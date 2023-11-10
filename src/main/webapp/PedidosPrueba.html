@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>Tomar Pedidos</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>
+		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">	
+	</head>
+	<body>
+
+		<link id="Menu-file" href="Menu.html" rel="import" />
+		<script type="text/javascript">
+			var getImport = document.querySelector('#Menu-file'); 
+			var getContent = getImport.import.querySelector('#menuprincipal');
+			document.body.appendChild(document.importNode(getContent, true));
+			console.log(getContent);
+		</script>
+
+		<div class="container">
+
+			<h1>Tomar Pedidos</h1>
+			<div class="row">
+				<table class="table table-bordered">
+					<tbody>
+						<form>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Teléfono</td>
+								</div>
+								<div class="col-md-6">
+									<td id="encTelefono"><input type="text" id="telefono" name="telefono" class="form-control" placeholder="Telefono" onchange="validarTelefono();"></td>
+								</div>
+									
+							</tr>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Nombres</td>
+								</div>
+								<div class="col-md-6">
+									<td id="encNombres"><input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres"></td>
+								</div>
+							</tr>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Dirección</td>
+								</div>
+								<div class="col-md-3">
+									<td id="encDireccion"><input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion"></td>
+								</div>
+							</tr>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Zona</td>
+								</div>
+								<div class="col-md-6">
+									<td id="encZona"><input type="text" id="zona" name="zona" class="form-control" placeholder="Zona"></td>
+								</div>
+							</tr>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Observacion</td>
+								</div>
+								<div class="col-md-6">
+									<td id="encObservacion"><input type="text" id="observacionDir" name="observacionDir" class="form-control" placeholder="Observacion"></td>
+								</div>
+							</tr>
+							<tr>
+								<div class="col-md-6">
+									<td class="active">Tienda</td>
+								</div>
+								<div class="col-md-6">
+									<td><select id="selectTiendas" class="form-control"></td>
+								</div>
+							</tr>
+						
+								<table id="grid-clientes" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+								        <thead>
+								            <tr>
+								                <th data-column-id="idCliente">idCliente</th>
+								                <th data-column-id="tienda">Tienda</th>
+								                <th data-column-id="nombre">Nombre</th>
+								                <th data-column-id="direccion">Dirección</th>
+								                <th data-column-id="zona">Zona</th>
+								                <th data-column-id="observacion">Observacion</th>
+								                <th data-column-id="telefono">Telefono</th>
+								            </tr>
+								        </thead>
+								      	<tbody>
+								      			
+								      	</tbody>
+								</table>
+
+						</form>
+					</tbody>
+				</table>
+			</div>
+
+		</div>
+			
+		<div class="container"><h2>Tamaño Pizza / Otro Producto</h2>
+				<form  id='FormTamanoPizza'>
+				<!--
+				  	<div class="row">
+						  <div class="col-md-2">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="extragrande" id="extragrande" name="tamanoPizza">Extragrande</label>
+						    </div>
+						  </div>
+						  <div class="col-md-2 col-md-offset-2">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="grande" id="grande" name="tamanoPizza">Grande</label>
+						    </div>
+						  </div>
+					</div>
+					<div class="row">
+						  <div class="col-md-2">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="mediana" id="mediana" name="tamanoPizza">Mediana</label>
+						    </div>
+						  </div>
+						  <div class="col-md-2 col-md-offset-2">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="pizzeta" id="pizzeta" name="tamanoPizza">Pizzeta</label>
+						    </div>
+						  </div>
+					</div>
+					<div class="row">
+						  <div class="col-md-2">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="otros" id="otros" name="tamanoPizza">Otros Productos</label>
+						    </div>
+						  </div>
+					</div>
+					-->
+				</form>
+					<h2>División Pizza</h2>
+					<div class="row">
+						  <div class="col-md-3">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="mitad" id='mitad' name="formapizza">Mitad/Mitad</label>
+						    </div><!-- /input-group -->
+						  </div><!-- /.col-lg-6 -->
+						  <div class="col-md-3 col-md-offset-3">
+						    <div class="input-group">
+						        <label><input type="radio" aria-label="..." value="entera" id='entera' name="formapizza">Solo un sabor</label>
+						    </div><!-- /input-group -->
+						  </div><!-- /.col-lg-6 -->
+					</div><!-- /.row -->
+					<h2>Especialidades</h2>
+					<form  id='especialidades'>
+					</form>
+					<h2>Otros Productos</h2>
+					<form  id='otrosproductos'>
+					</form>
+					<form  id='pedido'>
+						<div class="row">
+							<div class="col-md-2">Cantidad Producto</div>
+							<div class="col-md-2">
+								<a href="javascript:changeQuantity(-1)"><img src="img/minusBtn.gif"></a>
+							
+								<input type="text" id="cantidad" name="cantidad" class="form-control" placeholder="Cantidad">
+							</div>
+								<a href="javascript:changeQuantity(1)"><img src="img/plusBtn.gif"></a>
+						</div>
+						
+							<td id="excepcionPrecio">Excepción Precio<select id="selectExcepcion" name="selectExcepcion" class="form-control" placeholder="Excepcion Precio"></td>
+							<td>
+								 <label><input type="radio" aria-label="..." value="siadicion" id="siadicion" name="adicion">Si Adición</label>
+							     <label><input type="radio" aria-label="..." value="noadicion" id="noadicion" name="adicion">No Adición</label>
+							</td>
+					</form>	
+						<form  id='pintarAdiciones'>
+						</form>
+						<form  id='frmgaseosas'>
+						</form>
+						<br>
+						<div class="form-group">
+							  <label for="comment">Observacion:</label>
+							  <textarea class="form-control" rows="3" id="observacion"></textarea>
+						</div>
+						<br>
+						<div>
+						<input type="button" class="btn btn-primary btn-lg" value="Agregar al Pedido" onclick="agregarProducto()">
+						</div>
+						<br>
+					
+						<tr>
+							<div class="col-md-3">
+							<td class="active">Número de Pedido</td>
+							</div>
+							<div class="col-md-3">
+							<td class="active"><input type="text" class="form-control" id="NumPedido" placeholder="Número de pedido" disabled></td>
+							</div>
+						</tr>
+						<tr>
+							<div class="col-md-3">
+							<td class="active">Número Id Cliente</td>
+							</div>
+							<div class="col-md-3">
+							<td class="active"><input type="text" class="form-control" id="IdCliente" placeholder="Id Cliente" disabled></td>
+							</div>
+						</tr>
+						<br>
+						<tr>
+							<div class="col-md-3">
+							<td class="active">Estado del Pedido</td>
+							</div>
+							<div class="col-md-3">
+							<td class="active"><input type="text" class="form-control" id="estadopedido" placeholder="Estado del Pedido" disabled></td>
+							</div>
+						</tr>
+						<div>
+        				<table id="grid-pedido" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+								        <thead>
+								            <tr>
+								                <th data-column-id="iddetallepedido">Id Detalle Pedido</th>
+								                <th data-column-id="pizza">Pizza</th>
+								                <th data-column-id="otroprod">Otro Producto</th>
+								                <th data-column-id="cantidad">Cantidad</th>
+								                <th data-column-id="especialidad1">Especialidad 1</th>
+								                <th data-column-id="especialidad2">Especialidad 2</th>
+								                <th data-column-id="liquido">Liquido</th>
+								                <th data-column-id="adicion">Adición</th>
+								                <th data-column-id="observacion">Obs</th>
+								                <th data-column-id="valorunitario">Valor Unitario</th>
+								                <th data-column-id="valortotal">Valor Total</th>
+								            </tr>
+								        </thead>
+								      	<tbody>
+								      			
+								      	</tbody>
+								</table>
+						</div>
+
+								<input type="button" class="btn btn-primary btn-lg" value="Confimar Pedido" onclick="ConfirmarPedido()">
+										
+		</div>
+	</body>
+	<script src="js/pedidosprueba.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
+</html>

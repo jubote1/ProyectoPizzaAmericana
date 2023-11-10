@@ -1,0 +1,97 @@
+
+ [
+    { "title": "Manrique",
+        "zona":"Manrique",
+        "coordinates": {"lng": -75.55476201695326,"lat":6.270404035083642
+       },
+       "lugar_cercano":{"lng": -75.55530232377293,"lat": 6.280408589499984}
+
+
+    },
+    {
+        "title": "Bello",
+        "zona":"Bello",
+        "coordinates": {"lng": -75.5599370602694,"lat":6.31313642173263
+       },
+       "lugar_cercano":{"lng": -75.5554509025164,"lat": 6.325651046846675}
+
+    },
+    {
+        "title": "La America",
+        "zona":"La America",
+        "coordinates": {"lng": -75.6042451558178,"lat": 6.248795464621254
+       },
+       "lugar_cercano":{"lng": -75.59500996687267,"lat": 6.24188321063195}
+
+    },
+    {
+        "title": "Calasanz",
+        "zona":"Calasanz",
+        "coordinates": {"lng": -75.59837327880433,
+            "lat":6.266104483307567
+       },
+       "lugar_cercano":{"lng":-75.59290456281049,"lat":6.261639364698148}
+
+    },
+    {
+        "title": "Itagui",
+        "zona":"Itagui",
+        "coordinates":{"lng":
+         -75.6215936733657,
+         "lat": 6.165763998154379
+       },
+       "lugar_cercano":{"lng":-75.61904982714165,"lat": 6.153709722244767}
+
+    },
+    {
+        "title": "Poblado",
+        "zona":"Poblado",
+        "coordinates": {"lng": -75.55984400835283,
+            "lat":6.2066485560767415
+       },
+       "lugar_cercano":{"lng":-75.56908289523498,"lat": 6.213587165813872}
+
+    },
+    {
+        "title": "La Mota",
+        "zona":"La Mota",
+        "coordinates": {"lng": -75.5952875746262,
+            "lat":6.211386771165651
+       },
+       "lugar_cercano":{"lng": -75.60080626113755,"lat": 6.217611732527862}
+
+    },
+    {
+        "title": "Envigado",
+        "zona":"Envigado",
+        "coordinates": {"lng": -75.58524990346257,
+            "lat": 6.167150830483641
+       },
+       "lugar_cercano":{"lng": -75.58088680508307,"lat":  6.158021605217163}
+
+    },
+    {
+        "title": "Pilarica",
+        "zona":"Pilarica",
+        "coordinates": {"lng":-75.5854100862619, "lat":6.273129787405367
+       },
+       "lugar_cercano":{"lng":-75.58076020009997,"lat": 6.282138849108406}
+
+    },
+    {
+        "title": "San Antonio",
+        "zona":"San Antonio",
+        "coordinates":{"lng":-75.64904988626188,"lat": 6.168106662807738
+       },
+       "lugar_cercano":{"lng": -75.65112765095584,"lat": 6.179916345483423}
+
+    },
+    {
+        "title": "Piloto",
+        "zona":"Piloto",
+        "coordinates": {"lng": -75.55326141695326,"lat":6.2635609561198855
+       },
+       "lugar_cercano":{"lng": -75.56193040140214,"lat": 6.25427243133277}
+
+    }
+]
