@@ -1084,10 +1084,16 @@ function solFacturaElectronica()
 							            text: 'Confirmar',
 							            btnClass: 'btn-blue',
 							            action: function () {
+							            	//Validamos que si estén ingresando telefono
+											var telefonoFact = encodeURIComponent($('#telefonofact').val());
+											if(telefonoFact == '')
+											{
+												$.alert('El campo de teléfono para contactar al cliente si hay dudas está vacío, por favor diligenciarlo.');
+												return;
+											}
 							                var identificacionFact = encodeURIComponent($('#identificacionfact').val());
 											var correoFact = encodeURIComponent($('#correofact').val());
 											var empresaFact = encodeURIComponent($('#empresafact').val());
-											var telefonoFact = encodeURIComponent($('#telefonofact').val());
 											$.ajax({ 
 									    				url: server + "SolicitarFacturaElectronica?idpedidocontact="+ idPedido +"&idpedidotienda=" + idPedidoTienda + "&valor=" + totalpedido +"&nit=" + identificacionFact + "&correo=" + correoFact + "&empresa=" + empresaFact + "&telefono=" +  telefonoFact + "&fechapedido=" + fechaPedido + "&usuario=" + usuario, 
 									    				dataType: 'json', 
@@ -1179,11 +1185,16 @@ function solFacturaElectronicaTienda()
 							            text: 'Confirmar',
 							            btnClass: 'btn-blue',
 							            action: function () {
+							            	var telefonoFact = encodeURIComponent($('#telefonofact').val());
+											if(telefonoFact == '')
+											{
+												$.alert('El campo de teléfono para contactar al cliente si hay dudas está vacío, por favor diligenciarlo.');
+												return;
+											}
 							            	var numPedidoTiendaFact = $('#numpedidotiendafact').val();
 							                var identificacionFact = encodeURIComponent($('#identificacionfacttienda').val());
 											var correoFact = encodeURIComponent($('#correofacttienda').val());
 											var empresaFact = encodeURIComponent($('#empresafacttienda').val());
-											var telefonoFact = encodeURIComponent($('#telefonofacttienda').val());
 											var totalPedidoTienda = 0;
 											var datFechaPedido = new Date();
 											var fechaPedidoTienda = formatearFecha(datFechaPedido);

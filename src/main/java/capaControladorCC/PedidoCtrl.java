@@ -44,8 +44,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import capaControladorPOS.BiometriaCtrl;
-import capaControladorPOS.EmpleadoCtrl;
 import capaDAOCC.AdicionDetallePedidoDAO;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.DescuentoGeneralDAO;
@@ -119,6 +117,8 @@ import capaModeloCC.SolicitudPQRSImagenes;
 import capaModeloCC.TiempoPedido;
 import capaModeloCC.Tienda;
 import capaModeloCC.Ubicacion;
+import capaControladorPOS.BiometriaCtrl;
+import capaControladorPOS.EmpleadoCtrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;

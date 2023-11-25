@@ -46,7 +46,6 @@ import capaDAOCC.TiempoPedidoDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TiendaFranquiciaWompiDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
-import capaDAOPOS.DetallePedidoDAO;
 import capaModeloCC.AdicionTiendaVirtual;
 import capaModeloCC.Cliente;
 import capaModeloCC.Correo;
@@ -74,6 +73,7 @@ import capaModeloCC.ProductoIncluido;
 import capaModeloCC.SaborLiquido;
 import capaModeloCC.Tienda;
 import capaModeloCC.TiendaFranquiciaWompi;
+import capaDAOPOS.DetallePedidoDAO;
 import utilidadesCC.ControladorEnvioCorreo;
 
 public class PedidoMrTamalCtrl {

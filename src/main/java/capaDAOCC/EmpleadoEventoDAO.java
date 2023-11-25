@@ -9,8 +9,8 @@ import org.apache.log4j.Logger;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
-import capaConexionPOS.ConexionBaseDatos;
 import capaModeloCC.HorarioEmpleado;
+import capaConexionPOS.ConexionBaseDatos;
 import capaModeloPOS.Egreso;
 import capaModeloPOS.EmpleadoEncuesta;
 

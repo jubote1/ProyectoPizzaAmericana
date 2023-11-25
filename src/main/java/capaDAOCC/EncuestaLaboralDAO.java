@@ -6,8 +6,8 @@ import org.apache.log4j.Logger;
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
 import capaModeloCC.EncuestaLaboral;
-import capaModeloPOS.EncuestaAplicar;
 import conexionCC.ConexionBaseDatos;
+import capaModeloPOS.EncuestaAplicar;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
