@@ -5073,4 +5073,32 @@ public class PedidoDAO {
 		return(pedidosMonitoreo);
 	}
 	
+	public static boolean marcarPedidoEmpresarial(int idpedido)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			// Actualizamos la tabla pedido con el numero pedido pixel y le ponemos estado al pedido = 1, indicando que ya fue enviado a la tienda.
+			String update = "update pedido set venta_corporativa  = 'S'  where idpedido = "+ idpedido;
+			logger.info(update);
+			stm.executeUpdate(update);
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			return(false);
+		}
+		return(true);
+	}
+	
 }

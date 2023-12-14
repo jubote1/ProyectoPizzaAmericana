@@ -9509,4 +9509,13 @@ public class PedidoCtrl {
 		res.put("resultado", "OK");
 		return(res.toJSONString());
 	}
+	
+	public String marcarPedidoEmpresarial(int idpedido)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean resp = PedidoDAO.marcarPedidoEmpresarial(idpedido);
+		respuesta.put("resultado", resp);
+		return(respuesta.toJSONString());
+	}
+
 }

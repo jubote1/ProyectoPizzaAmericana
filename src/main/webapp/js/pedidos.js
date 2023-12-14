@@ -16,6 +16,7 @@ var productos;
 var gaseosas;
 var excepciones;
 var idPedido = 0;
+var idPedidoEmpresarial = 0;
 var memcode = 0;
 var insertado = 0;
 var idCliente = 0;
@@ -3084,6 +3085,13 @@ function ConfirmarPedido()
     {
         $.alert('El pedido excelente el monto de 5 UVT es decir ' + montoFactura + " por lo tanto se deberá generar factura electrónica, si desea indicar los datos para esta generación, por favor crear la solicitud de factura luego de tomado el pedido.");
     }
+    //Incluimos validacion de si es pedido o no empresarial
+    if($("#totalpedido").val() > 200000)
+    {
+        //Realizamos inclusión para mostrar modal de agregar domicilio
+        idPedidoEmpresarial = idPedido;
+        $('#modalVentaEmpresarial').modal('show');    
+    }
 	var valordevolver =  $("#valordevolver").val();
 	if(valordevolver >= 0)
 	{  
@@ -5972,4 +5980,13 @@ function validarCostoDomicilio()
         $('#modalCostoDomicilio').modal('hide');
     }
 }
+
+function validarVentaEmpresarial()
+{
+    $.getJSON(server + 'MarcarPedidoEmpresarial?idpedido=' + idPedidoEmpresarial, function(data1){
+        idPedidoEmpresarial = 0;
+    });
+    $('#modalVentaEmpresarial').modal('hide');
+}
+
 
