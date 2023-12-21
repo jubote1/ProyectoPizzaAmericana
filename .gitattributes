@@ -1,0 +1,6 @@
+# .gitattributes
+
+# Configuración de codificación para archivos de texto específicos
+*.txt git-encoding=utf-8
+*.java git-encoding=utf-8
+*.html git-encoding=utf-8
