@@ -92,13 +92,7 @@ tomcat {
     httpProtocol = 'org.apache.coyote.http11.Http11Nio2Protocol'
     ajpProtocol  = 'org.apache.coyote.ajp.AjpNio2Protocol'
 }
-tasks.withType(JavaCompile) {
-    options.encoding = 'UTF-8'
-}
 
-compileJava {
-    options.encoding = 'UTF-8'
-}
 
 task copyNatives(type: Copy) {
     description = "Copies the arcgis native libraries into the .arcgis directory for development."
