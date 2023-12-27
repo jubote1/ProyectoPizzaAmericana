@@ -5248,6 +5248,25 @@ public class PedidoCtrl {
 		return(respuestaJSON.toString());
 	}
 	
+	public String ConsultarPedidosVentasCorporativas(String fechaIni, String fechaFin)
+	{
+		ArrayList<Pedido> pedidos = PedidoDAO.ConsultarPedidosVentasCorporativas(fechaIni, fechaFin);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		for(Pedido pedTemp : pedidos)
+		{
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("idpedido", pedTemp.getIdpedido());
+			cadaRespuestaJSON.put("idpedidotienda", pedTemp.getNumposheader());
+			cadaRespuestaJSON.put("valor", pedTemp.getTotal_neto());
+			cadaRespuestaJSON.put("cliente", pedTemp.getNombrecliente());
+			cadaRespuestaJSON.put("fecha", pedTemp.getFechapedido());
+			cadaRespuestaJSON.put("asesor", pedTemp.getUsuariopedido());
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+
+		return(respuestaJSON.toString());
+	}
 	
 	public void notificarWhatsAppUltramsgSolFactura(SolicitudFactura solFactura)
 	{
