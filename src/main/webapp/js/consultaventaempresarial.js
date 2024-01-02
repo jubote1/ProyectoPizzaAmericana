@@ -4,7 +4,8 @@ var server;
 var tiendas;
 var table;
 var tabledetalle;
-var dtsolicitudes;
+var dtventas;
+var dtresumen;
 var idSolicitud = 0;
 var administrador = "N";
 //Configuramos el campo fileinput 
@@ -65,15 +66,25 @@ $(document).ready(function() {
 	//Final cargue productos pizza
 
 
-    dtsolicitudes = $('#grid-ventaempresarial').DataTable( {
+    dtventas = $('#grid-ventaempresarial').DataTable( {
     		"aoColumns": 
     		[
     		{ "mData": "idpedido" },
             { "mData": "idpedidotienda" },
             { "mData": "valor" },
             { "mData": "cliente" },
+            { "mData": "nombrecompania" },
             { "mData": "fecha" },
             { "mData": "asesor" }
+        	]
+    	} );
+
+    dtresumen = $('#grid-resumenventa').DataTable( {
+    		"aoColumns": 
+    		[
+    		{ "mData": "asesor" },
+            { "mData": "totalventa" },
+            { "mData": "comision" }
         	]
     	} );
 
@@ -172,8 +183,26 @@ function consultar()
 									"idpedidotienda": data1[i].idpedidotienda,
 									"valor": data1[i].valor,
 									"cliente": data1[i].cliente,
+									"nombrecompania": data1[i].nombrecompania,
 									"fecha": data1[i].fecha,
 									"asesor": data1[i].asesor
+								}).draw();
+							}
+							
+					});
+
+	var table2;
+	if ( $.fn.dataTable.isDataTable( '#grid-resumenventa' ) ) {
+    		table2 = $('#grid-resumenventa').DataTable();
+    }
+	$.getJSON(server + 'ConsultarResumenVentasEmpresariales?fechainicial=' + fechaini +"&fechafinal=" + fechafin, function(data2){
+	                		
+	                		table2.clear().draw();
+							for(var i = 0; i < data2.length;i++){
+								table2.row.add({
+									"asesor": data2[i].asesor,
+									"totalventa": data2[i].totalventa,
+									"comision": data2[i].comision
 								}).draw();
 							}
 							

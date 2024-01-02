@@ -110,6 +110,7 @@ import capaModeloCC.Producto;
 import capaModeloCC.ProductoIncluido;
 import capaModeloCC.Promocion;
 import capaModeloCC.Resultado;
+import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
 import capaModeloCC.SolicitudFactura;
 import capaModeloCC.SolicitudFacturaImagenes;
@@ -5262,6 +5263,24 @@ public class PedidoCtrl {
 			cadaRespuestaJSON.put("cliente", pedTemp.getNombrecliente());
 			cadaRespuestaJSON.put("fecha", pedTemp.getFechapedido());
 			cadaRespuestaJSON.put("asesor", pedTemp.getUsuariopedido());
+			cadaRespuestaJSON.put("nombrecompania", pedTemp.getNombreCompania());
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+
+		return(respuestaJSON.toString());
+	}
+	
+	public String ConsultarResumenVentasCorporativas(String fechaIni, String fechaFin)
+	{
+		ArrayList <ResumenVentaEmpresarial> resumenes = PedidoDAO.ConsultarResumenVentasCorporativas(fechaIni, fechaFin);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		for(ResumenVentaEmpresarial resTemp : resumenes)
+		{
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("asesor", resTemp.getAsesor());
+			cadaRespuestaJSON.put("totalventa", resTemp.getTotalVenta());
+			cadaRespuestaJSON.put("comision", resTemp.getComision());
 			respuestaJSON.add(cadaRespuestaJSON);
 		}
 

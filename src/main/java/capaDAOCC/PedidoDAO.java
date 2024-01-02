@@ -34,6 +34,7 @@ import capaModeloCC.PedidoMonitoreoPagoVirtual;
 import capaModeloCC.PedidoPlat;
 import capaModeloCC.Producto;
 import capaModeloCC.ProductoIncluido;
+import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
 import capaModeloCC.Tienda;
 import capaModeloCC.TipoLiquido;
@@ -3824,7 +3825,7 @@ public class PedidoDAO {
 		String consulta = ""; 
 		String fechaInicial = fechaIni.substring(6, 10)+"-"+fechaIni.substring(3, 5)+"-"+fechaIni.substring(0, 2) + " 00:00:00";	
 		String fechaFinal = fechaFin.substring(6, 10)+"-"+fechaFin.substring(3, 5)+"-"+fechaFin.substring(0, 2) + " 23:59:59";
-		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaInicial + "' and a.fechapedido <= '" + fechaFinal + "' and  a.venta_corporativa = 'S'";
+		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, c.nombrecompania from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaInicial + "' and a.fechapedido <= '" + fechaFinal + "' and  a.venta_corporativa = 'S' order by a.usuariopedido, a.fechapedido";
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
@@ -3852,6 +3853,7 @@ public class PedidoDAO {
 			String formapago;
 			int idformapago;
 			double tiempopedido;
+			String nombreCompania;
 			while(rs.next())
 			{
 				idpedido = rs.getInt("idpedido");
@@ -3874,8 +3876,10 @@ public class PedidoDAO {
 				formapago = rs.getString("formapago");
 				idformapago = rs.getInt("idforma_pago");
 				tiempopedido = rs.getDouble("tiempopedido");
+				nombreCompania = rs.getString("nombrecompania");
 				Pedido cadaPedido = new Pedido(idpedido,  nombreTienda,totalBruto, impuesto, totalNeto,
 						estadoPedido, fechaPedido, nombreCliente, idcliente, enviadopixel,numposheader, null, stringpixel, fechainsercion, usuariopedido, direccion, telefono, formapago, idformapago, tiempopedido, "", "", "");
+				cadaPedido.setNombreCompania(nombreCompania);
 				consultaPedidos.add(cadaPedido);
 			}
 			rs.close();
@@ -3893,6 +3897,48 @@ public class PedidoDAO {
 			
 		}
 		return(consultaPedidos);
+	}
+	
+	public static ArrayList<ResumenVentaEmpresarial> ConsultarResumenVentasCorporativas(String fechaIni, String fechaFin)
+	{
+		ArrayList <ResumenVentaEmpresarial> resumenes = new ArrayList();
+		String consulta = ""; 
+		String fechaInicial = fechaIni.substring(6, 10)+"-"+fechaIni.substring(3, 5)+"-"+fechaIni.substring(0, 2) + " 00:00:00";	
+		String fechaFinal = fechaFin.substring(6, 10)+"-"+fechaFin.substring(3, 5)+"-"+fechaFin.substring(0, 2) + " 23:59:59";
+		consulta = "select sum(a.total_neto) as ventatotal, (sum(a.total_neto)*0.03) as comision, g.nombre_largo as asesor  from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f, usuario g where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.usuariopedido = g.nombre and a.fechapedido >= '" + fechaInicial + "' and a.fechapedido <= '" + fechaFinal + "' and  a.venta_corporativa = 'S' group by asesor";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			ResultSet rs = stm.executeQuery(consulta);
+			String asesor;
+			double ventaTotal;
+			double comision;
+			while(rs.next())
+			{
+				asesor = rs.getString("asesor");
+				ventaTotal = rs.getDouble("ventatotal");
+				comision = rs.getDouble("comision");
+				ResumenVentaEmpresarial resumenTemp = new ResumenVentaEmpresarial(asesor,ventaTotal,comision);
+				resumenes.add(resumenTemp);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+
+		}catch(Exception e){
+			System.out.println(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			
+		}
+		return(resumenes);
 	}
 	
 	public static boolean seDebeReportar(int idpedido ,int maxAlertas)
