@@ -6525,6 +6525,9 @@ public class PedidoCtrl {
 			{
 				idTienda = 1;
 			}
+			//Realizamos procesamiento de telefono
+			telefono = telefono.replace(" ", "");
+			telefono = telefono.replace("-", "");
 			//Procedemos a crear el pedido en el sistema con base en como lo hemos creado para la tienda virtual
 			String telefonoCelular = "";
 			//El telefono le quitaremos el indicativo del país
@@ -6736,7 +6739,7 @@ public class PedidoCtrl {
 			mensaje = "Para el día de hoy, hay más de un pedido registrado con este número.";
 		}else if(cantPedidos == 0)
 		{
-			mensaje = "Para el día no hay pedido registrados con este número.";
+			mensaje = "Estimado Cliente! Para el día de hoy, no hay ningún pedido registrado con este número teléfonico (" + telefono +")";
 		}else if(cantPedidos == 1)
 		{
 			//Realizamos la consulta del pedido para saber de que tienda
@@ -6779,16 +6782,31 @@ public class PedidoCtrl {
 						String estado = (String)jsonResServicio.get("estadopedido");
 						if(estado.contains("En Espera"))
 						{
-							estado = "producto elaborado y en espera de domiciliario";
+							estado = "ya está listo y en espera de un domiciliario.";
+						}else if(estado.contains("En Elaboración"))
+						{
+							estado = "ya fue aceptado en tienda y en unos minutos ingresará a nuestros hornos.";
+						}else if(estado.contains("En Ruta"))
+						{
+							estado = "ya está con tu domiciliario y se encuentra en ruta.";
+						}else if(estado.contains("Entregado"))
+						{
+							estado = "ya fue entregado en la dirección " + pedConsultado.getDireccion() ;
 						}
 						String fechaDesde = (String)jsonResServicio.get("fechadesde");
 						//Cuando el mensaje esta vacio en ambos es porque no encontró
 						if(estado.equals(new String("")) && fechaDesde.equals(new String("")))
 						{
-							mensaje = "No se encontró información del pedido, por favor contactar a un asesor.";
+							mensaje = "No se encontró información del pedido, por favor llama a nuestras lineas de atención 604 4444553";
 						}else
 						{
-							mensaje = "*Su pedido número " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + " se encuentra en el estado " + estado + " desde la siguiente fecha y hora " + fechaDesde + ".*";
+							if(estado.contains("En Espera"))
+							{
+								mensaje = "*Su pedido número " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + ". " + estado + ".*";
+							}else
+							{
+								mensaje = "*Su pedido número " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + ". " + estado + " desde la siguiente fecha y hora " + fechaDesde + ".*";
+							}
 						}	
 					}catch(Exception e)
 					{
@@ -7492,6 +7510,8 @@ public class PedidoCtrl {
 	public static void main(String args[]) throws IOException
 	{
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();
+		PedidoCtrl.verificacionExistenciaClienteSalesManago("jubote1@gmail.com");
+		
 		PedidoCtrl.consultarCoberturaCRMBOT("{\"id\":21100107,\"name\":\"Lead #21100107\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58812344,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1697835183,\"updated_at\":1697835320,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":858274,\"field_name\":\"Dirección de envío\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"calle 63a # 47 -27\"}]},{\"field_id\":863427,\"field_name\":\"Barrio y Municipio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"prado centro , medellin\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/21100107?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "21100107", 0);
 		//PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"2\",\"type\":\"orderNew\",\"timestamp\":1694821682,\"data\":{\"order_id\":5764625991884408029,\"order_info\":{\"order_id\":5764625991884408029,\"status\":100,\"order_index\":162005,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1694824858,\"create_time\":1694821681,\"pay_time\":1694821681,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":2446200,\"items_discount\":1306200,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607591205045162,\"app_shop_id\":\"2\",\"shop_addr\":\"Carrera 53 #23-102 bello antioquia\",\"shop_name\":\"Pizza Americana - Bello\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"ud835udcf8ud835udcfcud835udcf9ud835udcf2ud835udcf7ud835udcea\",\"calling_code\":\"+57\",\"phone\":\"322***2741\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Combo Pizzeta + Gaseosa 400 ml\",\"total_price\":2446200,\"sku_price\":2446200,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400 ml\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":2,\"real_price\":1590000,\"promotion_detail\":{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},\"promo_list\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200}]}],\"promotions\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},{\"promo_type\":11,\"promo_discount\":450000,\"shop_subside_price\":0}]}}}", "revisar");
 		//PedidoCtrl.procesarFACBOTCRM("{\"id\":20617795,\"name\":\"Pizza Americana Manrique Piloto - Order #744528864 confirmed\",\"price\":34,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":59471960,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1692742678,\"updated_at\":1694608827,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":491608,\"field_name\":\"Tienda web:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana Manrique Piloto\"}]},{\"field_id\":491706,\"field_name\":\"Tipo:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"DELIVERY\"}]},{\"field_id\":492800,\"field_name\":\"Metodo de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"CASH\"}]},{\"field_id\":849448,\"field_name\":\"Llego\",\"field_code\":null,\"field_type\":\"multiselect\",\"values\":[{\"value\":\"Si\",\"enum_id\":537026,\"enum_code\":null}]},{\"field_id\":849440,\"field_name\":\"Conforme con producto\",\"field_code\":null,\"field_type\":\"numeric\",\"values\":[{\"value\":\"0\"}]},{\"field_id\":863599,\"field_name\":\"# Factura de venta\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"192993\"}]},{\"field_id\":863607,\"field_name\":\"# Tipo de cliente FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Empresa\"}]},{\"field_id\":863601,\"field_name\":\"# NIT o CC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"901290745\"}]},{\"field_id\":863603,\"field_name\":\"# Nombre empresa o cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana SAS\"}]},{\"field_id\":863609,\"field_name\":\"# Correo electrónico FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"jubote1@gmail.com\"}]},{\"field_id\":863605,\"field_name\":\"# Teléfono FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3148807773\"}]},{\"field_id\":863701,\"field_name\":\"# Documento FAC\",\"field_code\":null,\"field_type\":\"file\",\"values\":[{\"value\":{\"file_uuid\":\"044ffe1f-dd92-46d0-b866-f0c52b51d804\",\"version_uuid\":\"9afb3f07-7eb7-4510-aab3-aecbb1dc5c6e\",\"file_name\":\"_SOLICITUD PIEZAS GRÁFICAS junio 2023.pdf\",\"file_size\":529070,\"is_deleted\":false}}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20617795?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":6000,\"name\":\"VENTA ONLINE\",\"color\":null}],\"companies\":[]}}", "20617795", 0);
@@ -9554,6 +9574,56 @@ public class PedidoCtrl {
 		boolean resp = PedidoDAO.marcarPedidoEmpresarial(idpedido);
 		respuesta.put("resultado", resp);
 		return(respuesta.toJSONString());
+	}
+	
+	public void verificacionExistenciaClienteSalesManago(String correoCliente)
+	{
+		String jsonInfo = "{"
+				+ "  \"clientId\": \"8bff4c80ffe4b78a\","
+				+ "  \"apiKey\": \"jfHf8cOqtwcgYW2r4Top\","
+				+ "  \"requestTime\":  1704218302,\r\n"
+				+ "  \"sha\": \"c8ed0c44ee57ee5fc1eee36de659db051c7a0f66\","
+				+ "  \"owner\": \"tecnologia@pizzaamericana.com.co\","
+				+ "    \"email\": \""+ correoCliente +"\""
+				+ "}";
+		//Realizamos la invocación mediante el uso de HTTPCLIENT
+		HttpClient client = HttpClientBuilder.create().build();
+		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/hasContact ";
+		HttpPost request = new HttpPost( rutaURLSales);
+		try
+		{
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json;charset=UTF-8");
+			//Fijamos los parámetros
+			//pass the json string request in the entity
+		    HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
+		    request.setEntity(entity);
+			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+			StringBuffer retorno = new StringBuffer();
+			HttpResponse responseFinPed = client.execute(request);
+			BufferedReader rd = new BufferedReader
+				    (new InputStreamReader(
+				    		responseFinPed.getEntity().getContent()));
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				    retorno.append(line);
+				}
+			//Traemos el valor del JSON con toda la info del pedido
+			String datosJSON = retorno.toString();
+			System.out.println("RESULTADO RESPUESTA " + datosJSON);
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gráfica
+//			JSONParser parser = new JSONParser();
+//			Object objParser = parser.parse(datosJSON);
+//			JSONObject jsonGeneral = (JSONObject) objParser;
+//			String dataJSON = (String)jsonGeneral.get("data").toString();
+//			Object objParserData = parser.parse(dataJSON);
+//			JSONObject jsonData = (JSONObject) objParserData;
+//			String idLink = (String)jsonData.get("id");
+
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
 	}
 
 }
