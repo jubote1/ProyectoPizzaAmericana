@@ -17,7 +17,7 @@ import capaModeloCC.Resultado;;
 /**
  * Servlet implementation class GetCliente
  * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * como parï¿½metro un telï¿½fono determinado.
  */
 @WebServlet("/ProbarConsultarDireccion")
 public class ProbarConsultarDireccion extends HttpServlet {
@@ -33,9 +33,9 @@ public class ProbarConsultarDireccion extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como parámetro del teléfono el cual es manejado como un String, con base en esto se retorna
-	 * en formato JSON todos los registros que tiene asociado el cliente en la tabla de clientes con el teléfono indicado.
-	 * Lo anterior invocando el método obtenerCliente(tel) de la capa controlador cliente.
+	 * El servicio recibe como parï¿½metro del telï¿½fono el cual es manejado como un String, con base en esto se retorna
+	 * en formato JSON todos los registros que tiene asociado el cliente en la tabla de clientes con el telï¿½fono indicado.
+	 * Lo anterior invocando el mï¿½todo obtenerCliente(tel) de la capa controlador cliente.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -46,7 +46,7 @@ public class ProbarConsultarDireccion extends HttpServlet {
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			UbicacionCtrl ubiCtrl = new UbicacionCtrl();
-			Resultado res = ubiCtrl.ubicarDireccionEnTienda(direccion);
+			Resultado res = ubiCtrl.ubicarDireccionEnTienda(direccion,"");
 			PrintWriter out = response.getWriter();
 			out.write(res.getResultado());
 			

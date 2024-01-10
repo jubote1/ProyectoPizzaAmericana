@@ -19,10 +19,10 @@ import conexionCC.ConexionBaseDatos;
 public class SolicitudPQRSDAO {
 	
 	/**
-	 * Método de la capa DAO que se encarga de implementar la inserción de la entidad solicitudPQRS, recibiendo como parámetro
-	 * un objeto tipo SolicitudPQRS, retornará como resultado de la inserción el idsolicitudPQRS asignado por la base de datos
+	 * Mï¿½todo de la capa DAO que se encarga de implementar la inserciï¿½n de la entidad solicitudPQRS, recibiendo como parï¿½metro
+	 * un objeto tipo SolicitudPQRS, retornarï¿½ como resultado de la inserciï¿½n el idsolicitudPQRS asignado por la base de datos
 	 * en base a un campo configurado como autoincrementable en la misma.
-	 * @param solicitud Se recibe como parámetro un objeto de la capaModelo SolicitudPQRS
+	 * @param solicitud Se recibe como parï¿½metro un objeto de la capaModelo SolicitudPQRS
 	 * @return Se retorna valor intero con el idSolicitudPQRS asignado por la base de datos.
 	 */
 	public static int insertarSolicitudPQRS(SolicitudPQRS solicitud)
@@ -73,7 +73,7 @@ public class SolicitudPQRSDAO {
 	}
 	
 	/**
-	 * Método que se encarga de la actualización de una PQRS
+	 * Mï¿½todo que se encarga de la actualizaciï¿½n de una PQRS
 	 * @param solicitud
 	 * @return
 	 */
@@ -121,7 +121,7 @@ public class SolicitudPQRSDAO {
 	
 	
 	/**
-	 * Método que se encarga desde la base de datos del descarte de la solicitu de PQRS.
+	 * Mï¿½todo que se encarga desde la base de datos del descarte de la solicitu de PQRS.
 	 * @param idSolicitudPQRS
 	 * @return
 	 */
@@ -276,7 +276,7 @@ public class SolicitudPQRSDAO {
 	
 	
 	/**
-	 * Método que se encarga de validar si una PQRS existe o no, retornando esto como un valor booleano
+	 * Mï¿½todo que se encarga de validar si una PQRS existe o no, retornando esto como un valor booleano
 	 * @param PQRS
 	 * @param idCliente
 	 * @return
@@ -332,7 +332,7 @@ public class SolicitudPQRSDAO {
 			while(rs.next())
 			{
 				pqrs = rs.getInt("idsolicitudPQRS");
-				pqrsCliente.add(new Integer(pqrs));
+				pqrsCliente.add(Integer.valueOf(pqrs));
 			}
 			rs.close();
 			stm.close();

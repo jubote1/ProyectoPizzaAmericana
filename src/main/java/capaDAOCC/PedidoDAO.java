@@ -48,7 +48,7 @@ import java.util.Date;
 public class PedidoDAO {
 	
 	/**
-	 * Método que se encarga de obtener todas especialidades de Pizza definidos en el sistema.
+	 * Mï¿½todo que se encarga de obtener todas especialidades de Pizza definidos en el sistema.
 	 * @return Se retorna un ArrayList con todas las especialidades definidas en la base de datos.
 	 */
 	public static ArrayList<Especialidad> obtenerEspecialidad(int idExcepcion, int idProducto)
@@ -102,9 +102,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar un ArrayList con objetos de Modelo Producto que correspongan a la tipología
+	 * Mï¿½todo que se encarga de retornar un ArrayList con objetos de Modelo Producto que correspongan a la tipologï¿½a
 	 * otro productos
-	 * @return Se retorna ArrayList con objetos de Modelo Producto que correspongan a la tipología otros productos.
+	 * @return Se retorna ArrayList con objetos de Modelo Producto que correspongan a la tipologï¿½a otros productos.
 	 */
 	public static ArrayList<Producto> obtenerOtrosProductos()
 	{
@@ -153,8 +153,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar los productos tipo adición.
-	 * @return Se retorna un ArrayLista con entidades MOdelo Producto de la tipología de producto Adición.
+	 * Mï¿½todo que se encarga de retornar los productos tipo adiciï¿½n.
+	 * @return Se retorna un ArrayLista con entidades MOdelo Producto de la tipologï¿½a de producto Adiciï¿½n.
 	 */
 	public static ArrayList<Producto> obtenerAdicionProductos()
 	{
@@ -203,7 +203,7 @@ public class PedidoDAO {
 	}
 
 	/**
-	 * Método que se encarga de retornar todos los prodcutos definidos en el sistema
+	 * Mï¿½todo que se encarga de retornar todos los prodcutos definidos en el sistema
 	 * @return Se retorna un arrayList con objetos Modelo Producto, todos los definidos en el sistema.
 	 */
 	public static ArrayList<Producto> obtenerTodosProductos() {
@@ -260,10 +260,10 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar los sabores líquido definidos para un producto.
-	 * @param idProdu Se recibe como parámetro el id producto del cual se desean consultar los sabores tipo liquidos
-	 * disponibles por parametrización.
-	 * @return Se retorna un ArrayList con objetos Modelo SaborLiquido con la información según los parámetros recibidos.
+	 * Mï¿½todo que se encarga de retornar los sabores lï¿½quido definidos para un producto.
+	 * @param idProdu Se recibe como parï¿½metro el id producto del cual se desean consultar los sabores tipo liquidos
+	 * disponibles por parametrizaciï¿½n.
+	 * @return Se retorna un ArrayList con objetos Modelo SaborLiquido con la informaciï¿½n segï¿½n los parï¿½metros recibidos.
 	 */
 	public static ArrayList<SaborLiquido> ObtenerSaboresLiquidoProducto(int idProdu, int idtienda)
 	{
@@ -314,11 +314,11 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que retorna los sabores tipo liquido que tiene disponible un excepción de precio.
-	 * @param idExce Se recibe como parámetro un entero con el idexcepcion del cual se quiere consultar
+	 * Mï¿½todo que retorna los sabores tipo liquido que tiene disponible un excepciï¿½n de precio.
+	 * @param idExce Se recibe como parï¿½metro un entero con el idexcepcion del cual se quiere consultar
 	 * los sabores de liquido disponible
 	 * @return Se retorna un ArrayList con objetos MOdelo SaborLiquido de acuerdo a la excepcion pasada como 
-	 * parámetro.
+	 * parï¿½metro.
 	 */
 	public static ArrayList<SaborLiquido> ObtenerSaboresLiquidoExcepcion(int idExce, int idtienda)
 	{
@@ -371,11 +371,11 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de insertar el encabezado de un pedido.
-	 * @param idtienda Se recibe la tienda a la cual pertenecerá el pedido.
-	 * @param idcliente Se recibe el idcliente para el cual se tomará el pedido
+	 * Mï¿½todo que se encarga de insertar el encabezado de un pedido.
+	 * @param idtienda Se recibe la tienda a la cual pertenecerï¿½ el pedido.
+	 * @param idcliente Se recibe el idcliente para el cual se tomarï¿½ el pedido
 	 * @param fechaPedido Se inserta la fecha del pedido.
-	 * @return Se retorna el idpedido retornado en por la base de datos en la inserción.
+	 * @return Se retorna el idpedido retornado en por la base de datos en la inserciï¿½n.
 	 */
 	public static int InsertarEncabezadoPedido(int idtienda, int idcliente, String fechaPedido, String user, String esProgramado, String programado, int idTipoPedido)
 	{
@@ -426,7 +426,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Se tendrá un método diferencial para la tienda virtual debido a que el campo origen será diferencial para distinguir
+	 * Se tendrï¿½ un mï¿½todo diferencial para la tienda virtual debido a que el campo origen serï¿½ diferencial para distinguir
 	 * si el pedido viene del contact center o viene de la tienda virtual
 	 * @param idtienda
 	 * @param idcliente
@@ -484,7 +484,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Creamos un método diferencial para la tienda virtual KUNO dado que será necesario diferenciar ciertas cosas
+	 * Creamos un mï¿½todo diferencial para la tienda virtual KUNO dado que serï¿½ necesario diferenciar ciertas cosas
 	 * @param idtienda
 	 * @param idcliente
 	 * @param fechaPedido
@@ -591,10 +591,10 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de ir insertando uno a uno los item pedido solicitados por el cliente.
-	 * @param detPedido Se recibe como parámetro en un objeto Modelo DetallePedido la información de cada detalle pedido
+	 * Mï¿½todo que se encarga de ir insertando uno a uno los item pedido solicitados por el cliente.
+	 * @param detPedido Se recibe como parï¿½metro en un objeto Modelo DetallePedido la informaciï¿½n de cada detalle pedido
 	 * y se va insertando en base de datos
-	 * @return Con respuesta se va obteniendo un número entero con el iddetallepedido
+	 * @return Con respuesta se va obteniendo un nï¿½mero entero con el iddetallepedido
 	 */
 	public static int InsertarDetallePedido(DetallePedido detPedido)
 	{
@@ -632,11 +632,11 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de insertar el detalle de la adición en otra tabla relacional que involucra un iddetallepedido
-	 * un idadición
-	 * @param detPedidoAdicion Se recibe objeto Modelo DetallePedidoAdicion con base en el cual se realiza la inserción
-	 * del detalle de adición para un producto determinado
-	 * @return Se retorna el id asociado a la inserción realizada
+	 * Mï¿½todo que se encarga de insertar el detalle de la adiciï¿½n en otra tabla relacional que involucra un iddetallepedido
+	 * un idadiciï¿½n
+	 * @param detPedidoAdicion Se recibe objeto Modelo DetallePedidoAdicion con base en el cual se realiza la inserciï¿½n
+	 * del detalle de adiciï¿½n para un producto determinado
+	 * @return Se retorna el id asociado a la inserciï¿½n realizada
 	 */
 	public static int InsertarDetalleAdicion(DetallePedidoAdicion detPedidoAdicion)
 	{
@@ -675,10 +675,10 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de insertar la información de un modificador CON/SIN de un detalle pedido en particular
-	 * @param modDetallePedido Recibe como parámetro el objeto Modelo ModificadorDetallePedido con la información
+	 * Mï¿½todo que se encarga de insertar la informaciï¿½n de un modificador CON/SIN de un detalle pedido en particular
+	 * @param modDetallePedido Recibe como parï¿½metro el objeto Modelo ModificadorDetallePedido con la informaciï¿½n
 	 * a insertar
-	 * @return Retorne en un entero el idmodificador retornado luego de la inserción en base de datos.
+	 * @return Retorne en un entero el idmodificador retornado luego de la inserciï¿½n en base de datos.
 	 */
 	public static int InsertarModificadorDetallePedido(ModificadorDetallePedido modDetallePedido)
 	{
@@ -717,9 +717,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que permite retornar un idespecialidad, con base en el nombre especialidad pasado como parámetro
-	 * @param especialidad Se recibe como parámetro un String el nombre de la especialidad.
-	 * @return Se retorna el idespecialidad asociado a la especialidad enviada como parámetro.
+	 * Mï¿½todo que permite retornar un idespecialidad, con base en el nombre especialidad pasado como parï¿½metro
+	 * @param especialidad Se recibe como parï¿½metro un String el nombre de la especialidad.
+	 * @return Se retorna el idespecialidad asociado a la especialidad enviada como parï¿½metro.
 	 */
 	public static int obtenerIdEspecialidad(String especialidad)
 	{
@@ -755,10 +755,10 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de obtener el valor total de un pedido, con base en todos los detalles asociados a un pedido
+	 * Mï¿½todo que se encarga de obtener el valor total de un pedido, con base en todos los detalles asociados a un pedido
 	 * en particular.
-	 * @param idpedido Se recibe como parámetro el idpedido del cual se requiere obtener el total.
-	 * @return Se retorna un valor doble que tiene el total del valor del pedido pasado como parámetro.
+	 * @param idpedido Se recibe como parï¿½metro el idpedido del cual se requiere obtener el total.
+	 * @return Se retorna un valor doble que tiene el total del valor del pedido pasado como parï¿½metro.
 	 */
 	public static double obtenerTotalPedido(int idpedido)
 	{
@@ -797,7 +797,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método para obtener el total Neto de la tabla Pedido
+	 * Mï¿½todo para obtener el total Neto de la tabla Pedido
 	 * @param idpedido
 	 * @return
 	 */
@@ -911,10 +911,10 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de actualizar un pedido con el número de pedido el cual le fue asignado en la tienda correspondiente.
-	 * @param idpedido Se recibe como parámetro el idpedido en el sistema de Contact Center.
-	 * @param numPedidoPixel Se recibe el número de pedido que le fue asignado al pedido en la tienda correspondiente.
-	 * @return Se retorna un valor booleano que indica si la actualización fue exitosa(true) o no fue exitosa(false).
+	 * Mï¿½todo que se encarga de actualizar un pedido con el nï¿½mero de pedido el cual le fue asignado en la tienda correspondiente.
+	 * @param idpedido Se recibe como parï¿½metro el idpedido en el sistema de Contact Center.
+	 * @param numPedidoPixel Se recibe el nï¿½mero de pedido que le fue asignado al pedido en la tienda correspondiente.
+	 * @return Se retorna un valor booleano que indica si la actualizaciï¿½n fue exitosa(true) o no fue exitosa(false).
 	 */
 	public static boolean actualizarEstadoNumeroPedidoPixel(int idpedido, int numPedidoPixel)
 	{
@@ -1007,7 +1007,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de en la tabla pedido almacenar el campo de idLink para los pedidos con tipo de pago virtual con WOMPI
+	 * Mï¿½todo que se encarga de en la tabla pedido almacenar el campo de idLink para los pedidos con tipo de pago virtual con WOMPI
 	 * @param idpedido
 	 * @param idLink
 	 * @return
@@ -1045,7 +1045,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que permite la marcación de que el pedido ya fue aceptado en rappi
+	 * Mï¿½todo que permite la marcaciï¿½n de que el pedido ya fue aceptado en rappi
 	 * @param idpedido
 	 * @return
 	 */
@@ -1172,8 +1172,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de eliminar un pedido que no ha sido confirmado en el sistema.
-	 * @param idpedido Se recibe como parámetro el idpedido que se desea eliminar.
+	 * Mï¿½todo que se encarga de eliminar un pedido que no ha sido confirmado en el sistema.
+	 * @param idpedido Se recibe como parï¿½metro el idpedido que se desea eliminar.
 	 * @return Se retorna valor booleano indicando si el proceso fue exitoso (true) o si no fue exitoso (false).
 	 */
 	public static boolean eliminarPedidoSinConfirmar(int idpedido, int idcliente, String usuario)
@@ -1243,15 +1243,15 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de cerrar un pedido, para no poder adicionarle más detalles, con el cual se totaliza la 
-	 * información.
-	 * @param idpedido El id pedido que se finalizará.
-	 * @param idformapago La forma pago que tendrá el pedido que se va finalizar.
-	 * @param valorformapago Valor con el cual se pagará el pedido.
+	 * Mï¿½todo que se encarga de cerrar un pedido, para no poder adicionarle mï¿½s detalles, con el cual se totaliza la 
+	 * informaciï¿½n.
+	 * @param idpedido El id pedido que se finalizarï¿½.
+	 * @param idformapago La forma pago que tendrï¿½ el pedido que se va finalizar.
+	 * @param valorformapago Valor con el cual se pagarï¿½ el pedido.
 	 * @param valortotal
 	 * @param idcliente idcliente asociado al pedido.
-	 * @param insertado Marcación que indica si el cliente fue actualizado o insertado.
-	 * @param tiempoPedido se recibe como parámetro el tiempo pedido que se le dio al cliente al momento de confirmar dicho pedido.
+	 * @param insertado Marcaciï¿½n que indica si el cliente fue actualizado o insertado.
+	 * @param tiempoPedido se recibe como parï¿½metro el tiempo pedido que se le dio al cliente al momento de confirmar dicho pedido.
 	 * @return Se retorna un valor booleano con el resultado del proceso exitoso (true) o no exitoso (false).
 	 */
 	public static InsertarPedidoPixel finalizarPedido(int idpedido, int idformapago, double valorformapago, double valortotal, int idcliente, int insertado, double tiempopedido)
@@ -1300,7 +1300,7 @@ public class PedidoDAO {
 		//Llamado Inserciï¿½n Pixel
 		
 				
-		//La invocación del pedido ya no se realizará así
+		//La invocaciï¿½n del pedido ya no se realizarï¿½ asï¿½
 		//Main principal = new Main();
 		Cliente cliente = ClienteDAO.obtenerClienteporID(idcliente);
 		boolean indicadorAct = false;
@@ -1309,7 +1309,7 @@ public class PedidoDAO {
 			indicadorAct = true;
 		}
 		
-		// Recolectamos todos los datos para realizar la inserción en el POS tienda
+		// Recolectamos todos los datos para realizar la inserciï¿½n en el POS tienda
 		InsertarPedidoPixel pedidoPixel = PedidoPixelDAO.confirmarPedidoPixel(idpedido, idformapago, valorformapago, valortotal, idcliente, insertado, idformapagotienda);
 		return(pedidoPixel);
 	}
@@ -1329,7 +1329,7 @@ public class PedidoDAO {
 			String insertformapago = "insert pedido_forma_pago (idpedido, idforma_pago, valortotal, valorformapago) values (" + idPedido + " , " + idFormaPagoNueva + " , " + valorTotal + " , " + valorFormaPagoNueva + ")";
 			logger.info(insertformapago);
 			stm.executeUpdate(insertformapago);
-			//Realizamos cambios adicionales si está involucrado el pago virtual
+			//Realizamos cambios adicionales si estï¿½ involucrado el pago virtual
 			if(virtualOrigen)
 			{
 				String updatePagoVirtual = "update pedido set enviadopixel = 0 where idpedido = " + idPedido;
@@ -1378,7 +1378,7 @@ public class PedidoDAO {
 				valorTotal = valorTotal - descuento;
 				break;
 			}
-			//Validamos si la forma de pago es virtual para así al momento de cerrar el pedido en la tabla pedido debemos de hacer algo adicional
+			//Validamos si la forma de pago es virtual para asï¿½ al momento de cerrar el pedido en la tabla pedido debemos de hacer algo adicional
 			String virtual = "";
 			String consultaFormaPago = "select a.virtual from forma_pago a where a.idforma_pago =" +idformapago; 
 			ResultSet rs2 = stm.executeQuery(consultaFormaPago);
@@ -1398,7 +1398,7 @@ public class PedidoDAO {
 			}
 			logger.info(update);
 			stm.executeUpdate(update);
-			//Vamos a realizar una verificación antes si ya tiene forma pago para no insertarla
+			//Vamos a realizar una verificaciï¿½n antes si ya tiene forma pago para no insertarla
 			boolean existeFormaPago = false;
 			String consultaVerificacion = "select * from pedido_forma_pago where idpedido = " + idpedido;
 			ResultSet rs1 = stm.executeQuery(consultaVerificacion);
@@ -1439,7 +1439,7 @@ public class PedidoDAO {
 		//Llamado Inserciï¿½n Pixel
 		
 				
-		//La invocación del pedido ya no se realizará así
+		//La invocaciï¿½n del pedido ya no se realizarï¿½ asï¿½
 		//Main principal = new Main();
 		Cliente cliente = ClienteDAO.obtenerClienteporID(idcliente);
 		boolean indicadorAct = false;
@@ -1448,15 +1448,15 @@ public class PedidoDAO {
 			indicadorAct = true;
 		}
 		
-		// Recolectamos todos los datos para realizar la inserción en el POS tienda
+		// Recolectamos todos los datos para realizar la inserciï¿½n en el POS tienda
 		InsertarPedidoPixel pedidoPixel = PedidoPOSPMDAO.confirmarPedidoPOSPM(idpedido, idformapago, valorformapago, valortotal, idcliente, insertado, idformapagotienda);
 		return(pedidoPixel);
 	}
 	
 	
 	/**
-	 * Método que realiza el cierre del pedido cuando es de la tienda virtual, no hace ni los preparativos ni las homologaciones
-	 * teniendo en cuenta que inicialmente no va a realizar el envío a tienda.
+	 * Mï¿½todo que realiza el cierre del pedido cuando es de la tienda virtual, no hace ni los preparativos ni las homologaciones
+	 * teniendo en cuenta que inicialmente no va a realizar el envï¿½o a tienda.
 	 * @param idpedido
 	 * @param idformapago
 	 * @param idcliente
@@ -1482,7 +1482,7 @@ public class PedidoDAO {
 				valorTotal = valorTotal - descuento;
 				break;
 			}
-			//Validamos si la forma de pago es virtual para así al momento de cerrar el pedido en la tabla pedido debemos de hacer algo adicional
+			//Validamos si la forma de pago es virtual para asï¿½ al momento de cerrar el pedido en la tabla pedido debemos de hacer algo adicional
 			String virtual = "";
 			String consultaFormaPago = "select a.virtual from forma_pago a where a.idforma_pago =" +idformapago; 
 			ResultSet rs2 = stm.executeQuery(consultaFormaPago);
@@ -1502,7 +1502,7 @@ public class PedidoDAO {
 			}
 			logger.info(update);
 			stm.executeUpdate(update);
-			//Vamos a realizar una verificación antes si ya tiene forma pago para no insertarla
+			//Vamos a realizar una verificaciï¿½n antes si ya tiene forma pago para no insertarla
 			boolean existeFormaPago = false;
 			String consultaVerificacion = "select * from pedido_forma_pago where idpedido = " + idpedido;
 			ResultSet rs1 = stm.executeQuery(consultaVerificacion);
@@ -1541,8 +1541,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de ciertas acciones propias de la confirmación del pedido en el sistema tienda, dado que en el sistema
-	 * de contact center ya fue confirmada la información.
+	 * Mï¿½todo que se encarga de ciertas acciones propias de la confirmaciï¿½n del pedido en el sistema tienda, dado que en el sistema
+	 * de contact center ya fue confirmada la informaciï¿½n.
 	 * @param idpedido
 	 * @param idformapago
 	 * @param valorformapago
@@ -1570,7 +1570,7 @@ public class PedidoDAO {
 			indicadorAct = true;
 		}
 		
-		// Recolectamos todos los datos para realizar la inserción en el POS tienda
+		// Recolectamos todos los datos para realizar la inserciï¿½n en el POS tienda
 		InsertarPedidoPixel pedidoPixel = PedidoPixelDAO.confirmarPedidoPixel(idpedido, idformapago, valorformapago, valortotal, idcliente, insertado, idformapagotienda);
 		return(pedidoPixel);
 	}
@@ -1587,7 +1587,7 @@ public class PedidoDAO {
 		
 		//Recuperar la formapago de la tienda homologada
 		int idformapagotienda = PedidoDAO.obtenerFormaPagoHomologadaTienda(tiendaPedido.getIdTienda(), idformapago);
-		//Vamos a controlar el reenvío del mensaje de texto para alertar fraudes
+		//Vamos a controlar el reenvï¿½o del mensaje de texto para alertar fraudes
 		if((idformapagotienda == 4) && (!userReenvio.equals(new String(""))) && enviarTienda)
 		{
 			Correo correo = new Correo();
@@ -1609,14 +1609,14 @@ public class PedidoDAO {
 			indicadorAct = true;
 		}
 		
-		// Recolectamos todos los datos para realizar la inserción en el POS tienda
+		// Recolectamos todos los datos para realizar la inserciï¿½n en el POS tienda
 		InsertarPedidoPixel pedidoPixel = PedidoPOSPMDAO.confirmarPedidoPOSPM(idpedido, idformapago, valorformapago, valortotal, idcliente, insertado, idformapagotienda);
 		return(pedidoPixel);
 	}
 	
 	/**
-	 * Método que se encarga de retornar la url de una tienda, dado un idpedido	
-	 * @param idpedido Se recibe como parámetro  el idpedido, del cual se requiere extrear la URL de la tienda
+	 * Mï¿½todo que se encarga de retornar la url de una tienda, dado un idpedido	
+	 * @param idpedido Se recibe como parï¿½metro  el idpedido, del cual se requiere extrear la URL de la tienda
 	 * @return Se retorna un String con la URL del servicio de la tienda
 	 */
 	public static String obtenerUrlTienda(int idpedido)
@@ -1732,7 +1732,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar los tipos Liquidos existentes en el sistema.
+	 * Mï¿½todo que se encarga de retornar los tipos Liquidos existentes en el sistema.
 	 * @return Se retorna un ArrayList con los objetos Modelo TipoLiquido existentes en el sistema.
 	 */
 	public static ArrayList<TipoLiquido> ObtenerTiposLiquido()
@@ -1778,13 +1778,13 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que permite la consulta de pedidos de acuerdo a los parámetros enviados para la consulta, esta consulta es exclusiva para los 
+	 * Mï¿½todo que permite la consulta de pedidos de acuerdo a los parï¿½metros enviados para la consulta, esta consulta es exclusiva para los 
 	 * productos que son registrados dentro del sistema contact center.
 	 * @param fechainicial Fecha inicial de los pedidos a consultar.
 	 * @param fechafinal Fecha final de los pedidos a consultar.
 	 * @param tienda nombre de la tienda que se desea filtrar para la consulta de los pedidos.
-	 * @param numeropedido En caso de desearlo se puede filtrar por un número de pedido en específico.
-	 * @return Se retorna un ArrayList con objetos de tipo pedido con la información de los pedidos consultados.
+	 * @param numeropedido En caso de desearlo se puede filtrar por un nï¿½mero de pedido en especï¿½fico.
+	 * @return Se retorna un ArrayList con objetos de tipo pedido con la informaciï¿½n de los pedidos consultados.
 	 */
 	public static ArrayList<Pedido> ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
 	{
@@ -1801,7 +1801,7 @@ public class PedidoDAO {
 			idtienda = TiendaDAO.obteneridTienda(tienda);
 			consulta = consulta + " and a.idtienda =" + idtienda;
 		}
-		//Realizamos al validación si se va a filtrar por número de pedido
+		//Realizamos al validaciï¿½n si se va a filtrar por nï¿½mero de pedido
 		if(numeropedido != 0)
 		{
 			consulta = consulta + " and a.numposheader = " + numeropedido ;
@@ -1927,8 +1927,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que hará la recuperación de un pedido dado un número de pedido y hara el filtro con la fecha sistema, será una
-	 * búsqueda parecida a la de consulta integrada pero con el retorno de un solo pedido.
+	 * Mï¿½todo que harï¿½ la recuperaciï¿½n de un pedido dado un nï¿½mero de pedido y hara el filtro con la fecha sistema, serï¿½ una
+	 * bï¿½squeda parecida a la de consulta integrada pero con el retorno de un solo pedido.
 	 * @param numeropedido
 	 * @return
 	 */
@@ -2147,7 +2147,7 @@ public class PedidoDAO {
 			idtienda = TiendaDAO.obteneridTienda(tienda);
 			consulta = consulta + " and a.idtienda =" + idtienda;
 		}
-		//Realizamos al validación si se va a filtrar por número de pedido
+		//Realizamos al validaciï¿½n si se va a filtrar por nï¿½mero de pedido
 		if(numeropedido != 0)
 		{
 			consulta = consulta + " and a.numposheader = " + numeropedido ;
@@ -2278,7 +2278,7 @@ public class PedidoDAO {
 			idtienda = TiendaDAO.obteneridTienda(tienda);
 			consulta = consulta + " and a.idtienda =" + idtienda;
 		}
-		//Realizamos al validación si se va a filtrar por número de pedido
+		//Realizamos al validaciï¿½n si se va a filtrar por nï¿½mero de pedido
 		if(numeropedido != 0)
 		{
 			consulta = consulta + " and a.numposheader = " + numeropedido ;
@@ -2427,7 +2427,7 @@ public class PedidoDAO {
 		{
 			consulta = consulta + " and a.idordencomercio  > 0";
 		}
-		//Realizamos al validación si se va a filtrar por número de pedido
+		//Realizamos al validaciï¿½n si se va a filtrar por nï¿½mero de pedido
 		if(numeropedido != 0)
 		{
 			consulta = consulta + " and a.numposheader = " + numeropedido ;
@@ -2553,7 +2553,7 @@ public class PedidoDAO {
 			idtienda = TiendaDAO.obteneridTienda(tienda);
 			consulta = consulta + " and a.idtienda =" + idtienda;
 		}
-		//Realizamos al validación si se va a filtrar por número de pedido
+		//Realizamos al validaciï¿½n si se va a filtrar por nï¿½mero de pedido
 		if(numeropedido != 0)
 		{
 			consulta = consulta + " and a.numposheader = " + numeropedido ;
@@ -2658,9 +2658,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de eliminar un detalle pedido de acuerdo al parámetro recibido.
-	 * @param iddetallepedido Se recibe como parámetro el iddetallepedido que se desea eliminar
-	 * @return Se retorna un ArrayList de números enteros qeu responden a los iddetallepedido eliminados los cuales 
+	 * Mï¿½todo que se encarga de eliminar un detalle pedido de acuerdo al parï¿½metro recibido.
+	 * @param iddetallepedido Se recibe como parï¿½metro el iddetallepedido que se desea eliminar
+	 * @return Se retorna un ArrayList de nï¿½meros enteros qeu responden a los iddetallepedido eliminados los cuales 
 	 * pueden ser varios debido a que si eliminamos un detalle pedido que tenga asociadas adiciones, tambien
 	 * deberemos de eliminar las adiciones.
 	 */
@@ -2690,13 +2690,13 @@ public class PedidoDAO {
 				delete = "delete from adicion_detalle_pedido  where iddetallepedidoadicion = " + valorEliminar;
 				logger.info(delete);
 				stm1.executeUpdate(delete);
-				//borramos el detalle pedido asociado a ada adición
+				//borramos el detalle pedido asociado a ada adiciï¿½n
 				delete = "delete from detalle_pedido  where iddetalle_pedido = " + valorEliminar;
 				logger.info(delete);
 				stm1.executeUpdate(delete);
-				idDetallePedidosBorrados.add(new Integer(valorEliminar));
+				idDetallePedidosBorrados.add(Integer.valueOf(valorEliminar));
 			}
-			//borrado en detalle de adiciones en caso de que sea una adicion, en caso que solo estemos eliminando una adición
+			//borrado en detalle de adiciones en caso de que sea una adicion, en caso que solo estemos eliminando una adiciï¿½n
 			delete = "delete from adicion_detalle_pedido  where iddetallepedidoadicion = " + iddetallepedido; 
 			logger.info(delete);
 			stm1.executeUpdate(delete);
@@ -2711,15 +2711,15 @@ public class PedidoDAO {
 				delete = "delete from detalle_pedido  where iddetalle_pedido = " + valorEliminarMod;
 				logger.info(delete);
 				stm1.executeUpdate(delete);
-				idDetallePedidosBorrados.add(new Integer(valorEliminarMod));
+				idDetallePedidosBorrados.add(Integer.valueOf(valorEliminarMod));
 			}
 			delete = "delete from modificador_detalle_pedido  where iddetallepedidopadre = " + iddetallepedido; 
 			logger.info(delete);
 			stm1.executeUpdate(delete);
-			// Se hace la eliminación final del detalle pedido pasado como parametro.
+			// Se hace la eliminaciï¿½n final del detalle pedido pasado como parametro.
 			delete = "delete from detalle_pedido  where iddetalle_pedido = " + iddetallepedido; 
 			logger.info(delete);
-			idDetallePedidosBorrados.add(new Integer(iddetallepedido));
+			idDetallePedidosBorrados.add(Integer.valueOf(iddetallepedido));
 			stm1.executeUpdate(delete);
 			stm.close();
 			stm1.close();
@@ -2744,10 +2744,10 @@ public class PedidoDAO {
 	
 
 	/**
-	 * Método que se encarga de dado un iddetallepedido, retornar todas las adiciones asociados a dicho Item.
-	 * @param iddetallepedido Se recibe como parámetro el iddetallepedido del cual se requiere saber las adiciones.
+	 * Mï¿½todo que se encarga de dado un iddetallepedido, retornar todas las adiciones asociados a dicho Item.
+	 * @param iddetallepedido Se recibe como parï¿½metro el iddetallepedido del cual se requiere saber las adiciones.
 	 * @return Se retorna un ArrayList con objetos Modelo DetallePedidoAdicion asociados al iddetallepedido pasado
-	 * como parámetro.
+	 * como parï¿½metro.
 	 */
 	public static ArrayList<DetallePedidoAdicion> ObtenerAdicionDetallePedido (int iddetallepedido)
 	{
@@ -2799,11 +2799,11 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar todos los modificadores asociados a un iddetallepedido, enviado como parámetro.
-	 * @param iddetallepedido Se recibe como parámetro un iddetallepedido con base en el cual se retornarán todos los
+	 * Mï¿½todo que se encarga de retornar todos los modificadores asociados a un iddetallepedido, enviado como parï¿½metro.
+	 * @param iddetallepedido Se recibe como parï¿½metro un iddetallepedido con base en el cual se retornarï¿½n todos los
 	 * modificadores CON/SIN asociados al detallepedido.
 	 * @return Se retorna un ArrayList con objetos tipo ModificadorDetallePedido asociados al iddetallepedido
-	 * pasado como parámetro.
+	 * pasado como parï¿½metro.
 	 */
 	public static ArrayList<ModificadorDetallePedido> ObtenerModificadorDetallePedido (int iddetallepedido)
 	{
@@ -2850,9 +2850,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar el detalle de un pedido, con base en el id pedido recibido como parámetro
-	 * @param numeropedido Se recibe como parámetro del idpedido con base en el cual se retornará la información.
-	 * @return Se retorna un ArrayList con objetos tipo DetallePedido de acuerdo alos parámetros recibidos.
+	 * Mï¿½todo que se encarga de retornar el detalle de un pedido, con base en el id pedido recibido como parï¿½metro
+	 * @param numeropedido Se recibe como parï¿½metro del idpedido con base en el cual se retornarï¿½ la informaciï¿½n.
+	 * @return Se retorna un ArrayList con objetos tipo DetallePedido de acuerdo alos parï¿½metros recibidos.
 	 */
 	public static ArrayList<DetallePedido> ConsultarDetallePedido(int numeropedido)
 	{
@@ -2933,10 +2933,10 @@ public class PedidoDAO {
 
 	
 	/**
-	 * Método que recibe como parámetro un id pedido y con base en el retorna todos lo detallespedidos asociados, sin 
+	 * Mï¿½todo que recibe como parï¿½metro un id pedido y con base en el retorna todos lo detallespedidos asociados, sin 
 	 * incluir las adiciones.
-	 * @param numeropedido Se recibe como parámetro un número de pedido con base en el cual se realiza la consulta.
-	 * @return Se retorna un ArrayList con objetos Modelo DetallePedido asociados al pedido pasado como parámetro y excluyendo
+	 * @param numeropedido Se recibe como parï¿½metro un nï¿½mero de pedido con base en el cual se realiza la consulta.
+	 * @return Se retorna un ArrayList con objetos Modelo DetallePedido asociados al pedido pasado como parï¿½metro y excluyendo
 	 * las adiciones.
 	 */
 	public static ArrayList<DetallePedido> ConsultarDetallePedidoSinAdiciones(int numeropedido)
@@ -3010,9 +3010,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que retornar dado un idpedidopadre, retorna lo detalles de pedido asociados a este, como adiciones, productos
+	 * Mï¿½todo que retornar dado un idpedidopadre, retorna lo detalles de pedido asociados a este, como adiciones, productos
 	 * o modificadores con precio
-	 * @param iddetpedidopadre se recibe como paramétro el iddetalle pedido que deberá ser un productos de la tipología
+	 * @param iddetpedidopadre se recibe como paramï¿½tro el iddetalle pedido que deberï¿½ ser un productos de la tipologï¿½a
 	 * PIZZA u OTROS.
 	 * @return
 	 */
@@ -3095,11 +3095,11 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * mPetodo que se encarga de retornar la información de una entidad Tienda, con base en la información recibida como 
-	 * parámetro.
-	 * @param idpedido Se recibe como parámetro el idpedido con base en el cual se retornará la informacion de la tienda
+	 * mPetodo que se encarga de retornar la informaciï¿½n de una entidad Tienda, con base en la informaciï¿½n recibida como 
+	 * parï¿½metro.
+	 * @param idpedido Se recibe como parï¿½metro el idpedido con base en el cual se retornarï¿½ la informacion de la tienda
 	 * asociada al pedido.
-	 * @return Se retorna un objeto de tipo Modelo Tienda con base en el idpedido recibido como parámetro.
+	 * @return Se retorna un objeto de tipo Modelo Tienda con base en el idpedido recibido como parï¿½metro.
 	 */
 	public static Tienda obtenerTiendaPedido(int idpedido)
 	{
@@ -3135,9 +3135,9 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar la forma de pago dado un id pedido.
-	 * @param idPedido Se recibe como parámetro el idpedido, del cual se retorna la forma de pago
-	 * @return Se retorna un objeto Modelo FormaPago asociado al pedido pasado como parámetro.
+	 * Mï¿½todo que se encarga de retornar la forma de pago dado un id pedido.
+	 * @param idPedido Se recibe como parï¿½metro el idpedido, del cual se retorna la forma de pago
+	 * @return Se retorna un objeto Modelo FormaPago asociado al pedido pasado como parï¿½metro.
 	 */
 	public static FormaPago obtenerFormaPagoPedido(int idPedido)
 	{
@@ -3186,7 +3186,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que recupera las marcaciones de un pedido en un ArrayList.
+	 * Mï¿½todo que recupera las marcaciones de un pedido en un ArrayList.
 	 * @param idPedido
 	 * @return
 	 */
@@ -3241,8 +3241,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar un ArrayList con todos los productos incluidos en el sistema, con el objetivo
-	 * que en la capa de presentación, se controle la adición de un producto que tenga productos adicionales.
+	 * Mï¿½todo que se encarga de retornar un ArrayList con todos los productos incluidos en el sistema, con el objetivo
+	 * que en la capa de presentaciï¿½n, se controle la adiciï¿½n de un producto que tenga productos adicionales.
 	 * @return Se retorna un arrayList con los productos incluidos parametrizados en el sistema.
 	 */
 	public static ArrayList<ProductoIncluido> obtenerProductosIncluidos()
@@ -3323,7 +3323,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de validar si existen pedidos registrados con el teléfono determinado para realizar alertamiento
+	 * Mï¿½todo que se encarga de validar si existen pedidos registrados con el telï¿½fono determinado para realizar alertamiento
 	 * @param telefono
 	 * @return
 	 */
@@ -3363,8 +3363,8 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de validar si existen pedidos registrados con el teléfono determinado para realizar alertamiento
-	 * este a diferencia del anterior tiene en cuenta que el pedido ya está registrado es decir ya hay uno
+	 * Mï¿½todo que se encarga de validar si existen pedidos registrados con el telï¿½fono determinado para realizar alertamiento
+	 * este a diferencia del anterior tiene en cuenta que el pedido ya estï¿½ registrado es decir ya hay uno
 	 * @param telefono
 	 * @return
 	 */
@@ -3407,7 +3407,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar todas las gaseosas incluidas en productos homologadas en todas las tiendas
+	 * Mï¿½todo que se encarga de retornar todas las gaseosas incluidas en productos homologadas en todas las tiendas
 	 * @return Se retorna un arrayList con objetos HomologaGaseosaIncluida los cuales basicamente traen las propiedades
 	 * de idtienda e idsabortipoliquido definido para las homologaciones.
 	 */
@@ -3447,7 +3447,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar las gaseosas como producto homologada para cada tienda
+	 * Mï¿½todo que se encarga de retornar las gaseosas como producto homologada para cada tienda
 	 * @return
 	 */
 	public static ArrayList<HomologaGaseosaIncluida> obtenerHomologacionProductoGaseosa(int idTienda)
@@ -3492,7 +3492,7 @@ public class PedidoDAO {
 		return(gaseosaHomologada);
 	}
 	
-	//Método que buscará traer los últimos pedidos de un cliente.
+	//Mï¿½todo que buscarï¿½ traer los ï¿½ltimos pedidos de un cliente.
 	public static ArrayList<Pedido> ConsultaUltimosPedidosCliente(int idCliente)
 	{
 		Logger logger = Logger.getLogger("log_file");
@@ -3572,7 +3572,7 @@ public class PedidoDAO {
 	}
 	
 	 	/**
-	 	 * Método que se encargará de obtener el Texto del último pedido de un cliente.
+	 	 * Mï¿½todo que se encargarï¿½ de obtener el Texto del ï¿½ltimo pedido de un cliente.
 	 	 * @param idCliente
 	 	 * @return
 	 	 */
@@ -3630,9 +3630,9 @@ public class PedidoDAO {
 		String consulta = "";
 		String fechaini = fechainicial.substring(6, 10)+"-"+fechainicial.substring(3, 5)+"-"+fechainicial.substring(0, 2) + " 00:00:00";	
 		String fechafin = fechafinal.substring(6, 10)+"-"+fechafinal.substring(3, 5)+"-"+fechafinal.substring(0, 2) + " 23:59:00";	
-		//Modificamos consulta para incluir el número de pedidos que tiene el cliente, para realizar un control
-		//Validamos si el municipio es igual a cero es porque vamos a consultar todos los municipio, sino es así
-		// es porque la consulta deberá filtrar por municipio.
+		//Modificamos consulta para incluir el nï¿½mero de pedidos que tiene el cliente, para realizar un control
+		//Validamos si el municipio es igual a cero es porque vamos a consultar todos los municipio, sino es asï¿½
+		// es porque la consulta deberï¿½ filtrar por municipio.
 		String horaInicial = fechaini.substring(0,10) + " " + horaIni +":00";
 		String horaFinal = fechafin.substring(0,10) + " " + horaFin +":00";
 		if((horaIni.equals(new String("")))&&(horaFin.equals(new String(""))))
@@ -3714,7 +3714,7 @@ public class PedidoDAO {
 				apellido = rs.getString("apellido");
 				fechaIngreso = rs.getString("fecha_ingreso");
 				valor = rs.getDouble("total_neto");
-				//Luego de tomada la información de la cantidad de pedidos, validamos que los pedidos llevados al cliente seran 0 o 1.
+				//Luego de tomada la informaciï¿½n de la cantidad de pedidos, validamos que los pedidos llevados al cliente seran 0 o 1.
 				DireccionFueraZona dirFuera = new DireccionFueraZona(id, direccion, municipio, idCliente, latitud, longitud, telefono, nombre, apellido, valor);
 				dirFuera.setFechaIngreso(fechaIngreso);
 				consultaDirs.add(dirFuera);
@@ -3738,7 +3738,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encargará de consultar los pedidos pendientes dada una fecha determinada, con el fin de alertar posteriormente en correo electrónico
+	 * Mï¿½todo que se encargarï¿½ de consultar los pedidos pendientes dada una fecha determinada, con el fin de alertar posteriormente en correo electrï¿½nico
 	 * @param fechaPed
 	 * @return
 	 */
@@ -3749,7 +3749,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido = '" + fechaPed + "' and a.idestadopedido = 2 and a.enviadopixel = 0 AND TIMESTAMPDIFF(MINUTE, a.fechainsercion, NOW()) > 5 and b.alertarpedidos = 1";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -3997,8 +3997,8 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de recibir el idLink que se pago con su forma de pago y realizar la correspondiente actualización
-	 * para que posteriormente los procesos automáticos detecten estos pagos y realicen el envío del pedido a la tienda.
+	 * Mï¿½todo que se encarga de recibir el idLink que se pago con su forma de pago y realizar la correspondiente actualizaciï¿½n
+	 * para que posteriormente los procesos automï¿½ticos detecten estos pagos y realicen el envï¿½o del pedido a la tienda.
 	 * @param idLink
 	 * @param tipoPago
 	 * @return
@@ -4043,7 +4043,7 @@ public class PedidoDAO {
 				//Validamos si recuperamos algo de idPedido, si este es mayor a cero
 				if(idPedidoAct > 0)
 				{
-					//Realizamos la actualización y validamos si hubo o no actualización para realizar la notificación
+					//Realizamos la actualizaciï¿½n y validamos si hubo o no actualizaciï¿½n para realizar la notificaciï¿½n
 					update = "update pedido set fechapagovirtual = CURRENT_TIMESTAMP(), tipopago = '" + tipoPago + "'   where idpedido = " + idPedidoAct ;
 					actualizados = stm.executeUpdate(update);
 					if(actualizados > 0)
@@ -4053,10 +4053,10 @@ public class PedidoDAO {
 					}
 				}
 			}
-			//Realizamos validación de si el pedido estaba cancelado en cuyo caso deberemos de alertar
+			//Realizamos validaciï¿½n de si el pedido estaba cancelado en cuyo caso deberemos de alertar
 			String consultaPedido = "";
 			int idEstadoPedido = 0;
-			//Armamos la consulta según como se pueda en la tabla pedido y como se haya realizado la actualización del pedido
+			//Armamos la consulta segï¿½n como se pueda en la tabla pedido y como se haya realizado la actualizaciï¿½n del pedido
 			if(idPedidoAct > 0)
 			{
 				consultaPedido = "select idestadopedido from pedido where idpedido = " + idPedidoAct;
@@ -4075,11 +4075,11 @@ public class PedidoDAO {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOWOMPI", "CLAVECORREOWOMPI");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ATENCIÓN SE REGISTRO PAGO WOMPI DE PEDIDO CANCELADO");
+				correo.setAsunto("ATENCIï¿½N SE REGISTRO PAGO WOMPI DE PEDIDO CANCELADO");
 				correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-				correo.setMensaje(" Se realizó pago con el idLink en cuestión " + idLink + ", sin embargo el pedido ya había sido cancelado, por favor notificar al cliente de esta situación y tomar una decisión.");
+				correo.setMensaje(" Se realizï¿½ pago con el idLink en cuestiï¿½n " + idLink + ", sin embargo el pedido ya habï¿½a sido cancelado, por favor notificar al cliente de esta situaciï¿½n y tomar una decisiï¿½n.");
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				contro.enviarCorreo();
 			}
@@ -4102,7 +4102,7 @@ public class PedidoDAO {
 	//Consultas elaboradas para extraer reporte semanal de WOMPI
 	
 	/**
-	 * Método que me retorna total de pagos virtuales entre las fechas pasadas como parámetro
+	 * Mï¿½todo que me retorna total de pagos virtuales entre las fechas pasadas como parï¿½metro
 	 * @param fechaAnterior
 	 * @param fechaActual
 	 * @return
@@ -4114,7 +4114,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto) from pedido a, forma_pago e, pedido_forma_pago f where e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S'";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		double totalPedidos = 0;
 		try
@@ -4145,7 +4145,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que me retorna total de pagos virtuales Epayco entre las fechas pasadas como parámetro
+	 * Mï¿½todo que me retorna total de pagos virtuales Epayco entre las fechas pasadas como parï¿½metro
 	 * @param fechaAnterior
 	 * @param fechaActual
 	 * @return
@@ -4157,7 +4157,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto) from pedido a, forma_pago e, pedido_forma_pago f where e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0 and e.idforma_pago = 6";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		double totalPedidos = 0;
 		try
@@ -4189,7 +4189,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que trae la información de los totales vendidos de pedidos virtuales por tienda y su total de la semana
+	 * Mï¿½todo que trae la informaciï¿½n de los totales vendidos de pedidos virtuales por tienda y su total de la semana
 	 * @param fechaAnterior
 	 * @param fechaActual
 	 * @return
@@ -4200,7 +4200,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -4239,7 +4239,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0  and e.idforma_pago = 6 group by b.nombre order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -4278,7 +4278,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto), b.nombre, a.fechapedido from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre, a.fechapedido order by b.nombre, a.fechapedido";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -4317,7 +4317,7 @@ public class PedidoDAO {
 		String consulta = "";
 		consulta = "select sum(a.total_neto), b.nombre, a.fechapedido from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0 and e.idforma_pago = 6 group by b.nombre, a.fechapedido order by b.nombre, a.fechapedido";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -4351,7 +4351,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que retorna los pedidos tomados por tienda para la forma de pago Wompi pago virtual
+	 * Mï¿½todo que retorna los pedidos tomados por tienda para la forma de pago Wompi pago virtual
 	 * @param fechaAnterior
 	 * @param fechaActual
 	 * @param idTienda
@@ -4368,11 +4368,11 @@ public class PedidoDAO {
 		{
 			consulta = consulta + " and a.idtienda = " + idTienda;
 		}
-		//Se realiza la unión de la otra consulta con la unión de los pagos virtuales que se realiza desde la tienda
+		//Se realiza la uniï¿½n de la otra consulta con la uniï¿½n de los pagos virtuales que se realiza desde la tienda
 		consulta = consulta + " UNION SELECT 'tienda' AS nombre, 9000 as idpedido, idpedidotienda AS numposheader, valor_pedido AS total_neto, DATE_FORMAT(fechapagovirtual, '%Y-%m-%d') AS fechapedido ,tipopago FROM pedido_pago_virtual_consolidado " + 
 				" WHERE estado = 'PAGADO' AND DATE_FORMAT(fechapagovirtual, '%Y-%m-%d') >= '" + fechaAnterior + "' and DATE_FORMAT(fechapagovirtual, '%Y-%m-%d') <= '" + fechaActual + "'";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		Pedido pedTemp;
 		try
@@ -4420,7 +4420,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que retorna los pagos realizados para la forma de pago Epayco tienda virtual
+	 * Mï¿½todo que retorna los pagos realizados para la forma de pago Epayco tienda virtual
 	 * @param fechaAnterior
 	 * @param fechaActual
 	 * @param idTienda
@@ -4437,7 +4437,7 @@ public class PedidoDAO {
 			consulta = consulta + " and a.idtienda = " + idTienda;
 		}
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		Pedido pedTemp;
 		try
@@ -4486,7 +4486,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que se encargará de retornar el origen de un pedido determinado que nos ayudará para otros fines.
+	 * Mï¿½todo que se encargarï¿½ de retornar el origen de un pedido determinado que nos ayudarï¿½ para otros fines.
 	 * @param idpedido
 	 * @return
 	 */
@@ -4534,7 +4534,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método en la capa controladora que se encarga del cambio de un pedido en cuanto al cambio de tienda
+	 * Mï¿½todo en la capa controladora que se encarga del cambio de un pedido en cuanto al cambio de tienda
 	 * @param idTienda
 	 * @param idPedido
 	 * @param idCliente
@@ -4552,7 +4552,7 @@ public class PedidoDAO {
 			String update1 = "update pedido set idTienda = " +idTienda + "  where idpedido = "+ idpedido;
 			logger.info(update1);
 			stm.executeUpdate(update1);
-			// Posteriormente realizamos la actualización del cliente
+			// Posteriormente realizamos la actualizaciï¿½n del cliente
 			String update2 = "update cliente set idtienda = " + idTienda +  " where idcliente = " + idCliente;
 			System.out.println(update2);
 			logger.info(update2);
@@ -4656,7 +4656,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Metodo que retorna los pedidos de plataforma, con su total correspondiente, descuento y marcación de marketplace
+	 * Metodo que retorna los pedidos de plataforma, con su total correspondiente, descuento y marcaciï¿½n de marketplace
 	 * @param idRazon
 	 * @param fechaAnterior
 	 * @param fechaActual
@@ -4755,7 +4755,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que nos retorna en un rango de fecha el total de pedidos con forma de pago ONLINE para resumir por semana
+	 * Mï¿½todo que nos retorna en un rango de fecha el total de pedidos con forma de pago ONLINE para resumir por semana
 	 * @param idRazon
 	 * @param fechaAnterior
 	 * @param fechaActual
@@ -4804,7 +4804,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que permite obtener los descuentos por tienda en un rango de fechas
+	 * Mï¿½todo que permite obtener los descuentos por tienda en un rango de fechas
 	 * @param idRazon
 	 * @param fechaAnterior
 	 * @param fechaActual
@@ -4968,7 +4968,7 @@ public class PedidoDAO {
 		//consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, f.valorformapago, a.descuento, c.memcode, a.idtienda, a.origen from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido = '" + fechaPed + "' and a.idestadopedido = 2 and a.origen IN ('C','TK') and a.enviadopixel = 0 AND TIMESTAMPDIFF(MINUTE, a.fechainsercion, NOW()) > 5 and b.alertarpedidos = 1";
 		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, f.valorformapago, a.descuento, c.memcode, a.idtienda, a.hora_programado, a.origen from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido = '" + fechaPed + "' and a.idestadopedido = 2 and a.origen = 'RAP' and a.enviadopixel = 0 AND TIMESTAMPDIFF(MINUTE, a.fechainsercion, NOW()) > 2";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexión asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexiï¿½n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -5029,7 +5029,7 @@ public class PedidoDAO {
 	}
 	
 	/**
-	 * Método que nos permitirá consultar un pedido por telefono y fecha
+	 * Mï¿½todo que nos permitirï¿½ consultar un pedido por telefono y fecha
 	 * @param telefono
 	 * @param fecha
 	 * @return
@@ -5135,7 +5135,7 @@ public class PedidoDAO {
 	
 	
 	/**
-	 * Método que retorna un ArrayList con objetos de tipo Pedido Pago virtual monitoreo con el fin de saber el estado de los pagos virtuales
+	 * Mï¿½todo que retorna un ArrayList con objetos de tipo Pedido Pago virtual monitoreo con el fin de saber el estado de los pagos virtuales
 	 * @return
 	 */
 	public static ArrayList<PedidoMonitoreoPagoVirtual> obtenerPedidosMonitoreoPagoVirtual()

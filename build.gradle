@@ -2,6 +2,8 @@ plugins {
     id 'java'
 	id 'war'
 	id 'com.bmuschko.tomcat' version '2.7.0'
+
+
 }
 
 ext {
@@ -23,12 +25,17 @@ ext {
     //    classpath 'com.bmuschko:gradle-tomcat-plugin:2.5'
     //}
 
+//compileJava.options.encoding = "UTF-8"
+//compileTestJava.options.encoding = "UTF-8"
 
 war {
     archiveFileName = "ProyectoPizzaAmericana.war"
 
     // other war configuration...
 }
+
+
+
 sourceSets.main.java.srcDirs = ['src/main/java']
 
 
@@ -47,7 +54,7 @@ dependencies {
 
    implementation  'log4j:log4j:1.2.16'
    	
-   implementation fileTree(dir: 'libs', include: '*.jar')
+  // implementation fileTree(dir: 'libs', include: '*.jar')
    
    // https://mvnrepository.com/artifact/commons-logging/commons-logging
    implementation group: 'commons-logging', name: 'commons-logging', version: '1.1.1'
@@ -62,7 +69,7 @@ dependencies {
    //providedCompile group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.0' 
    providedCompile "javax.servlet:javax.servlet-api:4.0.0"
    
-   //Incluimos librería para Usar Servicios API Tookan
+   //Incluimos librer�a para Usar Servicios API Tookan
    // https://mavenlibs.com/maven/dependency/org.glassfish.jersey.core/jersey-client
 	implementation group: 'org.glassfish.jersey.core', name: 'jersey-client', version: '2.8'
 	// https://mavenlibs.com/maven/dependency/org.glassfish.jersey.media/jersey-media-json-jackson
@@ -72,6 +79,9 @@ dependencies {
 	
 	//Necesidades de httpclient Servicios
 	implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
+	
 	   
 } 
 
@@ -89,7 +99,10 @@ tomcat {
     tomcatRunWar.contextPath = '/ProyectoPizzaAmericana'
     httpProtocol = 'org.apache.coyote.http11.Http11Nio2Protocol'
     ajpProtocol  = 'org.apache.coyote.ajp.AjpNio2Protocol'
+
 }
+
+	
 
 
 task copyNatives(type: Copy) {
@@ -101,4 +114,5 @@ task copyNatives(type: Copy) {
     into "${System.properties.getProperty("user.home")}/.arcgis/$arcgisVersion"
     //into "/opt/tomcat/webapps/.arcgis/$arcgisVersion"
 }
+
 
