@@ -53,18 +53,18 @@ public class UbicacionCtrl {
 		Resultado resultado = new Resultado();
 		try {
 			Parametro parametro;
-			if(!primeraEjecucion)
+			/*if(!primeraEjecucion)
 			{
 				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
 				System.out.println(parametro.getValorTexto());
 				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
 				primeraEjecucion = true;
-			}
+			}*/
 			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
 			System.out.println(parametro.getValorTexto());
 			System.out.println("2.1 ANTES DE INICIAR ");
-			ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
-//			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
+			//ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
+			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
 			System.out.println("2.2 ANTES DE INICIAR ");
 	        String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 	        //String address = "Cl. 104 #42b-2 a 42b-30,Medellín,Antioquia";
@@ -118,7 +118,7 @@ public class UbicacionCtrl {
                             			  resultado.setResultado("Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ",te invitamos a que sigas con tu pedido.Recuerda que toda la informacion es validada al final por nuestros asesores");    
                             			  
                             		  }else if(tipo_cliente.toLowerCase().equals("programado")){
-                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestras tiendas.El pedido está siendo programado para la tienda "+ nombre.toString());    
+                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestras tiendas.El pedido esta siendo programado para la tienda "+ nombre.toString());    
                             			  
                             		  }else {
                             			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre.toString());  

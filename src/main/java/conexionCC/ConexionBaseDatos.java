@@ -43,13 +43,13 @@ public class ConexionBaseDatos {
 			/**
 			 * Se realiza la creaci�n de la conexi�n a la base de datos
 			 */
-			con = DriverManager.getConnection(
-		            "jdbc:mysql://172.19.0.25/pizzaamericana?"
-		            + "user=root&password=4m32017");
-			
 //			con = DriverManager.getConnection(
-//		            "jdbc:mysql://localhost/pizzaamericana?"
-//		            + "user=root&password=4m32017&serverTimezone=UTC");
+//		            "jdbc:mysql://172.19.0.25/pizzaamericana?"
+//		            + "user=root&password=4m32017");
+			
+			con = DriverManager.getConnection(
+		            "jdbc:mysql://localhost/pizzaamericana?"
+		            + "user=root&password=4m32017&serverTimezone=UTC");
 
 		    // Otros y operaciones sobre la base de datos...
 
