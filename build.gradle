@@ -2,8 +2,8 @@ plugins {
     id 'java'
 	id 'war'
 	id 'com.bmuschko.tomcat' version '2.7.0'
-	id 'application'
-    id 'org.openjfx.javafxplugin' version '0.1.0'
+
+
 }
 
 ext {
@@ -33,6 +33,7 @@ war {
 
     // other war configuration...
 }
+
 
 
 sourceSets.main.java.srcDirs = ['src/main/java']
@@ -84,10 +85,6 @@ dependencies {
 	   
 } 
 
-javafx {
-    version = "17.0.2"
-    modules = [ 'javafx.controls', 'javafx.graphics', 'javafx.fxml', 'javafx.web', 'javafx.media' ]
-}
 
 dependencies {
     def tomcatVersion = '9.0.1'
@@ -118,6 +115,4 @@ task copyNatives(type: Copy) {
     //into "/opt/tomcat/webapps/.arcgis/$arcgisVersion"
 }
 
-run {
-    dependsOn copyNatives
-}
+
