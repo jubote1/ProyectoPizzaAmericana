@@ -6978,21 +6978,23 @@ public class PedidoCtrl {
 					+ "]";
 		}else {
 			//Para revisar
-			 datos = "[\n"
-					+ "    {   \"id\":"+ lead +",\n"
-					+ "        \"custom_fields_values\": [\n"
-					+ "          {\n"
-					+ "             \"field_id\": 863191,\n"
-					+ "            \"values\": [\n"
-					+ "                {\n"
-					+ "                    \"value\":\""+ mensaje.getResultado() +"\"\n"
-					+ "                }\n"
-					+ "            ]\n"
-					+ "        }\n"
-					+ "    ]\n"
-					+ "    }\n"
-					+ "]";
-		}
+			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
+			 
+			 datos = "[{\"id\":"+ lead +",\n"
+			 		+ "  \"custom_fields_values\": [\n"
+			 		+ "    {\"field_id\": 863191,\n"
+			 		+ "      \"values\": [\n"
+			 		+ "        {\"value\":\""+ mensaje.getResultado() +"\"}\n"
+			 		+ "      ]\n"
+			 		+ "    },\n"
+			 		+ "    {\"field_id\": 862153,\n"
+			 		+ "      \"values\": [\n"
+			 		+ "        {\"enum_id\":"+idcampo_tienda+"}\n"
+			 		+ "      ]\n"
+			 		+ "    }\n"
+			 		+ "  ]\n"
+			 		+ "}]";
+			}
 			
 			
 		OkHttpClient client = new OkHttpClient();
