@@ -11,14 +11,14 @@ import org.apache.log4j.Logger;
 import capaModeloCC.SaborLiquido;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que implementa toda la interacción con la base de datos para la entidad Sabor Tipo Liquido.
+ * Clase que implementa toda la interacciï¿½n con la base de datos para la entidad Sabor Tipo Liquido.
  * @author JuanDavid
  *
  */
 public class SaborTipoLiquidoDAO {
 	
 	/**
-	 * Método que se encarga de retornar todos los sabores tipo liquido definidos en el sistema.
+	 * Mï¿½todo que se encarga de retornar todos los sabores tipo liquido definidos en el sistema.
 	 * @return Se retorna un ArrayList con todos los sabores Tipo Liquido definidos en el sistema.
 	 */
 	public static ArrayList<SaborLiquido> obtenerSaborLiquidos()
@@ -57,8 +57,8 @@ public class SaborTipoLiquidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar todos los sabores tipo liquido definidos en el sistema, en el formato básico
-	 * para el GRID que implementa el CRUD de la entidad en la capa de presentación.
+	 * Mï¿½todo que se encarga de retornar todos los sabores tipo liquido definidos en el sistema, en el formato bï¿½sico
+	 * para el GRID que implementa el CRUD de la entidad en la capa de presentaciï¿½n.
 	 * @return Se retorna un ArrayList con todas las entidades sabor tipo liquido definidas en el sistema.
 	 */
 	public static ArrayList<SaborLiquido> obtenerSaborLiquidosGrid()
@@ -98,9 +98,9 @@ public class SaborTipoLiquidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de insertar un sabor tipo liquido de acuerdo a los valores ingresados como parámetro
-	 * @param pro Se recibe como parámetro un objeto de Modelo Sabor Tipo Liquido con base en el cual se realiza
-	 * la inserción de la entidad.
+	 * Mï¿½todo que se encarga de insertar un sabor tipo liquido de acuerdo a los valores ingresados como parï¿½metro
+	 * @param pro Se recibe como parï¿½metro un objeto de Modelo Sabor Tipo Liquido con base en el cual se realiza
+	 * la inserciï¿½n de la entidad.
 	 * @return Se retorna un valor entero con el id sabor tipo liquido creado en la base de datos.
 	 */
 	public static int insertarSaborTipoLiquido(SaborLiquido pro)
@@ -137,8 +137,8 @@ public class SaborTipoLiquidoDAO {
 	}
 
 	/**
-	 * Método que se encarga de la eliminación de un sabor tipo líquido de la base de datos, con base en la información recibida como parámetro.
-	 * @param idsabortipoliquido Se recibe como parámetro el idsabortipoliquido, con base en el cual se realiza la eliminación.
+	 * Mï¿½todo que se encarga de la eliminaciï¿½n de un sabor tipo lï¿½quido de la base de datos, con base en la informaciï¿½n recibida como parï¿½metro.
+	 * @param idsabortipoliquido Se recibe como parï¿½metro el idsabortipoliquido, con base en el cual se realiza la eliminaciï¿½n.
 	 */
 	public static void eliminarSaborTipoLiquido(int idsabortipoliquido)
 	{
@@ -167,8 +167,8 @@ public class SaborTipoLiquidoDAO {
 	}
 
 	/**
-	 * Método mediante el cual se realiza la consulta de un sabor tipo liquido con base el parámetro recibido.
-	 * @param idsabortipoliquido Se recibe como parámetro valor entero que indica el sabor tipo liquido que se requiere 
+	 * Mï¿½todo mediante el cual se realiza la consulta de un sabor tipo liquido con base el parï¿½metro recibido.
+	 * @param idsabortipoliquido Se recibe como parï¿½metro valor entero que indica el sabor tipo liquido que se requiere 
 	 * consultar.
 	 * @return Se retorna objeto de Modelo SaborTipoLiquido en el cual se retorna la entidad sabor tipo liquido consultada.
 	 */
@@ -211,9 +211,9 @@ public class SaborTipoLiquidoDAO {
 	}
 
 	/**
-	 * Método que permite la edición de un sabor tipo liquido con base en la información enviada como parámetro.
-	 * @param Pro Se recibe como párametro un objeto Modelo SaborTipoLiquido que contiene la información básica
-	 * para la modificación.
+	 * Mï¿½todo que permite la ediciï¿½n de un sabor tipo liquido con base en la informaciï¿½n enviada como parï¿½metro.
+	 * @param Pro Se recibe como pï¿½rametro un objeto Modelo SaborTipoLiquido que contiene la informaciï¿½n bï¿½sica
+	 * para la modificaciï¿½n.
 	 * @return Se retorna un valor String que indica el resultado del proceso.
 	 */
 	public static String editarSaborTipoLiquido(SaborLiquido Pro)
@@ -247,7 +247,7 @@ public class SaborTipoLiquidoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de homologar el tipo de liquido incluido en el producto, con base en lo enviado dentro del JSON.
+	 * Mï¿½todo que se encarga de homologar el tipo de liquido incluido en el producto, con base en lo enviado dentro del JSON.
 	 * @param sku
 	 * @return
 	 */
@@ -280,6 +280,38 @@ public class SaborTipoLiquidoDAO {
 			}
 		}
 		return(idInterno);
+	}
+	
+	public static int retornarProductoSaborTipoLiquido(int idsabortipoliquido)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		int idProducto = 0;
+		try
+		{
+			Statement stm = con1.createStatement();
+			String consulta = "select idproducto from  sabor_x_tipo_liquido  where idsabor_x_tipo_liquido = " + idsabortipoliquido; 
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next()){
+				idProducto = rs.getInt("idproducto");
+				break;
+			}
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			
+		}
+		return(idProducto);
 	}
 
 }
