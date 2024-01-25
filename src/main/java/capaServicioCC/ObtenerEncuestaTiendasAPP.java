@@ -37,8 +37,9 @@ public class ObtenerEncuestaTiendasAPP extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		HttpSession sesion = request.getSession();
+		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
 		EncuestaCtrl encCtrl = new EncuestaCtrl();
-        String respuesta = encCtrl.obtenerEncuestaLaboral(12);
+        String respuesta = encCtrl.obtenerEncuestaLaboral(idencuesta);
         System.out.println(respuesta);
         PrintWriter out = response.getWriter();
 		out.write(respuesta);

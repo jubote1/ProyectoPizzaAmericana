@@ -65,6 +65,7 @@ public class EncuestaCtrl {
 			resTemp.put("valorescala", detalle.getValorEscala());
 			resTemp.put("valorfinal", detalle.getValorFinal());
 			resTemp.put("valorinicial", detalle.getValorInicial());
+			resTemp.put("tiporespuesta", detalle.getTipoRespuesta());
 			respuesta.add(resTemp);
 		}
 		return(respuesta.toJSONString());
