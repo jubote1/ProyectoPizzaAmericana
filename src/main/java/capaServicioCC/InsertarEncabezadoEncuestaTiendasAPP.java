@@ -50,7 +50,8 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 			idTienda = 1;
 		}
 		int idempleado = Integer.parseInt(request.getParameter("idempleado"));
-		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,idempleado,1,12,"",idTienda);
+		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
+		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,idempleado,0,idencuesta,"",idTienda);
 		EncuestaCtrl encCtrl = new EncuestaCtrl();
 		String respuesta = encCtrl.insertarEmpleadoEncuesta(empEncuesta);
         PrintWriter out = response.getWriter();
