@@ -13,9 +13,16 @@ public class EncuestaLaboralDetalle {
 	private String alertar;
 	private String valorAlertar;
 	private String obligatorio;
+	private int  orden;
 	
 	
 	
+	public int getOrden() {
+		return orden;
+	}
+	public void setOrden(int orden) {
+		this.orden = orden;
+	}
 	public String getObligatorio() {
 		return obligatorio;
 	}
@@ -83,7 +90,7 @@ public class EncuestaLaboralDetalle {
 		this.tipoRespuesta = tipoRespuesta;
 	}
 	public EncuestaLaboralDetalle(int idEncuestaDetalle, int idEncuesta, String descripcion, String tipoRespuesta,
-			double valorInicial, double valorFinal, double valorEscala, double valorDefecto, String alertar, String valorAlertar) {
+			double valorInicial, double valorFinal, double valorEscala, double valorDefecto, String alertar, String valorAlertar,int orden) {
 		super();
 		this.idEncuestaDetalle = idEncuestaDetalle;
 		this.idEncuesta = idEncuesta;
@@ -95,6 +102,7 @@ public class EncuestaLaboralDetalle {
 		this.valorDefecto = valorDefecto;
 		this.alertar = alertar;
 		this.valorAlertar = valorAlertar;
+		this.orden = orden;
 	}
 	
 	

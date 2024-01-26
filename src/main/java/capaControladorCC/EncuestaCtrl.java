@@ -31,10 +31,11 @@ public class EncuestaCtrl {
 	{
 	}
 	
-	public String obtenerEncuestaLaboral(int idEncuesta)
+	public String obtenerEncuestaLaboral(int idEncuesta, String documento )
 	{
 		JSONObject respuesta = new JSONObject();
 		EncuestaLaboral encLaboral =EncuestaLaboralDAO.obtenerEncuestaLaboral(idEncuesta);
+		int idempleado = EncuestaLaboralDAO.obteneridEmpleado(documento);
 		respuesta.put("idencuesta", encLaboral.getIdEncuesta());
 		respuesta.put("codigo", encLaboral.getCodigo());
 		respuesta.put("dependencia", encLaboral.getDependencia());
@@ -42,6 +43,7 @@ public class EncuestaCtrl {
 		respuesta.put("Encabezado", encLaboral.getEncabezado());
 		respuesta.put("nombreencuesta", encLaboral.getNombreEncuesta());
 		respuesta.put("version", encLaboral.getVersion());
+		respuesta.put("idempleado", idempleado);
 		return(respuesta.toJSONString());
 	}
 	
@@ -66,6 +68,7 @@ public class EncuestaCtrl {
 			resTemp.put("valorfinal", detalle.getValorFinal());
 			resTemp.put("valorinicial", detalle.getValorInicial());
 			resTemp.put("tiporespuesta", detalle.getTipoRespuesta());
+			resTemp.put("orden", detalle.getOrden());
 			respuesta.add(resTemp);
 		}
 		return(respuesta.toJSONString());
