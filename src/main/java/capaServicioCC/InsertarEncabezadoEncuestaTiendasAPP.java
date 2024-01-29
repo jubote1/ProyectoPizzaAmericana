@@ -47,7 +47,7 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 			idTienda = Integer.parseInt(request.getParameter("idtienda"));
 		}catch(Exception e)
 		{
-			idTienda = 1;
+			idTienda = 0;
 		}
 		int idempleado = Integer.parseInt(request.getParameter("idempleado"));
 		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
