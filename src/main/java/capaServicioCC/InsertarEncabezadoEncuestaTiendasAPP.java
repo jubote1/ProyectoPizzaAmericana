@@ -41,7 +41,14 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		HttpSession sesion = request.getSession();
-		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
+		int  idTienda = 0;
+		try
+		{
+			idTienda = Integer.parseInt(request.getParameter("idtienda"));
+		}catch(Exception e)
+		{
+			idTienda = 1;
+		}
 		int idempleado = Integer.parseInt(request.getParameter("idempleado"));
 		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
 		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,idempleado,0,idencuesta,"",idTienda);

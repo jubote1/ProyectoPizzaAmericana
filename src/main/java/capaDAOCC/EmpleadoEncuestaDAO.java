@@ -107,9 +107,15 @@ public class EmpleadoEncuestaDAO {
 		{
 			Statement stm = con1.createStatement();
 			String insert = "";
+			int idTienda = 0;
+
+			if ((Integer)empEncuesta.getIdTienda() != null) {
+				idTienda = empEncuesta.getIdTienda();
+			}
+
 			if(empEncuesta.getIdEvaluar() == 0)
 			{
-				insert = "insert into empleado_encuesta (id, idencuesta) values (" + empEncuesta.getId() + " , " + empEncuesta.getIdEncuesta() + ")";
+				insert = "insert into empleado_encuesta (id, idencuesta,idtienda) values (" + empEncuesta.getId() + " , " + empEncuesta.getIdEncuesta() + ","+idTienda+")";
 			}else
 			{
 				insert = "insert into empleado_encuesta (id, id_evaluar, idencuesta, idtienda) values (" + empEncuesta.getId() + " , " + empEncuesta.getIdEvaluar() + " , " + empEncuesta.getIdEncuesta() + " , " + empEncuesta.getIdTienda() + ")";
