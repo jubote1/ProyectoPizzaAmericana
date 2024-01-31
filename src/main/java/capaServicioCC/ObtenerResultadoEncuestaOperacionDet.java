@@ -8,39 +8,40 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
-import capaControladorCC.EncuestaCtrl;
-import capaControladorCC.ParametrosCtrl;
-import capaControladorCC.PedidoCtrl;
+import capaControladorCC.EmpleadoCtrl;
 
-/**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
- */
-@WebServlet("/ObtenerEncuestaDetalleTiendasAPP")
-public class ObtenerEncuestaDetalleTiendasAPP extends HttpServlet {
+
+@WebServlet("/ObtenerResultadoEncuestaOperacionDet")
+public class ObtenerResultadoEncuestaOperacionDet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public ObtenerEncuestaDetalleTiendasAPP() {
+    public ObtenerResultadoEncuestaOperacionDet() {
         super();
         // TODO Auto-generated constructor stub
     }
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 * Este servicio recibe como par�metro el idpedido correspondiente y se encarga de retornar el total del pedido,
+	 * sumando los detalles de pedidos asociados al pedido, esto invocando al m�todo obtenerTotalPedido de la capa
+	 * Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
-		EncuestaCtrl encCtrl = new EncuestaCtrl();
-		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
-        String respuesta = encCtrl.obtenerEncLaboralDetalle(idencuesta);
-        System.out.println(respuesta);
+		
+		String paramEncuesta = request.getParameter("idempleadoencuesta");
+		int idempleadoencuesta = 0;
+		if(paramEncuesta != null) {
+			idempleadoencuesta = Integer.parseInt(paramEncuesta);
+			
+		}
+		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
+        String respuesta = empCtrl.obtenerResulEncuestaOperacionDetalle(idempleadoencuesta);
         PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}

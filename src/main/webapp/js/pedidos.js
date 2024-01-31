@@ -5989,4 +5989,10 @@ function validarVentaEmpresarial()
     $('#modalVentaEmpresarial').modal('hide');
 }
 
+function validarVentaNoEmpresarial()
+{
+    idPedidoEmpresarial = 0;
+    $('#modalVentaEmpresarial').modal('hide');
+}
+
 

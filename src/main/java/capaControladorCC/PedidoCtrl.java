@@ -3,12 +3,8 @@ package capaControladorCC;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +28,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
+import okio.Buffer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -43,6 +39,9 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import capaDAOCC.AdicionDetallePedidoDAO;
 import capaDAOCC.ClienteDAO;
@@ -71,9 +70,9 @@ import capaDAOCC.PedidoPrecioEmpleadoDAO;
 import capaDAOCC.PedidoTiendaVirtualDAO;
 import capaDAOCC.ProductoDAO;
 import capaDAOCC.PromocionDAO;
+import capaDAOCC.SaborTipoLiquidoDAO;
 import capaDAOCC.SolicitudFacturaDAO;
 import capaDAOCC.SolicitudFacturaImagenesDAO;
-import capaDAOCC.SolicitudPQRSImagenesDAO;
 import capaDAOCC.TiempoPedidoDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
@@ -110,6 +109,7 @@ import capaModeloCC.Producto;
 import capaModeloCC.ProductoIncluido;
 import capaModeloCC.Promocion;
 import capaModeloCC.Resultado;
+import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
 import capaModeloCC.SolicitudFactura;
 import capaModeloCC.SolicitudFacturaImagenes;
@@ -250,7 +250,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que retorna los productos de una tienda teniendo en cuenta o no productos de plataforma
+	 * M√©todo que retorna los productos de una tienda teniendo en cuenta o no productos de plataforma
 	 * @param idtienda
 	 * @param plataforma
 	 * @return
@@ -293,7 +293,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de retornar las gaseosas como producto homologada para cada tienda
+	 * M√©todo que se encarga de retornar las gaseosas como producto homologada para cada tienda
 	 * @return
 	 */
 	public String obtenerHomologacionProductoGaseosa(int idtienda)
@@ -313,8 +313,8 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo en la capa controladora que se encarga de invocar a la capa DAO y obtener todos los productos incluidos
-	 * posteriormente los formatea en el JSON y se los envÌa al servicio para ser retornados
+	 * M√©todo en la capa controladora que se encarga de invocar a la capa DAO y obtener todos los productos incluidos
+	 * posteriormente los formatea en el JSON y se los env√≠a al servicio para ser retornados
 	 * @return Retorna un String en formato JSON con los productos incluidos parametrizados en el sistema.
 	 */
 	public String obtenerProductosIncluidos(){
@@ -495,9 +495,9 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de realizar las acciones para finalizar el pedido en el sistema de Contact Center, secuencialmente
+	 * M√©todo que se encarga de realizar las acciones para finalizar el pedido en el sistema de Contact Center, secuencialmente
 	 * se finaliza el pedido en la BD de contact center, se totaliza el valor del pedido y se cambia el estado del pedido, adicionalmente
-	 * se forma un json con la informaciÛnd del pedido, con la cual se invocar· el servicio de tienda con los datos necesarios del pedido.
+	 * se forma un json con la informaci√≥nd del pedido, con la cual se invocar√° el servicio de tienda con los datos necesarios del pedido.
 	 * @param idpedido
 	 * @param idformapago
 	 * @param valorformapago
@@ -505,16 +505,16 @@ public class PedidoCtrl {
 	 * @param idcliente
 	 * @param insertado
 	 * @param tiempopedido
-	 * @return Se retorna un string en formato JSON con todos los valores que se pasar·n al servicio tienda para la creaciÛn del pedido en la 
+	 * @return Se retorna un string en formato JSON con todos los valores que se pasar√°n al servicio tienda para la creaci√≥n del pedido en la 
 	 * tienda.
 	 */
 	public String FinalizarPedido(int idpedido, int idformapago, double valorformapago, double valortotal, int idcliente, int insertado, double tiempopedido, String validaDir, double descuento, String motivoDescuento, String esProgramado, String programado)
 	{
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
 		String tiendaPixel = tienda.getUrl();
-		//Capturamos el par·metro de para que POS ir· el destino del pedido, con base en esto se formar· la informaciÛn para enviar
+		//Capturamos el par√°metro de para que POS ir√° el destino del pedido, con base en esto se formar√° la informaci√≥n para enviar
 		int pos = tienda.getPos();
-		//Validamos si el Pos es igual a 2 el envÌo ser· para PIXEL, en caso contrario ser· para POS Pizza Americana
+		//Validamos si el Pos es igual a 2 el env√≠o ser√° para PIXEL, en caso contrario ser√° para POS Pizza Americana
 		InsertarPedidoPixel pedidoPixel = new InsertarPedidoPixel();
 		if(pos == 2)
 		{
@@ -544,7 +544,7 @@ public class PedidoCtrl {
 		respuesta.put("programado", pedidoPixel.getProgramado());
 		respuesta.put("horaprogramado", pedidoPixel.getHoraProgramado());
 		respuesta.put("idtipopedido", pedidoPixel.getIdTipoPedido());
-		//Tomamos la informaciÛn de la marcaciÛn del pedido
+		//Tomamos la informaci√≥n de la marcaci√≥n del pedido
 		MarcacionPedido marPedido = MarcacionPedidoDAO.obtenerMarcacionPedido(idpedido);
 		if(marPedido.getMarketplace().equals(new String("")))
 		{
@@ -572,6 +572,7 @@ public class PedidoCtrl {
 				
 				respuesta.put("idproductoext" + contador, detPed.getIdproductoext() );
 				respuesta.put("cantidad" + contador, detPed.getCantidad());
+				respuesta.put("valor" + contador, (detPed.getValor()/detPed.getCantidad()));
 				//System.out.println("idproductoext " + detPed.getIdproductoext() + " cantidad " + detPed.getCantidad() );
 				contador++;
 				
@@ -587,6 +588,7 @@ public class PedidoCtrl {
 				respuesta.put("idmaster" + contador, detPed.getIdMaster());
 				respuesta.put("idmodificador" + contador, detPed.getIdModificador());
 				respuesta.put("iddetalle" + contador, detPed.getIdDetallePedido());
+				respuesta.put("valor" + contador, (detPed.getValor()/detPed.getCantidad()));
 				//System.out.println("idproductoext " + detPed.getIdproductoext() + " cantidad " + detPed.getCantidad() + " iddetalle " + detPed.getIdDetallePedido());
 				contador++;
 				
@@ -595,7 +597,7 @@ public class PedidoCtrl {
 		contador--;
 		respuesta.put("cantidaditempedido", contador);
 		JSONObject clienteJSON = new JSONObject();
-		// El objeto cliente del cual se extraen cada uno de los par·metros y se formatea en JSON.
+		// El objeto cliente del cual se extraen cada uno de los par√°metros y se formatea en JSON.
 		String apellidosTemp = pedidoPixel.getCliente().getApellidos();
 		if(apellidosTemp == null)
 		{
@@ -653,8 +655,8 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de finalizar un pedido en el modo reenvÌo, teniendo en cuenta que la informaciÛn del pedido en el
-	 * sistema contact center ya fue confirmado pero faltarÌa confirmarlo en el sistema de la tienda
+	 * M√©todo que se encarga de finalizar un pedido en el modo reenv√≠o, teniendo en cuenta que la informaci√≥n del pedido en el
+	 * sistema contact center ya fue confirmado pero faltar√≠a confirmarlo en el sistema de la tienda
 	 * @param idpedido
 	 * @param idformapago
 	 * @param valorformapago
@@ -668,9 +670,9 @@ public class PedidoCtrl {
 		
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
 		String tiendaPixel = tienda.getUrl();
-		//Capturamos el par·metro de para que POS ir· el destino del pedido, con base en esto se formar· la informaciÛn para enviar
+		//Capturamos el par√°metro de para que POS ir√° el destino del pedido, con base en esto se formar√° la informaci√≥n para enviar
 		int pos = tienda.getPos();
-		//Validamos si el Pos es igual a 2 el envÌo ser· para PIXEL, en caso contrario ser· para POS Pizza Americana
+		//Validamos si el Pos es igual a 2 el env√≠o ser√° para PIXEL, en caso contrario ser√° para POS Pizza Americana
 		InsertarPedidoPixel pedidoPixel = new InsertarPedidoPixel();
 		if(pos == 2)
 		{
@@ -701,7 +703,7 @@ public class PedidoCtrl {
 		respuesta.put("programado", pedidoPixel.getProgramado());
 		respuesta.put("horaprogramado", pedidoPixel.getHoraProgramado());
 		respuesta.put("idtipopedido", pedidoPixel.getIdTipoPedido());
-		//Tomamos la informaciÛn de la marcaciÛn del pedido
+		//Tomamos la informaci√≥n de la marcaci√≥n del pedido
 		MarcacionPedido marPedido = MarcacionPedidoDAO.obtenerMarcacionPedido(idpedido);
 		if(marPedido.getMarketplace().equals(new String("")))
 		{
@@ -728,7 +730,7 @@ public class PedidoCtrl {
 				
 				respuesta.put("idproductoext" + contador, detPed.getIdproductoext() );
 				respuesta.put("cantidad" + contador, detPed.getCantidad());
-				respuesta.put("valor" + contador, detPed.getValor());
+				respuesta.put("valor" + contador, (detPed.getValor()/detPed.getCantidad()));
 				contador++;
 				
 			}
@@ -743,7 +745,7 @@ public class PedidoCtrl {
 				respuesta.put("idmaster" + contador, detPed.getIdMaster());
 				respuesta.put("idmodificador" + contador, detPed.getIdModificador());
 				respuesta.put("iddetalle" + contador, detPed.getIdDetallePedido());
-				respuesta.put("valor" + contador, detPed.getValor());
+				respuesta.put("valor" + contador, (detPed.getValor()/detPed.getCantidad()));
 				//System.out.println("idproductoext " + detPed.getIdproductoext() + " cantidad " + detPed.getCantidad() + " iddetalle " + detPed.getIdDetallePedido());
 				contador++;
 				
@@ -752,7 +754,7 @@ public class PedidoCtrl {
 		contador--;
 		respuesta.put("cantidaditempedido", contador);
 		JSONObject clienteJSON = new JSONObject();
-		// El objeto cliente del cual se extraen cada uno de los par·metros y se formatea en JSON.
+		// El objeto cliente del cual se extraen cada uno de los par√°metros y se formatea en JSON.
 		clienteJSON.put("apellidos", pedidoPixel.getCliente().getApellidos());
 		clienteJSON.put("nombres", pedidoPixel.getCliente().getNombres());
 		clienteJSON.put("nombrecompania", pedidoPixel.getCliente().getNombreCompania());
@@ -896,7 +898,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que retornar· la informaciÛn de un pedido dado el n˙mero de pedido del contact center
+	 * M√©todo que retornar√° la informaci√≥n de un pedido dado el n√∫mero de pedido del contact center
 	 * @param numeropedido
 	 * @return
 	 */
@@ -1131,8 +1133,8 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo que responde desde la capa controladora para la consulta del encabezado de los pedidos de un cliente.
-	 * @param idCliente, se recibe como par·metro el identificador del cliente para la consulta
+	 * M√©todo que responde desde la capa controladora para la consulta del encabezado de los pedidos de un cliente.
+	 * @param idCliente, se recibe como par√°metro el identificador del cliente para la consulta
 	 * @return
 	 */
 	public String ConsultaUltimosPedidosCliente(int idCliente)
@@ -1210,23 +1212,23 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de permitir duplicar un iddetallepedido, validando todo lo que tiene el id pedido padre
+	 * M√©todo que se encarga de permitir duplicar un iddetallepedido, validando todo lo que tiene el id pedido padre
 	 * y si es posible duplicar todo lo asociado a este.
-	 * @param iddetallepedido Se recibe como par·metro el iddetallepedido asociado a la duplicaciÛn, desde la capa de
-	 * presentaciÛn se permite realizar la duplicaciÛn de productos diferentes a adiciones y modificadores.
+	 * @param iddetallepedido Se recibe como par√°metro el iddetallepedido asociado a la duplicaci√≥n, desde la capa de
+	 * presentaci√≥n se permite realizar la duplicaci√≥n de productos diferentes a adiciones y modificadores.
 	 * @return Se retorna un String en formato JSON con la respuesta de cada uno de los detalles pedidos insertados
-	 * y que se tomar·n como bases para pintar el DATATABLE.
+	 * y que se tomar√°n como bases para pintar el DATATABLE.
 	 */
 	public String DuplicarDetallePedido(int iddetallepedido)
 	{
-				//Utilizamos mÈtodo que se encarga de retonar todos los detalles pedido asignado a un grupo de pedido
-				//donde podrÌa tenerse modificadores y adiciones, retornados en un ArrayList.
+				//Utilizamos m√©todo que se encarga de retonar todos los detalles pedido asignado a un grupo de pedido
+				//donde podr√≠a tenerse modificadores y adiciones, retornados en un ArrayList.
 				ArrayList<DetallePedido> detallesPedido = PedidoDAO.ConsultarDetallePedidoPorPadre(iddetallepedido);
-				//Se instancia ArrayList en donde se insertaran los nuevos detalles pedidos productos de la duplicaciÛn
+				//Se instancia ArrayList en donde se insertaran los nuevos detalles pedidos productos de la duplicaci√≥n
 				// de los iniciales.
 				ArrayList<DetallePedido> detallesPedidoNuevos = new ArrayList();
 				int idDetPedIns;
-				//Se lleva el control del que ser· el detalle pedido padre, esto se detecta por el tipo de pedido.
+				//Se lleva el control del que ser√° el detalle pedido padre, esto se detecta por el tipo de pedido.
 				boolean bandDetPedido = false;
 				int idDetPedidoPadre = 0;
 				// Se define arreglo donde se llevaran lo iddetallepedidos nuevo y viejos
@@ -1234,24 +1236,24 @@ public class PedidoCtrl {
 				int contDetPeds = 0;
 				//Se recorren uno a uno los detalle de pedido para insertarse como duplicado
 				for (DetallePedido detPed : detallesPedido) {
-					// Se realiza la inserciÛn de de pedido, no existe inconveniente debido a que no se toma el iddetallepedido
+					// Se realiza la inserci√≥n de de pedido, no existe inconveniente debido a que no se toma el iddetallepedido
 					idDetsPeds[contDetPeds][0] = detPed.getIddetallepedido();
-					//Antes de realizar la inserciÛn del detalle pedido controlaremos si es un producto incluido para cambiar la informaciÛn
+					//Antes de realizar la inserci√≥n del detalle pedido controlaremos si es un producto incluido para cambiar la informaci√≥n
 					if (detPed.getObservacion().equals(new String("Producto Incluido-"+ iddetallepedido)))
 					{
 						detPed.setObservacion("Producto Incluido-"+ idDetPedidoPadre);
 					}
-					// Se realiza la inserciÛn del detallepedido
+					// Se realiza la inserci√≥n del detallepedido
 					idDetPedIns = PedidoDAO.InsertarDetallePedido(detPed);
-					// Se lleva registro en el array del iddetallepedido reciÈn insertado.
+					// Se lleva registro en el array del iddetallepedido reci√©n insertado.
 					idDetsPeds[contDetPeds][1] = idDetPedIns;
-					// Se lleva control de si es el detalle pedido principal con la marcaciÛn de que sea sola una vez, sea tipo de prodcutos OTROS o PIZZA y adicionalmente no sea un producto incluido
+					// Se lleva control de si es el detalle pedido principal con la marcaci√≥n de que sea sola una vez, sea tipo de prodcutos OTROS o PIZZA y adicionalmente no sea un producto incluido
 					if (bandDetPedido == false && (detPed.getTipoProducto().equals(new String("OTROS")) || detPed.getTipoProducto().equals(new String("PIZZA"))) && !(detPed.getObservacion().equals(new String("Producto Incluido-"+ iddetallepedido))) )
 					{
 						idDetPedidoPadre = idDetPedIns;
 						bandDetPedido = true;
 					}
-					// Se clona el objeto para este ser editado y adicionarlo al ArrayList que se responder·.					
+					// Se clona el objeto para este ser editado y adicionarlo al ArrayList que se responder√°.					
 					DetallePedido detPedTemp = (DetallePedido) detPed.clone();
 					detPedTemp.setIddetallepedido(idDetPedIns);
 					// Se agrega el detallePedido al ArrayList de respuesta
@@ -1265,17 +1267,17 @@ public class PedidoCtrl {
 				for(DetallePedidoAdicion detPedAdi: adicionDetallePedido)
 				{
 					//Nos traemos el detalle de pedido padre que significa el producto detalle pedido al cual
-					// esta asociada la adiciÛn.
+					// esta asociada la adici√≥n.
 					int idDetPedAdiAnt =  detPedAdi.getIddetallepedidoadicion();
 					for (int i= 0; i < contDetPeds; i++)
 					{
 						//buscamos uno a uno el arreglo donde se guardan los detalles pedidos
 						if (idDetsPeds[i][0] == idDetPedAdiAnt)
 						{
-							// Se realizan los cambios en el objeto para dejar la informaciÛn correcta
+							// Se realizan los cambios en el objeto para dejar la informaci√≥n correcta
 							detPedAdi.setIddetallepedidoadicion(idDetsPeds[i][1]);
 							detPedAdi.setIddetallepedidopadre(idDetPedidoPadre);
-							// Se realiza la inserciÛn del detalle pedido adiciÛn.
+							// Se realiza la inserci√≥n del detalle pedido adici√≥n.
 							PedidoDAO.InsertarDetalleAdicion(detPedAdi);
 						}
 						
@@ -1313,7 +1315,7 @@ public class PedidoCtrl {
 				}		
 				JSONArray listJSON = new JSONArray();
 				// Se realiza el formateo en JSON para la respuesta de los detalles pedidos duplicados para que sean 
-				// pintados en la capa de presentaciÛn.
+				// pintados en la capa de presentaci√≥n.
 				for (DetallePedido cadaDetallePedido: detallesPedidoNuevos){
 					JSONObject cadaDetallePedidoJSON = new JSONObject();
 					cadaDetallePedidoJSON.put("iddetallepedido", cadaDetallePedido.getIddetallepedido());
@@ -1339,11 +1341,11 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo de la capa controladora que se encarga de retornar en formato JSON el precio asociado a una excepciÛn de
+	 * M√©todo de la capa controladora que se encarga de retornar en formato JSON el precio asociado a una excepci√≥n de
 	 * precio de especialidad y producto.
-	 * @param idespecialidad Se recibe como par·metro el idespecialidad asociado a la excepciÛn de precio especialidad.
-	 * @param idproducto Se recibe como par·metro el idproducto asociado a la excepciÛn de precio especialidad.
-	 * @return Se retorna en un String formato json el precio asociado seg˙n los par·metros de entrada|
+	 * @param idespecialidad Se recibe como par√°metro el idespecialidad asociado a la excepci√≥n de precio especialidad.
+	 * @param idproducto Se recibe como par√°metro el idproducto asociado a la excepci√≥n de precio especialidad.
+	 * @return Se retorna en un String formato json el precio asociado seg√∫n los par√°metros de entrada|
 	 */
 	public String obtenerPrecioExcepcionEspecialidad(int idespecialidad, int idproducto)
 	{
@@ -1413,19 +1415,19 @@ public class PedidoCtrl {
 		calendar.setTime(date);
 		String observacionLog = "";
 		String emailEnvio = "";
-		//Comenzamos por consultar al cliente para recuperar la informaciÛn de correo electrÛnico y n˙mero celular
+		//Comenzamos por consultar al cliente para recuperar la informaci√≥n de correo electr√≥nico y n√∫mero celular
 		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
 		//Obtenemos la forma de pago
 		FormaPago formaPagoNoti = FormaPagoDAO.retornarFormaPago(idFormaPago);
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Procesamos los mensajes de texto y correo electrÛnico
+		//Procesamos los mensajes de texto y correo electr√≥nico
 		String mensajeTexto = formaPagoNoti.getMensajeTexto();
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
 		mensajeTexto = mensajeTexto.replace("#VINCULO", linkPago);
-		//EnvÌo del mensaje de Texto
+		//Env√≠o del mensaje de Texto
 		promoCtrl.ejecutarPHPEnvioMensaje( "57"+ telefonoCelular, mensajeTexto);
 		observacionLog = "Se envio mensaje de texto.";
-		//Vamos a verificar si el cliente tiene correo electrÛnico para enviarlo si es el caso
+		//Vamos a verificar si el cliente tiene correo electr√≥nico para enviarlo si es el caso
 		if(clienteNoti.getEmail() != null)
 		{
 			if(clienteNoti.getEmail().length()> 0)
@@ -1450,7 +1452,7 @@ public class PedidoCtrl {
 							+ "\n" + "<body><a href=\"" + linkPago + "\"><img align=\" center \" src=\""+ imagenWompi +"\"></a></body>";
 					correo.setMensaje(mensajeCuerpoCorreo);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					//Agregamos control para que verifique con que mÈtodo debe hacer el envÌo
+					//Agregamos control para que verifique con que m√©todo debe hacer el env√≠o
 					if(cuentaCorreo.contains("@gmail.com"))
 					{
 						contro.enviarCorreo();
@@ -1458,7 +1460,7 @@ public class PedidoCtrl {
 					{
 						contro.enviarCorreo();
 					}
-					observacionLog = observacionLog + " Se intento realizar el envÌo del correo electrÛnico.";
+					observacionLog = observacionLog + " Se intento realizar el env√≠o del correo electr√≥nico.";
 				}
 			}
 		}
@@ -1480,7 +1482,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que tendr· como objetivo realizar una renotificaciÛn al cliente despues de 20 minutos con el fin de recordar a este el pago
+	 * M√©todo que tendr√° como objetivo realizar una renotificaci√≥n al cliente despues de 20 minutos con el fin de recordar a este el pago
 	 * @param idLink
 	 * @param idCliente
 	 * @param linkPago
@@ -1492,14 +1494,14 @@ public class PedidoCtrl {
 	{
 		String observacionLog = "";
 		String emailEnvio = "";
-		//Comenzamos por consultar al cliente para recuperar la informaciÛn de correo electrÛnico y n˙mero celular
+		//Comenzamos por consultar al cliente para recuperar la informaci√≥n de correo electr√≥nico y n√∫mero celular
 		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
 		//Obtenemos la forma de pago
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Procesamos los mensajes de texto y correo electrÛnico
+		//Procesamos los mensajes de texto y correo electr√≥nico
 		String mensajeTexto = "Querido Cliente han pasado 20 minutos y no registramos tu pago, tendras 20 minutos mas o tu pedido sera cancelado. Tu link es " + linkPago;
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
-		//EnvÌo del mensaje de Texto
+		//Env√≠o del mensaje de Texto
 		promoCtrl.ejecutarPHPEnvioMensaje( "57"+ telefonoCelular, mensajeTexto);
 		
 		//ENVIAREMOS MENSAJE DE WHATSAPP
@@ -1518,7 +1520,7 @@ public class PedidoCtrl {
 		}catch(Exception e)
 		{
 			System.out.println("ERROR " + e.toString());
-			//Recuperar la lista de distribuciÛn para este correo
+			//Recuperar la lista de distribuci√≥n para este correo
 			ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 			Date fecha = new Date();
 			Correo correo = new Correo();
@@ -1533,7 +1535,7 @@ public class PedidoCtrl {
 		//
 		
 		observacionLog = "Se envio mensaje de texto.";
-		//Vamos a verificar si el cliente tiene correo electrÛnico para enviarlo si es el caso
+		//Vamos a verificar si el cliente tiene correo electr√≥nico para enviarlo si es el caso
 		if(clienteNoti.getEmail() != null)
 		{
 			if(clienteNoti.getEmail().length()> 0)
@@ -1542,7 +1544,7 @@ public class PedidoCtrl {
 				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
 				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENWOMPI20MINUTOS");
-				String mensajeCorreo = "Querido Cliente han pasado 20 minutos y no registramos tu pago, tendr·s 10 minutos m·s o tu pedido ser· cancelado. Tu link es " + linkPago;
+				String mensajeCorreo = "Querido Cliente han pasado 20 minutos y no registramos tu pago, tendr√°s 10 minutos m√°s o tu pedido ser√° cancelado. Tu link es " + linkPago;
 				Correo correo = new Correo();
 				correo.setAsunto("No hemos registrado tu pago Pedido # " + idPedido);
 				ArrayList correos = new ArrayList();
@@ -1555,7 +1557,7 @@ public class PedidoCtrl {
 						+ "\n" + "<body><a href=\"" + linkPago + "\"><img align=\" center \" src=\""+ imagenWompi +"\"></a></body>";;
 				correo.setMensaje(mensajeCuerpoCorreo);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-				//Agregamos control para que verifique con que mÈtodo debe hacer el envÌo
+				//Agregamos control para que verifique con que m√©todo debe hacer el env√≠o
 				if(cuentaCorreo.contains("@gmail.com"))
 				{
 					contro.enviarCorreo();
@@ -1563,7 +1565,7 @@ public class PedidoCtrl {
 				{
 					contro.enviarCorreo();
 				}
-				observacionLog = observacionLog + " Se intento realizar el envÌo del correo electrÛnico.";
+				observacionLog = observacionLog + " Se intento realizar el env√≠o del correo electr√≥nico.";
 			}
 		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
@@ -1586,17 +1588,17 @@ public class PedidoCtrl {
 	{
 		String observacionLog = "";
 		String emailEnvio = "";
-		//Comenzamos por consultar al cliente para recuperar la informaciÛn de correo electrÛnico y n˙mero celular
+		//Comenzamos por consultar al cliente para recuperar la informaci√≥n de correo electr√≥nico y n√∫mero celular
 		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
 		//Obtenemos la forma de pago
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Procesamos los mensajes de texto y correo electrÛnico
+		//Procesamos los mensajes de texto y correo electr√≥nico
 		String mensajeTexto = "Querido Cliente han pasado mas de 40 minutos y no registramos tu pago, tu pedido # " + idPedido + " fue cancelado.";
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
-		//EnvÌo del mensaje de Texto
+		//Env√≠o del mensaje de Texto
 		promoCtrl.ejecutarPHPEnvioMensaje( "57"+ telefonoCelular, mensajeTexto);
 		observacionLog = "Se envio mensaje de texto.";
-		//Vamos a verificar si el cliente tiene correo electrÛnico para enviarlo si es el caso
+		//Vamos a verificar si el cliente tiene correo electr√≥nico para enviarlo si es el caso
 		if(clienteNoti.getEmail() != null)
 		{
 			if(clienteNoti.getEmail().length()> 0)
@@ -1605,9 +1607,9 @@ public class PedidoCtrl {
 				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
 				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENCANCELACIONWOMPI");
-				String mensajeCorreo = "Querido Cliente han pasado m·s de 40 minutos y no registramos tu pago, tu pedido # " + idPedido + " fue cancelado. Si deseas podr·s llamar de nuevo a nuestro Contact Center y reactivar tu pedido.";
+				String mensajeCorreo = "Querido Cliente han pasado m√°s de 40 minutos y no registramos tu pago, tu pedido # " + idPedido + " fue cancelado. Si deseas podr√°s llamar de nuevo a nuestro Contact Center y reactivar tu pedido.";
 				Correo correo = new Correo();
-				correo.setAsunto("CancelaciÛn de tu pago Pedido # " + idPedido);
+				correo.setAsunto("Cancelaci√≥n de tu pago Pedido # " + idPedido);
 				ArrayList correos = new ArrayList();
 				String correoEle = clienteNoti.getEmail();
 				emailEnvio = correoEle;
@@ -1618,7 +1620,7 @@ public class PedidoCtrl {
 						+ "\n" + "<body><img align=\" center \" src=\""+ imagenWompi +"\"></a></body>";;
 				correo.setMensaje(mensajeCuerpoCorreo);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-				//Agregamos control para que verifique con que mÈtodo debe hacer el envÌo
+				//Agregamos control para que verifique con que m√©todo debe hacer el env√≠o
 				if(cuentaCorreo.contains("@gmail.com"))
 				{
 					contro.enviarCorreo();
@@ -1626,7 +1628,7 @@ public class PedidoCtrl {
 				{
 					contro.enviarCorreo();
 				}
-				observacionLog = observacionLog + " Se intento realizar el envÌo del correo electrÛnico.";
+				observacionLog = observacionLog + " Se intento realizar el env√≠o del correo electr√≥nico.";
 			}
 		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
@@ -1643,7 +1645,7 @@ public class PedidoCtrl {
 		// Debemos de procesar todo datos para extraer todo los datos requeridos
 		JSONParser parser = new JSONParser();
 		try {
-			 //De acuerdo a la definiciÛn de como se envian los eventos, extraremos
+			 //De acuerdo a la definici√≥n de como se envian los eventos, extraremos
 			 Object objParser = parser.parse(stringJSON);
 			 JSONObject jsonPedido = (JSONObject) objParser;
 			 String evento = (String)jsonPedido.get("event");
@@ -1659,29 +1661,29 @@ public class PedidoCtrl {
 			 String idLink = (String)jsonTransaccion.get("payment_link_id");
 			 String estado = (String)jsonTransaccion.get("status");
 			 String tipoPago = (String)jsonTransaccion.get("payment_method_type");
-			 //Posteriormente de capturada la informaciÛn realizaremos un guardado de log de eventos WOMPI
+			 //Posteriormente de capturada la informaci√≥n realizaremos un guardado de log de eventos WOMPI
 			 if(stringJSON.length() > 5000)
 			 {
 				 stringJSON = stringJSON.substring(0,5000);
 			 }
 			 LogEventoWompi logEvento = new LogEventoWompi(idLink, evento, estado, stringJSON);
 			 int idLogEvento = LogEventoWompiDAO.insertarLogEventoWompi(logEvento);
-			 //Posteriormente verificaremos si es un transacciÛn de aprobado, y verificaremos el estado del idlink
+			 //Posteriormente verificaremos si es un transacci√≥n de aprobado, y verificaremos el estado del idlink
 			 if(evento.equals(new String("transaction.updated")))
 			 {
-				 //En este punto es porque hubo el pago de una transacciÛn
+				 //En este punto es porque hubo el pago de una transacci√≥n
 				 if(estado.equals(new String("APPROVED")))
 				 {
 					 
-					 //Haremos una validaciÛn de que el pago viene del dat·fono virtual de WOMPI
+					 //Haremos una validaci√≥n de que el pago viene del dat√°fono virtual de WOMPI
 					 if(idLink.equals(new String("VPOS_MmLnoT")))
 					 {
 						 long valorPagoCent =  (long)jsonTransaccion.get("amount_in_cents");
 						 double valorPago = ((double)valorPagoCent)/100;
-						 //Realizaremos la inserciÛn del registro de lo que se pago en el dat·fono virtual
+						 //Realizaremos la inserci√≥n del registro de lo que se pago en el dat√°fono virtual
 						 PedidoPagoVirtualConsolidadoDAO.insertarPedidoPagoVirtualPagado(131313, 13, valorPago, valorPago, idLink, tipoPago);
 					 }
-					 //Si el pedido asociado est· en enviadoPixel = 2 es decir PENDIENTE PAGO VIRTUAL, realizaremos envÌo del pedido a la tienda
+					 //Si el pedido asociado est√° en enviadoPixel = 2 es decir PENDIENTE PAGO VIRTUAL, realizaremos env√≠o del pedido a la tienda
 					 //y actualizaremos el estado a 1 que significa ENVIADO A TIENDA.
 					 
 					//Realizaremos el llenado del campo de fechapagovirtual
@@ -1691,14 +1693,14 @@ public class PedidoCtrl {
 					ArrayList correos = new ArrayList();
 					if(idPedido > 0)
 					{
-						//Realizamos labor de envÌo de notificaciÛn por WhatsApp para un n˙mero de pedido
+						//Realizamos labor de env√≠o de notificaci√≥n por WhatsApp para un n√∫mero de pedido
 						Pedido pedPagado = PedidoDAO.ConsultaPedido(idPedido);
 						//Enviamos mensaje ultramsg
 						if(pedPagado.getTelefono()!= null)
 						{
 							if(!pedPagado.getTelefono().equals(new String("")))
 							{
-								PedidoCtrl.enviarWhatsAppUltramsg("Querido " + pedPagado.getNombrecliente() + " hemos acabado de recibir la notificaciÛn de tu pago, a partir de este momento tu pedido ser· enviado a elaboraciÛn en una de nuestras tiendas!", pedPagado.getTelefono());
+								PedidoCtrl.enviarWhatsAppUltramsg("Querido " + pedPagado.getNombrecliente() + " hemos acabado de recibir la notificaci√≥n de tu pago, a partir de este momento tu pedido ser√° enviado a elaboraci√≥n en una de nuestras tiendas!", pedPagado.getTelefono());
 							}
 						}
 						//Enviaremos un correo en la etapa de piloto
@@ -1707,7 +1709,7 @@ public class PedidoCtrl {
 						correos.add(correoEle);
 						correo.setContrasena(infoCorreo.getClaveCorreo());
 						correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-						correo.setMensaje(" Se realizÛ pago con el inLink en cuestiÛn " + idLink);
+						correo.setMensaje(" Se realiz√≥ pago con el inLink en cuesti√≥n " + idLink);
 						//ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 						//contro.enviarCorreo();
 					}else
@@ -1716,13 +1718,13 @@ public class PedidoCtrl {
 						boolean actualizaTienda = PedidoPagoVirtualConsolidadoDAO.validarPagoWompiTienda(idLink, tipoPago);
 						if(!actualizaTienda)
 						{
-							//Controlamos el caso de que no encontrÛ un idLink para actualizar deberÌa de notificarlo
+							//Controlamos el caso de que no encontr√≥ un idLink para actualizar deber√≠a de notificarlo
 							//Enviaremos un correo en la etapa de piloto
-							correo.setAsunto("ATENCI”N PAGO IDLINK  " + idLink + " dicho link no aparece en un pedido");
+							correo.setAsunto("ATENCI√ìN PAGO IDLINK  " + idLink + " dicho link no aparece en un pedido");
 							correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 							correo.setContrasena(infoCorreo.getClaveCorreo());
 							correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-							correo.setMensaje(" Se realizÛ pago con el inLink en cuestiÛn " + idLink + ", sin embargo en estos momentos no hay un pedido con dicho link por favor revisar.");
+							correo.setMensaje(" Se realiz√≥ pago con el inLink en cuesti√≥n " + idLink + ", sin embargo en estos momentos no hay un pedido con dicho link por favor revisar.");
 							ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 							contro.enviarCorreo();
 						}	
@@ -1746,7 +1748,7 @@ public class PedidoCtrl {
 	
 	public String capturarEventoPagoEpayco(int idOrdenComercio, int codRespuesta , String tipoPago)
 	{
-		//Dejamos un log de la operaciÛn
+		//Dejamos un log de la operaci√≥n
 		LogPedidoVirtualDAO.insertarLogPedidoEpayco("idOrdenComercio " + idOrdenComercio  + " codRespuesta " + codRespuesta + " tipoPago " + tipoPago);
 		// Debemos de procesar todo datos para extraer todo los datos requeridos
 		JSONParser parser = new JSONParser();
@@ -1764,19 +1766,19 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo que se encargar· de tener toda la lÛgica para la descomposiciÛn del JSON enviado para tomar el pedido desde el sistema de 
+	 * M√©todo que se encargar√° de tener toda la l√≥gica para la descomposici√≥n del JSON enviado para tomar el pedido desde el sistema de 
 	 * tienda virtual de KUNO.
 	 * @param stringJSON
 	 * @return
 	 */
 	public String insertarPedidoTiendaVirtualKuno(String stringJSON, String authHeader)
 	{
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		LogPedidoVirtualKunoDAO.insertarLogPedidoVirtualKuno(stringJSON, authHeader);
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			AutenticacionCtrl autCtrl = new AutenticacionCtrl();
@@ -1786,12 +1788,12 @@ public class PedidoCtrl {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ATENCI”N POSIBLE ATAQUE A SERVICIO DE KUNO  " + authHeader);
+				correo.setAsunto("ATENCI√ìN POSIBLE ATAQUE A SERVICIO DE KUNO  " + authHeader);
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-				correo.setMensaje(" Se tiene una invocaciÛn al servicio con Authorization no autorizado, el cual es  " + authHeader);
+				correo.setMensaje(" Se tiene una invocaci√≥n al servicio con Authorization no autorizado, el cual es  " + authHeader);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				contro.enviarCorreo();
 				return("");
@@ -1799,10 +1801,10 @@ public class PedidoCtrl {
 		}
 		
 		//Varibles para el procesamiento del pedido
-		//Variable donde quedar· almacenada el idPedido creado
+		//Variable donde quedar√° almacenada el idPedido creado
 		int idPedidoCreado = 0;
 		long idOrdenComercio = 0;
-		//Variable que le asignar· un id ˙nico al pedido de tienda virtual que llega
+		//Variable que le asignar√° un id √∫nico al pedido de tienda virtual que llega
 		int idInterno = 0;
 		//Variable donde almacenaremos el idCliente
 		int idCliente = 0;
@@ -1811,14 +1813,14 @@ public class PedidoCtrl {
 		long valorTotalContact = 0;
 		String estadoPedido = "";
 		boolean esProgramado = false;
-		//Variable donde se almacenar· la hora de programado del pedido con S o N y la hora de programado
+		//Variable donde se almacenar√° la hora de programado del pedido con S o N y la hora de programado
 		//Inicializamos ambas variables con los valores 
 		String programado = "N";
 		String horaProgramado = "AHORA";
 		//Variable donde almacenaremos el tipoPedido
 		String tipoPedido = "";
 		int idTipoPedido = 1;
-		//Formamos la fecha del pedido que podr· cambiar si el pedido es posfechado
+		//Formamos la fecha del pedido que podr√° cambiar si el pedido es posfechado
 		Date fechaPedido = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("dd/MM/yyyy");
 		String strFechaFinal = formatoFinal.format(fechaPedido);
@@ -1830,7 +1832,7 @@ public class PedidoCtrl {
 			//Realizamos el parseo del primer nivel del JSON
 			Object objParser = parser.parse(stringJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
-			//Descomponemos la informaciÛn de orders que es donde est· agrupado toda la info del pedido
+			//Descomponemos la informaci√≥n de orders que es donde est√° agrupado toda la info del pedido
 			String ordersJSON = (String)jsonGeneral.get("orders").toString();
 			Object objParserOrders = parser.parse(ordersJSON);
 			JSONArray jsonOrdersArray = (JSONArray) objParserOrders;
@@ -1839,11 +1841,11 @@ public class PedidoCtrl {
 			{
 				//Tomamos el elemento para procesar
 				JSONObject objTemp = (JSONObject) jsonOrdersArray.get(i);
-				//Comenzamos capturando la informaciÛn del cliente del pedido
-				//Capturamos el n˙mero de orden en el ecommerce
+				//Comenzamos capturando la informaci√≥n del cliente del pedido
+				//Capturamos el n√∫mero de orden en el ecommerce
 				idOrdenComercio = (long)objTemp.get("id");
 				valorTotal = (long)objTemp.get("total_price");
-				//Agregamos an·lisis para programaciÛn de pedidos  y si el pedido est· aceptado
+				//Agregamos an√°lisis para programaci√≥n de pedidos  y si el pedido est√° aceptado
 				esProgramado = (boolean)objTemp.get("for_later");
 				estadoPedido = (String)objTemp.get("status");
 				if(estadoPedido.equals(new String("pending")) && !esProgramado)
@@ -1852,11 +1854,11 @@ public class PedidoCtrl {
 				}
 				else
 				{
-					//Definimos variable que nos indicar· para que estado va el pedido la inicializamos el 2
+					//Definimos variable que nos indicar√° para que estado va el pedido la inicializamos el 2
 					int idEstadoPedido = 2;
 					//Insertamos la traza inicial del pedido y retornamos el id
 					idInterno = PedidoTiendaVirtualDAO.insertarPedidoTiendaVirtual(((Long)idOrdenComercio).intValue());
-					//Controlaremos si idInterno es cero para no continuar con la inserciÛn
+					//Controlaremos si idInterno es cero para no continuar con la inserci√≥n
 					if(idInterno == 0 && !esProgramado )
 					{
 						Correo correo = new Correo();
@@ -1872,7 +1874,7 @@ public class PedidoCtrl {
 						contro.enviarCorreo();
 					}else if(idInterno == 0 && esProgramado && estadoPedido.equals(new String("accepted")))
 					{
-						//DeberÌamos de incluir la lÛgica para decir que es un pedido programado y fue aceptado
+						//Deber√≠amos de incluir la l√≥gica para decir que es un pedido programado y fue aceptado
 						PedidoDAO.actualizarProgramadoFinalizado((int)idOrdenComercio);
 					}
 					else
@@ -1882,9 +1884,9 @@ public class PedidoCtrl {
 						{
 							idEstadoPedido = 5;
 							programado = "S";
-							//En este punto vamos a tener la lÛgica para extraer la fecha del pedido programado requerimos tomar
-							//para cuando est· programado el pedido
-							//Tenemos en cuenta que esto viene seg˙n la fecha ZULU
+							//En este punto vamos a tener la l√≥gica para extraer la fecha del pedido programado requerimos tomar
+							//para cuando est√° programado el pedido
+							//Tenemos en cuenta que esto viene seg√∫n la fecha ZULU
 							String strFechaPreparacionZulu = (String)objTemp.get("fulfill_at");
 							//otra prueba
 							DateFormat utcFormato = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -1933,22 +1935,22 @@ public class PedidoCtrl {
 							}
 							fechaPedidoPro = fechaPedidoPro + "/" + Integer.toString(ano);
 							
-							//Se hace la diferenciaciÛn que la fecha final ser· la del pedido programado
+							//Se hace la diferenciaci√≥n que la fecha final ser√° la del pedido programado
 							strFechaFinal = fechaPedidoPro;
 						}
 						
 						//Continuamos con el procesamiento del pedido
 						String telefono = (String)objTemp.get("client_phone");
 						String telefonoCelular = "";
-						//El telefono le quitaremos el indicativo del paÌs
+						//El telefono le quitaremos el indicativo del pa√≠s
 						if(telefono.substring(0, 3).equals(new String("+57")))
 						{
 							telefono = telefono.substring(3);
 						}
-						//Para el caso del telÈfono validaremos si es un fijo
+						//Para el caso del tel√©fono validaremos si es un fijo
 						if(telefono.trim().length() == 7)
 						{
-							//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+							//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 							//contact center.
 							telefono = "604" + telefono;
 						}else
@@ -1971,11 +1973,11 @@ public class PedidoCtrl {
 						{
 							apellidos = "NO SE PUDO EXTRAR EL APELLIDO";
 						}
-						//Tendremos un trato diferencial para la direcciÛn
+						//Tendremos un trato diferencial para la direcci√≥n
 						String dirRes = "";
 						String ciudad = "";
 						String dirAdicional = "";
-						//Trabajamos sobre la direcciÛn resumida
+						//Trabajamos sobre la direcci√≥n resumida
 						//Debemos de crear otro objeto JSON
 						JSONObject infoAdiDir = (JSONObject)objTemp.get("client_address_parts");
 						try
@@ -2037,7 +2039,7 @@ public class PedidoCtrl {
 						//Pendiente revisar como incorporaremos estas informaciones
 						String zonaBarrio = "";
 						String obsDireccion = "";
-						//Tendremos unas reglas para conformar la direcciÛn
+						//Tendremos unas reglas para conformar la direcci√≥n
 						if(dirAdicional.equals(new String("")))
 						{
 							
@@ -2050,7 +2052,7 @@ public class PedidoCtrl {
 						
 						String email  = (String)objTemp.get("client_email");
 						//En ocasiones cuando no es definida la latitud ni la longitud esta llega como un String por lo
-						//tanto es necesario incluirlas dentro de un try y si hay excepciÛn llenar con cero los valores
+						//tanto es necesario incluirlas dentro de un try y si hay excepci√≥n llenar con cero los valores
 						double latitud = 0, longitud = 0;
 						try
 						{
@@ -2068,27 +2070,27 @@ public class PedidoCtrl {
 							longitud = 0;
 							System.out.println(e.toString());
 						}
-						//Realizamos la intervenciÛn para tratar en el momentoen que la ubicaciÛn viene en cero
+						//Realizamos la intervenci√≥n para tratar en el momentoen que la ubicaci√≥n viene en cero
 						if(latitud== 0 && longitud == 0)
 						{
-							//Cambiamos para el llamado del mÈtodo el resume
+							//Cambiamos para el llamado del m√©todo el resume
 							UbicacionCtrl  ubicacion = new UbicacionCtrl();
 							Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + ciudad);
 							latitud = ubicaResp.getLatitud();
 							longitud = ubicaResp.getLongitud();
 							
-//							//Realizaremos el intengo de realizar el llamado para la direcciÛn
+//							//Realizaremos el intengo de realizar el llamado para la direcci√≥n
 //							try
 //							{
 //							String resultado = "";
 //					        String apikey ="GsNtuVVEgGawtZDJwrcB_YcNs0lQ0JcMa5UXYQZN3wU";
 //					        if(ciudad.equals(new String("")))
 //					        {
-//					        	ciudad = "MedellÌn";
+//					        	ciudad = "Medell√≠n";
 //					        }
 //					        String dirBuscar= direccion+",Colombia,"+ ciudad +",Antioquia";
 //					        String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey="+apikey+"&searchtext="+ URLEncoder.encode(dirBuscar,"UTF-8");
-//					        //Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+//					        //Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 //							HttpClient client = HttpClientBuilder.create().build();
 //							HttpGet request = new HttpGet(connstr);
 //							
@@ -2102,7 +2104,7 @@ public class PedidoCtrl {
 //									    retorno.append(line);
 //									}
 //								resultado = retorno.toString();
-//								//Posteriormente realizamos la conversiÛn del objeto JSON para tener la latitud y la longitud
+//								//Posteriormente realizamos la conversi√≥n del objeto JSON para tener la latitud y la longitud
 //								Object objParserServicio = parser.parse(resultado);
 //								JSONObject jsonObjectGeojsonGeneral = (JSONObject) objParserServicio;
 //								String strResponse = jsonObjectGeojsonGeneral.get("Response").toString();
@@ -2150,14 +2152,14 @@ public class PedidoCtrl {
 						String origenPedido = homoTiendaToken.getOrigen();
 	
 						
-						//Vamos por la forma de pago en su homologaciÛn
-						//Realizamos la captura del mÈtodo de pago
+						//Vamos por la forma de pago en su homologaci√≥n
+						//Realizamos la captura del m√©todo de pago
 						String formPagVirtual = (String)objTemp.get("payment");
-						//Realizamos la homologaciÛn de la formad de pago
+						//Realizamos la homologaci√≥n de la formad de pago
 						ParametrosCtrl parCtrl = new ParametrosCtrl();
 						int idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPagVirtual);				
-						//Realizamos la creaciÛn de cliente y su procesamiento
-						//Creamos un objeto de la clase cliente y creamos un mÈtodo de se encargue de procesar el cliente
+						//Realizamos la creaci√≥n de cliente y su procesamiento
+						//Creamos un objeto de la clase cliente y creamos un m√©todo de se encargue de procesar el cliente
 						Cliente clienteVirtual = new Cliente(0, telefono, nombres, direccion, zonaBarrio, obsDireccion,"", idTienda);
 						clienteVirtual.setApellidos(apellidos);
 						clienteVirtual.setEmail(email);
@@ -2167,9 +2169,9 @@ public class PedidoCtrl {
 						clienteVirtual.setTelefonoCelular(telefonoCelular);
 						clienteVirtual.setPoliticaDatos("S");
 						
-						//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+						//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 						ClienteCtrl clienteCtrl = new ClienteCtrl();
-						//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+						//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 						idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, instrucciones);
 						if(idCliente == 0)
 						{
@@ -2182,7 +2184,7 @@ public class PedidoCtrl {
 							correos.add("lidercontactcenter@pizzaamericana.com.co");
 							correo.setContrasena(infoCorreo.getClaveCorreo());
 							correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-							correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n˙mero  " + idOrdenComercio);
+							correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n√∫mero  " + idOrdenComercio);
 							ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 							contro.enviarCorreo();
 						}
@@ -2196,13 +2198,13 @@ public class PedidoCtrl {
 						//Vamos a proceser la fuente del pedido
 						String fuentePedido = (String)objTemp.get("source");
 						
-						//Tenemos que crear un nuevo mÈtodo para el procesamiento seg˙n como se recibe informaciÛn de KUNO
+						//Tenemos que crear un nuevo m√©todo para el procesamiento seg√∫n como se recibe informaci√≥n de KUNO
 						//Creamos un arreglo para traer los descuentos de cupones
 						ArrayList<Double> cupones = new ArrayList();
 						idPedidoCreado = ingresarPedidoTiendaVirtualKuno(jsonItemsArray, idTienda, idCliente, strFechaFinal,idOrdenComercio, idTipoPedido,cupones,origenPedido, fuentePedido);
 						//Calculamos el descuento del pedido luego de ingresado
 						Double descuentoPedido = obtenerDescuentoDiarioPedidoVal(idPedidoCreado, "T");
-						//En caso de que no se tenga descuento por % en lo ya establecido, revisamos si hay descuento con cupÛn
+						//En caso de que no se tenga descuento por % en lo ya establecido, revisamos si hay descuento con cup√≥n
 						if(descuentoPedido == 0)
 						{
 							if(cupones.size()>0)
@@ -2213,13 +2215,13 @@ public class PedidoCtrl {
 								}
 							}	
 						}
-						//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
+						//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
 						int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
-						//Consultaremos el tiempo que la tienda est· dando en el momento
+						//Consultaremos el tiempo que la tienda est√° dando en el momento
 						valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedidoCreado);
 						long longDescuento = descuentoPedido.longValue();
 						valorTotalContact = valorTotalContact - longDescuento;
-						//Realizamos un cambio temporal para evitar las diferencias pero igual seguir·n llegando los correos
+						//Realizamos un cambio temporal para evitar las diferencias pero igual seguir√°n llegando los correos
 						FinalizarPedidoTiendaVirtual(idPedidoCreado, idFormaPago, idCliente, tiempoPedido, "S", descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), programado, horaProgramado, idEstadoPedido);
 						
 						
@@ -2228,7 +2230,7 @@ public class PedidoCtrl {
 							//Realizamos un control para verificar si la diferencia proviene de una diferencia del valor del domicilio
 							if(!cobroVariosDomicilios)
 							{
-								//Realizamos la divisiÛn por el valor del domicilio y si da un n˙mero entero
+								//Realizamos la divisi√≥n por el valor del domicilio y si da un n√∫mero entero
 								Correo correo = new Correo();
 								CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 								ArrayList correos = new ArrayList();
@@ -2237,13 +2239,13 @@ public class PedidoCtrl {
 								correos.add(correoEle);
 								correo.setContrasena(infoCorreo.getClaveCorreo());
 								correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-								correo.setMensaje(" Se tiene un problema con el pedido   " + idOrdenComercio + " dado que los totales no coinciden entre lo que venÌa en la tienda virtual y lo que arrojo la creaciÛn en el sistema de contact center.");
+								correo.setMensaje(" Se tiene un problema con el pedido   " + idOrdenComercio + " dado que los totales no coinciden entre lo que ven√≠a en la tienda virtual y lo que arrojo la creaci√≥n en el sistema de contact center.");
 								ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 								contro.enviarCorreo();
 							}	
 						}
 						
-						//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envÌo del link del pedido para pago al cliente
+						//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el env√≠o del link del pedido para pago al cliente
 						if(idFormaPago == 4)
 						{
 							verificarEnvioLinkPagos(idPedidoCreado, clienteVirtual, (valorTotal), idTienda);
@@ -2276,7 +2278,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo base para la descomposiciÛn del JSON con el objetivo de extraer todos los datos necesarios para traspasar el pedido
+	 * M√©todo base para la descomposici√≥n del JSON con el objetivo de extraer todos los datos necesarios para traspasar el pedido
 	 * desde el ecommerce hacia el sistema de pedidos del contact center.
 	 * @param stringJSON
 	 * @return
@@ -2288,14 +2290,14 @@ public class PedidoCtrl {
 		DateFormat formatoFinal = new SimpleDateFormat("dd/MM/yyyy");
 		String strFechaFinal = formatoFinal.format(fechaPedido);
 		
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		LogPedidoVirtualDAO.insertarLogPedidoVirtual(stringJSON);
 		JSONParser parser = new JSONParser();
-		//Variable que le asignar· un id ˙nico al pedido de tienda virtual que llega
+		//Variable que le asignar√° un id √∫nico al pedido de tienda virtual que llega
 		int idInterno = 0;
 		//Variable donde almacenaremos el idCliente
 		int idCliente = 0;
-		//Variable donde quedar· almacenada el idPedido creado
+		//Variable donde quedar√° almacenada el idPedido creado
 		int idPedidoCreado = 0;
 		long idOrdenComercio = 0;
 		try
@@ -2304,21 +2306,21 @@ public class PedidoCtrl {
 			Object objParser = parser.parse(stringJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
 			
-			//Capturamos el n˙mero de orden en el ecommerce
+			//Capturamos el n√∫mero de orden en el ecommerce
 			idOrdenComercio = (long)jsonGeneral.get("id");
 			
 			//Insertamos la traza inicial del pedido y retornamos el id
 			idInterno = PedidoTiendaVirtualDAO.insertarPedidoTiendaVirtual(((Long)idOrdenComercio).intValue());
 			
-			//Comenzamos la captura de informaciÛn del cliente que est· agrupada en billing
+			//Comenzamos la captura de informaci√≥n del cliente que est√° agrupada en billing
 			String billingJSON = (String)jsonGeneral.get("billing").toString();
 			Object objParserBilling = parser.parse(billingJSON);
 			JSONObject jsonBilling = (JSONObject) objParserBilling;
 			String telefono = (String)jsonBilling.get("phone");
-			//Para el caso del telÈfono validaremos si es un fijo
+			//Para el caso del tel√©fono validaremos si es un fijo
 			if(telefono.trim().length() == 7)
 			{
-				//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+				//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 				//contact center.
 				telefono = "604" + telefono;
 			}
@@ -2327,7 +2329,7 @@ public class PedidoCtrl {
 			String direccion = (String)jsonBilling.get("address_1");
 			String email  = (String)jsonBilling.get("email");
 			
-			//Realizamos la extracciÛn de la tienda o sitio donde se realizÛ la venta
+			//Realizamos la extracci√≥n de la tienda o sitio donde se realiz√≥ la venta
 			String tiendaVenta = "";
 			String zonaBarrio = "";
 			String obsDireccion = "";
@@ -2335,7 +2337,7 @@ public class PedidoCtrl {
 			String metaDataJSON = (String)jsonGeneral.get("meta_data").toString();
 			Object objParserMetaData = parser.parse(metaDataJSON);
 			JSONArray jsonMetaData = (JSONArray) objParserMetaData;
-			//Variable donde se almacenar· como se va a pagar el pedido
+			//Variable donde se almacenar√° como se va a pagar el pedido
 			double valorFormaPago = 0;
 			for(int i = 0; i < jsonMetaData.size(); i++)
 			{
@@ -2349,7 +2351,7 @@ public class PedidoCtrl {
 				{
 					zonaBarrio = (String) objTemp.get("value");
 				}
-				if(key.equals(new String("additional_ObservaciÛn_direcciÛn")) || key.equals(new String("additional_Observacion_direccion")))
+				if(key.equals(new String("additional_Observaci√≥n_direcci√≥n")) || key.equals(new String("additional_Observacion_direccion")))
 				{
 					obsDireccion = (String) objTemp.get("value");
 				}
@@ -2387,29 +2389,29 @@ public class PedidoCtrl {
 				obsDireccion = obsDireccion.substring(0,200);
 			}
 			
-			//Realizamos la captura del mÈtodo de pago
+			//Realizamos la captura del m√©todo de pago
 			String formPagVirtual = (String)jsonGeneral.get("payment_method");
 			
-			//Realizamos la homologaciÛn de la formad de pago
+			//Realizamos la homologaci√≥n de la formad de pago
 			ParametrosCtrl parCtrl = new ParametrosCtrl();
 			int idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPagVirtual);
 			
-			//Realizamos la homologaciÛn de la tienda
+			//Realizamos la homologaci√≥n de la tienda
 			TiendaCtrl tiendaCtrl = new TiendaCtrl();
 			int idTiendaContact = tiendaCtrl.realizarHomologacionTiendaVirtual(tiendaVenta);
 			
-			//Creamos un objeto de la clase cliente y creamos un mÈtodo de se encargue de procesar el cliente
+			//Creamos un objeto de la clase cliente y creamos un m√©todo de se encargue de procesar el cliente
 			Cliente clienteVirtual = new Cliente(0, telefono, nombres, direccion, zonaBarrio, obsDireccion,"", idTiendaContact );
 			clienteVirtual.setApellidos(apellidos);
 			clienteVirtual.setEmail(email);
 			clienteVirtual.setIdtienda(idTiendaContact);
 			clienteVirtual.setPoliticaDatos("S");
-			//Controlaremos que el telÈfono tenga +57
+			//Controlaremos que el tel√©fono tenga +57
 			if(telefono.substring(0, 3).equals(new String("+57")))
 			{
 				telefono = telefono.substring(3);	
 			}
-			//Controlaremos que el telÈfono tenga 57
+			//Controlaremos que el tel√©fono tenga 57
 			if(telefono.substring(0, 3).equals(new String("57")))
 			{
 				telefono = telefono.substring(2);	
@@ -2421,12 +2423,12 @@ public class PedidoCtrl {
 				clienteVirtual.setTelefonoCelular(telefono);
 			}
 			
-			//Vamos a realizar la notificaciÛn del correo electrÛnico al cliente indicando que tomamos su pedido
+			//Vamos a realizar la notificaci√≥n del correo electr√≥nico al cliente indicando que tomamos su pedido
 			notificarCorreoCliente(email, nombres + " " + apellidos, direccion , zonaBarrio, obsDireccion , telefono,idOrdenComercio);
 			
-			//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+			//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
-			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 			idCliente = clienteCtrl.validarClienteTiendaVirtual(clienteVirtual);
 			
 			//Continuamos con el procesamiento de la orden con los productos
@@ -2440,8 +2442,8 @@ public class PedidoCtrl {
 			idPedidoCreado = ingresarPedidoTiendaVirtual(jsonLineItems, idTiendaContact, idCliente, strFechaFinal,jsonShippingLines, (int)idOrdenComercio);
 			//Calculamos el descuento del pedido luego de ingresado
 			Double descuentoPedido = obtenerDescuentoDiarioPedidoVal(idPedidoCreado, "T");
-			//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
-			//Realizamos el procesamiento del tiempo pedido para enviarlo como par·metro
+			//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
+			//Realizamos el procesamiento del tiempo pedido para enviarlo como par√°metro
 			StringTokenizer strTokenTiempo = new StringTokenizer(strTiempoPedido, " ");
 			Double tiempoPedido = 0.0;
 			while(strTokenTiempo.hasMoreTokens())
@@ -2474,7 +2476,7 @@ public class PedidoCtrl {
 			System.out.println(e.toString());
 			//Actualizamos la fecha de procesamiento
 			PedidoTiendaVirtualDAO.actualizarPedidoTiendaVirtual(idInterno, "ERR");
-			//En fase de piloto envÌamos un correo electrÛnico porque hubo error
+			//En fase de piloto env√≠amos un correo electr√≥nico porque hubo error
 			//Enviaremos un correo en la etapa de piloto
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
@@ -2499,7 +2501,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encargar· de todo el proceso de inserciÛn del pedido y sus detalles de lo que viene del sistema de tienda virtual.
+	 * M√©todo que se encargar√° de todo el proceso de inserci√≥n del pedido y sus detalles de lo que viene del sistema de tienda virtual.
 	 * @param detallePedido
 	 * @param idTienda
 	 * @param idCliente
@@ -2508,15 +2510,15 @@ public class PedidoCtrl {
 	 */
 	public int ingresarPedidoTiendaVirtual(JSONArray detallePedido, int idTienda, int idCliente, String fechaPedido, JSONArray infoCobroDomi, int idOrdenComercio)
 	{
-		//Manejaremos una variable que nos indicar· si ya cobramos domicilio para cobrarlo una sola vez
+		//Manejaremos una variable que nos indicar√° si ya cobramos domicilio para cobrarlo una sola vez
 		boolean cobradoDomicilio = false;
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		//Procesaremos inicial el cobro o no del domicilio
-		//Con la siguiente variable deberemos de validar si se debe cobrar domicilio y cual serÌa el producto para este fin.
+		//Con la siguiente variable deberemos de validar si se debe cobrar domicilio y cual ser√≠a el producto para este fin.
 		int idProductoDomicilio = 0;
 		String strHomDomicilio = "";
 		long valorDomicilio = 0;
-		// 1. Debemos extraer la informaciÛn de el cobro del domicilio para el pedido
+		// 1. Debemos extraer la informaci√≥n de el cobro del domicilio para el pedido
 		for(int i = 0; i < infoCobroDomi.size(); i++) 
 		{
 			JSONObject infoDomicilioTemp = (JSONObject) infoCobroDomi.get(i);
@@ -2536,17 +2538,17 @@ public class PedidoCtrl {
 		}
 		
 		
-		// 2. Traemos los productos incluidos para validaciÛn
+		// 2. Traemos los productos incluidos para validaci√≥n
 		ArrayList<ProductoIncluido> productosIncluidos = PedidoDAO.obtenerProductosIncluidos();
-		//IdPedido valor a devolver con la creaciÛn del pedido
+		//IdPedido valor a devolver con la creaci√≥n del pedido
 		int idPedido = 0;
-		//3. Realizaremos la inserciÛn del ENCABEZADO PEDIDO
+		//3. Realizaremos la inserci√≥n del ENCABEZADO PEDIDO
 		idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtual(idTienda, idCliente, fechaPedido, "TIENDA VIRTUAL", idOrdenComercio);
 		//Realizamos el recorrido de uno a uno los detalles del pedido
 		//Tendremos un valor para el idPedido que crearemos una vez
 		
 		long valorTotalItemJSON = 0;
-		//Definimos las variables que nos serviran para obtener el cÛdigo de producto y las especialidades
+		//Definimos las variables que nos serviran para obtener el c√≥digo de producto y las especialidades
 		int idProducto = 0;
 		//Variable donde almacenaremos el idAdicion
 		int idProductoAdicion = 0;
@@ -2563,7 +2565,7 @@ public class PedidoCtrl {
 		int idEspecialidad = 0;
 		//Agregamos la especialidad2 en caso de ser mitad y mitad
 		int idEspecialidad2 = 0;
-		//Tendremos una homologaciÛn del excepciÛn de precio
+		//Tendremos una homologaci√≥n del excepci√≥n de precio
 		int idExcepcion = 0;
 		double valorExcepcion = 0;
 		//Tendremos dos variables para controlar cual mitad es la que estamos procesando
@@ -2577,7 +2579,7 @@ public class PedidoCtrl {
 		int idDetInser = 0;
 		//Definimos el idDetallePadre 
 		int idDetallepedido = 0;
-		//Esta variable es para el tema del tamaÒo
+		//Esta variable es para el tema del tama√±o
 		String tamanoPizza = "";
 		for(int i = 0; i < detallePedido.size(); i++) 
 		{
@@ -2602,7 +2604,7 @@ public class PedidoCtrl {
 			long tmp = (long)detallePedidoTemp.get("quantity");
 			Long lngCantidad = Long.valueOf(tmp);
 			cantidad = lngCantidad.doubleValue();
-			//Extraemos el cÛdigo SKU que nos dar· pistas de lo que tiene el item
+			//Extraemos el c√≥digo SKU que nos dar√° pistas de lo que tiene el item
 			sku = (String) detallePedidoTemp.get("sku");
 			//Una vez obtenido el SKU podemos detectar varias cosas
 			//Si la longitud es igual a 3 significa que es un producto de los solos
@@ -2615,7 +2617,7 @@ public class PedidoCtrl {
 			if(sku.length() == 3)
 			{
 				idProducto = parCtrl.homologarProductoTiendaVirtual(sku);
-				//En este caso es una pizza de tamaÒo y especialidad
+				//En este caso es una pizza de tama√±o y especialidad
 			}else if(sku.length()>= 6 && sku.length()<= 9)
 			{
 				if(sku.length() == 6) 
@@ -2628,16 +2630,16 @@ public class PedidoCtrl {
 					tamanoPizza = sku.substring(6,9);
 					idProducto = parCtrl.homologarProductoTiendaVirtual(tamanoPizza);
 					idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual(sku.substring(0,6));
-					//Vamos para el caso en donde ser· una promociÛn, estas tendr·n 11 caracteres
+					//Vamos para el caso en donde ser√° una promoci√≥n, estas tendr√°n 11 caracteres
 				}
 			}
 			else if(sku.length() == 11)
 			{
 				if(sku.substring(0,5).equals(new String("PROMO")))
 				{
-					//Traemos la excepciÛn de precio con el SKU recuperado
+					//Traemos la excepci√≥n de precio con el SKU recuperado
 					ExcepcionPrecio excepcion = parCtrl.homologarExcepcionTiendaVirtual(sku);
-					//Recuperamos el idExcepciÛn y el idProducto
+					//Recuperamos el idExcepci√≥n y el idProducto
 					idExcepcion = excepcion.getIdExcepcion();
 					idProducto = excepcion.getIdProducto();
 					valorExcepcion = excepcion.getPrecio();
@@ -2646,7 +2648,7 @@ public class PedidoCtrl {
 			
 			//7.	En este punto ya tenemos un producto por llamarlo encabezado, inicialmente pensamos en tener el producto principal y 
 			//la especialidad, necesitamos conocer las adiciones y la gaseosa con la que va la pizza
-			//Debemos de procesar la metadata que viene del pedido con sus adiciones, selecciÛn de bebida y otras cosas
+			//Debemos de procesar la metadata que viene del pedido con sus adiciones, selecci√≥n de bebida y otras cosas
 			JSONArray metaDataDetalle = (JSONArray) detallePedidoTemp.get("meta_data");
 			String keyDetPedido = "";
 			String valueDetPedido = "";
@@ -2661,21 +2663,21 @@ public class PedidoCtrl {
 				JSONObject metaDataTemp = (JSONObject) metaDataDetalle.get(j);
 				keyDetPedido = (String) metaDataTemp.get("key");
 				valueDetPedido = (String) metaDataTemp.get("value");
-				//Ya comenzamos a tratar por cada uno, validamos si es tamaÒo en cuyo caso
-				//Validaremos si es tamaÒo, si es gaseosa o si es adicion
+				//Ya comenzamos a tratar por cada uno, validamos si es tama√±o en cuyo caso
+				//Validaremos si es tama√±o, si es gaseosa o si es adicion
 				if(keyDetPedido.equals(new String("pa_tamanos")))
 				{
-					//El tamaÒo como tal no nos presta ning˙n valor, 
+					//El tama√±o como tal no nos presta ning√∫n valor, 
 					//por lo tanto no hacemos nada.
 				}else if(keyDetPedido.contains("Adiciones") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Con") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto adicional") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
 				{
 					/**
-					 * Para el caso de la adiciÛn deberemos de tener una lÛgica determinada
-					 * en donde deberemos de conformar la adiciÛn en texto y posteriormente hacer la homologaciÛn
-					 * y realizar la adiciÛn en el arreglo.
+					 * Para el caso de la adici√≥n deberemos de tener una l√≥gica determinada
+					 * en donde deberemos de conformar la adici√≥n en texto y posteriormente hacer la homologaci√≥n
+					 * y realizar la adici√≥n en el arreglo.
 					 */
 					StringTokenizer keyTemp = new StringTokenizer(keyDetPedido, "(");
-					//Realizamos la separaciÛn de la primera parte del String siempre y cuando tenga informaciÛn adicional
+					//Realizamos la separaci√≥n de la primera parte del String siempre y cuando tenga informaci√≥n adicional
 					while(keyTemp.hasMoreTokens())
 					{
 						//Sacamos la parte inicial del String.
@@ -2691,7 +2693,7 @@ public class PedidoCtrl {
 						idProductoAdicion = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						strAdiciones = strAdiciones + " " + idProductoAdicion + "-" + keyDetPedido;
 						/**
-						 * Realizamos la inserciÛn y cobro de la adiciÛn
+						 * Realizamos la inserci√≥n y cobro de la adici√≥n
 						 * 
 						 */
 						valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
@@ -2722,7 +2724,7 @@ public class PedidoCtrl {
 					{
 						idProductoCond = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						/*
-						 * Realizamos la inserciÛn de los condimentos
+						 * Realizamos la inserci√≥n de los condimentos
 						 */
 						valorUnitario = ProductoDAO.retornarProducto(idProductoCond).getPreciogeneral();
 						DetallePedido detPedidoCond = new DetallePedido(idProductoCond,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/, "", "");
@@ -2770,7 +2772,7 @@ public class PedidoCtrl {
 					}
 					else if(keyDetPedido.contains("Con "))
 					{
-						//Le agregamos el tamaÒo al tema del Con + ingrediente + tamaÒo de Pizza para buscar la homologaciÛn
+						//Le agregamos el tama√±o al tema del Con + ingrediente + tama√±o de Pizza para buscar la homologaci√≥n
 						keyDetPedido = keyDetPedido + " " + tamanoPizza;
 						idProductoCon = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						strModCon = strModCon + " " + idProductoCon + "-" + keyDetPedido + " / ";
@@ -2778,7 +2780,7 @@ public class PedidoCtrl {
 						valorUnitario = ProductoDAO.retornarProducto(idProductoCon).getPreciogeneral();
 						valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 						idDetInser = 0;
-						//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+						//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 						if(valorUnitario > 0)
 						{
 							DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -2794,18 +2796,18 @@ public class PedidoCtrl {
 				
 			}
 			//Luego de procesar la meta_data 
-			//En este punto comenzamos a realizar la inserciÛn del detalle del pedido
-			//Validamos en caso de que no sea excepciÛn es el precio full
+			//En este punto comenzamos a realizar la inserci√≥n del detalle del pedido
+			//Validamos en caso de que no sea excepci√≥n es el precio full
 			if (idExcepcion == 0)
 			{
 				valorUnitario = ProductoDAO.retornarProducto(idProducto).getPreciogeneral();
 			}else
 			{
-				//En el caso contrario el precio ser· el de la excepciÛn de precio
+				//En el caso contrario el precio ser√° el de la excepci√≥n de precio
 				valorUnitario = valorExcepcion;
 			}
 			
-			//Deberemos revisar si la especialidad en cuestiÛn tiene un sobrecosto
+			//Deberemos revisar si la especialidad en cuesti√≥n tiene un sobrecosto
 			double valorAdicional = 0;
 			double valorAdicional2 = 0;
 			
@@ -2822,7 +2824,7 @@ public class PedidoCtrl {
 				}	
 				valorUnitario = valorUnitario + valorAdicional + valorAdicional2;
 			}
-			//EN este punto vamos a realizar una diferenciaciÛn de PROMODOS, dado que tendremos que hacer dos inserciones
+			//EN este punto vamos a realizar una diferenciaci√≥n de PROMODOS, dado que tendremos que hacer dos inserciones
 			if((sku.contains("PROMODOS"))||(sku.contains("PROMOPIZ2X1")))
 			{
 				DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
@@ -2840,16 +2842,16 @@ public class PedidoCtrl {
 				ProductoIncluido proIncTemp = productosIncluidos.get(j);
 				if(proIncTemp.getIdproductopadre() == idProducto)
 				{
-					//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+					//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 					DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallepedido, 0, 0 /*idexcepcion*/, "", "");
 					PedidoDAO.InsertarDetallePedido(detPedidoInc);
 				}
 			}
-			//Posteriormente realizamos la inserciÛn de las adiciones
+			//Posteriormente realizamos la inserci√≥n de las adiciones
 			for(int j = 0; j < adiciones.size(); j++)
 			{
 				AdicionTiendaVirtual adiTempIns = adiciones.get(j);
-				//Creamos el objeto DetalleAdicion y hacemos la inserciÛn
+				//Creamos el objeto DetalleAdicion y hacemos la inserci√≥n
 				//Validamos si es una sola mitad
 				if(idEspecialidad  >0 && idEspecialidad2 == 0) 
 				{
@@ -2859,14 +2861,14 @@ public class PedidoCtrl {
 					PedidoDAO.InsertarDetalleAdicion(detPedidoAdicion);
 				}else
 				{
-					//Este serÌa el caso de que es mitad y mitad
+					//Este ser√≠a el caso de que es mitad y mitad
 					DetallePedidoAdicion detPedidoAdicion = new DetallePedidoAdicion(idDetallepedido, adiTempIns.getIdDetallePedido(), idEspecialidad, 0, 0.5 , 0);
 					PedidoDAO.InsertarDetalleAdicion(detPedidoAdicion);
 					detPedidoAdicion = new DetallePedidoAdicion(idDetallepedido, adiTempIns.getIdDetallePedido(), 0, idEspecialidad2, 0 , 0.5);
 					PedidoDAO.InsertarDetalleAdicion(detPedidoAdicion);
 				}	
 			}
-			//Posteriormente realizamos la inserciÛn de los modificadores
+			//Posteriormente realizamos la inserci√≥n de los modificadores
 			for(int j = 0; j < modificadoresCon.size(); j++)
 			{
 				AdicionTiendaVirtual modTempIns = modificadoresCon.get(j);
@@ -2883,7 +2885,7 @@ public class PedidoCtrl {
 				cobradoDomicilio = true;
 			}
 		}
-		//Realizamos ahora el retorno del id del pedido que ya es el identificador ˙nico del pedido en el sistema
+		//Realizamos ahora el retorno del id del pedido que ya es el identificador √∫nico del pedido en el sistema
 		//de contact center.
 		return(idPedido);
 	}
@@ -2893,13 +2895,13 @@ public class PedidoCtrl {
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		int idPedido = 0;
 		
-		// 1. InformaciÛn de los domicilios
+		// 1. Informaci√≥n de los domicilios
 		int idProductoDomicilio = 0;
 		long valorDomicilio = 0;
 		boolean cobradoDomicilio = false;
-		// 2. Traemos los productos incluidos para validaciÛn
+		// 2. Traemos los productos incluidos para validaci√≥n
 		ArrayList<ProductoIncluido> productosIncluidos = PedidoDAO.obtenerProductosIncluidos();
-		//IdPedido valor a devolver con la creaciÛn del pedido
+		//IdPedido valor a devolver con la creaci√≥n del pedido
 		String usuarioPedido = "";
 		if(fuentePedido.contains("web"))
 		{
@@ -2908,12 +2910,12 @@ public class PedidoCtrl {
 		{
 			usuarioPedido = "APP";
 		}
-		//3. Realizaremos la inserciÛn del ENCABEZADO PEDIDO
+		//3. Realizaremos la inserci√≥n del ENCABEZADO PEDIDO
 		idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, fechaPedido, usuarioPedido, idOrdenComercio, idTipoPedido, origenPedido, fuentePedido);
 		//Realizamos el recorrido de uno a uno los detalles del pedido
 		//Tendremos un valor para el idPedido que crearemos una vez
 		long valorTotalItemJSON = 0;
-		//Definimos las variables que nos serviran para obtener el cÛdigo de producto y las especialidades
+		//Definimos las variables que nos serviran para obtener el c√≥digo de producto y las especialidades
 		int idProducto = 0;
 		//Variable donde almacenaremos el idAdicion
 		int idProductoAdicion = 0;
@@ -2932,7 +2934,7 @@ public class PedidoCtrl {
 		int idEspecialidad = 0;
 		//Agregamos la especialidad2 en caso de ser mitad y mitad
 		int idEspecialidad2 = 0;
-		//Tendremos una homologaciÛn del excepciÛn de precio
+		//Tendremos una homologaci√≥n del excepci√≥n de precio
 		int idExcepcion = 0;
 		double valorExcepcion = 0;
 		String controlaEspecialidadExc = "N";
@@ -2950,10 +2952,10 @@ public class PedidoCtrl {
 		int idDetallepedido = 0;
 		int idDetPedido1 = 0;
 		int idDetPedido2 = 0;
-		//Esta variable es para el tema del tamaÒo
+		//Esta variable es para el tema del tama√±o
 		String tamanoPizza = "";
-		//Variable que indicar· si es promociÛn y la cantidad del producto se deber· tomar de allÌ
-		//por ejemplo si es una promociÛn del 20%
+		//Variable que indicar√° si es promoci√≥n y la cantidad del producto se deber√° tomar de all√≠
+		//por ejemplo si es una promoci√≥n del 20%
 		boolean esPromocion = false;
 		boolean indPrimerCon = false;
 		boolean indSegundoCon = false;
@@ -2981,7 +2983,7 @@ public class PedidoCtrl {
 			AdicionTiendaVirtual adiTemp = new AdicionTiendaVirtual();
 			//Extraemos uno a uno los items del pedido
 
-			//Hacemos una validacion especÌfica si es el caso de un descuento de acompaÒante gratis
+			//Hacemos una validacion espec√≠fica si es el caso de un descuento de acompa√±ante gratis
 			String tipo = (String)productoTemp.get("type");
 			String cupon = "";
 			Double descuento = 0.0;
@@ -3011,7 +3013,7 @@ public class PedidoCtrl {
 			valorTotalItemJSON = (long)productoTemp.get("total_item_price");
 			if(esPromocion)
 			{
-				//Conservaremos la cantidad como venÌa en la anterior interacciÛn y apagaremos la variable
+				//Conservaremos la cantidad como ven√≠a en la anterior interacci√≥n y apagaremos la variable
 				esPromocion = false;
 			}else
 			{
@@ -3020,19 +3022,19 @@ public class PedidoCtrl {
 				Long lngCantidad = Long.valueOf(tmp);
 				cantidad = lngCantidad.doubleValue();
 			}
-			//Extraemos el cÛdigo SKU que nos dar· pistas de lo que tiene el item
+			//Extraemos el c√≥digo SKU que nos dar√° pistas de lo que tiene el item
 			sku = (String) productoTemp.get("name");
 			
-			//Validamos si es un SKU de promociÛn
+			//Validamos si es un SKU de promoci√≥n
 			esPromocion = parCtrl.esPromocionTiendaVirtual(sku);
 			ExcepcionPrecio excepcionPrecioTemp = parCtrl.homologarExcepcionTiendaVirtual(sku);
-			//Si lo es iremos al siguiente item de iteraciÛn dado que solo nos interesar· la cantidad
+			//Si lo es iremos al siguiente item de iteraci√≥n dado que solo nos interesar√° la cantidad
 			if(esPromocion)
 			{
 				continue;
 			}
 			
-			//Incluiremos una lÛgica para procesar en caso de que sea domicilio
+			//Incluiremos una l√≥gica para procesar en caso de que sea domicilio
 			if(sku.equals(new String("DELIVERY_FEE")))
 			{
 				idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio");
@@ -3045,11 +3047,11 @@ public class PedidoCtrl {
 			
 			//Extraeremos el valor del tamano de la pizza
 			JSONArray metaDataDetalle = (JSONArray) productoTemp.get("options");
-			//Realizamos un recorrido para tomar el tamaÒo si existe
+			//Realizamos un recorrido para tomar el tama√±o si existe
 			for(int j = 0; j < metaDataDetalle.size();j++)
 			{
 				JSONObject metaDataTemp = (JSONObject) metaDataDetalle.get(j);
-				if(((String)metaDataTemp.get("group_name")).trim().equals(new String("TamaÒo"))||((String)metaDataTemp.get("group_name")).trim().equals(new String("Size")))
+				if(((String)metaDataTemp.get("group_name")).trim().equals(new String("Tama√±o"))||((String)metaDataTemp.get("group_name")).trim().equals(new String("Size")))
 				{
 					tamanoPizza = (String)metaDataTemp.get("name");
 					break;
@@ -3065,12 +3067,12 @@ public class PedidoCtrl {
 			controlaEspecialidadExc = "N";
 			indPrimerCon = false;
 			indSegundoCon = false;
-			//En caso de que tamanoPizza tenga un valor diferente a vacÌo significa que fue un producto del men˙
+			//En caso de que tamanoPizza tenga un valor diferente a vac√≠o significa que fue un producto del men√∫
 			if(tamanoPizza.length() > 0 && excepcionPrecioTemp.getIdExcepcion() == 0 )
 			{
 				idProducto = parCtrl.homologarProductoTiendaVirtual(tamanoPizza);
 				idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual(sku);
-				//Tendremos una marcaciÛn especial cuando la pizza es mitad y mitad
+				//Tendremos una marcaci√≥n especial cuando la pizza es mitad y mitad
 				if(idEspecialidad == -1)
 				{
 					String strmitad1 = ""; 
@@ -3078,7 +3080,7 @@ public class PedidoCtrl {
 					for(int j = 0; j < metaDataDetalle.size();j++)
 					{
 						JSONObject metaDataTemp = (JSONObject) metaDataDetalle.get(j);
-						if(((String)metaDataTemp.get("group_name")).trim().equals(new String("Elige uno o dos sabor de tu pizza")))
+						if(((String)metaDataTemp.get("group_name")).trim().contains(new String("Elige uno o dos sabor de tu pizza")))
 						{
 							if(strmitad1.equals(new String("")))
 							{
@@ -3094,15 +3096,15 @@ public class PedidoCtrl {
 					}
 					//Quiere decir que la pizza es mitad y mitad.
 				}
-			}else //Este ser· el caso o de una promociÛn o de un producto incluido
+			}else //Este ser√° el caso o de una promoci√≥n o de un producto incluido
 			{
-				//Intentaremos primero como un producto acompaÒante
+				//Intentaremos primero como un producto acompa√±ante
 				idProducto = parCtrl.homologarProductoTiendaVirtual(sku);
-				//En caso de que el idProducto sea cero es porque no encontrÛ homologaciÛn.
+				//En caso de que el idProducto sea cero es porque no encontr√≥ homologaci√≥n.
 				if(idProducto == 0)
 				{
 					ExcepcionPrecio excepcion = parCtrl.homologarExcepcionTiendaVirtual(sku);
-					//Recuperamos el idExcepciÛn y el idProducto
+					//Recuperamos el idExcepci√≥n y el idProducto
 					idExcepcion = excepcion.getIdExcepcion();
 					idProducto = excepcion.getIdProducto();
 					valorExcepcion = excepcion.getPrecio();
@@ -3114,11 +3116,13 @@ public class PedidoCtrl {
 				}
 			}
 			
-			//La idea es procesar los adicionales de la pizza que estarÌan dentro de los detalles y estos serÌan
+			//La idea es procesar los adicionales de la pizza que estar√≠an dentro de los detalles y estos ser√≠an
 			//las adiciones, los condimentos y la gaseosa.
 			String keyDetPedido = "";
 			String valueDetPedido = "";
 			idSaborTipoLiquido = 0;
+			double precioItem = 0;
+			double precioGaseosa = 0;
 			for(int j = 0; j < metaDataDetalle.size(); j++)
 			{
 				//Extraemos cada una de las meta data del detalle del pedido
@@ -3129,23 +3133,29 @@ public class PedidoCtrl {
 				idProductoCon = 0;
 				keyDetPedido = (String) metaDataTemp.get("group_name");
 				valueDetPedido = (String) metaDataTemp.get("name");
-				//Ya comenzamos a tratar por cada uno, validamos si es tamaÒo en cuyo caso
-				//Validaremos si es tamaÒo, si es gaseosa o si es adicion
-				//Realizaremos un replace con el fin de evitar para las pizzas un solo ingrediente realizar una homologaciÛn
+				precioItem = (long)metaDataTemp.get("price");
+				//Ya comenzamos a tratar por cada uno, validamos si es tama√±o en cuyo caso
+				//Validaremos si es tama√±o, si es gaseosa o si es adicion
+				//Realizaremos un replace con el fin de evitar para las pizzas un solo ingrediente realizar una homologaci√≥n
 				keyDetPedido = keyDetPedido.replace("Elige 1 ingrediente Primera Pizza", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige 1 ingrediente Segunda Pizza", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige 1 ingrediente Segunda Mitad", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige 1 ingrediente Primera Mitad", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige 1 ingrediente", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 2 ingredientes", "Elige hasta 3 ingredientes");
-				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promociÛn") || keyDetPedido.contains("EnvÌo (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
+				//Agregamos el cambio para el tema de agregar diferencias de precio del pepperoni
+				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes PZ", "Elige hasta 3 ingredientes");
+				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes MD", "Elige hasta 3 ingredientes");
+				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes GD", "Elige hasta 3 ingredientes");
+				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes XL", "Elige hasta 3 ingredientes");
+				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoci√≥n") || keyDetPedido.contains("Env√≠o (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
 				{
 
 					keyDetPedido = keyDetPedido + " " + valueDetPedido;
 					//Con el Key formado validamos el tipo de key que tenemos
 					if(keyDetPedido.contains("Adicionar"))
 					{
-						//Agregamos tomar la cantidad de la adiciÛn dado que puede ser diferente de 1
+						//Agregamos tomar la cantidad de la adici√≥n dado que puede ser diferente de 1
 						double cantidadAdicion = 0;
 						long tmp = (long)metaDataTemp.get("quantity");
 						Long lngCantidadAdi = Long.valueOf(tmp);
@@ -3153,7 +3163,7 @@ public class PedidoCtrl {
 						//En este punto vamos a multiplicar las adiciones para hacerlo de la manera correcta
 						cantidadAdicion = cantidadAdicion * cantidad;
 						
-						//En este punto realizaremos un tema comportamiento diferencial para la promociÛn SUPER COMBO MEDIANAS
+						//En este punto realizaremos un tema comportamiento diferencial para la promoci√≥n SUPER COMBO MEDIANAS
 						if(sku.contains("Super Combo Medianas"))
 						{
 							int posicionPizza = 1;
@@ -3189,11 +3199,11 @@ public class PedidoCtrl {
 							idProductoAdicion = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 							strAdiciones = strAdiciones + " " + idProductoAdicion + "-" + keyDetPedido;
 							/**
-							 * Realizamos la inserciÛn y cobro de la adiciÛn
+							 * Realizamos la inserci√≥n y cobro de la adici√≥n
 							 * 
 							 */
 							valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
-							//La idea es adicionar la adiciÛn del ingrediente cuantas veces estÈ
+							//La idea es adicionar la adici√≥n del ingrediente cuantas veces est√©
 							int cantAdicionCiclo = (int) cantidadAdicion;
 							for(int z = 1; z <= cantAdicionCiclo; z++)
 							{
@@ -3208,6 +3218,7 @@ public class PedidoCtrl {
 						}	
 					}else if(keyDetPedido.contains("bebida"))
 					{
+						precioGaseosa = precioItem;
 						if(tamanoPizza.equals(new String("")))
 						{
 							if(sku.contains(new String("PROMO")))
@@ -3225,7 +3236,7 @@ public class PedidoCtrl {
 					{
 						idProductoCond = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						/*
-						 * Realizamos la inserciÛn de los condimentos
+						 * Realizamos la inserci√≥n de los condimentos
 						 */
 						valorUnitario = ProductoDAO.retornarProducto(idProductoCond).getPreciogeneral();
 						DetallePedido detPedidoCond = new DetallePedido(idProductoCond,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/, "", "");
@@ -3244,9 +3255,9 @@ public class PedidoCtrl {
 					}else if(keyDetPedido.contains("Elige hasta 3 ingredientes"))
 					{
 						
-						//CONTROLAMOS QUE SI NO TIENE TAMA—O SE LO PONEMOS PERO DEBERÕA YA DE VENIR
-						//Le agregamos el tamaÒo al tema del Con + ingrediente + tamaÒo de Pizza para buscar la homologaciÛn
-						//Colocaremos un condicional para poder manejar la promociÛn de 1 ingrediente que manejamos
+						//CONTROLAMOS QUE SI NO TIENE TAMA√ëO SE LO PONEMOS PERO DEBER√çA YA DE VENIR
+						//Le agregamos el tama√±o al tema del Con + ingrediente + tama√±o de Pizza para buscar la homologaci√≥n
+						//Colocaremos un condicional para poder manejar la promoci√≥n de 1 ingrediente que manejamos
 						if(tamanoPizza.equals(new String("")))
 						{
 							if(sku.contains("Super Combo Medianas"))
@@ -3254,16 +3265,16 @@ public class PedidoCtrl {
 								tamanoPizza = "Mediana (6 porciones)";
 							}else
 							{
-								// Para promociÛn de Grande 1 Ingrediente 19900
+								// Para promoci√≥n de Grande 1 Ingrediente 19900
 								tamanoPizza = "Grande (8 porciones)";
 							}
 							
 						}
 						
-						//Se realiza la identificaciÛn del CON						
+						//Se realiza la identificaci√≥n del CON						
 						keyDetPedido = keyDetPedido + " " + tamanoPizza;
 						idProductoCon = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
-						//Hacemos diferenciaciÛn si es una promociÛn o no
+						//Hacemos diferenciaci√≥n si es una promoci√≥n o no
 						if(idExcepcion > 0)
 						{
 							if(sku.contains("Super Combo Medianas"))
@@ -3277,7 +3288,7 @@ public class PedidoCtrl {
 									//2021-02-27 Comentamos siguiente linea pues no tiene sentido si estamos hablando es del idproductoCon
 									//valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 									idDetInser = 0;
-									//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+									//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 									if(valorUnitario > 0)
 									{
 										DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -3298,7 +3309,7 @@ public class PedidoCtrl {
 									//2021-02-27 Comentamos siguiente linea pues no tiene sentido si estamos hablando es del idproductoCon
 									//valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 									idDetInser = 0;
-									//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+									//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 									if(valorUnitario > 0)
 									{
 										DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -3322,7 +3333,7 @@ public class PedidoCtrl {
 									//2021-02-27 Comentamos siguiente linea pues no tiene sentido si estamos hablando es del idproductoCon
 									//valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 									idDetInser = 0;
-									//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+									//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 									if(valorUnitario > 0)
 									{
 										DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -3343,7 +3354,7 @@ public class PedidoCtrl {
 									//2021-02-27 Comentamos siguiente linea pues no tiene sentido si estamos hablando es del idproductoCon
 									//valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 									idDetInser = 0;
-									//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+									//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 									if(valorUnitario > 0)
 									{
 										DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -3359,14 +3370,14 @@ public class PedidoCtrl {
 							}
 						}else if(idExcepcion == 0)
 						{
-							//Aqui deberÌa venir la lÛgica cuando la pizza es ARMA TU PIZZA
+							//Aqui deber√≠a venir la l√≥gica cuando la pizza es ARMA TU PIZZA
 							strModCon = strModCon + " " + idProductoCon + "-" + keyDetPedido;
 							//Capturamos el valor unitario asociado al ModificadorCon
 							valorUnitario = ProductoDAO.retornarProducto(idProductoCon).getPreciogeneral();
 							//2021-02-27 Comentamos siguiente linea pues no tiene sentido si estamos hablando es del idproductoCon
 							//valorUnitario = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
 							idDetInser = 0;
-							//Controlamos si el valor Unitario es mayor a cero hacemos la inserciÛn del detalle pedido
+							//Controlamos si el valor Unitario es mayor a cero hacemos la inserci√≥n del detalle pedido
 							if(valorUnitario > 0)
 							{
 								DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitario,valorUnitario*cantidad, keyDetPedido , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
@@ -3380,10 +3391,10 @@ public class PedidoCtrl {
 						}
 						
 						
-					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promociÛn"))
+					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promoci√≥n"))
 					{
 						//Si se tiene Elige la especialidad que es la que viene en promociones vamos a hacer el cambio por mitad y mitad
-						keyDetPedido = keyDetPedido.replace("Elige uno o dos sabores para tu promociÛn", "Mitad y Mitad");
+						keyDetPedido = keyDetPedido.replace("Elige uno o dos sabores para tu promoci√≥n", "Mitad y Mitad");
 						//Preguntamos si es la mitad1 o la mitad2, para saber cual especialidad deberemos de homologar
 						if(mitad1)
 						{
@@ -3394,7 +3405,7 @@ public class PedidoCtrl {
 						{
 							idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
 						}
-					}else if(keyDetPedido.contains("EnvÌo (obligatorio)"))
+					}else if(keyDetPedido.contains("Env√≠o (obligatorio)"))
 					{
 						if(cantidad > 1)
 						{
@@ -3426,19 +3437,19 @@ public class PedidoCtrl {
 				
 			}
 			//Luego de procesar la meta_data 
-			//En este punto comenzamos a realizar la inserciÛn del detalle del pedido
-			//Validamos en caso de que no sea excepciÛn es el precio full
+			//En este punto comenzamos a realizar la inserci√≥n del detalle del pedido
+			//Validamos en caso de que no sea excepci√≥n es el precio full
 			if (idExcepcion == 0)
 			{
 				valorUnitario = ProductoDAO.retornarProducto(idProducto).getPreciogeneral();
 			}else
 			{
-				//En el caso contrario el precio ser· el de la excepciÛn de precio
+				//En el caso contrario el precio ser√° el de la excepci√≥n de precio
 				valorUnitario = valorExcepcion;
 				valorUnitario2 = valorExcepcion;
 			}
 			
-			//Deberemos revisar si la especialidad en cuestiÛn tiene un sobrecosto
+			//Deberemos revisar si la especialidad en cuesti√≥n tiene un sobrecosto
 			double valorAdicional = 0;
 			double valorAdicional2 = 0;
 			
@@ -3477,26 +3488,65 @@ public class PedidoCtrl {
 				}	
 				
 			}
-			//EN este punto vamos a realizar una diferenciaciÛn de PROMODOS, dado que tendremos que hacer dos inserciones
+			//EN este punto vamos a realizar una diferenciaci√≥n de PROMODOS, dado que tendremos que hacer dos inserciones
 			if((sku.contains("Combo 2 Medianas"))||(sku.contains("Pizzeta 2 x 1")))
 			{
 				if(sku.contains("Combo 2 Medianas"))
 				{
-					DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
-					idDetPedido1 = PedidoDAO.InsertarDetallePedido(detPedido);
-					detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdicionesSegunda , "" /*observacion*/, 0, idExcepcion, strModConSegunda, "");
-					idDetPedido2 = PedidoDAO.InsertarDetallePedido(detPedido);
+					if((idSaborTipoLiquido == 0) || (idSaborTipoLiquido > 0 && precioGaseosa == 0))
+					{
+						DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
+						idDetPedido1 = PedidoDAO.InsertarDetallePedido(detPedido);
+						detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdicionesSegunda , "" /*observacion*/, 0, idExcepcion, strModConSegunda, "");
+						idDetPedido2 = PedidoDAO.InsertarDetallePedido(detPedido);
+					}else if(idSaborTipoLiquido > 0 && precioGaseosa > 0)
+					{
+						DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
+						idDetPedido1 = PedidoDAO.InsertarDetallePedido(detPedido);
+						detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdicionesSegunda , "" /*observacion*/, 0, idExcepcion, strModConSegunda, "");
+						idDetPedido2 = PedidoDAO.InsertarDetallePedido(detPedido);
+						//Hacemos la adici√≥n de la gaseosa
+						int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+						DetallePedido detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+					}
+					
 				}else if((sku.contains("Pizzeta 2 x 1")))
 				{
-					DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
-					idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
-					detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
-					idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+					
+					if((idSaborTipoLiquido == 0) || (idSaborTipoLiquido > 0 && precioGaseosa == 0))
+					{
+						DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
+						idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+						detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
+						idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+					}else if(idSaborTipoLiquido > 0 && precioGaseosa > 0)
+					{
+						DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,0,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
+						idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+						detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad2,0,valorUnitario2,valorUnitario2*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
+						idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+						//Hacemos la adici√≥n de la gaseosa
+						int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+						DetallePedido detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+					}
+					
 				}
 			}else
 			{
-				DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
-				idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+				if((idSaborTipoLiquido == 0) || (idSaborTipoLiquido > 0 && precioGaseosa == 0))
+				{
+					DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strModCon, "");
+					idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+				}else if(idSaborTipoLiquido > 0 && precioGaseosa > 0)
+				{
+					DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0, idExcepcion, strModCon, "");
+					idDetallepedido = PedidoDAO.InsertarDetallePedido(detPedido);
+					//Hacemos la adici√≥n de la gaseosa
+					int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+					DetallePedido detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+					PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+				}
+				
 			}
 			//Revisaremos si hay productos incluidos para agregar
 			for(int j = 0; j < productosIncluidos.size(); j++)
@@ -3504,12 +3554,12 @@ public class PedidoCtrl {
 				ProductoIncluido proIncTemp = productosIncluidos.get(j);
 				if(proIncTemp.getIdproductopadre() == idProducto)
 				{
-					//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+					//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 					DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallepedido, 0, 0 /*idexcepcion*/, "", "");
 					PedidoDAO.InsertarDetallePedido(detPedidoInc);
 				}
 			}
-			//Posteriormente realizamos la inserciÛn de los modificadores
+			//Posteriormente realizamos la inserci√≥n de los modificadores
 			for(int j = 0; j < modificadoresCon.size(); j++)
 			{
 				if((indPrimerCon && indSegundoCon) || (indPrimerCon && !indSegundoCon))
@@ -3547,7 +3597,7 @@ public class PedidoCtrl {
 				}
 				
 			}
-			//Posteriormente realizamos la inserciÛn de las adiciones
+			//Posteriormente realizamos la inserci√≥n de las adiciones
 			for(int j = 0; j < adiciones.size(); j++)
 			{
 				AdicionTiendaVirtual adiTempIns = adiciones.get(j);
@@ -3573,7 +3623,7 @@ public class PedidoCtrl {
 				}
 				else
 				{
-					//Creamos el objeto DetalleAdicion y hacemos la inserciÛn
+					//Creamos el objeto DetalleAdicion y hacemos la inserci√≥n
 					//Validamos si es una sola mitad
 					if(idEspecialidad  >0 && idEspecialidad2 == 0) 
 					{
@@ -3583,7 +3633,7 @@ public class PedidoCtrl {
 						PedidoDAO.InsertarDetalleAdicion(detPedidoAdicion);
 					}else if(idEspecialidad  >0 && idEspecialidad2 > 0)
 					{
-						//Este serÌa el caso de que es mitad y mitad
+						//Este ser√≠a el caso de que es mitad y mitad
 						DetallePedidoAdicion detPedidoAdicion = new DetallePedidoAdicion(idDetallepedido, adiTempIns.getIdDetallePedido(), idEspecialidad, 0, 0.5 , 0);
 						PedidoDAO.InsertarDetalleAdicion(detPedidoAdicion);
 						detPedidoAdicion = new DetallePedidoAdicion(idDetallepedido, adiTempIns.getIdDetallePedido(), 0, idEspecialidad2, 0 , 0.5);
@@ -3611,9 +3661,9 @@ public class PedidoCtrl {
 		return(idPedido);
 	}
 	
-	//MÈtodo para la generaciÛn y envÌo de link de pago con tienda virtual
+	//M√©todo para la generaci√≥n y env√≠o de link de pago con tienda virtual
 	/**
-	 * MÈtodo que se encargar· de la creaciÛn del link de pago y del envÌo de la notificaciÛkn al correo y mensaje para notificar al cliente
+	 * M√©todo que se encargar√° de la creaci√≥n del link de pago y del env√≠o de la notificaci√≥kn al correo y mensaje para notificar al cliente
 	 * @param idPedidoTienda
 	 * @param clienteVirtual
 	 * @param totalPedido
@@ -3622,7 +3672,7 @@ public class PedidoCtrl {
 	public void verificarEnvioLinkPagos(int idPedidoTienda, Cliente clienteVirtual, double totalPedido, int idTienda)
 	{
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Se debe hacer la creaciÛn del link y la inserciÛn en la tabla
+		//Se debe hacer la creaci√≥n del link y la inserci√≥n en la tabla
 		//Obtenemos la tienda
 		Tienda tienda = TiendaDAO.retornarTienda(idTienda);
 		//Creamos la fecha Actual
@@ -3656,7 +3706,7 @@ public class PedidoCtrl {
                 "\"sku\": \"" + idPedidoTienda + "\","+
                 "\"collect_shipping\": false"+
               "}";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
@@ -3666,7 +3716,7 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			//Fijamos los par·metros
+			//Fijamos los par√°metros
 			//pass the json string request in the entity
 		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 		    request.setEntity(entity);
@@ -3683,7 +3733,7 @@ public class PedidoCtrl {
 			//Traemos el valor del JSON con toda la info del pedido
 			String datosJSON = retorno.toString();
 			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr·fica
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr√°fica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
@@ -3691,9 +3741,9 @@ public class PedidoCtrl {
 			Object objParserData = parser.parse(dataJSON);
 			JSONObject jsonData = (JSONObject) objParserData;
 			String idLink = (String)jsonData.get("id");
-			//En la parte de arriba ya tenemos la generaciÛn del link la idea en este punto es realizar
+			//En la parte de arriba ya tenemos la generaci√≥n del link la idea en este punto es realizar
 			
-			//reutilizaciÛn de la lÛgica del resto para el envÌo de la notificaciÛn
+			//reutilizaci√≥n de la l√≥gica del resto para el env√≠o de la notificaci√≥n
 			realizarNotificacionWompi(idLink, clienteVirtual.getIdcliente(), "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();
@@ -3705,7 +3755,7 @@ public class PedidoCtrl {
 	public void verificarEnvioLinkPagosProcesoWompi(int idPedidoTienda, int idCliente, double totalPedido, int idTienda)
 	{
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Se debe hacer la creaciÛn del link y la inserciÛn en la tabla
+		//Se debe hacer la creaci√≥n del link y la inserci√≥n en la tabla
 		//Obtenemos la tienda
 		Tienda tienda = TiendaDAO.retornarTienda(idTienda);
 		//Creamos la fecha Actual
@@ -3740,7 +3790,7 @@ public class PedidoCtrl {
                 "\"sku\": \"" + idPedidoTienda + "\","+
                 "\"collect_shipping\": false"+
               "}";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
@@ -3750,7 +3800,7 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			//Fijamos los par·metros
+			//Fijamos los par√°metros
 			//pass the json string request in the entity
 		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 		    request.setEntity(entity);
@@ -3767,7 +3817,7 @@ public class PedidoCtrl {
 			//Traemos el valor del JSON con toda la info del pedido
 			String datosJSON = retorno.toString();
 			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr·fica
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr√°fica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
@@ -3775,9 +3825,9 @@ public class PedidoCtrl {
 			Object objParserData = parser.parse(dataJSON);
 			JSONObject jsonData = (JSONObject) objParserData;
 			String idLink = (String)jsonData.get("id");
-			//En la parte de arriba ya tenemos la generaciÛn del link la idea en este punto es realizar
+			//En la parte de arriba ya tenemos la generaci√≥n del link la idea en este punto es realizar
 			
-			//reutilizaciÛn de la lÛgica del resto para el envÌo de la notificaciÛn
+			//reutilizaci√≥n de la l√≥gica del resto para el env√≠o de la notificaci√≥n
 			realizarNotificacionWompi(idLink, idCliente, "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();
@@ -3795,7 +3845,7 @@ public class PedidoCtrl {
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 		String mensaje = obtenerStrCreacionPedido(nombres, direccion, zona, observacionAdicional, telefono, (int)idOrdenComercio);
-		//correo.setMensaje(" Estimado Cliente  " + nombres + " hemos tenido el gusto de recibir tu pedido para ser entregado en " + direccion + " en la zona " + zona + " con la informaciÛn adicional " + observacionAdicional + ". El telÈfono de contacto que has dejado es el " + telefono + ". Por favor si alguno de estos datos es incorrecto por favor comunicate con nosotros a los n˙meros 4444553-4442525-4804660. \n Recuerda si tu pago es en linea y no has realizado el pago estaremos esperando que el pago se refleje para iniciar la elaboraciÛn de tu pedido.");
+		//correo.setMensaje(" Estimado Cliente  " + nombres + " hemos tenido el gusto de recibir tu pedido para ser entregado en " + direccion + " en la zona " + zona + " con la informaci√≥n adicional " + observacionAdicional + ". El tel√©fono de contacto que has dejado es el " + telefono + ". Por favor si alguno de estos datos es incorrecto por favor comunicate con nosotros a los n√∫meros 4444553-4442525-4804660. \n Recuerda si tu pago es en linea y no has realizado el pago estaremos esperando que el pago se refleje para iniciar la elaboraci√≥n de tu pedido.");
 		correo.setMensaje(mensaje);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
@@ -4208,7 +4258,7 @@ public class PedidoCtrl {
 				"													 " + zona +".</p>\n" + 
 				"												<p\n" + 
 				"													style=\"font-size: 16px; line-height: 1.2; text-align: left; word-break: break-word; font-family: 'Montserrat', sans-serif; mso-line-height-alt: 19px; margin: 0;\">\n" + 
-				"													Con la informaciÛn adicional " + observacionAdicional + ".</p>\n" + 
+				"													Con la informaci√≥n adicional " + observacionAdicional + ".</p>\n" + 
 				"											</div>\n" + 
 				"										</div>\n" + 
 				"										<div class=\"conTel\">\n" + 
@@ -4224,7 +4274,7 @@ public class PedidoCtrl {
 				"													style=\" font-size: 16px; line-height: 1.2; text-align: left; word-break: break-word;\n" + 
 				"												font-family: 'Montserrat' , sans-serif; mso-line-height-alt: 19px;\n" + 
 				"												margin: 0;\">\n" + 
-				"												El telÈfono que has dejado es " + telefonoContacto + ".</p>\n" + 
+				"												El tel√©fono que has dejado es " + telefonoContacto + ".</p>\n" + 
 				"											</div>\n" + 
 				"										</div>\n" + 
 				"									</div>\n" + 
@@ -4258,10 +4308,10 @@ public class PedidoCtrl {
 				"													style=\"font-size: 14px; line-height: 1.5; font-family: 'Montserrat', sans-serif; color: #555555; mso-line-height-alt: 21px;\">\n" + 
 				"													<p class=\"txtInfoLineas\"\n" + 
 				"														style=\"font-size: 14px; line-height: 1.5; word-break: break-word; font-family: 'Montserrat', sans-serif; mso-line-height-alt: 21px; margin: 0;\">\n" + 
-				"														Por favor si alguno de estos datos es incorrecto comunÌcate con\n" + 
-				"														nosotros a los n˙meros 4444553 - 4442525 -4804660. Recuerda si\n" + 
-				"														tu pago es en lÌnea y no has realizado el pago estaremos\n" + 
-				"														esperando que el pago se refleje para iniciar la elaboraciÛn de\n" + 
+				"														Por favor si alguno de estos datos es incorrecto comun√≠cate con\n" + 
+				"														nosotros a los n√∫meros 4444553 - 4442525 -4804660. Recuerda si\n" + 
+				"														tu pago es en l√≠nea y no has realizado el pago estaremos\n" + 
+				"														esperando que el pago se refleje para iniciar la elaboraci√≥n de\n" + 
 				"														tu pedido.</p>\n" + 
 				"												</div>\n" + 
 				"											</div>\n" + 
@@ -4274,7 +4324,7 @@ public class PedidoCtrl {
 				"												<div class=\"contPolitica\"\n" + 
 				"													style=\"font-size: 14px; line-height: 1.5; color: #555555; font-family: 'Montserrat', sans-serif; mso-line-height-alt: 21px;\">\n" + 
 				"													<a href=\"https://pizzaamericana.co/politica-de-tratamiento-de-datos\"\n" + 
-				"														class=\"btnPolitica\">Conoce nuestras PolÌticas de tratamientos de\n" + 
+				"														class=\"btnPolitica\">Conoce nuestras Pol√≠ticas de tratamientos de\n" + 
 				"														datos personales</a>\n" + 
 				"												</div>\n" + 
 				"											</div>\n" + 
@@ -4311,7 +4361,7 @@ public class PedidoCtrl {
 				"													style=\"line-height: 1; font-size: 12px; font-family: 'Montserrat', sans-serif; color: #555555; mso-line-height-alt: 14px;\">\n" + 
 				"													<p\n" + 
 				"														style=\"font-size: 18px; line-height: 1; text-align: center; font-family: 'Montserrat', sans-serif; word-break: break-word; mso-line-height-alt: 22px; margin: 0;\">\n" + 
-				"														<span style=\"font-size: 24px; color: #ffffff;\">°Gracias por\n" + 
+				"														<span style=\"font-size: 24px; color: #ffffff;\">¬°Gracias por\n" + 
 				"															comprar en PizzaAmericana.co!</span></p>\n" + 
 				"												</div>\n" + 
 				"											</div>\n" + 
@@ -4358,7 +4408,7 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo en la capa controladora que se encarga del cambio de un pedido en cuanto al cambio de tienda
+	 * M√©todo en la capa controladora que se encarga del cambio de un pedido en cuanto al cambio de tienda
 	 * @param idTienda
 	 * @param idPedido
 	 * @param idCliente
@@ -4411,9 +4461,9 @@ public class PedidoCtrl {
 	{
 		double valorDescuento = 0;
 		double descuentoTemp = 0;
-		//Recuperamos los descuentos que aplican para el dÌa en cuestiÛn como un arrayList
+		//Recuperamos los descuentos que aplican para el d√≠a en cuesti√≥n como un arrayList
 		ArrayList<DescuentoGeneral> descuentos = DescuentoGeneralDAO.obtenerDescuentosGenerales(canal);
-		//Recuperamos el detalle pedido del pedido en cuestiÛn
+		//Recuperamos el detalle pedido del pedido en cuesti√≥n
 		ArrayList<DetallePedido> detallesPedido = capaDAOCC.DetallePedidoDAO.obtenerDetallesPedidoResumido(idPedido);
 		//Comenzamos a recorrer cada uno de los descuentos y recorriendo cada uno de los detalle pedido
 		for(int i = 0; i < descuentos.size(); i++)
@@ -4429,7 +4479,7 @@ public class PedidoCtrl {
 					if(detPedidoTemp.getIdproducto() == descTemp.getIdProducto())
 					{
 						//En caso de que coincidan los productos tendremos dos situaciones en las que aplica el descuento 
-						//Si el idExcepciÛn es diferente de cero y aplica Excepcion es S o idExcepcion es cero 
+						//Si el idExcepci√≥n es diferente de cero y aplica Excepcion es S o idExcepcion es cero 
 						if((detPedidoTemp.getIdexcepcion() > 0 && descTemp.getAplicaExcepcion().equals(new String("S"))) ||(detPedidoTemp.getIdexcepcion() == 0))
 						{
 							//Verificamos si el descuento es en pesos o en caso contrario si es en porcentaje.	
@@ -4451,7 +4501,7 @@ public class PedidoCtrl {
 				//Cuando es por ingredientes la idea es que el descuento se maneja en pesos
 				double descuentoDisponible = 0;
 				double valorMaximoDescuento = descTemp.getValorPesos();
-				//La lÛgica consiste en mirar cada detalle pedido ver si el producto le aplica la promociÛn de Ingredientes
+				//La l√≥gica consiste en mirar cada detalle pedido ver si el producto le aplica la promoci√≥n de Ingredientes
 				//Si le aplica ir y revisar las adiciones y sumar el valor su costo y hacerle el descuento pertinente
 				for(int j = 0; j < detallesPedido.size(); j++)
 				{
@@ -4459,14 +4509,14 @@ public class PedidoCtrl {
 					if(detPedidoTemp.getIdproducto() == descTemp.getIdProducto())
 					{
 						//En caso de que coincidan los productos tendremos dos situaciones en las que aplica el descuento 
-						//Si el idExcepciÛn es diferente de cero y aplica Excepcion es S o idExcepcion es cero 
+						//Si el idExcepci√≥n es diferente de cero y aplica Excepcion es S o idExcepcion es cero 
 						if((detPedidoTemp.getIdexcepcion() > 0 && descTemp.getAplicaExcepcion().equals(new String("S"))) ||(detPedidoTemp.getIdexcepcion() == 0))
 						{
 							descuentoDisponible = valorMaximoDescuento;
 							//Validamos que la oferta si tenga un descuento disponible
 							if(valorMaximoDescuento > 0)
 							{
-								//Recuperamos los idDetallePedido que corresponden a las adiciones del producto principal y vamos a realizar el c·lculo
+								//Recuperamos los idDetallePedido que corresponden a las adiciones del producto principal y vamos a realizar el c√°lculo
 								ArrayList<Integer> adicionesDetalle = AdicionDetallePedidoDAO.ObtenerIdAdicionDetallePedido(detPedidoTemp.getIddetallepedido());
 								for(int z = 0; z < adicionesDetalle.size(); z++)
 								{
@@ -4526,7 +4576,7 @@ public class PedidoCtrl {
 	//TIENDA VIRTUAL KUNO
 //	public static void main(String[] args)
 //	{
-//		String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2022-10-10T17:53:25.000Z\",\"id\":581411611,\"total_price\":46500,\"sub_total_price\":44500,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.259071354182328\",\"longitude\":\"-75.55976914907379\",\"client_first_name\":\"Juan David\",\"client_last_name\":\"Botero Duque\",\"client_email\":\"jubote1@gmail.com\",\"client_phone\":\"+573148807773\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"pending\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":null,\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2022-10-10T21:30:00.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":13094867,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":true,\"client_address\":\"Calle 63 a # 47 - 27, Apt.101, MedellÌn Prado Centro\",\"client_address_parts\":{\"street\":\"Calle 63 a # 47 - 27\",\"city\":\"MedellÌn Prado Centro\",\"more_address\":\"Apt.101\"},\"items\":[{\"id\":779245101,\"name\":\"DELIVERY_FEE\",\"total_item_price\":2000,\"price\":2000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":779252085,\"name\":\"PIZZA ESTOFADA\",\"total_item_price\":44500,\"price\":38000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":15002995,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":696388974,\"name\":\"Grande Estofada (8 porciones)\",\"price\":5000,\"group_name\":\"TamaÒo\",\"quantity\":1,\"type\":\"size\",\"type_id\":7416293},{\"id\":696388975,\"name\":\"Peperoni y Queso\",\"price\":1500,\"group_name\":\"Selecciona la especialidad 1\",\"quantity\":1,\"type\":\"option\",\"type_id\":17331806},{\"id\":696388976,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744},{\"id\":696388977,\"name\":\"Pepsi\",\"price\":0,\"group_name\":\"Selecciona tu bebida\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680739}]}]}]}";
+//		String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2022-10-10T17:53:25.000Z\",\"id\":581411611,\"total_price\":46500,\"sub_total_price\":44500,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.259071354182328\",\"longitude\":\"-75.55976914907379\",\"client_first_name\":\"Juan David\",\"client_last_name\":\"Botero Duque\",\"client_email\":\"jubote1@gmail.com\",\"client_phone\":\"+573148807773\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"pending\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":null,\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2022-10-10T21:30:00.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":13094867,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":true,\"client_address\":\"Calle 63 a # 47 - 27, Apt.101, Medell√≠n Prado Centro\",\"client_address_parts\":{\"street\":\"Calle 63 a # 47 - 27\",\"city\":\"Medell√≠n Prado Centro\",\"more_address\":\"Apt.101\"},\"items\":[{\"id\":779245101,\"name\":\"DELIVERY_FEE\",\"total_item_price\":2000,\"price\":2000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":779252085,\"name\":\"PIZZA ESTOFADA\",\"total_item_price\":44500,\"price\":38000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":15002995,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":696388974,\"name\":\"Grande Estofada (8 porciones)\",\"price\":5000,\"group_name\":\"Tama√±o\",\"quantity\":1,\"type\":\"size\",\"type_id\":7416293},{\"id\":696388975,\"name\":\"Peperoni y Queso\",\"price\":1500,\"group_name\":\"Selecciona la especialidad 1\",\"quantity\":1,\"type\":\"option\",\"type_id\":17331806},{\"id\":696388976,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744},{\"id\":696388977,\"name\":\"Pepsi\",\"price\":0,\"group_name\":\"Selecciona tu bebida\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680739}]}]}]}";
 //		byte[] byteText = null;
 //		try {
 //			byteText = strInicial.getBytes("UTF-8");
@@ -4582,20 +4632,20 @@ public class PedidoCtrl {
 	public String avanzarEstadoPedidoDomicilioLog(int idPedidoTienda, int idTienda, String claveUsuario, String observacion)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "DarEntregaDomicilio?idpedidotienda=" + idPedidoTienda + "&claveusuario=" + claveUsuario + "&idtienda=" + idTienda + "&observacion=" + observacion;
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -4624,20 +4674,20 @@ public class PedidoCtrl {
 	public String cambiarFormaPagoPedidoApp(int idPedidoTienda, int idTienda, String claveUsuario, String observacion)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "CambiarFormaPagoPedidoApp?idpedidotienda=" + idPedidoTienda + "&claveusuario=" + claveUsuario + "&idtienda=" + idTienda + "&observacion=" + observacion;
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -4666,20 +4716,20 @@ public class PedidoCtrl {
 		public String obtenerResumenDomiciliarioApp(int idTienda, String claveUsuario)
 		{
 			String respuesta = "";
-			//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+			//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 			HttpClient client = HttpClientBuilder.create().build();
 			//Recuperamos la tienda que requerimos trabajar con el servicio
 			Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 			if (tienda != null)
 			{
-				//Realizar invocaciÛn de servicio en tienda
+				//Realizar invocaci√≥n de servicio en tienda
 				String rutaURL = tienda.getUrl() + "ObtenerResumenDomiciliarioApp?claveusuario=" + claveUsuario + "&idtienda=" + idTienda;
 				HttpGet request = new HttpGet(rutaURL);
 				try
 				{
 					StringBuffer retorno = new StringBuffer();
 					StringBuffer retornoTienda = new StringBuffer();
-					//Se realiza la ejecuciÛn del servicio de finalizar pedido
+					//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 					HttpResponse responseFinPed = client.execute(request);
 					BufferedReader rd = new BufferedReader
 						    (new InputStreamReader(
@@ -4707,20 +4757,20 @@ public class PedidoCtrl {
 		public String obtenerResumenDomiciliarioAppV2(int idTienda, String claveUsuario)
 		{
 			String respuesta = "";
-			//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+			//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 			HttpClient client = HttpClientBuilder.create().build();
 			//Recuperamos la tienda que requerimos trabajar con el servicio
 			Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 			if (tienda != null)
 			{
-				//Realizar invocaciÛn de servicio en tienda
+				//Realizar invocaci√≥n de servicio en tienda
 				String rutaURL = tienda.getUrl() + "ObtenerResumenDomiciliarioAppV2?claveusuario=" + claveUsuario + "&idtienda=" + idTienda;
 				HttpGet request = new HttpGet(rutaURL);
 				try
 				{
 					StringBuffer retorno = new StringBuffer();
 					StringBuffer retornoTienda = new StringBuffer();
-					//Se realiza la ejecuciÛn del servicio de finalizar pedido
+					//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 					HttpResponse responseFinPed = client.execute(request);
 					BufferedReader rd = new BufferedReader
 						    (new InputStreamReader(
@@ -4756,7 +4806,7 @@ public class PedidoCtrl {
 		String telefonoCelular = "";
 		String respuestaServicio = "";
 		Cliente clienteNotif = ClienteDAO.obtenerClienteporID(idCliente);
-		//Revisamos la lÛgica para obtener el telefono
+		//Revisamos la l√≥gica para obtener el telefono
 		if(clienteNotif.getTelefonoCelular()!= null)
 		{
 			if(!clienteNotif.getTelefonoCelular().equals(new String("")))
@@ -4794,8 +4844,8 @@ public class PedidoCtrl {
 			OkHttpClient client = new OkHttpClient();
 			IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
-			String mensajeEvidencia = "token="+ intWhat.getAccessToken() +"&to=+57"+ telefonoCelular + "&body=Estimado " + nombre +", este es tu link de pago " + linkPago + " . Ingresa y realiza el proceso de pago. Una vez efectuado el pago,iniciaremos la elaboraciÛn de tu pedido. °Para que el link sea habilitado en este mensaje, deber·s guardar este contacto, pero ten en cuenta que a este n˙mero no deber·s escribir dado que no tendr·s respuesta! &priority=1&referenceId=";
-			RequestBody body = RequestBody.create(mediaType, "token="+ intWhat.getAccessToken() +"&to=+57"+ telefonoCelular + "&body=Estimado " + nombre +", este es tu link de pago " + linkPago + " . Ingresa y realiza el proceso de pago. Una vez efectuado el pago,iniciaremos la elaboraciÛn de tu pedido. °Para que el link sea habilitado en este mensaje, deber·s guardar este contacto, pero ten en cuenta que a este n˙mero no deber·s escribir dado que no tendr·s respuesta! &priority=1&referenceId=");
+			String mensajeEvidencia = "token="+ intWhat.getAccessToken() +"&to=+57"+ telefonoCelular + "&body=Estimado " + nombre +", este es tu link de pago " + linkPago + " . Ingresa y realiza el proceso de pago. Una vez efectuado el pago,iniciaremos la elaboraci√≥n de tu pedido. ¬°Para que el link sea habilitado en este mensaje, deber√°s guardar este contacto, pero ten en cuenta que a este n√∫mero no deber√°s escribir dado que no tendr√°s respuesta! &priority=1&referenceId=";
+			RequestBody body = RequestBody.create(mediaType, "token="+ intWhat.getAccessToken() +"&to=+57"+ telefonoCelular + "&body=Estimado " + nombre +", este es tu link de pago " + linkPago + " . Ingresa y realiza el proceso de pago. Una vez efectuado el pago,iniciaremos la elaboraci√≥n de tu pedido. ¬°Para que el link sea habilitado en este mensaje, deber√°s guardar este contacto, pero ten en cuenta que a este n√∫mero no deber√°s escribir dado que no tendr√°s respuesta! &priority=1&referenceId=");
 			Request request = new Request.Builder()
 			  .url("https://api.ultramsg.com/"+ intWhat.getClientID() +"/messages/chat")
 			  .post(body)
@@ -4809,7 +4859,7 @@ public class PedidoCtrl {
 			}catch(Exception e)
 			{
 				System.out.println("ERROR " + e.toString());
-				//Recuperar la lista de distribuciÛn para este correo
+				//Recuperar la lista de distribuci√≥n para este correo
 				ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 				Date fecha = new Date();
 				Correo correo = new Correo();
@@ -4828,7 +4878,7 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * M…TODO EN DESUSO PRODUCTO DE QUE NO TENEMOS RELACI”N CON BOTTA SOFTWARE
+	 * M√âTODO EN DESUSO PRODUCTO DE QUE NO TENEMOS RELACI√ìN CON BOTTA SOFTWARE
 	 * @param nombre
 	 * @param idPedido
 	 * @param idCliente
@@ -4839,7 +4889,7 @@ public class PedidoCtrl {
 		String telefonoCelular = "";
 		String respuestaServicio = "";
 		Cliente clienteNotif = ClienteDAO.obtenerClienteporID(idCliente);
-		//Revisamos la lÛgica para obtener el telefono
+		//Revisamos la l√≥gica para obtener el telefono
 		if(clienteNotif.getTelefonoCelular()!= null)
 		{
 			if(!clienteNotif.getTelefonoCelular().equals(new String("")))
@@ -4879,18 +4929,18 @@ public class PedidoCtrl {
 		            "\"customerNumber\": \"whatsapp:+57" + telefonoCelular +"\"," + 
 		            "\"inputs\": [\""+ nombre+" - "+ idPedido +"\" , \""+ linkPago +"\"]" +
 		          "}";
-					//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+					//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 					HttpClient client = HttpClientBuilder.create().build();
 					String rutaURLNotif = "https://us-east1-bottapizzaamericana.cloudfunctions.net/fnBottaWhatsAppNotification";
 					HttpPost request = new HttpPost(rutaURLNotif);
 					try
 					{
 						//Fijamos el header con el token
-						//NO HAY SEGURIDAD TODAVÕA
+						//NO HAY SEGURIDAD TODAV√çA
 						//request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
 						request.setHeader("Accept", "application/json");
 						request.setHeader("Content-type", "application/json");
-						//Fijamos los par·metros
+						//Fijamos los par√°metros
 						//pass the json string request in the entity
 					    HttpEntity entity = new ByteArrayEntity(jsonString.getBytes("UTF-8"));
 					    request.setEntity(entity);
@@ -4910,7 +4960,7 @@ public class PedidoCtrl {
 							
 						}else
 						{
-							//Recuperar la lista de distribuciÛn para este correo
+							//Recuperar la lista de distribuci√≥n para este correo
 							ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 							Date fecha = new Date();
 							Correo correo = new Correo();
@@ -4954,7 +5004,7 @@ public class PedidoCtrl {
 			}catch(Exception e)
 			{
 				System.out.println("ERROR " + e.toString());
-				//Recuperar la lista de distribuciÛn para este correo
+				//Recuperar la lista de distribuci√≥n para este correo
 				ArrayList correos = GeneralDAO.obtenerCorreosParametro("ERROR");
 				Date fecha = new Date();
 				Correo correo = new Correo();
@@ -5006,9 +5056,9 @@ public class PedidoCtrl {
 		{
 		String result = "";
         String apikey ="GsNtuVVEgGawtZDJwrcB_YcNs0lQ0JcMa5UXYQZN3wU";
-        String searchtext= "Cra. 76 #96-50 a 96-102,Colombia,MedellÌn,Antioquia";
+        String searchtext= "Cra. 76 #96-50 a 96-102,Colombia,Medell√≠n,Antioquia";
         String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey="+apikey+"&searchtext="+ URLEncoder.encode(searchtext,"UTF-8");
-        //Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+        //Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		HttpGet request = new HttpGet(connstr);
 		
@@ -5054,7 +5104,7 @@ public class PedidoCtrl {
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		String codigo = promoCtrl.generarCodigoPrecioEmpleado();
 		pedPrecio.setCodigo(codigo);
-		//Incluimos la validaciÛn del cÛdigo para asignar
+		//Incluimos la validaci√≥n del c√≥digo para asignar
 		PedidoPrecioEmpleadoDAO.insertarPedidoPrecioEmpleado(pedPrecio);
 		respuestaJSON.put("codigo", codigo);
 		return(codigo);
@@ -5065,7 +5115,7 @@ public class PedidoCtrl {
 		JSONObject respuestaJSON = new JSONObject();
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		String codigo = promoCtrl.generarCodigoEmpleadoRemotovale();
-		//Incluimos la validaciÛn del cÛdigo para asignar
+		//Incluimos la validaci√≥n del c√≥digo para asignar
 		EmpleadoRemotoValeDAO.insertarEmpleadoRemotoVale(idEmpleado,fecha,codigo);
 		respuestaJSON.put("codigo", codigo);
 		return(codigo);
@@ -5075,7 +5125,7 @@ public class PedidoCtrl {
 	{
 		boolean respuesta = false;
 		String fechaActual = "";
-		//Variables donde manejaremos la fecha anerior con el fin realizar los c·lculos de ventas
+		//Variables donde manejaremos la fecha anerior con el fin realizar los c√°lculos de ventas
 		Date datFechaAnterior;
 		String fechaAnterior = "";
 		Calendar calendarioActual = Calendar.getInstance();
@@ -5123,10 +5173,10 @@ public class PedidoCtrl {
 			//Si es sabado se resta cinco
 			calendarioActual.add(Calendar.DAY_OF_YEAR, -5);
 		}
-		//Llevamos a un string la fecha anterior para el c·lculo de la venta
+		//Llevamos a un string la fecha anterior para el c√°lculo de la venta
 		datFechaAnterior = calendarioActual.getTime();
 		fechaAnterior = dateFormat.format(datFechaAnterior);
-		//Fija las fechas tenemos un mÈtodo para validar cuantas pizzas tiene el empleado para dicha semana
+		//Fija las fechas tenemos un m√©todo para validar cuantas pizzas tiene el empleado para dicha semana
 		int cantPedidos = PedidoPrecioEmpleadoDAO.validarFrecuenciaPedidoPrecioEmpleado(idEmpleado, fechaAnterior, fechaActual);
 		if(cantPedidos > 0)
 		{
@@ -5145,18 +5195,18 @@ public class PedidoCtrl {
 	{
 		Ubicacion ubicaResp = new Ubicacion(0,0);
 		JSONParser parser = new JSONParser();
-		//Realizaremos el intengo de realizar el llamado para la direcciÛn
+		//Realizaremos el intengo de realizar el llamado para la direcci√≥n
 		try
 		{
 			String resultado = "";
 		    String apikey ="GsNtuVVEgGawtZDJwrcB_YcNs0lQ0JcMa5UXYQZN3wU";
 		    if(ciudad.equals(new String("")))
 		    {
-		    	ciudad = "MedellÌn";
+		    	ciudad = "Medell√≠n";
 		    }
 		    String dirBuscar= direccion+",Colombia,"+ ciudad +",Antioquia";
 		    String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey="+apikey+"&searchtext="+ URLEncoder.encode(dirBuscar,"UTF-8");
-		    //Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		    //Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 			HttpClient client = HttpClientBuilder.create().build();
 			HttpGet request = new HttpGet(connstr);
 			
@@ -5170,7 +5220,7 @@ public class PedidoCtrl {
 				    retorno.append(line);
 				}
 			resultado = retorno.toString();
-			//Posteriormente realizamos la conversiÛn del objeto JSON para tener la latitud y la longitud
+			//Posteriormente realizamos la conversi√≥n del objeto JSON para tener la latitud y la longitud
 			Object objParserServicio = parser.parse(resultado);
 			JSONObject jsonObjectGeojsonGeneral = (JSONObject) objParserServicio;
 			String strResponse = jsonObjectGeojsonGeneral.get("Response").toString();
@@ -5204,7 +5254,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que desde la capa controladora se encarga de procesar la solicitud de una factura electrÛnica
+	 * M√©todo que desde la capa controladora se encarga de procesar la solicitud de una factura electr√≥nica
 	 * @param solFactura
 	 * @return
 	 */
@@ -5215,7 +5265,7 @@ public class PedidoCtrl {
 		respuestaJSON.put("idsolicitud", idsolicitud);
 		if(idsolicitud > 0)
 		{
-			//Mandaremos mensaje de WhatsApp con la generaciÛn de la factura
+			//Mandaremos mensaje de WhatsApp con la generaci√≥n de la factura
 			notificarWhatsAppUltramsgSolFactura(solFactura);
 		}
 		return(respuestaJSON.toJSONString());
@@ -5248,14 +5298,51 @@ public class PedidoCtrl {
 		return(respuestaJSON.toString());
 	}
 	
+	public String ConsultarPedidosVentasCorporativas(String fechaIni, String fechaFin)
+	{
+		ArrayList<Pedido> pedidos = PedidoDAO.ConsultarPedidosVentasCorporativas(fechaIni, fechaFin);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		for(Pedido pedTemp : pedidos)
+		{
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("idpedido", pedTemp.getIdpedido());
+			cadaRespuestaJSON.put("idpedidotienda", pedTemp.getNumposheader());
+			cadaRespuestaJSON.put("valor", pedTemp.getTotal_neto());
+			cadaRespuestaJSON.put("cliente", pedTemp.getNombrecliente());
+			cadaRespuestaJSON.put("fecha", pedTemp.getFechapedido());
+			cadaRespuestaJSON.put("asesor", pedTemp.getUsuariopedido());
+			cadaRespuestaJSON.put("nombrecompania", pedTemp.getNombreCompania());
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+
+		return(respuestaJSON.toString());
+	}
+	
+	public String ConsultarResumenVentasCorporativas(String fechaIni, String fechaFin)
+	{
+		ArrayList <ResumenVentaEmpresarial> resumenes = PedidoDAO.ConsultarResumenVentasCorporativas(fechaIni, fechaFin);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		for(ResumenVentaEmpresarial resTemp : resumenes)
+		{
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("asesor", resTemp.getAsesor());
+			cadaRespuestaJSON.put("totalventa", resTemp.getTotalVenta());
+			cadaRespuestaJSON.put("comision", resTemp.getComision());
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+
+		return(respuestaJSON.toString());
+	}
 	
 	public void notificarWhatsAppUltramsgSolFactura(SolicitudFactura solFactura)
 	{
 		OkHttpClient client = new OkHttpClient();
 		IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
-		String mensajeEvidencia = "token="+ intWhat.getAccessToken() +"&to=+57"+ "3148807773" + "&body=*SE HA RADICADO UNA NUEVA SOLICITUD DE FACTURA ELECTR”NICA*, # Pedido Contact " + solFactura.getIdPedidoContact() +", # pedido tienda " + solFactura.getIdPedidoTienda() + " , por un valor de  $" + solFactura.getValor() + ", para la empresa " + solFactura.getEmpresa() + ", de una fecha de pedido " + solFactura.getFechaPedido() + " °No te tardes en generarla.! &priority=1&referenceId=";
-		RequestBody body = RequestBody.create(mediaType, "token="+ intWhat.getAccessToken() +"&to=+57"+ "3148807773" + "&body=*SE HA RADICADO UNA NUEVA SOLICITUD DE FACTURA ELECTR”NICA*, # Pedido Contact " + solFactura.getIdPedidoContact() +", # pedido tienda " + solFactura.getIdPedidoTienda() + " , por un valor de  $" + solFactura.getValor() + ", para la empresa " + solFactura.getEmpresa() + ", de una fecha de pedido " + solFactura.getFechaPedido() + " °No te tardes en generarla.! &priority=1&referenceId=");
+		String mensajeEvidencia = "token="+ intWhat.getAccessToken() +"&to=+57"+ "3148807773" + "&body=*SE HA RADICADO UNA NUEVA SOLICITUD DE FACTURA ELECTR√ìNICA*, # Pedido Contact " + solFactura.getIdPedidoContact() +", # pedido tienda " + solFactura.getIdPedidoTienda() + " , por un valor de  $" + solFactura.getValor() + ", para la empresa " + solFactura.getEmpresa() + ", de una fecha de pedido " + solFactura.getFechaPedido() + " ¬°No te tardes en generarla.! &priority=1&referenceId=";
+		RequestBody body = RequestBody.create(mediaType, "token="+ intWhat.getAccessToken() +"&to=+57"+ "3148807773" + "&body=*SE HA RADICADO UNA NUEVA SOLICITUD DE FACTURA ELECTR√ìNICA*, # Pedido Contact " + solFactura.getIdPedidoContact() +", # pedido tienda " + solFactura.getIdPedidoTienda() + " , por un valor de  $" + solFactura.getValor() + ", para la empresa " + solFactura.getEmpresa() + ", de una fecha de pedido " + solFactura.getFechaPedido() + " ¬°No te tardes en generarla.! &priority=1&referenceId=");
 		Request request = new Request.Builder()
 		  .url("https://api.ultramsg.com/"+ intWhat.getClientID() +"/messages/chat")
 		  .post(body)
@@ -5267,7 +5354,7 @@ public class PedidoCtrl {
 		}catch(Exception e)
 		{
 			System.out.println("ERROR " + e.toString());
-			//Recuperar la lista de distribuciÛn para este correo
+			//Recuperar la lista de distribuci√≥n para este correo
 			ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 			Date fecha = new Date();
 			Correo correo = new Correo();
@@ -5304,10 +5391,10 @@ public class PedidoCtrl {
 		String fechaActualMenosHora = dateFormatHora.format(datFechaMenosHora);
 		
 		
-		//Realizamos la extracciÛn de los tiempos pedidos
+		//Realizamos la extracci√≥n de los tiempos pedidos
 		String respuesta = "";
 		boolean indicadorCorreo = false;
-		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la informaciÛn
+		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la informaci√≥n
 		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendas();
 		String cantMinutos = "";
 		String strPedidosProg = "";
@@ -5396,16 +5483,16 @@ public class PedidoCtrl {
 		String fechaActualMenosHora = dateFormatHora.format(datFechaMenosHora);
 		
 		
-		//Realizamos la extracciÛn de los tiempos pedidos
+		//Realizamos la extracci√≥n de los tiempos pedidos
 		String respuesta = "";
 		boolean indicadorCorreo = false;
-		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la informaciÛn
+		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la informaci√≥n
 		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendas();
 		//Vamos a recuperar de manera centralizada los valores de las variables de pedido en espera y pedido en ruta
 		int pedidoEmpacado = ParametrosDAO.retornarValorNumerico("EMPACADODOMICILIO");
 		int pedidoEnRuta = ParametrosDAO.retornarValorNumerico("ENRUTADOMICILIO");
 		int tipoPedidoDomicilio = ParametrosDAO.retornarValorNumerico("TIPOPEDIDODOMICILIO");
-		//Con los valores recuperados con anterioridad se realizar· la consulta a cada una de las tiendas
+		//Con los valores recuperados con anterioridad se realizar√° la consulta a cada una de las tiendas
 		int cantPedCoc = 0;
 		int cantPedEmp = 0;
 		int cantPedPen = 0;
@@ -5422,23 +5509,23 @@ public class PedidoCtrl {
 				respuesta = respuesta + "<tr>"
 						+  "<td><strong>Pedidos en COCINA</strong></td>"
 						+  "<td><strong>Ped Pend Salir Tienda</strong></td>"
-						+  "<td><strong>Cant de Ped ⁄lt Hora Domicilio</strong></td>"
-						+  "<td><strong>Cant de Ped ⁄lt Hora No Domicilio</strong></td>"
-						+  "<td><strong>Tiempo ˙ltimo Ped Pend</strong></td>"
+						+  "<td><strong>Cant de Ped √ölt Hora Domicilio</strong></td>"
+						+  "<td><strong>Cant de Ped √ölt Hora No Domicilio</strong></td>"
+						+  "<td><strong>Tiempo √∫ltimo Ped Pend</strong></td>"
 						+  "</tr>";
-				//Comenzamos a validar los par·metros de cada tienda 
-				// LA MEJOR ESTRATEGIA SERÕA TENER UN SOLO M…TODO PARA MEJORAR EL PERFORMANCE
+				//Comenzamos a validar los par√°metros de cada tienda 
+				// LA MEJOR ESTRATEGIA SER√çA TENER UN SOLO M√âTODO PARA MEJORAR EL PERFORMANCE
 				//Cantidad de pedidos en Cocina
 				cantPedCoc = capaDAOPOS.PedidoDAO.obtenerCantidadPedidoCocina(fechaActual, tien.getHosbd());
 				//Cantidad de pedidos pendientes por salir de la tienda
 				cantPedEmp = capaDAOPOS.PedidoDAO.obtenerCantidadPedidoPorEstado(fechaActual, pedidoEmpacado, tien.getHosbd());
 				//Cantidad de pedidos pendientes de la tienda
 				cantPedPen =  cantPedEmp + capaDAOPOS.PedidoDAO.obtenerCantidadPedidoPorEstado(fechaActual, pedidoEnRuta, tien.getHosbd());
-				//Cantidad de pedidos de la ˙ltima hora Domicilio
+				//Cantidad de pedidos de la √∫ltima hora Domicilio
 				cantPedHoraDom = capaDAOPOS.PedidoDAO.obtenerCantidadPedidoDespuesHoraDomicilio(fechaActual, fechaActualMenosHora, tien.getHosbd(),tipoPedidoDomicilio );
-				//Cantidad de pedidos de la ˙ltima hora Domicilio
+				//Cantidad de pedidos de la √∫ltima hora Domicilio
 				cantPedHoraNoDom = capaDAOPOS.PedidoDAO.obtenerCantidadPedidoDespuesHoraNoDomicilio(fechaActual, fechaActualMenosHora, tien.getHosbd(),tipoPedidoDomicilio );
-				//Tiempo del ˙ltimo pedimo por salir
+				//Tiempo del √∫ltimo pedimo por salir
 				cantMinutos = capaDAOPOS.PedidoDAO.obtenerTiempoUltimoPedidoEstado(fechaActual, pedidoEmpacado, strPedidosProg,  tien.getHosbd());
 				//Luego de obtenidos los datos pintamos el html
 				respuesta = respuesta + "<tr>"
@@ -5503,30 +5590,30 @@ public class PedidoCtrl {
 	public String insertarPedidoCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
-		//System.out.println("informaciÛn " + infLead);
+		//System.out.println("informaci√≥n " + infLead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,"I");
 		procesarPedidoBOTCRM(infLead,lead, idLog);
 		return(respuesta);
 	}
 	
 	/**
-	 * MÈtodo para atender desde el Servlet la consulta del estado de un pedido en el BOT CRM
+	 * M√©todo para atender desde el Servlet la consulta del estado de un pedido en el BOT CRM
 	 * @param datos
 	 * @param authHeader
 	 * @return
@@ -5535,30 +5622,30 @@ public class PedidoCtrl {
 	public String consultarPedidoCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
-		//System.out.println("informaciÛn " + infLead);
+		//System.out.println("informaci√≥n " + infLead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "C");
 		consultarPedidoCRMBOT(infLead,lead, idLog);
 		return(respuesta);
 	}
 	
 	/**
-	 * MÈtodo para atender desde el Servlet la consulta del cobertura en el BOT CRM
+	 * M√©todo para atender desde el Servlet la consulta del cobertura en el BOT CRM
 	 * @param datos
 	 * @param authHeader
 	 * @return
@@ -5567,32 +5654,33 @@ public class PedidoCtrl {
 	public String consultarCoberturaCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		System.out.println("1. REVISI”N LEAD " + lead);
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		System.out.println("1. REVISI√ìN LEAD " + lead);
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
 		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
-		//System.out.println("informaciÛn " + infLead);
+		//System.out.println("informaci√≥n " + infLead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "T");
 		consultarCoberturaCRMBOT(infLead,lead, idLog);
 		return(respuesta);
 	}
 	
 	/**
-	 * MÈtodo que ejecuta el servicio para validar la cobertura de un pedido.
+	 * M√©todo que ejecuta el servicio para validar la cobertura de un pedido.
 	 * @param datosJSON
 	 * @param lead
 	 * @param idLog
@@ -5602,10 +5690,12 @@ public class PedidoCtrl {
 		String resultadoProceso = "";
 		String direccion = "";
 		String barrioMunicipio = "";
-		//Para realizar el ˙ltimo parseo
+		String tipo_cliente ="";
+		String referencia ="";
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -5622,10 +5712,10 @@ public class PedidoCtrl {
 				customFieldsArray = (JSONArray) objcustomFieldsValues;
 			}catch(Exception e1)
 			{
-				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 				//Tratar problema de no tener campos adicionales
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -5638,13 +5728,21 @@ public class PedidoCtrl {
 				valor = (JSONObject) objParserFinal;
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
-				if(clave.equals(new String("direcciÛn de envÌo")) || clave.contains("direcci"))
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
+				if(clave.equals(new String("direcci√≥n de env√≠o")) || clave.contains("direcci"))
 				{
 					direccion = strValor;
 				}else if(clave.equals(new String("barrio y municipio")))
 				{
 					barrioMunicipio = strValor;
+				}
+				else if(clave.equals(new String("tipo de cliente")))
+				{
+					tipo_cliente = strValor;
+				}
+				else if(clave.equals(new String("referencia")))
+				{
+					referencia = strValor;
 				}
 			}
 		}catch(Exception e)
@@ -5653,55 +5751,58 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(direccion + " , " + barrioMunicipio);
+	    String txtdirecc = direccion + " , " + barrioMunicipio+","+referencia+",Antioquia,Colombia";
+		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(txtdirecc,tipo_cliente);
 		System.out.println("3. RESULTADO DEL PROCESO " +  resultado);
-		actualizarCoberturaLeadCRMBOT(lead, resultado.getResultado());
+		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);
 		System.out.println("6. TERMINO DEL PROCESO ");
 	}
 	
 	public String insertarPedidoCRMBOTPoblado(String datos, String authHeader) throws IOException
 	{
 		String respuesta = ""; 
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
-		//System.out.println("informaciÛn " + infLead);
+		//System.out.println("informaci√≥n " + infLead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "I");
 		procesarPedidoBOTCRMPoblado(infLead,lead, idLog);
 		return(respuesta);
 	}
 	
+	
+	
 	public String limpiarLeadCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		limpiarLeadCRM(lead);
 		return(respuesta);
 	}
@@ -5710,21 +5811,21 @@ public class PedidoCtrl {
 	public String insertarPQRSCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "P");
 		procesarPQRSBOTCRM(infLead,lead, idLog);
@@ -5734,21 +5835,21 @@ public class PedidoCtrl {
 	public String insertarFACCRMBOT(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
-		//Vamos a realizar la extracciÛn del par·metro
+		//Vamos a realizar la extracci√≥n del par√°metro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la informaciÛn del LEAD, por lo tanto realizaremos la consulta de la informaciÛn
+		//Ya tenemos la informaci√≥n del LEAD, por lo tanto realizaremos la consulta de la informaci√≥n
 		String infLead = obtenerInformacionLeadCRM(lead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "F");
 		procesarFACBOTCRM(infLead,lead, idLog);
@@ -5757,7 +5858,7 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo creado para tomar los datos del JSON y crear el pedido en el sistema proveniente de RAPPI.
+	 * M√©todo creado para tomar los datos del JSON y crear el pedido en el sistema proveniente de RAPPI.
 	 * @param datos
 	 * @param authHeader
 	 * @return
@@ -5766,15 +5867,15 @@ public class PedidoCtrl {
 	public String insertarPedidoRAPPI(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogRAPPI(datos, authHeader);
 		//Realizamos el procesamiento del Pedido
 		insertarPedidoRAPPI(datos, idLog);
@@ -5784,15 +5885,15 @@ public class PedidoCtrl {
 	public String insertarPedidoDIDI(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
-		//El primer paso a validar es la autorizaciÛn para la utilizaciÛn del servicio
+		//El primer paso a validar es la autorizaci√≥n para la utilizaci√≥n del servicio
 		if(authHeader.equals(new String("PRUEBA")))
 		{
-			//Si viene el valor de prueba omitimos la validaciÛn
+			//Si viene el valor de prueba omitimos la validaci√≥n
 		}else
 		{
 			
 		}
-		//Realizamos la inserciÛn de log con el JSON recibido
+		//Realizamos la inserci√≥n de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogDIDI(datos, authHeader);
 		//Realizamos el procesamiento del Pedido
 		insertarPedidoDIDI(datos, idLog);
@@ -5805,6 +5906,38 @@ public class PedidoCtrl {
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 		HttpClient client = HttpClientBuilder.create().build();
 		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/"+lead;
+		HttpGet request = new HttpGet(rutaURL);
+		try
+		{
+			//Fijamos el header con el token
+			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json");
+			StringBuffer retorno = new StringBuffer();
+			HttpResponse responseFinPed = client.execute(request);
+			BufferedReader rd = new BufferedReader
+				    (new InputStreamReader(
+				    		responseFinPed.getEntity().getContent()));
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				    retorno.append(line);
+				}
+			//Traemos el valor del JSON con toda la info del pedido
+			datosLead = retorno.toString();
+			
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
+		return(datosLead);
+	}
+	
+	public String obtenerInfoCampoLeadCRM(String idcampo) throws IOException
+	{
+		String datosLead = "";
+		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+		HttpClient client = HttpClientBuilder.create().build();
+		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/custom_fields/"+idcampo;
 		HttpGet request = new HttpGet(rutaURL);
 		try
 		{
@@ -6049,8 +6182,8 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que recibe la informaciÛn capturada en el CRM BOT y realiza una inserciÛn del pedido, teniendo las caracterÌsticas
-	 * propias del CRM en donde solo hay un producto y un posible acompaÒante.
+	 * M√©todo que recibe la informaci√≥n capturada en el CRM BOT y realiza una inserci√≥n del pedido, teniendo las caracter√≠sticas
+	 * propias del CRM en donde solo hay un producto y un posible acompa√±ante.
 	 * @param idPedido
 	 * @param nombreDelCombo
 	 * @param sabor1
@@ -6064,14 +6197,14 @@ public class PedidoCtrl {
 	public String insertarProductoBOTCRM(int idPedido, String nombreDelCombo, String sabor1, String sabor2, String adicion, String bebida, String acompanamiento, String bebida2, String detalle, int idTipoPedido)
 	{
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
-		//InformaciÛn del domicilio
+		//Informaci√≥n del domicilio
 		int idProductoDomicilio = 0;
 		long valorDomicilio = 0;
 		int idEspecialidad = 0;
 		int idEspecialidad2 = 0;
 		int idSaborTipoLiquido = 0;
 		int idSaborTipoLiquido2 = 0;
-		//Realizamos la inserciÛn del domicilio en caso de que el tipo pedido sea domicilio
+		//Realizamos la inserci√≥n del domicilio en caso de que el tipo pedido sea domicilio
 		if(idTipoPedido == 1)
 		{
 			idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio");
@@ -6107,7 +6240,7 @@ public class PedidoCtrl {
 		int idExcepcion = excepcionPrecioTemp.getIdExcepcion();
 		double valorExcepcion = excepcionPrecioTemp.getPrecio();
 		String log = "";
-		//Hacemos la validaciÛn de si no se logrÛ identificar dentro de los productos de precio men˙ 
+		//Hacemos la validaci√≥n de si no se logr√≥ identificar dentro de los productos de precio men√∫ 
 		if(excepcionPrecioTemp.getIdExcepcion() != 0)
 		{
 			idProducto = excepcionPrecioTemp.getIdProducto();
@@ -6172,7 +6305,7 @@ public class PedidoCtrl {
 				}
 			}
 		}
-		//Procesamos los modificadores CON solo se har· en promociones, dado que en precio men˙ no tenemos arma tu pizza
+		//Procesamos los modificadores CON solo se har√° en promociones, dado que en precio men√∫ no tenemos arma tu pizza
 		if(esPromocion && idEspecialidad == 0)
 		{
 			String comTamano = "";
@@ -6273,15 +6406,27 @@ public class PedidoCtrl {
 		{
 			idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual("Selecciona tu bebida " + bebida + " " + nombreDelCombo);
 		}
-		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, strCON, "");
+		DetallePedido detPedidoGaseosaAdi = new DetallePedido();
+		detPedidoGaseosaAdi.setIdproducto(0);
+		if(idSaborTipoLiquido > 0)
+		{
+			int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+			Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
+			detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+		}
+		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, strCON, "");
 		idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
+		if(detPedidoGaseosaAdi.getIdproducto() > 0)
+		{
+			PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+		}
 		//Revisaremos si hay productos incluidos para agregar
 		for(int j = 0; j < productosIncluidos.size(); j++)
 		{
 			ProductoIncluido proIncTemp = productosIncluidos.get(j);
 			if(proIncTemp.getIdproductopadre() == idProducto)
 			{
-				//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+				//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 				DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallePedido, 0, 0 /*idexcepcion*/, "", "");
 				PedidoDAO.InsertarDetallePedido(detPedidoInc);
 			}
@@ -6310,13 +6455,13 @@ public class PedidoCtrl {
 				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
 			}
 		}
-		//Verificamos el estado del acompaÒante si se pidiÛ
+		//Verificamos el estado del acompa√±ante si se pidi√≥
 		if(acompanamiento.equals(new String("")))
 		{
 			
 		}else
 		{
-			//No necesariamente si solo es promociÛn tambiÈn se debe validar si es combo para todos
+			//No necesariamente si solo es promoci√≥n tambi√©n se debe validar si es combo para todos
 			if(esPromocion && nombreDelCombo.equals(new String("COMBO PARA TODOS")))
 			{
 				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento);
@@ -6328,15 +6473,30 @@ public class PedidoCtrl {
 			{
 				double valorUnitarioAco = ProductoDAO.retornarProducto(idProductoAcompa).getPreciogeneral();
 				idSaborTipoLiquido2 = parCtrl.homologarLiquidoTiendaVirtual("Selecciona tu bebida " + bebida2 + " Pizzeta (4 porciones)");
-				DetallePedido detPedidoAcom = new DetallePedido(idProductoAcompa,idPedido,1,0,0,valorUnitarioAco,valorUnitarioAco, "" , "" /*observacion*/, idSaborTipoLiquido2, 0, "", "");
+				//Realizamos el procesamiento en caso de que el liquido 2 sea diferente de cero
+				detPedidoGaseosaAdi = new DetallePedido();
+				detPedidoGaseosaAdi.setIdproducto(0);
+				if(idSaborTipoLiquido2 > 0)
+				{
+					int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido2);
+					Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
+					detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,1,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*1, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+				}
+				DetallePedido detPedidoAcom = new DetallePedido(idProductoAcompa,idPedido,1,0,0,valorUnitarioAco,valorUnitarioAco, "" , "" /*observacion*/, 0 /*idSaborTipoLiquido2*/, 0, "", "");
 				idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedidoAcom);
+				if(detPedidoGaseosaAdi.getIdproducto() > 0)
+				{
+					PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+				}
+				
+				
 				//Realizamos ciclo de productos incluidos
 				for(int j = 0; j < productosIncluidos.size(); j++)
 				{
 					ProductoIncluido proIncTemp = productosIncluidos.get(j);
 					if(proIncTemp.getIdproductopadre() == idProductoAcompa)
 					{
-						//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+						//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 						DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad(),0,0,0,0, "" , "Producto Incluido-"+idDetallePedido, 0, 0 /*idexcepcion*/, "", "");
 						PedidoDAO.InsertarDetallePedido(detPedidoInc);
 					}
@@ -6347,7 +6507,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo para realizar la inserciÛn del pedido en el sistem proveniente del CRM
+	 * M√©todo para realizar la inserci√≥n del pedido en el sistem proveniente del CRM
 	 * @param datosJSON
 	 * @param lead
 	 * @param idLog
@@ -6375,10 +6535,10 @@ public class PedidoCtrl {
 		int idTienda = 0;
 		String horaPedido = "";
 		String fechaProgramado = "";
-		//Para realizar el ˙ltimo parseo
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -6395,10 +6555,10 @@ public class PedidoCtrl {
 				customFieldsArray = (JSONArray) objcustomFieldsValues;
 			}catch(Exception e1)
 			{
-				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 				//Tratar problema de no tener campos adicionales
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -6420,7 +6580,7 @@ public class PedidoCtrl {
 				}
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
 				if(clave.equals(new String("asesor que atiende")))
 				{
 					asesor = strValor;
@@ -6428,10 +6588,10 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("nombre cliente"))||clave.equals(new String("Nombre del cliente")))
 				{
 					nombreCliente = strValor;
-				}else if(clave.equals(new String("numero de telÈfono")))
+				}else if(clave.equals(new String("numero de tel√©fono")))
 				{
 					telefono  = strValor;
-				}else if(clave.equals(new String("correo electrÛnico")) || clave.equals(new String("correo electrÛnico pqrs")))
+				}else if(clave.equals(new String("correo electr√≥nico")) || clave.equals(new String("correo electr√≥nico pqrs")))
 				{
 					correo = strValor;
 				}else if(clave.equals(new String("nombre del combo")))
@@ -6448,13 +6608,13 @@ public class PedidoCtrl {
 					sabor2 = strValor;
 				}else if(clave.equals(new String("adicion")))
 				{
-					//En este punto si podr·n ser varios
+					//En este punto si podr√°n ser varios
 					adicion = strValor;
 					
 				}else if(clave.equals(new String("bebida")))
 				{
 					bebida = strValor;
-				}else if(clave.equals(new String("acompaÒamiento")))
+				}else if(clave.equals(new String("acompa√±amiento")))
 				{
 					acompanamiento = strValor;
 				}else if(clave.equals(new String("bebida 2")))
@@ -6463,7 +6623,7 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("forma de pago")))
 				{
 					formaPago = strValor;
-				}else if(clave.equals(new String("direcciÛn de envÌo")))
+				}else if(clave.equals(new String("direcci√≥n de env√≠o")))
 				{
 					direccion = strValor;
 				}else if(clave.equals(new String("referencia")))
@@ -6487,17 +6647,20 @@ public class PedidoCtrl {
 			{
 				idTienda = 1;
 			}
+			//Realizamos procesamiento de telefono
+			telefono = telefono.replace(" ", "");
+			telefono = telefono.replace("-", "");
 			//Procedemos a crear el pedido en el sistema con base en como lo hemos creado para la tienda virtual
 			String telefonoCelular = "";
-			//El telefono le quitaremos el indicativo del paÌs
+			//El telefono le quitaremos el indicativo del pa√≠s
 			if(telefono.substring(0, 3).equals(new String("+57")))
 			{
 				telefono = telefono.substring(3);
 			}
-			//Para el caso del telÈfono validaremos si es un fijo
+			//Para el caso del tel√©fono validaremos si es un fijo
 			if(telefono.trim().length() == 7)
 			{
-				//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+				//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 				//contact center.
 				telefono = "604" + telefono;
 			}else
@@ -6508,7 +6671,7 @@ public class PedidoCtrl {
 			if(latitud== 0 && longitud == 0)
 			{
 				UbicacionCtrl  ubicacion = new UbicacionCtrl();
-				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + referencia + " MedellÌn");
+				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + referencia + " Medell√≠n");
 				latitud = ubicaResp.getLatitud();
 				longitud = ubicaResp.getLongitud();
 			}
@@ -6527,9 +6690,9 @@ public class PedidoCtrl {
 			clienteVirtual.setTelefonoCelular(telefonoCelular);
 			clienteVirtual.setPoliticaDatos("S");
 			
-			//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+			//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
-			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 			int idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, "");
 			if(idCliente == 0)
 			{
@@ -6552,14 +6715,14 @@ public class PedidoCtrl {
 				Date datFechPro = new Date();
 				//Realizar validacion que la fecha si se pueda convertir
 				try {
-					//Validamos si se puede hacer la conversiÛn
+					//Validamos si se puede hacer la conversi√≥n
 					datFechPro = formatoFinal.parse(fechaProgramado);
 				}catch(Exception e)
 				{
 					//En caso de error prenderemos el indicador 
 					errorFecha = true;
 				}
-				//Validaremos que la fecha de programaciÛn no sea menor a la fecha actual
+				//Validaremos que la fecha de programaci√≥n no sea menor a la fecha actual
 				if(datFechPro.before(fechaPedido))
 				{
 					errorFecha = true;
@@ -6570,11 +6733,11 @@ public class PedidoCtrl {
 				}else
 				{
 					//Se envia correo con la notificacion de que se tuvo error con la fecha y que igual el pedido
-					//se enviar· y con fecha actual
+					//se enviar√° y con fecha actual
 					Correo correoError = new Correo();
 					CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 					ArrayList correos = new ArrayList();
-					correoError.setAsunto("Tuvimos Novedad en la CreaciÛn de tu Pedido  ");
+					correoError.setAsunto("Tuvimos Novedad en la Creaci√≥n de tu Pedido  ");
 					String correoEle = "jubote1@gmail.com";
 					correos.add(correoEle);
 					correos.add("pqrs@pizzaamericana.com.co");
@@ -6582,7 +6745,7 @@ public class PedidoCtrl {
 					correos.add(correo);
 					correoError.setContrasena(infoCorreo.getClaveCorreo());
 					correoError.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-					correoError.setMensaje(" Querido Cliente " + nombreCliente + " tuvimos una novedad en la creaciÛn de tu pedido, no entendimos la fecha ingresada, por lo tanto creamos el pedido para el dÌa de hoy, en caso de que no sea asÌ por favor comunicate con nosotros a la linea 604 4444553.");
+					correoError.setMensaje(" Querido Cliente " + nombreCliente + " tuvimos una novedad en la creaci√≥n de tu pedido, no entendimos la fecha ingresada, por lo tanto creamos el pedido para el d√≠a de hoy, en caso de que no sea as√≠ por favor comunicate con nosotros a la linea 604 4444553.");
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correoError, correos);
 					contro.enviarCorreo();
 				}
@@ -6590,13 +6753,13 @@ public class PedidoCtrl {
 			}
 			int idTipoPedido = 1;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal, asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
-			//Realizamos la inserciÛn del producto ordenado
+			//Realizamos la inserci√≥n del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido,nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento,  bebida2, detalles, idTipoPedido);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
-			//Luego de insertar el pedido haremos las ˙ltimas validaciones
-			//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
+			//Luego de insertar el pedido haremos las √∫ltimas validaciones
+			//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
-			//Consultaremos el tiempo que la tienda est· dando en el momento
+			//Consultaremos el tiempo que la tienda est√° dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
 			String horaProgramado = "AHORA";
 			String pedidoProgramado = "N";
@@ -6606,22 +6769,22 @@ public class PedidoCtrl {
 				pedidoProgramado = "S";
 			}
 			int idEstadoPedido = 2;
-			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir·n llegando los correos
+			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir√°n llegando los correos
 			FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", 0, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado, idEstadoPedido);
-			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envÌo del link del pedido para pago al cliente
+			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el env√≠o del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
 				verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
 			}
 		}catch(Exception e)
 		{
-			//Trabajar excepciÛn de que no se pudo obtener informaciÛn del LEAD y no se pudo crear
-			resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+			//Trabajar excepci√≥n de que no se pudo obtener informaci√≥n del LEAD y no se pudo crear
+			resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 		}
 	}
 	
 	/**
-	 * MÈtodo inicial que es llamado por el servicio, obtiene la informaciÛn del lead y trae la informaciÛn del pedido
+	 * M√©todo inicial que es llamado por el servicio, obtiene la informaci√≥n del lead y trae la informaci√≥n del pedido
 	 * @param datosJSON
 	 * @param lead
 	 * @param idLog
@@ -6630,10 +6793,10 @@ public class PedidoCtrl {
 	{
 		String resultadoProceso = "";
 		String telefono = "";
-		//Para realizar el ˙ltimo parseo
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -6650,10 +6813,10 @@ public class PedidoCtrl {
 				customFieldsArray = (JSONArray) objcustomFieldsValues;
 			}catch(Exception e1)
 			{
-				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 				//Tratar problema de no tener campos adicionales
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -6666,8 +6829,8 @@ public class PedidoCtrl {
 				valor = (JSONObject) objParserFinal;
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
-				if(clave.equals(new String("numero de telÈfono")) || clave.contains("numero de tel"))
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
+				if(clave.equals(new String("numero de tel√©fono")) || clave.contains("numero de tel"))
 				{
 					telefono = strValor;
 				}
@@ -6682,23 +6845,25 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que con el tÈlefono se encargar· de devolver el texto indicando el estado del pedido que se viene consultando.
+	 * M√©todo que con el t√©lefono se encargar√° de devolver el texto indicando el estado del pedido que se viene consultando.
 	 * @param telefono
 	 * @return
 	 */
 	public String obtenerMensajePedidoBOTCRM(String telefono)
 	{
 		String mensaje = "";
-		//Una vez recuperado el telÈfono realizamos las acciones correspondientes
+		//Una vez recuperado el tel√©fono realizamos las acciones correspondientes
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		//Con el n˙mero de telÈfono y fecha realizamos la consulta del pedido
+		//Con el n√∫mero de tel√©fono y fecha realizamos la consulta del pedido
 		int cantPedidos = PedidoDAO.validarTelefonoPedido(telefono);
 		if(cantPedidos > 1)
 		{
-			mensaje = "Para el dÌa de hoy, hay m·s de un pedido registrado con este n˙mero.";
+			mensaje = "Para el d√≠a de hoy, hay m√°s de un pedido registrado con este n√∫mero.";
 		}else if(cantPedidos == 0)
 		{
-			mensaje = "Para el dÌa no hay pedido registrados con este n˙mero.";
+
+			mensaje = "Estimado Cliente! Para el d√≠a de hoy, no hay ning√∫n pedido registrado con este n√∫mero tel√©fonico (" + telefono +")";
+
 		}else if(cantPedidos == 1)
 		{
 			//Realizamos la consulta del pedido para saber de que tienda
@@ -6709,7 +6874,7 @@ public class PedidoCtrl {
 			{
 				esPagoVirtual = true;
 			}
-			//Teniendo la informaciÛn del pedido deberemos de consultar el estado del pedido para lo cual vamos a consumir servicio a la tienda
+			//Teniendo la informaci√≥n del pedido deberemos de consultar el estado del pedido para lo cual vamos a consumir servicio a la tienda
 			//Recuperamos la tienda que requerimos trabajar con el servicio
 			HttpClient client = HttpClientBuilder.create().build();
 			if(pedConsultado.getNumposheader() > 0)
@@ -6717,14 +6882,14 @@ public class PedidoCtrl {
 				Tienda tienda = TiendaDAO.obtenerTienda(pedConsultado.getTienda().getIdTienda());
 				if (tienda != null)
 				{
-					//Realizar invocaciÛn de servicio en tienda
+					//Realizar invocaci√≥n de servicio en tienda
 					String rutaURL = tienda.getUrl() + "ConsultarEstadoPedido?idpedidotienda=" + pedConsultado.getNumposheader();
 					HttpGet request = new HttpGet(rutaURL);
 					try
 					{
 						StringBuffer retorno = new StringBuffer();
 						StringBuffer retornoTienda = new StringBuffer();
-						//Se realiza la ejecuciÛn del servicio de finalizar pedido
+						//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 						HttpResponse responseFinPed = client.execute(request);
 						BufferedReader rd = new BufferedReader
 							    (new InputStreamReader(
@@ -6741,32 +6906,49 @@ public class PedidoCtrl {
 						String estado = (String)jsonResServicio.get("estadopedido");
 						if(estado.contains("En Espera"))
 						{
-							estado = "producto elaborado y en espera de domiciliario";
+							estado = "ya est√° listo y en espera de un domiciliario.";
+						}else if(estado.contains("En Elaboraci√≥n"))
+						{
+							estado = "ya fue aceptado en tienda y en unos minutos ingresar√° a nuestros hornos.";
+						}else if(estado.contains("En Ruta"))
+						{
+							estado = "ya est√° con tu domiciliario y se encuentra en ruta.";
+						}else if(estado.contains("Entregado"))
+						{
+							estado = "ya fue entregado en la direcci√≥n " + pedConsultado.getDireccion() ;
 						}
 						String fechaDesde = (String)jsonResServicio.get("fechadesde");
-						//Cuando el mensaje esta vacio en ambos es porque no encontrÛ
+						//Cuando el mensaje esta vacio en ambos es porque no encontr√≥
 						if(estado.equals(new String("")) && fechaDesde.equals(new String("")))
 						{
-							mensaje = "No se encontrÛ informaciÛn del pedido, por favor contactar a un asesor.";
+
+							mensaje = "No se encontr√° informaci√≥n del pedido, por favor llama a nuestras lineas de atenci√≥n 604 4444553";
 						}else
 						{
-							mensaje = "*Su pedido n˙mero " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + " se encuentra en el estado " + estado + " desde la siguiente fecha y hora " + fechaDesde + ".*";
+							if(estado.contains("En Espera"))
+							{
+								mensaje = "*Su pedido n√∫mero " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + ". " + estado + ".*";
+							}else
+							{
+								mensaje = "*Su pedido n√∫mero " + pedConsultado.getIdpedido() + " a nombre de " + pedConsultado.getNombrecliente() + ". " + estado + " desde la siguiente fecha y hora " + fechaDesde + ".*";
+							}
+
 						}	
 					}catch(Exception e)
 					{
-						mensaje = "No se encontrÛ informaciÛn para su solicitud por favor contactar a un asesor.";
+						mensaje = "No se encontr√≥ informaci√≥n para su solicitud por favor contactar a un asesor.";
 						System.out.println(e.toString());
 					}
 				}
 			}
-			//Validamos si el pago es virtual para incluir m·s informaciÛn al mensaje
+			//Validamos si el pago es virtual para incluir m√°s informaci√≥n al mensaje
 			String mensajePagoVirtual = "";
 			if(esPagoVirtual)
 			{
-				mensajePagoVirtual = " Recuerde que su forma de pago es PAGO VIRTUAL y su pedido es enviado a elaborar una vez recibimos notificaciÛn autom·tica de su pago. Su pedido ingresÛ a las " + pedConsultado.getFechainsercion();
+				mensajePagoVirtual = " Recuerde que su forma de pago es PAGO VIRTUAL y su pedido es enviado a elaborar una vez recibimos notificaci√≥n autom√°tica de su pago. Su pedido ingres√≥ a las " + pedConsultado.getFechainsercion();
 				if(pedConsultado.getFechaPagoVirtual() == null || pedConsultado.getFechaPagoVirtual().equals(new String("")) ||pedConsultado.getFechaPagoVirtual().equals(new String("null")))
 				{
-					mensajePagoVirtual = mensajePagoVirtual + " y a˙n no ha sido pagado.";
+					mensajePagoVirtual = mensajePagoVirtual + " y a√∫n no ha sido pagado.";
 				}else
 				{
 					mensajePagoVirtual = mensajePagoVirtual + " y fue pagado a las " + pedConsultado.getFechaPagoVirtual() + " y enviado a elaborar a las " + pedConsultado.getFechaFinalizacion();
@@ -6780,8 +6962,8 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo que se encarga de realizar la actualizaciÛn de la informaciÛn de los datos adicionales del lead para mostrar
-	 * en el bot el resultado de la informaciÛn
+	 * M√©todo que se encarga de realizar la actualizaci√≥n de la informaci√≥n de los datos adicionales del lead para mostrar
+	 * en el bot el resultado de la informaci√≥n
 	 * @param lead
 	 * @param mensaje
 	 * @throws IOException
@@ -6827,30 +7009,83 @@ public class PedidoCtrl {
 	}
 	
 	
-	public void actualizarCoberturaLeadCRMBOT(String lead, String mensaje)
-	{
+	public void actualizarCoberturaLeadCRMBOT(String lead, Resultado mensaje,String tipo_cliente) {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		//Para revisar
-		String datos = "[\n"
-				+ "    {   \"id\":"+ lead +",\n"
-				+ "        \"custom_fields_values\": [\n"
-				+ "          {\n"
-				+ "             \"field_id\": 863191,\n"
-				+ "            \"values\": [\n"
-				+ "                {\n"
-				+ "                    \"value\": \" "+ mensaje +"\"\n"
-				+ "                }\n"
-				+ "            ]\n"
-				+ "        }\n"
-				+ "    ]\n"
-				+ "    }\n"
-				+ "]";
+		String datos="";
+		String txtmensaje=mensaje.getResultado();
+		
+		if(tipo_cliente.toLowerCase().equals("programado")) {
+			String  idcampo_asesor = obtenerCampoSeleccionCRM("862155","PROGRAMADO BOT SAM");
+			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
+			
+			if(mensaje.getResultado() == null) {
+				txtmensaje="";
+			}
+
+			datos = "[\r\n"
+					+ "    {   \"id\":"+ lead +",\r\n"
+					+ "        \"custom_fields_values\": [\r\n"
+					+ "        {\r\n"
+					+ "            \"field_id\": 863191,\r\n"
+					+ "            \"values\": [\r\n"
+					+ "                {\r\n"
+					+ "                    \"value\":\""+ mensaje.getResultado() +"\"\r\n"
+					+ "                }\r\n"
+					+ "            ]\r\n"
+					+ "        },\r\n"
+					+ "        {\r\n"
+					+ "            \"field_id\": 862155,\r\n"
+					+ "            \"values\": [\r\n"
+					+ "                {\r\n"
+					+ "                    \"enum_id\":"+idcampo_asesor+"\r\n"
+					+ "                }\r\n"
+					+ "            ]\r\n"
+					+ "        },\r\n"
+					+ "             {\r\n"
+					+ "            \"field_id\": 862153,\r\n"
+					+ "            \"values\": [\r\n"
+					+ "                {\r\n"
+					+ "                    \"enum_id\":"+idcampo_tienda+"\r\n"
+					+ "                }\r\n"
+					+ "            ]\r\n"
+					+ "        }\r\n"
+					+ "        ]\r\n"
+					+ "    }\r\n"
+					+ "    \r\n"
+					+ "]";
+		}else {
+			//Para revisar
+			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
+			 
+			 datos = "[{\"id\":"+ lead +",\n"
+			 		+ "  \"custom_fields_values\": [\n"
+			 		+ "    {\"field_id\": 863191,\n"
+			 		+ "      \"values\": [\n"
+			 		+ "        {\"value\":\""+ mensaje.getResultado() +"\"}\n"
+			 		+ "      ]\n"
+			 		+ "    },\n"
+			 		+ "    {\"field_id\": 862153,\n"
+			 		+ "      \"values\": [\n"
+			 		+ "        {\"enum_id\":"+idcampo_tienda+"}\n"
+			 		+ "      ]\n"
+			 		+ "    }\n"
+			 		+ "  ]\n"
+			 		+ "}]";
+			}
+			
+			
 		OkHttpClient client = new OkHttpClient();
-		System.out.println("4. LOS DATOS ENVIADOS PARA ACTUALIZACI”N  " + datos);
-		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
-		RequestBody body = RequestBody.create(mediaType, datos );
-		System.out.println("5. Clave  " + intCRM.getAccessToken());
+		System.out.println("4. LOS DATOS ENVIADOS PARA ACTUALIZACI√ìN  " + datos);
+		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
+		//byte[] datosBytes = datos.getBytes(StandardCharsets.UTF_8);
+		RequestBody body = RequestBody.create(mediaType,datos);
+			System.out.println("5. Clave  " + intCRM.getAccessToken());
+			System.out.println("5.1. body  " + body);
+
+
+
+		System.out.println("Request Body: " + bodyToString(body));
 		Request request = new Request.Builder()
 		  .url("https://pizzaamericana.kommo.com/api/v4/leads")
 		  .patch(body)
@@ -6858,10 +7093,12 @@ public class PedidoCtrl {
 		  .build();
 		try
 		{
-			okhttp3.Response response = client.newCall(request).execute();
-			String respuestaJSON = response.body().string();
-			System.out.println("1 " + response.toString());
-			datosLead = respuestaJSON;
+				okhttp3.Response response = client.newCall(request).execute();
+				System.out.println("Response Code: " + response.code());
+				System.out.println("Response Headers: " + response.headers());
+				String respuestaJSON = response.body().string();
+				System.out.println("Response Body: " + respuestaJSON);
+				datosLead = respuestaJSON;
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
@@ -6869,10 +7106,62 @@ public class PedidoCtrl {
 			
 	}
 	
+	private static String bodyToString(final RequestBody request) {
+	    try {
+	        final Buffer buffer = new Buffer();
+	        if (request != null) {
+	            request.writeTo(buffer);
+	        } else {
+	            return "";
+	        }
+	        return buffer.readUtf8();
+	    } catch (final IOException e) {
+	        return "Couldn't convert request body to string";
+	    }
+	}
+	
+	public String  obtenerCampoSeleccionCRM(String idcampo,String valorDeseado ){
+		String id = "";
+		try {
+			String infoCamp = obtenerInfoCampoLeadCRM(idcampo);
+            ObjectMapper objectMapper = new ObjectMapper();
+            // Convertir el string JSON a un objeto JsonNode
+            JsonNode jsonNode = objectMapper.readTree(infoCamp);
+            // Obtener el valor de "enums"
+            if (jsonNode.has("enums")) {
+            JsonNode enumsNode = jsonNode.get("enums");
+            // Verificar si "enums" no es nulo
+            if (enumsNode != null) {
+                // Imprimir el valor de "enums"
+                for (JsonNode enumNode : enumsNode) {
+                    // Obtener el valor de "value"
+                    String value = enumNode.get("value").asText();
+
+                    if (value.toLowerCase().equals(valorDeseado.toLowerCase())) {
+                    	 id= enumNode.get("id").asText();
+                    	
+                        break; // Puedes salir del bucle si encuentras la coincidencia
+                    }
+                }
+            } 
+            }
+
+		
+		} catch (IOException e) {
+			  System.out.println(e.toString());
+			e.printStackTrace();
+		}
+		
+		return id;
+		
+		
+		
+	}
+	
 	
 	
 	/**
-	 * MÈtodo para la inserciÛn directa del pedido proveneinte del CRM con la integraciÛn particular de Poblado
+	 * M√©todo para la inserci√≥n directa del pedido proveneinte del CRM con la integraci√≥n particular de Poblado
 	 * @param datosJSON
 	 * @param lead
 	 * @param idLog
@@ -6901,10 +7190,10 @@ public class PedidoCtrl {
 		int idTienda = 0;
 		String horaPedido = "";
 		String fechaProgramado = "";
-		//Para realizar el ˙ltimo parseo
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -6921,10 +7210,10 @@ public class PedidoCtrl {
 				customFieldsArray = (JSONArray) objcustomFieldsValues;
 			}catch(Exception e1)
 			{
-				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+				resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 				//Tratar problema de no tener campos adicionales
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -6946,7 +7235,7 @@ public class PedidoCtrl {
 				}
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
 				if(clave.equals(new String("asesor que atiende")))
 				{
 					asesor = strValor;
@@ -6954,10 +7243,10 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("nombre cliente"))||clave.equals(new String("Nombre del cliente")))
 				{
 					nombreCliente = strValor;
-				}else if(clave.equals(new String("numero de telÈfono")))
+				}else if(clave.equals(new String("numero de tel√©fono")))
 				{
 					telefono  = strValor;
-				}else if(clave.equals(new String("correo electrÛnico")) || clave.equals(new String("correo electrÛnico pqrs")))
+				}else if(clave.equals(new String("correo electr√≥nico")) || clave.equals(new String("correo electr√≥nico pqrs")))
 				{
 					correo = strValor;
 				}else if(clave.equals(new String("nombre del combo")))
@@ -6974,13 +7263,13 @@ public class PedidoCtrl {
 					sabor2 = strValor;
 				}else if(clave.equals(new String("adicion")))
 				{
-					//En este punto si podr·n ser varios
+					//En este punto si podr√°n ser varios
 					adicion = strValor;
 					
 				}else if(clave.equals(new String("bebida")))
 				{
 					bebida = strValor;
-				}else if(clave.equals(new String("acompaÒamiento")))
+				}else if(clave.equals(new String("acompa√±amiento")))
 				{
 					acompanamiento = strValor;
 				}else if(clave.equals(new String("bebida 2")))
@@ -6989,7 +7278,7 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("forma de pago")))
 				{
 					formaPago = strValor;
-				}else if(clave.equals(new String("direcciÛn de envÌo")))
+				}else if(clave.equals(new String("direcci√≥n de env√≠o")))
 				{
 					direccion = strValor;
 				}else if(clave.equals(new String("referencia")))
@@ -7017,15 +7306,15 @@ public class PedidoCtrl {
 			}
 			//Procedemos a crear el pedido en el sistema con base en como lo hemos creado para la tienda virtual
 			String telefonoCelular = "";
-			//El telefono le quitaremos el indicativo del paÌs
+			//El telefono le quitaremos el indicativo del pa√≠s
 			if(telefono.substring(0, 3).equals(new String("+57")))
 			{
 				telefono = telefono.substring(3);
 			}
-			//Para el caso del telÈfono validaremos si es un fijo
+			//Para el caso del tel√©fono validaremos si es un fijo
 			if(telefono.trim().length() == 7)
 			{
-				//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+				//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 				//contact center.
 				telefono = "604" + telefono;
 			}else
@@ -7033,35 +7322,35 @@ public class PedidoCtrl {
 				telefonoCelular = telefono;
 			}
 
-			//INCLUSI”N DE L”GICA
-			//Validamos la hora del pedido para poder realizar la validaciÛn del mismo 
+			//INCLUSI√ìN DE L√ìGICA
+			//Validamos la hora del pedido para poder realizar la validaci√≥n del mismo 
 			Date fechaActual = new Date();
-			//Requerimos saber si es viernes o S·bado
+			//Requerimos saber si es viernes o S√°bado
 			Calendar calendarioActual = Calendar.getInstance();
 			int diaActual = calendarioActual.get(Calendar.DAY_OF_WEEK);
 			//Solo dejaremos pedir si es un jueves, viernes o sabado
 			if((diaActual == 5)||(diaActual == 6)||(diaActual == 7))
 			{
-				//Se podrÌa continuar con el pedido
+				//Se podr√≠a continuar con el pedido
 			}
 			else
 			{
-				//En caso de que se estÈ pidiendo un dÌa diferente se enviar· un mensaje al WhatsApp y al correo informando esta anomlia
-				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los dÌas jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado)";
+				//En caso de que se est√© pidiendo un d√≠a diferente se enviar√° un mensaje al WhatsApp y al correo informando esta anomlia
+				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los d√≠as jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado)";
 				enviarWhatsAppUltramsg( mensaje , telefono);
 				envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 				return;
 			}
-			//Realizamos validaciÛn de si es sabado no se programe para el viernes
+			//Realizamos validaci√≥n de si es sabado no se programe para el viernes
 			if(diaActual == 7 && fechaProgramado.equals(new String("viernes")))
 			{
-				//En caso de que se estÈ pidiendo un dÌa sabado para dÌa viernes al WhatsApp y al correo informando esta anomlia
-				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los dÌas jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado),en tu caso estamos a dÌa sabado y estas intentando programarlo para el dÌa viernes.";
+				//En caso de que se est√© pidiendo un d√≠a sabado para d√≠a viernes al WhatsApp y al correo informando esta anomlia
+				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los d√≠as jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado),en tu caso estamos a d√≠a sabado y estas intentando programarlo para el d√≠a viernes.";
 				enviarWhatsAppUltramsg( mensaje , telefono);
 				envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 				return;
 			}
-			//Por ˙ltimo hacemos validaciones de las horas de los pedidos vs la fecha del pedido
+			//Por √∫ltimo hacemos validaciones de las horas de los pedidos vs la fecha del pedido
 			LocalDateTime locaDate = LocalDateTime.now();
 			int hora  = locaDate.getHour();
 			int minutos = locaDate.getMinute();
@@ -7069,7 +7358,7 @@ public class PedidoCtrl {
 			{
 				if(hora > 16 || (hora== 16 && minutos > 45))
 				{
-					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy viernes ya no se puede programar, dado que lo puedes programar m·ximo para las 4:45pm.";
+					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy viernes ya no se puede programar, dado que lo puedes programar m√°ximo para las 4:45pm.";
 					enviarWhatsAppUltramsg( mensaje , telefono);
 					envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 					return;
@@ -7079,7 +7368,7 @@ public class PedidoCtrl {
 			{
 				if(hora > 15 || (hora== 15 && minutos > 45))
 				{
-					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy sabado ya no se puede programar, dado que lo puedes programar m·ximo para las 3:45pm.";
+					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy sabado ya no se puede programar, dado que lo puedes programar m√°ximo para las 3:45pm.";
 					enviarWhatsAppUltramsg( mensaje , telefono);
 					envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 					return;
@@ -7103,9 +7392,9 @@ public class PedidoCtrl {
 			clienteVirtual.setTelefonoCelular(telefonoCelular);
 			clienteVirtual.setPoliticaDatos("S");
 			
-			//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+			//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
-			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 			int idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, "");
 			if(idCliente == 0)
 			{
@@ -7135,13 +7424,13 @@ public class PedidoCtrl {
 			String strFechaFinal = formatoFinal.format(fechaFinalPedido);
 			int idTipoPedido = 4;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal, asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido); 
-			//Realizamos la inserciÛn del producto ordenado
+			//Realizamos la inserci√≥n del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido,nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento,  bebida2, detalles, idTipoPedido );
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
-			//Luego de insertar el pedido haremos las ˙ltimas validaciones
-			//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
+			//Luego de insertar el pedido haremos las √∫ltimas validaciones
+			//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
-			//Consultaremos el tiempo que la tienda est· dando en el momento
+			//Consultaremos el tiempo que la tienda est√° dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
 			String horaProgramado = "AHORA";
 			String pedidoProgramado = "N";
@@ -7151,27 +7440,27 @@ public class PedidoCtrl {
 				pedidoProgramado = "S";
 			}
 			int idEstadoPedido = 2;
-			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir·n llegando los correos
+			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir√°n llegando los correos
 			FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", 0, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado, idEstadoPedido);
-			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envÌo del link del pedido para pago al cliente
+			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el env√≠o del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
 				verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
 			}
 			try
 			{
-				//Enviamos notificaciÛn de creaciÛn del pedido
+				//Enviamos notificaci√≥n de creaci√≥n del pedido
 				ArrayList correos = new ArrayList();
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correos.add(correo);
 				Correo correoNoti = new Correo(); 
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
-				correoNoti.setAsunto("CREACI”N DE PEDIDO BOT   # " + idPedido);
+				correoNoti.setAsunto("CREACI√ìN DE PEDIDO BOT   # " + idPedido);
 				correoNoti.setContrasena(infoCorreo.getClaveCorreo());
 				correoNoti.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 				//Construimos el mensaje
-				String mensaje =  "<table border='2'> <tr> DATOS DE CREACI”N DEL PEDIDO </tr>";
+				String mensaje =  "<table border='2'> <tr> DATOS DE CREACI√ìN DEL PEDIDO </tr>";
 				mensaje = mensaje 
 						+  "<tr><td><strong>Cliente</strong></td><td>"+ nombreCliente +"</td></tr>"
 						+  "<tr><td><strong>Telefono</strong></td><td>"+ telefono +"</td></tr>"
@@ -7180,7 +7469,7 @@ public class PedidoCtrl {
 						+  "<tr><td><strong>IMPORTANTE</strong></td><td>DEBE REALIZAR EL PAGO PARA QUE SU PEDIDO QUEDE PROGRAMADO</td></tr>";
 				
 				correoNoti.setMensaje(mensaje);
-				//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo AtenciÛn:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descriciÛn del problema: " + descripcionProblema  );
+				//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo Atenci√≥n:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descrici√≥n del problema: " + descripcionProblema  );
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correoNoti, correos);
 				contro.enviarCorreo(); 
 				
@@ -7191,8 +7480,8 @@ public class PedidoCtrl {
 			
 		}catch(Exception e)
 		{
-			//Trabajar excepciÛn de que no se pudo obtener informaciÛn del LEAD y no se pudo crear
-			resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est·n llenos los campos.";
+			//Trabajar excepci√≥n de que no se pudo obtener informaci√≥n del LEAD y no se pudo crear
+			resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no est√°n llenos los campos.";
 		}
 	}
 	
@@ -7203,10 +7492,10 @@ public class PedidoCtrl {
 		String nombreCliente = "";
 		String telefono = "";
 		String descripcionProblema = "";
-		//Para realizar el ˙ltimo parseo
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -7225,7 +7514,7 @@ public class PedidoCtrl {
 			}catch(Exception e1)
 			{
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -7238,8 +7527,8 @@ public class PedidoCtrl {
 				valor = (JSONObject) objParserFinal;
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
-				if(clave.equals(new String("tipo de atenciÛn")))
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
+				if(clave.equals(new String("tipo de atenci√≥n")))
 				{
 					tipoAtencion = strValor;
 				}else if(clave.equals(new String("punto de venta pqrs")))
@@ -7248,41 +7537,41 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("nombre cliente pqrs")))
 				{
 					nombreCliente  = strValor;
-				}else if(clave.equals(new String("telÈfono cliente pqrs")))
+				}else if(clave.equals(new String("tel√©fono cliente pqrs")))
 				{
 					telefono = strValor.trim();
 					telefono = telefono.replaceAll(" ", "");
-				}else if(clave.equals(new String("descripciÛn del problema")))
+				}else if(clave.equals(new String("descripci√≥n del problema")))
 				{
 					descripcionProblema = strValor;
 				}
 			}
-			//Realizamos envÌo de CORREO
-			//Recuperar la lista de distribuciÛn para este correo
+			//Realizamos env√≠o de CORREO
+			//Recuperar la lista de distribuci√≥n para este correo
 			ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEPQRSBOT");
 			Date fecha = new Date();
 			SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 			String strFechaSol = dateFormat.format(fecha);
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
-			correo.setAsunto("RADICI”N DE PQRS POR BOT  " + lead);
+			correo.setAsunto("RADICI√ìN DE PQRS POR BOT  " + lead);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			//Construimos el mensaje
-			String mensaje =  "<table border='2'> <tr> RADICACI”N DE PQRS POR SISTEMA CRM FUENTE BOT </tr>";
+			String mensaje =  "<table border='2'> <tr> RADICACI√ìN DE PQRS POR SISTEMA CRM FUENTE BOT </tr>";
 			mensaje = mensaje 
-					+  "<tr><td><strong>Tipo AtenciÛn</strong></td><td>"+ tipoAtencion +"</td></tr>"
+					+  "<tr><td><strong>Tipo Atenci√≥n</strong></td><td>"+ tipoAtencion +"</td></tr>"
 					+  "<tr><td><strong>Punto Venta PQRS</strong></td><td>"+ puntoVentaPQRS +"</td></tr>"
 					+  "<tr><td><strong>Nombre Cliente</strong></td><td>"+ nombreCliente +"</td></tr>"
-					+  "<tr><td><strong>TelÈfono</strong></td><td>"+ telefono +"</td></tr>"
-					+  "<tr><td><strong>DescripciÛn problema</strong></td><td>"+ descripcionProblema +"</td></tr>";
+					+  "<tr><td><strong>Tel√©fono</strong></td><td>"+ telefono +"</td></tr>"
+					+  "<tr><td><strong>Descripci√≥n problema</strong></td><td>"+ descripcionProblema +"</td></tr>";
 			correo.setMensaje(mensaje);
-			//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo AtenciÛn:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descriciÛn del problema: " + descripcionProblema  );
+			//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo Atenci√≥n:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descrici√≥n del problema: " + descripcionProblema  );
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 			contro.enviarCorreo();
 			
 			//Posteriormente realizaremos un tratamiento para crear la PQRS y que esta sea creada en nuestro sistema y se notifique a 
-			//Isabel y MÛnica
+			//Isabel y M√≥nica
 			Cliente cliente = clienteCtrl.obtenerClienteUltimoPedido(telefono);
 			//Validamos si el idcliente es cero significa que el cliente no existe
 			if(cliente.getIdcliente()== 0)
@@ -7291,9 +7580,9 @@ public class PedidoCtrl {
 			}
 			SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda");
-			//Realizar notificaciÛn WhatsApp
+			//Realizar notificaci√≥n WhatsApp
 			String notificacion = "Ha ingreasado una PQRS por el BOT Pizza Americana, por favor revisar con el LEAD # " + lead;
-			//Recuperaremos los celulares para notificar de la situaciÛn de la queja
+			//Recuperaremos los celulares para notificar de la situaci√≥n de la queja
 			ArrayList telNotifica = GeneralDAO.obtenerCorreosParametro("NOTIFICAPQRSBOT");
 			for(int i = 0; i  < telNotifica.size(); i++)
 			{
@@ -7308,7 +7597,7 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo para enviar de manera general un mensaje de WhatsApp con el celular y el texto.
+	 * M√©todo para enviar de manera general un mensaje de WhatsApp con el celular y el texto.
 	 * @param telefono
 	 * @param mensaje
 	 */
@@ -7332,7 +7621,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que realiza el procesamiento de la solicitud de factura electrÛnica
+	 * M√©todo que realiza el procesamiento de la solicitud de factura electr√≥nica
 	 * @param datosJSON
 	 * @param lead
 	 * @param idLog
@@ -7345,10 +7634,10 @@ public class PedidoCtrl {
 		String nombreCliente = "";
 		String telefono = "";
 		String correoElec = "";
-		//Para realizar el ˙ltimo parseo
+		//Para realizar el √∫ltimo parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
-		//Aqui estamos verificando la utilizaciÛn del valor
+		//Aqui estamos verificando la utilizaci√≥n del valor
 		JSONObject valor = new JSONObject();
 		JSONArray valorArreglo = new JSONArray();
 		String strValor = "";
@@ -7366,7 +7655,7 @@ public class PedidoCtrl {
 			}catch(Exception e1)
 			{
 			}
-			//Continuamos con la recolecciÛn de la informaciÛn para el pedido
+			//Continuamos con la recolecci√≥n de la informaci√≥n para el pedido
 			for(int i = 0; i < customFieldsArray.size(); i++)
 			{
 				//Tomamos el elemento para procesar
@@ -7379,7 +7668,7 @@ public class PedidoCtrl {
 				valor = (JSONObject) objParserFinal;
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
-				//Dependiendo del campos se tendr· la recuperaciÛn del mismo
+				//Dependiendo del campos se tendr√° la recuperaci√≥n del mismo
 				if(clave.equals(new String("# tipo de cliente fac")))
 				{
 					tipoClienteFAC = strValor;
@@ -7392,41 +7681,41 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("# nombre empresa o cliente")))
 				{
 					nombreCliente = strValor;
-				}else if(clave.equals(new String("# telÈfono fac")))
+				}else if(clave.equals(new String("# tel√©fono fac")))
 				{
 					telefono = strValor;
-				}else if(clave.equals(new String("# correo electrÛnico fac")))
+				}else if(clave.equals(new String("# correo electr√≥nico fac")))
 				{
 					correoElec = strValor;
 				}
 			}
-			//Realizamos envÌo de CORREO
-			//Recuperar la lista de distribuciÛn para este correo
+			//Realizamos env√≠o de CORREO
+			//Recuperar la lista de distribuci√≥n para este correo
 			ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEPQRSBOT");
 			Date fecha = new Date();
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
-			correo.setAsunto("SOLICITUD FACTURA ELECTR”NICA  " + lead);
+			correo.setAsunto("SOLICITUD FACTURA ELECTR√ìNICA  " + lead);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			//Construimos el mensaje
-			String mensaje =  "<table border='2'> <tr> SOLICITUD FACTURA ELECTR”NICA </tr>";
+			String mensaje =  "<table border='2'> <tr> SOLICITUD FACTURA ELECTR√ìNICA </tr>";
 			mensaje = mensaje 
 					+  "<tr><td><strong>Tipo de Cliente FAC</strong></td><td>"+ tipoClienteFAC +"</td></tr>"
 					+  "<tr><td><strong>Factura de venta</strong></td><td>"+ facturaVenta +"</td></tr>"
 					+  "<tr><td><strong>NIT o CC</strong></td><td>"+ identificacion +"</td></tr>"
 					+  "<tr><td><strong>Nombre Empresa o Cliente</strong></td><td>"+ nombreCliente +"</td></tr>"
-					+  "<tr><td><strong>TelÈfono FAC</strong></td><td>"+ telefono +"</td></tr>"
-					+  "<tr><td><strong>Correo electrÛnico FAC</strong></td><td>"+ correoElec +"</td></tr>";
+					+  "<tr><td><strong>Tel√©fono FAC</strong></td><td>"+ telefono +"</td></tr>"
+					+  "<tr><td><strong>Correo electr√≥nico FAC</strong></td><td>"+ correoElec +"</td></tr>";
 			correo.setMensaje(mensaje);
-			//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo AtenciÛn:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descriciÛn del problema: " + descripcionProblema  );
+			//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo Atenci√≥n:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descrici√≥n del problema: " + descripcionProblema  );
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 			contro.enviarCorreo();
-			//REVISAR TEMA DE GENERAR LA SOLICITUD DE FACTURA ELECTR”NICA EN NUESTRO SISTEMA
+			//REVISAR TEMA DE GENERAR LA SOLICITUD DE FACTURA ELECTR√ìNICA EN NUESTRO SISTEMA
 			Date fechaActual = new Date();
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			String strFechaAct = dateFormat.format(fechaActual);
-			//Realizamos un pequeÒo tratamiento al telefono
+			//Realizamos un peque√±o tratamiento al telefono
 			telefono = telefono.replace("+57", "");
 			telefono = telefono.replace(" ", "");
 			int intFacturaVenta = 0;
@@ -7454,28 +7743,36 @@ public class PedidoCtrl {
 	public static void main(String args[]) throws IOException
 	{
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();
-		PedidoCtrl.consultarCoberturaCRMBOT("{\"id\":21100107,\"name\":\"Lead #21100107\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58812344,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1697835183,\"updated_at\":1697835320,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":858274,\"field_name\":\"DirecciÛn de envÌo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"calle 63a # 47 -27\"}]},{\"field_id\":863427,\"field_name\":\"Barrio y Municipio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"prado centro , medellin\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/21100107?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "21100107", 0);
+
+		//PedidoCtrl.verificacionExistenciaClienteSalesManago("jubote1@gmail.com");
+		
+		//PedidoCtrl.consultarCoberturaCRMBOT("{\"id\":21100107,\"name\":\"Lead #21100107\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58812344,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1697835183,\"updated_at\":1697835320,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":858274,\"field_name\":\"Direcci√≥n de env√≠o\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"calle 63a # 47 -27\"}]},{\"field_id\":863427,\"field_name\":\"Barrio y Municipio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"prado centro , medellin\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/21100107?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "21100107", 0);
+
 		//PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"2\",\"type\":\"orderNew\",\"timestamp\":1694821682,\"data\":{\"order_id\":5764625991884408029,\"order_info\":{\"order_id\":5764625991884408029,\"status\":100,\"order_index\":162005,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1694824858,\"create_time\":1694821681,\"pay_time\":1694821681,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":2446200,\"items_discount\":1306200,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607591205045162,\"app_shop_id\":\"2\",\"shop_addr\":\"Carrera 53 #23-102 bello antioquia\",\"shop_name\":\"Pizza Americana - Bello\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"ud835udcf8ud835udcfcud835udcf9ud835udcf2ud835udcf7ud835udcea\",\"calling_code\":\"+57\",\"phone\":\"322***2741\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Combo Pizzeta + Gaseosa 400 ml\",\"total_price\":2446200,\"sku_price\":2446200,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400 ml\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":2,\"real_price\":1590000,\"promotion_detail\":{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},\"promo_list\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200}]}],\"promotions\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},{\"promo_type\":11,\"promo_discount\":450000,\"shop_subside_price\":0}]}}}", "revisar");
-		//PedidoCtrl.procesarFACBOTCRM("{\"id\":20617795,\"name\":\"Pizza Americana Manrique Piloto - Order #744528864 confirmed\",\"price\":34,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":59471960,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1692742678,\"updated_at\":1694608827,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":491608,\"field_name\":\"Tienda web:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana Manrique Piloto\"}]},{\"field_id\":491706,\"field_name\":\"Tipo:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"DELIVERY\"}]},{\"field_id\":492800,\"field_name\":\"Metodo de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"CASH\"}]},{\"field_id\":849448,\"field_name\":\"Llego\",\"field_code\":null,\"field_type\":\"multiselect\",\"values\":[{\"value\":\"Si\",\"enum_id\":537026,\"enum_code\":null}]},{\"field_id\":849440,\"field_name\":\"Conforme con producto\",\"field_code\":null,\"field_type\":\"numeric\",\"values\":[{\"value\":\"0\"}]},{\"field_id\":863599,\"field_name\":\"# Factura de venta\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"192993\"}]},{\"field_id\":863607,\"field_name\":\"# Tipo de cliente FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Empresa\"}]},{\"field_id\":863601,\"field_name\":\"# NIT o CC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"901290745\"}]},{\"field_id\":863603,\"field_name\":\"# Nombre empresa o cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana SAS\"}]},{\"field_id\":863609,\"field_name\":\"# Correo electrÛnico FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"jubote1@gmail.com\"}]},{\"field_id\":863605,\"field_name\":\"# TelÈfono FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3148807773\"}]},{\"field_id\":863701,\"field_name\":\"# Documento FAC\",\"field_code\":null,\"field_type\":\"file\",\"values\":[{\"value\":{\"file_uuid\":\"044ffe1f-dd92-46d0-b866-f0c52b51d804\",\"version_uuid\":\"9afb3f07-7eb7-4510-aab3-aecbb1dc5c6e\",\"file_name\":\"_SOLICITUD PIEZAS GR¡FICAS junio 2023.pdf\",\"file_size\":529070,\"is_deleted\":false}}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20617795?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":6000,\"name\":\"VENTA ONLINE\",\"color\":null}],\"companies\":[]}}", "20617795", 0);
+		//PedidoCtrl.procesarFACBOTCRM("{\"id\":20617795,\"name\":\"Pizza Americana Manrique Piloto - Order #744528864 confirmed\",\"price\":34,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":59471960,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1692742678,\"updated_at\":1694608827,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":491608,\"field_name\":\"Tienda web:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana Manrique Piloto\"}]},{\"field_id\":491706,\"field_name\":\"Tipo:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"DELIVERY\"}]},{\"field_id\":492800,\"field_name\":\"Metodo de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"CASH\"}]},{\"field_id\":849448,\"field_name\":\"Llego\",\"field_code\":null,\"field_type\":\"multiselect\",\"values\":[{\"value\":\"Si\",\"enum_id\":537026,\"enum_code\":null}]},{\"field_id\":849440,\"field_name\":\"Conforme con producto\",\"field_code\":null,\"field_type\":\"numeric\",\"values\":[{\"value\":\"0\"}]},{\"field_id\":863599,\"field_name\":\"# Factura de venta\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"192993\"}]},{\"field_id\":863607,\"field_name\":\"# Tipo de cliente FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Empresa\"}]},{\"field_id\":863601,\"field_name\":\"# NIT o CC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"901290745\"}]},{\"field_id\":863603,\"field_name\":\"# Nombre empresa o cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana SAS\"}]},{\"field_id\":863609,\"field_name\":\"# Correo electr√≥nico FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"jubote1@gmail.com\"}]},{\"field_id\":863605,\"field_name\":\"# Tel√©fono FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3148807773\"}]},{\"field_id\":863701,\"field_name\":\"# Documento FAC\",\"field_code\":null,\"field_type\":\"file\",\"values\":[{\"value\":{\"file_uuid\":\"044ffe1f-dd92-46d0-b866-f0c52b51d804\",\"version_uuid\":\"9afb3f07-7eb7-4510-aab3-aecbb1dc5c6e\",\"file_name\":\"_SOLICITUD PIEZAS GR√ÅFICAS junio 2023.pdf\",\"file_size\":529070,\"is_deleted\":false}}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20617795?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":6000,\"name\":\"VENTA ONLINE\",\"color\":null}],\"companies\":[]}}", "20617795", 0);
 		int idOrdenRappi = (int)(Math.random()*10000 + 1);
-		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":4500.0,\"description\":\"Aprovecha envÌo GRATIS cerca a ti\",\"title\":\"DESCUENTOS CERCANOS\",\"product_id\":null,\"type\":\"free_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":20,\"min_cooking_time\":14,\"max_cooking_time\":26,\"created_at\":\"2023-08-22 16:18:11\",\"delivery_method\":\"marketplace\",\"payment_method\":\"nequi\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"43 A \",\"complete_main_street_number\":\"48 C SUR\",\"main_street_number_letter\":\"C\",\"complementary_street_quadrant\":null,\"city\":\"Envigado\",\"meter\":\"50\",\"complete_address\":\"CL 48 C SUR # 43 A 50\",\"complementary_street_prefix\":null,\"complete_main_street\":\"CL 48 C SUR\",\"main_street_type\":\"CL\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"A\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"43 A 50\",\"complementary_street_number\":\"43\",\"complementary_street_prefix_letter\":null,\"neighborhood\":\"Primavera\",\"complement\":\"casa 170 cuidadela real\",\"postal_code\":\"055422\",\"main_street_quadrant\":\"SUR\"},\"totals\":{\"total_products\":46000.0,\"total_discounts\":4500.0,\"total_products_with_discount\":46000,\"total_products_without_discount\":46000,\"total_other_discounts\":0,\"total_order\":50500,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":46000,\"sku\":\"2135092234\",\"id\":\"2095543663\",\"name\":\"Pizza Hawaiana Extra Grande\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":46000,\"unit_price_without_discount\":46000,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[{\"price\":0,\"sku\":\"2135092232\",\"id\":\"21584967\",\"name\":\"Colombiana 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Pablo\",\"last_name\":\"Hern·ndez \",\"phone_number\":\"3238060575\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1020404113\"},\"store\":{\"internal_id\":\"900171988\",\"external_id\":\"900171988\",\"name\":\"Pizza Americana Envigado  (Solo maleta grande)\"}}", "");
+		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":4500.0,\"description\":\"Aprovecha env√≠o GRATIS cerca a ti\",\"title\":\"DESCUENTOS CERCANOS\",\"product_id\":null,\"type\":\"free_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":20,\"min_cooking_time\":14,\"max_cooking_time\":26,\"created_at\":\"2023-08-22 16:18:11\",\"delivery_method\":\"marketplace\",\"payment_method\":\"nequi\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"43 A \",\"complete_main_street_number\":\"48 C SUR\",\"main_street_number_letter\":\"C\",\"complementary_street_quadrant\":null,\"city\":\"Envigado\",\"meter\":\"50\",\"complete_address\":\"CL 48 C SUR # 43 A 50\",\"complementary_street_prefix\":null,\"complete_main_street\":\"CL 48 C SUR\",\"main_street_type\":\"CL\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"A\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"43 A 50\",\"complementary_street_number\":\"43\",\"complementary_street_prefix_letter\":null,\"neighborhood\":\"Primavera\",\"complement\":\"casa 170 cuidadela real\",\"postal_code\":\"055422\",\"main_street_quadrant\":\"SUR\"},\"totals\":{\"total_products\":46000.0,\"total_discounts\":4500.0,\"total_products_with_discount\":46000,\"total_products_without_discount\":46000,\"total_other_discounts\":0,\"total_order\":50500,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":46000,\"sku\":\"2135092234\",\"id\":\"2095543663\",\"name\":\"Pizza Hawaiana Extra Grande\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":46000,\"unit_price_without_discount\":46000,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[{\"price\":0,\"sku\":\"2135092232\",\"id\":\"21584967\",\"name\":\"Colombiana 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Pablo\",\"last_name\":\"Hern√°ndez \",\"phone_number\":\"3238060575\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1020404113\"},\"store\":{\"internal_id\":\"900171988\",\"external_id\":\"900171988\",\"name\":\"Pizza Americana Envigado  (Solo maleta grande)\"}}", "");
+		idOrdenRappi = (int)(Math.random()*10000 + 1);
+		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":4500.0,\"description\":\"Aprovecha env√≠o GRATIS cerca a ti\",\"title\":\"DESCUENTOS CERCANOS\",\"product_id\":null,\"type\":\"free_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":20,\"min_cooking_time\":14,\"max_cooking_time\":26,\"created_at\":\"2023-08-22 16:18:11\",\"delivery_method\":\"marketplace\",\"payment_method\":\"nequi\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"43 A \",\"complete_main_street_number\":\"48 C SUR\",\"main_street_number_letter\":\"C\",\"complementary_street_quadrant\":null,\"city\":\"Envigado\",\"meter\":\"50\",\"complete_address\":\"CL 48 C SUR # 43 A 50\",\"complementary_street_prefix\":null,\"complete_main_street\":\"CL 48 C SUR\",\"main_street_type\":\"CL\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"A\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"43 A 50\",\"complementary_street_number\":\"43\",\"complementary_street_prefix_letter\":null,\"neighborhood\":\"Primavera\",\"complement\":\"casa 170 cuidadela real\",\"postal_code\":\"055422\",\"main_street_quadrant\":\"SUR\"},\"totals\":{\"total_products\":46000.0,\"total_discounts\":4500.0,\"total_products_with_discount\":46000,\"total_products_without_discount\":46000,\"total_other_discounts\":0,\"total_order\":50500,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":46000,\"sku\":\"2135092234\",\"id\":\"2095543663\",\"name\":\"Pizza Hawaiana Extra Grande\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":46000,\"unit_price_without_discount\":46000,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[{\"price\":3500,\"sku\":\"2135092232\",\"id\":\"21584967\",\"name\":\"Colombiana 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Pablo\",\"last_name\":\"Hern√°ndez \",\"phone_number\":\"3238060575\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1020404113\"},\"store\":{\"internal_id\":\"900171988\",\"external_id\":\"900171988\",\"name\":\"Pizza Americana Envigado  (Solo maleta grande)\"}}", "");
 		int idOrdenDidi = (int)(Math.random()*10000 + 1);
 		PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"11\",\"type\":\"orderNew\",\"timestamp\":1692580650,\"data\":{\"order_id\":"+ idOrdenDidi +",\"order_info\":{\"order_id\":"+ idOrdenDidi +",\"status\":100,\"order_index\":938010,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1692583124,\"create_time\":1692580650,\"pay_time\":1692580650,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":1900000,\"items_discount\":0,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607772705162938,\"app_shop_id\":\"11\",\"shop_addr\":\"Calle 68 # 43 u2013 05 medellin, Medellu00edn, Antioquia, Colombia\",\"shop_name\":\"Pizza Americana - Manrique Piloto\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"\",\"calling_code\":\"+57\",\"phone\":\"310***3910\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizzeta por Mitades\",\"total_price\":1900000,\"sku_price\":1900000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400ml\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Americana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":0,\"real_price\":1900000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}}]}}}", "revisar");
+		idOrdenDidi = (int)(Math.random()*10000 + 1);
+		PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"11\",\"type\":\"orderNew\",\"timestamp\":1692580650,\"data\":{\"order_id\":"+ idOrdenDidi +",\"order_info\":{\"order_id\":"+ idOrdenDidi +",\"status\":100,\"order_index\":938010,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1692583124,\"create_time\":1692580650,\"pay_time\":1692580650,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":1900000,\"items_discount\":0,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607772705162938,\"app_shop_id\":\"11\",\"shop_addr\":\"Calle 68 # 43 u2013 05 medellin, Medellu00edn, Antioquia, Colombia\",\"shop_name\":\"Pizza Americana - Manrique Piloto\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"\",\"calling_code\":\"+57\",\"phone\":\"310***3910\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizzeta por Mitades\",\"total_price\":1900000,\"sku_price\":1900000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400ml\",\"total_price\":200000,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Americana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":0,\"real_price\":1900000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}}]}}}", "revisar");
 		
 		//OTROS TEMAS DE PRUEBAS
 		
 		//PedidoCtrl.consultarCoberturaCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20424793&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=58822804&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5421266&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=58812344&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5421266&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "HTTP Authorization header: No authorization header");
 		//PedidoCtrl.obtenerMensajePedidoBOTCRM("3003861204");
-		//PedidoCtrl.capturarEventoPagoWompi("{\"event\":\"transaction.updated\",\"data\":{\"transaction\":{\"id\":\"17415-1690508372-39946\",\"created_at\":\"2023-07-28T01:39:32.482Z\",\"finalized_at\":\"2023-07-28T02:24:43.627Z\",\"amount_in_cents\":4100000,\"reference\":\"o7uauu_1690508299_xwdlTld0Y\",\"customer_email\":\"erikazapata7193@gmail.com\",\"currency\":\"COP\",\"payment_method_type\":\"NEQUI\",\"payment_method\":{\"type\":\"NEQUI\",\"extra\":{\"is_three_ds\":false,\"transaction_id\":\"350-123-200774-1690508373TD3e\",\"external_identifier\":\"1690508373TD3e\",\"nequi_transaction_id\":\"350-123-200774-1690508373TD3e\"},\"phone_number\":\"3012630615\"},\"status\":\"APPROVED\",\"status_message\":\"La transacciÛn caducÛ\",\"shipping_address\":null,\"redirect_url\":\"https://pizzaamericana.co\",\"payment_source_id\":null,\"payment_link_id\":\"o7uauu\",\"customer_data\":{\"full_name\":\"Erika Zapata \",\"phone_number\":\"+573012630615\"},\"billing_data\":null}},\"sent_at\":\"2023-07-28T02:24:43.676Z\",\"timestamp\":1690511083,\"signature\":{\"checksum\":\"e9575a0dfbb7ded7b8bf30e028458fcf459e2426e4624259a1b7f700b2776527\",\"properties\":[\"transaction.id\",\"transaction.status\",\"transaction.amount_in_cents\"]},\"environment\":\"prod\"}");
-		//PedidoCtrl.procesarPedidoBOTCRM("{\"id\":20288899,\"name\":\"Lead #20288899\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58725736,\"pipeline_id\":7052584,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1689875327,\"updated_at\":1690466036,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862089,\"field_name\":\"numero de telÈfono\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3185020068\"}]},{\"field_id\":861855,\"field_name\":\"Nombre del combo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Grande (8 porciones)\"}]},{\"field_id\":862081,\"field_name\":\"Detalles\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Mitad y Mitad\"}]},{\"field_id\":857712,\"field_name\":\"Sabor 1\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Paisa\"}]},{\"field_id\":857714,\"field_name\":\"Sabor 2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Mexicana\"}]},{\"field_id\":861771,\"field_name\":\"Adicion\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Adiciones de Grande†Peperoni\"}]},{\"field_id\":861775,\"field_name\":\"Bebida\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pepsi\"}]},{\"field_id\":861773,\"field_name\":\"AcompaÒamiento\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Deditos de masa con queso\"}]},{\"field_id\":862087,\"field_name\":\"nombre cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sebastian\"}]},{\"field_id\":862901,\"field_name\":\"FECHA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"27/07/2023\"}]},{\"field_id\":862847,\"field_name\":\"HORA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"16:30\"}]},{\"field_id\":858274,\"field_name\":\"DirecciÛn de envÌo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Calle 67a # 31 AE - 39\"}]},{\"field_id\":858276,\"field_name\":\"Referencia\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Torre 4\"}]},{\"field_id\":862091,\"field_name\":\"correo electrÛnico\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sbotero0601@gmail.com\"}]},{\"field_id\":858272,\"field_name\":\"Forma de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pago Virtual Link Wompi\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20288899?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":93039,\"name\":\"PROGRAMADO\",\"color\":null}],\"companies\":[]}}", "20288899", 0);
+		//PedidoCtrl.capturarEventoPagoWompi("{\"event\":\"transaction.updated\",\"data\":{\"transaction\":{\"id\":\"17415-1690508372-39946\",\"created_at\":\"2023-07-28T01:39:32.482Z\",\"finalized_at\":\"2023-07-28T02:24:43.627Z\",\"amount_in_cents\":4100000,\"reference\":\"o7uauu_1690508299_xwdlTld0Y\",\"customer_email\":\"erikazapata7193@gmail.com\",\"currency\":\"COP\",\"payment_method_type\":\"NEQUI\",\"payment_method\":{\"type\":\"NEQUI\",\"extra\":{\"is_three_ds\":false,\"transaction_id\":\"350-123-200774-1690508373TD3e\",\"external_identifier\":\"1690508373TD3e\",\"nequi_transaction_id\":\"350-123-200774-1690508373TD3e\"},\"phone_number\":\"3012630615\"},\"status\":\"APPROVED\",\"status_message\":\"La transacci√≥n caduc√≥\",\"shipping_address\":null,\"redirect_url\":\"https://pizzaamericana.co\",\"payment_source_id\":null,\"payment_link_id\":\"o7uauu\",\"customer_data\":{\"full_name\":\"Erika Zapata \",\"phone_number\":\"+573012630615\"},\"billing_data\":null}},\"sent_at\":\"2023-07-28T02:24:43.676Z\",\"timestamp\":1690511083,\"signature\":{\"checksum\":\"e9575a0dfbb7ded7b8bf30e028458fcf459e2426e4624259a1b7f700b2776527\",\"properties\":[\"transaction.id\",\"transaction.status\",\"transaction.amount_in_cents\"]},\"environment\":\"prod\"}");
+		//PedidoCtrl.procesarPedidoBOTCRM("{\"id\":20288899,\"name\":\"Lead #20288899\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58725736,\"pipeline_id\":7052584,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1689875327,\"updated_at\":1690466036,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862089,\"field_name\":\"numero de tel√©fono\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3185020068\"}]},{\"field_id\":861855,\"field_name\":\"Nombre del combo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Grande (8 porciones)\"}]},{\"field_id\":862081,\"field_name\":\"Detalles\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Mitad y Mitad\"}]},{\"field_id\":857712,\"field_name\":\"Sabor 1\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Paisa\"}]},{\"field_id\":857714,\"field_name\":\"Sabor 2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Mexicana\"}]},{\"field_id\":861771,\"field_name\":\"Adicion\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Adiciones de Grande¬†Peperoni\"}]},{\"field_id\":861775,\"field_name\":\"Bebida\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pepsi\"}]},{\"field_id\":861773,\"field_name\":\"Acompa√±amiento\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Deditos de masa con queso\"}]},{\"field_id\":862087,\"field_name\":\"nombre cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sebastian\"}]},{\"field_id\":862901,\"field_name\":\"FECHA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"27/07/2023\"}]},{\"field_id\":862847,\"field_name\":\"HORA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"16:30\"}]},{\"field_id\":858274,\"field_name\":\"Direcci√≥n de env√≠o\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Calle 67a # 31 AE - 39\"}]},{\"field_id\":858276,\"field_name\":\"Referencia\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Torre 4\"}]},{\"field_id\":862091,\"field_name\":\"correo electr√≥nico\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sbotero0601@gmail.com\"}]},{\"field_id\":858272,\"field_name\":\"Forma de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pago Virtual Link Wompi\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20288899?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":93039,\"name\":\"PROGRAMADO\",\"color\":null}],\"companies\":[]}}", "20288899", 0);
 		//PedidoCtrl.consultarPedidoCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20017019&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=53955335&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5064734&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=142&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5064734&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana","prueba");
 		//PedidoCtrl.limpiarLeadCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=19895821&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=47301113&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5010344&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=53365371&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5010344&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "");
-		//PedidoCtrl.procesarPQRSBOTCRM("{\"id\":20780873,\"name\":\"Lead #20780873\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58728028,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1694391557,\"updated_at\":1694391802,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862681,\"field_name\":\"Tipo de atenciÛn\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Punto de venta\"}]},{\"field_id\":862683,\"field_name\":\"punto de venta pqrs\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Envigado\"}]},{\"field_id\":862673,\"field_name\":\"Nombre cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Arley Eduardo Palacio Cardona\"}]},{\"field_id\":862675,\"field_name\":\"TelÈfono cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"312 7038619\"}]},{\"field_id\":862677,\"field_name\":\"descripciÛn del problema\",\"field_code\":null,\"field_type\":\"textarea\",\"values\":[{\"value\":\"PedÌ unos palitos con queso y arequipe y no me enviaron el arequipe\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20780873?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "20780873", 0);
+		//PedidoCtrl.procesarPQRSBOTCRM("{\"id\":20780873,\"name\":\"Lead #20780873\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58728028,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1694391557,\"updated_at\":1694391802,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862681,\"field_name\":\"Tipo de atenci√≥n\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Punto de venta\"}]},{\"field_id\":862683,\"field_name\":\"punto de venta pqrs\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Envigado\"}]},{\"field_id\":862673,\"field_name\":\"Nombre cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Arley Eduardo Palacio Cardona\"}]},{\"field_id\":862675,\"field_name\":\"Tel√©fono cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"312 7038619\"}]},{\"field_id\":862677,\"field_name\":\"descripci√≥n del problema\",\"field_code\":null,\"field_type\":\"textarea\",\"values\":[{\"value\":\"Ped√≠ unos palitos con queso y arequipe y no me enviaron el arequipe\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20780873?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "20780873", 0);
 		//PedidoCtrl.envioCorreoTarjetaRegalo();
 	}
 	
 	/**
-	 * MAIN PARA PROBAR LA CREACI”N DE UN PEDIDO DE RAPPI
+	 * MAIN PARA PROBAR LA CREACI√ìN DE UN PEDIDO DE RAPPI
 	 * @param args
 	 * @throws IOException
 	 */
@@ -7483,7 +7780,7 @@ public class PedidoCtrl {
 //	{
 //		PedidoCtrl PedidoCtrl = new PedidoCtrl();
 //		//PedidoCtrl.aceptarPedidoIntegracionRAPPI(357382552);
-//		PedidoCtrl.insertarPedidoRAPPI("{"order_detail":{"discounts":[{"value":4500.0,"description":null,"title":null,"product_id":null,"type":"prime_discount_shipping","raw_value":0.0,"value_type":"percentage","max_value":null,"includes_toppings":false,"percentage_by_rappi":100,"percentage_by_partners":0,"amount_by_rappi":4500.0,"amount_by_partner":0.0,"discount_product_units":0,"discount_product_unit_value":null,"sku":null}],"order_id":"2155573457","cooking_time":20,"min_cooking_time":14,"max_cooking_time":26,"created_at":"2023-08-14 18:56:42","delivery_method":"marketplace","payment_method":"cc","billing_information":null,"delivery_information":{"complementary_street_without_meter":"74 ","complete_main_street_number":"31 ","main_street_number_letter":"","complementary_street_quadrant":null,"city":"MedellÌn","meter":"19","complete_address":"Calle 31 # 74 19","complementary_street_prefix":null,"complete_main_street":"Calle 31 ","main_street_type":"Calle","main_street_number_or_name":"31","complementary_street_letter":"","main_street_prefix_letter":null,"main_street_prefix":null,"complete_complementary_street":"74 19","complementary_street_number":"74","complementary_street_prefix_letter":null,"neighborhood":"BelÈn","complement":"","postal_code":"050030","main_street_quadrant":null},"totals":{"total_products":35000.0,"total_discounts":4500.0,"total_products_with_discount":35000,"total_products_without_discount":35000,"total_other_discounts":0,"total_order":39500,"total_to_pay":0,"discount_by_support":0.0,"total_discount_by_partner":0.0,"charges":{"shipping":4500},"other_totals":{"total_rappi_credits":0,"total_rappi_pay":0,"tip":0}},"items":[{"price":35000,"sku":"2135092188","id":"2095543677","name":"Pizza Americana Mediana","type":"product","comments":null,"unit_price_with_discount":35000,"unit_price_without_discount":35000,"percentage_discount":0,"quantity":1,"subitems":[{"price":0,"sku":"2135092185","id":"21585022","name":"Manzana 1.5 l","type":"topping","comments":null,"unit_price_with_discount":0,"unit_price_without_discount":0,"percentage_discount":0,"quantity":1,"subitems":[]}]}],"delivery_discount":{"total_percentage_discount":0.0,"total_value_discount":0.0}},"customer":{"first_name":"Alejandro","last_name":"Arbel·ez","phone_number":"3054316759","email":"integration@rappi.com","document_type":"1","document_number":"1017270642"},"store":{"internal_id":"900171987","external_id":"900171987","name":"Pizza Americana La AmÈrica"}}", "PRUEBA");
+//		PedidoCtrl.insertarPedidoRAPPI("{"order_detail":{"discounts":[{"value":4500.0,"description":null,"title":null,"product_id":null,"type":"prime_discount_shipping","raw_value":0.0,"value_type":"percentage","max_value":null,"includes_toppings":false,"percentage_by_rappi":100,"percentage_by_partners":0,"amount_by_rappi":4500.0,"amount_by_partner":0.0,"discount_product_units":0,"discount_product_unit_value":null,"sku":null}],"order_id":"2155573457","cooking_time":20,"min_cooking_time":14,"max_cooking_time":26,"created_at":"2023-08-14 18:56:42","delivery_method":"marketplace","payment_method":"cc","billing_information":null,"delivery_information":{"complementary_street_without_meter":"74 ","complete_main_street_number":"31 ","main_street_number_letter":"","complementary_street_quadrant":null,"city":"Medell√≠n","meter":"19","complete_address":"Calle 31 # 74 19","complementary_street_prefix":null,"complete_main_street":"Calle 31 ","main_street_type":"Calle","main_street_number_or_name":"31","complementary_street_letter":"","main_street_prefix_letter":null,"main_street_prefix":null,"complete_complementary_street":"74 19","complementary_street_number":"74","complementary_street_prefix_letter":null,"neighborhood":"Bel√©n","complement":"","postal_code":"050030","main_street_quadrant":null},"totals":{"total_products":35000.0,"total_discounts":4500.0,"total_products_with_discount":35000,"total_products_without_discount":35000,"total_other_discounts":0,"total_order":39500,"total_to_pay":0,"discount_by_support":0.0,"total_discount_by_partner":0.0,"charges":{"shipping":4500},"other_totals":{"total_rappi_credits":0,"total_rappi_pay":0,"tip":0}},"items":[{"price":35000,"sku":"2135092188","id":"2095543677","name":"Pizza Americana Mediana","type":"product","comments":null,"unit_price_with_discount":35000,"unit_price_without_discount":35000,"percentage_discount":0,"quantity":1,"subitems":[{"price":0,"sku":"2135092185","id":"21585022","name":"Manzana 1.5 l","type":"topping","comments":null,"unit_price_with_discount":0,"unit_price_without_discount":0,"percentage_discount":0,"quantity":1,"subitems":[]}]}],"delivery_discount":{"total_percentage_discount":0.0,"total_value_discount":0.0}},"customer":{"first_name":"Alejandro","last_name":"Arbel√°ez","phone_number":"3054316759","email":"integration@rappi.com","document_type":"1","document_number":"1017270642"},"store":{"internal_id":"900171987","external_id":"900171987","name":"Pizza Americana La Am√©rica"}}", "PRUEBA");
 //	}
 	
 	public String insertarSolicitudFacturaImagen(SolicitudFacturaImagenes solicitud)
@@ -7522,20 +7819,20 @@ public class PedidoCtrl {
 	public String consultarEstadosPedidoTienda(int idTienda)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "ConsultarEstadosPedidoTienda?dsnodbc=" + tienda.getDsnTienda() + "&pos=" + tienda.getPos();
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -7563,20 +7860,20 @@ public class PedidoCtrl {
 	public String obtenerEgresosServicio(int idTienda, String fecha)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "ObtenerEgresosServicio?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -7603,20 +7900,20 @@ public class PedidoCtrl {
 	public String consultaResumidaEstadoTienda(int idTienda, String fecha)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "ConsultaResumidaEstadoTienda?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -7644,20 +7941,20 @@ public class PedidoCtrl {
 	public String aprobarEgresoServicio(int idTienda, int idEgreso)
 	{
 		String respuesta = "";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		//Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null)
 		{
-			//Realizar invocaciÛn de servicio en tienda
+			//Realizar invocaci√≥n de servicio en tienda
 			String rutaURL = tienda.getUrl() + "AprobarEgresoServicio?idegreso=" + idEgreso;
 			HttpGet request = new HttpGet(rutaURL);
 			try
 			{
 				StringBuffer retorno = new StringBuffer();
 				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecuciÛn del servicio de finalizar pedido
+				//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
 				BufferedReader rd = new BufferedReader
 					    (new InputStreamReader(
@@ -7684,7 +7981,7 @@ public class PedidoCtrl {
 	
 	
 	/**
-	 * MÈtodo que se encarga de realizar la actualizaciÛn cada semana del token de actualizaciÛn para la plataformad de RAPPI
+	 * M√©todo que se encarga de realizar la actualizaci√≥n cada semana del token de actualizaci√≥n para la plataformad de RAPPI
 	 * @param plataforma
 	 * @throws IOException
 	 */
@@ -7720,7 +8017,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo construido para el propÛsito de descomponer el JSON con la informaciÛn del pedido de RAPPI
+	 * M√©todo construido para el prop√≥sito de descomponer el JSON con la informaci√≥n del pedido de RAPPI
 	 * @param stringJSON
 	 * @param idLog
 	 * @return
@@ -7730,7 +8027,7 @@ public class PedidoCtrl {
 		String log = "";
 		int idPedidoCreado = 0;
 		long idOrdenComercio = 0;
-		//Variable que le asignar· un id ˙nico al pedido de tienda virtual que llega
+		//Variable que le asignar√° un id √∫nico al pedido de tienda virtual que llega
 		int idInterno = 0;
 		//Variable donde almacenaremos el idCliente
 		int idCliente = 0;
@@ -7739,7 +8036,7 @@ public class PedidoCtrl {
 		long valorTotalContact = 0;
 		String estadoPedido = "";
 		boolean esProgramado = false;
-		//Variable donde se almacenar· la hora de programado del pedido con S o N y la hora de programado
+		//Variable donde se almacenar√° la hora de programado del pedido con S o N y la hora de programado
 		//Inicializamos ambas variables con los valores 
 		String programado = "N";
 		String horaProgramado = "AHORA";
@@ -7747,7 +8044,7 @@ public class PedidoCtrl {
 		//Variable donde almacenaremos el tipoPedido
 		String tipoPedido = "";
 		int idTipoPedido = 1;
-		//Formamos la fecha del pedido que podr· cambiar si el pedido es posfechado
+		//Formamos la fecha del pedido que podr√° cambiar si el pedido es posfechado
 		Date fechaPedido = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("dd/MM/yyyy");
 		String strFechaFinal = formatoFinal.format(fechaPedido);
@@ -7763,15 +8060,15 @@ public class PedidoCtrl {
 			//Realizamos el parseo del primer nivel del JSON
 			Object objParser = parser.parse(stringJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
-			//Descomponemos la informaciÛn en order_detail,customer,store
+			//Descomponemos la informaci√≥n en order_detail,customer,store
 			String orderDetailJSON = (String)jsonGeneral.get("order_detail").toString();
 			String customerJSON = (String)jsonGeneral.get("customer").toString();
 			String storeJSON = (String)jsonGeneral.get("store").toString();
 			Object objParserOrderDetail = parser.parse(orderDetailJSON);
 			JSONObject jsonOrder = (JSONObject) objParserOrderDetail;
-			//Comenzamos a extraer la informacion que allÌ viene
+			//Comenzamos a extraer la informacion que all√≠ viene
 			idOrdenComercio = Long.parseLong((String)jsonOrder.get("order_id"));
-			//Incluiremos validaciÛn para que no cree pedidos dobles
+			//Incluiremos validaci√≥n para que no cree pedidos dobles
 			boolean yaExisteOrden = PedidoDAO.consultarExistenciaOrdenRappi(idOrdenComercio);
 			if(yaExisteOrden)
 			{
@@ -7784,7 +8081,7 @@ public class PedidoCtrl {
 				correos.add("lidercontactcenter@pizzaamericana.com.co");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-				correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n˙mero  " + idOrdenComercio);
+				correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n√∫mero  " + idOrdenComercio);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				contro.enviarCorreo();
 				return("");
@@ -7857,9 +8154,9 @@ public class PedidoCtrl {
 				}
 			}
 		
-			//Trabajamos con la extracciÛn y homologaciÛn de la forma de pago
+			//Trabajamos con la extracci√≥n y homologaci√≥n de la forma de pago
 			String formPago = (String)jsonOrder.get("payment_method");
-			//Realizamos la homologaciÛn de la formad de pago
+			//Realizamos la homologaci√≥n de la formad de pago
 			ParametrosCtrl parCtrl = new ParametrosCtrl();
 			int idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPago);
 			if(idFormaPago == 0)
@@ -7867,9 +8164,9 @@ public class PedidoCtrl {
 				idFormaPago = 3;
 				log = log + " " + "No se pudo homologar la forma de pago fue puesto en PAGO-ONLINE, por favor revisar.";
 			}
-			//Procesamos la informaciÛn de UbicaciÛn del domicilio
+			//Procesamos la informaci√≥n de Ubicaci√≥n del domicilio
 			JSONObject jsonDelivInf  = (JSONObject)jsonOrder.get("delivery_information");
-			//Tendremos un trato diferencial para la direcciÛn
+			//Tendremos un trato diferencial para la direcci√≥n
 			String dirRes = "";
 			String ciudad = "";
 			String dirAdicional = "";
@@ -7879,7 +8176,7 @@ public class PedidoCtrl {
 				dirRes = (String)jsonDelivInf.get("complete_address");
 				if(dirRes == null)
 				{
-					//Se deber· probar a armar la direcciÛn manualmente
+					//Se deber√° probar a armar la direcci√≥n manualmente
 					dirRes = "";
 					dirRes = (String)jsonDelivInf.get("complete_main_street_number") + " " + (String)jsonDelivInf.get("complete_complementary_street");
 				}
@@ -7914,7 +8211,7 @@ public class PedidoCtrl {
 			{
 				dirAdicional = "";
 			}
-			//Trabajamos sobre el complemento de la direcciÛn
+			//Trabajamos sobre el complemento de la direcci√≥n
 			try
 			{
 				complementoDir = (String)jsonDelivInf.get("complement");
@@ -7938,7 +8235,7 @@ public class PedidoCtrl {
 			String direccion = "";
 			String obsDireccion = "";
 			direccion = direccion.replaceAll("'", " ");
-			//Tendremos unas reglas para conformar la direcciÛn
+			//Tendremos unas reglas para conformar la direcci√≥n
 			if(dirAdicional.equals(new String("")))
 			{
 				direccion = dirRes + " " + ciudad;
@@ -7949,7 +8246,7 @@ public class PedidoCtrl {
 				obsDireccion = dirAdicional;
 			}
 			double latitud = 0, longitud = 0;
-			//Realizamos la intervenciÛn para tratar en el momentoen que la ubicaciÛn viene en cero
+			//Realizamos la intervenci√≥n para tratar en el momentoen que la ubicaci√≥n viene en cero
 			if(latitud== 0 && longitud == 0)
 			{
 				UbicacionCtrl  ubicacion = new UbicacionCtrl();
@@ -7959,21 +8256,21 @@ public class PedidoCtrl {
 			}
 			
 			
-			//REALIZAMOS PROCESAMIENTO DE LA INFORMACI”N DEL CLIENTE
+			//REALIZAMOS PROCESAMIENTO DE LA INFORMACI√ìN DEL CLIENTE
 			Object objParserCustomer = parser.parse(customerJSON);
 			JSONObject jsonCustomer = (JSONObject) objParserCustomer;
 			//Continuamos con el procesamiento del pedido
 			String telefono = (String)jsonCustomer.get("phone_number");
 			String telefonoCelular = "";
-			//El telefono le quitaremos el indicativo del paÌs
+			//El telefono le quitaremos el indicativo del pa√≠s
 			if(telefono.substring(0, 3).equals(new String("+57")))
 			{
 				telefono = telefono.substring(3);
 			}
-			//Para el caso del telÈfono validaremos si es un fijo
+			//Para el caso del tel√©fono validaremos si es un fijo
 			if(telefono.trim().length() == 7)
 			{
-				//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+				//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 				//contact center.
 				telefono = "604" + telefono;
 			}else
@@ -7998,7 +8295,7 @@ public class PedidoCtrl {
 			}
 			String email  = (String)jsonCustomer.get("email");
 			
-			//REALIZAMOS PROCESAMIENTO DE LA INFORMACI”N DE LA TIENDA
+			//REALIZAMOS PROCESAMIENTO DE LA INFORMACI√ìN DE LA TIENDA
 			Object objParserStore = parser.parse(storeJSON);
 			JSONObject jsonStore = (JSONObject) objParserStore;
 			Long internalIDTienda =Long.parseLong((String)jsonStore.get("internal_id"));
@@ -8015,7 +8312,7 @@ public class PedidoCtrl {
 			{
 				origenPedido = "RAP";
 			}
-			//REALIZAMOS PROCESAMIENTO DEL CLIENTE CON SU DIRECCI”N
+			//REALIZAMOS PROCESAMIENTO DEL CLIENTE CON SU DIRECCI√ìN
 			Cliente clienteVirtual = new Cliente(0, telefono, nombres, direccion, "", obsDireccion,"", idTienda);
 			clienteVirtual.setApellidos(apellidos);
 			clienteVirtual.setEmail(email);
@@ -8024,9 +8321,9 @@ public class PedidoCtrl {
 			clienteVirtual.setLontitud((float)longitud);
 			clienteVirtual.setTelefonoCelular(telefonoCelular);
 			clienteVirtual.setPoliticaDatos("S");
-			//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+			//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
-			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+			//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 			idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, "");
 			if(idCliente == 0)
 			{
@@ -8039,7 +8336,7 @@ public class PedidoCtrl {
 				correos.add("lidercontactcenter@pizzaamericana.com.co");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-				correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n˙mero  " + idOrdenComercio);
+				correo.setMensaje(" Se tiene un problema creando el pedido duplicado de RAPPI n√∫mero  " + idOrdenComercio);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				contro.enviarCorreo();
 			}
@@ -8076,7 +8373,7 @@ public class PedidoCtrl {
 				JSONObject productoTemp = (JSONObject) detalleOrdenArray.get(i);
 				//Tomamos el nombre del producto
 				String nombreProducto = (String) productoTemp.get("name");
-				//Buscaremos la manera de homologar con el nombre en donde homologarÌamos producto, sabor y es promociÛn, crearemos una tabla para este fin.
+				//Buscaremos la manera de homologar con el nombre en donde homologar√≠amos producto, sabor y es promoci√≥n, crearemos una tabla para este fin.
 				HomologacionProductoRappi homProducto = HomologacionProductoRappiDAO.obtenerHomologacionProductoRappi(nombreProducto);
 				idProducto = homProducto.getIdProducto();
 				idEspecialidad = homProducto.getIdEspecialidad();
@@ -8084,17 +8381,45 @@ public class PedidoCtrl {
 				double valorUnitario = homProducto.getPrecio();
 				int cantidad = new Long((long)productoTemp.get("quantity")).intValue();
 				double douCantidad = (double)cantidad;
-				//Necesitamos extraer la informaciÛn de la gaseosa
+				//Necesitamos extraer la informaci√≥n de la gaseosa
 				JSONArray subItemsOrdenArray = (JSONArray)productoTemp.get("subitems");
+				double precioGaseosa = 0;
 				int idSaborTipoLiquido = 0;
 				for(int j = 0; j < subItemsOrdenArray.size(); j++)
 				{
 					JSONObject subProductoTemp = (JSONObject) subItemsOrdenArray.get(j);
 					String nombreGaseosa = (String)subProductoTemp.get("name");
+					try
+					{
+						precioGaseosa = (long)subProductoTemp.get("price");
+					}catch(Exception e1)
+					{
+						precioGaseosa = 0;
+					}
 					idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual(nombreGaseosa);
+					if(idSaborTipoLiquido != 0)
+					{
+						break;
+					}
 				}
-				DetallePedido detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, 0/*idExcepcion*/, "" /*strCON*/, "");
+				//Verificamos si viene la gaseosa como un producto adicional
+				DetallePedido detPedido = new DetallePedido();;
+				DetallePedido detPedidoGaseosaAdi = new DetallePedido();;
+				detPedidoGaseosaAdi.setIdproducto(0);
+				if(precioGaseosa == 0)
+				{
+					detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, 0/*idExcepcion*/, "" /*strCON*/, "");
+				}else if(precioGaseosa > 0)
+				{
+					detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+					int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+					detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,douCantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+				}
 				int idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
+				if(detPedidoGaseosaAdi.getIdproducto() > 0)
+				{
+					PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+				}
 				//Revisamos el tema de los de productos incluidos
 				if(idDetallePedido > 0)
 				{
@@ -8103,7 +8428,7 @@ public class PedidoCtrl {
 						ProductoIncluido proIncTemp = productosIncluidos.get(j);
 						if(proIncTemp.getIdproductopadre() == detPedido.getIdproducto())
 						{
-							//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+							//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 							DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallePedido, 0, 0 /*idexcepcion*/, "", "");
 							PedidoDAO.InsertarDetallePedido(detPedidoInc);
 						}
@@ -8112,10 +8437,10 @@ public class PedidoCtrl {
 				
 			}
 			int idEstadoPedido = 2;
-			//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
+			//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
 			
-			//VALIDAMOS LA INFORMACI”N DEL DESCUENTO
+			//VALIDAMOS LA INFORMACI√ìN DEL DESCUENTO
 			double descuentoPedido = 0;
 			double descuentoPropio = 0;
 			double descuentoPlataforma = 0;
@@ -8123,7 +8448,7 @@ public class PedidoCtrl {
 			String marketPlace = "S";
 			String motivoDescuento = "";
 			JSONArray descuentosArray = (JSONArray)jsonOrder.get("discounts");
-			//Realizamos modificaciÛn
+			//Realizamos modificaci√≥n
 			for(int k = 0; k < descuentosArray.size(); k++)
 			{
 				JSONObject descuentoTemp = (JSONObject) descuentosArray.get(k);
@@ -8183,7 +8508,7 @@ public class PedidoCtrl {
 					}
 	
 				}
-				//Realizamos validaciÛn para que si el descuento viene del service fee y es PAGO-ONLINE no lo tenga en cuenta
+				//Realizamos validaci√≥n para que si el descuento viene del service fee y es PAGO-ONLINE no lo tenga en cuenta
 				if(descripcion.equals(new String("30%OFF Service Fee")) && idFormaPago == 3)
 				{
 					
@@ -8194,16 +8519,16 @@ public class PedidoCtrl {
 					descuentoPlataforma = descuentoPlataforma  +  (desTemp*porcentajeRappi)/100;
 				}
 			}
-			//Hacemos validaciÛn de rappiCreditos con los descuentos
+			//Hacemos validaci√≥n de rappiCreditos con los descuentos
 			if(rappiCreditos > 0)
 			{
 				descuentoPlataforma = descuentoPlataforma + rappiCreditos;
 				descuentoPedido = descuentoPedido + rappiCreditos;
 			}
-			//Debemos insertar la marcaciÛn del pedido RAPPI
+			//Debemos insertar la marcaci√≥n del pedido RAPPI
 			MarcacionPedido marPedido = new MarcacionPedido(idPedido, 2, Long.toString(idOrdenComercio), descuentoPropio, motivoDescuento, marketPlace, descuentoAsumido, descuentoPlataforma,tarifaServicio,propina,log);
 			MarcacionPedidoDAO.InsertarMarcacionPedido(marPedido);
-			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir·n llegando los correos
+			//Realizamos un cambio temporal para evitar las diferencias pero igual seguir√°n llegando los correos
 			FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado, idEstadoPedido);
 		}catch(Exception e)
 		{
@@ -8215,7 +8540,7 @@ public class PedidoCtrl {
 			correos.add(correoEle);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-			correo.setMensaje(" Se tiene un problema creando el pedido de RAPPI n˙mero  " + idOrdenComercio + " " + e.toString());
+			correo.setMensaje(" Se tiene un problema creando el pedido de RAPPI n√∫mero  " + idOrdenComercio + " " + e.toString());
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 			contro.enviarCorreo();
 			System.out.println(e.toString());
@@ -8233,7 +8558,7 @@ public class PedidoCtrl {
 		String appId = "";
 		String appShopId = "";
 		int idTienda = 0;
-		//Variable que le asignar· un id ˙nico al pedido de tienda virtual que llega
+		//Variable que le asignar√° un id √∫nico al pedido de tienda virtual que llega
 		int idInterno = 0;
 		//Variable donde almacenaremos el idCliente
 		int idCliente = 0;
@@ -8242,7 +8567,7 @@ public class PedidoCtrl {
 		long valorTotalContact = 0;
 		String estadoPedido = "";
 		boolean esProgramado = false;
-		//Variable donde se almacenar· la hora de programado del pedido con S o N y la hora de programado
+		//Variable donde se almacenar√° la hora de programado del pedido con S o N y la hora de programado
 		//Inicializamos ambas variables con los valores 
 		String programado = "N";
 		String horaProgramado = "AHORA";
@@ -8250,7 +8575,7 @@ public class PedidoCtrl {
 		//Variable donde almacenaremos el tipoPedido
 		String tipoPedido = "";
 		int idTipoPedido = 1;
-		//Formamos la fecha del pedido que podr· cambiar si el pedido es posfechado
+		//Formamos la fecha del pedido que podr√° cambiar si el pedido es posfechado
 		Date fechaPedido = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("dd/MM/yyyy");
 		String strFechaFinal = formatoFinal.format(fechaPedido);
@@ -8273,11 +8598,11 @@ public class PedidoCtrl {
 			appShopId = (String)jsonGeneral.get("app_shop_id");
 			if(tipoOrden.equals(new String("orderNew")))
 			{
-				//Descomponemos la informaciÛn en order_detail,customer,store
+				//Descomponemos la informaci√≥n en order_detail,customer,store
 				String data = (String)jsonGeneral.get("data").toString();
 				Object objParserData = parser.parse(data);
 				JSONObject jsonData = (JSONObject) objParserData;
-				//Comenzamos a extraer la informacion que allÌ viene
+				//Comenzamos a extraer la informacion que all√≠ viene
 				idOrdenComercio = new BigInteger((String)(jsonData.get("order_id").toString()));
 				boolean yaExisteOrden = PedidoDAO.consultarExistenciaOrdenDidi(idOrdenComercio);
 				if(yaExisteOrden)
@@ -8291,19 +8616,19 @@ public class PedidoCtrl {
 					correos.add("lidercontactcenter@pizzaamericana.com.co");
 					correo.setContrasena(infoCorreo.getClaveCorreo());
 					correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-					correo.setMensaje(" Se tiene un problema creando el pedido duplicado de DIDI n˙mero  " + idOrdenComercio);
+					correo.setMensaje(" Se tiene un problema creando el pedido duplicado de DIDI n√∫mero  " + idOrdenComercio);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 					//contro.enviarCorreo();
 					return("");
 				}
 				appId = ((Long)jsonGeneral.get("app_id")).toString();
-				//Obtenemos la tienda de la cual proviene la integraciÛn
+				//Obtenemos la tienda de la cual proviene la integraci√≥n
 				idTienda = IntegracionCRMDAO.obtenerIdTiendaIntegracion(appShopId);
 				String orderInfo = (String)jsonData.get("order_info").toString();
 				Object objParserOrderInfo = parser.parse(orderInfo);
 				JSONObject jsonOrderInfo = (JSONObject) objParserOrderInfo;
 				String origenPedido = "DID";
-				//Hacemos el procesamiento de la informaciÛn del cliente
+				//Hacemos el procesamiento de la informaci√≥n del cliente
 				//Continuamos con el procesamiento del pedido
 				JSONObject jsonReceiveAddress = (JSONObject) jsonOrderInfo.get("receive_address");
 				numeroPedidoDiario = (long) jsonOrderInfo.get("order_index");
@@ -8319,7 +8644,7 @@ public class PedidoCtrl {
 				String telefono = "";
 				
 				
-				//El telefono le quitaremos el indicativo del paÌs
+				//El telefono le quitaremos el indicativo del pa√≠s
 				if(tipoDelivery == 1)
 				{
 					telefono = numeroPedidoDiario + "4444";
@@ -8332,10 +8657,10 @@ public class PedidoCtrl {
 				{
 					telefono = telefono.substring(3);
 				}
-				//Para el caso del telÈfono validaremos si es un fijo
+				//Para el caso del tel√©fono validaremos si es un fijo
 				if(telefono.trim().length() == 7)
 				{
-					//En este caso al ser un n˙mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+					//En este caso al ser un n√∫mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 					//contact center.
 					telefono = "604" + telefono;
 				}else
@@ -8354,7 +8679,7 @@ public class PedidoCtrl {
 					nombres = nombres.replaceAll("'", " ");
 				}catch(Exception enombre)
 				{
-					nombres = "NO SE PUDO EXTRAR EL NOMBRE";
+					nombres = "NO SE PUDO EXTRAER EL NOMBRE";
 				}
 				String apellidos;
 				try {
@@ -8374,7 +8699,7 @@ public class PedidoCtrl {
 					email = "";
 				}
 				
-				//PROCESAMIENTO DE DATOS DE UBICACI”N
+				//PROCESAMIENTO DE DATOS DE UBICACI√ìN
 				String dirRes = "";
 				String ciudad = "";
 				try
@@ -8408,7 +8733,7 @@ public class PedidoCtrl {
 				String obsDireccion = "";
 				String dirAdicional = "";
 				direccion = direccion.replaceAll("'", " ");
-				//Tendremos unas reglas para conformar la direcciÛn
+				//Tendremos unas reglas para conformar la direcci√≥n
 				if(dirAdicional.equals(new String("")))
 				{
 					direccion = numeroPedidoDiario + "-" + dirRes + " " + ciudad;
@@ -8418,7 +8743,7 @@ public class PedidoCtrl {
 					direccion = numeroPedidoDiario + "-" + dirRes + " " + ciudad;
 					obsDireccion = dirAdicional;
 				}
-				//Validamos si la direcciÛn nos da
+				//Validamos si la direcci√≥n nos da
 				if(direccion.length() > 200)
 				{
 					direccion = direccion.substring(200);
@@ -8439,7 +8764,7 @@ public class PedidoCtrl {
 				{
 					longitud = 0;
 				}
-				//Realizamos la intervenciÛn para tratar en el momentoen que la ubicaciÛn viene en cero
+				//Realizamos la intervenci√≥n para tratar en el momentoen que la ubicaci√≥n viene en cero
 				if(tipoDelivery != 1)
 				{
 					if(latitud== 0 && longitud == 0)
@@ -8451,8 +8776,8 @@ public class PedidoCtrl {
 					}
 				}
 				
-				//INCLUSI”N Y PROCESAMIENTO DE LA INFORMACI”N DEL CLIENTE
-				//REALIZAMOS PROCESAMIENTO DEL CLIENTE CON SU DIRECCI”N
+				//INCLUSI√ìN Y PROCESAMIENTO DE LA INFORMACI√ìN DEL CLIENTE
+				//REALIZAMOS PROCESAMIENTO DEL CLIENTE CON SU DIRECCI√ìN
 				Cliente clienteVirtual = new Cliente(0, telefono, nombres, direccion, "", obsDireccion,"", idTienda);
 				clienteVirtual.setApellidos(apellidos);
 				clienteVirtual.setEmail(email);
@@ -8461,9 +8786,9 @@ public class PedidoCtrl {
 				clienteVirtual.setLontitud((float)longitud);
 				clienteVirtual.setTelefonoCelular(telefonoCelular);
 				clienteVirtual.setPoliticaDatos("S");
-				//Realizamos la validaciÛn del cliente con toda la lÛgica en la capa Controladora de Cliente
+				//Realizamos la validaci√≥n del cliente con toda la l√≥gica en la capa Controladora de Cliente
 				ClienteCtrl clienteCtrl = new ClienteCtrl();
-				//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr·n mucho que ver
+				//Aprovecharemos que los objetos se pasan como valores por referencia por lo tanto las modificaciones realizadas al objeto tendr√°n mucho que ver
 				idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, "");
 				if(idCliente == 0)
 				{
@@ -8476,7 +8801,7 @@ public class PedidoCtrl {
 					correos.add("lidercontactcenter@pizzaamericana.com.co");
 					correo.setContrasena(infoCorreo.getClaveCorreo());
 					correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-					correo.setMensaje(" Se tiene un problema creando actualizando cliente DIDI n˙mero  " + idOrdenComercio);
+					correo.setMensaje(" Se tiene un problema creando actualizando cliente DIDI n√∫mero  " + idOrdenComercio);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 					contro.enviarCorreo();
 				}
@@ -8503,7 +8828,7 @@ public class PedidoCtrl {
 					JSONObject productoTemp = (JSONObject) detalleOrdenArray.get(i);
 					//Tomamos el nombre del producto
 					String nombreProducto = (String) productoTemp.get("name");
-					//Buscaremos la manera de homologar con el nombre en donde homologarÌamos producto, sabor y es promociÛn, crearemos una tabla para este fin.
+					//Buscaremos la manera de homologar con el nombre en donde homologar√≠amos producto, sabor y es promoci√≥n, crearemos una tabla para este fin.
 					HomologacionProductoRappi homProducto = HomologacionProductoRappiDAO.obtenerHomologacionProductoRappi(nombreProducto);
 					idProducto = homProducto.getIdProducto();
 					idEspecialidad = homProducto.getIdEspecialidad();
@@ -8518,7 +8843,7 @@ public class PedidoCtrl {
 					double valorUnitario = homProducto.getPrecio();
 					int cantidad = new Long((long)productoTemp.get("amount")).intValue();
 					double douCantidad = (double)cantidad;
-					//Necesitamos extraer la informaciÛn de la gaseosa
+					//Necesitamos extraer la informaci√≥n de la gaseosa
 					JSONArray subItemsOrdenArray = (JSONArray)productoTemp.get("sub_item_list");
 					//En caso de no encontrar el producto es porque es Mitad y Mitad
 					if(idProducto == 0)
@@ -8548,9 +8873,9 @@ public class PedidoCtrl {
 							}
 						}
 					}
-					//Deberemos de tener una variante para promociones que son agrupadas en una sola opciÛn
-					//Con el nombre de la promociÛn tendremos el idproducto, el idexcepciÛn y en idespecialidad un -1 que nos 
-					//indicar· que se debe procesar las especialidades
+					//Deberemos de tener una variante para promociones que son agrupadas en una sola opci√≥n
+					//Con el nombre de la promoci√≥n tendremos el idproducto, el idexcepci√≥n y en idespecialidad un -1 que nos 
+					//indicar√° que se debe procesar las especialidades
 					if(idProducto > 0 && idEspecialidad == -1 )
 					{
 						boolean primerEspecialidad = false, segundaEspecialidad = false;
@@ -8575,11 +8900,21 @@ public class PedidoCtrl {
 							}
 						}
 					}
+					//Vamos por el sabor del l√≠quido del pedido, aqui tendremos que tener un campo para el precio
+					double precioGaseosa = 0;
 					int idSaborTipoLiquido = 0;
 					for(int j = 0; j < subItemsOrdenArray.size(); j++)
 					{
 						JSONObject subProductoTemp = (JSONObject) subItemsOrdenArray.get(j);
 						String nombreGaseosa = (String)subProductoTemp.get("name");
+						try
+						{
+							precioGaseosa = ((long)subProductoTemp.get("total_price"))/100;
+							
+						}catch(Exception e1)
+						{
+							precioGaseosa = 0;
+						}
 						idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual(nombreGaseosa);
 						if(idSaborTipoLiquido != 0)
 						{
@@ -8587,19 +8922,45 @@ public class PedidoCtrl {
 						}
 					}
 					DetallePedido detPedido = new DetallePedido();
+					DetallePedido detPedidoGaseosaAdi = new DetallePedido();
+					detPedidoGaseosaAdi.setIdproducto(0);
 					if(idEspecialidad > 0 && idEspecialidad2 == 0)
 					{
-						detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						if(precioGaseosa == 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						}else if(precioGaseosa > 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, "" /*strCON*/, "");
+							int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+							detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,douCantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+						}
 					}else if(idEspecialidad > 0 && idEspecialidad2 >0)
 					{
 						//Cuando la pizza es mitad y mitad hay que validar si tiene un valor extra
 						double valorAdicional = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad, idProducto))/2;
 						double valorAdicional2 = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad2, idProducto))/2;
 						valorUnitario = valorUnitario + valorAdicional + valorAdicional2;
-						detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						if(precioGaseosa == 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						}else if(precioGaseosa > 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, "" /*strCON*/, "");
+							int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+							detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,douCantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+						}
 					}else if(idEspecialidad == 0 && idEspecialidad2 ==0)
 					{
-						detPedido = new DetallePedido(idProducto,idPedido,douCantidad,0,0,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						if(precioGaseosa == 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,0,0,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, idSaborTipoLiquido, idExcepcion, "" /*strCON*/, "");
+						}else if(precioGaseosa > 0)
+						{
+							detPedido = new DetallePedido(idProducto,idPedido,douCantidad,0,0,valorUnitario,valorUnitario*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, "" /*strCON*/, "");
+							int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+							detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,douCantidad,0,0,precioGaseosa,precioGaseosa*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+						}
 					}
 					int idDetallePedido = 0;
 					if(detPedido.getIdproducto() == 0)
@@ -8607,20 +8968,24 @@ public class PedidoCtrl {
 						Correo correo = new Correo();
 						CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 						ArrayList correos = new ArrayList();
-						correo.setAsunto("ERROR GRAVE HOMOLOGACI”N PRODUCTO DIDI EN PEDIDO  " + idOrdenComercio);
+						correo.setAsunto("ERROR GRAVE HOMOLOGACI√ìN PRODUCTO DIDI EN PEDIDO  " + idOrdenComercio);
 						String correoEle = "jubote1@gmail.com";
 						correos.add(correoEle);
 						correos.add("lidercontactcenter@pizzaamericana.com.co");
 						correo.setContrasena(infoCorreo.getClaveCorreo());
 						correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-						correo.setMensaje(" Se tiene un problema creando el pedido duplicado de DIDI n˙mero  " + idOrdenComercio + " en la homologaciÛn de producto.");
+						correo.setMensaje(" Se tiene un problema creando el pedido duplicado de DIDI n√∫mero  " + idOrdenComercio + " en la homologaci√≥n de producto.");
 						ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 						contro.enviarCorreo();
 					}else
 					{
 						idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
+						if(detPedidoGaseosaAdi.getIdproducto() > 0)
+						{
+							PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+						}
 					}
-					//Realizamos modificaciÛn para agregar los acompaÒantes adicionales de productos incluidos
+					//Realizamos modificaci√≥n para agregar los acompa√±antes adicionales de productos incluidos
 					if(idDetallePedido > 0)
 					{
 						for(int j = 0; j < productosIncluidos.size(); j++)
@@ -8628,7 +8993,7 @@ public class PedidoCtrl {
 							ProductoIncluido proIncTemp = productosIncluidos.get(j);
 							if(proIncTemp.getIdproductopadre() == detPedido.getIdproducto())
 							{
-								//Realizamos una modificaciÛn para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+								//Realizamos una modificaci√≥n para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
 								DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallePedido, 0, 0 /*idexcepcion*/, "", "");
 								PedidoDAO.InsertarDetallePedido(detPedidoInc);
 							}
@@ -8664,7 +9029,7 @@ public class PedidoCtrl {
 					PedidoDAO.InsertarDetallePedido(detPedidoPropina);
 				}
 				//FORMA DE PAGO
-				//Trabajamos con la extracciÛn y homologaciÛn de la forma de pago
+				//Trabajamos con la extracci√≥n y homologaci√≥n de la forma de pago
 				int idFormaPago = 0;
 				String formPago = "";
 				if(tipoDelivery == 1)
@@ -8682,7 +9047,7 @@ public class PedidoCtrl {
 				}
 				//PROCESAMIENTO FINAL DEL PEDIDO
 				int idEstadoPedido = 2;
-				//Posteriormente realizamos los pasos para la finalizaciÛn del pedido
+				//Posteriormente realizamos los pasos para la finalizaci√≥n del pedido
 				int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
 				double descuentoPedido = 0;
 				double descuentoPropio = 0;
@@ -8698,7 +9063,7 @@ public class PedidoCtrl {
 				}
 				String motivoDescuento = "";
 				JSONArray descuentosArray = (JSONArray)jsonOrderInfo.get("promotions");
-				//Realizamos ProgramaciÛn para temas de descuentos
+				//Realizamos Programaci√≥n para temas de descuentos
 				if(descuentosArray == null)
 				{
 					
@@ -8732,19 +9097,19 @@ public class PedidoCtrl {
 				descuentoPedido = descuentoPedido - descuentoDomicilio;
 				//Le quitaremos el descuento de domicilio si lo hay
 				descuentoPlataforma = descuentoPlataforma - descuentoDomicilio;
-				//Debemos insertar la marcaciÛn del pedido RAPPI
+				//Debemos insertar la marcaci√≥n del pedido RAPPI
 				MarcacionPedido marPedido = new MarcacionPedido(idPedido, 1, idOrdenComercio.toString(), descuentoPropio, motivoDescuento, marketPlace, descuentoAsumido, descuentoPlataforma,tarifaServicio,propina,log);
 				MarcacionPedidoDAO.InsertarMarcacionPedido(marPedido);
-				//Realizamos un cambio temporal para evitar las diferencias pero igual seguir·n llegando los correos
+				//Realizamos un cambio temporal para evitar las diferencias pero igual seguir√°n llegando los correos
 				FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado, idEstadoPedido);
 				
 			}else if(tipoOrden.equals(new String("deliveryStatus")))
 			{
-				//Descomponemos la informaciÛn en order_detail,customer,store
+				//Descomponemos la informaci√≥n en order_detail,customer,store
 				String data = (String)jsonGeneral.get("data").toString();
 				Object objParserData = parser.parse(data);
 				JSONObject jsonData = (JSONObject) objParserData;
-				//Comenzamos a extraer la informacion que allÌ viene
+				//Comenzamos a extraer la informacion que all√≠ viene
 				idOrdenComercio = new BigInteger((String)(jsonData.get("order_id").toString()));
 				long deliveryStatus = (long)(jsonData.get("delivery_status"));
 				String nombreDomi = "";
@@ -8755,22 +9120,22 @@ public class PedidoCtrl {
 					nombreDomi = (String)(jsonData.get("rider_name").toString());
 					telDomi = (String)(jsonData.get("rider_phone").toString());
 					Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
-					//InformaciÛn para hacer el llamado al servicio en la tienda
+					//Informaci√≥n para hacer el llamado al servicio en la tienda
 					String respuesta = "";
-					//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+					//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 					HttpClient client = HttpClientBuilder.create().build();
 					//Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null)
 					{
-						//Realizar invocaciÛn de servicio en tienda
+						//Realizar invocaci√≥n de servicio en tienda
 						String rutaURL = tienda.getUrl() + "DarSalidaDomicilioPlataforma?idpedido=" + pedEvento.getNumposheader() + "&idusuario=180&usuario=Caja";
 						HttpGet request = new HttpGet(rutaURL);
 						try
 						{
 							StringBuffer retorno = new StringBuffer();
 							StringBuffer retornoTienda = new StringBuffer();
-							//Se realiza la ejecuciÛn del servicio de finalizar pedido
+							//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
 							BufferedReader rd = new BufferedReader
 								    (new InputStreamReader(
@@ -8797,22 +9162,22 @@ public class PedidoCtrl {
 					nombreDomi = (String)(jsonData.get("rider_name").toString());
 					telDomi = (String)(jsonData.get("rider_phone").toString());
 					Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
-					//InformaciÛn para hacer el llamado al servicio en la tienda
+					//Informaci√≥n para hacer el llamado al servicio en la tienda
 					String respuesta = "";
-					//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+					//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 					HttpClient client = HttpClientBuilder.create().build();
 					//Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null)
 					{
-						//Realizar invocaciÛn de servicio en tienda
+						//Realizar invocaci√≥n de servicio en tienda
 						String rutaURL = tienda.getUrl() + "DarEntregaDomicilio?idpedidotienda=" + pedEvento.getNumposheader() + "&claveusuario=2&idtienda=" + tienda.getIdTienda() + "&observacion=PedidoEntregadoPorPlataforma";
 						HttpGet request = new HttpGet(rutaURL);
 						try
 						{
 							StringBuffer retorno = new StringBuffer();
 							StringBuffer retornoTienda = new StringBuffer();
-							//Se realiza la ejecuciÛn del servicio de finalizar pedido
+							//Se realiza la ejecuci√≥n del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
 							BufferedReader rd = new BufferedReader
 								    (new InputStreamReader(
@@ -8837,14 +9202,14 @@ public class PedidoCtrl {
 				}
 			}else if(tipoOrden.equals(new String("orderCancel")))
 			{
-				//Descomponemos la informaciÛn en order_detail,customer,store
+				//Descomponemos la informaci√≥n en order_detail,customer,store
 				String data = (String)jsonGeneral.get("data").toString();
 				Object objParserData = parser.parse(data);
 				JSONObject jsonData = (JSONObject) objParserData;
-				//Comenzamos a extraer la informacion que allÌ viene
+				//Comenzamos a extraer la informacion que all√≠ viene
 				idOrdenComercio = new BigInteger((String)(jsonData.get("order_id").toString()));
-				String notificacion = "*CUIDADO DIDI se ha cancelado la orden n˙mero  " + idOrdenComercio + " por favor revisar el estado de la orden.*" ;
-				//Recuperaremos los celulares para notificar de la situaciÛn de la queja
+				String notificacion = "*CUIDADO DIDI se ha cancelado la orden n√∫mero  " + idOrdenComercio + " por favor revisar el estado de la orden.*" ;
+				//Recuperaremos los celulares para notificar de la situaci√≥n de la queja
 				ArrayList telNotifica = GeneralDAO.obtenerCorreosParametro("NOTIFICAPQRSBOT");
 				for(int i = 0; i  < telNotifica.size(); i++)
 				{
@@ -8854,9 +9219,9 @@ public class PedidoCtrl {
 			}
 		}catch(Exception e)
 		{
-			System.out.println("Se presentaron problemas en la descomposiÛn del JSON inicial" + e.toString());
+			System.out.println("Se presentaron problemas en la descomposi√≥n del JSON inicial" + e.toString());
 		}
-		//Preparamos la respuesta para que DIDI no mande m·s eventos de Pedidos
+		//Preparamos la respuesta para que DIDI no mande m√°s eventos de Pedidos
 		JSONObject respJSON  = new JSONObject();
 		respJSON.put("errno", 0);
 		respJSON.put("errmsg", "ok");
@@ -8951,7 +9316,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de aceptar el pedido en la plataforma de DIDI, una vez ingresa por la API
+	 * M√©todo que se encarga de aceptar el pedido en la plataforma de DIDI, una vez ingresa por la API
 	 * @param idOrdenComercio
 	 * @return
 	 * @throws IOException
@@ -8960,14 +9325,14 @@ public class PedidoCtrl {
 	{
 		JSONObject respJSON = new JSONObject();
 		boolean respuesta = false;
-		//Obtejemos la informaciÛn del Pedido
+		//Obtejemos la informaci√≥n del Pedido
 		Pedido pedCons = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracionXTienda("DIDI", pedCons.getTienda().getIdTienda());
 		//Creamos el JSON para consumir el servicio
 		String jsonData = "{  \"auth_token\": \""  + intCRM.getAccessToken() + "\",\n"
 				+ "  \"order_id\": "+ idOrdenComercio +"\n"
 				+ "}";
-		//Realizamos la invocaciÛn mediante el uso de HTTPCLIENT
+		//Realizamos la invocaci√≥n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
 		String rutaURLDIDI = "https://openapi.didi-food.com/v1/order/order/confirm";
 		HttpPost request = new HttpPost(rutaURLDIDI);
@@ -8975,7 +9340,7 @@ public class PedidoCtrl {
 		{
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			//Fijamos los par·metros
+			//Fijamos los par√°metros
 			//pass the json string request in the entity
 		    HttpEntity entity = new ByteArrayEntity(jsonData.getBytes("UTF-8"));
 		    request.setEntity(entity);
@@ -8993,7 +9358,7 @@ public class PedidoCtrl {
 			String datosJSON = retorno.toString();
 			System.out.println(datosJSON);
 			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr·fica
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr√°fica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
@@ -9037,7 +9402,7 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtodo que nos servir· como base para el envÌo del correo de la tarjeta regalo
+	 * M√©todo que nos servir√° como base para el env√≠o del correo de la tarjeta regalo
 	 */
 	public void envioCorreoTarjetaRegalo()
 	{
@@ -9325,14 +9690,14 @@ public class PedidoCtrl {
 				+ "                          style=\"color:#1d1c1c;margin:0;padding:0;font-family:arial,'helvetica neue',helvetica,sans-serif;font-size:18px\">\n"
 				+ "\n"
 				+ "                          <ul>\n"
-				+ "                            <li>La tarjeta v·lida al portador.</li>\n"
+				+ "                            <li>La tarjeta v√°lida al portador.</li>\n"
 				+ "                            <li>Puedes redimir nuestra tarjeta de regalo en nuestro Contact Center <strong>(604 4444\n"
-				+ "                                553)</strong> o a travÈs de nuestras tiendas fÌsicas.</li>\n"
-				+ "                            <li>Al momento de realizar la compra debes indicar que la forma de pago ser· nuestra Tarjeta\n"
+				+ "                                553)</strong> o a trav√©s de nuestras tiendas f√≠sicas.</li>\n"
+				+ "                            <li>Al momento de realizar la compra debes indicar que la forma de pago ser√° nuestra Tarjeta\n"
 				+ "                              Pizza Americana.</li>\n"
-				+ "                            <li>La tarjeta tendr· una validez de 1 aÒo, a partir de la fecha de compra.</li>\n"
-				+ "                            <li>Si tu pedido es a domicilio aseg˙rese de indicar esta forma de pago dado que su tarjeta\n"
-				+ "                              deber· ser validada en el dat·fono.</li>\n"
+				+ "                            <li>La tarjeta tendr√° una validez de 1 a√±o, a partir de la fecha de compra.</li>\n"
+				+ "                            <li>Si tu pedido es a domicilio aseg√∫rese de indicar esta forma de pago dado que su tarjeta\n"
+				+ "                              deber√° ser validada en el dat√°fono.</li>\n"
 				+ "                            <li>Puedes recargar esta tarjeta nuevamente en cualquiera de nuestras tiendas fisicas,\n"
 				+ "                              cuando el saldo inicial se acabe.</li>\n"
 				+ "                          </ul>\n"
@@ -9358,7 +9723,7 @@ public class PedidoCtrl {
 				+ "\n"
 				+ "</html>";
 		correo.setMensaje(mensajeCuerpoCorreo);
-		//FIJACI”N DE ENVÕO DE CORREO
+		//FIJACI√ìN DE ENV√çO DE CORREO
 		ArrayList correos = new ArrayList();
 		//String correoEle = "leidyjtorog@gmail.com";
 		ArrayList correosEnviar = PedidoDAO.obtenerCorreosEnvioMasivoCorreo();
@@ -9371,7 +9736,7 @@ public class PedidoCtrl {
 			correos.add(correoTemporal);
 			contro = new ControladorEnvioCorreo(correo, correos);
 			contro.enviarCorreo();
-			//Realizar un delay de 15 segundos para no hacer un envÌo masivo de correos
+			//Realizar un delay de 15 segundos para no hacer un env√≠o masivo de correos
 			try {
 	            //Ponemos a "Dormir" el programa durante los ms que queremos
 	            Thread.sleep(15*1000);
@@ -9382,8 +9747,8 @@ public class PedidoCtrl {
 	}
 	
 	/**
-	 * MÈtod que se encargar· de refrescar el auth_token en la plataforma de DIDI, este mÈtodo se realiza mediante el llamado
-	 * GET por lo tanto los par·metros van en la URL, se realizan 2 llamados el primero de refrescar el token y el segundo de tomar el auth_token y almacenarlo
+	 * M√©tod que se encargar√° de refrescar el auth_token en la plataforma de DIDI, este m√©todo se realiza mediante el llamado
+	 * GET por lo tanto los par√°metros van en la URL, se realizan 2 llamados el primero de refrescar el token y el segundo de tomar el auth_token y almacenarlo
 	 * @param plataforma
 	 * @throws IOException
 	 */
@@ -9414,7 +9779,7 @@ public class PedidoCtrl {
 				JSONObject jsonGeneral = (JSONObject) objParser;
 				String error = (String)jsonGeneral.get("errno").toString();
 				String authToken = "";
-				//Si se cumple esta condiciÛn es porque no hubo error refrescando el token
+				//Si se cumple esta condici√≥n es porque no hubo error refrescando el token
 				if(error.equals(new String("0")))
 				{
 					rutaURL = "https://openapi.didi-food.com/v1/auth/authtoken/get?app_id="+ intCRM.getClientID() +"&app_shop_id=" + intCRM.getAppShopID() + "&app_secret=" + intCRM.getFreshToken();;
@@ -9441,7 +9806,7 @@ public class PedidoCtrl {
 					}catch(Exception e2)
 					{
 						e2.printStackTrace();
-						System.out.println("Hubo un problema obteniendo el token de actualizaciÛn de DiDi");
+						System.out.println("Hubo un problema obteniendo el token de actualizaci√≥n de DiDi");
 					}
 					IntegracionCRMDAO.actualizarTokenIntegracionCRMMultiple(plataforma,intCRM.getIdTienda(), authToken, intCRM.getFreshToken());
 				}
@@ -9516,6 +9881,128 @@ public class PedidoCtrl {
 		boolean resp = PedidoDAO.marcarPedidoEmpresarial(idpedido);
 		respuesta.put("resultado", resp);
 		return(respuesta.toJSONString());
+	}
+	
+	public boolean verificacionExistenciaClienteSalesManago(String correoCliente)
+	{
+		boolean respuesta = false;
+		IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");
+		String jsonInfo = "{"
+				+ "  \"clientId\": \"" + intSales.getClientID() +"\","
+				+ "  \"apiKey\": \"" + intSales.getAccessToken() +"\","
+				+ "  \"requestTime\":  1704218302,\r\n"
+				+ "  \"sha\": \"" + intSales.getFreshToken() + "\","
+				+ "  \"owner\": \"mercadeo@pizzaamericana.com.co\","
+				+ "    \"email\": \""+ correoCliente +"\""
+				+ "}";
+		//Realizamos la invocacion mediante el uso de HTTPCLIENT
+		HttpClient client = HttpClientBuilder.create().build();
+		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/hasContact";
+		HttpPost request = new HttpPost( rutaURLSales);
+		try
+		{
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json;charset=UTF-8");
+			//Fijamos los parametros
+			//pass the json string request in the entity
+		    HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
+		    request.setEntity(entity);
+			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+			StringBuffer retorno = new StringBuffer();
+			HttpResponse responseFinPed = client.execute(request);
+			BufferedReader rd = new BufferedReader
+				    (new InputStreamReader(
+				    		responseFinPed.getEntity().getContent()));
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				    retorno.append(line);
+				}
+			//Traemos el valor del JSON con toda la info del pedido
+			String datosJSON = retorno.toString();
+			System.out.println("RESULTADO RESPUESTA " + datosJSON);
+			//Los datos vienen en un arreglo
+			JSONParser parser = new JSONParser();
+			Object objParser = parser.parse(datosJSON);
+			JSONObject jsonGeneral = (JSONObject) objParser;
+			String dataJSON = jsonGeneral.get("result").toString();
+			respuesta = Boolean.parseBoolean(dataJSON);
+
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
+		return(respuesta);
+	}
+	
+	public boolean insertarEventoClienteSalesManago(String correoCliente, double valorPedido)
+	{
+		Date fechaActual = new Date();
+		long time = fechaActual.getTime();
+		boolean respuesta = true;
+		IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");
+		String jsonInfo = "{"
+				+ "  \"clientId\": \"" + intSales.getClientID() +"\","
+				+ "  \"apiKey\": \"" + intSales.getAccessToken() +"\","
+				+ "  \"requestTime\":  1704218302,\r\n"
+				+ "  \"sha\": \"" + intSales.getFreshToken() + "\","
+				+ "  \"owner\": \"mercadeo@pizzaamericana.com.co\","
+				+ "    \"email\": \""+ correoCliente +"\","
+				+ "  \"contactEvent\": { "
+				+ "   \"date\": " + time + ", "
+			    + "   \"contactExtEventType\": \"PURCHASE\", "
+			    + "   \"products\": \"p0123, p4567\", "
+			    + "   \"value\": " + valorPedido  +", "
+			    + "   \"location\": \"TIENDAVIRTUAL\" "
+    			+ "}"
+			+ "}";
+		//Realizamos la invocacion mediante el uso de HTTPCLIENT
+		HttpClient client = HttpClientBuilder.create().build();
+		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/addContactExtEvent";
+		HttpPost request = new HttpPost( rutaURLSales);
+		try
+		{
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json;charset=UTF-8");
+			//Fijamos los parametros
+			//pass the json string request in the entity
+		    HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
+		    request.setEntity(entity);
+			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+			StringBuffer retorno = new StringBuffer();
+			HttpResponse responseFinPed = client.execute(request);
+			BufferedReader rd = new BufferedReader
+				    (new InputStreamReader(
+				    		responseFinPed.getEntity().getContent()));
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				    retorno.append(line);
+				}
+			//Traemos el valor del JSON con toda la info del pedido
+			String datosJSON = retorno.toString();
+			System.out.println("RESULTADO RESPUESTA " + datosJSON);
+//			//Los datos vienen en un arreglo
+//			JSONParser parser = new JSONParser();
+//			Object objParser = parser.parse(datosJSON);
+//			JSONObject jsonGeneral = (JSONObject) objParser;
+//			String dataJSON = jsonGeneral.get("result").toString();
+//			respuesta = Boolean.parseBoolean(dataJSON);
+
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
+		return(respuesta);
+	}
+	
+	public void realizarPruebaEventoExterno()
+	{
+		String telefono = "3202140469";
+		String email = "sandramilquintero@gmail.com";
+		boolean existeCliente = verificacionExistenciaClienteSalesManago(email);
+		if(existeCliente)
+		{
+			insertarEventoClienteSalesManago(email, 120000);
+		}
 	}
 
 }

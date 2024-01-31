@@ -48,31 +48,33 @@ public class UbicacionCtrl {
 	
 	public static boolean primeraEjecucion = false;
 	
-	public Resultado ubicarDireccionEnTienda(String direccion)
+	public Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente)
 	{
 		Resultado resultado = new Resultado();
 		try {
 			Parametro parametro;
-//			if(!primeraEjecucion)
-//			{
-//				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
-//				System.out.println(parametro.getValorTexto());
-//				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
-//				primeraEjecucion = true;
-//			}
+			/*if(!primeraEjecucion)
+			{
+				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
+				System.out.println(parametro.getValorTexto());
+				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
+				primeraEjecucion = true;
+			}*/
 			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
 			System.out.println(parametro.getValorTexto());
 			System.out.println("2.1 ANTES DE INICIAR ");
+			//ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
 			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
 			System.out.println("2.2 ANTES DE INICIAR ");
 	        String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
-	        //String address = "Cl. 104 #42b-2 a 42b-30,Medellín,Antioquia";
+	        //String address = "Cl. 104 #42b-2 a 42b-30,MedellÃ­n,Antioquia";
 	        String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
-	
+	        System.out.println(direccion);
+	        System.out.println(tipo_cliente);
 	        LocatorTask locatorTask = new LocatorTask(serviceUrl);
 	        GeocodeParameters geocodeParameters = new GeocodeParameters();
 	        geocodeParameters.getResultAttributeNames().add("*");
-	        geocodeParameters.setMaxResults(1); // Limitamos el número de resultados para obtener solo el más relevante
+	        geocodeParameters.setMaxResults(1); // Limitamos el nÃºmero de resultados para obtener solo el mÃ¡s relevante
 	
 	        ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
             List<GeocodeResult> geocodeResults = future.get(); 
@@ -83,7 +85,7 @@ public class UbicacionCtrl {
                 double latitude = displayLocation.getY();
                 double longitude = displayLocation.getX();
 
-                System.out.println("Coordenadas geográficas de la dirección:");
+                System.out.println("Coordenadas geogrÃ¡ficas de la direcciÃ³n:");
                 System.out.println("Latitud: " + latitude);
                 System.out.println("Longitud: " + longitude);
                 
@@ -92,7 +94,7 @@ public class UbicacionCtrl {
                 Point point = new Point(longitude, latitude, SpatialReferences.getWgs84());
              // Transforma las coordenadas al sistema de coordenadas de la capa de entidades (si es diferente)
                 QueryParameters query = new QueryParameters();
-                query.setGeometry(point); // Establece la geometría de la consulta (en este caso, un punto)
+                query.setGeometry(point); // Establece la geometrÃ­a de la consulta (en este caso, un punto)
                 query.setSpatialRelationship(QueryParameters.SpatialRelationship.WITHIN);
  
                
@@ -101,24 +103,36 @@ public class UbicacionCtrl {
 
                         // Verifica si hay resultados en la consulta
                         if (result.iterator().hasNext()) {
-                            // El punto se encuentra dentro de al menos uno de los polígonos en la capa
-                            System.out.println("El punto está dentro de al menos uno de los polígonos en la capa.");
+                            // El punto se encuentra dentro de al menos uno de los polÃ­gonos en la capa
+                            System.out.println("El punto esta dentro de al menos uno de los polÃ­gonos en la capa.");
                             Geometry pointGeometry = GeometryEngine.project(point, SpatialReferences.getWgs84());
 
                             // Itera sobre los resultados de la consulta
                             for (Feature feature : result) {
-                                // Obtén la geometría de la característica (polígono)
+                                // ObtÃ©n la geometria de la caracterÃ­stica (polÃ­gono)
                             	  Geometry polygonGeometry = GeometryEngine.project(feature.getGeometry(), SpatialReferences.getWgs84());
                             	  Map<String, Object> attributes = feature.getAttributes();
                             	  Object nombre = attributes.get("nombre");
                             	  System.out.println(nombre);
-                            	  resultado.setResultado("Tu dirección se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ", te invitamos a que sigas con tu pedido");  
+                            		  if(tipo_cliente.toLowerCase().equals("informacion")) {
+                            			  resultado.setResultado("Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ",te invitamos a que sigas con tu pedido.Recuerda que toda la informacion es validada al final por nuestros asesores");    
+                            			  
+                            		  }else if(tipo_cliente.toLowerCase().equals("programado")){
+                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestras tiendas.El pedido esta siendo programado para la tienda "+ nombre.toString());    
+                            			  
+                            		  }else {
+                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre.toString());  
+                            		  }
+
+                            	  resultado.setInfoAdicional(nombre.toString());
+                            	 
                             }
                         
                         } else {
-                            // El punto no se encuentra dentro de ningún polígono en la capa
-                            System.out.println("El punto no se encuentra dentro de ningún polígono en la capa.");
-                            resultado.setResultado("Por el momento tu dirección no se encuentra dentro de la cobertura de domicilio de nuestras tiendas, te invitamos a que te acerques a nuestro punto de venta más cercano para que puedas realizar tu pedido.");
+                            // El punto no se encuentra dentro de ningun poligono en la capa
+                            System.out.println("El punto no se encuentra dentro de ningun poligono en la capa.");
+                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te acerques a nuestro punto de venta mas cercano para que puedas realizar tu pedido o selecciona la opcion 2 a continuacion para volver a colocar otra direccion."); 
+
                         }
                     } catch (Exception e) {
                         System.out.println("Error al realizar la consulta: " + e.getMessage());
@@ -131,15 +145,15 @@ public class UbicacionCtrl {
         				correos.add(correoEle);
         				correo.setContrasena(infoCorreo.getClaveCorreo());
         				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-        				correo.setMensaje(" Se tiene prolema con la invocación de la API ARCGIS  " + e.getMessage());
+        				correo.setMensaje(" Se tiene prolema con la invocaciÃ³n de la API ARCGIS  " + e.getMessage());
         				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
         				contro.enviarCorreo();
                     }
                
                 
             } else {
-                System.out.println("No se pudo geocodificar la dirección.");
-                resultado.setResultado("Presentamos problemas encontrando tu dirección, recuerda seguir las instrucciones de nuestro BOT de mensajes, para que el sistema pueda validar bien tu dirección.");
+                System.out.println("No se pudo geocodificar la direcciÃ³n.");
+                resultado.setResultado("Presentamos problemas encontrando tu direcciÃ³n, recuerda seguir las instrucciones de nuestro BOT de mensajes, para que el sistema pueda validar bien tu direcciÃ³n. Selecciona la opcion 2 a continuacion para volver a colocar otra direccion.");
             }
         } catch (Exception e) {
             System.out.println("Error al geocodificar: " + e.getMessage());
@@ -162,7 +176,7 @@ public class UbicacionCtrl {
 	        LocatorTask locatorTask = new LocatorTask(serviceUrl);
 	        GeocodeParameters geocodeParameters = new GeocodeParameters();
 	        geocodeParameters.getResultAttributeNames().add("*");
-	        geocodeParameters.setMaxResults(1); // Limitamos el número de resultados para obtener solo el más relevante
+	        geocodeParameters.setMaxResults(1); // Limitamos el nÃºmero de resultados para obtener solo el mÃ¡s relevante
 	        ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
             List<GeocodeResult> geocodeResults = future.get(); 
 
@@ -180,7 +194,7 @@ public class UbicacionCtrl {
 //                Point point = new Point(longitude, latitude, SpatialReferences.getWgs84());
 //             // Transforma las coordenadas al sistema de coordenadas de la capa de entidades (si es diferente)
 //                QueryParameters query = new QueryParameters();
-//                query.setGeometry(point); // Establece la geometría de la consulta (en este caso, un punto)
+//                query.setGeometry(point); // Establece la geometrÃ­a de la consulta (en este caso, un punto)
 //                query.setSpatialRelationship(QueryParameters.SpatialRelationship.WITHIN);
 // 
 //               
@@ -189,24 +203,24 @@ public class UbicacionCtrl {
 //
 //                        // Verifica si hay resultados en la consulta
 //                        if (result.iterator().hasNext()) {
-//                            // El punto se encuentra dentro de al menos uno de los polígonos en la capa
-//                            System.out.println("El punto está dentro de al menos uno de los polígonos en la capa.");
+//                            // El punto se encuentra dentro de al menos uno de los polÃ­gonos en la capa
+//                            System.out.println("El punto estÃ¡ dentro de al menos uno de los polÃ­gonos en la capa.");
 //                            Geometry pointGeometry = GeometryEngine.project(point, SpatialReferences.getWgs84());
 //
 //                            // Itera sobre los resultados de la consulta
 //                            for (Feature feature : result) {
-//                                // Obtén la geometría de la característica (polígono)
+//                                // Obten la geometrÃ­a de la caracterÃ­stica (polÃ­gono)
 //                            	  Geometry polygonGeometry = GeometryEngine.project(feature.getGeometry(), SpatialReferences.getWgs84());
 //                            	  Map<String, Object> attributes = feature.getAttributes();
 //                            	  Object nombre = attributes.get("nombre");
 //                            	  System.out.println(nombre);
-//                            	  resultado.setResultado("Tu dirección se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ", te invitamos a que sigas con tu pedido");  
+//                            	  resultado.setResultado("Tu direcciÃ³n se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ", te invitamos a que sigas con tu pedido");  
 //                            }
 //                        
 //                        } else {
-//                            // El punto no se encuentra dentro de ningún polígono en la capa
-//                            System.out.println("El punto no se encuentra dentro de ningún polígono en la capa.");
-//                            resultado.setResultado("Por el momento tu dirección no se encuentra dentro de la cobertura de domicilio de nuestras tiendas, te invitamos a que te acerques a nuestro punto de venta más cercano para que puedas realizar tu pedido.");
+//                            // El punto no se encuentra dentro de ningÃºn polÃ­gono en la capa
+//                            System.out.println("El punto no se encuentra dentro de ningÃºn polÃ­gono en la capa.");
+//                            resultado.setResultado("Por el momento tu direcciÃ³n no se encuentra dentro de la cobertura de domicilio de nuestras tiendas, te invitamos a que te acerques a nuestro punto de venta mÃ¡s cercano para que puedas realizar tu pedido.");
 //                        }
 //                    } catch (Exception e) {
 //                        System.out.println("Error al realizar la consulta: " + e.getMessage());
@@ -219,14 +233,14 @@ public class UbicacionCtrl {
 //        				correos.add(correoEle);
 //        				correo.setContrasena(infoCorreo.getClaveCorreo());
 //        				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-//        				correo.setMensaje(" Se tiene prolema con la invocación de la API ARCGIS  " + e.getMessage());
+//        				correo.setMensaje(" Se tiene prolema con la invocaciÃ³n de la API ARCGIS  " + e.getMessage());
 //        				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 //        				contro.enviarCorreo();
 //                    }
                
                 
             } else {
-                System.out.println("No se pudo geocodificar la dirección.");
+                System.out.println("No se pudo geocodificar la direcciÃ³n.");
             }
         } catch (Exception e) {
             System.out.println("Error al geocodificar: " + e.getMessage());

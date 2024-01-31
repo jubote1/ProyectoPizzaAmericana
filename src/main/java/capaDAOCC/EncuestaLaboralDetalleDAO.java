@@ -13,7 +13,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
- * Clase que se encarga de la implementación de toda la interacción con la base de datos para la entidad Municipio.
+ * Clase que se encarga de la implementaciï¿½n de toda la interacciï¿½n con la base de datos para la entidad Municipio.
  * @author JuanDavid
  *
  */
@@ -26,7 +26,7 @@ public class EncuestaLaboralDetalleDAO {
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDGeneral();
 		ArrayList<EncuestaLaboralDetalle> encLaboralDetalle = new ArrayList<EncuestaLaboralDetalle>();
-		EncuestaLaboralDetalle encLaboralDetTemp = new EncuestaLaboralDetalle(0, 0, "", "", 0, 0, 0, 0,"", "");
+		EncuestaLaboralDetalle encLaboralDetTemp = new EncuestaLaboralDetalle(0, 0, "", "", 0, 0, 0, 0,"", "",0);
 		try
 		{
 			Statement stm = con1.createStatement();
@@ -40,10 +40,12 @@ public class EncuestaLaboralDetalleDAO {
 			String alertar;
 			String valorAlertar;
 			String obligatorio;
+			int orden;
 			while(rs.next()){
 				idEncuestaDetalle = rs.getInt("idencuestadetalle");
 				descripcion = rs.getString("descripcion");
 				tipoRespuesta = rs.getString("tipo_respuesta");
+				orden = rs.getInt("orden");
 				try
 				{
 					valorInicial = rs.getDouble("valor_inicial");
@@ -75,7 +77,7 @@ public class EncuestaLaboralDetalleDAO {
 				alertar = rs.getString("alertar");
 				valorAlertar = rs.getString("valor_alertar");
 				//obligatorio = rs.getString("obligatorio");
-				encLaboralDetTemp = new EncuestaLaboralDetalle(idEncuestaDetalle, idEncuesta, descripcion, tipoRespuesta, valorInicial, valorFinal, valorEscala, valorDefecto, alertar, valorAlertar);
+				encLaboralDetTemp = new EncuestaLaboralDetalle(idEncuestaDetalle, idEncuesta, descripcion, tipoRespuesta, valorInicial, valorFinal, valorEscala, valorDefecto, alertar, valorAlertar,orden);
 				encLaboralDetalle.add(encLaboralDetTemp);
 			}
 			rs.close();

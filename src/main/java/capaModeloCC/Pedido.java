@@ -42,7 +42,16 @@ public class Pedido {
 	private String usuarioReenvio;
 	private int grupoVirtual;
 	private int aceptadoRappi;
+	private String nombreCompania;
 	
+	
+	
+	public String getNombreCompania() {
+		return nombreCompania;
+	}
+	public void setNombreCompania(String nombreCompania) {
+		this.nombreCompania = nombreCompania;
+	}
 	public int getAceptadoRappi() {
 		return aceptadoRappi;
 	}

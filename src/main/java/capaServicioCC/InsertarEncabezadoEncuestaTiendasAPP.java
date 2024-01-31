@@ -33,9 +33,9 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como parámetro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
+	 * El servicio recibe como parï¿½metro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
 	 * indica si el cliente fue insertado o por el contrario actualizado, valor de la forma pago del cliente, con los datos
-	 * anteriores se invocará el método de la capa controlador pedido FinalizarPedido.
+	 * anteriores se invocarï¿½ el mï¿½todo de la capa controlador pedido FinalizarPedido.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -47,9 +47,11 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 			idTienda = Integer.parseInt(request.getParameter("idtienda"));
 		}catch(Exception e)
 		{
-			idTienda = 1;
+			idTienda = 0;
 		}
-		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,0,1,12,"",idTienda);
+		int idempleado = Integer.parseInt(request.getParameter("idempleado"));
+		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
+		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,idempleado,0,idencuesta,"",idTienda);
 		EncuestaCtrl encCtrl = new EncuestaCtrl();
 		String respuesta = encCtrl.insertarEmpleadoEncuesta(empEncuesta);
         PrintWriter out = response.getWriter();

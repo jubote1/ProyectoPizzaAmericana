@@ -1,7 +1,7 @@
 package conexionCC;
 import java.sql.*;
 /**
- * Clase que se encarga de la implementación de la conexión a las bases de datos del sistema contact center y la
+ * Clase que se encarga de la implementaciï¿½n de la conexiï¿½n a las bases de datos del sistema contact center y la
  * base de datos de cada tienda.
  * @author JuanDavid
  *
@@ -17,7 +17,7 @@ public class ConexionBaseDatos {
 	}
 
 	/**
-	 * Método que implementa la conexión a la base de datos del sistema principal de contact center
+	 * Mï¿½todo que implementa la conexiï¿½n a la base de datos del sistema principal de contact center
 	 * @return
 	 */
 	public Connection obtenerConexionBDPrincipal(){ 
@@ -41,7 +41,7 @@ public class ConexionBaseDatos {
 
 			 
 			/**
-			 * Se realiza la creación de la conexión a la base de datos
+			 * Se realiza la creaciï¿½n de la conexiï¿½n a la base de datos
 			 */
 //			con = DriverManager.getConnection(
 //		            "jdbc:mysql://172.19.0.25/pizzaamericana?"
@@ -83,7 +83,7 @@ public class ConexionBaseDatos {
 
 			
 			/**
-			 * Se realiza la creación de la conexión a la base de datos
+			 * Se realiza la creaciï¿½n de la conexiï¿½n a la base de datos
 			 */
 			//con = DriverManager.getConnection(
 		    //        "jdbc:mysql://192.168.0.25/pizzaamericana?"
@@ -105,7 +105,7 @@ public class ConexionBaseDatos {
 	}
 	
 	/**
-	 * Método que se encarga de tener conexión al sistema principal de temas generales
+	 * Mï¿½todo que se encarga de tener conexiï¿½n al sistema principal de temas generales
 	 * @return
 	 */
 	public Connection obtenerConexionBDGeneral(){
@@ -180,9 +180,9 @@ public class ConexionBaseDatos {
 	}
 	
 	/**
-	 * Método que se encarga de implementar la conexion a la base de datos de cada teinda
-	 * @param dsn Recibe como parámetro el valor del Datasource Name
-	 * @return Se retorna un objeto de la clase conexión.
+	 * Mï¿½todo que se encarga de implementar la conexion a la base de datos de cada teinda
+	 * @param dsn Recibe como parï¿½metro el valor del Datasource Name
+	 * @return Se retorna un objeto de la clase conexiï¿½n.
 	 */
 	public Connection obtenerConexionBDTienda(String dsn){
 		
@@ -193,13 +193,13 @@ public class ConexionBaseDatos {
 			 //con = DriverManager.getConnection("jdbc:sqlanywhere:dsn="+dsn+";uid=admin;pwd=xxx");//SystemPos
 			
 			/**
-			 * Cambiamos para la versión 12 del driver en teoria no es necesario registrar el driver lo comentamos
+			 * Cambiamos para la versiï¿½n 12 del driver en teoria no es necesario registrar el driver lo comentamos
 			 */
 			DriverManager.registerDriver( (Driver)
 					 Class.forName( "sybase.jdbc.sqlanywhere.IDriver" ).newInstance() );
 			
 			/**
-			 * Se crea el ojbeto conexión para sqlanyhwere
+			 * Se crea el ojbeto conexiï¿½n para sqlanyhwere
 			 */
 			con = DriverManager.getConnection("jdbc:sqlanywhere:dsn="+dsn+";uid=admin;pwd=xxx");//SystemPos
 			//con = DriverManager.getConnection("jdbc:sqlanywhere:uid=admin;pwd=xxx;eng=PixelSqlbase;database=PixelSqlbase;links=tcpip(host=192.168.0.37;port=2638)");//SystemPos

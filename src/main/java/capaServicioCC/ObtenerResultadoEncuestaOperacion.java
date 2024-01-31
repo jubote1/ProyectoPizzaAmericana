@@ -10,21 +10,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.EmpleadoCtrl;
-import capaControladorCC.PedidoCtrl;
+
 
 /**
  * Servlet implementation class ObtenerTotalPedido
  * Servicio que permite dado un id de pedido, retornar el total de un pedido, sumando los detalles de pedido asociados
  * al pedido.
  */
-@WebServlet("/ObtenerResultadoEncuesta")
-public class ObtenerResultadoEncuesta extends HttpServlet {
+@WebServlet("/ObtenerResultadoEncuestaOperacion")
+public class ObtenerResultadoEncuestaOperacion extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public ObtenerResultadoEncuesta() {
+    public ObtenerResultadoEncuestaOperacion() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -39,8 +39,15 @@ public class ObtenerResultadoEncuesta extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
+		String rangofecha = request.getParameter("rangofecha");
+		String paramEncuesta = request.getParameter("idencuesta");
+		int idencuesta = 0;
+		if(paramEncuesta != null) {
+			idencuesta = Integer.parseInt(paramEncuesta);
+			
+		}
 		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
-        String respuesta = empCtrl.obtenerResultadoEncuesta(idTienda,4);
+        String respuesta = empCtrl.obtenerResultadoEncuestaOperacion(idTienda,idencuesta,rangofecha);
         PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}
@@ -54,3 +61,5 @@ public class ObtenerResultadoEncuesta extends HttpServlet {
 	}
 
 }
+
+

@@ -88,7 +88,7 @@ $(document).ready(function() {
 	                		
 							
 					});
-        if(datospedido.minutos > 30)
+        if(datospedido.minutos > 10)
         {
         	$('#obsGestion').attr('disabled', false);
         	console.log("intentando activar el boton");
