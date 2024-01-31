@@ -2,10 +2,12 @@ package capaDAOCC;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
+import org.json.simple.JSONObject;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
@@ -141,6 +143,145 @@ public class EmpleadoEncuestaDAO {
 		}
 		return(idEmpleadoEncuesta);
 	}
-	
 
+	
+	public static ArrayList<JSONObject> obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String[] rangofecha){
+		ArrayList<JSONObject> repResultadoEncuesta = new ArrayList();
+		Connection con1 = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+		
+		try {
+
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			con1 = con.obtenerConexionBDGeneralLocal();
+			String fecha_inicio = rangofecha[0];
+			String fecha_final= rangofecha[1];
+			String sqlQuer ="SELECT \n"
+					+ " 	e.idempleadoencuesta,\n"
+					+ "    em.nombre_largo AS nombre_empleado,\n"
+					+ "    e.fecha_ingreso,\n"
+					+ "    e.idtienda AS tienda_id,\n"
+					+ "    l.descripcion AS descripcion_encuesta\n"
+					+ "\n"
+					+ "FROM \n"
+					+ "    empleado_encuesta AS e\n"
+					+ "JOIN \n"
+					+ "    encuesta_laboral AS l ON l.idencuesta = e.idencuesta\n"
+					+ "JOIN \n"
+					+ "    empleado AS em ON e.id = em.id\n"
+					+ "WHERE \n"
+					+ "    e.idencuesta = "+idencuesta+"\n"
+					+ "    AND DATE(e.fecha_ingreso) BETWEEN '"+fecha_inicio+"' AND '"+fecha_final+"'\n"
+					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion";
+			
+	            statement = con1.createStatement();
+
+	            // Ejecutar la consulta SQL
+	            resultSet = statement.executeQuery(sqlQuer);
+
+	            // Procesar los resultados
+	            while (resultSet.next()) {
+	                // Acceder a los valores de las columnas
+	            	int idempleadoencuesta = resultSet.getInt("idempleadoencuesta");
+	                String nombreEmpleado = resultSet.getString("nombre_empleado");
+	                String fechaIngreso = resultSet.getString("fecha_ingreso");
+	                int tiendaId = resultSet.getInt("tienda_id");
+	                String descripcionEncuesta = resultSet.getString("descripcion_encuesta");
+	                JSONObject json = new JSONObject();
+	                json.put("idempleadoencuesta", idempleadoencuesta);
+	                json.put("nombre_empleado", nombreEmpleado);
+	                json.put("fecha_hora", fechaIngreso);
+	                json.put("idtienda", tiendaId);
+	                json.put("descripcion_encuesta", descripcionEncuesta);
+	                repResultadoEncuesta.add(json);
+
+	            }
+		} catch (SQLException e) {
+			System.out.println(e.toString());
+        } finally {
+            // Cerrar los objetos de conexión, result set y statement
+            try {
+                if (resultSet != null) resultSet.close();
+                if (statement != null) statement.close();
+                if (con1 != null) con1.close();
+            } catch (SQLException e) {
+            	System.out.println(e.toString());
+            }
+        }
+
+		return repResultadoEncuesta;
+	}
+	
+	
+	public static ArrayList<JSONObject> obtenerResultEncuestaOperacionDetalle(int idempleadoencuesta){
+		ArrayList<JSONObject> repResultadoEncuesta = new ArrayList();
+		Connection con1 = null;
+        Statement statement = null;
+        ResultSet resultSet = null;
+		
+		try {
+
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			con1 = con.obtenerConexionBDGeneralLocal();
+
+			String sqlQuer ="SELECT \n"
+					+ "    el.descripcion AS item,\n"
+					+ "    el.tipo_respuesta,\n"
+					+ "    el.orden,\n"
+					+ "    d.observacion AS respuesta,\n"
+					+ "    d.observacion_adi AS observacion,\n"
+					+ "    d.respuesta_si,\n"
+					+ "    d.respuesta_no\n"
+					+ "    \n"
+					+ "\n"
+					+ "FROM \n"
+					+ "    empleado_encuesta_detalle AS d\n"
+					+ "JOIN \n"
+					+ "    encuesta_laboral_detalle AS el ON d.idencuestadetalle = el.idencuestadetalle\n"
+					+ "WHERE \n"
+					+ "    d.idempleadoencuesta = "+idempleadoencuesta;
+			
+	            statement = con1.createStatement();
+
+	            // Ejecutar la consulta SQL
+	            resultSet = statement.executeQuery(sqlQuer);
+
+	            // Procesar los resultados
+	            while (resultSet.next()) {
+	                // Acceder a los valores de las columnas
+	                String item = resultSet.getString("item");
+	                String tipo_respuesta = resultSet.getString("tipo_respuesta");
+	                int orden = resultSet.getInt("orden");
+	                String respuesta = resultSet.getString("respuesta");
+	                String observacion = resultSet.getString("observacion");
+	                String respuesta_si = resultSet.getString("respuesta_si");
+	                String respuesta_no = resultSet.getString("respuesta_no");
+	                JSONObject json = new JSONObject();
+	                
+	                json.put("item", item);
+	                json.put("tipo_respuesta", tipo_respuesta);
+	                json.put("orden", orden);
+	                json.put("respuesta", respuesta);
+	                json.put("observacion", observacion);
+	                json.put("respuesta_si", respuesta_si);
+	                json.put("respuesta_no", respuesta_no);
+	                repResultadoEncuesta.add(json);
+
+	            }
+		} catch (SQLException e) {
+			System.out.println(e.toString());
+        } finally {
+            // Cerrar los objetos de conexión, result set y statement
+            try {
+                if (resultSet != null) resultSet.close();
+                if (statement != null) statement.close();
+                if (con1 != null) con1.close();
+            } catch (SQLException e) {
+            	System.out.println(e.toString());
+            }
+        }
+
+		return repResultadoEncuesta;
+	}
 }

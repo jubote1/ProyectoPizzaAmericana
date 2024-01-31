@@ -117,5 +117,20 @@ public class EmpleadoCtrl {
 		}
 		return(arrayJSON.toJSONString());
 	}
+	
+	public String obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String rangofecha){
+		
+		String[] fechas = rangofecha.trim().split("-");
+		ArrayList<JSONObject> respuestas = EmpleadoEncuestaDAO.obtenerResultadoEncuestaOperacion(idtienda, idencuesta, fechas);
+		
+		return respuestas.toString();
+	}
+	
+	public String obtenerResulEncuestaOperacionDetalle(int idempleadoencuesta){
+		
+		ArrayList<JSONObject> respuestas = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);	
+		return respuestas.toString();
+	}
+
 
 }
