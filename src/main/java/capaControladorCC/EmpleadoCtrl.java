@@ -14,6 +14,7 @@ import capaModeloCC.HorarioEmpleado;
 
 public class EmpleadoCtrl {
 	
+
 	public String obtenerResultadoEncuesta(int idTienda, int idEncuesta)
 	{
 		JSONArray listJSON = new JSONArray();
@@ -118,18 +119,60 @@ public class EmpleadoCtrl {
 		return(arrayJSON.toJSONString());
 	}
 	
-	public String obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String rangofecha){
+	
+	public  String obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String rangofecha){
 		
 		String[] fechas = rangofecha.trim().split("-");
-		ArrayList<JSONObject> respuestas = EmpleadoEncuestaDAO.obtenerResultadoEncuestaOperacion(idtienda, idencuesta, fechas);
+		ArrayList<JSONObject> obtenerResult = EmpleadoEncuestaDAO.obtenerResultadoEncuestaOperacion(idtienda, idencuesta, fechas);
 		
-		return respuestas.toString();
+		for(int i =0;i < obtenerResult.size(); i++)
+			
+		{  
+			JSONObject json =  obtenerResult.get(i);
+			int idempleadoencuesta = (int) json.get("idempleadoencuesta");
+			float total_obtenido = 0;
+			float total_esperado = 0;
+			
+			ArrayList<JSONObject> obtenerResultDet = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
+			for(int j =0;j < obtenerResultDet.size(); j++)
+			{
+				JSONObject json2 =  obtenerResultDet.get(j);
+				float porcentaje = (float) json.get("porcentaje");
+				Object  resp =json.get("respuesta");
+				
+				if(resp instanceof Number) {
+					float respuesta = (float)resp;
+					if(porcentaje > 0 && respuesta > 0) {
+						
+						float valor_final = (float) json.get("valor_final");
+						float valor_esperado =  (porcentaje * valor_final) / 100;
+						float valor_obtenido = (porcentaje * respuesta) / 100;
+						total_esperado= total_esperado + valor_esperado;
+						total_obtenido= total_obtenido + valor_obtenido;
+					}
+					
+				}
+				
+
+				
+				
+			}
+			float result_porcentaje =  (total_obtenido / total_esperado)* 100;
+			double numeroRedondeado = Math.round(result_porcentaje * 100.0) / 100.0;
+			json.put("porcentaje_total", numeroRedondeado);
+						
+		}
+		
+		System.out.println(obtenerResult.toString());
+		
+		return obtenerResult.toString();
 	}
 	
 	public String obtenerResulEncuestaOperacionDetalle(int idempleadoencuesta){
 		
-		ArrayList<JSONObject> respuestas = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);	
-		return respuestas.toString();
+		ArrayList<JSONObject> respuesta = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
+			
+		return respuesta.toString();
 	}
 
 

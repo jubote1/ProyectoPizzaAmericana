@@ -232,7 +232,11 @@ public class EmpleadoEncuestaDAO {
 					+ "    d.observacion AS respuesta,\n"
 					+ "    d.observacion_adi AS observacion,\n"
 					+ "    d.respuesta_si,\n"
-					+ "    d.respuesta_no\n"
+					+ "    d.respuesta_no,\n"
+					+ "    el.valor_inicial,\n"
+					+ "    el.valor_final,\n"
+					+ "    el.valor_escala,\n"
+					+ "    el.porcentaje\n"
 					+ "    \n"
 					+ "\n"
 					+ "FROM \n"
@@ -257,6 +261,10 @@ public class EmpleadoEncuestaDAO {
 	                String observacion = resultSet.getString("observacion");
 	                String respuesta_si = resultSet.getString("respuesta_si");
 	                String respuesta_no = resultSet.getString("respuesta_no");
+	                int valor_inicial = resultSet.getInt("valor_inicial");
+	                int valor_final = resultSet.getInt("valor_final");
+	                int valor_escala = resultSet.getInt("valor_escala");
+	                float porcentaje = resultSet.getFloat("porcentaje");
 	                JSONObject json = new JSONObject();
 	                
 	                json.put("item", item);
@@ -266,6 +274,11 @@ public class EmpleadoEncuestaDAO {
 	                json.put("observacion", observacion);
 	                json.put("respuesta_si", respuesta_si);
 	                json.put("respuesta_no", respuesta_no);
+	                json.put("valor_inicial", valor_inicial);
+	                json.put("valor_final", valor_final);
+	                json.put("valor_escala", valor_escala);
+	                json.put("porcentaje", porcentaje);
+	                
 	                repResultadoEncuesta.add(json);
 
 	            }
