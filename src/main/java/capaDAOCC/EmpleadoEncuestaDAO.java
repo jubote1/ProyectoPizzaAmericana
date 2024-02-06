@@ -145,7 +145,8 @@ public class EmpleadoEncuestaDAO {
 	}
 
 	
-	public static ArrayList<JSONObject> obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String[] rangofecha){
+	public static ArrayList<JSONObject> obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String fecha1,String fecha2){
+		Logger logger = Logger.getLogger("log_file");
 		ArrayList<JSONObject> repResultadoEncuesta = new ArrayList();
 		Connection con1 = null;
         Statement statement = null;
@@ -155,8 +156,6 @@ public class EmpleadoEncuestaDAO {
 
 			ConexionBaseDatos con = new ConexionBaseDatos();
 			con1 = con.obtenerConexionBDGeneralLocal();
-			String fecha_inicio = rangofecha[0];
-			String fecha_final= rangofecha[1];
 			String sqlQuer ="SELECT \n"
 					+ " 	e.idempleadoencuesta,\n"
 					+ "    em.nombre_largo AS nombre_empleado,\n"
@@ -172,7 +171,7 @@ public class EmpleadoEncuestaDAO {
 					+ "    empleado AS em ON e.id = em.id\n"
 					+ "WHERE \n"
 					+ "    e.idencuesta = "+idencuesta+"\n"
-					+ "    AND DATE(e.fecha_ingreso) BETWEEN '"+fecha_inicio+"' AND '"+fecha_final+"'\n"
+					+ "    AND DATE(e.fecha_ingreso) BETWEEN '"+fecha1+"' AND '"+fecha2+"'\n"
 					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion";
 			
 	            statement = con1.createStatement();
@@ -199,6 +198,7 @@ public class EmpleadoEncuestaDAO {
 	            }
 		} catch (SQLException e) {
 			System.out.println(e.toString());
+			logger.error(e.toString());
         } finally {
             // Cerrar los objetos de conexión, result set y statement
             try {
@@ -215,6 +215,7 @@ public class EmpleadoEncuestaDAO {
 	
 	
 	public static ArrayList<JSONObject> obtenerResultEncuestaOperacionDetalle(int idempleadoencuesta){
+		Logger logger = Logger.getLogger("log_file");
 		ArrayList<JSONObject> repResultadoEncuesta = new ArrayList();
 		Connection con1 = null;
         Statement statement = null;
@@ -284,6 +285,7 @@ public class EmpleadoEncuestaDAO {
 	            }
 		} catch (SQLException e) {
 			System.out.println(e.toString());
+			logger.error(e.toString());
         } finally {
             // Cerrar los objetos de conexión, result set y statement
             try {

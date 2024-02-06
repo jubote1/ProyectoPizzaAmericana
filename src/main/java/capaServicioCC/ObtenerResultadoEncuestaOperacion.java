@@ -39,7 +39,8 @@ public class ObtenerResultadoEncuestaOperacion extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
-		String rangofecha = request.getParameter("rangofecha");
+		String fecha1 = request.getParameter("fecha1");
+		String fecha2 = request.getParameter("fecha2");
 		String paramEncuesta = request.getParameter("idencuesta");
 		int idencuesta = 0;
 		if(paramEncuesta != null) {
@@ -47,7 +48,7 @@ public class ObtenerResultadoEncuestaOperacion extends HttpServlet {
 			
 		}
 		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
-        String respuesta = empCtrl.obtenerResultadoEncuestaOperacion(idTienda,idencuesta,rangofecha);
+        String respuesta = empCtrl.obtenerResultadoEncuestaOperacion(idTienda,idencuesta,fecha1,fecha2);
         PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}

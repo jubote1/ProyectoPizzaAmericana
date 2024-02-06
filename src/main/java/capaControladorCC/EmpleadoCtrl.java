@@ -120,50 +120,58 @@ public class EmpleadoCtrl {
 	}
 	
 	
-	public  String obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String rangofecha){
+	public  String obtenerResultadoEncuestaOperacion(int idtienda ,int idencuesta,String fecha1, String fecha2){
 		
-		String[] fechas = rangofecha.trim().split("-");
-		ArrayList<JSONObject> obtenerResult = EmpleadoEncuestaDAO.obtenerResultadoEncuestaOperacion(idtienda, idencuesta, fechas);
+		ArrayList<JSONObject> obtenerResult = new ArrayList<>();
 		
-		for(int i =0;i < obtenerResult.size(); i++)
+		try{
+			obtenerResult = EmpleadoEncuestaDAO.obtenerResultadoEncuestaOperacion(idtienda, idencuesta, fecha1,fecha2);
 			
-		{  
-			JSONObject json =  obtenerResult.get(i);
-			int idempleadoencuesta = (int) json.get("idempleadoencuesta");
-			float total_obtenido = 0;
-			float total_esperado = 0;
-			
-			ArrayList<JSONObject> obtenerResultDet = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
-			for(int j =0;j < obtenerResultDet.size(); j++)
-			{
-				JSONObject json2 =  obtenerResultDet.get(j);
-				float porcentaje = (float) json.get("porcentaje");
-				Object  resp =json.get("respuesta");
+			for(int i =0;i < obtenerResult.size(); i++)
 				
-				if(resp instanceof Number) {
-					float respuesta = (float)resp;
-					if(porcentaje > 0 && respuesta > 0) {
-						
-						float valor_final = (float) json.get("valor_final");
-						float valor_esperado =  (porcentaje * valor_final) / 100;
-						float valor_obtenido = (porcentaje * respuesta) / 100;
-						total_esperado= total_esperado + valor_esperado;
-						total_obtenido= total_obtenido + valor_obtenido;
+			{  
+				JSONObject json =  obtenerResult.get(i);
+				int idempleadoencuesta = (int) json.get("idempleadoencuesta");
+				float total_obtenido = 0;
+				float total_esperado = 0;
+				
+				ArrayList<JSONObject> obtenerResultDet = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
+				for(int j =0;j < obtenerResultDet.size(); j++)
+				{
+					JSONObject json2 =  obtenerResultDet.get(j);
+					float porcentaje = 0;
+					if(json2.get("porcentaje") != null) {
+						porcentaje = (float)json2.get("porcentaje");
 					}
+					Object  resp =json2.get("respuesta");
+					
+					if(resp instanceof Number) {
+						float respuesta = (float)resp;
+						if(porcentaje > 0 && respuesta > 0) {
+							
+							float valor_final = (float) json2.get("valor_final");
+							float valor_esperado =  (porcentaje * valor_final) / 100;
+							float valor_obtenido = (porcentaje * respuesta) / 100;
+							total_esperado= total_esperado + valor_esperado;
+							total_obtenido= total_obtenido + valor_obtenido;
+						}
+						
+					}
+							
 					
 				}
-				
-
-				
-				
+				float result_porcentaje =  (total_obtenido / total_esperado)* 100;
+				double numeroRedondeado = Math.round(result_porcentaje * 100.0) / 100.0;
+				obtenerResult.get(i).put("porcentaje_total", numeroRedondeado);
+							
 			}
-			float result_porcentaje =  (total_obtenido / total_esperado)* 100;
-			double numeroRedondeado = Math.round(result_porcentaje * 100.0) / 100.0;
-			json.put("porcentaje_total", numeroRedondeado);
-						
-		}
-		
-		System.out.println(obtenerResult.toString());
+			
+			
+		}catch(Exception e) {
+			
+			System.out.println(e);
+			
+		}		
 		
 		return obtenerResult.toString();
 	}
