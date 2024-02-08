@@ -46,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import capaDAOCC.AdicionDetallePedidoDAO;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.DescuentoGeneralDAO;
+import capaDAOCC.DetallePedidoDAO;
 import capaDAOCC.DomiciliarioPedidoDAO;
 import capaDAOCC.EmpleadoRemotoValeDAO;
 import capaDAOCC.EspecialidadDAO;
@@ -71,6 +72,8 @@ import capaDAOCC.PedidoTiendaVirtualDAO;
 import capaDAOCC.ProductoDAO;
 import capaDAOCC.PromocionDAO;
 import capaDAOCC.SaborTipoLiquidoDAO;
+import capaDAOCC.SolicitudCumpleDAO;
+import capaDAOCC.SolicitudCumpleImagenesDAO;
 import capaDAOCC.SolicitudFacturaDAO;
 import capaDAOCC.SolicitudFacturaImagenesDAO;
 import capaDAOCC.TiempoPedidoDAO;
@@ -111,8 +114,10 @@ import capaModeloCC.Promocion;
 import capaModeloCC.Resultado;
 import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
+import capaModeloCC.SolicitudCumple;
 import capaModeloCC.SolicitudFactura;
 import capaModeloCC.SolicitudFacturaImagenes;
+import capaModeloCC.SolicitudImagenes;
 import capaModeloCC.SolicitudPQRSImagenes;
 import capaModeloCC.TiempoPedido;
 import capaModeloCC.Tienda;
@@ -640,6 +645,16 @@ public class PedidoCtrl {
 		listJSONCliente.add(clienteJSON);
 		respuesta.put("cliente", listJSONCliente.toString());
 		listJSON.add(respuesta);
+		//En este punto intervenimos para hacer el envío y validación en SalesManago
+		String correo = pedidoPixel.getCliente().getEmail();
+		if(correo == null)
+		{
+			correo = "";
+		}
+		if(!correo.equals(new String("")) && !correo.equals(new String("integration@rappi.com")))
+		{
+			notificarEventoExternoSalesManago(correo, idpedido, pedidoPixel.getOrigen());
+		}
 		String respuestaJson = listJSON.toJSONString();
 		PedidoDAO.actualizarJSONPedido(idpedido, respuestaJson, "");
 		return(respuestaJson);
@@ -782,6 +797,16 @@ public class PedidoCtrl {
 		listJSONCliente.add(clienteJSON);
 		respuesta.put("cliente", listJSONCliente.toString());
 		listJSON.add(respuesta);
+		//En este punto intervenimos para hacer el envío y validación en SalesManago
+		String correo = pedidoPixel.getCliente().getEmail();
+		if(correo == null)
+		{
+			correo = "";
+		}
+		if(!correo.equals(new String("")) && !correo.equals(new String("integration@rappi.com")))
+		{
+			notificarEventoExternoSalesManago(correo, idpedido, pedidoPixel.getOrigen());
+		}
 		String respuestaJson = listJSON.toJSONString();
 		PedidoDAO.actualizarJSONPedido(idpedido, respuestaJson, userReenvio);
 		return(respuestaJson);
@@ -9934,7 +9959,7 @@ public class PedidoCtrl {
 		return(respuesta);
 	}
 	
-	public boolean insertarEventoClienteSalesManago(String correoCliente, double valorPedido)
+	public boolean insertarEventoClienteSalesManago(String correoCliente, double valorPedido, String productos, String origen)
 	{
 		Date fechaActual = new Date();
 		long time = fechaActual.getTime();
@@ -9950,9 +9975,9 @@ public class PedidoCtrl {
 				+ "  \"contactEvent\": { "
 				+ "   \"date\": " + time + ", "
 			    + "   \"contactExtEventType\": \"PURCHASE\", "
-			    + "   \"products\": \"p0123, p4567\", "
+			    + "   \"products\": \" " + productos + " \", "
 			    + "   \"value\": " + valorPedido  +", "
-			    + "   \"location\": \"TIENDAVIRTUAL\" "
+			    + "   \"location\": \"" + origen + "\" "
     			+ "}"
 			+ "}";
 		//Realizamos la invocacion mediante el uso de HTTPCLIENT
@@ -9996,13 +10021,76 @@ public class PedidoCtrl {
 	
 	public void realizarPruebaEventoExterno()
 	{
-		String telefono = "3202140469";
-		String email = "sandramilquintero@gmail.com";
-		boolean existeCliente = verificacionExistenciaClienteSalesManago(email);
-		if(existeCliente)
+		notificarEventoExternoSalesManago("juandavid.r@hotmail.com",1658924, "CRM");
+	}
+	
+	public String retornarIdProductosSalesManago(int idPedido)
+	{
+		String respuesta = "";
+		
+		return(respuesta);
+	}
+	
+	public void notificarEventoExternoSalesManago(String correoElectronico, int idPedido, String origen)
+	{
+		boolean existeCliente = verificacionExistenciaClienteSalesManago(correoElectronico);
 		{
-			insertarEventoClienteSalesManago(email, 120000);
+			double totalPedido = PedidoDAO.obtenerTotalPedido(idPedido);
+			String productos = DetallePedidoDAO.retornarIdProductosSalesManago(idPedido);
+			insertarEventoClienteSalesManago(correoElectronico, totalPedido, productos, origen);
 		}
+	}
+	
+	public String insertarSolicitudCumple(String fecha, int idTienda, int idPedido)
+	{
+		JSONArray listJSON = new JSONArray();
+		SolicitudCumple solicitud = new SolicitudCumple(0,fecha, idTienda, idPedido);
+		int idSol = SolicitudCumpleDAO.insertarSolicitudCumple(solicitud);
+		JSONObject ResultadoJSON = new JSONObject();
+		ResultadoJSON.put("idSolicitudCumple", idSol);
+		listJSON.add(ResultadoJSON);
+		return listJSON.toJSONString();
+	}
+	
+	public String insertarSolicitudCumpleImagen(SolicitudImagenes solicitud)
+	{
+		int idImagen = SolicitudCumpleImagenesDAO.insertarSolicitudCumpleImagen(solicitud);
+		JSONObject resultadoJSON = new JSONObject();
+		resultadoJSON.put("idimagen", idImagen);
+		return(resultadoJSON.toJSONString());
+	}
+	
+	public String consultarSolicitudesCumple(String fechaInicial, String fechaFinal)
+	{
+		ArrayList<SolicitudCumple> solicitudes = SolicitudCumpleDAO.consultarSolicitudesCumple(fechaInicial, fechaFinal);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		for(SolicitudCumple solTemp : solicitudes)
+		{
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("idsolicitudcumple", solTemp.getIdSolicitudCumple());
+			cadaRespuestaJSON.put("idpedido", solTemp.getIdPedido());
+			cadaRespuestaJSON.put("fecha", solTemp.getFecha());
+			cadaRespuestaJSON.put("tienda", solTemp.getFecha());
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+
+		return(respuestaJSON.toString());
+	}
+	
+	public String consultarSolicitudCumpleImagenes(int idSolicitud)
+	{
+		ArrayList<String> imagenes = SolicitudCumpleImagenesDAO.consultarSolicitudCumpleImagenes(idSolicitud);
+		JSONArray resultadoJSON = new JSONArray();
+		for(int i = 0; i < imagenes.size(); i++)
+		{
+			JSONObject cadaImagen = new JSONObject();
+			String imagen = (String) imagenes.get(i);
+			cadaImagen.put("rutaimagen", imagen);
+			resultadoJSON.add(cadaImagen);
+			
+		}
+		return(resultadoJSON.toJSONString());
 	}
 
 }

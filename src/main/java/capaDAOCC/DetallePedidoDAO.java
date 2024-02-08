@@ -67,7 +67,7 @@ public class DetallePedidoDAO {
 	
 	
 	/**
-	 * Método que se encarga de calcular el total con un detalle pedido Padre que podra tener adiciones o modificadores
+	 * Mï¿½todo que se encarga de calcular el total con un detalle pedido Padre que podra tener adiciones o modificadores
 	 * @param idPedido
 	 * @param idDetallePedido
 	 * @return
@@ -159,6 +159,60 @@ public class DetallePedidoDAO {
 			}
 		}
 		return(detallePedido);
+		
+	}
+	
+	public static String retornarIdProductosSalesManago(int idPedido)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		String respuesta = "";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String consulta = "select idproducto,idespecialidad1, idespecialidad2 from detalle_pedido where idpedido = " + idPedido;
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			int idProducto;
+			int idEspecialidad1;
+			int idEspecialidad2;
+			boolean esPrimero = true;
+			while(rs.next()){
+				idProducto = rs.getInt("idProducto");
+				if(esPrimero)
+				{
+					respuesta = Integer.toString(idProducto);
+					esPrimero = false;
+				}else
+				{
+					respuesta = respuesta +" , " +  Integer.toString(idProducto);
+				}
+
+				idEspecialidad1 = rs.getInt("idespecialidad1");
+				idEspecialidad2 = rs.getInt("idespecialidad2");
+				if(idEspecialidad1 != 0)
+				{
+					respuesta = respuesta +" , I" +  Integer.toString(idEspecialidad1);
+				}
+				if(idEspecialidad2 != 0)
+				{
+					respuesta = respuesta +" , I" +  Integer.toString(idEspecialidad2);
+				}
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
 		
 	}
 
