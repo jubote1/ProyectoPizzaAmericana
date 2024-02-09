@@ -156,6 +156,7 @@ public class EmpleadoEncuestaDAO {
 
 			ConexionBaseDatos con = new ConexionBaseDatos();
 			con1 = con.obtenerConexionBDGeneralLocal();
+
 			String sqlQuer ="SELECT \n"
 					+ " 	e.idempleadoencuesta,\n"
 					+ "    em.nombre_largo AS nombre_empleado,\n"
@@ -175,7 +176,6 @@ public class EmpleadoEncuestaDAO {
 					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion";
 			
 	            statement = con1.createStatement();
-
 	            // Ejecutar la consulta SQL
 	            resultSet = statement.executeQuery(sqlQuer);
 
@@ -262,9 +262,9 @@ public class EmpleadoEncuestaDAO {
 	                String observacion = resultSet.getString("observacion");
 	                String respuesta_si = resultSet.getString("respuesta_si");
 	                String respuesta_no = resultSet.getString("respuesta_no");
-	                int valor_inicial = resultSet.getInt("valor_inicial");
-	                int valor_final = resultSet.getInt("valor_final");
-	                int valor_escala = resultSet.getInt("valor_escala");
+	                float valor_inicial = resultSet.getFloat("valor_inicial");
+	                float valor_final = resultSet.getFloat("valor_final");
+	                float valor_escala = resultSet.getFloat("valor_escala");
 	                float porcentaje = resultSet.getFloat("porcentaje");
 	                JSONObject json = new JSONObject();
 	                
