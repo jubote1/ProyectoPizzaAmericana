@@ -74,7 +74,7 @@ public class SolicitudCumpleImagenesDAO {
 			ResultSet rs = stm.executeQuery(select);
 			while(rs.next())
 			{
-				String imagenTmp = rs.getString("rutaimagen");
+				String imagenTmp = rs.getString("ruta");
 				imagenes.add(imagenTmp);
 			}
 			rs.close();

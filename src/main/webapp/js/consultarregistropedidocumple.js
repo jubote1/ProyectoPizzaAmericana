@@ -75,11 +75,10 @@ $(document).ready(function() {
 
    
     $('#grid-solicitud').on('click', 'tr', function () {
-        //Clareamos las imagenes para cargarlas
-        $('#file-1').fileinput('reset');
     	var datos = table.row( this ).data();
     	idSolicitud = datos.idsolicitudcumple;
-    	$.getJSON(server + 'ConsultarSolicitudCumpleImagenes?idsolicitudcumple=' + datos.idsolicitud , function(data1){
+    	console.log("CAPTURADO " + idSolicitud );
+    	$.getJSON(server + 'ConsultarSolicitudCumpleImagenes?idsolicitudcumple=' + idSolicitud , function(data1){
 			//recibimos respueta que es un json con los nombres de todas las imagenes
 			imagenes = data1;
 			if(imagenes.length == 0)
@@ -242,5 +241,48 @@ function validarDiferenciaFechas(date1, date2){
       }
 }
 
+function agregarImagen() {
+ 
+ 	$('#img-gallery').html('');
+    imgs.forEach(item => {
+        elemento = null;
+		//validamos si el archivo es pdf
+        if(item.includes('.pdf')){
+            elemento =document.createElement('div');
+            embed = document.createElement('embed');
+            a =document.createElement('a');
+            src = "http://172.19.0.25:4200/imagenes/" + item
+            embed.src = src;
+            embed.width = '320px';
+            embed.height = '350px';
+            a.href = src
+            a.innerHTML =  "<br><strong>Ver documento completo</strong>"
+            a.target="_blank"
+            embed.style.display ='block';
+            embed.className = "file"
+            elemento.appendChild(embed)
+            elemento.appendChild(a);
+           
+        }else{
+            elemento = document.createElement('img');
+            elemento.className = "file"
+            src = "http://172.19.0.25:4200/imagenes/" + item
+            elemento.src = src;
+            elemento.onclick = function () { openFulImg(this.src) };
 
+        }
+
+        div.appendChild(elemento);
+    });
+}
+
+
+function openFulImg(reference) {
+        fulImgBox.style.display = "flex";
+        fulImg.src = reference
+    }
+
+function closeImg() {
+    fulImgBox.style.display = "none";
+}
 
