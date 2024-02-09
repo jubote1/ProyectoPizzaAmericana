@@ -37,20 +37,25 @@ public class ObtenerResultadoEncuestaOperacion extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
-		String fecha1 = request.getParameter("fecha1");
-		String fecha2 = request.getParameter("fecha2");
-		String paramEncuesta = request.getParameter("idencuesta");
-		int idencuesta = 0;
-		if(paramEncuesta != null) {
-			idencuesta = Integer.parseInt(paramEncuesta);
-			
+		try {
+			response.addHeader("Access-Control-Allow-Origin", "*");
+			int idTienda = Integer.parseInt(request.getParameter("idtienda"));
+			String fecha1 = request.getParameter("fecha1");
+			String fecha2 = request.getParameter("fecha2");
+			String paramEncuesta = request.getParameter("idencuesta");
+			int idencuesta = 0;
+			if(paramEncuesta != null) {
+				idencuesta = Integer.parseInt(paramEncuesta);
+				
+			}
+			EmpleadoCtrl empCtrl = new EmpleadoCtrl();
+	        String respuesta = empCtrl.obtenerResultadoEncuestaOperacion(idTienda,idencuesta,fecha1,fecha2);
+	        PrintWriter out = response.getWriter();
+			out.write(respuesta);
+		}catch(Exception e) {
+			System.out.println(e);
 		}
-		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
-        String respuesta = empCtrl.obtenerResultadoEncuestaOperacion(idTienda,idencuesta,fecha1,fecha2);
-        PrintWriter out = response.getWriter();
-		out.write(respuesta);
+
 	}
 
 	/**
