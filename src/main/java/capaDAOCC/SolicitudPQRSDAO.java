@@ -350,5 +350,46 @@ public class SolicitudPQRSDAO {
 		}
 		return(pqrsCliente);
 	}
+	
+	/**
+	 * Obtener la cantidad de PQRS asociadas a un cliente en específico
+	 * @param telefono
+	 * @return
+	 */
+	public static int obtenerCantidadPQRS(String telefono)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		int cantidadPQRS = 0;
+		String consulta = "";
+		consulta = "select  count(*) from solicitudPQRS a, cliente b WHERE a.idcliente = b.idcliente and (b.telefono = '"+telefono +"')";
+		logger.info(consulta);
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		
+		try
+		{
+			Statement stm = con1.createStatement();
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next())
+			{
+				cantidadPQRS = rs.getInt(1);
+				break;
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+
+		}catch(Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			
+		}
+		return(cantidadPQRS);
+	}
 
 }

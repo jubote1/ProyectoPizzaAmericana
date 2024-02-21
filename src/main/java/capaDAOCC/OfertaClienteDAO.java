@@ -18,14 +18,14 @@ import capaModeloCC.OfertaCliente;
 import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que implementa todos los métodos de acceso a la base de datos para la administración de la entidad Excepcion de Precio.
+ * Clase que implementa todos los mï¿½todos de acceso a la base de datos para la administraciï¿½n de la entidad Excepcion de Precio.
  * @author JuanDavid
  *
  */
 public class OfertaClienteDAO {
 	
 	/**
-	 * Método que se encarga de obtener todas la Ofertas de un cliente parametrizadas en base de datos
+	 * Mï¿½todo que se encarga de obtener todas la Ofertas de un cliente parametrizadas en base de datos
 	 * @return Retorna un ArrayList con objetos de Modelo Oferta.
 	 */
 	public static ArrayList<OfertaCliente> obtenerOfertasClienteGrid(int idCliente)
@@ -37,7 +37,7 @@ public class OfertaClienteDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente;
+			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente + " and b.habilitado ='S'";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOfertaCliente;
@@ -81,7 +81,7 @@ public class OfertaClienteDAO {
 	}
 	
 	/**
-	 * Método que contiene las ofertas que TIENE VIGENTE UN CLIENTE DETERMINADO
+	 * Mï¿½todo que contiene las ofertas que TIENE VIGENTE UN CLIENTE DETERMINADO
 	 * @param idCliente
 	 * @return
 	 */
@@ -139,11 +139,11 @@ public class OfertaClienteDAO {
 	
 		
 	/**
-	 * Método que se encarga de realizar la inserción de una ferta Cliente con base en la información recibida como 
-	 * parámetro.
-	 * @param Exc Recibe como parámetro un objeto de Modelo EOfertaCliente con base en el cual se realiza la inserción
-	 * de la información.
-	 * @return Se retorna un número entero con el idofertacliente retornado en la inserción a la base de datos.
+	 * Mï¿½todo que se encarga de realizar la inserciï¿½n de una ferta Cliente con base en la informaciï¿½n recibida como 
+	 * parï¿½metro.
+	 * @param Exc Recibe como parï¿½metro un objeto de Modelo EOfertaCliente con base en el cual se realiza la inserciï¿½n
+	 * de la informaciï¿½n.
+	 * @return Se retorna un nï¿½mero entero con el idofertacliente retornado en la inserciï¿½n a la base de datos.
 	 */
 	public static int insertarOfertaCliente(OfertaCliente ofer)
 	{
@@ -195,8 +195,8 @@ public class OfertaClienteDAO {
 	}
 
 	/**
-	 * Método qeu se encarga de eliminar una oferta CLiente con base en la información enviadad como parámetro.
-	 * @param idofertaCliente Recibe como parámetro el idexcepcion que desea ser eliminado.
+	 * Mï¿½todo qeu se encarga de eliminar una oferta CLiente con base en la informaciï¿½n enviadad como parï¿½metro.
+	 * @param idofertaCliente Recibe como parï¿½metro el idexcepcion que desea ser eliminado.
 	 */
 	public static void eliminarOfertaCliente(int idOfertaCliente)
 	{
@@ -225,9 +225,9 @@ public class OfertaClienteDAO {
 	}
 
 	/**
-	 * Método que se encarga de consultar una ofertaCliente con base en el parámetro recibido.
-	 * @param idOferta Se recibe como parámetro el idexcepcion que desea ser consultado.
-	 * @return Se retorna un objeto Modelo Oferta que contiene la información el excepcion Precio consultada.
+	 * Mï¿½todo que se encarga de consultar una ofertaCliente con base en el parï¿½metro recibido.
+	 * @param idOferta Se recibe como parï¿½metro el idexcepcion que desea ser consultado.
+	 * @return Se retorna un objeto Modelo Oferta que contiene la informaciï¿½n el excepcion Precio consultada.
 	 */
 	public static OfertaCliente retornarOfertaCliente(int idOfertaCliente)
 	{
@@ -292,9 +292,9 @@ public class OfertaClienteDAO {
 	}
 
 	/**
-	 * Método que permite editar una excepción Precio con base en la información enviada como parámetro.
-	 * @param Esc Recibe como parámetro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la edición.
-	 * @return Retorna un string con el resultado del proceso de edición.
+	 * Mï¿½todo que permite editar una excepciï¿½n Precio con base en la informaciï¿½n enviada como parï¿½metro.
+	 * @param Esc Recibe como parï¿½metro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la ediciï¿½n.
+	 * @return Retorna un string con el resultado del proceso de ediciï¿½n.
 	 */
 	public static String actualizarUsoOferta(int idOfertaCliente, String usuarioUso, double descuentoSobrante)
 	{
@@ -340,8 +340,8 @@ public class OfertaClienteDAO {
 	
 	
 	/**
-	 * Método que se encargará de retornar las ofertas ingresadas en la semana de rango enviada como parámetros y recupera
-	 * la información como un arrayList de ofertascliente.
+	 * Mï¿½todo que se encargarï¿½ de retornar las ofertas ingresadas en la semana de rango enviada como parï¿½metros y recupera
+	 * la informaciï¿½n como un arrayList de ofertascliente.
 	 * @param fechaSuperior
 	 * @param fechaInferior
 	 * @return
@@ -401,8 +401,8 @@ public class OfertaClienteDAO {
 	}
 	
 	/**
-	 * Método que retornará un ArrayList con objetos de tipo oferta Cliente, con todas las ofertas redimidas dentro del  rango de fechas 
-	 * enviadas como parámetro.
+	 * Mï¿½todo que retornarï¿½ un ArrayList con objetos de tipo oferta Cliente, con todas las ofertas redimidas dentro del  rango de fechas 
+	 * enviadas como parï¿½metro.
 	 * @param fechaSuperior
 	 * @param fechaInferior
 	 * @return
@@ -463,7 +463,7 @@ public class OfertaClienteDAO {
 	
 	
 	/**
-	 * Método que se encarga de validar si un código promocional determinado existe, retorna un valor booleano con la validación.
+	 * Mï¿½todo que se encarga de validar si un cï¿½digo promocional determinado existe, retorna un valor booleano con la validaciï¿½n.
 	 * @param codigoPromocional
 	 * @return
 	 */
@@ -501,7 +501,7 @@ public class OfertaClienteDAO {
 	
 	
 	/**
-	 * Método que basado en un codigo promocional pasado como parámetro retorna la oferta asociado al mismo indicando si está existe o no y los datos correspondientes.
+	 * Mï¿½todo que basado en un codigo promocional pasado como parï¿½metro retorna la oferta asociado al mismo indicando si estï¿½ existe o no y los datos correspondientes.
 	 * @param codigoPromocional
 	 * @return
 	 */
@@ -572,7 +572,7 @@ public class OfertaClienteDAO {
 	}
 
 	/**
-	 * Método que se encarga de retornar en un arrayList los mensajes de texto que se deberían de enviar según la oferta 
+	 * Mï¿½todo que se encarga de retornar en un arrayList los mensajes de texto que se deberï¿½an de enviar segï¿½n la oferta 
 	 * seleccionada
 	 * @param idOferta
 	 * @return
@@ -646,7 +646,7 @@ public class OfertaClienteDAO {
 	}
 	
 	/**
-	 * Método que se encarga de marcar el campo de mensaje de texto para una oferta determinada, esta marcación se hace
+	 * Mï¿½todo que se encarga de marcar el campo de mensaje de texto para una oferta determinada, esta marcaciï¿½n se hace
 	 * cuando un mensaje de texto fue correctamente enviado.
 	 * @param idOfertaCliente
 	 * @return

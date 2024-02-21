@@ -13,14 +13,14 @@ import capaModeloCC.Oferta;
 import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que implementa todos los métodos de acceso a la base de datos para la administración de la entidad Excepcion de Precio.
+ * Clase que implementa todos los mï¿½todos de acceso a la base de datos para la administraciï¿½n de la entidad Excepcion de Precio.
  * @author JuanDavid
  *
  */
 public class OfertaDAO {
 	
 	/**
-	 * Método que se encarga de obtener todas la excepciones de precio parametrizadas en base de datos
+	 * Mï¿½todo que se encarga de obtener todas la excepciones de precio parametrizadas en base de datos
 	 * @return Retorna un ArrayList con objetos de Modelo Oferta.
 	 */
 	public static ArrayList<Oferta> obtenerOfertas()
@@ -32,7 +32,7 @@ public class OfertaDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select * from oferta";
+			String consulta = "select * from oferta where habilitado = 'S'";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOferta;
@@ -71,7 +71,7 @@ public class OfertaDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.idoferta, a.nombre_oferta, a.idexcepcion, b.descripcion from oferta a left outer join excepcion_precio b on a.idexcepcion = b.idexcepcion ";
+			String consulta = "select a.idoferta, a.nombre_oferta, a.idexcepcion, b.descripcion from oferta a left outer join excepcion_precio b on a.idexcepcion = b.idexcepcion where a.habilitado = 'S' ";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOferta;
@@ -114,7 +114,7 @@ public class OfertaDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.idoferta, a.nombre_oferta, a.idexcepcion, b.descripcion from oferta a left outer join excepcion_precio b on a.idexcepcion = b.idexcepcion where a.contact = 'S' ";
+			String consulta = "select a.idoferta, a.nombre_oferta, a.idexcepcion, b.descripcion from oferta a left outer join excepcion_precio b on a.idexcepcion = b.idexcepcion where a.contact = 'S' and a.habilitado = 'S'";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOferta;
@@ -149,11 +149,11 @@ public class OfertaDAO {
 	
 		
 	/**
-	 * Método que se encarga de realizar la inserción de una ferta con base en la información recibida como 
-	 * parámetro.
-	 * @param Exc Recibe como parámetro un objeto de Modelo EOferta con base en el cual se realiza la inserción
-	 * de la información.
-	 * @return Se retorna un número entero con el idoferta retornado en la inserción a la base de datos.
+	 * Mï¿½todo que se encarga de realizar la inserciï¿½n de una ferta con base en la informaciï¿½n recibida como 
+	 * parï¿½metro.
+	 * @param Exc Recibe como parï¿½metro un objeto de Modelo EOferta con base en el cual se realiza la inserciï¿½n
+	 * de la informaciï¿½n.
+	 * @return Se retorna un nï¿½mero entero con el idoferta retornado en la inserciï¿½n a la base de datos.
 	 */
 	public static int insertarOferta(Oferta ofer)
 	{
@@ -189,8 +189,8 @@ public class OfertaDAO {
 	}
 
 	/**
-	 * Método qeu se encarga de eliminar una oferta de precio con base en la información enviadad como parámetro.
-	 * @param idoferta Recibe como parámetro el idexcepcion que desea ser eliminado.
+	 * Mï¿½todo qeu se encarga de eliminar una oferta de precio con base en la informaciï¿½n enviadad como parï¿½metro.
+	 * @param idoferta Recibe como parï¿½metro el idexcepcion que desea ser eliminado.
 	 */
 	public static void eliminarOferta(int idOferta)
 	{
@@ -219,9 +219,9 @@ public class OfertaDAO {
 	}
 
 	/**
-	 * Método que se encarga de consultar una oferta con base en el parámetro recibido.
-	 * @param idOferta Se recibe como parámetro el idexcepcion que desea ser consultado.
-	 * @return Se retorna un objeto Modelo Oferta que contiene la información el excepcion Precio consultada.
+	 * Mï¿½todo que se encarga de consultar una oferta con base en el parï¿½metro recibido.
+	 * @param idOferta Se recibe como parï¿½metro el idexcepcion que desea ser consultado.
+	 * @return Se retorna un objeto Modelo Oferta que contiene la informaciï¿½n el excepcion Precio consultada.
 	 */
 	public static Oferta retornarOferta(int idOferta)
 	{
@@ -284,7 +284,7 @@ public class OfertaDAO {
 	
 	
 	/**
-	 * Método que retorna las condiciones de horario de una oferta en caso de que las tenga definidas para validar la vigencia de una oferta
+	 * Mï¿½todo que retorna las condiciones de horario de una oferta en caso de que las tenga definidas para validar la vigencia de una oferta
 	 * @param idOferta
 	 * @return
 	 */
@@ -330,9 +330,9 @@ public class OfertaDAO {
 	}
 
 	/**
-	 * Método que permite editar una excepción Precio con base en la información enviada como parámetro.
-	 * @param Esc Recibe como parámetro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la edición.
-	 * @return Retorna un string con el resultado del proceso de edición.
+	 * Mï¿½todo que permite editar una excepciï¿½n Precio con base en la informaciï¿½n enviada como parï¿½metro.
+	 * @param Esc Recibe como parï¿½metro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la ediciï¿½n.
+	 * @return Retorna un string con el resultado del proceso de ediciï¿½n.
 	 */
 	public static String editarOferta(Oferta ofertaEdi)
 	{

@@ -3622,6 +3622,132 @@ public class PedidoDAO {
 			}
 			return(infoPedido);
 		}
+		
+		/**
+		 * Método que nos retornará la fecha del último pedido realizado por el cliente
+		 * @param telefono
+		 * @return
+		 */
+		public static String obtenerFechaUltimoPedidoCliente(String telefono)
+		{
+			Logger logger = Logger.getLogger("log_file");
+			String fechaPedido = "";
+			String consulta = "";
+			consulta = "select  a.fechapedido from pedido a, cliente b WHERE a.idcliente = b.idcliente and (b.telefono = '"+telefono +"') order by fechapedido desc LIMIT 1";
+			logger.info(consulta);
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next())
+				{
+					fechaPedido = rs.getString("fechapedido");
+					break;
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(fechaPedido);
+		}
+		
+		
+		/**
+		 * Método que nos retornará la cantidad de pedidos realizados por un cliente en un lapso o cantidad de días
+		 * @param telefono
+		 * @return
+		 */
+		public static int obtenerCantidadPedidosClienteDiasAtras(String telefono, int cantidadDias)
+		{
+			Logger logger = Logger.getLogger("log_file");
+			int cantidadPedidos = 0;
+			String consulta = "";
+			consulta = "select  count(*) from pedido a, cliente b WHERE a.idcliente = b.idcliente and (b.telefono = '"+telefono +"') AND a.fechapedido >= DATE_SUB(CURDATE(), INTERVAL " + cantidadDias + " DAY) AND a.numposheader > 0";
+			logger.info(consulta);
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next())
+				{
+					cantidadPedidos = rs.getInt(1);
+					break;
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(cantidadPedidos);
+		}
+		
+		
+		/**
+		 * Método para obtener la cnatidad de especialidades que ha consumido un cliente en toda su historia, mostrará el top 4.
+		 * @param telefonos
+		 * @return
+		 */
+		public static String obtenerCantidadEspecialidadesCliente(String telefono)
+		{
+			Logger logger = Logger.getLogger("log_file");
+			String respuesta = "";
+			String consulta = "";
+			consulta = "SELECT COUNT(*) AS cantidad, c.nombre  FROM pedido a, detalle_pedido b, especialidad c, cliente d WHERE a.idpedido = b.idpedido  AND b.idespecialidad1  = c.idespecialidad AND a.idcliente = d.idcliente and (d.telefono = '" + telefono + "') GROUP BY c.nombre ORDER BY cantidad DESC LIMIT 4";
+			logger.info(consulta);
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				int posicion = 1;
+				while(rs.next())
+				{
+					respuesta  = respuesta + posicion + "." + rs.getString(2)+" : " + rs.getString(1) + "<br>";
+					posicion = posicion + 1;
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(respuesta);
+		}
 	
 	public static ArrayList<DireccionFueraZona> ConsultarDireccionesPedido(String fechainicial, String fechafinal, String strIdMuni, String idTienda, String horaIni, String horaFin)
 	{
@@ -3827,7 +3953,7 @@ public class PedidoDAO {
 		String fechaFinal = fechaFin.substring(6, 10)+"-"+fechaFin.substring(3, 5)+"-"+fechaFin.substring(0, 2) + " 23:59:59";
 		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, c.nombrecompania from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaInicial + "' and a.fechapedido <= '" + fechaFinal + "' and  a.venta_corporativa = 'S' order by a.usuariopedido, a.fechapedido";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
@@ -3907,7 +4033,7 @@ public class PedidoDAO {
 		String fechaFinal = fechaFin.substring(6, 10)+"-"+fechaFin.substring(3, 5)+"-"+fechaFin.substring(0, 2) + " 23:59:59";
 		consulta = "select sum(a.total_neto) as ventatotal, (sum(a.total_neto)*0.03) as comision, g.nombre_largo as asesor  from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f, usuario g where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.usuariopedido = g.nombre and a.fechapedido >= '" + fechaInicial + "' and a.fechapedido <= '" + fechaFinal + "' and  a.venta_corporativa = 'S' group by asesor";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{

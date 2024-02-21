@@ -28,10 +28,10 @@ public class ClienteCtrl {
 	
 	/**
 	 * 
-	 * @param tel recibe el valor del teléfono para buscar al cliente en la base de datos y devolver en una estructura json
-	 * las incripciones del cliente que corresponden al número telefónico entregado como parámetro.
-	 * @return un valor String en formato json con el arreglo de inscripciones en la tabla cliente que responden al teléfono
-	 * enviado como parámetro
+	 * @param tel recibe el valor del telï¿½fono para buscar al cliente en la base de datos y devolver en una estructura json
+	 * las incripciones del cliente que corresponden al nï¿½mero telefï¿½nico entregado como parï¿½metro.
+	 * @return un valor String en formato json con el arreglo de inscripciones en la tabla cliente que responden al telï¿½fono
+	 * enviado como parï¿½metro
 	 * NOTA: En la capa DAO validamos el estado del  cliente.
 	 */
 	public String obtenerCliente(String tel){
@@ -72,9 +72,33 @@ public class ClienteCtrl {
 		return listJSON.toJSONString();
 	}
 	
+	
 	/**
-	 * Método en capa controlador que se encarga de retornar la info de un cliente en lo más actualizado posible 
-	 * de su último pedido
+	 * Metodo que se encargarÃ¡ de obtener la informaciÃ³n de mercadeo de los clientes con base en el telÃ©fono de los clientes que nos
+	 * llaman, para asÃ­ poder dar un mejor servicio comercial.
+	 * @param tel
+	 * @return
+	 */
+	public String obtenerMercadeoCliente(String tel){
+		JSONObject datosMercadeo = new JSONObject();
+	    String fechaPedido = PedidoDAO.obtenerFechaUltimoPedidoCliente(tel);
+	    datosMercadeo.put("fechaultimopedido", fechaPedido);
+	    int cantidadPedidos30 = PedidoDAO.obtenerCantidadPedidosClienteDiasAtras(tel, 30);
+	    int cantidadPedidos90 = PedidoDAO.obtenerCantidadPedidosClienteDiasAtras(tel, 90);
+	    int cantidadPedidos180 = PedidoDAO.obtenerCantidadPedidosClienteDiasAtras(tel, 180);
+	    datosMercadeo.put("cantidadpedidos30", cantidadPedidos30);
+	    datosMercadeo.put("cantidadpedidos90", cantidadPedidos90);
+	    datosMercadeo.put("cantidadpedidos180", cantidadPedidos180);
+	    int cantidadPQRS = SolicitudPQRSDAO.obtenerCantidadPQRS(tel);
+	    datosMercadeo.put("cantidadpqrs", cantidadPQRS);
+	    String especialidades = PedidoDAO.obtenerCantidadEspecialidadesCliente(tel);
+	    datosMercadeo.put("especialidades", especialidades);
+		return datosMercadeo.toJSONString();
+	}
+	
+	/**
+	 * Mï¿½todo en capa controlador que se encarga de retornar la info de un cliente en lo mï¿½s actualizado posible 
+	 * de su ï¿½ltimo pedido
 	 * @param tel
 	 * @return
 	 */
@@ -85,7 +109,7 @@ public class ClienteCtrl {
 	}
 	
 /**
- * Método que se encarga de validar si con el número ingresado existen pedidos para el día en cuestión y si los hay que cantidad hay
+ * Mï¿½todo que se encarga de validar si con el nï¿½mero ingresado existen pedidos para el dï¿½a en cuestiï¿½n y si los hay que cantidad hay
  * @param tel
  * @return
  */
@@ -106,11 +130,11 @@ public class ClienteCtrl {
 	
 	/**
 	 * 
-	 * @param tel recibe el valor del teléfono para buscar al cliente en la base de datos y devolver en una estructura json
-	 * las incripciones del cliente que corresponden al número telefónico entregado como parámetro.
-	 * @return un valor String en formato json con el arreglo de inscripciones en la tabla cliente que responden al teléfono
-	 * enviado como parámetro
-	 * NOTA: En la capa DAO no para este en específico validamos el estado del  cliente.
+	 * @param tel recibe el valor del telï¿½fono para buscar al cliente en la base de datos y devolver en una estructura json
+	 * las incripciones del cliente que corresponden al nï¿½mero telefï¿½nico entregado como parï¿½metro.
+	 * @return un valor String en formato json con el arreglo de inscripciones en la tabla cliente que responden al telï¿½fono
+	 * enviado como parï¿½metro
+	 * NOTA: En la capa DAO no para este en especï¿½fico validamos el estado del  cliente.
 	 */
 	public String obtenerClienteTodos(String tel){
 		JSONArray listJSON = new JSONArray();
@@ -183,8 +207,8 @@ public class ClienteCtrl {
 	
 /**
  * 	
- * @param id Dado el id de un cliente se retorna la información del cliente
- * @return Se retorna en formato json la información del cliente que corresponde al id cliente, ingresado como parámetro.
+ * @param id Dado el id de un cliente se retorna la informaciï¿½n del cliente
+ * @return Se retorna en formato json la informaciï¿½n del cliente que corresponde al id cliente, ingresado como parï¿½metro.
  */
 public String obtenerClienteporID(int id)
 {
@@ -217,7 +241,7 @@ public String obtenerClienteporID(int id)
 }
 
 /**
- * Método que retorna el cliente en foramto objeto consultando por el id de la tabla cliente
+ * Mï¿½todo que retorna el cliente en foramto objeto consultando por el id de la tabla cliente
  * @param id
  * @return
  */
@@ -229,13 +253,13 @@ public Cliente obtenerClienteporIDObj(int id)
 
 
 /**
- * 	Este método tiene como objetivo tomar los parámetros de un cliente para realizar la inserción
- * @param telefono parámetro de ingreso para la creación de cliente
- * @param nombres parámetro de ingreso para la creación de cliente
- * @param direccion parámetro de ingreso para la creación de cliente
- * @param zona parámetro de ingreso para la creación de cliente 
- * @param observacion parámetro de ingreso para la creación de cliente
- * @param tienda parámetro de ingreso para la creación de cliente
+ * 	Este mï¿½todo tiene como objetivo tomar los parï¿½metros de un cliente para realizar la inserciï¿½n
+ * @param telefono parï¿½metro de ingreso para la creaciï¿½n de cliente
+ * @param nombres parï¿½metro de ingreso para la creaciï¿½n de cliente
+ * @param direccion parï¿½metro de ingreso para la creaciï¿½n de cliente
+ * @param zona parï¿½metro de ingreso para la creaciï¿½n de cliente 
+ * @param observacion parï¿½metro de ingreso para la creaciï¿½n de cliente
+ * @param tienda parï¿½metro de ingreso para la creaciï¿½n de cliente
  * @return Se retorna en formato Json el id del cliente sea ingresado o actualizado.
  */
 public String InsertarClientePedido(String telefono, String nombres, String direccion,  String zona,  String observacion, String tienda)
@@ -296,7 +320,7 @@ public String InsertarClientePedido(String telefono, String nombres, String dire
 }
 
 /**
- * Este método recibe la informacion de un cliente y de acuerdo a los diferentes condiciones, actualiza o crea el cliente en la base de datos
+ * Este mï¿½todo recibe la informacion de un cliente y de acuerdo a los diferentes condiciones, actualiza o crea el cliente en la base de datos
  * @param idCliente 
  * @param telefono
  * @param nombres
@@ -310,11 +334,11 @@ public String InsertarClientePedido(String telefono, String nombres, String dire
  * @param observacion
  * @param tienda
  * @param memcode
- * @return Retorna el idcliente ingresado o actualizado según los datos recibidos como parámetro.
+ * @return Retorna el idcliente ingresado o actualizado segï¿½n los datos recibidos como parï¿½metro.
  */
 public int InsertarClientePedidoEncabezado(int idCliente,String telefono, String nombres, String apellidos, String nombreCompania, String direccion, String municipio, float latitud, float longitud, double distanciaTienda, String zona,  String observacion, String tienda, int memcode, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3, String telefonoCelular, String email, String politicaDatos, String fechaNacimiento )
 {
-	//Incluimos la lógica para validar la latitud y longitud
+	//Incluimos la lï¿½gica para validar la latitud y longitud
 	if(latitud == 0 && longitud == 0)
 	{
 		String geolocaliza = ParametrosDAO.retornarValorAlfanumerico("GEOLOCALIZACIONACTIVA");
@@ -332,9 +356,9 @@ public int InsertarClientePedidoEncabezado(int idCliente,String telefono, String
 	// Esta pendiente convertir el nombre tienda a tienda
 	int idTienda = TiendaDAO.obteneridTienda(tienda);
 	int idMunicipio = MunicipioDAO.obteneridMunicipio(municipio);
-	// Se crea el objeto cliente con todas las características enviadas
+	// Se crea el objeto cliente con todas las caracterï¿½sticas enviadas
 	Cliente clienteRevisar = new Cliente(idCliente, telefono, nombres, apellidos, nombreCompania, direccion,municipio, idMunicipio, latitud, longitud, distanciaTienda,  zona,  observacion,  tienda, idTienda, memcode, idnomenclatura, numNomenclatura, numNomenclatura2, num3, "", telefonoCelular, email, politicaDatos,fechaNacimiento);
-	// Se inician las variables para la iniciación de la creación o la actualización
+	// Se inician las variables para la iniciaciï¿½n de la creaciï¿½n o la actualizaciï¿½n
 	int idRespuestaCreacion = 0;
 	int idRespuestaActualizacion = 0;
 	if ((idCliente > 0) && (memcode > 0) )
@@ -365,7 +389,7 @@ public int InsertarClientePedidoEncabezado(int idCliente,String telefono, String
 
 public String InsertarClientePedidoEncabezadoJSON(int idCliente,String telefono, String nombres, String apellidos, String nombreCompania, String direccion, String municipio, float latitud, float longitud, double distanciaTienda, String zona,  String observacion, String tienda, int memcode, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3, String telefonoCelular, String email, String politicaDatos, String fechaNacimiento )
 {
-	//Incluimos la lógica para validar la latitud y longitud
+	//Incluimos la lï¿½gica para validar la latitud y longitud
 	if(latitud == 0 && longitud == 0)
 	{
 		String geolocaliza = ParametrosDAO.retornarValorAlfanumerico("GEOLOCALIZACIONACTIVA");
@@ -383,9 +407,9 @@ public String InsertarClientePedidoEncabezadoJSON(int idCliente,String telefono,
 	// Esta pendiente convertir el nombre tienda a tienda
 	int idTienda = TiendaDAO.obteneridTienda(tienda);
 	int idMunicipio = MunicipioDAO.obteneridMunicipio(municipio);
-	// Se crea el objeto cliente con todas las características enviadas
+	// Se crea el objeto cliente con todas las caracterï¿½sticas enviadas
 	Cliente clienteRevisar = new Cliente(idCliente, telefono, nombres, apellidos, nombreCompania, direccion,municipio, idMunicipio, latitud, longitud, distanciaTienda, zona,  observacion,  tienda, idTienda, memcode, idnomenclatura, numNomenclatura, numNomenclatura2, num3, "", telefonoCelular, email, politicaDatos, fechaNacimiento);
-	// Se inician las variables para la iniciación de la creación o la actualización
+	// Se inician las variables para la iniciaciï¿½n de la creaciï¿½n o la actualizaciï¿½n
 	int idRespuestaCreacion = 0;
 	int idRespuestaActualizacion = 0;
 	int idClienteResp = 0;
@@ -474,7 +498,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 	{
 		respuesta.put("pqrs", "NO");
 	}
-	//Validamos que tenga última fecha pedido
+	//Validamos que tenga ï¿½ltima fecha pedido
 	if(infoPedido[0]== "")
 	{
 		
@@ -489,7 +513,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 }
 
 /**
- * Método que se encagará de realizar un procesamiento completo del cliente y la información recibida del cliente que pidió virtualmente
+ * Mï¿½todo que se encagarï¿½ de realizar un procesamiento completo del cliente y la informaciï¿½n recibida del cliente que pidiï¿½ virtualmente
  * @param clienteVirtual
  */
 	public int validarClienteTiendaVirtual(Cliente clienteVirtual)
@@ -498,14 +522,14 @@ public String obtenerNotificacionesCliente(int idCliente)
 		//Definimos la variable con las alertas de actualizacion
 		String alertaActualizacion = "";
 		/**
-		 * 1.Regularizar la data del cliente virtual correspondiente con la dirección que la trae toda junta
+		 * 1.Regularizar la data del cliente virtual correspondiente con la direcciï¿½n que la trae toda junta
 		 */
 		normalizarDireccionClienteVirtual(clienteVirtual);
 		
 		/**
-		 * 2. A continuación toda la lógica seguida en la implementación de este método, comenzamos por 
-		 * verificar si el cliente ya existe, pues en caso de que ya existe pues haremos una actualización 
-		 * del cliente existente, en caso de que no exista, haremos la creación.
+		 * 2. A continuaciï¿½n toda la lï¿½gica seguida en la implementaciï¿½n de este mï¿½todo, comenzamos por 
+		 * verificar si el cliente ya existe, pues en caso de que ya existe pues haremos una actualizaciï¿½n 
+		 * del cliente existente, en caso de que no exista, haremos la creaciï¿½n.
 		 */
 		boolean esTelefonoFijo = false;
 		if(clienteVirtual.getTelefono().substring(0,3).equals(new String("034")))
@@ -519,17 +543,17 @@ public String obtenerNotificacionesCliente(int idCliente)
 			clienteEncontrado = ClienteDAO.obtenerClienteCelular(clienteVirtual.getTelefonoCelular(), clienteVirtual.getIdtienda());
 		}
 		/**
-		 * 2. En caso de que el cliente exista tomaremos el idCliente y comenzaremos a realizar una actualización "inteligente, dejando un log detallado".
+		 * 2. En caso de que el cliente exista tomaremos el idCliente y comenzaremos a realizar una actualizaciï¿½n "inteligente, dejando un log detallado".
 		 * 
 		 */
 		if(clienteEncontrado.getIdcliente() > 0)
 		{
 			clienteVirtual.setIdcliente(clienteEncontrado.getIdcliente());
-			//Procederemos con la actualización dejando un rastro de lo encontrado
+			//Procederemos con la actualizaciï¿½n dejando un rastro de lo encontrado
 			alertaActualizacion = prepararActClienteTiendaVirtual(clienteVirtual, clienteEncontrado);
 			//Fijamos el valor de las observaciones virtuales
 			clienteVirtual.setObservacionVirtual(clienteVirtual.getObservacionVirtual() + alertaActualizacion);
-			//Realizamos la actualización del cliente
+			//Realizamos la actualizaciï¿½n del cliente
 			idCliente = ClienteDAO.actualizarCliente(clienteVirtual);
 		}else
 		{
@@ -542,8 +566,8 @@ public String obtenerNotificacionesCliente(int idCliente)
 	
 	
 	/**
-	 * Tenemos en tienda virtual KUNO que revisar como llegará la dirección dado que no será estándar y posiblemente
-	 * no hay forma de hacer la separación.
+	 * Tenemos en tienda virtual KUNO que revisar como llegarï¿½ la direcciï¿½n dado que no serï¿½ estï¿½ndar y posiblemente
+	 * no hay forma de hacer la separaciï¿½n.
 	 * @param clienteVirtual
 	 * @return
 	 */
@@ -553,14 +577,14 @@ public String obtenerNotificacionesCliente(int idCliente)
 		//Definimos la variable con las alertas de actualizacion
 		String alertaActualizacion = "";
 		/**
-		 * 1.Regularizar la data del cliente virtual correspondiente con la dirección que la trae toda junta
+		 * 1.Regularizar la data del cliente virtual correspondiente con la direcciï¿½n que la trae toda junta
 		 */
 		normalizarDireccionClienteVirtualKuno(clienteVirtual);
 		
 		/**
-		 * 2. A continuación toda la lógica seguida en la implementación de este método, comenzamos por 
-		 * verificar si el cliente ya existe, pues en caso de que ya existe pues haremos una actualización 
-		 * del cliente existente, en caso de que no exista, haremos la creación.
+		 * 2. A continuaciï¿½n toda la lï¿½gica seguida en la implementaciï¿½n de este mï¿½todo, comenzamos por 
+		 * verificar si el cliente ya existe, pues en caso de que ya existe pues haremos una actualizaciï¿½n 
+		 * del cliente existente, en caso de que no exista, haremos la creaciï¿½n.
 		 */
 		boolean esTelefonoFijo = false;
 		if(clienteVirtual.getTelefono().substring(0,3).equals(new String("034")))
@@ -574,17 +598,17 @@ public String obtenerNotificacionesCliente(int idCliente)
 			clienteEncontrado = ClienteDAO.obtenerClienteCelularTiendaVirtual(clienteVirtual.getTelefonoCelular(), clienteVirtual.getIdtienda());
 		}
 		/**
-		 * 2. En caso de que el cliente exista tomaremos el idCliente y comenzaremos a realizar una actualización "inteligente, dejando un log detallado".
+		 * 2. En caso de que el cliente exista tomaremos el idCliente y comenzaremos a realizar una actualizaciï¿½n "inteligente, dejando un log detallado".
 		 * 
 		 */
 		if(clienteEncontrado.getIdcliente() > 0)
 		{
 			clienteVirtual.setIdcliente(clienteEncontrado.getIdcliente());
-			//Procederemos con la actualización dejando un rastro de lo encontrado
+			//Procederemos con la actualizaciï¿½n dejando un rastro de lo encontrado
 			alertaActualizacion = prepararActClienteTiendaVirtual(clienteVirtual, clienteEncontrado);
 			//Fijamos el valor de las observaciones virtuales
 			clienteVirtual.setObservacionVirtual(clienteVirtual.getObservacionVirtual() + alertaActualizacion + " " + instrucciones);
-			//Realizamos la actualización del cliente
+			//Realizamos la actualizaciï¿½n del cliente
 			idCliente = ClienteDAO.actualizarCliente(clienteVirtual);
 		}else
 		{
@@ -594,28 +618,28 @@ public String obtenerNotificacionesCliente(int idCliente)
 	}
 	
 	/**
-	 * Este método con base en un cliente existente vs el cliente que viene de la tienda virtual se encarga de comparar la información
-	 * de la dirección y dejar anotación de las igualdades y diferencias.
+	 * Este mï¿½todo con base en un cliente existente vs el cliente que viene de la tienda virtual se encarga de comparar la informaciï¿½n
+	 * de la direcciï¿½n y dejar anotaciï¿½n de las igualdades y diferencias.
 	 * @param clienteVirtual
 	 * @param clienteExistente
 	 * @return
 	 */
 	public String prepararActClienteTiendaVirtual(Cliente clienteVirtual, Cliente clienteExistente)
 	{
-		//Se tendrá este String que guardara todas aquellas anotaciones importantes de la actualización del cliente
-		String alertasAct = "CLIENTE YA EXISTIA Y SE ACTUALIZÓ.";
+		//Se tendrï¿½ este String que guardara todas aquellas anotaciones importantes de la actualizaciï¿½n del cliente
+		String alertasAct = "CLIENTE YA EXISTIA Y SE ACTUALIZï¿½.";
 		try
 		{
-			//Validamos que el anterior tenga nombre compañia para si es el caso colocarselo al nuevo
+			//Validamos que el anterior tenga nombre compaï¿½ia para si es el caso colocarselo al nuevo
 			if(clienteExistente.getNombreCompania().length() > 0)
 			{
 				if(clienteVirtual.getNombreCompania().length() == 0)
 				{
 					clienteVirtual.setNombreCompania(clienteExistente.getNombreCompania());
-					alertasAct = alertasAct + " Se encontró que el cliente tenía información en el campo nombre Compañia y se dejo dicha información.";
+					alertasAct = alertasAct + " Se encontrï¿½ que el cliente tenï¿½a informaciï¿½n en el campo nombre Compaï¿½ia y se dejo dicha informaciï¿½n.";
 				}	
 			}
-			//Tendremos un contador de equivalencias en la dirección
+			//Tendremos un contador de equivalencias en la direcciï¿½n
 			int equivalencias = 0;
 			if(clienteVirtual.getIdnomenclatura() == clienteExistente.getIdnomenclatura())
 			{
@@ -639,36 +663,36 @@ public String obtenerNotificacionesCliente(int idCliente)
 			}
 			if(equivalencias == 5)
 			{
-				alertasAct = alertasAct + " La direccion que teníamos del cliente coincide exactamente con la que teníamos antes";
+				alertasAct = alertasAct + " La direccion que tenï¿½amos del cliente coincide exactamente con la que tenï¿½amos antes";
 			}else
 			{
 				if(clienteVirtual.getNumNomenclatura().equals(new String("0")))
 				{
-					alertasAct = alertasAct + " ATENCIÓN!! SE DEBE REVISAR LA DIRECCIÓN DEL CLIENTE Y NORMALIZARLA TIENE PROBLEMAS.";
+					alertasAct = alertasAct + " ATENCIï¿½N!! SE DEBE REVISAR LA DIRECCIï¿½N DEL CLIENTE Y NORMALIZARLA TIENE PROBLEMAS.";
 				}else
 				{
-					alertasAct = alertasAct + " La dirección tiene diferencias, la anterior es " + clienteExistente.getDireccion() + " y la nueva es " + clienteVirtual.getDireccion();
+					alertasAct = alertasAct + " La direcciï¿½n tiene diferencias, la anterior es " + clienteExistente.getDireccion() + " y la nueva es " + clienteVirtual.getDireccion();
 				}	
 			}
 		}catch(Exception e)
 		{
-			alertasAct = alertasAct + " ALERTA! El cliente realizó ingreso de la direccion en un formato diferente al esperado, se debe verificar la dirección antes de enviar.";
+			alertasAct = alertasAct + " ALERTA! El cliente realizï¿½ ingreso de la direccion en un formato diferente al esperado, se debe verificar la direcciï¿½n antes de enviar.";
 		}
 		return(alertasAct);
 	}
 	
 	/**
-	 * Este método se encargará de normalizar la dirección para el cliente virtual que en cuyo caso la dirección viene toda junta
+	 * Este mï¿½todo se encargarï¿½ de normalizar la direcciï¿½n para el cliente virtual que en cuyo caso la direcciï¿½n viene toda junta
 	 * y debe ser separada por campos.
 	 * @param clienteVirtual
 	 */
 	public void normalizarDireccionClienteVirtual(Cliente clienteVirtual)
 	{
-		//Incluimos todo en un try/catch, con el fin de que si se presenta erorr, alertar la situación
+		//Incluimos todo en un try/catch, con el fin de que si se presenta erorr, alertar la situaciï¿½n
 		try
 		{
-			//La dirección viene completa por lo tanto deberá ser descompuesta para ser almacenada de la forma correcta y ser validada con la existente
-			//Sacamos los campos para la descomposición de la dirección
+			//La direcciï¿½n viene completa por lo tanto deberï¿½ ser descompuesta para ser almacenada de la forma correcta y ser validada con la existente
+			//Sacamos los campos para la descomposiciï¿½n de la direcciï¿½n
 			String nomenclatura = "";
 			int idNomenclatura;
 			String numNomencla1="";
@@ -676,7 +700,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			String num3 = "";
 			String municipio = "";
 			int idMunicipio;
-			//Comenzamos con la dirección base que se trae del sitio virtual
+			//Comenzamos con la direcciï¿½n base que se trae del sitio virtual
 			String direccionBase = clienteVirtual.getDireccion();
 			//Vamos a extraer la nomemclatura como primer paso.
 			StringTokenizer strTokenDir = new StringTokenizer(direccionBase, " ");
@@ -687,24 +711,24 @@ public String obtenerNotificacionesCliente(int idCliente)
 			}
 			//Posteriormente dada la nomenclatura validamos el idNomenclatura
 			idNomenclatura = NomenclaturaDireccionDAO.obtenerIdNomenclatura(nomenclatura);
-			//Si la nomenclatura es cero envíamos correo
+			//Si la nomenclatura es cero envï¿½amos correo
 			if(idNomenclatura == 0)
 			{
 				//Enviaremos un correo en la etapa de piloto
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("TIENDA VIRTUAL ERROR EN LA DIRECCIÓN NOMENCLATURA VACÍA   " + clienteVirtual.getDireccion());
+				correo.setAsunto("TIENDA VIRTUAL ERROR EN LA DIRECCIï¿½N NOMENCLATURA VACï¿½A   " + clienteVirtual.getDireccion());
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-				correo.setMensaje(" Se tuvo problema creando la orden del cliente  en la dirección " + clienteVirtual.getDireccion());
+				correo.setMensaje(" Se tuvo problema creando la orden del cliente  en la direcciï¿½n " + clienteVirtual.getDireccion());
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				contro.enviarCorreo();
 			}
 			direccionBase = direccionBase.substring(nomenclatura.length());
-			//Realizamos la separación de los números de la dirección
+			//Realizamos la separaciï¿½n de los nï¿½meros de la direcciï¿½n
 			strTokenDir = new StringTokenizer(direccionBase , "#");
 			while(strTokenDir.hasMoreTokens())
 			{
@@ -712,7 +736,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 				numNomencla2 = strTokenDir.nextToken().trim();
 				break;
 			}
-			//Continuamos separando la segunda parte de los números de la dirección
+			//Continuamos separando la segunda parte de los nï¿½meros de la direcciï¿½n
 			strTokenDir = new StringTokenizer(numNomencla2, "-");
 			while(strTokenDir.hasMoreTokens())
 			{
@@ -720,7 +744,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 				num3 = strTokenDir.nextToken().trim();
 				break;
 			}
-			//Terminamos la Extracción del último número y el municipio
+			//Terminamos la Extracciï¿½n del ï¿½ltimo nï¿½mero y el municipio
 			strTokenDir = new StringTokenizer(num3, " ");
 			while(strTokenDir.hasMoreTokens())
 			{
@@ -728,7 +752,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 				municipio = strTokenDir.nextToken().trim();
 				break;
 			}
-			//Realizamos un control para los municipios que tienen más de una letra
+			//Realizamos un control para los municipios que tienen mï¿½s de una letra
 			while(strTokenDir.hasMoreTokens())
 			{
 				municipio = municipio + " " + strTokenDir.nextToken().trim();
@@ -737,7 +761,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			if(idMunicipio == 0)
 			{
 				idMunicipio = 1;
-				clienteVirtual.setObservacionVirtual(clienteVirtual.getObservacionVirtual() + " Se tuvo problema en la conversión de la dirección FAVOR VERIFICA LA DIRECCIÓN.");
+				clienteVirtual.setObservacionVirtual(clienteVirtual.getObservacionVirtual() + " Se tuvo problema en la conversiï¿½n de la direcciï¿½n FAVOR VERIFICA LA DIRECCIï¿½N.");
 			}
 			clienteVirtual.setIdnomenclatura(idNomenclatura);
 			clienteVirtual.setNumNomenclatura(numNomencla1);
@@ -746,7 +770,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			clienteVirtual.setIdMunicipio(idMunicipio);
 		}catch(Exception e)
 		{
-			//Si hay un inconveniente igual se reportará el correo pero se asignarán valores
+			//Si hay un inconveniente igual se reportarï¿½ el correo pero se asignarï¿½n valores
 			clienteVirtual.setIdnomenclatura(1);
 			clienteVirtual.setNumNomenclatura("0");
 			clienteVirtual.setNumNomenclatura2("0");
@@ -761,7 +785,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			correos.add(correoEle);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-			correo.setMensaje(" Se presentó problema en la normalización de la dirección del cliente con teléfono " + clienteVirtual.getTelefono() );
+			correo.setMensaje(" Se presentï¿½ problema en la normalizaciï¿½n de la direcciï¿½n del cliente con telï¿½fono " + clienteVirtual.getTelefono() );
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 			contro.enviarCorreo();
 		}
@@ -771,20 +795,20 @@ public String obtenerNotificacionesCliente(int idCliente)
 	
 	
 	/**
-	 * La normalización de la dirección con KUNO es bastante diferente dado que como tal no hay normalización
+	 * La normalizaciï¿½n de la direcciï¿½n con KUNO es bastante diferente dado que como tal no hay normalizaciï¿½n
 	 * @param clienteVirtual
 	 */
 	public void normalizarDireccionClienteVirtualKuno(Cliente clienteVirtual)
 	{
-		//Incluimos todo en un try/catch, con el fin de que si se presenta erorr, alertar la situación
+		//Incluimos todo en un try/catch, con el fin de que si se presenta erorr, alertar la situaciï¿½n
 		try
 		{
-			//La dirección viene completa por lo tanto deberá ser descompuesta para ser almacenada de la forma correcta y ser validada con la existente
-			//Sacamos los campos para la descomposición de la dirección
+			//La direcciï¿½n viene completa por lo tanto deberï¿½ ser descompuesta para ser almacenada de la forma correcta y ser validada con la existente
+			//Sacamos los campos para la descomposiciï¿½n de la direcciï¿½n
 			int idNomenclatura;
 			String municipio = "";
 			int idMunicipio;
-			//Comenzamos con la dirección base que se trae del sitio virtual
+			//Comenzamos con la direcciï¿½n base que se trae del sitio virtual
 			String direccionBase = clienteVirtual.getDireccion();
 			idNomenclatura = 1;
 			idMunicipio = 1;

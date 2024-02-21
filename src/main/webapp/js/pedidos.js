@@ -718,6 +718,7 @@ function descripcionDireccion()
 // Método que se encarga luego de introducido un teléfono en el campo de teléfono del cliente llamar al servicio
 function validarTelefono(){
 
+	var existCliente = false;
 	//Incluimos validación del logueo dado que es un punto crítico para retomar los pedidos
 	validarVigenciaLogueo();
 	// Validamos el tema de la longitud del pedido
@@ -745,28 +746,26 @@ function validarTelefono(){
 	$.getJSON(server + 'GetCliente?telefono=' + telefono.value, function(data1){
 			table.clear().draw();
 			for(var i = 0; i < data1.length;i++){
+				existCliente = true;
 				var cadaCliente  = data1[i];
 				table.row.add(data1[i]).draw();
 			}
 		});
     //Realizar validacion posibles pedidos
-    $.getJSON(server + 'CRUDOfertaCliente?idoperacion=6&idcliente=' + idCliente, function(data1){
-            if(data1.length > 0)
+    $.getJSON(server + 'ObtenerMercadeoCliente?telefono=' + telefono.value, function(data2){
+            if(existCliente)
             {
-                var mensajeOferta = "<br>";
-                var obs = "";
-                for(var i = 0; i < data1.length;i++){
-                    obs = data1[i].observacion;
-                    if(obs == null || obs == 'null')
-                    {
-                        obs = "";
-                    }
-                    mensajeOferta += data1[i].nombreoferta + "(" + obs + ")" + "<br>";
-                }
+                var mensajeComercial = "<br>";
+                mensajeComercial = mensajeComercial  + "Fecha Último Pedido: " + data2.fechaultimopedido + "<br>";
+				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 30 días: " + data2.cantidadpedidos30 + "<br>";
+				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 90 días: " + data2.cantidadpedidos90 + "<br>";
+				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 180 días: " + data2.cantidadpedidos180 + "<br>";
+				mensajeComercial = mensajeComercial  + "Cantidad PQRS: " + data2.cantidadpqrs + "<br>";
+				mensajeComercial = mensajeComercial  + "Especialidades que Pide: " + data2.especialidades + "<br>";
                     $.confirm(
                     {
-                            'title'     : 'El cliente tiene ofertas pendientes',
-                            'content'   : 'El cliente tiene varias ofertas pendientes: ' + mensajeOferta + '.',
+                            'title'     : 'Datos comerciales del CLIENTE',
+                            'content'   : 'El cliente tiene la siguiente informacion comercial: ' + mensajeComercial + '.',
                             'buttons'   : {
                                 'Enterado'  : {
                                     'class' : 'blue',

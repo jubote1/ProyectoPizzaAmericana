@@ -10071,7 +10071,7 @@ public class PedidoCtrl {
 			cadaRespuestaJSON.put("idsolicitudcumple", solTemp.getIdSolicitudCumple());
 			cadaRespuestaJSON.put("idpedido", solTemp.getIdPedido());
 			cadaRespuestaJSON.put("fecha", solTemp.getFecha());
-			cadaRespuestaJSON.put("tienda", solTemp.getFecha());
+			cadaRespuestaJSON.put("tienda", solTemp.getTienda());
 			respuestaJSON.add(cadaRespuestaJSON);
 		}
 
