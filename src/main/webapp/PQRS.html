@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>Peticiones Quejas Reclamos Sugerencias</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />	
+		  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>
+		  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/bootstrapValidator.min.js'></script>
+   		  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/language/es_ES.min.js'></script>
+		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">	
+		  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
+        crossorigin="anonymous">
+	    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.min.css"
+	        crossorigin="anonymous">
+	    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+	    <!-- el archivo CSS de estilo del complemento fileinput -->
+	    <link href="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/css/fileinput.min.css" media="all"
+	        rel="stylesheet" type="text/css" />
+	    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script> -->
+	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
+	        crossorigin="anonymous"></script>
+	     <!-- el archivo JS del script principal fileinput plugin -->
+	    <script src="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/js/fileinput.min.js"></script>
+	    <script>$.fn.fileinput.defaults.theme = 'gly';</script>
+	    <link rel="stylesheet" href="js/mostrarImagen.css" crossorigin="anonymous">
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<label id="usuariologin" style="color:black;"></label></p>
+		<script type="text/javascript">
+			
+			var getImport; 
+			var getContent;
+			//Obtenemos el valor de la variable server, con base en la URL digitada
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({ 
+		    	url: server + 'ValidarUsuarioAplicacion', 
+		    	dataType: 'json',
+		    	type: 'post', 
+		    	async: false, 
+		    	success: function(data){
+						    respuesta =  data[0].respuesta;	
+						    usuario = data[0].nombreusuario;	
+						    
+				} 
+			});
+			switch(respuesta)
+		    		{
+		    			case 'OK':
+		    				$('#cargarMenu').load("Menu.html");
+		    				break;
+		    			case 'OKA':
+		    				$('#cargarMenu').load("MenuAdm.html");
+		    				break;
+		    			case 'OKP':
+		    				$('#cargarMenu').load("MenuPQRS.html");
+		    				break;	
+		    			default:
+		    				location.href = server +"Index.html";
+		    				break;
+		    		}
+
+			    	$('#usuariologin').html(usuario);
+		</script>
+
+		<div class="container">
+			<form id="cliente">
+				<h1>REGISTRO SOLICITUDES PQRS</h1>
+				
+					<table class="table table-bordered">
+						<tbody>
+								
+								<tr>
+										<td class="active">Fecha Solicitud</td>
+										<td><input type="text" id="fecha" name="fecha" class="form-control" placeholder="Fecha"></td>
+								</tr>
+								<tr>
+										<td class="active">Tipo de Solicitud</td>
+										<td><select id="selectSolicitud" class="form-control"><option value='peticion' id ='peticion'>Peticion</option>
+										<option value='queja' id ='queja'>Queja</option>
+										<option value='reclamo' id ='reclamo'>Reclamo</option>
+										<option value='sugerencia' id ='sugerencia'>Sugerencia</option>
+										<option value='felicitacion' id ='felicitacion'>Felicitación</option>
+										</select></td>
+								</tr>
+								<tr>
+										<td class="active">Teléfono Cliente</td>
+										<td id="encTelefono"><input type="text" id="telefono" name="telefono" class="form-control" placeholder="Telefono" onchange="validarTelefono();" maxlength="10"></td>
+								</tr>
+								<tr>
+										<td class="active">Nombres</td>
+										<td id="encNombres"><input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres" maxlength="20"></td>
+								</tr>
+								<tr>
+										<td class="active">Apellidos</td>
+										<td id="encApellidos"><input type="text" id="apellidos" name="apellidos" class="form-control" placeholder="Apellidos" maxlength="20"></td>
+								</tr>
+								<tr>
+										<td class="active">Dirección</td>
+										<td id="encDireccion">
+										
+											<div class="col-md-6"> 
+												<input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion" maxlength="30">
+											</div>
+											<div class="col-md-2"> 
+												<select id="selectMunicipio" class="form-control"></select>
+											</div>
+										</td>
+								</tr>
+								<tr>
+										<td class="active">Complemento Dirección</td>
+										<td id="encZona"><input type="text" id="zona" name="zona" class="form-control" placeholder="Zona" maxlength="30"></td>
+								</tr>
+								<tr>
+										<td class="active">Tienda PQRS</td>
+										<td><select id="selectTiendas" class="form-control"></select></td>
+								</tr>
+								<tr>
+										<td class="active">Origen PQRS</td>
+										<td><select id="selectOrigen" class="form-control"></select></td>
+								</tr>
+								<tr>
+										<td class="active">Foco PQRS</td>
+										<td><select id="selectFoco" class="form-control"></select></td>
+								</tr>
+								<tr>
+										<td class="active">Queja Externa/Interna</td>
+										<td><select id="selectTipo" class="form-control">
+											<option value="externa" selected="true">externa</option>
+											<option value="interna">interna</option>
+										</select></td>
+								</tr>
+								<tr>
+										<td class="active">Area Responsable</td>
+										<td><select id="selectAreaResponsable" class="form-control">
+											<option value="tienda" selected="true">tienda</option>
+											<option value="contact">contact</option>
+											<option value="tecnologia" >tecnologia</option>
+											<option value="calidad">calidad</option>
+										</select></td>
+								</tr>
+								<tr>
+										<td class="active">Comentarios</td>
+										<td><textarea name="comentarios" id="comentarios" rows="10" cols="100" placeholder="Escribe Comentarios"></textarea></td>
+								</tr>
+								<tr>
+									<td colspan="2">
+										<div class="form-group">
+							               <!-- campo en el que el usuario puede cargar uno o más archivos-->
+							                <div class="file-loading">
+							                    <input id="file-1" type="file" multiple class="file" data-overwrite-initial="false"
+							                        data-min-file-count="2" data-theme="fa5">
+							                </div>
+	            						</div>
+            						</td>
+								</tr>
+						</tbody>
+					</table>
+
+					<input type="button" class="btn btn-default btn-sm" id="limpiar" name="limpiar" value="Reiniciar Registro Solicitud" onclick="limpiarSeleccionCliente()"/>
+
+					<table id="grid-clientes" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+									        <thead>
+									            <tr>
+									                <th data-column-id="idCliente">idCliente</th>
+									                <th data-column-id="tienda">Tienda</th>
+									                <th data-column-id="nombre">Nombres</th>
+									                <th data-column-id="apellido">Apellidos</th>
+									                <th data-column-id="nombrecompania">Nom-Compañia</th>
+									                <th data-column-id="direccion">Dirección</th>
+									                <th data-column-id="zona">Zona</th>
+									                <th data-column-id="observacion">Observacion</th>
+									                <th data-column-id="telefono">Telefono</th>
+									                <th data-column-id="memcode">Memcode</th>
+									            </tr>
+									        </thead>
+									      	<tbody>
+									      			
+									      	</tbody>
+					</table>
+				
+			</form>
+			<input type="button" class="btn btn-primary btn-lg" value="Confirmar PQRS" onclick="ConfirmarPQRS()">
+		</div>
+	</body>
+	<script src="js/pqrs.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="js/datepicker.js"></script>
+    <script>
+    	$("#fecha").datepicker($.datepicker.regional["es"]);
+		$("#fecha").datepicker('setDate', new Date());
+	</script>
+</html>

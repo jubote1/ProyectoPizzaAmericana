@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0,width=device-width" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+
+    <title>Consultar Ubicación Domiciliario</title>
+    <style>
+
+      .btn-group{
+        margin-right:20px;
+      }
+      .mapa{
+      margin-left:30px;;
+      margin-top:20px;
+      width: 800px;       
+      height: 600px;
+  
+     
+      }
+    
+      .content{
+      margin-left:8px;
+      margin-top:20px;
+      width: 400px;       
+      height: 200px;
+      }
+    </style>
+</head>
+
+<body>
+
+      <div id="cargarMenu"></div>
+    <label id="usuariologin" style="color:black;"></label></p>
+    <script type="text/javascript">
+      
+      var getImport; 
+      var getContent;
+      //Obtenemos el valor de la variable server, con base en la URL digitada
+      var loc = window.location;
+      var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+      server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+      var respuesta ='';
+      var usuario = "";
+      $.ajax({ 
+          url: server + 'ValidarUsuarioAplicacion', 
+          dataType: 'json',
+          type: 'post', 
+          async: false, 
+          success: function(data){
+                respuesta =  data[0].respuesta; 
+                usuario = data[0].nombreusuario;  
+                
+        } 
+      });
+      switch(respuesta)
+            {
+              case 'OK':
+                $('#cargarMenu').load("Menu.html");
+                break;
+              case 'OKA':
+                $('#cargarMenu').load("MenuAdm.html");
+                break;  
+              default:
+                location.href = server +"Index.html";
+                break;
+            }
+            
+            $('#usuariologin').html(usuario);
+    </script>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Geolocalizacion</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Tienda
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          <button class="dropdown-item" value="1"  >Manrique</button>
+          <button class="dropdown-item" value="2" >Bello</button>
+          <button class="dropdown-item" value="3"  >America</button>
+          <button class="dropdown-item" value="4"  >Calasanz</button>
+          <button class="dropdown-item" value="5"  >itagui</button>
+          <button class="dropdown-item" value="6"  >Poblado</button>
+          <button class="dropdown-item" value="7"  >La Mota</button>
+          <button class="dropdown-item" value="8"  >Envigado</button>
+          <button class="dropdown-item"value="9"  >Pilarica</button>
+          <button class="dropdown-item" value="10" >San antonio</button>
+          <button class="dropdown-item" value="11" >Piloto</button>
+  
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"
+
+
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyDnkaRQNkqtILRyrPHpMXP_GkNKv6EQLrw",
+          authDomain: "rastreo-domiciliario.firebaseapp.com",
+          projectId: "rastreo-domiciliario",
+          storageBucket: "rastreo-domiciliario.appspot.com",
+          messagingSenderId: "263782661521",
+          appId: "1:263782661521:web:d3d0fe886338dfd6ccae30",
+          measurementId: "G-PKTGVZF2GM"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+      
+
+        //const analytics = getAnalytics(app);
+      </script>
+      <div class="row">    <div class="mapa" id="map"></div>
+        <div class="card-deck content" ><div class="card border-info mb-3" style="max-width: 18rem;">
+        <div class="card-header"  >
+        <center><h5 class="card-title" id="nombre_domiciliario">Domiciliario</h5></center></div>
+        <div class="card-body text-info">
+        <h6 class="card-subtitle" id="subtitle">Seleccione el marcador a localizar.</h6>
+        <p class="card-text" id="direccion"></p>
+        <h6 class="card-subtitle" id="subtitle2"></h6>
+        <p class="card-text" id="fecha_y_hora"></p>
+        </div>
+        </div></div>
+      </div>    
+
+
+</body>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script type="module" src="consultarubicaciondomiciliario.js" ></script>
+
+
+</html>

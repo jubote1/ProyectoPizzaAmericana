@@ -1,0 +1,248 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"IP",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/juanb/Desktop/PIZZA AMERICANA/MANUALES PIZZA AMERICANA/SIST - TIENDA VIRTUAL/PLANTILLA-TIENDA/wp-content/themes/lafka-child/js/geolocaliza.js",
+		"/C/Users/juanb/Desktop/PIZZA AMERICANA/MANUALES PIZZA AMERICANA/SIST - TIENDA VIRTUAL/PLANTILLA-TIENDA/wp-content/themes/lafka-child/page_templates/prueba-corregida.php",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/consultapedidostienda.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/consultapedidos.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/index.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/pedidos.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/modificargeneralpedido.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/RegistrarEntradaSalida.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/ConsultaPedidos.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/Pedidos.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/Index.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/geolocalizacion.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/registrarentradasalida.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/ConsultaPedidosTienda.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/ModificarGeneralPedido.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/MenuAdm.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/Menu.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/AsignarTiemposPedidos.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/consultapedidosencurso.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/ConsultaPedidosEnCurso.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/geolocaliza.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/pedidos-prueba.js",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/Pedidos-copia.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/ConsultaTiemposPedidos.html",
+		"/D/git/ProyectoPizzaAmericana/src/main/webapp/js/consultatiempospedidos.js",
+		"/C/Users/juanb/Desktop/pedidos.js",
+		"/C/Users/juanb/Desktop/geolocalizacion.js",
+		"/C/Users/juanb/Desktop/Pedidos.html",
+		"/D/git/ProyectoPizzaAmericana/WebContent/Pedidos.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/Insumos.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/js/insumos.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/js/pedidos.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/PQRS.html",
+		"/D/git/ProyectoPizzaAmericana/WebContent/js/pqrs.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/js/crmclientes.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/js/crmclientesfull.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/CRMClientesFull.html",
+		"/D/git/ProyectoPizzaAmericana/WebContent/CRMClientes.html",
+		"/D/git/ProyectoPizzaAmericana/WebContent/js/oferta.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/Oferta.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/CalcularInventario.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/js/calcularinventario.js",
+		"/D/git/ProyectoPizzaAmericana/WebContent/EstadosPedidosTienda.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ValidarCodigo.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/TipoLiquido.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/TiendaBloqueada.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Tienda.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/SaborTipoLiquido.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Producto.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/PQRS.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/PedidosPrueba.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Pedidos.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Oferta.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/MarcarProductoNoExistente.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/GeolocalizacionEntreTiendas.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ExcepcionPrecio.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/EstadosPedidosTienda.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/EstadoPedido.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Especialidad.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/Especialidad - SinDT.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/CRMClientesFull.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/CRMClientes.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaTiemposPedidos.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaPQRS.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaPedidosMapaEvolutivo.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaPedidosMapa.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaPedidos.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/ConsultaDireccionFueraZona.html",
+		"/D/git/ProyectoPizzaAmericanaContact/WebContent/AsignarTiemposPedidos.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/Index.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/FijarInventariosSugeridos.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/ConsultarInventariosDespachados.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/ConsultarInventarioActual.html",
+		"/D/git/ProyectoInventarioAmericana/ProyectoInventarioAmericana/WebContent/Menu.html",
+		"/D/git/ProyectoInventarioAmericana/.settings/org.eclipse.wst.jsdt.ui.superType.name",
+		"/D/git/ProyectoInventarioAmericana/.settings/org.eclipse.wst.jsdt.ui.superType.container"
+	],
+	"find":
+	{
+		"height": 39.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.sftp":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "ConsultaPedidosTienda.sublime-project",
+	"replace":
+	{
+		"height": 42.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 186.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

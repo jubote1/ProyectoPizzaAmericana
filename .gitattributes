@@ -1,0 +1,9 @@
+# .gitattributes
+* text=auto
+# Configuración de codificación para archivos de texto específicos
+*.html text
+*.css text
+*.js text
+*.java text
+*.xml text
+*.txt text

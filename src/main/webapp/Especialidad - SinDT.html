@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>Maestro Especialidades</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.min.js"></script>
+		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">	
+	</head>
+	<body>
+	<div class="container">
+		<p></p>
+		<button class="btn btn-primary" data-toggle="modal" data-target="#addData">Crear Nueva Especialidad</button>
+
+		<!-- Modal -->
+		<div class="modal fade" id="addData" tabindex="-1" role="dialog" aria-labelledby="addLabel">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		        <h4 class="modal-title" id="addLabel">Insertar Información</h4>
+		      </div>
+		      <form>
+		      <div class="modal-body">
+		       		<div class="form-group">
+					    <label for="nombreEspecialidad">Nombre Especialidad</label>
+					    <input type="text" class="form-control" id="nombre" placeholder="Nombre">
+					  </div>
+					  <div class="form-group">
+					    <label for="abreviaturaEspecialidad">Abreviatura Especialidad</label>
+					    <input type="text" class="form-control" id="abreviatura" placeholder="Abreviatura">
+					  </div>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+		        <button type="submit" onClick="guardarEspecialidad()" class="btn btn-primary">Guardar Cambios</button>
+		      </div>
+		      </form>
+		    </div>
+		  </div>
+		</div>
+
+
+		<table id="grid-especialidades" class="table table-condensed table-hover table-striped table-bordered" cellspacing="0" width="100%">
+								        <thead>
+								            <tr>
+								                <th width="20" data-column-id="idespecialidad">Id Especialidad</th>
+								                <th data-column-id="abreviatura">Abreviatura</th>
+								                <th data-column-id="Nombre">Nombre</th>
+								                <th width="120">Editar/Eliminar</th>
+								            </tr>
+								        </thead>
+								      	<tfoot>
+								      		<tr>
+								                <th width="20" data-column-id="idespecialidad">Id Especialidad</th>
+								                <th data-column-id="abreviatura">Abreviatura</th>
+								                <th data-column-id="Nombre">Nombre</th>
+								                <th width="120">Editar/Eliminar</th>
+								            </tr>
+								      	</tfoot>
+								</table>
+	</div>
+	</body>
+			<script src="js/especialidad.js" type="text/javascript"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
+	</html>

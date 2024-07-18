@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>Modificaciones Generales de un Pedido</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
+		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<label id="usuariologin" style="color:black;"></label></p>
+		<script type="text/javascript">
+			
+			var getImport; 
+			var getContent;
+			//Obtenemos el valor de la variable server, con base en la URL digitada
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({ 
+		    	url: server + 'ValidarUsuarioAplicacion', 
+		    	dataType: 'json',
+		    	type: 'post', 
+		    	async: false, 
+		    	success: function(data){
+						    respuesta =  data[0].respuesta;	
+						    usuario = data[0].nombreusuario;	
+						    
+				} 
+			});
+			switch(respuesta)
+		    		{
+		    			case 'OK':
+		    				$('#cargarMenu').load("Menu.html");
+		    				break;
+		    			case 'OKA':
+		    				$('#cargarMenu').load("MenuAdm.html");
+		    				break;	
+		    			default:
+		    				location.href = server +"Index.html";
+		    				break;
+		    		}
+		    		
+			    	$('#usuariologin').html(usuario);
+		</script>
+
+		<div class="container">
+			<form>
+				<h1>CAMBIOS GENERALES DEL PEDIDO</h1>
+				
+					<table class="table table-bordered">
+						<tbody>
+
+								<tr>
+										<td class="active">Número de Pedido Tienda</td>
+										<td><input type="text" id="numeropedido" name="zona" class="form-control" placeholder="Número de Pedido"></td>
+										<td colspan = "2"><input type="button" class="btn btn-primary btn-lg" id="consultapedido" value="Consultar Pedido" onclick="consultarPedido()"></td>
+								</tr>
+								<tr>
+										<td class="active">Estado pedido</td>
+										<td>
+											<input type="text" id="estadopedido" name="zona" class="form-control" placeholder="Estado del pedido" disabled>
+										</td>
+										<td class="active">Estado Envio Tienda</td>
+										<td>
+											<input type="text" id="estadoenviotienda" name="zona" class="form-control" placeholder="Estado Envío Tienda" disabled>
+										</td>
+								</tr>
+								<tr>
+										<td class="active">Tienda Actual</td>
+										<td>
+											<input type="text" id="tiendaactual" name="zona" class="form-control" placeholder="Tienda Actual" disabled>
+										</td>
+										<td class="active">Tienda Nueva</td>
+										<td>
+											<select id="selectTiendasNueva" class="form-control"></select>
+										</td>
+								</tr>
+								
+							
+						</tbody>
+					</table>
+						<input type="button" class="btn btn-danger btn-lg" id="cambioPedido" value="Realizar Cambio Tienda" onclick="realizarCambioPedido()" disabled>
+
+					<table class="table table-bordered">
+						<tbody>
+
+								<tr>
+										<td class="active">Total Pedido</td>
+										<td><input type="text" id="totalpedido" name="totalpedido" class="form-control" placeholder="Total Pedido" disabled></td>
+										<td class="active">Valor Pago</td>
+										<td><input type="text" id="valorpago" name="valorpago" class="form-control" placeholder="Valor Pago" disabled></td>
+								</tr>
+								<tr>
+										<td class="active">Valor Devolver</td>
+										<td>
+											<input type="text" id="valordevolver" name="valordevolver" class="form-control" placeholder="Valor Devolver" disabled>
+										</td>
+										<td class="active">Forma Pago</td>
+										<td>
+											<input type="text" id="formapago" name="formapago" class="form-control" placeholder="Forma de Pago" disabled>
+										</td>
+								</tr>
+								<tr>
+										<td class="active">Descuento</td>
+										<td>
+											<input type="text" id="descuento" name="descuento" class="form-control" placeholder="Descuento" disabled>
+										</td>
+								</tr>
+								
+							
+						</tbody>	
+					</table>
+					<table class='table table-bordered'>
+						<tbody>
+							<tr>
+								<td>
+								</td>
+								<td>
+								</td>
+								<td>
+								</td>
+								<td>
+									<label><input type="radio" aria-label="..." value="completo" id='completo' name="requiereDevuelta">Paga Completo</label>
+									<label><input type="radio" aria-label="..." value="devuelta" id='devuelta' name="requiereDevuelta">Requiere Devuelta</label>
+								</td>
+							</tr>
+							<tr>
+								<td class="active">Valor Total del Pedido</td>
+								<td class="active"><input type="text" class="form-control" id="totalpedidonuevo" placeholder="Valor total del Pedido" disabled></td>
+								<td class="active">Valor de Pago</td>
+								<td class="active"><input type="text" class="form-control" id="valorpagonuevo" placeholder="Valor de pago Nuevo"></td>
+							</tr>
+							<tr>
+								<td class="active">Forma de Pago </td>
+								<td class="active"><select id="selectformapago" class="form-control"></select></td>
+								<td class="active">Valor Devuelta</td>
+								<td class="active"><input type="text" class="form-control" id="valordevolvernuevo" placeholder="Valor Devuelta Nuevo" disabled></td>
+							</tr>
+						</tbody>
+					</table>
+
+						<input type="button" class="btn btn-danger btn-lg" id="cambioPedidoformapago" value="Realizar Cambio Forma Pago" onclick="realizarCambioFormaPago()" disabled>
+						<input type="button" class="btn btn-success btn-lg" id="realizarotraconsulta" value="Realizar Otra Consulta" onclick="realizarOtraConsulta()" disabled>
+
+				
+			</form>
+		
+	</body>
+	<script src="js/modificargeneralpedido.js" type="text/javascript"></script>
+	<script src="js/jquery-confirm.min.js"></script>
+	</script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechainicial").datepicker($.datepicker.regional["es"]);
+		$("#fechainicial").datepicker('setDate', new Date());
+		$("#fechafinal").datepicker($.datepicker.regional["es"]);
+		$("#fechafinal").datepicker('setDate', new Date());
+	</script>
+</html>
