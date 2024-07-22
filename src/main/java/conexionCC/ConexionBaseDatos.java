@@ -46,7 +46,7 @@ public class ConexionBaseDatos {
 //			con = DriverManager.getConnection(
 //		            "jdbc:mysql://172.19.0.25/pizzaamericana?"
 //		            + "user=root&password=4m32017");
-			
+//			
 			con = DriverManager.getConnection(
 		            "jdbc:mysql://localhost/pizzaamericana?"
 		            + "user=root&password=4m32017&serverTimezone=UTC");

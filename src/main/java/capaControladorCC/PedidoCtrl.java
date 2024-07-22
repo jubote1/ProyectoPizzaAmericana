@@ -48,6 +48,8 @@ import org.json.simple.parser.JSONParser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+
 import capaDAOCC.AdicionDetallePedidoDAO;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.DescuentoGeneralDAO;
@@ -132,13 +134,15 @@ import capaModeloCC.SolicitudPQRSImagenes;
 import capaModeloCC.TiempoPedido;
 import capaModeloCC.Tienda;
 import capaModeloCC.Ubicacion;
+import capaModeloPOS.RespFactura;
 import capaControladorPOS.BiometriaCtrl;
 import capaControladorPOS.EmpleadoCtrl;
+import capaControladorPOS.PedidoCtrl.ValidationResult;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import utilidadesCC.ControladorEnvioCorreo;
-
+import com.google.gson.JsonArray;
 public class PedidoCtrl {
 
 	boolean cobroVariosDomicilios = false; 
@@ -4638,8 +4642,8 @@ public class PedidoCtrl {
 	
 	//TIENDA VIRTUAL KUNO
 	public static void main(String[] args)
-	{
-		String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[492832],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2024-07-10T16:41:38.000Z\",\"id\":891094316,\"total_price\":42000,\"sub_total_price\":39000,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.2596580486090545\",\"longitude\":\"-75.55999257605743\",\"client_first_name\":\"Pedido\",\"client_last_name\":\"PRUEBAA\",\"client_email\":\"pedidopruebaAA@gmail.com\",\"client_phone\":\"+573124066229\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"accepted\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":\"2024-07-10T16:41:38.000Z\",\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2024-07-10T17:41:38.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":68478556,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"delivery_zone_name\":\"Piloto\",\"outside_delivery_area\":null,\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"client_order_count\":0,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":false,\"client_address\":\"Cra. 48 #63A-35, Medellín\",\"client_address_parts\":{\"street\":\"Cra. 48 #63A-35\",\"city\":\"Medellín\"},\"items\":[{\"id\":1184916042,\"name\":\"Deditos\",\"total_item_price\":11000,\"price\":0,\"quantity\":1,\"instructions\":null,\"type\":\"promo_cart_item\",\"type_id\":492832,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916093,\"name\":\"DEDITOS DE MASA CON QUESO\",\"total_item_price\":11000,\"price\":11000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655698,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":1184916042,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916585,\"name\":\"DELIVERY_FEE\",\"total_item_price\":3000,\"price\":3000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184917115,\"name\":\"PIZZA AMERICANA\",\"total_item_price\":39000,\"price\":19000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655672,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":1028538629,\"name\":\"Mediana (6 porciones)\",\"price\":16000,\"group_name\":\"Tamaño\",\"quantity\":1,\"type\":\"size\",\"type_id\":6982284},{\"id\":1028538630,\"name\":\"Coca Cola Zero\",\"price\":4000,\"group_name\":\"Selecciona tu bebida 1.5 Litros\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680737},{\"id\":1028538631,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744}]}]}]}";
+	{	PedidoCtrl pedCtrl = new PedidoCtrl();
+		/*String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[492832],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2024-07-10T16:41:38.000Z\",\"id\":891094316,\"total_price\":42000,\"sub_total_price\":39000,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.2596580486090545\",\"longitude\":\"-75.55999257605743\",\"client_first_name\":\"Pedido\",\"client_last_name\":\"PRUEBAA\",\"client_email\":\"pedidopruebaAA@gmail.com\",\"client_phone\":\"+573124066229\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"accepted\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":\"2024-07-10T16:41:38.000Z\",\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2024-07-10T17:41:38.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":68478556,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"delivery_zone_name\":\"Piloto\",\"outside_delivery_area\":null,\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"client_order_count\":0,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":false,\"client_address\":\"Cra. 48 #63A-35, Medellín\",\"client_address_parts\":{\"street\":\"Cra. 48 #63A-35\",\"city\":\"Medellín\"},\"items\":[{\"id\":1184916042,\"name\":\"Deditos\",\"total_item_price\":11000,\"price\":0,\"quantity\":1,\"instructions\":null,\"type\":\"promo_cart_item\",\"type_id\":492832,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916093,\"name\":\"DEDITOS DE MASA CON QUESO\",\"total_item_price\":11000,\"price\":11000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655698,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":1184916042,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916585,\"name\":\"DELIVERY_FEE\",\"total_item_price\":3000,\"price\":3000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184917115,\"name\":\"PIZZA AMERICANA\",\"total_item_price\":39000,\"price\":19000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655672,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":1028538629,\"name\":\"Mediana (6 porciones)\",\"price\":16000,\"group_name\":\"Tamaño\",\"quantity\":1,\"type\":\"size\",\"type_id\":6982284},{\"id\":1028538630,\"name\":\"Coca Cola Zero\",\"price\":4000,\"group_name\":\"Selecciona tu bebida 1.5 Litros\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680737},{\"id\":1028538631,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744}]}]}]}";
 		byte[] byteText = null;
 		try {
 			byteText = strInicial.getBytes("UTF-8");
@@ -4654,7 +4658,14 @@ public class PedidoCtrl {
 			e.printStackTrace();
 		}
 		PedidoCtrl pedCtrl = new PedidoCtrl();
-		pedCtrl.insertarPedidoTiendaVirtualKuno(strJSON, "PRUEBA");
+		pedCtrl.insertarPedidoTiendaVirtualKuno(strJSON, "PRUEBA");*/
+		Cliente clien=  new Cliente();
+		clien.setNombres("Maria Lopera");
+		clien.setApellidos("Gomez");
+		clien.setDireccion("calle 20");
+		clien.setTelefonoCelular("3004577639");
+		clien.setEmail("a.desarrollosi@gmail.com");
+	    System.out.println(pedCtrl.servicioFidelizacionSalesManago(clien,"Club Pizza Americana 2",false));
 	}
 	
 //	public static void main(String[] args)
@@ -10222,9 +10233,166 @@ public class PedidoCtrl {
 		return(respuesta.toJSONString());
 	}
 	
-	public boolean verificacionExistenciaClienteSalesManago(String correoCliente)
-	{
-		boolean respuesta = false;
+	
+	public JSONObject CrearClienteSalesManago(Cliente cliente, String nombreProg)
+
+	{	JSONObject respuestaJSON = new JSONObject();
+	    List<String> error = new ArrayList<>();
+	    respuestaJSON.put("resultado", false);
+	    respuestaJSON.put("mensaje", new ArrayList<>());
+	    respuestaJSON.put("idcontacto", "");
+
+	    try {
+	    	
+		IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");
+		
+		String jsonInfo ="{\r\n"
+				+ "  \"clientId\": \"" + intSales.getClientID() +"\","
+				+"  \"apiKey\": \"" + intSales.getAccessToken() +"\","
+				+ "  \"requestTime\":  1704218302,\r\n"
+				+ "  \"sha\": \"" + intSales.getFreshToken() + "\","
+				+ "  \"owner\": \"mercadeo@pizzaamericana.com.co\",\r\n"
+				+ "  \"contact\": {\r\n"
+				+  "    \"email\": \""+ cliente.getEmail() +"\","
+				+ "    \"phone\": \""+ cliente.getTelefonoCelular() +"\","
+				+ "    \"name\": \""+ cliente.getNombres() + " "+cliente.getApellidos()+ "\","
+				+ "    \"externalId\": null,\r\n"
+				+ "    \"address\": {\r\n"
+				+ "    \"streetAddress\": \""+ cliente.getDireccion() +"\","
+				+ "      \"country\": \"CO\"\r\n"
+				+ "    }\r\n"
+				+ "  },\r\n"
+				+ "  \"province\": \"Antioquia\",\r\n"
+				+ "  \"forceOptIn\": true,\r\n"
+				+ "  \"doubleOptInLanguage\": \"ES\",\r\n"
+				+ "  \"tags\": [\r\n"
+				+ " \"CLIENTE-TIENDA\"\r\n"
+				+ "  ]";
+
+			if(nombreProg != null && !nombreProg.isEmpty()) {
+				jsonInfo =jsonInfo+  " ,\"loyaltyProgram\": \""+nombreProg +"\"";
+			}
+			jsonInfo=jsonInfo+"}";
+			
+		    System.out.println(jsonInfo);
+	    	RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonInfo);
+	        Request request = new Request.Builder()
+	                .url("https://app2.salesmanago.pl/api/contact/upsert")
+	                .addHeader("Content-Type", "application/json;charset=UTF-8")
+	                .addHeader("Accept", "application/json")
+	                .post(body)
+	                .build();
+	
+	        OkHttpClient client = new OkHttpClient();
+	         try (okhttp3.Response response = client.newCall(request).execute()) {
+		    int statusCode = response.code();
+		    
+		    if(statusCode == 200) {
+		    	  String responseBody = response.body().string();
+		    	  System.out.println("RESPUESTA CREARCLIENTESG: "+responseBody);
+		    	  JSONParser parser = new JSONParser();
+	              JSONObject responseObject = (JSONObject) parser.parse(responseBody);
+	              Boolean success = (Boolean) responseObject.get("success");
+	              JSONArray messageArray = (JSONArray) responseObject.get("message");
+	              String contactId=(String)responseObject.get("contactId");
+
+			      respuestaJSON.put("resultado", success);
+				  respuestaJSON.put("mensaje", messageArray);
+				  respuestaJSON.put("idcontacto", contactId);
+				    
+				 
+		    }else {			    	
+		    	error.add("Error con estado.");
+				respuestaJSON.put("resultado", false);
+			    respuestaJSON.put("mensaje", error);
+		    }
+	         }
+	    } catch (Exception e) {
+	    	    error.add("Error:"+e.getMessage());
+		       	respuestaJSON.put("resultado", false);
+			    respuestaJSON.put("mensaje", error);
+	    }
+
+		return(respuestaJSON);
+	}
+	
+	
+	
+	public JSONObject ProgramaFidelizacionSalesManago(String correoCliente,String nombre_programa,boolean isAdd)
+
+	{	JSONObject respuestaJSON = new JSONObject();
+	     JSONArray  error = new JSONArray();
+	    respuestaJSON.put("resultado", false);
+	    respuestaJSON.put("mensaje", new ArrayList<>());
+	    String tipo = "addContact";
+
+	    try {
+	    	
+		IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");		
+		String jsonInfo = "{\r\n"
+				+  "  \"clientId\": \"" + intSales.getClientID() +"\","
+				+"  \"apiKey\": \"" + intSales.getAccessToken() +"\","
+				+ "  \"requestTime\": 1704218302,\r\n"
+				+  "  \"sha\": \"" + intSales.getFreshToken() + "\","
+				+ "  \"owner\": \"mercadeo@pizzaamericana.com.co\",\r\n"
+				+ "  \"contacts\": [\r\n"
+				+ "    {\r\n"
+				+ "      \"addresseeType\": \"email\",\r\n"
+				+  "    \"value\": \""+ correoCliente +"\""
+				+ "    }\r\n"
+				+ "  ],\r\n"
+				+  "    \"loyaltyProgram\": \""+ nombre_programa +"\""
+				+ "}";
+		System.out.println(jsonInfo);
+		        if(!isAdd) {
+		        	tipo="removeContact";
+		        }
+	        	RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonInfo);
+	            Request request = new Request.Builder()
+	                    .url("https://app2.salesmanago.pl/api/loyalty/program/v1/"+tipo)
+	                    .addHeader("Content-Type", "application/json;charset=UTF-8")
+	                    .addHeader("Accept", "application/json")
+	                    .post(body)
+	                    .build();
+
+	            OkHttpClient client = new OkHttpClient();
+		         try (okhttp3.Response response = client.newCall(request).execute()) {
+			    int statusCode = response.code();
+			    
+			    if(statusCode == 200) {
+	                String responseBody = response.body().string();
+	                System.out.println("RESPUESTA PROGRAMAFIDELSG: " + responseBody);
+	                
+	                JSONParser parser = new JSONParser();
+	                JSONObject responseObject = (JSONObject) parser.parse(responseBody);
+	                
+	                Boolean success = (Boolean) responseObject.get("success");
+	                JSONArray messageArray = (JSONArray) responseObject.get("message");
+	                
+	                respuestaJSON.put("resultado", success);
+	                respuestaJSON.put("mensaje", messageArray);
+	
+			    }else {			    	
+			    	error.add("Error con estado.");
+					respuestaJSON.put("resultado", false);
+				    respuestaJSON.put("mensaje", error);
+			    }
+		         }
+	        } catch (Exception e) {
+	        	    error.add("Error:"+e.getMessage());
+			       	respuestaJSON.put("resultado", false);
+				    respuestaJSON.put("mensaje", error);
+	        }
+	    
+		return(respuestaJSON);
+	}
+	
+	public JSONObject verificacionExistenciaClienteSalesManago(String correoCliente)
+
+	{	JSONObject respuestaJSON = new JSONObject();
+	    respuestaJSON.put("resultado", false);
+	    respuestaJSON.put("mensaje", new ArrayList<>());
+	    
 		IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");
 		String jsonInfo = "{"
 				+ "  \"clientId\": \"" + intSales.getClientID() +"\","
@@ -10263,24 +10431,71 @@ public class PedidoCtrl {
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
-			String dataJSON = jsonGeneral.get("result").toString();
-			respuesta = Boolean.parseBoolean(dataJSON);
+			String resultado = jsonGeneral.get("result").toString();
+			String mensaje = jsonGeneral.get("message").toString();		
+			Gson gson = new Gson();
+			JsonArray messageArray = gson.fromJson(mensaje, JsonArray.class);
+			respuestaJSON.put("resultado", Boolean.parseBoolean(resultado));
+		    respuestaJSON.put("mensaje", messageArray);
+		
 
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
         }
-		return(respuesta);
+		return(respuestaJSON);
 	}
 	
 	public String servicioExistenciaClienteSalesManago(String correoCliente)
-	{
-		JSONObject respuestaJSON = new JSONObject();
-		boolean respuesta = verificacionExistenciaClienteSalesManago(correoCliente);
-		respuestaJSON.put("respuesta", respuesta);
+	{	
+		JSONObject respuestaJSON = verificacionExistenciaClienteSalesManago(correoCliente);
 		return(respuestaJSON.toJSONString());
 	}
 	
+	
+	public String servicioFidelizacionSalesManago(Cliente cliente, String nombre_programa,boolean isAdd) {   
+		JSONObject data = new JSONObject();    
+		List<String> message_error = new ArrayList<>();
+	    try {
+			if(isAdd) {
+				data = CrearClienteSalesManago(cliente,nombre_programa);
+			}else {
+				data = ProgramaFidelizacionSalesManago(cliente.getEmail(), nombre_programa,isAdd);
+			}
+			
+			if(data.size() == 0) {
+				data.put("resultado", false);
+				message_error.add("Error: No se obtuvieron datos");
+				data.put("mensaje", false);
+			}
+
+	    } catch (Exception e) {
+	    	data.put("resultado", false);
+	    	message_error.add("Error: "+e.getMessage());
+	        System.err.println("La espera fue interrumpida: " + e.getMessage());
+	    }
+	    
+	    // Combinar los resultados de ambos JSON
+	    //JSONObject combinedJson = combineJsonObjects(resp_crearcliente, programa_fideli);
+	    return data.toJSONString();
+	}
+	
+	
+    public static JSONObject combineJsonObjects(JSONObject json1, JSONObject json2) {
+        JSONObject combined = new JSONObject();
+        
+        // Agregar todos los elementos de json1 al objeto combinado
+        for (Object key : json1.keySet()) {
+            combined.put(key, json1.get(key));
+        }
+        
+        // Agregar todos los elementos de json2 al objeto combinado
+        for (Object key : json2.keySet()) {
+            combined.put(key, json2.get(key));
+        }
+        
+        return combined;
+    }
 	public boolean insertarEventoClienteSalesManago(String correoCliente, double valorPedido, String productos, String origen)
 	{
 		Date fechaActual = new Date();
@@ -10354,9 +10569,9 @@ public class PedidoCtrl {
 	}
 	
 	public void notificarEventoExternoSalesManago(String correoElectronico, int idPedido, String origen)
-	{
-		boolean existeCliente = verificacionExistenciaClienteSalesManago(correoElectronico);
-		{
+	{   JSONObject respuestaJSON = verificacionExistenciaClienteSalesManago(correoElectronico);
+		boolean existeCliente = (boolean) respuestaJSON.get("resultado");
+		if(existeCliente){
 			double totalPedido = PedidoDAO.obtenerTotalPedido(idPedido);
 			String productos = DetallePedidoDAO.retornarIdProductosSalesManago(idPedido);
 			insertarEventoClienteSalesManago(correoElectronico, totalPedido, productos, origen);
