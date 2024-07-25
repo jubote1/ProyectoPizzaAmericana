@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
+import org.json.simple.JSONObject;
 
 import capaModeloCC.Producto;
 import capaModeloCC.Tienda;
@@ -70,6 +71,47 @@ public class TiendaDAO {
 		
 	}
 	
+	
+	public static ArrayList<JSONObject> obtenerHostTiendas()
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList<JSONObject> tiendas = new ArrayList<>();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String consulta = "select * from tienda";
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next()){
+				int idtienda = rs.getInt("idtienda");
+				String nombre = rs.getString("nombre");
+				String hosbd = rs.getString("hosbd");
+				String funcional = rs.getString("funcional");
+
+				JSONObject tien = new JSONObject();
+				tien.put("idtienda", idtienda);
+				tien.put("nombre", nombre);
+				tien.put("hosbd", hosbd);
+				tien.put("funcional", funcional);
+				tiendas.add(tien);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.info(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(tiendas);
+		
+	}
 	public static ArrayList<Tienda> obtenerTiendasxRazon(int idRazon)
 	{
 		Logger logger = Logger.getLogger("log_file");

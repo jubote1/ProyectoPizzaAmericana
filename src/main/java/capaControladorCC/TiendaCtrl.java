@@ -31,6 +31,21 @@ public class TiendaCtrl {
 	}
 	
 	
+	public String obtenerHostTiendas(){
+		ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
+		return tiendas.toString();
+	}
+	
+	public static void main(String args[])
+	{
+		TiendaCtrl tCtrl = new TiendaCtrl();
+		ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
+	    System.out.println(tCtrl.pingHost("192.168.9.254"));
+	
+
+		
+	}
+	
 	public String obtenerTiendasOtroOrden(){
 		JSONArray listJSON = new JSONArray();
 		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendasOtroOrden();
@@ -79,9 +94,9 @@ public class TiendaCtrl {
 	}
 	
 	/**
-	 * Método de la capa controlador que recibe los parámetros para la inserción de una nueva tienda, invoca la capa DAO y retorna el ID de la nueva tienda creada.
-	 * @param nombre Parámetro con el valor de la tienda a insertar.
-	 * @param dsn Parámetro con el valor del Data Source Name de la tienda a crear
+	 * Mï¿½todo de la capa controlador que recibe los parï¿½metros para la inserciï¿½n de una nueva tienda, invoca la capa DAO y retorna el ID de la nueva tienda creada.
+	 * @param nombre Parï¿½metro con el valor de la tienda a insertar.
+	 * @param dsn Parï¿½metro con el valor del Data Source Name de la tienda a crear
 	 * @return Retorna el valor id de la tienda creada en formato JSON.
 	 */
 	public String insertarTienda(String nombre, String dsn)
@@ -95,8 +110,8 @@ public class TiendaCtrl {
 		return listJSON.toJSONString();
 	}
 	/**
-	 * Método de la capa controladora que dado un id tienda, lo retorna en formato JSON luego de invocada la capa DAO.
-	 * @param idtienda Parámetro con el valor de idtienda que se desea consultar.
+	 * Mï¿½todo de la capa controladora que dado un id tienda, lo retorna en formato JSON luego de invocada la capa DAO.
+	 * @param idtienda Parï¿½metro con el valor de idtienda que se desea consultar.
 	 * @return Se retorna la entidad tienda consultada en formato JSON.
 	 */
 	public String retornarTienda(int idtienda)
@@ -114,7 +129,7 @@ public class TiendaCtrl {
 	
 	
 	/**
-	 * Método de la capa controlador que retorna en formato JSON las tiendas que existen en la base de datos
+	 * Mï¿½todo de la capa controlador que retorna en formato JSON las tiendas que existen en la base de datos
 	 * @return Retorna en formato JSON las tiendas que existen en la base de datos, invocando la capa DAO.
 	 */
 	public String retornarTiendas(){
@@ -132,8 +147,8 @@ public class TiendaCtrl {
 	}
 	
 	/**
-	 * Método de la capa controlador que se encarga de Eliminar una tienda, con base en la id tienda recibida como parámetro.			
-	 * @param idtienda Parámetro con base en el cual realiza la eliminación de la tienda.
+	 * Mï¿½todo de la capa controlador que se encarga de Eliminar una tienda, con base en la id tienda recibida como parï¿½metro.			
+	 * @param idtienda Parï¿½metro con base en el cual realiza la eliminaciï¿½n de la tienda.
 	 * @return Retorna el resultado del proceso.
 	 */
 	public String eliminarTienda(int idtienda)
@@ -147,8 +162,8 @@ public class TiendaCtrl {
 	}
 	
 	/**
-	 * Método en la capa controlador que se encarga de la edición de la entidad tienda
-	 * @param idtienda Parámetro de la tienda a modificar.
+	 * Mï¿½todo en la capa controlador que se encarga de la ediciï¿½n de la entidad tienda
+	 * @param idtienda Parï¿½metro de la tienda a modificar.
 	 * @param nombre NOmbre de la tienda a ser modificado
 	 * @param dsn Data source name de la tienda a ser modificado
 	 * @return Se retorna el resultado del proceso.
@@ -205,5 +220,36 @@ public class TiendaCtrl {
 		}
 
 		return(respuestaFinal.toJSONString());
+	}
+
+	
+	public String ServicioVerificarConexInternet(String host) {
+		JSONObject respuesta = new JSONObject();
+		  boolean isReachable = pingHost(host);
+		  respuesta.put("respuesta", isReachable);
+		  String mensaje ="";
+	        if (isReachable) {	       
+	        	mensaje = "Ping successful to " + host;
+	            System.out.println(mensaje);
+	        } else {
+	        	mensaje = "Error pinging " + host;
+	            System.out.println(mensaje);
+	        }
+	     respuesta.put("mensaje", mensaje);
+	     
+	     return (respuesta.toJSONString());
+	}
+	
+	public  boolean pingHost(String host) {		
+	      boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+	        String cmd = isWindows ? "ping -n 1 " + host : "ping -c 1 " + host;
+
+	        try {
+	            Process process = Runtime.getRuntime().exec(cmd);
+	            int returnVal = process.waitFor();
+	            return returnVal == 0;
+	        } catch (Exception e) {
+	            return false;
+	        }
 	}
 }
