@@ -6391,7 +6391,7 @@ public class PedidoCtrl {
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		//Información del domicilio
 		int idProductoDomicilio = 0;
-		long valorDomicilio = 0;
+		double valorDomicilio = 0;
 		int idEspecialidad = 0;
 		int idEspecialidad2 = 0;
 		int idSaborTipoLiquido = 0;
@@ -6401,7 +6401,8 @@ public class PedidoCtrl {
 		if(idTipoPedido == 1)
 		{
 			idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio");
-			valorDomicilio = 3000;
+			//Se interviene para recuperar el valor del domicilio
+			valorDomicilio = ProductoDAO.retornarProducto(idProductoDomicilio).getPreciogeneral();
 			DetallePedido detPedidoDomi = new DetallePedido(idProductoDomicilio,idPedido,1,0,0,valorDomicilio,valorDomicilio*1, "" , "" /*observacion*/, 0, 0, "", "");
 			PedidoDAO.InsertarDetallePedido(detPedidoDomi);
 		}
