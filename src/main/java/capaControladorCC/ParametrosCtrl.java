@@ -1168,8 +1168,10 @@ public class ParametrosCtrl {
 			
 			public static void main(String args[])
 			{
-				ParametrosCtrl parCtrl = new ParametrosCtrl();
-				parCtrl.obtenerHorarioProgramacionPizza();
+				//ParametrosCtrl parCtrl = new ParametrosCtrl();
+				//parCtrl.obtenerHorarioProgramacionPizza();
+				ArrayList <TiempoPedido> tiempos = TiempoPedidoDAO.retornarTiemposPedidos();
+				System.out.println(tiempos);
 			}
 			
 			

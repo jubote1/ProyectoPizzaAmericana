@@ -40,11 +40,11 @@ public class VerificarConexionInternet extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
 		//	HttpSession sesion = request.getSession();
-	        String host = request.getParameter("host");
+
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			TiendaCtrl tiendaCtrl = new TiendaCtrl();
-			String respuesta = tiendaCtrl.ServicioVerificarConexInternet(host);
+			String respuesta = tiendaCtrl.ServicioVerificarConexInternet();
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
 			

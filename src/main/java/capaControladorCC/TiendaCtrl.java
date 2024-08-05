@@ -39,9 +39,8 @@ public class TiendaCtrl {
 	public static void main(String args[])
 	{
 		TiendaCtrl tCtrl = new TiendaCtrl();
-		ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
-	    System.out.println(tCtrl.pingHost("192.168.9.254"));
-	
+	    System.out.println(tCtrl.ServicioVerificarConexInternet());
+	    
 
 		
 	}
@@ -222,23 +221,52 @@ public class TiendaCtrl {
 		return(respuestaFinal.toJSONString());
 	}
 
-	
-	public String ServicioVerificarConexInternet(String host) {
-		JSONObject respuesta = new JSONObject();
-		  boolean isReachable = pingHost(host);
-		  respuesta.put("respuesta", isReachable);
-		  String mensaje ="";
-	        if (isReachable) {	       
-	        	mensaje = "Ping successful to " + host;
-	            System.out.println(mensaje);
-	        } else {
-	        	mensaje = "Error pinging " + host;
-	            System.out.println(mensaje);
-	        }
-	     respuesta.put("mensaje", mensaje);
-	     
-	     return (respuesta.toJSONString());
+	public static String formatIP(String ip) {
+	    // Verifica si la IP es nula o vacía
+	    if (ip == null || ip.isEmpty()) {
+	        return ""; // Retorna una cadena vacía en lugar de lanzar una excepción
+	    }
+
+	    // Divide la IP en partes usando el punto como delimitador
+	    String[] tokens = ip.split("\\.");
+
+	    // Verifica si la IP tiene exactamente 4 partes
+	    if (tokens.length != 4) {
+	        return ""; // Retorna una cadena vacía si la IP no es válida
+	    }
+
+	    // Construye la nueva IP reemplazando el último octeto por 254
+	    return String.format("%s.%s.%s.254", tokens[0], tokens[1], tokens[2]);
 	}
+	
+	public String ServicioVerificarConexInternet() {
+	    JSONArray respuesta = new JSONArray();
+	    ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
+	    
+	    for (JSONObject t : tiendas) {
+	        String hosbd = (String) t.get("hosbd");
+	        String formattedIP = formatIP(hosbd);
+	        String funcional = (String) t.get("funcional");
+
+	        // Verifica si la IP formateada no está vacía y el campo funcional es "S"
+	        if (!formattedIP.isEmpty() && "S".equals(funcional)) {
+	            boolean isReachable = pingHost(formattedIP);
+	            JSONObject json = new JSONObject();
+	            json.put("nombre", (String) t.get("nombre"));
+	            json.put("conexion", isReachable);
+	            
+	            String mensaje = isReachable ? 
+	                "Ping successful to " + hosbd : 
+	                "Error pinging " + hosbd;
+	            
+	            json.put("mensaje", mensaje);
+	            respuesta.add(json);
+	        }
+	    }
+
+	    return respuesta.toJSONString();
+	}
+
 	
 	public  boolean pingHost(String host) {		
 	      boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
