@@ -7083,8 +7083,8 @@ public class PedidoCtrl {
 			
 		}
 		//
-		String mensaje = obtenerMensajePedidoBOTCRM(telefono);
-		actualizarEstadoPedidoLeadCRMBOT(lead, mensaje);
+		JSONObject informacion = obtenerMensajePedidoBOTCRM(telefono);		
+		actualizarEstadoPedidoLeadCRMBOT(lead, informacion);
 	}
 	
 	/**
@@ -7092,9 +7092,11 @@ public class PedidoCtrl {
 	 * @param telefono
 	 * @return
 	 */
-	public String obtenerMensajePedidoBOTCRM(String telefono)
-	{
+	public JSONObject obtenerMensajePedidoBOTCRM(String telefono)
+	{   JSONObject informacion= new JSONObject();
 		String mensaje = "";
+		String estadopedidotienda = "No se encontraron datos.";
+		String nombre_tienda = "";
 		//Una vez recuperado el teléfono realizamos las acciones correspondientes
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		//Con el número de teléfono y fecha realizamos la consulta del pedido
@@ -7113,6 +7115,7 @@ public class PedidoCtrl {
 			//Deberemos de conocer si es pago virtual por las diferentes condiciones
 			boolean esPagoVirtual = false;
 			Pedido pedConsultado = PedidoDAO.ConsultaPedido(telefono);
+	
 			if(pedConsultado.getIdformapago() == 4)
 			{
 				esPagoVirtual = true;
@@ -7147,6 +7150,9 @@ public class PedidoCtrl {
 						Object objParser = parser.parse(strRetorno);
 						JSONObject jsonResServicio= (JSONObject) objParser;
 						String estado = (String)jsonResServicio.get("estadopedido");
+						estadopedidotienda = String.valueOf(pedConsultado.getNumposheader());
+						nombre_tienda = tienda.getNombreTienda();
+						
 						if(estado.contains("En Espera"))
 						{
 							estado = "ya está listo y en espera de un domiciliario.";
@@ -7199,8 +7205,11 @@ public class PedidoCtrl {
 				mensaje = mensaje + mensajePagoVirtual;
 			}
 		}
-		
-		return(mensaje);
+		informacion.put("estadopedido", estadopedidotienda);
+		informacion.put("tienda", nombre_tienda);
+		informacion.put("mensaje", mensaje);
+			
+		return(informacion);
 	}
 	
 	
@@ -7211,24 +7220,44 @@ public class PedidoCtrl {
 	 * @param mensaje
 	 * @throws IOException
 	 */
-	public void actualizarEstadoPedidoLeadCRMBOT(String lead, String mensaje)
+	public void actualizarEstadoPedidoLeadCRMBOT(String lead, JSONObject informacion)
 	{
 		String datosLead = "";
+		String mensaje = (String)informacion.get("mensaje");
+		String estadopedido = (String)informacion.get("estadopedido");
+		String tienda = (String)informacion.get("tienda");
+		
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 		//Para revisar
-		String datos = "[\n"
+		String datos = "[\r\n"
 				+ "    {   \"id\": "+ lead +",\n"
-				+ "        \"custom_fields_values\": [\n"
-				+ "                {\n"
-				+ "            \"field_id\":864379,\n"
-				+ "            \"values\": [\n"
-				+ "                {\n"
+				+ "        \"custom_fields_values\": [\r\n"
+				+ "          {\r\n"
+				+ "             \"field_id\": 864379,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
 				+ "                    \"value\": \" " + mensaje + "\"\n"
-				+ "                }\n"
-				+ "            ]\n"
-				+ "        }\n"
-				+ "    ]\n"
-				+ "    }\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "            {\r\n"
+				+ "             \"field_id\": 867885,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \" " + estadopedido + "\"\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "            {\r\n"
+				+ "             \"field_id\": 867887,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \" " + tienda + "\"\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "    ]\r\n"
+				+ "    }\r\n"
 				+ "]";
 		OkHttpClient client = new OkHttpClient();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
