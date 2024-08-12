@@ -3736,8 +3736,10 @@ public class PedidoCtrl {
 	 * @param totalPedido
 	 * @param idTienda
 	 */
-	public void verificarEnvioLinkPagos(int idPedidoTienda, Cliente clienteVirtual, double totalPedido, int idTienda)
+	public String verificarEnvioLinkPagos(int idPedidoTienda, Cliente clienteVirtual, double totalPedido, int idTienda)
 	{
+		String respuesta;
+		String idLink = "";
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		//Se debe hacer la creación del link y la inserción en la tabla
 		//Obtenemos la tienda
@@ -3807,7 +3809,7 @@ public class PedidoCtrl {
 			String dataJSON = (String)jsonGeneral.get("data").toString();
 			Object objParserData = parser.parse(dataJSON);
 			JSONObject jsonData = (JSONObject) objParserData;
-			String idLink = (String)jsonData.get("id");
+			idLink = (String)jsonData.get("id");
 			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
 			
 			//reutilización de la lógica del resto para el envío de la notificación
@@ -3816,6 +3818,7 @@ public class PedidoCtrl {
             e2.printStackTrace();
             System.out.println(e2.toString());
         }
+		return("https://checkout.wompi.co/l/"+idLink);
 	}
 	
 	
@@ -7017,7 +7020,9 @@ public class PedidoCtrl {
 			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
-				verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				String link = verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				//Se actualiza lead con el link de pago
+
 			}
 		}catch(Exception e)
 		{
