@@ -7022,7 +7022,7 @@ public class PedidoCtrl {
 			{
 				String link = verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
 				//Se actualiza lead con el link de pago
-
+				actualizarLinkPagoLeadCRMBOT(lead,link);
 			}
 		}catch(Exception e)
 		{
