@@ -7281,6 +7281,46 @@ public class PedidoCtrl {
 	}
 	
 	
+	public void actualizarLinkPagoLeadCRMBOT(String lead,String link)
+	{
+
+		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+		//Para revisar
+		String datos = "[\r\n"
+				+ "    {   \"id\": "+ lead +",\n"
+				+ "        \"custom_fields_values\": [\r\n"
+				+ "          {\r\n"
+				+ "             \"field_id\": 868227,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \" " + link + "\"\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "    ]\r\n"
+				+ "    }\r\n"
+				+ "]\r\n"
+				+ "    ";
+		OkHttpClient client = new OkHttpClient();
+		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
+		RequestBody body = RequestBody.create(mediaType, datos );
+		Request request = new Request.Builder()
+		  .url("https://pizzaamericana.kommo.com/api/v4/leads")
+		  .patch(body)
+		  .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
+		  .build();
+		try
+		{
+			okhttp3.Response response = client.newCall(request).execute();
+			String respuestaJSON = response.body().string();
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
+			
+	}
+	
+	
 	public void actualizarCoberturaLeadCRMBOT(String lead, Resultado mensaje,String tipo_cliente) {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
