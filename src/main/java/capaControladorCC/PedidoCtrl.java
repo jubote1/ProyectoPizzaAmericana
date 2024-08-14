@@ -6026,14 +6026,34 @@ public class PedidoCtrl {
 					strValor = valor.get("value").toString();
 					strValor = strValor.replaceAll("'", " ");
 					//Dependiendo del campos se tendrá la recuperación del mismo
-					if(clave.equals(new String("dirección de envío")))
+					if(clave.equals(new String("# factura web")))
 					{
 						numordenkunno = strValor;
 						break;
 					}
 				}
+				
+				BigInteger idOrdenComercio = new BigInteger("0");
+				HttpClient client = HttpClientBuilder.create().build();
+				try
+				{
+					idOrdenComercio = new BigInteger((String)numordenkunno);
+				}catch(Exception e)
+				{
+				}
+				Pedido infoPedido= PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
+				if(infoPedido.getIdcliente() > 0)
+				{  
+					String linkpago  = "https://checkout.wompi.co/l/"+infoPedido.getIdLink();
+					actualizarLinkPagoLeadCRMBOT(lead,linkpago,"pedidoweb");
+									
+				}
+				
+				
+				  
 			}catch(Exception e)
 			{
+				System.out.println("ERROR CONSULTAR LINK CRM: "+e);
 			}
 			//
 
@@ -7117,7 +7137,7 @@ public class PedidoCtrl {
 			{
 				String link = verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
 				//Se actualiza lead con el link de pago
-				actualizarLinkPagoLeadCRMBOT(lead,link);
+				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
 			}
 		}catch(Exception e)
 		{
@@ -7381,16 +7401,20 @@ public class PedidoCtrl {
 	}
 	
 	
-	public void actualizarLinkPagoLeadCRMBOT(String lead,String link)
+	public void actualizarLinkPagoLeadCRMBOT(String lead,String link,String tipo_pedido)
 	{
 
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+		int idcampo = 868227;
+		if(tipo_pedido.toLowerCase().equals("pedidoweb")) {					
+				idcampo = 868231;		
+		}		
 		//Para revisar
 		String datos = "[\r\n"
 				+ "    {   \"id\": "+ lead +",\n"
 				+ "        \"custom_fields_values\": [\r\n"
 				+ "          {\r\n"
-				+ "             \"field_id\": 868227,\r\n"
+				+ "             \"field_id\": "+ idcampo +",\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
 				+ "                    \"value\": \" " + link + "\"\n"
