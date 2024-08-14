@@ -7407,7 +7407,7 @@ public class PedidoCtrl {
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 		int idcampo = 868227;
 		if(tipo_pedido.toLowerCase().equals("pedidoweb")) {					
-				idcampo = 868231;		
+				idcampo = 868233;		
 		}		
 		//Para revisar
 		String datos = "[\r\n"
