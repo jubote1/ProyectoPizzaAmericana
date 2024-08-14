@@ -6281,4 +6281,17 @@ function validarIdentificacion()
     }
 }
 
+//Método creado para la validación de la inclusión al plan de fidelización Club Pizza Americana
+function incluirFidelizacion()
+{
+    //Validamos que el cliente ya tiene que estar creado para poder ser incluido en el programado
+    if(icCliente == 0)
+    {
+        $.alert('Para incluir al cliente en el CLUB Pizza Americana, el cliente debe existir en la base de datos, Si el cliente es NUEVO debes primero tomar los datos del cliente y agregar por lo menos un producto al pedido!');
+    }else{
+        //Tomaremos validaremos los valores que requerimos para la creación en el Sales Manago e inclusión en programa de fidelización
+
+    }
+}
+
 $('#email').on('input', validate);

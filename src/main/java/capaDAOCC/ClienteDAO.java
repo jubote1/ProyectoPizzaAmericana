@@ -1283,5 +1283,35 @@ public class ClienteDAO {
 		return(retorno);
 	}
 	
+	
+	public static boolean actualizarInformacionFacturacion(int idCliente, int idTipoCliente, String identificacion, String nombreClienteFact, String correoFac)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
+			Statement stm = con1.createStatement();
+			String update = "update cliente set idtipopersona = " + idTipoCliente + ", identificacion = '" + identificacion + "' , nombrecompania = '" + nombreClienteFact + "' , email_facturacion = '" + correoFac + "' , facturar_sin = 'N'  where idcliente = " + idCliente; 
+			logger.info(update);
+			stm.executeUpdate(update);
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			System.out.println(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			return(false);
+		}
+		return(true);
+	}
+	
 
 }
