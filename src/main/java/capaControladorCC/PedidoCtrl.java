@@ -5861,6 +5861,8 @@ public class PedidoCtrl {
 		return(respuesta);
 	}
 	
+	
+	
 	/**
 	 * Método que ejecuta el servicio para validar la cobertura de un pedido.
 	 * @param datosJSON
@@ -5944,6 +5946,93 @@ public class PedidoCtrl {
 		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);
 		System.out.println("6. TERMINO DEL PROCESO ");
 	}
+	
+	
+	public String consultarLinkPagoVirtualCRM(String datos, String authHeader) throws IOException
+	{
+		String respuesta = "";
+		//El primer paso a validar es la autorización para la utilización del servicio
+		if(authHeader.equals(new String("PRUEBA")))
+		{
+			//Si viene el valor de prueba omitimos la validación
+		}else
+		{
+			
+		}
+		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
+		//Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		//Vamos a realizar la extracción del parámetro
+		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+		Map parSep = separarURL(parametrosDecode);
+		String lead = (String)parSep.get("leads[status][0][id]");
+		System.out.println("1. REVISIÓN LEAD " + lead);
+		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
+		String infLead = obtenerInformacionLeadCRM(lead);
+		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
+		//System.out.println("información " + infLead);
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "LP");
+		consultarLink(infLead,lead, idLog);
+		return(respuesta);
+	}
+	
+	
+	public void consultarLink(String datosJSON, String lead, int idLog) throws IOException
+		
+		{
+			String resultadoProceso = "";
+			String numordenkunno = "";
+
+			//Para realizar el último parseo
+			JSONParser parserFinal = new JSONParser();
+			Object objParserFinal;
+			//Aqui estamos verificando la utilización del valor
+			JSONObject valor = new JSONObject();
+			JSONArray valorArreglo = new JSONArray();
+			String strValor = "";
+			try
+			{
+				JSONParser parser = new JSONParser();
+				Object objParser = parser.parse(datosJSON);
+				JSONObject jsonGeneral = (JSONObject) objParser;
+				JSONArray customFieldsArray = new JSONArray();
+				try
+				{
+					String customFieldsValues = (String)jsonGeneral.get("custom_fields_values").toString();
+					Object objcustomFieldsValues = parser.parse(customFieldsValues);
+					customFieldsArray = (JSONArray) objcustomFieldsValues;
+				}catch(Exception e1)
+				{
+					resultadoProceso = resultadoProceso + " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no están llenos los campos.";
+					//Tratar problema de no tener campos adicionales
+				}
+				//Continuamos con la recolección de la información para el pedido
+				for(int i = 0; i < customFieldsArray.size(); i++)
+				{
+					//Tomamos el elemento para procesar
+					JSONObject objTemp = (JSONObject) customFieldsArray.get(i);
+					String clave = objTemp.get("field_name").toString().toLowerCase();
+					String values = objTemp.get("values").toString();
+					Object objValues = parser.parse(values);
+					JSONArray valuesArray = (JSONArray) objValues;
+					objParserFinal = parserFinal.parse(valuesArray.get(0).toString());
+					valor = (JSONObject) objParserFinal;
+					strValor = valor.get("value").toString();
+					strValor = strValor.replaceAll("'", " ");
+					//Dependiendo del campos se tendrá la recuperación del mismo
+					if(clave.equals(new String("dirección de envío")))
+					{
+						numordenkunno = strValor;
+						break;
+					}
+				}
+			}catch(Exception e)
+			{
+			}
+			//
+
+	}
+	
 	
 	public String insertarPedidoCRMBOTPoblado(String datos, String authHeader) throws IOException
 	{
