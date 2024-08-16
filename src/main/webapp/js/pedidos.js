@@ -6285,12 +6285,29 @@ function validarIdentificacion()
 function incluirFidelizacion()
 {
     //Validamos que el cliente ya tiene que estar creado para poder ser incluido en el programado
-    if(icCliente == 0)
+    if(idCliente == 0)
     {
         $.alert('Para incluir al cliente en el CLUB Pizza Americana, el cliente debe existir en la base de datos, Si el cliente es NUEVO debes primero tomar los datos del cliente y agregar por lo menos un producto al pedido!');
     }else{
         //Tomaremos validaremos los valores que requerimos para la creación en el Sales Manago e inclusión en programa de fidelización
-
+        if ((($("#email").val()=='') || ($("#apellidos").val()=='') || ($("#nombres").val()=='') || ($("#direccion").val()=='') || ($("#telcelular").val()=='')))
+        {
+            $.alert('Para ser incluido en el programa debe tener: nombres, apellidos, dirección, telefono celular y correo.');
+        }else {
+            //Se realiza llamado a servicio para inclusión en programa de fidelización
+            var nombresEncode = encodeURIComponent($("#nombres").val());
+            var apellidosEncode = encodeURIComponent($("#apellidos").val());
+            var direccionEncode = encodeURIComponent($("#direccion").val());
+            $.ajax({ 
+                        url: server + 'IncluirFidelizacionSalesManago?telefonocelular=' + $("#telcelular").val() + "&nombres=" + nombresEncode + "&apellidos=" + apellidosEncode + "&direccion="  + direccionEncode   + "&email=" + $("#email").val(), 
+                        dataType: 'json', 
+                        async: false, 
+                        success: function(data){ 
+                            console.log(data);
+                            $.alert('Ha sido incluido en el programa de fidelización');
+                        } 
+            });
+}
     }
 }
 

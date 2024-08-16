@@ -1539,6 +1539,93 @@ public class PedidoCtrl {
 	}
 	
 	/**
+	 * Método que se encarga de realizar la notificación de WOMPI, siendo paramétrica para el caso del Whatsapp, en caso de que se use tambien la mensajeria externa
+	 * @param idLink
+	 * @param idCliente
+	 * @param linkPago
+	 * @param idFormaPago
+	 * @param idPedido
+	 * @param mensajeWhatsapp
+	 * @return
+	 */
+	public String realizarNotificacionWompiParametrico(String idLink, int idCliente, String linkPago, int idFormaPago, int idPedido, String mensajeWhatsapp)
+	{
+		boolean correoCorrecto;
+		Date date = new Date();   // given date
+		Calendar calendar = GregorianCalendar.getInstance(); // creates a new calendar instance
+		int horaActual = calendar.get(Calendar.HOUR_OF_DAY); 
+		calendar.setTime(date);
+		String observacionLog = "";
+		String emailEnvio = "";
+		//Comenzamos por consultar al cliente para recuperar la información de correo electrónico y número celular
+		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
+		//Obtenemos la forma de pago
+		FormaPago formaPagoNoti = FormaPagoDAO.retornarFormaPago(idFormaPago);
+		PromocionesCtrl promoCtrl = new PromocionesCtrl();
+		//Procesamos los mensajes de texto y correo electrónico
+		String mensajeTexto = formaPagoNoti.getMensajeTexto();
+		String telefonoCelular = clienteNoti.getTelefonoCelular();
+		mensajeTexto = mensajeTexto.replace("#VINCULO", linkPago);
+		//Envío del mensaje de Texto
+		promoCtrl.ejecutarPHPEnvioMensaje( "57"+ telefonoCelular, mensajeTexto);
+		observacionLog = "Se envio mensaje de texto.";
+		//Vamos a verificar si el cliente tiene correo electrónico para enviarlo si es el caso
+		if(clienteNoti.getEmail() != null)
+		{
+			if(clienteNoti.getEmail().length()> 0)
+			{
+				if(clienteNoti.getEmail().contains("@"))
+				{
+					observacionLog = observacionLog + " Se tiene email para enviar.";
+					String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+					String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+					String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+					String mensajeCorreo = formaPagoNoti.getMensajeCorreo();
+					mensajeCorreo = mensajeCorreo.replace("#VINCULO", linkPago);
+					Correo correo = new Correo();
+					correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+					ArrayList correos = new ArrayList();
+					String correoEle = clienteNoti.getEmail();
+					emailEnvio = correoEle;
+					correos.add(correoEle);
+					correo.setContrasena(claveCorreo);
+					correo.setUsuarioCorreo(cuentaCorreo);
+					String mensajeCuerpoCorreo = "Cordiar Saludo " + clienteNoti.getNombres() + " " + clienteNoti.getApellidos() + " ." + mensajeCorreo 
+							+ "\n" + "<body><a href=\"" + linkPago + "\"><img align=\" center \" src=\""+ imagenWompi +"\"></a></body>";
+					correo.setMensaje(mensajeCuerpoCorreo);
+					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+					//Agregamos control para que verifique con que método debe hacer el envío
+					if(cuentaCorreo.contains("@gmail.com"))
+					{
+						correoCorrecto = contro.enviarCorreo();
+					}else
+					{
+						correoCorrecto = contro.enviarCorreo();
+					}
+					if(!correoCorrecto)
+					{
+						ClienteDAO.marcarCorreoIncorrecto(idCliente);
+					}
+					observacionLog = observacionLog + " Se intento realizar el envío del correo electrónico.";
+				}
+			}
+		}
+		if(mensajeWhatsapp.equals(new String("S")))
+		{
+			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		}
+		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
+		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
+		//Al pedido le adicionamos el campo de idLink para el pago
+		PedidoDAO.actualizarLinkPagoPedido(idPedido, idLink);
+		JSONArray listJSON = new JSONArray();
+		JSONObject precioJSON = new JSONObject();
+		precioJSON.put("respuesta", "OK" );
+		listJSON.add(precioJSON);
+		return listJSON.toJSONString();
+	}
+	
+	/**
 	 * Método que tendrá como objetivo realizar una renotificación al cliente despues de 20 minutos con el fin de recordar a este el pago
 	 * @param idLink
 	 * @param idCliente
@@ -2305,7 +2392,13 @@ public class PedidoCtrl {
 						//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 						if(idFormaPago == 4)
 						{
-							verificarEnvioLinkPagos(idPedidoCreado, clienteVirtual, (valorTotal), idTienda);
+							//Se hace validación si esta activo el envio de mensajería con Tercero
+							String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
+							if(mensajeExterno.equals(new String("")))
+							{
+								mensajeExterno = "S";
+							}
+							verificarEnvioLinkPagosParametrico(idPedidoCreado, clienteVirtual, (valorTotal), idTienda, mensajeExterno);
 						}
 						
 						//Actualizamos la fecha de procesamiento
@@ -3819,6 +3912,100 @@ public class PedidoCtrl {
 			
 			//reutilización de la lógica del resto para el envío de la notificación
 			realizarNotificacionWompi(idLink, clienteVirtual.getIdcliente(), "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda);
+		}catch (Exception e2) {
+            e2.printStackTrace();
+            System.out.println(e2.toString());
+        }
+		return("https://checkout.wompi.co/l/"+idLink);
+	}
+	
+	
+	/**
+	 * Método que realiza la gereneración del link de pago y hará envío del link de pago por WhatsApp de manera paramétrica
+	 * @param idPedidoTienda
+	 * @param clienteVirtual
+	 * @param totalPedido
+	 * @param idTienda
+	 * @return
+	 */
+	public String verificarEnvioLinkPagosParametrico(int idPedidoTienda, Cliente clienteVirtual, double totalPedido, int idTienda, String mensajeWhatsapp)
+	{
+		String respuesta;
+		String idLink = "";
+		PromocionesCtrl promoCtrl = new PromocionesCtrl();
+		//Se debe hacer la creación del link y la inserción en la tabla
+		//Obtenemos la tienda
+		Tienda tienda = TiendaDAO.retornarTienda(idTienda);
+		//Creamos la fecha Actual
+		Date dateFecha = new Date();
+		Calendar calendarioActual = Calendar.getInstance();
+		try
+		{
+			calendarioActual.add(Calendar.DAY_OF_YEAR, 1);
+		}catch(Exception e)
+		{
+			
+		}
+		dateFecha = calendarioActual.getTime();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		String strFechaExt = dateFormat.format(dateFecha);
+		//Creamos el JSON para consumir el servicio
+		String jsonLinkPago = '{' +
+                "\"amount_in_cents\":"  + (int)totalPedido*100 +","+
+                "\"currency\": \"COP\"," + 
+                "\"taxes\": [" +
+                 "      {" +
+                            "\"type\": \"CONSUMPTION\", "+
+                            "\"amount_in_cents\":" + (int)((totalPedido*100)*0.08/1.08) + 
+                          "}" +
+                        "]," +
+                "\"name\": \"Pizza Americana"  + " " + tienda.getNombreTienda() + "\" ," +
+                "\"description\": \"Pedido #" + idPedidoTienda + "\","+
+                "\"expires_at\": \"" + strFechaExt  + "T23:00:00.000Z\","+
+                "\"redirect_url\": \"https://pizzaamericana.co\","+
+                "\"single_use\": false,"+
+                "\"sku\": \"" + idPedidoTienda + "\","+
+                "\"collect_shipping\": false"+
+              "}";
+		//Realizamos la invocación mediante el uso de HTTPCLIENT
+		HttpClient client = HttpClientBuilder.create().build();
+		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
+		HttpPost request = new HttpPost(rutaURLWOMPI);
+		try
+		{
+			//Fijamos el header con el token
+			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json");
+			//Fijamos los parámetros
+			//pass the json string request in the entity
+		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
+		    request.setEntity(entity);
+			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+			StringBuffer retorno = new StringBuffer();
+			HttpResponse responseFinPed = client.execute(request);
+			BufferedReader rd = new BufferedReader
+				    (new InputStreamReader(
+				    		responseFinPed.getEntity().getContent()));
+			String line = "";
+			while ((line = rd.readLine()) != null) {
+				    retorno.append(line);
+				}
+			//Traemos el valor del JSON con toda la info del pedido
+			String datosJSON = retorno.toString();
+			
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gráfica
+			JSONParser parser = new JSONParser();
+			Object objParser = parser.parse(datosJSON);
+			JSONObject jsonGeneral = (JSONObject) objParser;
+			String dataJSON = (String)jsonGeneral.get("data").toString();
+			Object objParserData = parser.parse(dataJSON);
+			JSONObject jsonData = (JSONObject) objParserData;
+			idLink = (String)jsonData.get("id");
+			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
+			
+			//reutilización de la lógica del resto para el envío de la notificación
+			realizarNotificacionWompiParametrico(idLink, clienteVirtual.getIdcliente(), "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda, mensajeWhatsapp);
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
@@ -11031,10 +11218,10 @@ public class PedidoCtrl {
 	}
 	
 	//Agregamos lógica relacionada con la validación e inclusión de clientes en programa de fidelización
-	public JSONObject FidelizacionSalesManago(String nombres, String apellidos, String direccion, String telefonoCelular, String email, boolean adi) {
+	public String incluirFidelizacionSalesManago(String nombres, String apellidos, String direccion, String telefonoCelular, String email, boolean adi) {
 		String programaFidel = ParametrosDAO.retornarValorAlfanumerico("PROGRAMAFIDELIZACION");
         String url = buildUrlFidelizacion(nombres, apellidos, direccion, telefonoCelular, email, programaFidel, adi);
-        return getResponseFromUrl(url, true);
+        return (getResponseFromUrl(url, true).toJSONString());
     }
 
 	/**
