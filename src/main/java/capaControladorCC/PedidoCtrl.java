@@ -6270,8 +6270,6 @@ public class PedidoCtrl {
 	{
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		
-		//Para revisar
 		String mensaje = "[\r\n"
 				+ "    {   \"id\": " + lead + ",\r\n"
 				+ "        \"custom_fields_values\": [\r\n"
@@ -6466,10 +6464,79 @@ public class PedidoCtrl {
 				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
+				+ "        },          {\r\n"
+				+ "             \"field_id\": 864379,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "            {\r\n"
+				+ "             \"field_id\": 867885,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"estado\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "            {\r\n"
+				+ "             \"field_id\": 867887,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"tienda\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "             {\r\n"
+				+ "             \"field_id\": 868227,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "        ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868045,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "        ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868051,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "\r\n"
+				+ "          ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868231,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        }\r\n"
+				+ "             ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868233,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
 				+ "        }\r\n"
 				+ "    ]\r\n"
 				+ "    }\r\n"
 				+ "]";
+
 		OkHttpClient client = new OkHttpClient();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, mensaje );
@@ -7217,6 +7284,7 @@ public class PedidoCtrl {
 		String mensaje = "";
 		String estadopedidotienda = "No se encontraron datos.";
 		String nombre_tienda = "";
+		String origen="";
 		//Una vez recuperado el teléfono realizamos las acciones correspondientes
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		//Con el número de teléfono y fecha realizamos la consulta del pedido
@@ -7272,6 +7340,7 @@ public class PedidoCtrl {
 						String estado = (String)jsonResServicio.get("estadopedido");
 						estadopedidotienda = String.valueOf(pedConsultado.getNumposheader());
 						nombre_tienda = tienda.getNombreTienda();
+						origen = pedConsultado.getUsuariopedido();
 						
 						if(estado.contains("En Espera"))
 						{
@@ -7328,6 +7397,7 @@ public class PedidoCtrl {
 		informacion.put("estadopedido", estadopedidotienda);
 		informacion.put("tienda", nombre_tienda);
 		informacion.put("mensaje", mensaje);
+		informacion.put("origen", origen);
 			
 		return(informacion);
 	}
@@ -7346,6 +7416,7 @@ public class PedidoCtrl {
 		String mensaje = (String)informacion.get("mensaje");
 		String estadopedido = (String)informacion.get("estadopedido");
 		String tienda = (String)informacion.get("tienda");
+		String origen = (String)informacion.get("origen");
 		
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 		//Para revisar
@@ -7373,6 +7444,14 @@ public class PedidoCtrl {
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
 				+ "                    \"value\": \" " + tienda + "\"\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        },\r\n"
+				+ "            {\r\n"
+				+ "             \"field_id\": 868045,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \" " + origen + "\"\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
