@@ -6288,12 +6288,14 @@ function incluirFidelizacion()
     if(idCliente == 0)
     {
         $.alert('Para incluir al cliente en el CLUB Pizza Americana, el cliente debe existir en la base de datos, Si el cliente es NUEVO debes primero tomar los datos del cliente y agregar por lo menos un producto al pedido!');
-    }else{
+    }else
+    {
         //Tomaremos validaremos los valores que requerimos para la creación en el Sales Manago e inclusión en programa de fidelización
         if ((($("#email").val()=='') || ($("#apellidos").val()=='') || ($("#nombres").val()=='') || ($("#direccion").val()=='') || ($("#telcelular").val()=='')))
         {
             $.alert('Para ser incluido en el programa debe tener: nombres, apellidos, dirección, telefono celular y correo.');
-        }else {
+        }else 
+        {
             //Se realiza llamado a servicio para inclusión en programa de fidelización
             var nombresEncode = encodeURIComponent($("#nombres").val());
             var apellidosEncode = encodeURIComponent($("#apellidos").val());
@@ -6303,11 +6305,44 @@ function incluirFidelizacion()
                         dataType: 'json', 
                         async: false, 
                         success: function(data){ 
-                            console.log(data);
-                            $.alert('Ha sido incluido en el programa de fidelización');
+
                         } 
             });
-}
+            //
+            $.ajax({ 
+                        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo='+ $("#email").val(), 
+                        dataType: 'json', 
+                        async: false, 
+                        success: function(data){ 
+                            if(data.respuesta)
+                            {
+                                $.alert('El cliente ya existe en el programa de fidelizacion.');
+                                return;
+                            }
+                            else 
+                            {
+                                $.ajax({ 
+                                            url: server + 'ServiciosClienteFidelizacion?idoperacion=2&correo='+ $("#email").val(), 
+                                            dataType: 'json', 
+                                            async: false, 
+                                            success: function(data){ 
+                                                if(data.respuesta)
+                                                {
+                                                    $.alert('El cliente FUE INGRESADO al programa de fidelización.');
+                                                    return;
+                                                }
+                                                else 
+                                                {
+                                                    $.alert('HUBO UN ERROR y el cliente no fue ingresado al programa de fidelización.');
+                                                }
+                                                
+                                            } 
+                                });
+                            }
+                            
+                        } 
+            });
+        }
     }
 }
 
