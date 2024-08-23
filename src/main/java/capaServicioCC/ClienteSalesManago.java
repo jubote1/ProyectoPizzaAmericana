@@ -12,14 +12,14 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Cliente;
 
-@WebServlet("/FidelizacionSalesManago")
-public class FidelizacionSalesManago extends HttpServlet {
+@WebServlet("/ClienteSalesManago")
+public class ClienteSalesManago extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
 	/**
      * @see HttpServlet#HttpServlet()
      */
-    public FidelizacionSalesManago() {
+    public ClienteSalesManago() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -37,7 +37,6 @@ public class FidelizacionSalesManago extends HttpServlet {
 	        String direccion = request.getParameter("direccion");
 	        String telefonoCelular = request.getParameter("telefonocelular");
 	        String email = request.getParameter("email");
-	        String nombre_programa = request.getParameter("nombre_programa");
 	        boolean isAdd = Boolean.parseBoolean(request.getParameter("isAdd"));
         
 	        Cliente cliente = new Cliente();
@@ -50,7 +49,7 @@ public class FidelizacionSalesManago extends HttpServlet {
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			PedidoCtrl pedCtrl = new PedidoCtrl();
-			String respuesta = pedCtrl.servicioFidelizacionSalesManago(cliente,nombre_programa,isAdd);
+			String respuesta = pedCtrl.ClienteSalesManago(cliente,isAdd);
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
 			
