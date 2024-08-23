@@ -68,7 +68,6 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 			
 		}else if(operacion == 6)//Servicio para sumar puntos y guardar transaccion
 		{
-			String correo = request.getParameter("correo");
 			double puntosSumar = 0;
 			try {
 				puntosSumar = Double.parseDouble(request.getParameter("puntos"));
