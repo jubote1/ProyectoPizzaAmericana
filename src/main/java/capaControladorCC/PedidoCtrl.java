@@ -4860,7 +4860,7 @@ public class PedidoCtrl {
 		clien.setDireccion("calle 20");
 		clien.setTelefonoCelular("3004577639");
 		clien.setEmail("a.desarrollosi@gmail.com");
-	    System.out.println(pedCtrl.servicioFidelizacionSalesManago(clien,"Club Pizza Americana 2",false));
+	    System.out.println(pedCtrl.ClienteSalesManago(clien,false));
 	    pedCtrl.procesarSolFacturaPedidoWebBOT(1, "8060972", "PRUEBAS SAS","jubote3@gmail.com", "123");
 	}
 	
@@ -10694,7 +10694,7 @@ public class PedidoCtrl {
 	}
 	
 	
-	public JSONObject CrearClienteSalesManago(Cliente cliente, String nombreProg)
+	public JSONObject CrearClienteSalesManago(Cliente cliente)
 
 	{	JSONObject respuestaJSON = new JSONObject();
 	    List<String> error = new ArrayList<>();
@@ -10727,12 +10727,7 @@ public class PedidoCtrl {
 				+ "  \"doubleOptInLanguage\": \"ES\",\r\n"
 				+ "  \"tags\": [\r\n"
 				+ " \"CLIENTE-TIENDA\"\r\n"
-				+ "  ]";
-
-			if(nombreProg != null && !nombreProg.isEmpty()) {
-				jsonInfo =jsonInfo+  " ,\"loyaltyProgram\": \""+nombreProg +"\"";
-			}
-			jsonInfo=jsonInfo+"}";
+				+ "  ] }";
 			
 		    System.out.println(jsonInfo);
 	    	RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonInfo);
@@ -10913,14 +10908,14 @@ public class PedidoCtrl {
 	}
 	
 	
-	public String servicioFidelizacionSalesManago(Cliente cliente, String nombre_programa,boolean isAdd) {   
+	public String ClienteSalesManago(Cliente cliente ,boolean isAdd) {   
 		JSONObject data = new JSONObject();    
 		List<String> message_error = new ArrayList<>();
 	    try {
 			if(isAdd) {
-				data = CrearClienteSalesManago(cliente,nombre_programa);
+				data = CrearClienteSalesManago(cliente);
 			}else {
-				data = ProgramaFidelizacionSalesManago(cliente.getEmail(), nombre_programa,isAdd);
+				//data = ProgramaFidelizacionSalesManago(cliente.getEmail(), nombre_programa,isAdd);
 			}
 			
 			if(data.size() == 0) {

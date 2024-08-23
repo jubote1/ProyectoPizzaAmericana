@@ -22,5 +22,24 @@ public class FidelizacionCtrl {
 		respuesta.put("respuesta", inserto);
 		return(respuesta.toJSONString());
 	}
+	
+	public String activarClienteFidelizacion(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean inserto = ClienteFidelizacionDAO.activarClienteFidelizacion(correo);
+		respuesta.put("respuesta", inserto);
+		return(respuesta.toJSONString());
+	}
+
+	
+	
+	public String desactivarClienteFidelizacion(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean inserto = ClienteFidelizacionDAO.desactivarClienteFidelizacion(correo);
+		respuesta.put("respuesta", inserto);
+		return(respuesta.toJSONString());
+	}
+
 
 }

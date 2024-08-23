@@ -48,20 +48,21 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 		}catch(Exception e){
 			operacion = 0;
 		}
+		
+		String correo = request.getParameter("correo");
 		if (operacion ==1)
 		{
-			String correo = request.getParameter("correo");
+			
 			respuesta = fideCtrl.existeClienteFidelizacion(correo);
 		}else if (operacion ==2)
 		{
-			String correo = request.getParameter("correo");
 			respuesta = fideCtrl.insertarClienteFidelizacion(correo);
 		}else if (operacion ==3 )
-		{
+		{   respuesta = fideCtrl.activarClienteFidelizacion(correo);
 			
 		}else if (operacion == 4)
 		{
-			
+			respuesta = fideCtrl.desactivarClienteFidelizacion(correo);
 		}else if(operacion == 5)
 		{
 			
