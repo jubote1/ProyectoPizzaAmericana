@@ -65,9 +65,38 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 		}else if(operacion == 5)
 		{
 			
-		}else if(operacion == 6)
+		}else if(operacion == 6)//Servicio para sumar puntos y guardar transaccion
 		{
-			
+			String correo = request.getParameter("correo");
+			double puntosSumar = 0;
+			try {
+				puntosSumar = Double.parseDouble(request.getParameter("puntos"));
+			}catch(Exception e)
+			{
+				puntosSumar = 0;
+			}
+			int idTienda = 0;
+			try {
+				idTienda = Integer.parseInt(request.getParameter("idtienda"));
+			}catch(Exception e)
+			{
+				idTienda = 0;
+			}
+			int idPedidoTienda = 0;
+			try {
+				idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
+			}catch(Exception e)
+			{
+				idPedidoTienda = 0;
+			}
+			double valorNeto = 0;
+			try {
+				valorNeto = Double.parseDouble(request.getParameter("valorneto"));
+			}catch(Exception e)
+			{
+				valorNeto = 0;
+			}
+			respuesta = fideCtrl.sumarPuntosClienteFidelizacion(correo, puntosSumar,idTienda, idPedidoTienda, valorNeto);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

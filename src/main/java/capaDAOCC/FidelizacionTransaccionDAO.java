@@ -30,7 +30,7 @@ public class FidelizacionTransaccionDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select * from cliente_fidelizacion_transaccion where correo = '"+ correo + "' and idtienda = " + idTienda + " and idpedidotienda = " + idPedidoTienda;
+			String consulta = "select * from fidelizacion_transaccion where correo = '"+ correo + "' and idtienda = " + idTienda + " and idpedidotienda = " + idPedidoTienda;
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			while(rs.next()){
@@ -61,7 +61,7 @@ public class FidelizacionTransaccionDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String insert = "insert into fidelizacion_transaccion (correo,idtienda, idpedido, valor_neto, puntos) values ('" + transaccion.getCorreo() +"' ," + transaccion.getIdTienda()+ " ," +  transaccion.getIdPedidoTienda()+ "," + transaccion.getValorNeto() + ", " + transaccion.getPuntos() +")";
+			String insert = "insert into fidelizacion_transaccion (correo,idtienda, idpedidotienda, valor_neto, puntos) values ('" + transaccion.getCorreo() +"' ," + transaccion.getIdTienda()+ " ," +  transaccion.getIdPedidoTienda()+ "," + transaccion.getValorNeto() + ", " + transaccion.getPuntos() +")";
 			logger.info(insert);
 			stm.executeUpdate(insert);
 			respuesta = true;
