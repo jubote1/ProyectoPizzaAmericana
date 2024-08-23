@@ -6457,7 +6457,8 @@ public class PedidoCtrl {
 	{
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		String mensaje = "[\r\n"
+		String mensaje = "\r\n"
+				+ "[\r\n"
 				+ "    {   \"id\": " + lead + ",\r\n"
 				+ "        \"custom_fields_values\": [\r\n"
 				+ "        {\r\n"
@@ -6655,7 +6656,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 864379,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        },\r\n"
@@ -6663,7 +6664,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 867885,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"estado\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        },\r\n"
@@ -6671,7 +6672,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 867887,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"tienda\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        },\r\n"
@@ -6679,7 +6680,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 868227,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
@@ -6688,7 +6689,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 868045,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
@@ -6697,7 +6698,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 868051,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
@@ -6707,7 +6708,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 868231,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
@@ -6716,13 +6717,14 @@ public class PedidoCtrl {
 				+ "             \"field_id\": 868233,\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \"mensaje\"\r\n"
+				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
 				+ "    ]\r\n"
 				+ "    }\r\n"
-				+ "]";
+				+ "]\r\n"
+				+ "     ";
 
 		OkHttpClient client = new OkHttpClient();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
@@ -10693,7 +10695,65 @@ public class PedidoCtrl {
 		return(respuesta.toJSONString());
 	}
 	
+	public JSONObject EliminarClienteSalesManago(String correo) 
 	
+		{	JSONObject respuestaJSON = new JSONObject();
+		    List<String> error = new ArrayList<>();
+		    respuestaJSON.put("resultado", false);
+		    respuestaJSON.put("mensaje", new ArrayList<>());		  
+		    try {
+		    	
+			IntegracionCRM intSales = IntegracionCRMDAO.obtenerInformacionIntegracion("SALES");			
+			String jsonInfo = "{ \r\n"
+					+"  \"apiKey\": \"" + intSales.getAccessToken() +"\","
+			        + "  \"clientId\": \"" + intSales.getClientID() +"\","
+					+ "  \"sha\": \"" + intSales.getFreshToken() + "\","
+					+ " \"requestTime\" :1704218302,\r\n"
+					+  " \"email\": \""+ correo +"\","
+					+ " \"owner\" : \"mercadeo@pizzaamericana.com.co\"\r\n"
+					+ "}";
+				
+			    System.out.println(jsonInfo);
+		    	RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonInfo);
+		        Request request = new Request.Builder()
+		                .url("https://app2.salesmanago.pl/api/contact/delete")
+		                .addHeader("Content-Type", "application/json;charset=UTF-8")
+		                .addHeader("Accept", "application/json")
+		                .post(body)
+		                .build();
+		
+		        OkHttpClient client = new OkHttpClient();
+		         try (okhttp3.Response response = client.newCall(request).execute()) {
+			    int statusCode = response.code();
+			    
+			    if(statusCode == 200) {
+			    	  String responseBody = response.body().string();
+			    	  System.out.println("RESPUESTA CREARCLIENTESG: "+responseBody);
+			    	  JSONParser parser = new JSONParser();
+		              JSONObject responseObject = (JSONObject) parser.parse(responseBody);
+		              Boolean success = (Boolean) responseObject.get("success");
+		              JSONArray messageArray = (JSONArray) responseObject.get("message");
+
+
+				      respuestaJSON.put("resultado", success);
+					  respuestaJSON.put("mensaje", messageArray);
+					    
+					 
+			    }else {			    	
+			    	error.add("Error con estado.");
+					respuestaJSON.put("resultado", false);
+				    respuestaJSON.put("mensaje", error);
+			    }
+		         }
+		    } catch (Exception e) {
+		    	    error.add("Error:"+e.getMessage());
+			       	respuestaJSON.put("resultado", false);
+				    respuestaJSON.put("mensaje", error);
+		    }
+
+			return(respuestaJSON);
+	}
+		
 	public JSONObject CrearClienteSalesManago(Cliente cliente)
 
 	{	JSONObject respuestaJSON = new JSONObject();
@@ -10915,7 +10975,7 @@ public class PedidoCtrl {
 			if(isAdd) {
 				data = CrearClienteSalesManago(cliente);
 			}else {
-				//data = ProgramaFidelizacionSalesManago(cliente.getEmail(), nombre_programa,isAdd);
+				data = EliminarClienteSalesManago(cliente.getEmail());
 			}
 			
 			if(data.size() == 0) {
