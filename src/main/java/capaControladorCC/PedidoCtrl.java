@@ -1528,7 +1528,36 @@ public class PedidoCtrl {
 //		{
 //			notificarWhatsApp(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
 //		}
-		notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNOCONTACT");
+		if(mensajeExterno.equals(new String("")))
+		{
+			mensajeExterno = "S";
+		}
+		if(mensajeExterno.equals(new String("S")))
+		{
+			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		}else
+		{
+			//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
+			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+			String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+			Correo correo = new Correo();
+			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+			ArrayList correos = new ArrayList();
+			correos.add("29918165.95978@parser.kommo.com");
+			correo.setContrasena(claveCorreo);
+			correo.setUsuarioCorreo(cuentaCorreo);
+			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
+					+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
+					+ "Link de pago:" + linkPago + " \n <br>"
+					+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
+					+ "email:" + clienteNoti.getEmail()+ " \n <br>";
+			correo.setMensaje(mensajeCuerpoCorreo);
+			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+			correoCorrecto = contro.enviarCorreo();
+
+		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
 		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
 		//Al pedido le adicionamos el campo de idLink para el pago
@@ -4865,6 +4894,7 @@ public class PedidoCtrl {
 		clien.setEmail("a.desarrollosi@gmail.com");
 	    System.out.println(pedCtrl.ClienteSalesManago(clien,false));
 	    pedCtrl.procesarSolFacturaPedidoWebBOT(1, "8060972", "PRUEBAS SAS","jubote3@gmail.com", "123");
+	    
 	}
 	
 //	public static void main(String[] args)
@@ -5982,7 +6012,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"I");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6014,7 +6044,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"C");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6047,7 +6077,7 @@ public class PedidoCtrl {
 		}
 		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"T");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6162,7 +6192,7 @@ public class PedidoCtrl {
 		}
 		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"LP");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6267,7 +6297,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"I");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6294,7 +6324,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"LI");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6317,7 +6347,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"P");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6341,14 +6371,14 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"SF");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "F");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "SF");
 		procesarFACBOTCRM(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -7399,7 +7429,13 @@ public class PedidoCtrl {
 			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
-				String link = verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				//Se hace validación si esta activo el envio de mensajería con Tercero
+				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
+				if(mensajeExterno.equals(new String("")))
+				{
+					mensajeExterno = "S";
+				}
+				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
 				//Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
 			}
@@ -8157,7 +8193,15 @@ public class PedidoCtrl {
 			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
-				verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				//Se hace validación si esta activo el envio de mensajería con Tercero
+				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
+				if(mensajeExterno.equals(new String("")))
+				{
+					mensajeExterno = "S";
+				}
+				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				//Se actualiza lead con el link de pago
+				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
 			}
 			try
 			{
@@ -11444,7 +11488,7 @@ public class PedidoCtrl {
 	{
 		String respuesta = "";
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"F");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
