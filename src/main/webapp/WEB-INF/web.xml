@@ -9,4 +9,33 @@
     <welcome-file>default.htm</welcome-file>
     <welcome-file>default.jsp</welcome-file>
   </welcome-file-list>
+  
+  
+     <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>capaSeguridad.filtro.CorsFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/ObtenerVacantes</url-pattern>
+	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
+	    <url-pattern>/ObtenerVacanteID</url-pattern>
+	     <url-pattern>/InsertarCandidato</url-pattern>
+    </filter-mapping>
+    
+    
+        <filter>
+        <filter-name>JwtAuthFilter</filter-name>
+        <filter-class>capaSeguridad.filtro.JwtAuthFilter</filter-class>
+    </filter>
+
+	<filter-mapping>
+	    <filter-name>JwtAuthFilter</filter-name>
+	    <url-pattern>/ObtenerVacantes</url-pattern>
+	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
+	    <url-pattern>/ObtenerVacanteID</url-pattern>
+	         <url-pattern>/InsertarCandidato</url-pattern>
+	</filter-mapping>
+
 </web-app>

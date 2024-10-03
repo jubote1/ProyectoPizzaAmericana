@@ -46,7 +46,7 @@ public class ConexionBaseDatos {
 //			con = DriverManager.getConnection(
 //		            "jdbc:mysql://172.19.0.25/pizzaamericana?"
 //		            + "user=root&password=4m32017");
-//			
+			
 			con = DriverManager.getConnection(
 		            "jdbc:mysql://localhost/pizzaamericana?"
 		            + "user=root&password=4m32017&serverTimezone=UTC");
@@ -234,6 +234,70 @@ public class ConexionBaseDatos {
 		            "jdbc:mysql://localhost/datamart?"
 		            + "user=root&password=4m32017&serverTimezone=UTC");
 
+		    // Otros y operaciones sobre la base de datos...
+
+		} catch (SQLException ex) {
+
+		    // Mantener el control sobre el tipo de error
+		    System.out.println("SQLException: " + ex.getMessage());
+
+		}
+		return(con);
+	}
+	
+	public Connection obtenerConexionBDNominaAmericana(){
+		try {
+		    Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		    
+
+		} catch (Exception e) {
+
+		    System.out.println(e.toString());
+
+		}
+		
+		Connection con = null;
+		//...
+
+		try {
+
+			con = DriverManager.getConnection(
+		            "jdbc:mysql://localhost/nominaamericana?"
+		            + "user=root&password=4m32017&serverTimezone=UTC");
+			
+
+		    // Otros y operaciones sobre la base de datos...
+
+		} catch (SQLException ex) {
+
+		    // Mantener el control sobre el tipo de error
+		    System.out.println("SQLException: " + ex.getMessage());
+
+		}
+		return(con);
+	}
+	
+	
+	public Connection obtenerConexionBDSeguridad(){
+		try {
+		    Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		    
+
+		} catch (Exception e) {
+
+		    System.out.println(e.toString());
+
+		}
+		
+		Connection con = null;
+		//...
+
+		try {
+
+			con = DriverManager.getConnection(
+		            "jdbc:mysql://localhost/seguridad?"
+		            + "user=root&password=4m32017&serverTimezone=UTC");
+			
 		    // Otros y operaciones sobre la base de datos...
 
 		} catch (SQLException ex) {
