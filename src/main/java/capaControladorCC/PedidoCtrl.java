@@ -7028,7 +7028,14 @@ public class PedidoCtrl {
 		{
 			int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
 			Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
-			detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			//Intevenimos si debemos o no de cobrar el liquido
+			if(esPromocion && excepcionPrecioTemp.getIncluyeliquido().equals(new String("S")))
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,0,0*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}else
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}
 		}
 		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, strCON, "");
 		idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
@@ -7078,7 +7085,7 @@ public class PedidoCtrl {
 		}else
 		{
 			//No necesariamente si solo es promoción también se debe validar si es combo para todos
-			if(esPromocion && nombreDelCombo.equals(new String("COMBO PARA TODOS")))
+			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA"))))
 			{
 				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento);
 			}else
