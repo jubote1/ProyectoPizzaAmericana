@@ -29,9 +29,16 @@ import io.jsonwebtoken.security.MacAlgorithm;
 
 public class Accesos {
 
-    private  static final String SECRET_KEY = "rLRo7wEjYWqQ0MXheR3Fa2e4ynWSA1W8O4YynRJXg6g="; // Define tu clave secreta aquí
-    private  static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
-    private  static final  String EncryptionKey = "M/0rbK23cqAm9bDbTlOovmNgh7sTSKA4x0jfPz5FTrQ=";
+	private static final String SECRET_KEY = System.getenv("SECRET_KEY") != null ? System.getenv("SECRET_KEY") : "";
+    private static final SecretKey KEY;
+
+    static {
+        if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
+            throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
+        }
+        KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
+    private static final String EncryptionKey = System.getenv("ENCRYPTION_KEY") != null ? System.getenv("ENCRYPTION_KEY") : "";
 
 	
 	  public  static boolean isValidUser(String username,String password){

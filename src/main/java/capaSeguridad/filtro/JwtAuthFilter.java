@@ -26,8 +26,15 @@ import java.util.Date;
 public class JwtAuthFilter implements Filter {
 
     private static final String AUTH_HEADER = "Authorization";
-    private static final String SECRET_KEY = "rLRo7wEjYWqQ0MXheR3Fa2e4ynWSA1W8O4YynRJXg6g="; // Define tu clave secreta aquí
-    private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    private static final String SECRET_KEY = System.getenv("SECRET_KEY") != null ? System.getenv("SECRET_KEY") : "";
+    private static final SecretKey KEY;
+
+    static {
+        if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
+            throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
+        }
+        KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
