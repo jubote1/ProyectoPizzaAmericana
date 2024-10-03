@@ -16,9 +16,9 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class InsertarPQRSCRMBOT
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servlet implementation class InsertarFACCRMBOT
+ * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrï¿½ tomar un pedido, 
+ * la informaciï¿½n serï¿½ retornada en formato JSON.
  */
 @WebServlet("/InsertarFACCRMBOT")
 public class InsertarFACCRMBOT extends HttpServlet {
@@ -34,16 +34,16 @@ public class InsertarFACCRMBOT extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe parámetros dado que no filtra la información, simplemente retorna en formato JSON 
-	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el método obtenerTiendas de la capa Tienda Controlador.
+	 * Este servicio no recibe parï¿½metros dado que no filtra la informaciï¿½n, simplemente retorna en formato JSON 
+	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el mï¿½todo obtenerTiendas de la capa Tienda Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		try{
 			response.addHeader("Access-Control-Allow-Origin", "*");
-			//Devolveremos según documentación de WOMPI un JSON vacío
+			//Devolveremos segï¿½n documentaciï¿½n de WOMPI un JSON vacï¿½o
 			response.setContentType("application/json");
-			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maración
+			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maraciï¿½n
 			BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(), "UTF-8"));
 			String line = null;
 			StringBuilder sb = new StringBuilder();

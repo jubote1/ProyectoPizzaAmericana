@@ -87,6 +87,8 @@ import capaDAOCC.SolicitudFacturaImagenesDAO;
 import capaDAOCC.TiempoPedidoDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
+import capaDAOPOS.EmpleadoEventoDAO;
+import capaDAOPOS.EmpleadoTemporalDiaDAO;
 import capaModeloCC.AdicionTiendaVirtual;
 import capaModeloCC.Cliente;
 import capaModeloCC.Correo;
@@ -1526,7 +1528,36 @@ public class PedidoCtrl {
 //		{
 //			notificarWhatsApp(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
 //		}
-		notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNOCONTACT");
+		if(mensajeExterno.equals(new String("")))
+		{
+			mensajeExterno = "S";
+		}
+		if(mensajeExterno.equals(new String("S")))
+		{
+			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		}else
+		{
+			//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
+			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+			String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+			Correo correo = new Correo();
+			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+			ArrayList correos = new ArrayList();
+			correos.add("29918165.95978@parser.kommo.com");
+			correo.setContrasena(claveCorreo);
+			correo.setUsuarioCorreo(cuentaCorreo);
+			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
+					+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
+					+ "Link de pago:" + linkPago + " \n <br>"
+					+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
+					+ "email:" + clienteNoti.getEmail()+ " \n <br>";
+			correo.setMensaje(mensajeCuerpoCorreo);
+			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+			correoCorrecto = contro.enviarCorreo();
+
+		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
 		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
 		//Al pedido le adicionamos el campo de idLink para el pago
@@ -4836,8 +4867,9 @@ public class PedidoCtrl {
 //	}
 	
 	//TIENDA VIRTUAL KUNO
-	public static void main(String[] args)
-	{	PedidoCtrl pedCtrl = new PedidoCtrl();
+	public static void main(String[] args) throws IOException
+	{	
+		PedidoCtrl pedCtrl = new PedidoCtrl();
 		/*String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[492832],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2024-07-10T16:41:38.000Z\",\"id\":891094316,\"total_price\":42000,\"sub_total_price\":39000,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.2596580486090545\",\"longitude\":\"-75.55999257605743\",\"client_first_name\":\"Pedido\",\"client_last_name\":\"PRUEBAA\",\"client_email\":\"pedidopruebaAA@gmail.com\",\"client_phone\":\"+573124066229\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"accepted\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":\"2024-07-10T16:41:38.000Z\",\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2024-07-10T17:41:38.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":68478556,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"delivery_zone_name\":\"Piloto\",\"outside_delivery_area\":null,\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"client_order_count\":0,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":false,\"client_address\":\"Cra. 48 #63A-35, Medellín\",\"client_address_parts\":{\"street\":\"Cra. 48 #63A-35\",\"city\":\"Medellín\"},\"items\":[{\"id\":1184916042,\"name\":\"Deditos\",\"total_item_price\":11000,\"price\":0,\"quantity\":1,\"instructions\":null,\"type\":\"promo_cart_item\",\"type_id\":492832,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916093,\"name\":\"DEDITOS DE MASA CON QUESO\",\"total_item_price\":11000,\"price\":11000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655698,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":1184916042,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916585,\"name\":\"DELIVERY_FEE\",\"total_item_price\":3000,\"price\":3000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184917115,\"name\":\"PIZZA AMERICANA\",\"total_item_price\":39000,\"price\":19000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655672,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":1028538629,\"name\":\"Mediana (6 porciones)\",\"price\":16000,\"group_name\":\"Tamaño\",\"quantity\":1,\"type\":\"size\",\"type_id\":6982284},{\"id\":1028538630,\"name\":\"Coca Cola Zero\",\"price\":4000,\"group_name\":\"Selecciona tu bebida 1.5 Litros\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680737},{\"id\":1028538631,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744}]}]}]}";
 		byte[] byteText = null;
 		try {
@@ -4862,6 +4894,7 @@ public class PedidoCtrl {
 		clien.setEmail("a.desarrollosi@gmail.com");
 	    System.out.println(pedCtrl.ClienteSalesManago(clien,false));
 	    pedCtrl.procesarSolFacturaPedidoWebBOT(1, "8060972", "PRUEBAS SAS","jubote3@gmail.com", "123");
+	    
 	}
 	
 //	public static void main(String[] args)
@@ -5775,13 +5808,14 @@ public class PedidoCtrl {
 			strPedidosProg = "(";
 			if(!tien.getHosbd().equals(new String("")))
 			{
-				respuesta = respuesta + "<table border='2'><tr><td colspan='5'>" + tien.getNombreTienda() + "</td></tr>";
+				respuesta = respuesta + "<table border='2'><tr><td colspan='6'>" + tien.getNombreTienda() + "</td></tr>";
 				respuesta = respuesta + "<tr>"
 						+  "<td><strong>Pedidos en COCINA</strong></td>"
 						+  "<td><strong>Ped Pend Salir Tienda</strong></td>"
 						+  "<td><strong>Cant de Ped Últ Hora Domicilio</strong></td>"
 						+  "<td><strong>Cant de Ped Últ Hora No Domicilio</strong></td>"
 						+  "<td><strong>Tiempo último Ped Pend</strong></td>"
+						+  "<td><strong>Cant Domi</strong></td>"
 						+  "</tr>";
 				//Comenzamos a validar los parámetros de cada tienda 
 				// LA MEJOR ESTRATEGIA SERÍA TENER UN SOLO MÉTODO PARA MEJORAR EL PERFORMANCE
@@ -5797,6 +5831,9 @@ public class PedidoCtrl {
 				cantPedHoraNoDom = capaDAOPOS.PedidoDAO.obtenerCantidadPedidoDespuesHoraNoDomicilio(fechaActual, fechaActualMenosHora, tien.getHosbd(),tipoPedidoDomicilio );
 				//Tiempo del último pedimo por salir
 				cantMinutos = capaDAOPOS.PedidoDAO.obtenerTiempoUltimoPedidoEstado(fechaActual, pedidoEmpacado, strPedidosProg,  tien.getHosbd());
+				//Obtenemos los domiciliarios de la tienda
+				int domInternos = capaDAOPOS.EmpleadoEventoDAO.cantidadEmpleadoDomiciliario(fechaActual, tien.getIdTienda(), false);
+				int domExternos = capaDAOPOS.EmpleadoTemporalDiaDAO.consultarCantEmpleadoTempDia(fechaActual, tien.getHosbd(),  false);
 				//Luego de obtenidos los datos pintamos el html
 				respuesta = respuesta + "<tr>"
 						+  "<td>" + cantPedCoc + "</td>"
@@ -5804,6 +5841,7 @@ public class PedidoCtrl {
 						+  "<td>" + cantPedHoraDom + "</td>"
 						+  "<td>" + cantPedHoraNoDom + "</td>"
 						+  "<td>" + cantMinutos + "</td>"
+						+  "<td>" + (domInternos + domExternos)+ "</td>"
 						+  "</tr>";
 				respuesta = respuesta + "</table> <br/>";					
 			}
@@ -5974,7 +6012,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"I");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6006,7 +6044,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"C");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6039,7 +6077,7 @@ public class PedidoCtrl {
 		}
 		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"T");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6154,7 +6192,7 @@ public class PedidoCtrl {
 		}
 		//ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"LP");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6259,7 +6297,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"I");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6286,7 +6324,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"LI");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6309,7 +6347,7 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"P");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6333,14 +6371,14 @@ public class PedidoCtrl {
 			
 		}
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"SF");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String)parSep.get("leads[status][0][id]");
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "F");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "SF");
 		procesarFACBOTCRM(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6990,7 +7028,14 @@ public class PedidoCtrl {
 		{
 			int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
 			Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
-			detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			//Intevenimos si debemos o no de cobrar el liquido
+			if(esPromocion && excepcionPrecioTemp.getIncluyeliquido().equals(new String("S")))
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,0,0*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}else
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}
 		}
 		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, strCON, "");
 		idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
@@ -7040,7 +7085,7 @@ public class PedidoCtrl {
 		}else
 		{
 			//No necesariamente si solo es promoción también se debe validar si es combo para todos
-			if(esPromocion && nombreDelCombo.equals(new String("COMBO PARA TODOS")))
+			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA"))))
 			{
 				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento);
 			}else
@@ -7391,7 +7436,13 @@ public class PedidoCtrl {
 			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
-				String link = verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				//Se hace validación si esta activo el envio de mensajería con Tercero
+				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
+				if(mensajeExterno.equals(new String("")))
+				{
+					mensajeExterno = "S";
+				}
+				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
 				//Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
 			}
@@ -8149,7 +8200,15 @@ public class PedidoCtrl {
 			//Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y realizaremos el envío del link del pedido para pago al cliente
 			if(idFormaPago == 4)
 			{
-				verificarEnvioLinkPagos(idPedido, clienteVirtual, valorTotalContact, idTienda);
+				//Se hace validación si esta activo el envio de mensajería con Tercero
+				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
+				if(mensajeExterno.equals(new String("")))
+				{
+					mensajeExterno = "S";
+				}
+				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				//Se actualiza lead con el link de pago
+				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
 			}
 			try
 			{
@@ -8993,16 +9052,20 @@ public class PedidoCtrl {
 			}
 			String nombres;
 			try {
+				String filtroEmoticones = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]";
 				nombres = (String)jsonCustomer.get("first_name");
 				nombres = nombres.replaceAll("'", " ");
+				nombres = nombres.replaceAll(filtroEmoticones,"");
 			}catch(Exception enombre)
 			{
 				nombres = "NO SE PUDO EXTRAR EL NOMBRE";
 			}
 			String apellidos;
 			try {
+				String filtroEmoticones = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]";
 				apellidos = (String)jsonCustomer.get("last_name");
 				apellidos = apellidos.replaceAll("'", " ");
+				apellidos = apellidos.replaceAll(filtroEmoticones,"");
 			}catch(Exception enombre)
 			{
 				apellidos = "NO SE PUDO EXTRAR EL APELLIDO";
@@ -11432,7 +11495,7 @@ public class PedidoCtrl {
 	{
 		String respuesta = "";
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"F");
 		//Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);

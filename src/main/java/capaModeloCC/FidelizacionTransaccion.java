@@ -4,10 +4,18 @@ public class FidelizacionTransaccion {
 	
 	private String correo;
 	private int idTienda;
+	private String tienda;
 	private int idPedidoTienda;
 	private String fechaTransaccion;
 	private double valorNeto;
 	private double puntos;
+	
+	public String getTienda() {
+		return tienda;
+	}
+	public void setTienda(String tienda) {
+		this.tienda = tienda;
+	}
 	public String getCorreo() {
 		return correo;
 	}
@@ -52,6 +60,18 @@ public class FidelizacionTransaccion {
 		this.valorNeto = valorNeto;
 		this.puntos = puntos;
 	}
+	public FidelizacionTransaccion(String correo, int idTienda, String tienda, int idPedidoTienda,
+			String fechaTransaccion, double valorNeto, double puntos) {
+		super();
+		this.correo = correo;
+		this.idTienda = idTienda;
+		this.tienda = tienda;
+		this.idPedidoTienda = idPedidoTienda;
+		this.fechaTransaccion = fechaTransaccion;
+		this.valorNeto = valorNeto;
+		this.puntos = puntos;
+	}
+	
 	
 	
 

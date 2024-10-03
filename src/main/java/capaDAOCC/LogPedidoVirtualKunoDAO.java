@@ -45,7 +45,7 @@ public class LogPedidoVirtualKunoDAO {
 	}
 	
 	
-	public static int insertarLogCRMBOT(String datosJSON, String authHeader)
+	public static int insertarLogCRMBOT(String datosJSON, String authHeader, String operacion)
 	{
 		Logger logger = Logger.getLogger("log_file");  
 		int idEventoIns = 0;
@@ -54,7 +54,7 @@ public class LogPedidoVirtualKunoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String insert = "insert into log_pedido_crmbot (datos_json, header) values ('" + datosJSON + "' , '" + authHeader + "')"; 
+			String insert = "insert into log_pedido_crmbot (datos_json, header, tipo) values ('" + datosJSON + "' , '" + authHeader + "' , '" + operacion + "')"; 
 			logger.info(insert);
 			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
 			ResultSet rs = stm.getGeneratedKeys();
