@@ -83,6 +83,10 @@ dependencies {
 	//Necesidades de httpclient Servicios
 	implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+	implementation 'io.jsonwebtoken:jjwt:0.12.6'
+	implementation 'org.springframework.security:spring-security-core:5.8.1'
+	
+
 
 	
 	   

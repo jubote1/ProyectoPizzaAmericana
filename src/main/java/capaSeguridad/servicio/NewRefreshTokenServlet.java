@@ -26,8 +26,15 @@ import io.jsonwebtoken.security.Keys;
 @WebServlet("/NewRefreshTokenServlet")
 public class NewRefreshTokenServlet extends HttpServlet {
 
-    private static final String SECRET_KEY = "rLRo7wEjYWqQ0MXheR3Fa2e4ynWSA1W8O4YynRJXg6g=";
-    private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+	private static final String SECRET_KEY = System.getenv("SECRET_KEY") != null ? System.getenv("SECRET_KEY") : "";
+    private static final SecretKey KEY;
+
+    static {
+        if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
+            throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
+        }
+        KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    }
     private static final long JWT_EXPIRATION_ACCESS_TOKEN = 1000L * 60 * 60 * 2;  // 2 hours
     private static final long JWT_EXPIRATION_REFRESH_TOKEN = 1000L * 60 * 60 * 24 * 7;  // 7 days
 
