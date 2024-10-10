@@ -7,7 +7,6 @@ public class Vacante {
     private String perfil;
     private String descripcion;
     private boolean estado; // Cambiado a boolean
-    private int cantidad;
     private String imagen;
     private String mision;
     private String salario;
@@ -37,12 +36,11 @@ public class Vacante {
     private List<BeneficioVacante> BeneficioVacantes;
 
     // Constructor
-    public Vacante(int id, String perfil, String descripcion, boolean estado, int cantidad, String imagen, String mision, String salario,String categoria,String contrato) {
+    public Vacante(int id, String perfil, String descripcion, boolean estado, String imagen, String mision, String salario,String categoria,String contrato) {
         this.id = id;
         this.perfil = perfil;
         this.descripcion = descripcion;
         this.estado = estado;
-        this.cantidad = cantidad;
         this.imagen = imagen;
         this.mision = mision;
         this.salario = salario;
@@ -83,13 +81,8 @@ public class Vacante {
         this.estado = estado;
     }
 
-    public int getCantidad() {
-        return cantidad;
-    }
+ 
 
-    public void setCantidad(int cantidad) {
-        this.cantidad = cantidad;
-    }
 
     public String getImagen() {
         return imagen;
