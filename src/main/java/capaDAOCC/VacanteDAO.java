@@ -26,7 +26,7 @@ public class VacanteDAO {
         Connection con1 = con.obtenerConexionBDNominaAmericana();
 
         String query = "SELECT v.id, v.perfil, v.descripcion, v.cantidad, c.descripcion AS categoria, " +
-                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion " +
+                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion, vl.cantidad_vacantes " +
                        "FROM vacante v " +
                        "JOIN categoria c ON v.idcategoria = c.id " +
                        "LEFT JOIN vacante_lugar vl ON v.id = vl.idvacante " +
@@ -63,7 +63,8 @@ public class VacanteDAO {
    
                 if (lugarId != null && lugarId > 0 ) {
                     String lugarDescripcion = resultSet.getString("lugar_descripcion");
-                    Lugar lugar = new Lugar(lugarId, lugarDescripcion);
+                    int cantidadVacantes= resultSet.getInt("cantidad_vacantes");
+                    Lugar lugar = new Lugar(lugarId, lugarDescripcion,cantidadVacantes);
                     vacante.getLugares().add(lugar); // Agregar lugar a la lista
                 }
             }
@@ -264,7 +265,7 @@ public class VacanteDAO {
         Connection con1 = con.obtenerConexionBDNominaAmericana();
 
         String query = "SELECT v.id, v.perfil, v.descripcion, v.cantidad, v.requiere_transporte, c.descripcion AS categoria, " +
-                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion " +
+                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion ,vl.cantidad_vacantes " +
                        "FROM vacante v " +
                        "JOIN categoria c ON v.idcategoria = c.id " +
                        "LEFT JOIN vacante_lugar vl ON v.id = vl.idvacante " +
@@ -298,7 +299,9 @@ public class VacanteDAO {
                     
                     if (lugarId != null && lugarId > 0 ) {
                         String lugarDescripcion = resultSet.getString("lugar_descripcion");
-                        Lugar lugar = new Lugar(lugarId, lugarDescripcion);
+                        int cantidadVacantes= resultSet.getInt("cantidad_vacantes");
+                        Lugar lugar = new Lugar(lugarId, lugarDescripcion,cantidadVacantes);
+                        
                         vacante.getLugares().add(lugar); // Agregar lugar a la lista
                     }
                 }
