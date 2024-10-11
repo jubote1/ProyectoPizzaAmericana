@@ -25,8 +25,8 @@ public class VacanteDAO {
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDNominaAmericana();
 
-        String query = "SELECT v.id, v.perfil, v.descripcion, v.cantidad, c.descripcion AS categoria, " +
-                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion " +
+        String query = "SELECT v.id, v.perfil, v.descripcion, c.descripcion AS categoria, " +
+                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion, vl.cantidad_vacantes " +
                        "FROM vacante v " +
                        "JOIN categoria c ON v.idcategoria = c.id " +
                        "LEFT JOIN vacante_lugar vl ON v.id = vl.idvacante " +
@@ -42,7 +42,7 @@ public class VacanteDAO {
                 int id = resultSet.getInt("id");
                 String perfil = resultSet.getString("perfil");
                 String descripcion = resultSet.getString("descripcion");
-                int cantidad = resultSet.getInt("cantidad");
+               
                 String categoria = resultSet.getString("categoria");
 
                 // Si la vacante no está en el mapa, la agregamos
@@ -52,7 +52,7 @@ public class VacanteDAO {
                     vacante.setId(id);
                     vacante.setPerfil(perfil);
                     vacante.setDescripcion(descripcion);
-                    vacante.setCantidad(cantidad);
+                   
                     vacante.setCategoria(categoria);
                     vacante.setLugares(new ArrayList<>()); // Inicializar la lista de lugares
                     vacanteMap.put(id, vacante);
@@ -63,7 +63,8 @@ public class VacanteDAO {
    
                 if (lugarId != null && lugarId > 0 ) {
                     String lugarDescripcion = resultSet.getString("lugar_descripcion");
-                    Lugar lugar = new Lugar(lugarId, lugarDescripcion);
+                    int cantidadVacantes= resultSet.getInt("cantidad_vacantes");
+                    Lugar lugar = new Lugar(lugarId, lugarDescripcion,cantidadVacantes);
                     vacante.getLugares().add(lugar); // Agregar lugar a la lista
                 }
             }
@@ -93,9 +94,9 @@ public class VacanteDAO {
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDNominaAmericana();
         
-        String sql = "SELECT v.id, v.perfil, v.descripcion, v.cantidad, c.descripcion AS categoria, ct.descripcion AS contrato, v.imagen, "
+        String sql = "SELECT v.id, v.perfil, v.descripcion, c.descripcion AS categoria, ct.descripcion AS contrato, v.imagen, "
                    + "v.mision, v.salario, "
-                   + "(SELECT JSON_ARRAYAGG(JSON_OBJECT('id', l.id, 'descripcion', l.descripcion)) FROM lugar l "
+                   + "(SELECT JSON_ARRAYAGG(JSON_OBJECT('id', l.id, 'descripcion', l.descripcion,'cantidad_vacantes',vl.cantidad_vacantes)) FROM lugar l "
                    + "JOIN vacante_lugar vl ON l.id = vl.idlugar WHERE vl.idvacante = v.id) AS lugares, "
                    + "(SELECT JSON_ARRAYAGG(JSON_OBJECT('id', b.id, 'descripcion', b.descripcion)) FROM beneficio b "
                    + "JOIN vacante_beneficio vb ON b.id = vb.idbeneficio WHERE vb.idvacante = v.id) AS beneficios, "
@@ -109,43 +110,54 @@ public class VacanteDAO {
         try (PreparedStatement preparedStatement = con1.prepareStatement(sql)) {
             preparedStatement.setInt(1, idvacante);
             try (ResultSet rs = preparedStatement.executeQuery()) {
-                if (rs.next()) {
-                    vacante = new Vacante();
-                    vacante.setId(rs.getInt("id"));
-                    vacante.setPerfil(rs.getString("perfil"));
-                    vacante.setDescripcion(rs.getString("descripcion"));
-                    vacante.setCantidad(rs.getInt("cantidad"));
-                    vacante.setCategoria(rs.getString("categoria"));
-                    vacante.setMision(rs.getString("mision"));
-                    vacante.setSalario(rs.getString("salario"));
-                    vacante.setContrato(rs.getString("contrato"));
-                    vacante.setImagen(rs.getString("imagen"));;
-                    Gson gson = new Gson();
-                    // Procesar lugares
-                    String lugaresJson = rs.getString("lugares");
-                    if (lugaresJson != null) {
-                        // Usa Gson o Jackson para procesar JSON
-                   
-                        Lugar[] lugares = gson.fromJson(lugaresJson, Lugar[].class);
-                        vacante.setLugares(Arrays.asList(lugares));
-                    }
+            	List<Lugar> lugaresList = new ArrayList<>();
+            	List<BeneficioVacante> beneficiosList = new ArrayList<>();
+            	List<HorarioVacante> horariosList = new ArrayList<>();
 
-                    // Procesar beneficios
-                    String beneficiosJson = rs.getString("beneficios");
-                    if (beneficiosJson != null) {
-                        // Usa Gson o Jackson para procesar JSON
-                        BeneficioVacante[] beneficios = gson.fromJson(beneficiosJson, BeneficioVacante[].class);
-                        vacante.setBeneficioVacante(Arrays.asList(beneficios));
-                    }
+            	while (rs.next()) {
+            	    if (vacante == null) {
+            	        vacante = new Vacante();
+            	        vacante.setId(rs.getInt("id"));
+            	        vacante.setPerfil(rs.getString("perfil"));
+            	        vacante.setDescripcion(rs.getString("descripcion"));
+            	      
+            	        vacante.setCategoria(rs.getString("categoria"));
+            	        vacante.setMision(rs.getString("mision"));
+            	        vacante.setSalario(rs.getString("salario"));
+            	        vacante.setContrato(rs.getString("contrato"));
+            	        vacante.setImagen(rs.getString("imagen"));
+            	    }
 
-                    // Procesar horarios
-                    String horariosJson = rs.getString("horarios");
-                    if (horariosJson != null) {
-                        // Usa Gson o Jackson para procesar JSON
-                        HorarioVacante[] horarios = gson.fromJson(horariosJson, HorarioVacante[].class);
-                        vacante.setHorarioVacante(Arrays.asList(horarios));
-                    }
-                }
+            	    Gson gson = new Gson();
+
+            	    // Procesar lugares (acumular en la lista)
+            	    String lugaresJson = rs.getString("lugares");
+            	    if (lugaresJson != null) {
+            	        Lugar[] lugares = gson.fromJson(lugaresJson, Lugar[].class);
+            	        lugaresList.addAll(Arrays.asList(lugares));
+            	    }
+
+            	    // Procesar beneficios (acumular en la lista)
+            	    String beneficiosJson = rs.getString("beneficios");
+            	    if (beneficiosJson != null) {
+            	        BeneficioVacante[] beneficios = gson.fromJson(beneficiosJson, BeneficioVacante[].class);
+            	        beneficiosList.addAll(Arrays.asList(beneficios));
+            	    }
+
+            	    // Procesar horarios (acumular en la lista)
+            	    String horariosJson = rs.getString("horarios");
+            	    if (horariosJson != null) {
+            	        HorarioVacante[] horarios = gson.fromJson(horariosJson, HorarioVacante[].class);
+            	        horariosList.addAll(Arrays.asList(horarios));
+            	    }
+            	}
+
+            	// Una vez que terminas de recorrer todas las filas, asigna las listas acumuladas a la vacante:
+            	if (vacante != null) {
+            	    vacante.setLugares(lugaresList);
+            	    vacante.setBeneficioVacante(beneficiosList);
+            	    vacante.setHorarioVacante(horariosList);
+            	}
             }
         } catch (SQLException e) {
             System.err.println("Error: " + e.getMessage());
@@ -263,8 +275,8 @@ public class VacanteDAO {
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDNominaAmericana();
 
-        String query = "SELECT v.id, v.perfil, v.descripcion, v.cantidad, v.requiere_transporte, c.descripcion AS categoria, " +
-                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion " +
+        String query = "SELECT v.id, v.perfil, v.descripcion, v.requiere_transporte, c.descripcion AS categoria, " +
+                       "l.id AS lugar_id, l.descripcion AS lugar_descripcion ,vl.cantidad_vacantes " +
                        "FROM vacante v " +
                        "JOIN categoria c ON v.idcategoria = c.id " +
                        "LEFT JOIN vacante_lugar vl ON v.id = vl.idvacante " +
@@ -276,32 +288,42 @@ public class VacanteDAO {
             preparedStatement.setInt(1, idVacante);
             
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                if (resultSet.next()) {
-                    int id = resultSet.getInt("id");
-                    String perfil = resultSet.getString("perfil");
-                    String descripcion = resultSet.getString("descripcion");
-                    int cantidad = resultSet.getInt("cantidad");
-                    String categoria = resultSet.getString("categoria");
-                    boolean requiere_transporte = resultSet.getBoolean("requiere_transporte");
-                    
-                    vacante = new Vacante();
-                    vacante.setId(id);
-                    vacante.setPerfil(perfil);
-                    vacante.setDescripcion(descripcion);
-                    vacante.setCantidad(cantidad);
-                    vacante.setCategoria(categoria);
-                    vacante.setLugares(new ArrayList<>()); // Inicializar la lista de lugares
-                    vacante.setRequiere_transporte(requiere_transporte);
+  
+            	    int currentVacanteId = -1;
 
-                    
-                    Integer lugarId = resultSet.getObject("lugar_id", Integer.class);
-                    
-                    if (lugarId != null && lugarId > 0 ) {
-                        String lugarDescripcion = resultSet.getString("lugar_descripcion");
-                        Lugar lugar = new Lugar(lugarId, lugarDescripcion);
-                        vacante.getLugares().add(lugar); // Agregar lugar a la lista
-                    }
-                }
+            	    while (resultSet.next()) {
+            	        int id = resultSet.getInt("id");
+
+            	        // Si es una nueva vacante, inicializamos una nueva instancia
+            	        if (vacante == null || id != currentVacanteId) {
+            	            currentVacanteId = id;
+
+            	            String perfil = resultSet.getString("perfil");
+            	            String descripcion = resultSet.getString("descripcion");
+            	           
+            	            String categoria = resultSet.getString("categoria");
+            	            boolean requiere_transporte = resultSet.getBoolean("requiere_transporte");
+
+            	            vacante = new Vacante();
+            	            vacante.setId(id);
+            	            vacante.setPerfil(perfil);
+            	            vacante.setDescripcion(descripcion);
+            	 
+            	            vacante.setCategoria(categoria);
+            	            vacante.setRequiere_transporte(requiere_transporte);
+            	            vacante.setLugares(new ArrayList<>()); // Inicializar la lista de lugares
+            	        }
+
+            	        // Procesar los lugares asociados
+            	        Integer lugarId = resultSet.getObject("lugar_id", Integer.class);
+            	        if (lugarId != null && lugarId > 0) {
+            	            String lugarDescripcion = resultSet.getString("lugar_descripcion");
+            	            int cantidadVacantes = resultSet.getInt("cantidad_vacantes");
+            	            Lugar lugar = new Lugar(lugarId, lugarDescripcion, cantidadVacantes);
+
+            	            vacante.getLugares().add(lugar); // Agregar lugar a la lista de lugares
+            	        }
+            	    }
             }
         } catch (SQLException e) {
             e.printStackTrace(); // Manejo de excepciones
@@ -330,7 +352,7 @@ public class VacanteDAO {
                 System.out.println("Vacante ID: " + vacante.getId());
                 System.out.println("Perfil: " + vacante.getPerfil());
                 System.out.println("Descripcion: " + vacante.getDescripcion());
-                System.out.println("Cantidad: " + vacante.getCantidad());
+             
                 System.out.println("Categoria: " + vacante.getCategoria());
                 System.out.println("Mision: " + vacante.getMision());
                 System.out.println("Salario: " + vacante.getSalario());
@@ -347,7 +369,7 @@ public class VacanteDAO {
             System.out.println("Vacante (dos) ID: " + dos.getId());
             System.out.println("Perfil: " + dos.getPerfil());
             System.out.println("Descripcion: " + dos.getDescripcion());
-            System.out.println("Cantidad: " + dos.getCantidad());
+         
             System.out.println("Categoria: " + dos.getCategoria());
             System.out.println("Mision: " + dos.getMision());
             System.out.println("Salario: " + dos.getSalario());
@@ -358,12 +380,13 @@ public class VacanteDAO {
             System.out.println("No details available for Vacante 'dos'.");
         }
         
-        Vacante vacanteEspecifica = obtenerVacantePorId(1);
-        if (vacanteEspecifica != null) {
-            System.out.println("Vacante ID: " + vacanteEspecifica.getId());
-            // Imprimir otros detalles de la vacante
-        } else {
-            System.out.println("No se encontró la vacante con el ID especificado.");
-        }
+        List<Lugar> lugares = dos.getLugares();
+        Gson gson = new Gson();
+
+        // Convertir la lista a formato JSON
+        String jsonLugares = gson.toJson(lugares);
+
+        // Mostrar o usar el JSON
+        System.out.println(jsonLugares);
     }
 }

@@ -1545,7 +1545,7 @@ public class PedidoCtrl {
 			Correo correo = new Correo();
 			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
 			ArrayList correos = new ArrayList();
-			correos.add("29918165.95978@parser.kommo.com");
+			correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
 			correo.setContrasena(claveCorreo);
 			correo.setUsuarioCorreo(cuentaCorreo);
 			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
