@@ -894,6 +894,12 @@
 		     changeYear: true,
 		     yearRange: "1930:2010"
 		 });
+		$("#fechanaci").datepicker({ 
+		    changeYear: false, 
+		    dateFormat: 'MM-dd',
+		}).focus(function () {
+		    $(".ui-datepicker-year").hide();
+		});
 
 	</script>
  <script src="https://js.arcgis.com/4.27/"></script>

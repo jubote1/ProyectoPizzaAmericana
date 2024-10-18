@@ -1,5 +1,8 @@
 package capaControladorCC;
 
+import java.util.ArrayList;
+
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.ClienteFidelizacionDAO;
@@ -68,5 +71,32 @@ public class FidelizacionCtrl {
 		return(respuesta.toJSONString());
 	}
 
-
+	public String  obtenerFidelizacionTransacciones(String correo)
+	{
+		JSONArray transacciones = new JSONArray();
+		JSONObject transaccion = new JSONObject();
+		ArrayList<FidelizacionTransaccion> tranObj = FidelizacionTransaccionDAO.obtenerFidelizacionTransacciones(correo);
+		FidelizacionTransaccion tranTemp;
+		for(int i = 0; i < tranObj.size(); i++)
+		{
+			tranTemp = tranObj.get(i);
+			transaccion = new JSONObject();
+			transaccion.put("idtienda", tranTemp.getIdTienda());
+			transaccion.put("tienda", tranTemp.getTienda());
+			transaccion.put("idpedidotienda", tranTemp.getIdPedidoTienda());
+			transaccion.put("fechatransaccion", tranTemp.getFechaTransaccion());
+			transaccion.put("valorneto", tranTemp.getValorNeto());
+			transaccion.put("puntos", tranTemp.getPuntos());
+			transacciones.add(transaccion);
+		}
+		return(transacciones.toJSONString());
+	}
+	
+	public String obtenerCantidadPuntosCliente(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		double puntos = ClienteFidelizacionDAO.obtenerCantidadPuntosCliente(correo);
+		respuesta.put("puntos", puntos);
+		return(respuesta.toJSONString());
+	}
 }

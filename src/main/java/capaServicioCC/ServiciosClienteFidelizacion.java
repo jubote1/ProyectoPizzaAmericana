@@ -65,7 +65,7 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 			respuesta = fideCtrl.desactivarClienteFidelizacion(correo);
 		}else if(operacion == 5)
 		{
-			
+			respuesta = fideCtrl.obtenerCantidadPuntosCliente(correo);
 		}else if(operacion == 6)//Servicio para sumar puntos y guardar transaccion
 		{
 			double puntosSumar = 0;
@@ -97,6 +97,9 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 				valorNeto = 0;
 			}
 			respuesta = fideCtrl.sumarPuntosClienteFidelizacion(correo, puntosSumar,idTienda, idPedidoTienda, valorNeto);
+		}else if(operacion == 7)//Servicio para sumar puntos y guardar transaccion
+		{
+			respuesta = fideCtrl.obtenerFidelizacionTransacciones(correo);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

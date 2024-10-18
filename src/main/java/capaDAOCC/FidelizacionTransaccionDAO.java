@@ -79,4 +79,50 @@ public class FidelizacionTransaccionDAO {
 		return(respuesta);
 	}
 	
+	public static ArrayList<FidelizacionTransaccion> obtenerFidelizacionTransacciones(String correo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		ArrayList<FidelizacionTransaccion> transacciones = new ArrayList();
+		FidelizacionTransaccion tranTemp;
+		int idTienda;
+		String tienda;
+		int idPedidoTienda;
+		String fechaTransaccion;
+		double valorNeto;
+		double puntos;
+		try
+		{
+			Statement stm = con1.createStatement();
+			String select = "SELECT a.*, b.nombre AS tienda FROM fidelizacion_transaccion a, tienda b WHERE a.idtienda = b.idtienda AND a.correo = '" + correo + "';";
+			logger.info(select);
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				idTienda = rs.getInt("idtienda");
+				tienda = rs.getString("tienda");
+				idPedidoTienda = rs.getInt("idpedidotienda");
+				fechaTransaccion = rs.getString("fecha_transaccion");
+				valorNeto = rs.getDouble("valor_neto");
+				puntos = rs.getDouble("puntos");
+				tranTemp = new FidelizacionTransaccion(correo,idTienda,tienda, idPedidoTienda, fechaTransaccion, valorNeto, puntos);
+				transacciones.add(tranTemp);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(transacciones);
+	}
+	
 }
