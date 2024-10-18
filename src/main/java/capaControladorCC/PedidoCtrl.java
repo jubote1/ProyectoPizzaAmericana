@@ -11695,7 +11695,7 @@ public class PedidoCtrl {
 
 	public String procesarEncuestaServicio(String datos, String authHeader) {
 	    String respuesta = "";
-	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"ES");
 
 	    try {
 	        // Decodificar datos y obtener parámetros
