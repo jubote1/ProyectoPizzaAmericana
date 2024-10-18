@@ -22,6 +22,7 @@ import capaModeloCC.EmpleadoEncuesta;
 import capaModeloCC.EmpleadoEncuestaDetalle;
 import capaModeloCC.EncuestaLaboral;
 import capaModeloCC.EncuestaLaboralDetalle;
+import capaModeloCC.EncuestaServicio;
 
 
 public class EncuestaCtrl {
@@ -89,4 +90,7 @@ public class EncuestaCtrl {
 		respuesta.put("idempleadoencuesta", idEmpleadoEncuesta);
 		return(respuesta.toJSONString());
 	}	
+	
+	
+
 }

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
+import capaModeloCC.EncuestaServicio;
+import capaModeloCC.EncuestaServicio.RespuestaServicio;
 
 import javax.swing.JOptionPane;
 import javax.ws.rs.client.Client;
@@ -45,6 +47,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,6 +58,7 @@ import capaDAOCC.ClienteDAO;
 import capaDAOCC.DescuentoGeneralDAO;
 import capaDAOCC.DetallePedidoDAO;
 import capaDAOCC.DomiciliarioPedidoDAO;
+import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoRemotoValeDAO;
 import capaDAOCC.EspecialidadDAO;
 import capaDAOCC.EstadisticaPromocionDAO;
@@ -1545,7 +1549,7 @@ public class PedidoCtrl {
 			Correo correo = new Correo();
 			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
 			ArrayList correos = new ArrayList();
-			correos.add("29918165.95978@parser.kommo.com");
+			correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
 			correo.setContrasena(claveCorreo);
 			correo.setUsuarioCorreo(cuentaCorreo);
 			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
@@ -3344,7 +3348,7 @@ public class PedidoCtrl {
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes MD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes GD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes XL", "Elige hasta 3 ingredientes");
-				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
+				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Elige uno o dos sabor de tu pizza")  || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
 				{
 
 					keyDetPedido = keyDetPedido + " " + valueDetPedido;
@@ -3587,7 +3591,7 @@ public class PedidoCtrl {
 						}
 						
 						
-					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promoción"))
+					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promoción") )
 					{
 						//Si se tiene Elige la especialidad que es la que viene en promociones vamos a hacer el cambio por mitad y mitad
 						keyDetPedido = keyDetPedido.replace("Elige uno o dos sabores para tu promoción", "Mitad y Mitad");
@@ -3601,7 +3605,27 @@ public class PedidoCtrl {
 						{
 							idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
 						}
-					}else if(keyDetPedido.contains("Envío (obligatorio)"))
+					}else if (keyDetPedido.contains("Elige uno o dos sabor de tu pizza"))
+					{
+						if(!keyDetPedido.equals("Elige uno o dos sabor de tu pizza"))
+						{
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza PZ", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza MD", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza GD", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza XL", "Mitad y Mitad");
+							//Preguntamos si es la mitad1 o la mitad2, para saber cual especialidad deberemos de homologar
+							if(mitad1)
+							{
+								idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
+								mitad1 = false;
+								mitad2 = true;
+							}else if(mitad2)
+							{
+								idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
+							}
+						}
+					}
+					else if(keyDetPedido.contains("Envío (obligatorio)"))
 					{
 						if(cantidad > 1)
 						{
@@ -11667,5 +11691,120 @@ public class PedidoCtrl {
 			}
 		}
 	}
+	
+
+	public String procesarEncuestaServicio(String datos, String authHeader) {
+	    String respuesta = "";
+	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+
+	    try {
+	        // Decodificar datos y obtener parámetros
+	        String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+	        Map<String, String> parametros = separarURL(parametrosDecode);
+	        String lead = parametros.get("leads[status][0][id]");
+	        if (lead == null || lead.isEmpty()) {
+	            return "No se encontró información del LEAD.";
+	        }
+
+	        // Obtener información del lead y actualizar el log
+	        String infLead = obtenerInformacionLeadCRM(lead);
+	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "ES");
+
+	        // Procesar campos del LEAD
+	        EncuestaServicio encuestaServicio = new EncuestaServicio();
+	        List<RespuestaServicio> respuestaServicio = new ArrayList<>();
+	        int idpedido = 0;
+	        String tipo_atencion = "";
+
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
+	        JSONArray customFieldsArray = (JSONArray) jsonGeneral.get("custom_fields_values");
+
+	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
+	            for (Object obj : customFieldsArray) {
+	                JSONObject campo = (JSONObject) obj;
+	                String clave = ((String) campo.get("field_name")).toLowerCase();
+	                JSONArray valuesArray = (JSONArray) campo.get("values");
+	                
+	                if (valuesArray != null && !valuesArray.isEmpty()) {
+	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                    String valor = valorObj.get("value").toString().replace("'", " ");
+
+	                    // Procesar campo #factura web
+	                    if ("#factura web".equals(clave)) {
+	                        try {
+	                            idpedido = Integer.parseInt(valor);
+	                        } catch (NumberFormatException e) {
+	                            idpedido = 0; // Si no es un número válido, poner 0
+	                        }
+	                    }
+	                    
+	                    if ("tipo de atencion ?".equals(clave)) {
+	                        tipo_atencion = valor;
+	                    }
+
+	                    // Procesar otros campos relevantes
+	                    if (clave.equals("calidad de atencion") || 
+	                        clave.equals("inconvenientes") || 
+	                        clave.equals("nos recomendarias") || 
+	                        clave.equals("satisfaccion producto") || 
+	                        clave.equals("limpieza y orga.") || 
+	                        clave.equals("para mejorar")) {
+	                        respuestaServicio.add(new RespuestaServicio(clave, valor));
+	                    }
+	                }
+	            }
+	        }
+
+	        // Guardar la encuesta
+	        encuestaServicio.setIdpedido(idpedido);
+	        encuestaServicio.setRespuesta(respuestaServicio);
+	        encuestaServicio.setTipo_atencion(tipo_atencion);
+	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
+
+	    } catch (Exception e) {
+	        respuesta = "Error al procesar datos: " + e.getMessage();
+	    }
+
+	    return respuesta;
+	}
+
+
+	/**
+	 * Método que se encarga de enviar correo para parsing y generación de LEAD para las encuestas de servicio
+	 * @param nombreCliente
+	 * @param telefonoCelular
+	 * @param numeroPedido
+	 */
+	public void enviarCorreoParsingEncuestaServicio(String nombreCliente, String telefonoCelular, String numeroPedido, String email)
+	{
+		boolean correoCorrecto;
+		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+		Correo correo = new Correo();
+		correo.setAsunto("ENCUESTA PEDIDO # " + numeroPedido);
+		ArrayList correos = new ArrayList();
+		correos = GeneralDAO.obtenerCorreosParametro("PARSERENCUESTASERVICIO");
+		correo.setContrasena(claveCorreo);
+		correo.setUsuarioCorreo(cuentaCorreo);
+		String mensajeCuerpoCorreo = "Numero Pedido:" + numeroPedido + " \n <br>"
+				+ "Nombre Cliente:" + nombreCliente + " \n <br>"
+				+ "Numero Telefono:" + telefonoCelular + " \n <br>"
+				+ "email:" + email + " \n <br>";;
+		correo.setMensaje(mensajeCuerpoCorreo);
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		correoCorrecto = contro.enviarCorreo();
+	}
+	
+	/**
+	 * Envío correo de prueba para parsing
+	 */
+	public String enviarCorreoPruebaEncuesta()
+	{
+		enviarCorreoParsingEncuestaServicio("JUAN DAVID BOTERO DUQUE", "3148807773", "342193939", "jubote1@gmail.com");
+		return("");
+	}
+
 	
 }

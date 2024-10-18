@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,6 +13,8 @@ import org.json.simple.JSONObject;
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
 import capaModeloCC.EmpleadoEncuesta;
+import capaModeloCC.EncuestaServicio;
+import capaModeloCC.EncuestaServicio.RespuestaServicio;
 import capaConexionPOS.ConexionBaseDatos;
 
 
@@ -299,4 +302,76 @@ public class EmpleadoEncuestaDAO {
 
 		return repResultadoEncuesta;
 	}
+	
+	// Método para insertar registros en la tabla encuesta_servicio
+    public static void insertarEncuestaServicio(EncuestaServicio encuestaservicio) {
+        String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion) VALUES (?, ?, ?,?)";
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = null;
+
+        try {
+            con1 = con.obtenerConexionBDGeneralLocal();  // Obtener la conexión una vez
+            
+            Integer idpedido = encuestaservicio.getIdpedido();
+            String  tipo_atencion = encuestaservicio.getTipo_atencion();
+            
+            for (RespuestaServicio value : encuestaservicio.getRespuesta()) {
+                Integer idPregunta = obtenerIdPorTitulo(value.getDescripcion(), con1);
+                
+                if (idPregunta == null) {
+                    System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
+                    continue;  // Saltamos este registro y continuamos con los demás
+                }
+
+                // Usamos el PreparedStatement dentro del bloque try-with-resources
+                try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+                    pstmt.setInt(1, idPregunta);   // idpregunta
+                    pstmt.setString(2, value.getRespuesta()); // respuesta
+                    pstmt.setInt(3, idpedido);     // idpedido
+                    pstmt.setString(4, tipo_atencion);     // tipo_antecion
+                    pstmt.executeUpdate();
+                    
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    System.err.println("Error al insertar el registro con la pregunta: " + value.getDescripcion());
+                    // Aquí puedes decidir si detener el proceso o continuar con los demás registros
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Aquí manejas el error de conexión general si es necesario
+
+        } finally {
+            if (con1 != null) {
+                try {
+                    con1.close(); // Cerramos la conexión
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    // Método para obtener el ID de una pregunta por su título
+    public static Integer obtenerIdPorTitulo(String titulo, Connection con1) throws SQLException {
+        String sql = "SELECT idpregunta FROM pregunta_servicio WHERE titulo = ?";
+        Integer idPregunta = null;
+
+        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+            pstmt.setString(1, titulo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    idPregunta = rs.getInt("idpregunta");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+        }
+
+        return idPregunta;
+    }
+
 }
