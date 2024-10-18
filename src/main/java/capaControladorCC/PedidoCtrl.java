@@ -3344,7 +3344,7 @@ public class PedidoCtrl {
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes MD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes GD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes XL", "Elige hasta 3 ingredientes");
-				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
+				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Elige uno o dos sabor de tu pizza")  || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
 				{
 
 					keyDetPedido = keyDetPedido + " " + valueDetPedido;
@@ -3587,7 +3587,7 @@ public class PedidoCtrl {
 						}
 						
 						
-					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promoción"))
+					}else if(keyDetPedido.contains("Elige uno o dos sabores para tu promoción") )
 					{
 						//Si se tiene Elige la especialidad que es la que viene en promociones vamos a hacer el cambio por mitad y mitad
 						keyDetPedido = keyDetPedido.replace("Elige uno o dos sabores para tu promoción", "Mitad y Mitad");
@@ -3601,7 +3601,27 @@ public class PedidoCtrl {
 						{
 							idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
 						}
-					}else if(keyDetPedido.contains("Envío (obligatorio)"))
+					}else if (keyDetPedido.contains("Elige uno o dos sabor de tu pizza"))
+					{
+						if(!keyDetPedido.equals("Elige uno o dos sabor de tu pizza"))
+						{
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza PZ", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza MD", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza GD", "Mitad y Mitad");
+							keyDetPedido = keyDetPedido.replace("Elige uno o dos sabor de tu pizza XL", "Mitad y Mitad");
+							//Preguntamos si es la mitad1 o la mitad2, para saber cual especialidad deberemos de homologar
+							if(mitad1)
+							{
+								idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
+								mitad1 = false;
+								mitad2 = true;
+							}else if(mitad2)
+							{
+								idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual(keyDetPedido);
+							}
+						}
+					}
+					else if(keyDetPedido.contains("Envío (obligatorio)"))
 					{
 						if(cantidad > 1)
 						{
@@ -11666,6 +11686,43 @@ public class PedidoCtrl {
 				}
 			}
 		}
+	}
+	
+	
+	/**
+	 * Método que se encarga de enviar correo para parsing y generación de LEAD para las encuestas de servicio
+	 * @param nombreCliente
+	 * @param telefonoCelular
+	 * @param numeroPedido
+	 */
+	public void enviarCorreoParsingEncuestaServicio(String nombreCliente, String telefonoCelular, String numeroPedido, String email)
+	{
+		boolean correoCorrecto;
+		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+		Correo correo = new Correo();
+		correo.setAsunto("ENCUESTA PEDIDO # " + numeroPedido);
+		ArrayList correos = new ArrayList();
+		correos = GeneralDAO.obtenerCorreosParametro("PARSERENCUESTASERVICIO");
+		correo.setContrasena(claveCorreo);
+		correo.setUsuarioCorreo(cuentaCorreo);
+		String mensajeCuerpoCorreo = "Numero Pedido:" + numeroPedido + " \n <br>"
+				+ "Nombre Cliente:" + nombreCliente + " \n <br>"
+				+ "Numero Telefono:" + telefonoCelular + " \n <br>"
+				+ "email:" + email + " \n <br>";;
+		correo.setMensaje(mensajeCuerpoCorreo);
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		correoCorrecto = contro.enviarCorreo();
+	}
+	
+	/**
+	 * Envío correo de prueba para parsing
+	 */
+	public String enviarCorreoPruebaEncuesta()
+	{
+		enviarCorreoParsingEncuestaServicio("JUAN DAVID BOTERO DUQUE", "3148807773", "342193939", "jubote1@gmail.com");
+		return("");
 	}
 	
 }
