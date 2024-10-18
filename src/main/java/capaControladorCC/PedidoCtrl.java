@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
+import capaModeloCC.EncuestaServicio;
+import capaModeloCC.EncuestaServicio.RespuestaServicio;
 
 import javax.swing.JOptionPane;
 import javax.ws.rs.client.Client;
@@ -45,6 +47,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,6 +58,7 @@ import capaDAOCC.ClienteDAO;
 import capaDAOCC.DescuentoGeneralDAO;
 import capaDAOCC.DetallePedidoDAO;
 import capaDAOCC.DomiciliarioPedidoDAO;
+import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoRemotoValeDAO;
 import capaDAOCC.EspecialidadDAO;
 import capaDAOCC.EstadisticaPromocionDAO;
@@ -11688,7 +11692,84 @@ public class PedidoCtrl {
 		}
 	}
 	
-	
+
+	public String procesarEncuestaServicio(String datos, String authHeader) {
+	    String respuesta = "";
+	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader);
+
+	    try {
+	        // Decodificar datos y obtener parámetros
+	        String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+	        Map<String, String> parametros = separarURL(parametrosDecode);
+	        String lead = parametros.get("leads[status][0][id]");
+	        if (lead == null || lead.isEmpty()) {
+	            return "No se encontró información del LEAD.";
+	        }
+
+	        // Obtener información del lead y actualizar el log
+	        String infLead = obtenerInformacionLeadCRM(lead);
+	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "ES");
+
+	        // Procesar campos del LEAD
+	        EncuestaServicio encuestaServicio = new EncuestaServicio();
+	        List<RespuestaServicio> respuestaServicio = new ArrayList<>();
+	        int idpedido = 0;
+	        String tipo_atencion = "";
+
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
+	        JSONArray customFieldsArray = (JSONArray) jsonGeneral.get("custom_fields_values");
+
+	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
+	            for (Object obj : customFieldsArray) {
+	                JSONObject campo = (JSONObject) obj;
+	                String clave = ((String) campo.get("field_name")).toLowerCase();
+	                JSONArray valuesArray = (JSONArray) campo.get("values");
+	                
+	                if (valuesArray != null && !valuesArray.isEmpty()) {
+	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                    String valor = valorObj.get("value").toString().replace("'", " ");
+
+	                    // Procesar campo #factura web
+	                    if ("#factura web".equals(clave)) {
+	                        try {
+	                            idpedido = Integer.parseInt(valor);
+	                        } catch (NumberFormatException e) {
+	                            idpedido = 0; // Si no es un número válido, poner 0
+	                        }
+	                    }
+	                    
+	                    if ("tipo de atencion ?".equals(clave)) {
+	                        tipo_atencion = valor;
+	                    }
+
+	                    // Procesar otros campos relevantes
+	                    if (clave.equals("calidad de atencion") || 
+	                        clave.equals("inconvenientes") || 
+	                        clave.equals("nos recomendarias") || 
+	                        clave.equals("satisfaccion producto") || 
+	                        clave.equals("limpieza y orga.") || 
+	                        clave.equals("para mejorar")) {
+	                        respuestaServicio.add(new RespuestaServicio(clave, valor));
+	                    }
+	                }
+	            }
+	        }
+
+	        // Guardar la encuesta
+	        encuestaServicio.setIdpedido(idpedido);
+	        encuestaServicio.setRespuesta(respuestaServicio);
+	        encuestaServicio.setTipo_atencion(tipo_atencion);
+	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
+
+	    } catch (Exception e) {
+	        respuesta = "Error al procesar datos: " + e.getMessage();
+	    }
+
+	    return respuesta;
+	}
+
+
 	/**
 	 * Método que se encarga de enviar correo para parsing y generación de LEAD para las encuestas de servicio
 	 * @param nombreCliente
@@ -11724,5 +11805,6 @@ public class PedidoCtrl {
 		enviarCorreoParsingEncuestaServicio("JUAN DAVID BOTERO DUQUE", "3148807773", "342193939", "jubote1@gmail.com");
 		return("");
 	}
+
 	
 }
