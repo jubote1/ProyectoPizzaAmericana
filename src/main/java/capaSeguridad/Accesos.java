@@ -289,17 +289,18 @@ public class Accesos {
 	    
 	    
 	    // Método para crear un nuevo usuario con contraseña encriptada
-	    public static  boolean createUser(String username, String password,String email) {
+	    public static  boolean createUser(String username, String password,String email,int rol) {
 	        String encryptedPassword = BCrypt.hashpw(password, BCrypt.gensalt()); // Encripta la contraseña
 	        
 	        ConexionBaseDatos con = new ConexionBaseDatos();
 	        Connection con1 = con.obtenerConexionBDSeguridad();
-	        String query = "INSERT INTO users (username, password,email) VALUES (?, ?,?)";
+	        String query = "INSERT INTO users (username, password,email,role_id) VALUES (?, ?,?,?)";
 	        
 	        try (PreparedStatement statement = con1.prepareStatement(query)) {
 	            statement.setString(1, username);
 	            statement.setString(2, encryptedPassword);
 	            statement.setString(3, email);
+	            statement.setInt(4, rol);
 	            int rowsInserted = statement.executeUpdate();
 	            return rowsInserted > 0;
 	        } catch (SQLException e) {
@@ -418,7 +419,7 @@ public class Accesos {
 
 	    
         public static void main(String[] args) {
-        	createUser("maria","americana1","a.desarrollosi@gmail.com");
+        	createUser("wordpress","Pzz2024American4","a.desarrollosi@gmail.com",2);
    
 
         	
