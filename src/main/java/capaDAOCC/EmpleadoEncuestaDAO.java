@@ -308,9 +308,9 @@ public class EmpleadoEncuestaDAO {
         String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion) VALUES (?, ?, ?,?)";
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = null;
-
+    //EJEMPLOO
         try {
-            con1 = con.obtenerConexionBDGeneralLocal();  // Obtener la conexión una vez
+            con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
             
             Integer idpedido = encuestaservicio.getIdpedido();
             String  tipo_atencion = encuestaservicio.getTipo_atencion();
