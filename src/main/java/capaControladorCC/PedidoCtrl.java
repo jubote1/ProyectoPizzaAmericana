@@ -11730,8 +11730,8 @@ public class PedidoCtrl {
 	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
 	                    String valor = valorObj.get("value").toString().replace("'", " ");
 
-	                    // Procesar campo #factura web
-	                    if ("#factura web".equals(clave)) {
+	                    // Procesar campo # factura web
+	                    if ("# factura web".equals(clave)) {
 	                        try {
 	                            idpedido = Integer.parseInt(valor);
 	                        } catch (NumberFormatException e) {
