@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
@@ -352,6 +353,51 @@ public class EmpleadoEncuestaDAO {
             }
         }
     }
+    
+	// Método para insertar registros en la tabla encuesta_servicio
+    public static void insertarClienteServicio(EncuestaServicio encuestaservicio) {
+        String sql = "INSERT INTO cliente_servicio (nombre_cliente, telefono, idtienda,idpedido) VALUES (?, ?, ?,?)";
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = null;
+    //EJEMPLOO
+        try {
+            con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
+            
+            Integer idpedido = encuestaservicio.getIdpedido();
+            Integer idtienda =encuestaservicio.getIdtienda();
+            String  nombre_cliente=encuestaservicio.getNombre_cliente();
+            String  telefono =encuestaservicio.getTelefono();
+            
+            
+                // Usamos el PreparedStatement dentro del bloque try-with-resources
+                try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+                    pstmt.setString(1, nombre_cliente);   // idpregunta
+                    pstmt.setString(2, telefono); // respuesta
+                    pstmt.setInt(3, idtienda);     // idpedido
+                    pstmt.setInt(4, idpedido);     // tipo_antecion
+                    pstmt.executeUpdate();
+                    
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    System.err.println("Error al insertar el cliente que califico el servicio");
+                    // Aquí puedes decidir si detener el proceso o continuar con los demás registros
+                }
+            
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Aquí manejas el error de conexión general si es necesario
+
+        } finally {
+            if (con1 != null) {
+                try {
+                    con1.close(); // Cerramos la conexión
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
     // Método para obtener el ID de una pregunta por su título
     public static Integer obtenerIdPorTitulo(String titulo, Connection con1) throws SQLException {
@@ -372,6 +418,29 @@ public class EmpleadoEncuestaDAO {
         }
 
         return idPregunta;
+    }
+    
+    public static void main(String[] args) {
+        EncuestaServicio encuestaservicio = new EncuestaServicio();
+        encuestaservicio.setIdpedido(6651);
+        encuestaservicio.setTipo_atencion("domicilio");
+        
+       List<RespuestaServicio> lista = new ArrayList<>();
+       lista.add(new RespuestaServicio("calidad de atencion","respuesta"));
+       lista.add(new RespuestaServicio("inconvenientes","respuesta"));
+       lista.add(new RespuestaServicio("nos recomendarias","respuesta"));
+       lista.add(new RespuestaServicio("satisfaccion producto","respuesta"));
+       
+       encuestaservicio.setRespuesta(lista);
+
+        
+        try {
+            insertarEncuestaServicio(encuestaservicio);
+            System.out.println("Registros insertados exitosamente.");
+        } catch (Exception e) {
+            System.err.println("Error al insertar los registros:"+e);
+            		
+            		}
     }
 
 }

@@ -104,12 +104,15 @@ public class ClienteFidelizacionDAO {
 			stm.close();
 			con1.close();
 		}catch (Exception e){
+		
 			logger.error(e.toString());
 			try
 			{
 				con1.close();
 			}catch(Exception e1)
 			{
+				
+				
 			}
 		}
 		return(respuesta);
