@@ -11715,6 +11715,10 @@ public class PedidoCtrl {
 	        List<RespuestaServicio> respuestaServicio = new ArrayList<>();
 	        int idpedido = 0;
 	        String tipo_atencion = "";
+	        String nombre_cliente="";
+	        String telefono = "";
+	        int idtienda = 0;
+	        
 
 	        JSONParser parser = new JSONParser();
 	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
@@ -11752,6 +11756,23 @@ public class PedidoCtrl {
 	                        clave.equals("para mejorar")) {
 	                        respuestaServicio.add(new RespuestaServicio(clave, valor));
 	                    }
+	                    
+	                    if("nombre cliente".equals(clave)){
+	                    	nombre_cliente = valor;
+	                    }
+	                    
+	                    if("numero de teléfono".equals(clave)){
+	                    	telefono = valor;
+	                    }
+	                    
+	                    if("ID TIENDA".equals(clave)){
+			                    	
+	                        try {
+	                        	idtienda = Integer.parseInt(valor);
+	                        } catch (NumberFormatException e) {
+	                        	idtienda = 0; // Si no es un número válido, poner 0
+	                        }
+			          }
 	                }
 	            }
 	        }
@@ -11760,7 +11781,11 @@ public class PedidoCtrl {
 	        encuestaServicio.setIdpedido(idpedido);
 	        encuestaServicio.setRespuesta(respuestaServicio);
 	        encuestaServicio.setTipo_atencion(tipo_atencion);
+	        encuestaServicio.setNombre_cliente(nombre_cliente);
+	        encuestaServicio.setTelefono(telefono);
+	        encuestaServicio.setIdtienda(idtienda);
 	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
+	        EmpleadoEncuestaDAO.insertarClienteServicio(encuestaServicio);
 
 	    } catch (Exception e) {
 	        respuesta = "Error al procesar datos: " + e.getMessage();
