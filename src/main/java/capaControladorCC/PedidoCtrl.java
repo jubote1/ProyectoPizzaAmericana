@@ -11765,7 +11765,7 @@ public class PedidoCtrl {
 	                    	telefono = valor;
 	                    }
 	                    
-	                    if("ID TIENDA".equals(clave)){
+	                    if("id tienda".equals(clave)){
 			                    	
 	                        try {
 	                        	idtienda = Integer.parseInt(valor);
