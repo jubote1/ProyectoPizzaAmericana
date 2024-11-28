@@ -128,6 +128,8 @@ function consultarHistorialEstadosPedido()
 											var nombreDomi = data4.domiciliario;
 											$('#domiciliario').val(nombreDomi);
 											$('#empresa').val(data4.empresa);
+											$('#teldomiciliario').val(data4.teldomiciliario);
+											$('#tiempopedido').val(data4.tiempopedido);
 										}
 								  });
 						},
