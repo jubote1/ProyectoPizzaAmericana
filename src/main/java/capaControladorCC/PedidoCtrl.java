@@ -4910,14 +4910,17 @@ public class PedidoCtrl {
 		}
 		PedidoCtrl pedCtrl = new PedidoCtrl();
 		pedCtrl.insertarPedidoTiendaVirtualKuno(strJSON, "PRUEBA");*/
-		Cliente clien=  new Cliente();
-		clien.setNombres("Maria Lopera");
-		clien.setApellidos("Gomez");
-		clien.setDireccion("calle 20");
-		clien.setTelefonoCelular("3004577639");
-		clien.setEmail("a.desarrollosi@gmail.com");
-	    System.out.println(pedCtrl.ClienteSalesManago(clien,false));
-	    pedCtrl.procesarSolFacturaPedidoWebBOT(1, "8060972", "PRUEBAS SAS","jubote3@gmail.com", "123");
+		
+		
+		pedCtrl.obtenerInformacionLeadCRM("25210311");
+//		Cliente clien=  new Cliente();
+//		clien.setNombres("Maria Lopera");
+//		clien.setApellidos("Gomez");
+//		clien.setDireccion("calle 20");
+//		clien.setTelefonoCelular("3004577639");
+//		clien.setEmail("a.desarrollosi@gmail.com");
+//	    System.out.println(pedCtrl.ClienteSalesManago(clien,false));
+//	    pedCtrl.procesarSolFacturaPedidoWebBOT(1, "8060972", "PRUEBAS SAS","jubote3@gmail.com", "123");
 	    
 	}
 	
@@ -6461,11 +6464,13 @@ public class PedidoCtrl {
 		try
 		{
 			//Fijamos el header con el token
-			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
+			request.setHeader("Authorization", "Bearer " + "");
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
 			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
+			int statusCode = responseFinPed.getStatusLine().getStatusCode();  			
+			System.out.println("Código de estado: " + statusCode);  			
 			BufferedReader rd = new BufferedReader
 				    (new InputStreamReader(
 				    		responseFinPed.getEntity().getContent()));
@@ -6475,6 +6480,28 @@ public class PedidoCtrl {
 				}
 			//Traemos el valor del JSON con toda la info del pedido
 			datosLead = retorno.toString();
+			
+			if(statusCode != 200) {
+				Correo correo = new Correo();
+				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+				ArrayList correos = new ArrayList();
+				correo.setAsunto("ERROR AL OBTENER INFORMACION DEL LEAD - WEBHOOK CRM:  #" + lead);
+				String correoEle = "jubote1@gmail.com";
+				correos.add(correoEle);
+				correos.add("pizzaamericana.co@gmail.com");
+				correo.setContrasena(infoCorreo.getClaveCorreo());
+				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+				String mensaje_correo ="<strong>RESPUESTA DE LA SOLICITUD :</strong> " + datosLead+"<br>"+"<strong>ESTADO :</strong> "+statusCode;
+				if(statusCode == 401) {
+					mensaje_correo = mensaje_correo+" (Problemas de autenticación con el <strong>token de acceso</strong>)";
+				}
+				correo.setMensaje(mensaje_correo);
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				contro.enviarCorreo();
+				
+			}
+			
+		
 			
 		}catch (Exception e2) {
             e2.printStackTrace();
