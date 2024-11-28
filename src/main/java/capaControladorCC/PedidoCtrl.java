@@ -6464,7 +6464,7 @@ public class PedidoCtrl {
 		try
 		{
 			//Fijamos el header con el token
-			request.setHeader("Authorization", "Bearer " + "");
+			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
 			StringBuffer retorno = new StringBuffer();
@@ -6500,7 +6500,6 @@ public class PedidoCtrl {
 				contro.enviarCorreo();
 				
 			}
-			
 		
 			
 		}catch (Exception e2) {
