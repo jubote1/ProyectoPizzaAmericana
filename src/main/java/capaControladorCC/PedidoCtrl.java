@@ -8447,6 +8447,7 @@ public class PedidoCtrl {
 		String nombreCliente = "";
 		String telefono = "";
 		String correoElec = "";
+		String fechaFactura = "";
 		//Para realizar el último parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
@@ -8500,6 +8501,9 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("# correo electrónico fac")))
 				{
 					correoElec = strValor;
+				}else if(clave.equals(new String("# fecha factura")))
+				{
+					fechaFactura = strValor;
 				}
 			}
 			//Realizamos envío de CORREO
@@ -8519,7 +8523,8 @@ public class PedidoCtrl {
 					+  "<tr><td><strong>NIT o CC</strong></td><td>"+ identificacion +"</td></tr>"
 					+  "<tr><td><strong>Nombre Empresa o Cliente</strong></td><td>"+ nombreCliente +"</td></tr>"
 					+  "<tr><td><strong>Teléfono FAC</strong></td><td>"+ telefono +"</td></tr>"
-					+  "<tr><td><strong>Correo electrónico FAC</strong></td><td>"+ correoElec +"</td></tr>";
+					+  "<tr><td><strong>Correo electrónico FAC</strong></td><td>"+ correoElec +"</td></tr>"
+					+  "<tr><td><strong>Fecha Factura Pedido</strong></td><td>"+ fechaFactura +"</td></tr>";
 			correo.setMensaje(mensaje);
 			//correo.setMensaje("Se ha radicado una pqrs por intermedio del BOT con los siguientes datos. Tipo Atención:  " + tipoAtencion + " Punto de Venta PQRS: " + puntoVentaPQRS + " Nombre del Cliente: " + nombreCliente + " Telefono: " + telefono + " descrición del problema: " + descripcionProblema  );
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
