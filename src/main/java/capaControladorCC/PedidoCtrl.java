@@ -1879,7 +1879,8 @@ public class PedidoCtrl {
 						{
 							if(!pedPagado.getTelefono().equals(new String("")))
 							{
-								PedidoCtrl.enviarWhatsAppUltramsg("Querido " + pedPagado.getNombrecliente() + " hemos acabado de recibir la notificación de tu pago, a partir de este momento tu pedido será enviado a elaboración en una de nuestras tiendas!", pedPagado.getTelefono());
+								//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+								//PedidoCtrl.enviarWhatsAppUltramsg("Querido " + pedPagado.getNombrecliente() + " hemos acabado de recibir la notificación de tu pago, a partir de este momento tu pedido será enviado a elaboración en una de nuestras tiendas!", pedPagado.getTelefono());
 							}
 						}
 						//Enviaremos un correo en la etapa de piloto
@@ -5596,7 +5597,8 @@ public class PedidoCtrl {
 		if(idsolicitud > 0)
 		{
 			//Mandaremos mensaje de WhatsApp con la generación de la factura
-			notificarWhatsAppUltramsgSolFactura(solFactura);
+			//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+			//notificarWhatsAppUltramsgSolFactura(solFactura);
 		}
 		return(respuestaJSON.toJSONString());
 	}
@@ -8142,7 +8144,8 @@ public class PedidoCtrl {
 			{
 				//En caso de que se esté pidiendo un día diferente se enviará un mensaje al WhatsApp y al correo informando esta anomlia
 				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los días jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado)";
-				enviarWhatsAppUltramsg( mensaje , telefono);
+				//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+				//enviarWhatsAppUltramsg( mensaje , telefono);
 				envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 				return;
 			}
@@ -8151,7 +8154,8 @@ public class PedidoCtrl {
 			{
 				//En caso de que se esté pidiendo un día sabado para día viernes al WhatsApp y al correo informando esta anomlia
 				String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado solo se puede realizar los días jueves (para viernes y sabado), viernes (para viernes y sabado) y sabado (para sabado),en tu caso estamos a día sabado y estas intentando programarlo para el día viernes.";
-				enviarWhatsAppUltramsg( mensaje , telefono);
+				//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+				//enviarWhatsAppUltramsg( mensaje , telefono);
 				envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 				return;
 			}
@@ -8164,7 +8168,8 @@ public class PedidoCtrl {
 				if(hora > 16 || (hora== 16 && minutos > 45))
 				{
 					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy viernes ya no se puede programar, dado que lo puedes programar máximo para las 4:45pm.";
-					enviarWhatsAppUltramsg( mensaje , telefono);
+					//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+					//enviarWhatsAppUltramsg( mensaje , telefono);
 					envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 					return;
 				}
@@ -8174,7 +8179,8 @@ public class PedidoCtrl {
 				if(hora > 15 || (hora== 15 && minutos > 45))
 				{
 					String mensaje = "Querido Cliente " + nombreCliente + " el pedido programado para Poblado para hoy sabado ya no se puede programar, dado que lo puedes programar máximo para las 3:45pm.";
-					enviarWhatsAppUltramsg( mensaje , telefono);
+					//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+					//enviarWhatsAppUltramsg( mensaje , telefono);
 					envioCorreoNotificacion(correo,"INCONVENIENTE FECHA PEDIDO-PEDIDO RECHAZADO", mensaje);
 					return;
 				}
@@ -8400,7 +8406,8 @@ public class PedidoCtrl {
 			for(int i = 0; i  < telNotifica.size(); i++)
 			{
 				String telTemp = (String) telNotifica.get(i);
-				notificarWhatsAppUltramsg(telTemp, notificacion);
+				//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+				//notificarWhatsAppUltramsg(telTemp, notificacion);
 			}
 		}catch(Exception e)
 		{
@@ -10139,7 +10146,8 @@ public class PedidoCtrl {
 					for(int i = 0; i  < telNotifica.size(); i++)
 					{
 						String telTemp = (String) telNotifica.get(i);
-						notificarWhatsAppUltramsg(telTemp, notificacion);
+						//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+						//notificarWhatsAppUltramsg(telTemp, notificacion);
 					}
 				}
 			}
@@ -11363,8 +11371,9 @@ public class PedidoCtrl {
 	    			{
 	    				//Es porque no se insertó el pedido en la tienda y enviamos mensaje de whatsapp
 	    				String mensajePla = "Se tuvo problema enviando pedido " + idPedido + " de plataformas, por favor revisar y enviar manualmente";
-	    				PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3148807773");
-	    				PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3052166792");
+	    				//#PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
+	    				//PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3148807773");
+	    				//PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3052166792");
 	    			}
 	    			
 	    		}catch(Exception e3)
