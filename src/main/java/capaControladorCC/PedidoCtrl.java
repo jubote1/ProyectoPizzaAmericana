@@ -5727,7 +5727,7 @@ public class PedidoCtrl {
 		String respuesta = "";
 		boolean indicadorCorreo = false;
 		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la información
-		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendas();
+		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendasFuncionales();
 		String cantMinutos = "";
 		String strPedidosProg = "";
 		for(Tienda tien : tiendas)
@@ -5735,6 +5735,16 @@ public class PedidoCtrl {
 			strPedidosProg = "(";
 			if(!tien.getHosbd().equals(new String("")))
 			{
+				//Incluimos validación del internet
+				String dirIp = tien.getHosbd();
+				StringTokenizer tokenDirIp = new StringTokenizer(dirIp, ".");
+				dirIp= tokenDirIp.nextToken()+"."+tokenDirIp.nextToken()+"."+tokenDirIp.nextToken()+"."+"254";
+				boolean resultado =  isReachableByPing(dirIp);
+				if(!resultado)
+				{
+					//Si no hay conectividad lo que hacemos es saltar a la siguiente interacción
+					continue;
+				}
 				//Vamos a agregar los pedidos programados
 				respuesta = respuesta + "<table border='2'><tr><td colspan='4'>" + tien.getNombreTienda() + "</td></tr>";
 				respuesta = respuesta + "<tr>"
@@ -5819,7 +5829,7 @@ public class PedidoCtrl {
 		String respuesta = "";
 		boolean indicadorCorreo = false;
 		//Recuperaremos las tiendas y empezaremos a ir consultando una a una las tiendas para extraer la información
-		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendas();
+		ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendasFuncionales();
 		//Vamos a recuperar de manera centralizada los valores de las variables de pedido en espera y pedido en ruta
 		int pedidoEmpacado = ParametrosDAO.retornarValorNumerico("EMPACADODOMICILIO");
 		int pedidoEnRuta = ParametrosDAO.retornarValorNumerico("ENRUTADOMICILIO");
@@ -5834,6 +5844,16 @@ public class PedidoCtrl {
 		String strPedidosProg = "";
 		for(Tienda tien : tiendas)
 		{
+			//Incluimos validación del internet
+			String dirIp = tien.getHosbd();
+			StringTokenizer tokenDirIp = new StringTokenizer(dirIp, ".");
+			dirIp= tokenDirIp.nextToken()+"."+tokenDirIp.nextToken()+"."+tokenDirIp.nextToken()+"."+"254";
+			boolean resultado =  isReachableByPing(dirIp);
+			if(!resultado)
+			{
+				//Si no hay conectividad lo que hacemos es saltar a la siguiente interacción
+				continue;
+			}
 			strPedidosProg = "(";
 			if(!tien.getHosbd().equals(new String("")))
 			{
@@ -11919,5 +11939,33 @@ public class PedidoCtrl {
 		return("");
 	}
 
+	public static boolean isReachableByPing(String Host) {
+	    try{
+	               String cmd = "";
+	               if(System.getProperty("os.name").startsWith("Windows")) {   
+	                       // For Windows
+	                       cmd = "ping -n 1 " + Host;
+	               } else {
+	                       // For Linux and OSX
+	                       cmd = "ping -c 1 " + Host;
+	               }
+
+	               Process myProcess = Runtime.getRuntime().exec(cmd);
+	               myProcess.waitFor();
+
+	               if(myProcess.exitValue() == 0) {
+
+	                       return true;
+	               } else {
+
+	                       return false;
+	               }
+
+	       } catch( Exception e ) {
+
+	               e.printStackTrace();
+	               return false;
+	       }
+	}
 	
 }
