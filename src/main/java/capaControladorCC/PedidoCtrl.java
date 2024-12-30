@@ -713,6 +713,11 @@ public class PedidoCtrl {
 	{
 		
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
+		//Hacemos una validación si el tiempo llegó en cero
+		if(tiempoPedido == 0)
+		{
+			tiempoPedido = (double) TiempoPedidoDAO.retornarTiempoPedidoTienda(tienda.getIdTienda());
+		}
 		String tiendaPixel = tienda.getUrl();
 		//Capturamos el parámetro de para que POS irá el destino del pedido, con base en esto se formará la información para enviar
 		int pos = tienda.getPos();
