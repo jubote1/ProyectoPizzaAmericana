@@ -7872,10 +7872,6 @@ public class PedidoCtrl {
 			String  idcampo_asesor = obtenerCampoSeleccionCRM("862155","PROGRAMADO BOT SAM");
 			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
 			
-			if(mensaje.getResultado() == null) {
-				txtmensaje="";
-			}
-
 			datos = "[\r\n"
 					+ "    {   \"id\":"+ lead +",\r\n"
 					+ "        \"custom_fields_values\": [\r\n"
@@ -7974,7 +7970,7 @@ public class PedidoCtrl {
 	}
 	
 	public String  obtenerCampoSeleccionCRM(String idcampo,String valorDeseado ){
-		String id = "";
+		String id = null;
 		try {
 			String infoCamp = obtenerInfoCampoLeadCRM(idcampo);
             ObjectMapper objectMapper = new ObjectMapper();
@@ -7989,10 +7985,13 @@ public class PedidoCtrl {
                 for (JsonNode enumNode : enumsNode) {
                     // Obtener el valor de "value"
                     String value = enumNode.get("value").asText();
+                    
+                    if(valorDeseado == null) {
+                    	break;
+                    }
 
                     if (value.toLowerCase().equals(valorDeseado.toLowerCase())) {
-                    	 id= enumNode.get("id").asText();
-                    	
+                    	 id= enumNode.get("id").asText();              	
                         break; // Puedes salir del bucle si encuentras la coincidencia
                     }
                 }

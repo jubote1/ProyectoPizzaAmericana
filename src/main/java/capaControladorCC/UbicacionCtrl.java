@@ -48,7 +48,7 @@ public class UbicacionCtrl {
 	
 	public static boolean primeraEjecucion = false;
 	
-	public Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente)
+	public static Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente)
 	{
 		Resultado resultado = new Resultado();
 		try {
@@ -61,7 +61,7 @@ public class UbicacionCtrl {
 				primeraEjecucion = true;
 			}*/
 			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
-			System.out.println(parametro.getValorTexto());
+			System.out.println("AQUI: "+parametro.getValorTexto());
 			System.out.println("2.1 ANTES DE INICIAR ");
 			//ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
 			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
@@ -131,7 +131,7 @@ public class UbicacionCtrl {
                         } else {
                             // El punto no se encuentra dentro de ningun poligono en la capa
                             System.out.println("El punto no se encuentra dentro de ningun poligono en la capa.");
-                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te acerques a nuestro punto de venta mas cercano para que puedas realizar tu pedido o selecciona la opcion 2 a continuacion para volver a colocar otra direccion."); 
+                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te acerques a nuestro punto de venta mas cercano para que puedas realizar tu pedido o selecciona nuevamente la opcion para volver a colocar otra direccion."); 
 
                         }
                     } catch (Exception e) {
@@ -145,7 +145,7 @@ public class UbicacionCtrl {
         				correos.add(correoEle);
         				correo.setContrasena(infoCorreo.getClaveCorreo());
         				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-        				correo.setMensaje(" Se tiene prolema con la invocación de la API ARCGIS  " + e.getMessage());
+        				correo.setMensaje("Se encontro un problema con la invocación de la API ARCGIS  " + e.getMessage());
         				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
         				contro.enviarCorreo();
                     }
@@ -153,9 +153,10 @@ public class UbicacionCtrl {
                 
             } else {
                 System.out.println("No se pudo geocodificar la dirección.");
-                resultado.setResultado("Presentamos problemas encontrando tu dirección, recuerda seguir las instrucciones de nuestro BOT de mensajes, para que el sistema pueda validar bien tu dirección. Selecciona la opcion 2 a continuacion para volver a colocar otra direccion.");
+                resultado.setResultado("Presentamos problemas encontrando tu dirección, recuerda seguir las instrucciones de nuestro BOT de mensajes, para que el sistema pueda validar bien tu dirección. Selecciona nuevamente la opcion para volver a colocar otra direccion.");
             }
         } catch (Exception e) {
+        	// resultado.setResultado("Presentamos problemas encontrando tu dirección,Intentalo de nuevo mas tarde");
             System.out.println("Error al geocodificar: " + e.getMessage());
         }
         return(resultado);
@@ -250,9 +251,9 @@ public class UbicacionCtrl {
 	
 	public static void main(String[] args)
 	{
-		Parametro parametro;
-		parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
-		System.out.println(parametro.getValorTexto());
-		ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
+
+	
+		Resultado resultado = ubicarDireccionEnTienda("Carrera 30, Tv. 7A #381 local 107,,,","");
+		System.out.println(resultado.getResultado());
 	}
 }
