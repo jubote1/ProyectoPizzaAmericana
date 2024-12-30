@@ -48,7 +48,7 @@ public class UbicacionCtrl {
 	
 	public static boolean primeraEjecucion = false;
 	
-	public static Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente)
+	public static Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente,String lead)
 	{
 		Resultado resultado = new Resultado();
 		try {
@@ -102,15 +102,12 @@ public class UbicacionCtrl {
                         FeatureQueryResult result = serviceFeatureTable.queryFeaturesAsync(query,ServiceFeatureTable.QueryFeatureFields.LOAD_ALL).get();
 
                         // Verifica si hay resultados en la consulta
-                        if (result.iterator().hasNext()) {
+                        if (result != null && result.iterator().hasNext()) {
                             // El punto se encuentra dentro de al menos uno de los polígonos en la capa
                             System.out.println("El punto esta dentro de al menos uno de los polígonos en la capa.");
-                            Geometry pointGeometry = GeometryEngine.project(point, SpatialReferences.getWgs84());
 
                             // Itera sobre los resultados de la consulta
                             for (Feature feature : result) {
-                                // Obtén la geometria de la característica (polígono)
-                            	  Geometry polygonGeometry = GeometryEngine.project(feature.getGeometry(), SpatialReferences.getWgs84());
                             	  Map<String, Object> attributes = feature.getAttributes();
                             	  Object nombre = attributes.get("nombre");
                             	  System.out.println(nombre);
@@ -131,23 +128,13 @@ public class UbicacionCtrl {
                         } else {
                             // El punto no se encuentra dentro de ningun poligono en la capa
                             System.out.println("El punto no se encuentra dentro de ningun poligono en la capa.");
-                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te acerques a nuestro punto de venta mas cercano para que puedas realizar tu pedido o selecciona nuevamente la opcion para volver a colocar otra direccion."); 
+                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 para que puedas realizar tu pedido o selecciona nuevamente la opcion para volver a colocar otra direccion."); 
 
                         }
                     } catch (Exception e) {
                         System.out.println("Error al realizar la consulta: " + e.getMessage());
                         //Enviaremos correo para notificar que hay problema con la API
-                        Correo correo = new Correo();
-        				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-        				ArrayList correos = new ArrayList();
-        				correo.setAsunto("TENEMOS PROBLEMA CON LA API ARCGIS  ");
-        				String correoEle = "jubote1@gmail.com";
-        				correos.add(correoEle);
-        				correo.setContrasena(infoCorreo.getClaveCorreo());
-        				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-        				correo.setMensaje("Se encontro un problema con la invocación de la API ARCGIS  " + e.getMessage());
-        				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-        				contro.enviarCorreo();
+                        EnvioCorreo(lead ,e.getMessage());
                     }
                
                 
@@ -158,6 +145,8 @@ public class UbicacionCtrl {
         } catch (Exception e) {
         	// resultado.setResultado("Presentamos problemas encontrando tu dirección,Intentalo de nuevo mas tarde");
             System.out.println("Error al geocodificar: " + e.getMessage());
+            EnvioCorreo(lead ,e.getMessage());
+
         }
         return(resultado);
 	}
@@ -245,15 +234,36 @@ public class UbicacionCtrl {
             }
         } catch (Exception e) {
             System.out.println("Error al geocodificar: " + e.getMessage());
+          
         }
         return(ubica);
+	}
+	
+	public static void EnvioCorreo(String lead,String error) {
+        Correo correo = new Correo();
+		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+		ArrayList correos = new ArrayList();
+		correo.setAsunto("TENEMOS PROBLEMA CON LA API ARCGIS");
+		String correoEle = "jubote1@gmail.com";
+		correos.add(correoEle);
+		correos.add("a.desarrollosi@gmail.com");
+		correo.setContrasena(infoCorreo.getClaveCorreo());
+		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+		String mensCorreo = "Se encontro un problema con la invocación de la API ARCGIS  " + error;
+		if(lead != null  || !lead.isEmpty()) {
+			mensCorreo = mensCorreo+"<br> Numero de Lead: "+lead;
+		}
+		correo.setMensaje(mensCorreo);
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		contro.enviarCorreo();
+		
 	}
 	
 	public static void main(String[] args)
 	{
 
 	
-		Resultado resultado = ubicarDireccionEnTienda("Carrera 30, Tv. 7A #381 local 107,,,","");
+		Resultado resultado = ubicarDireccionEnTienda("Calle 25 # 69 -38,Bogota","",null);
 		System.out.println(resultado.getResultado());
 	}
 }
