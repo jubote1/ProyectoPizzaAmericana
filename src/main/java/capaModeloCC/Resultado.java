@@ -3,7 +3,7 @@ package capaModeloCC;
 public class Resultado {
 	
 	private String resultado;
-	private String infoAdicional = "";
+	private String infoAdicional;
 
 	public String getResultado() {
 		return resultado;
