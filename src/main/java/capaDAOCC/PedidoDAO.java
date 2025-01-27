@@ -1592,17 +1592,22 @@ public class PedidoDAO {
 		//Vamos a controlar el reenv�o del mensaje de texto para alertar fraudes
 		if((idformapagotienda == 4) && (!userReenvio.equals(new String(""))) && enviarTienda)
 		{
-			Correo correo = new Correo();
-			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-			ArrayList correos = new ArrayList();
-			correo.setAsunto("ANTIFRAUDE  " + idpedido);
-			String correoEle = "jubote1@gmail.com";
-			correos.add(correoEle);
-			correo.setContrasena(infoCorreo.getClaveCorreo());
-			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-			correo.setMensaje(" Cuidado hay un pedido de pago virtual WOMPI que fue reenviado " + idpedido);
-			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-			contro.enviarCorreo();
+			//Haremos validacion para saber si ya esta pago, debemos enviar correo si no está pago
+			boolean pedidoNoPago = PedidoDAO.validarPedidoPagoVirtual(idpedido);
+			if(!pedidoNoPago)
+			{
+				Correo correo = new Correo();
+				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+				ArrayList correos = new ArrayList();
+				correo.setAsunto("ANTIFRAUDE  " + idpedido);
+				String correoEle = "jubote1@gmail.com";
+				correos.add(correoEle);
+				correo.setContrasena(infoCorreo.getClaveCorreo());
+				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+				correo.setMensaje(" Cuidado hay un pedido de pago virtual WOMPI que fue reenviado " + idpedido + " segun la revisión no ha sido pagado todavia.");
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				contro.enviarCorreo();
+			}
 		}
 		Cliente cliente = ClienteDAO.obtenerClienteporID(idcliente);
 		boolean indicadorAct = false;
@@ -5610,6 +5615,59 @@ public class PedidoDAO {
 			}
 		}
 		return(pedidos);
+	}
+	
+	
+	/**
+	 * Metodo que retorna un valor booleano indicando si el pedido en cuestion fue pagado virtualmente si o no.
+	 * @param idPedido
+	 * @return
+	 */
+	public static boolean validarPedidoPagoVirtual(int idPedido)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		boolean respuesta = false;
+		try
+		{
+			Statement stm = con1.createStatement();
+			// Actualizamos la tabla pedido con el numero pedido pixel y le ponemos estado al pedido = 1, indicando que ya fue enviado a la tienda.
+			String select = "select fechapagovirtual from  pedido  where idpedido = " + idPedido;
+			logger.info(select);
+			ResultSet rs = stm.executeQuery(select);
+			String fechaPagoVirtual = "";
+			while(rs.next())
+			{
+				fechaPagoVirtual = rs.getString("fechapagovirtual");
+				if(fechaPagoVirtual == null)
+				{
+					fechaPagoVirtual = "";
+				}
+				break;
+			}
+			//Procesamos el valor de la respuesta
+			if(fechaPagoVirtual.equals(new String("")))
+			{
+				respuesta = false;
+			}else
+			{
+				respuesta = true;
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
 	}
 
 }

@@ -70,6 +70,7 @@ import capaDAOCC.HomologacionSalesManagoDAO;
 import capaDAOCC.HomologacionTiendaTokenDAO;
 import capaDAOCC.IntegracionCRMDAO;
 import capaDAOCC.IntegracionCRMHomologaAsesorDAO;
+import capaDAOCC.LogEncuestaServicioDAO;
 import capaDAOCC.LogEventoWompiDAO;
 import capaDAOCC.LogPedidoVirtualDAO;
 import capaDAOCC.LogPedidoVirtualKunoDAO;
@@ -7159,7 +7160,7 @@ public class PedidoCtrl {
 				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,0,0*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
 			}else
 			{
-				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPrecioOferta()),(prodGas.getPrecioOferta())*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
 			}
 		}
 		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, strCON, "");
@@ -7228,7 +7229,7 @@ public class PedidoCtrl {
 				{
 					int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido2);
 					Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
-					detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,1,0,0,(prodGas.getPreciogeneral()/2),(prodGas.getPreciogeneral()/2)*1, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+					detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,1,0,0,(prodGas.getPrecioOferta()),(prodGas.getPrecioOferta())*1, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
 				}
 				DetallePedido detPedidoAcom = new DetallePedido(idProductoAcompa,idPedido,1,0,0,valorUnitarioAco,valorUnitarioAco, "" , "" /*observacion*/, 0 /*idSaborTipoLiquido2*/, 0, "", "");
 				idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedidoAcom);
@@ -11896,6 +11897,9 @@ public class PedidoCtrl {
 	        encuestaServicio.setNombre_cliente(nombre_cliente);
 	        encuestaServicio.setTelefono(telefono);
 	        encuestaServicio.setIdtienda(idtienda);
+	        //Marcamos y actualizamos el log de que la encuesta fue diligenciada
+	        LogEncuestaServicioDAO.actualizarLlenadoLogEncuestaServicio(idtienda, idpedido);
+	        //Resto de acciones
 	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
 	        EmpleadoEncuestaDAO.insertarClienteServicio(encuestaServicio);
 

@@ -22,8 +22,15 @@ public class Producto {
 	private String manejacantidad;
 	private String habilitado;
 	private String controlaEspecialidades;
+	private double precioOferta;
 	
 	
+	public double getPrecioOferta() {
+		return precioOferta;
+	}
+	public void setPrecioOferta(double precioOferta) {
+		this.precioOferta = precioOferta;
+	}
 	public String getControlaEspecialidades() {
 		return controlaEspecialidades;
 	}

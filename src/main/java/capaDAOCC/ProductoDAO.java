@@ -15,14 +15,14 @@ import capaModeloCC.TipoLiquido;
 import conexionCC.ConexionBaseDatos;
 
 /**
- * Clase que se encarga de implementar toda la interacción con la base de datos para le entidad Producto.
+ * Clase que se encarga de implementar toda la interacciï¿½n con la base de datos para le entidad Producto.
  * @author JuanDavid
  *
  */
 public class ProductoDAO {
 	
 	/**
-	 * Método que se encarga de retonar la información de todas la entidades Producto definidas en el sistema.
+	 * Mï¿½todo que se encarga de retonar la informaciï¿½n de todas la entidades Producto definidas en el sistema.
 	 * @return Se retorna un ArrayList con todos los productos definidos en el sistema.
 	 *
 	 */
@@ -71,10 +71,10 @@ public class ProductoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de retornar la información de todos los productos definidos en el sistema, en forma GRID
-	 * para la implementación del CRUD de la entidad Producto.
-	 * @return Se retorna un ArrayList con todos los productos definidos en el sistema con la información base para
-	 * la implementación del GRID.
+	 * Mï¿½todo que se encarga de retornar la informaciï¿½n de todos los productos definidos en el sistema, en forma GRID
+	 * para la implementaciï¿½n del CRUD de la entidad Producto.
+	 * @return Se retorna un ArrayList con todos los productos definidos en el sistema con la informaciï¿½n base para
+	 * la implementaciï¿½n del GRID.
 	 */
 	public static ArrayList<Producto> obtenerProductosGrid()
 	{
@@ -177,7 +177,7 @@ public class ProductoDAO {
 	}
 	
 	/**
-	 * Método para retornar los productos de una tienda teniendo en cuenta las plataformas
+	 * Mï¿½todo para retornar los productos de una tienda teniendo en cuenta las plataformas
 	 * @param idtienda
 	 * @param plataforma
 	 * @return
@@ -246,8 +246,8 @@ public class ProductoDAO {
 	}
 	
 	/**
-	 * Método que se encarga de insertar un nuevo producto con base en la información recibida como parámetro
-	 * @param pro Se recibe como parámetro un objeto Modelo Producto con toda la informació del nuevo producto
+	 * Mï¿½todo que se encarga de insertar un nuevo producto con base en la informaciï¿½n recibida como parï¿½metro
+	 * @param pro Se recibe como parï¿½metro un objeto Modelo Producto con toda la informaciï¿½ del nuevo producto
 	 * a insertar
 	 * @return Se retorna un valor entero con el idproducto del producto creado.
 	 */
@@ -285,8 +285,8 @@ public class ProductoDAO {
 	}
 
 	/**
-	 * Método que se encarga de la eliminación de un Producto con base el parámetro recibido.
-	 * @param idproducto Se recibe como parámetro el idproducto con base en el cual se realiza la eliminación del producto
+	 * Mï¿½todo que se encarga de la eliminaciï¿½n de un Producto con base el parï¿½metro recibido.
+	 * @param idproducto Se recibe como parï¿½metro el idproducto con base en el cual se realiza la eliminaciï¿½n del producto
 	 */
 	public static void eliminarProducto(int idproducto)
 	{
@@ -316,9 +316,9 @@ public class ProductoDAO {
 	}
 
 	/**
-	 * Método con base en el cual se retorna la información de un producto con base en el parámetro recibido
-	 * @param idproducto Se recibe como parámetro el idproducto del producto que desea ser consultado.
-	 * @return Se retorna un objeto Modelo Producto con la información del producto que se desea consultar.
+	 * Mï¿½todo con base en el cual se retorna la informaciï¿½n de un producto con base en el parï¿½metro recibido
+	 * @param idproducto Se recibe como parï¿½metro el idproducto del producto que desea ser consultado.
+	 * @return Se retorna un objeto Modelo Producto con la informaciï¿½n del producto que se desea consultar.
 	 */
 	public static Producto retornarProducto(int idproducto)
 	{
@@ -329,7 +329,7 @@ public class ProductoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select idproducto,idreceta,nombre, descripcion,impuesto,tipo,producto_asocia_adicion,preciogeneral,incluye_liquido,idtipo_liquido, manejacantidad,habilitado from  producto  where idproducto = " + idproducto; 
+			String consulta = "select idproducto,idreceta,nombre, descripcion,impuesto,tipo,producto_asocia_adicion,preciogeneral,incluye_liquido,idtipo_liquido, manejacantidad,habilitado,preciooferta from  producto  where idproducto = " + idproducto; 
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idproduc = 0;
@@ -340,6 +340,7 @@ public class ProductoDAO {
 			String tipo = "";
 			int productoasociaadicion= 0;
 			double preciogeneral = 0;
+			double precioOferta = 0;
 			String incluye_liquido = "";
 			int idtipo_liquido = 0;
 			String manejacantidad = "";
@@ -357,9 +358,11 @@ public class ProductoDAO {
 				idtipo_liquido = rs.getInt("idtipo_liquido");
 				manejacantidad = rs.getString("manejacantidad");
 				habilitado = rs.getString("habilitado");
+				precioOferta = rs.getDouble("preciooferta");
 				break;
 			}
 			Pro = new Producto(idproduc,idreceta,nombre,descripcion,impuesto,tipo,productoasociaadicion,preciogeneral,incluye_liquido,idtipo_liquido, manejacantidad,habilitado);
+			Pro.setPrecioOferta(precioOferta);
 			stm.close();
 			con1.close();
 		}
@@ -376,9 +379,9 @@ public class ProductoDAO {
 	}
 
 	/**
-	 * Método que se encarga de editar un producto con base en los parámetros recibidos
-	 * @param Pro Se recibe como parámetro un objeto Modelo Producto el cual contiene la información base para
-	 * la edición del producto.
+	 * Mï¿½todo que se encarga de editar un producto con base en los parï¿½metros recibidos
+	 * @param Pro Se recibe como parï¿½metro un objeto Modelo Producto el cual contiene la informaciï¿½n base para
+	 * la ediciï¿½n del producto.
 	 * @return Se retorna un valor tipo String con el resultado del proceso.
 	 */
 	public static String editarProducto(Producto Pro)
@@ -413,7 +416,7 @@ public class ProductoDAO {
 	
 	
 	/**
-	 * Método que realizará la homologación del producto con base en el SKU que llegará como parámetro y de esta manera poder
+	 * Mï¿½todo que realizarï¿½ la homologaciï¿½n del producto con base en el SKU que llegarï¿½ como parï¿½metro y de esta manera poder
 	 * conocer el idproducto dentro del sistema de contact center.
 	 * @param sku
 	 * @return
