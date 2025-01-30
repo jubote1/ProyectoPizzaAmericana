@@ -820,6 +820,20 @@ public class ParametrosCtrl {
 				JSONArray listJSON = new JSONArray();
 				ProductoNoExistente Pro = new ProductoNoExistente(idtienda, "" , idproducto, "");
 				ProductoNoExistenteDAO.insertaProductoNoExistente(Pro);
+				//Realizamos envío de correo electrónico para lider logística, lider calidad y tecnologia.
+				Tienda tienda = TiendaDAO.retornarTienda(idtienda);
+				Producto producto = ProductoDAO.retornarProducto(idproducto);
+				Correo correo = new Correo();
+				Date fecha =  new Date();
+				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+				correo.setAsunto("ALERTA BLOQUEO PRODUCTO " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
+				ArrayList correos = GeneralDAO.obtenerCorreosParametro("BLOQUEOPRODUCTO");
+				correo.setContrasena(infoCorreo.getClaveCorreo());
+				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+				
+				correo.setMensaje("La tienda " + tienda.getNombreTienda() + " esta bloqueando el siguiente producto " + producto.getDescripcion());
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				contro.enviarCorreo();
 				JSONObject ResultadoJSON = new JSONObject();
 				ResultadoJSON.put("insertado", "true");
 				listJSON.add(ResultadoJSON);
@@ -878,6 +892,20 @@ public class ParametrosCtrl {
 			{
 				JSONArray listJSON = new JSONArray();
 				ProductoNoExistenteDAO.eliminarProductoNoExistente(idtienda,idproducto);
+				//Realizamos envío de correo electrónico para lider logística, lider calidad y tecnologia.
+				Tienda tienda = TiendaDAO.retornarTienda(idtienda);
+				Producto producto = ProductoDAO.retornarProducto(idproducto);
+				Correo correo = new Correo();
+				Date fecha =  new Date();
+				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+				correo.setAsunto("ALERTA DESBLOQUEO PRODUCTO " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
+				ArrayList correos = GeneralDAO.obtenerCorreosParametro("BLOQUEOPRODUCTO");
+				correo.setContrasena(infoCorreo.getClaveCorreo());
+				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+				
+				correo.setMensaje("La tienda " + tienda.getNombreTienda() + " esta desbloqueando el siguiente producto " + producto.getDescripcion());
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				contro.enviarCorreo();
 				JSONObject ResultadoJSON = new JSONObject();
 				ResultadoJSON.put("resultado", "exitoso");
 				listJSON.add(ResultadoJSON);

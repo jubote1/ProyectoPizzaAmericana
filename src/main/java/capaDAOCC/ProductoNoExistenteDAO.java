@@ -16,7 +16,7 @@ import capaModeloCC.TipoLiquido;
 import conexionCC.ConexionBaseDatos;
 
 /**
- * Clase que se encarga de implementar toda la interacci�n con la base de datos para le entidad Producto.
+ * Clase que se encarga de implementar toda la interacci�n con la base de datos para le entidad Producto.
  * @author JuanDavid
  *
  */
@@ -114,6 +114,10 @@ public class ProductoNoExistenteDAO {
 				idProductoIns = rs.getInt(1);
 				
 	        }
+			//Realizamos inserción de log
+			String insert2 = "insert into log_bloqueo_producto_tienda (idtienda, idproducto, accion) values (" + pro.getIdtienda() + ", " + pro.getIdproducto() + ", 'B')";
+			stm.executeUpdate(insert2);
+			rs.close();
 			stm.close();
 			con1.close();
 		}
@@ -142,6 +146,9 @@ public class ProductoNoExistenteDAO {
 			String delete = "delete from producto_no_existente  where idproducto = " + idproducto + " and idtienda = " + idtienda; 
 			logger.info(delete);
 			stm.executeUpdate(delete);
+			//Realizamos inserción de log
+			String insert = "insert into log_bloqueo_producto_tienda (idtienda, idproducto, accion) values (" + idtienda+ ", " + idproducto + ", 'D')";
+			stm.executeUpdate(insert);
 			stm.close();
 			con1.close();
 		}
