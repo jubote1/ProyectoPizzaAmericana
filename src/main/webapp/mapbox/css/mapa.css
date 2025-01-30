@@ -1,0 +1,346 @@
+/* Reset de márgenes y padding */
+* {
+    box-sizing: border-box;
+}
+
+/* Estilo del cuerpo */
+body {
+    padding: 20px;
+}
+
+.pagina-activa {
+    display: block;
+}
+
+#pagina-historial{
+
+ padding-left: 50px; 
+ padding-right: 50px;
+ 
+}
+.pagina-oculta {
+    display: none;
+
+}
+
+#paginador {
+    margin-bottom: 10px;
+}
+
+#paginador button {
+    min-width: 100px;
+}
+
+.titulo-pagina {
+    font-family: 'Poppins', sans-serif; /* Aplica la fuente Poppins */
+    font-size: 1.5rem; /* Tamaño de fuente más grande */
+    font-weight: bold; /* Negrita */
+    color: #0b35a6; /* Color oscuro */
+    text-align: center; /* Centrar el título */
+    margin-top: 20px; /* Espacio por encima */
+    margin-bottom: 30px; /* Espacio por debajo */
+    text-transform: uppercase; /* Texto en mayúsculas */
+}
+
+#detalles{ 
+
+    width: 100%;
+    max-width: 100%; /* Limita el tamaño máximo */
+    overflow: hidden; /* Asegura que no haya desbordamiento */
+    box-sizing: border-box; /* Incluye el padding y border dentro del tamaño total */
+
+	
+}
+
+
+#detalles .contenedor-detalle {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Tabla ocupa 1 parte, mapa ocupa 2 partes */
+    gap: 30px; /* Espacio entre la tabla y el mapa */
+    width: 100%; /* Asegura que ocupe todo el ancho disponible */
+    align-items: start;
+    box-sizing: border-box; /* Evita que paddings o bordes alteren el tamaño */
+}
+
+#mapa-detalle {
+    height: 50vh; /* Altura fija para el mapa */
+     width: 100%;/* Asegura que ocupe todo el ancho de su celda */
+
+}
+
+.container-info{
+	width: 100%;
+ box-sizing: border-box;
+	
+}
+
+
+
+#map {
+    flex: 2;
+    height: 70vh;
+    min-width: 500px;
+    margin-right: 10px; /* Separación entre el mapa y la tabla */
+    width: 100%;
+}
+
+
+#map, #mapa-detalle {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo de la tabla y otros elementos */
+#table-container {
+    flex: 1; /* Ocupa el espacio disponible */
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: fixed;
+}
+
+#user-details,#info {
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 20px; /* Margen superior */
+    margin-bottom: 20px; /* Margen inferior */
+    padding: 16px; /* Espaciado interno */
+    font-family: 'Arial', sans-serif; /* Fuente más estilizada */
+    font-size: 14px; /* Tamaño de fuente */
+    color: #333; /* Color de texto */
+    line-height: 1.6; /* Altura de línea para mejor legibilidad */
+    width: 400px; /* Ancho fijo */
+    max-width: 90%; /* Ajusta para pantallas pequeñas */
+}
+
+#user-details h3 ,#info h3{
+    font-size: 16px; /* Tamaño del encabezado */
+    font-weight: bold; /* Encabezado más destacado */
+    margin-bottom: 12px; /* Espaciado debajo del encabezado */
+    color: #0b35a6; /* Color del encabezado */
+}
+
+#user-details p,#info p {
+    margin-bottom: 8px; /* Espaciado entre párrafos */
+}
+
+.contenedor-general {
+    display: flex;
+    height: auto;
+    font-family: 'Roboto', sans-serif;
+    background-color: #ffffff; /* Fondo claro y suave */
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.contenedor-tablas{
+	 margin-top: 20px;
+	
+}
+.tienda-selector, .date-range-selector {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px; /* Espacio entre los elementos */
+}
+
+.tienda-selector select {
+    width: 200px; /* Establece un ancho fijo para el selector */
+    margin-right: 10px;
+}
+
+.date-range-selector input, .date-range-selector button {
+    width: auto; /* Deja que los campos de fecha y el botón se ajusten automáticamente */
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: 10px auto;
+    box-sizing: border-box;
+}
+
+#table-container th, #table-historial th,
+#table-container td, #table-historial td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#table-container th, #table-historial th, #table-detalles th {
+    text-align: left;
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #555;
+}
+
+.fila-seleccionada {
+    background-color: #f0f0f0 !important;
+    font-weight: bold;        /* Texto en negrita */
+}
+
+
+.mensaje-error {
+    display: none; /* Oculto por defecto */
+    background-color: #f8d7da; /* Fondo rojo claro */
+    color: #721c24; /* Texto rojo oscuro */
+    border: 1px solid #f5c6cb; /* Borde rojo */
+    border-radius: 5px; /* Bordes redondeados */
+    padding: 10px 15px; /* Espaciado interno */
+    font-size: 14px; /* Tamaño de fuente */
+    font-weight: bold; /* Texto en negrita */
+    margin: 10px 0; /* Espaciado externo */
+    text-align: center; /* Centrar el texto */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra */
+    animation: fadeIn 0.3s ease-in-out; /* Animación al aparecer */
+}
+
+/* Animación opcional para el mensaje */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#table-container tr:hover, #table-historial tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Estilos para las tablas */
+#table-historial {
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: fixed;
+}
+
+#table-detalles {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    table-layout: auto; 
+    width: 100%; /* Asegura que la tabla ocupe todo el ancho disponible */
+ 
+}
+
+
+.content-tab{
+	
+	table-layout: fixed;
+    margin-top: 0; /* Elimina márgenes innecesarios */
+    box-sizing: border-box;
+    max-width: 100%; /* Asegura que no se salga de su celda */
+        grid-column: 1; /* Tabla ocupa solo la primera columna */
+    grid-row: 1; /* Fila 1 */
+    height: 70vh; /* O cualquier valor adecuado */
+   overflow-y: auto; /* Permitir desplazamiento vertical */
+    overflow-x: hidden; /* Desactivar desplazamiento horizontal */
+      
+	
+}
+
+#table-container td {
+    color: #777;
+}
+
+
+.centered {
+    text-align: center; /* Centra el texto horizontalmente */
+    padding: 20px; /* Añade espacio alrededor del texto */
+}
+
+/* Centrar solo el th con la clase centered-header */
+#table-container th.centered-header, #table-historial th.centered-header {
+    text-align: center;
+    background-color: #0b35a6;
+    color: #ffffff;
+}
+
+#table-detalles th.centered-header {
+    text-align: center;
+    background-color: #1b54fb;
+    color: #ffffff;
+}
+
+/* Diseño responsivo */
+@media (max-width: 1200px) {
+    .contenedor-general {
+        flex-direction: column; /* Cambiar a columna en pantallas pequeñas */
+        height: auto;
+    }
+
+    #map, #mapa-detalle {
+        margin-right: 0;
+        margin-bottom: 20px;
+        width: 100%; /* Asegura que el mapa ocupe todo el ancho */
+    }
+    
+ 
+
+    #table-container {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .container {
+        width: 100%;
+        max-width: none;
+    }
+
+ 
+    #table-historial {
+        max-width: 100%; /* Cada tabla ocupará todo el ancho */
+    }
+    
+          #detalles .contenedor-detalle {
+        grid-template-columns: 1fr; /* Cambia a una columna */
+        grid-template-rows: auto auto; /* Asegura que los elementos se apilen verticalmente */
+        gap: 20px; /* Espacio entre los elementos en la disposición vertical */
+    }
+}
+
+
+/* Asegura que el modal ocupe más espacio */
+.modal-dialog {
+    max-width: 70%; /* Reduce el ancho máximo para pantallas más pequeñas */
+    width: 80%; /* Fuerza el modal a ocupar todo el ancho disponible */
+}
+
+/* Contenedor del contenido del modal */
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto; /* Centra el modal en la pantalla */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 100%; /* Asegura que el contenido ocupe todo el ancho */
+    box-sizing: border-box;
+}
+
+/* Para pantallas más grandes */
+@media (min-width: 1200px) {
+    .modal-dialog {
+        max-width: 80%; /* Aumenta el ancho del modal en pantallas grandes */
+    }
+}
+
+/* Para pantallas más pequeñas */
+@media (max-width: 768px) {
+    .modal-dialog {
+        max-width: 100%; /* Permite que el modal ocupe el 100% en pantallas pequeñas */
+    }
+    
+
+}
+
