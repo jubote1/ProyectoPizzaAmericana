@@ -164,7 +164,7 @@ $(document).ready(function() {
 
 
 	const tiendaMap = {};
-	tiendas.forEach(tienda => tiendaMap[tienda.id] = tienda.nombre);
+	
 
 	// Función de geocodificación inversa
 	function updateAddress(address) {
@@ -282,7 +282,7 @@ $(document).ready(function() {
 	});
 
 
-	const socket = io("http://localhost:8082", { reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000 });
+	const socket = io("http://172.19.0.25:8082", { reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000 });
 
 	// Escuchar datos desde el servidor
 	socket.on('updateLocation', (data) => {
@@ -596,6 +596,8 @@ function initializePage(){
 							);
 						});
 					});
+					
+					tiendas.forEach(tienda => tiendaMap[tienda.id] = tienda.nombre);
 
 	        },
 	        error: function (err) {
