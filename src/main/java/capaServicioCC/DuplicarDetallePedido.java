@@ -38,6 +38,7 @@ public class DuplicarDetallePedido extends HttpServlet {
 		Logger logger = Logger.getLogger("log_file");
 		HttpSession sesion = request.getSession();
 		int iddetallepedido;
+		int idpedido;
         try
         {
         	iddetallepedido = Integer.parseInt(request.getParameter("iddetallepedido"));
@@ -45,9 +46,16 @@ public class DuplicarDetallePedido extends HttpServlet {
         {
         	iddetallepedido= 0;
         }
-        logger.info("Llamado a servicio con parámetros iddetallepedido " + iddetallepedido);
+        try
+        {
+        	idpedido = Integer.parseInt(request.getParameter("idpedido"));
+        }catch(Exception e)
+        {
+        	idpedido= 0;
+        }
+        logger.info("Llamado a servicio con parï¿½metros iddetallepedido " + iddetallepedido);
         PedidoCtrl pedido = new PedidoCtrl();
-        String respuestaDuplicar = pedido.DuplicarDetallePedido(iddetallepedido);
+        String respuestaDuplicar = pedido.DuplicarDetallePedido(iddetallepedido, idpedido);
         logger.debug("Respuesta duplicar de detalle pedido " + iddetallepedido + " ");
         PrintWriter out = response.getWriter();
 		out.write(respuestaDuplicar);

@@ -51,7 +51,7 @@ public class FidelizacionCtrl {
 	public String sumarPuntosClienteFidelizacion(String correo, double puntosSumar, int idTienda, int idPedidoTienda, double valorNeto)
 	{
 		JSONObject respuesta = new JSONObject();
-		boolean acumula =  false;
+		double acumula =  0;
 		boolean creaTransaccion = false;
 		boolean existe = FidelizacionTransaccionDAO.existeFidelizacionTransaccion(correo, idTienda, idPedidoTienda);
 		if(!existe)
@@ -59,7 +59,7 @@ public class FidelizacionCtrl {
 			acumula =  ClienteFidelizacionDAO.sumarPuntosClienteFidelizacion(correo, puntosSumar);
 			FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedidoTienda, valorNeto, puntosSumar);
 			creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
-			if(acumula && creaTransaccion)
+			if(acumula > 0 && creaTransaccion)
 			{
 				respuesta.put("respuesta", true);
 			}

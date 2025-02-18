@@ -1283,11 +1283,11 @@ public class PedidoCtrl {
 	 * @return Se retorna un String en formato JSON con la respuesta de cada uno de los detalles pedidos insertados
 	 * y que se tomarán como bases para pintar el DATATABLE.
 	 */
-	public String DuplicarDetallePedido(int iddetallepedido)
+	public String DuplicarDetallePedido(int iddetallepedido, int idPedido)
 	{
 				//Utilizamos método que se encarga de retonar todos los detalles pedido asignado a un grupo de pedido
 				//donde podría tenerse modificadores y adiciones, retornados en un ArrayList.
-				ArrayList<DetallePedido> detallesPedido = PedidoDAO.ConsultarDetallePedidoPorPadre(iddetallepedido);
+				ArrayList<DetallePedido> detallesPedido = PedidoDAO.ConsultarDetallePedidoPorPadre(iddetallepedido,idPedido);
 				//Se instancia ArrayList en donde se insertaran los nuevos detalles pedidos productos de la duplicación
 				// de los iniciales.
 				ArrayList<DetallePedido> detallesPedidoNuevos = new ArrayList();

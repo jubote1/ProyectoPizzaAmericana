@@ -130,6 +130,13 @@ function consultarHistorialEstadosPedido()
 											$('#empresa').val(data4.empresa);
 											$('#teldomiciliario').val(data4.teldomiciliario);
 											$('#tiempopedido').val(data4.tiempopedido);
+											if(data4.tiempopedido >= 90)
+											{
+												$('#reportar').val("SI");
+											}else
+											{
+												$('#reportar').val("NO");
+											}
 										}
 								  });
 						},

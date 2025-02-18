@@ -3023,7 +3023,7 @@ public class PedidoDAO {
 	 * PIZZA u OTROS.
 	 * @return
 	 */
-	public static ArrayList<DetallePedido> ConsultarDetallePedidoPorPadre(int iddetpedidopadre)
+	public static ArrayList<DetallePedido> ConsultarDetallePedidoPorPadre(int iddetpedidopadre, int idPedido)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList <DetallePedido> consultaDetallePedidos = new ArrayList();
@@ -3032,7 +3032,7 @@ public class PedidoDAO {
 				+ "c on a.idespecialidad1 = c.idespecialidad left outer join especialidad d on a.idespecialidad2 = d.idespecialidad"
 				+ " left outer join sabor_x_tipo_liquido e on a.idsabortipoliquido = e.idsabor_x_tipo_liquido "
 				+ "left outer join excepcion_precio f on a.idexcepcion = f.idexcepcion"
-				+ ",producto b where a.idproducto = b.idproducto and a.iddetalle_pedido in  " 
+				+ ",producto b where a.idproducto = b.idproducto and a.idpedido = " + idPedido + " and a.iddetalle_pedido in  " 
 				+ " (select iddetalle_pedido from detalle_pedido where iddetalle_pedido = " + iddetpedidopadre 
 				+ " union select iddetalle_pedido from detalle_pedido where observacion = '"+ "Producto Incluido-" + iddetpedidopadre +"'"
 				+ " union select iddetallepedidoadicion from adicion_detalle_pedido where iddetallepedidopadre = " + iddetpedidopadre

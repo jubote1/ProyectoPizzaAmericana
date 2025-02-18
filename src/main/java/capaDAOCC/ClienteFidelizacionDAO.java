@@ -146,10 +146,10 @@ public class ClienteFidelizacionDAO {
 		return(respuesta);
 	}
 	
-	public static boolean sumarPuntosClienteFidelizacion(String correo, double puntosSumar)
+	public static double sumarPuntosClienteFidelizacion(String correo, double puntosSumar)
 	{
 		Logger logger = Logger.getLogger("log_file");
-		boolean respuesta = false;
+		double puntos = 0;
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
@@ -158,7 +158,14 @@ public class ClienteFidelizacionDAO {
 			String update = "update cliente_fidelizacion a set a.puntos_vigentes = a.puntos_vigentes + " + puntosSumar +  " where a.correo = '"+ correo + "'";
 			logger.info(update);
 			stm.executeUpdate(update);
-			respuesta = true;
+			String select = "select puntos_vigentes from cliente_fidelizacion a where a.correo = '"+ correo + "'";
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				puntos = rs.getDouble(1);
+				break;
+			}
+			rs.close();
 			stm.close();
 			con1.close();
 		}catch (Exception e){
@@ -170,7 +177,7 @@ public class ClienteFidelizacionDAO {
 			{
 			}
 		}
-		return(respuesta);
+		return(puntos);
 	}
 
 	public static boolean insertarClienteFidelizacion(String correo)

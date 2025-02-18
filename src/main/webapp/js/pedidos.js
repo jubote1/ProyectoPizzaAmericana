@@ -925,7 +925,7 @@ function duplicarDetallePedido(iddetallepedido)
 					
 						var resultado
 						$.ajax({ 
-	    				url: server + 'DuplicarDetallePedido?iddetallepedido=' + iddetallepedido, 
+	    				url: server + 'DuplicarDetallePedido?iddetallepedido=' + iddetallepedido +"&idpedido=" + idPedido, 
 	    				dataType: 'json', 
 	    				async: false, 
 	    				success: function(data){ 
