@@ -10,6 +10,8 @@ import org.json.simple.JSONObject;
 
 import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoEventoDAO;
+import capaDAOCC.EmpleadoValeDAO;
+import capaModeloCC.EmpleadoVale;
 import capaModeloCC.HorarioEmpleado;
 
 public class EmpleadoCtrl {
@@ -206,6 +208,14 @@ public class EmpleadoCtrl {
 		ArrayList<JSONObject> respuesta = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
 			
 		return respuesta.toString();
+	}
+	
+	public String insertarEmpleadoVale(EmpleadoVale empleadoVale)
+	{
+		int idEmpleadoVale = EmpleadoValeDAO.insertarEmpleadoVale(empleadoVale);
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("idempleadovale", idEmpleadoVale);
+		return(respuesta.toJSONString());
 	}
 
 
