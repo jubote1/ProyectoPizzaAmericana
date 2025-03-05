@@ -21,14 +21,14 @@ import capaModeloCC.EmpleadoVale;;
  * Este servicio se encarga de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet hace las veces de front
  * y se encarga de la invocaci�n a la clase en la capa Controladora.
  */
-@WebServlet("/InsertarEmpleadoVale")
-public class InsertarEmpleadoVale extends HttpServlet {
+@WebServlet("/EliminarEmpleadoVale")
+public class EliminarEmpleadoVale extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public InsertarEmpleadoVale() {
+    public EliminarEmpleadoVale() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -47,18 +47,9 @@ public class InsertarEmpleadoVale extends HttpServlet {
 				String fecha = "";
 				int idempleado = 0;
 				int idEgreso = 0;
-				double  valor = 0;
+				
 				fecha = request.getParameter("fecha");
-				String descuadre = request.getParameter("descuadre");
-				if(descuadre == null)
-				{
-					descuadre = "N";
-				}
-				if(descuadre.equals(new String("")))
-				{
-					descuadre = "N";
-				}
-		        try
+			    try
 		        {
 		        	idempleado = Integer.parseInt(request.getParameter("idempleado"));
 		        }catch(Exception e)
@@ -72,15 +63,8 @@ public class InsertarEmpleadoVale extends HttpServlet {
 		        {
 		        	idEgreso = 0;
 		        }
-		        try
-		        {
-		        	valor = Double.parseDouble(request.getParameter("valor"));
-		        }catch(Exception e)
-		        {
-		        	valor = 0;
-		        }
 		        EmpleadoCtrl empCtrl = new EmpleadoCtrl();
-		        String respuesta = empCtrl.insertarEmpleadoVale(new EmpleadoVale(0,idempleado, fecha, valor, descuadre,idEgreso));
+		        String respuesta = empCtrl.eliminarEmpleadoVale(idempleado, fecha, idEgreso);
 		        System.out.println(respuesta);
 		        PrintWriter out = response.getWriter();
 				out.write(respuesta);

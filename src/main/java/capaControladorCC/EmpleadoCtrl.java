@@ -1,5 +1,6 @@
 package capaControladorCC;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -11,8 +12,10 @@ import org.json.simple.JSONObject;
 import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoEventoDAO;
 import capaDAOCC.EmpleadoValeDAO;
+import capaDAOCC.PeriodoNominaDAO;
 import capaModeloCC.EmpleadoVale;
 import capaModeloCC.HorarioEmpleado;
+import capaModeloCC.PeriodoNomina;
 
 public class EmpleadoCtrl {
 	
@@ -210,6 +213,11 @@ public class EmpleadoCtrl {
 		return respuesta.toString();
 	}
 	
+	/**
+	 * Método que se encarga de adicionar un vale empleado.
+	 * @param empleadoVale
+	 * @return
+	 */
 	public String insertarEmpleadoVale(EmpleadoVale empleadoVale)
 	{
 		int idEmpleadoVale = EmpleadoValeDAO.insertarEmpleadoVale(empleadoVale);
@@ -217,6 +225,68 @@ public class EmpleadoCtrl {
 		respuesta.put("idempleadovale", idEmpleadoVale);
 		return(respuesta.toJSONString());
 	}
+	
+	/**
+	 * Método que se encarga de la eliminación de un vale
+	 * @param idEmpleado
+	 * @param fecha
+	 * @param idEgreso
+	 * @return
+	 */
+	public String eliminarEmpleadoVale(int idEmpleado, String fecha, int idEgreso)
+	{
+		boolean respuesta = EmpleadoValeDAO.eliminarEmpleadoVale(idEmpleado, fecha, idEgreso);
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON .put("respuesta", respuesta);
+		return(respuestaJSON .toJSONString());
+	}
+	
+	public String validarEmpleadoVale(int idEmpleado, String fechaVale)
+	{
+		ArrayList<PeriodoNomina> periodos = PeriodoNominaDAO.obtenerPeriodosNomina();
+		//Formateamos la fecha del vale
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		Date dateFechaVale  = new Date();
+		try {
+			dateFechaVale = dateFormat.parse(fechaVale);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Date fechaInferior = null;
+		Date fechaSuperior = null;
+		//Debemos identificar según la fecha del vale a que periodo correspondería
+		for(PeriodoNomina periodoTemp : periodos)
+		{
+			if((dateFechaVale.compareTo(periodoTemp.getFechaInferior()) == 0 || dateFechaVale.compareTo(periodoTemp.getFechaInferior()) == 1) && (dateFechaVale.compareTo(periodoTemp.getFechaSuperior()) == 0 || dateFechaVale.compareTo(periodoTemp.getFechaSuperior()) == -1))
+			{
+				fechaInferior = periodoTemp.getFechaInferior();
+				fechaSuperior = periodoTemp.getFechaSuperior();
+				break;
+			}
+		}
+		//Posteriormente debemos de validar cuanto vales hay en ese rango de tiempo para el empleado
+		int cantidadVales = 0;
+		if(fechaInferior != null && fechaSuperior != null)
+		{
+			cantidadVales = EmpleadoValeDAO.validarEmpleadoValeNoDescuadre(dateFormat.format(fechaInferior), dateFormat.format(fechaSuperior), idEmpleado);
+		}
+		JSONObject respuesta = new JSONObject();
+		if(cantidadVales == 0)
+		{
+			respuesta.put("respuesta", true);
+		}else
+		{
+			respuesta.put("respuesta", false);
+		}
+		
+		return(respuesta.toJSONString());
+	}
 
 
+	public static void main(String args[])
+	{
+		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
+		empCtrl.validarEmpleadoVale(285, "2025-02-27");
+	}
 }

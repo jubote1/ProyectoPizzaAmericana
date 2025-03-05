@@ -21,7 +21,7 @@ import conexionCC.ConexionBaseDatos;
 public class TiendaBloqueadaDAO {
 	
 /**
- * Método que se encarga de retornar todas las entidades Tiendas Bloqueadas definidas en la base de datos
+ * Mï¿½todo que se encarga de retornar todas las entidades Tiendas Bloqueadas definidas en la base de datos
  * @return Se retorna un ArrayList con todas las entidades Tiendas Bloqueadas definidas en la base de datos.
  */
 	public static ArrayList<TiendaBloqueada> retornarTiendasBloqueadas()
@@ -64,8 +64,8 @@ public class TiendaBloqueadaDAO {
 	
 	
 	/**
-	 * Método que se encarga de la inserción de una tienda bloqueada, con base en la información recibida como parámetro.
-	 * @param pro Se recibe como parámetro un objeto Modelo TiendaBloqueada con base en el cual se realiza la inserción de una nueva entidad tienda
+	 * Mï¿½todo que se encarga de la inserciï¿½n de una tienda bloqueada, con base en la informaciï¿½n recibida como parï¿½metro.
+	 * @param pro Se recibe como parï¿½metro un objeto Modelo TiendaBloqueada con base en el cual se realiza la inserciï¿½n de una nueva entidad tienda
 	 * en el sistema.
 	 * @return no hay retorno.
 	 */
@@ -100,8 +100,8 @@ public class TiendaBloqueadaDAO {
 	}
 
 	/**
-	 * Método que se encarga de la eliminación de una tiendaBloqueada con base en los parámetros recibidos.
-	 * @param idtienda Se revise como parámetro el idtienda de la entidad que se desea eliminar, no se retornan valores.
+	 * Mï¿½todo que se encarga de la eliminaciï¿½n de una tiendaBloqueada con base en los parï¿½metros recibidos.
+	 * @param idtienda Se revise como parï¿½metro el idtienda de la entidad que se desea eliminar, no se retornan valores.
 	 */
 	public static void eliminarTiendaBloqueada(int idtienda)
 	{
@@ -131,6 +131,44 @@ public class TiendaBloqueadaDAO {
 		
 	}
 
+	
+	/**
+	 * MÃ©todo que se encarga de validar si una tienda esta bloqueada o no.
+	 * @param idTienda
+	 * @return
+	 */
+	public static boolean validarTiendaBloqueada(int idTienda)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String consulta = "select * from tienda_bloqueada where idtienda = " + idTienda;
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next()){
+				respuesta = true;
+				break;
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.info(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
+		
+	}
+	
 	
 	
 }

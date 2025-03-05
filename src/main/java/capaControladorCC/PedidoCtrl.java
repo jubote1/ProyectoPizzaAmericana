@@ -6226,7 +6226,7 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-	    String txtdirecc = direccion + " ," + Barrio+","+ Municipio+","+referencia+",Antioquia,Colombia";
+	    String txtdirecc = direccion + " ," + Barrio+","+ Municipio+",Antioquia,Colombia";
 		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(txtdirecc,tipo_cliente,lead);
 		System.out.println("3. RESULTADO DEL PROCESO " +  resultado);
 		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);
@@ -6884,6 +6884,30 @@ public class PedidoCtrl {
 				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 870325,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 870327,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 865679,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
 				+ "        }\r\n"
 				+ "    ]\r\n"
 				+ "    }\r\n"
@@ -6995,7 +7019,39 @@ public class PedidoCtrl {
 		}
 		if(detalle.equals(new String("")))
 		{
-			
+			//Procesamos cuando es la pizza Burger
+			//validaremos si nombre del combo tiene la palabra combo
+			String sinMod = "";
+			int idProductoSin = 0;
+			if(nombreDelCombo.contains("burger"))
+			{
+				if(sabor1.equals("con todo") ||sabor1.equals(""))
+				{
+					
+				}else
+				{
+					//Separamos por el caracter,
+					StringTokenizer strTokenTiempo = new StringTokenizer(sabor1, ",");
+					while(strTokenTiempo.hasMoreTokens())
+					{
+						try
+						{
+							sinMod = strTokenTiempo.nextToken().trim();
+							idProductoSin = parCtrl.homologarProductoTiendaVirtual( sinMod + " burger" );
+							strCON = strCON + " " + "SIN " + sinMod;
+							adiTemp = new AdicionTiendaVirtual();
+							adiTemp.setCantidad(1);
+							adiTemp.setIdProductoAdicion(idProductoSin);
+							adiTemp.setIdDetallePedido(0);
+							adiTemp.setPosicionPizza(1);
+							modificadoresCon.add(adiTemp);
+						}catch(Exception e)
+						{
+						}
+						
+					}
+				}
+			}
 		}else if(detalle.equals(new String("una sola especialidad"))||detalle.equals(new String("pizza una sola especialidad")))
 		{
 			idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual("Pizza "+ sabor1);
@@ -7155,7 +7211,7 @@ public class PedidoCtrl {
 			int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
 			Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
 			//Intevenimos si debemos o no de cobrar el liquido
-			if(esPromocion && excepcionPrecioTemp.getIncluyeliquido().equals(new String("S")))
+			if(((esPromocion) && (excepcionPrecioTemp.getIncluyeliquido().equals(new String("S"))))||(nombreDelCombo.contains("burger")))
 			{
 				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,0,0*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
 			}else
@@ -7926,6 +7982,7 @@ public class PedidoCtrl {
 					+ "                    \"enum_id\":"+idcampo_tienda+"\r\n"
 					+ "                }\r\n"
 					+ "            ]\r\n"
+
 					+ "        }\r\n"
 					+ "        ]\r\n"
 					+ "    }\r\n"
@@ -7946,7 +8003,15 @@ public class PedidoCtrl {
 			 		+ "      \"values\": [\n"
 			 		+ "        {\"enum_id\":"+idcampo_tienda+"}\n"
 			 		+ "      ]\n"
-			 		+ "    }\n"
+					+ "        },\r\n"
+					+ "             {\r\n"
+					+ "            \"field_id\": 870325,\r\n"
+					+ "            \"values\": [\r\n"
+					+ "                {\r\n"
+					+ "                    \"value\":\""+mensaje.getEstadoTienda()+"\"\r\n"
+					+ "                }\r\n"
+					+ "            ]\r\n"
+					+ "        }\r\n"
 			 		+ "  ]\n"
 			 		+ "}]";
 			}

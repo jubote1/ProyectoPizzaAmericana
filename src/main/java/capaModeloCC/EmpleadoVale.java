@@ -6,6 +6,24 @@ public class EmpleadoVale {
 	private int idEmpleado;
 	private String fecha;
 	private double valor;
+	private String descuadre;
+	private int idEgreso;
+	
+	
+	
+	
+	public int getIdEgreso() {
+		return idEgreso;
+	}
+	public void setIdEgreso(int idEgreso) {
+		this.idEgreso = idEgreso;
+	}
+	public String getDescuadre() {
+		return descuadre;
+	}
+	public void setDescuadre(String descuadre) {
+		this.descuadre = descuadre;
+	}
 	public int getIdEmpleadoVale() {
 		return idEmpleadoVale;
 	}
@@ -30,12 +48,14 @@ public class EmpleadoVale {
 	public void setValor(double valor) {
 		this.valor = valor;
 	}
-	public EmpleadoVale(int idEmpleadoVale, int idEmpleado, String fecha, double valor) {
+	public EmpleadoVale(int idEmpleadoVale, int idEmpleado, String fecha, double valor, String descuadre, int idEgreso) {
 		super();
 		this.idEmpleadoVale = idEmpleadoVale;
 		this.idEmpleado = idEmpleado;
 		this.fecha = fecha;
 		this.valor = valor;
+		this.descuadre = descuadre;
+		this.idEgreso = idEgreso;
 	}
 	
 	

@@ -4,6 +4,17 @@ public class Resultado {
 	
 	private String resultado;
 	private String infoAdicional;
+	private String estadoTienda;
+	
+	
+
+	public String getEstadoTienda() {
+		return estadoTienda;
+	}
+
+	public void setEstadoTienda(String estadoTienda) {
+		this.estadoTienda = estadoTienda;
+	}
 
 	public String getResultado() {
 		return resultado;

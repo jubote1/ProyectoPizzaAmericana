@@ -30,6 +30,8 @@ import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
 
 import capaDAOCC.ParametrosDAO;
+import capaDAOCC.TiendaBloqueadaDAO;
+import capaDAOPOS.TiendaDAO;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
 import capaModeloCC.Parametro;
@@ -53,13 +55,13 @@ public class UbicacionCtrl {
 		Resultado resultado = new Resultado();
 		try {
 			Parametro parametro;
-			/*if(!primeraEjecucion)
-			{
-				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
-				System.out.println(parametro.getValorTexto());
-				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
-				primeraEjecucion = true;
-			}*/
+//			if(!primeraEjecucion)
+//			{
+//				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
+//				System.out.println(parametro.getValorTexto());
+//				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
+//				primeraEjecucion = true;
+//			}
 			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
 			System.out.println("AQUI: "+parametro.getValorTexto());
 			System.out.println("2.1 ANTES DE INICIAR ");
@@ -122,7 +124,18 @@ public class UbicacionCtrl {
                             		  }
 
                             	  resultado.setInfoAdicional(nombre.toString());
-                            	 
+                            	  //Debemos de fijar el estadoTienda, con el nombre de la tienda verificaremos si está bloqueada o no
+                            	  //Debemos de recuperar la tienda con su id
+                            	  int idTienda = capaDAOCC.TiendaDAO.obteneridTienda(nombre.toString());
+                            	  //Debemos de verificar si la tienda esta bloqueada o no
+                            	  boolean tiendaBloqueada = TiendaBloqueadaDAO.validarTiendaBloqueada(idTienda);
+                            	  if(tiendaBloqueada)
+                            	  {
+                            		  resultado.setEstadoTienda("BLOQUEADO");
+                            	  }else
+                            	  {
+                            		  resultado.setEstadoTienda("DISPONIBLE");
+                            	  }
                             }
                         
                         } else {
@@ -263,7 +276,7 @@ public class UbicacionCtrl {
 	{
 
 	
-		Resultado resultado = ubicarDireccionEnTienda("Calle 25 # 69 -38,Bogota","",null);
+		Resultado resultado = ubicarDireccionEnTienda("Calle 63 A # 47 - 27, Medellin","",null);
 		System.out.println(resultado.getResultado());
 	}
 }
