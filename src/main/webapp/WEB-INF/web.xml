@@ -22,6 +22,7 @@
 	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
 	    <url-pattern>/ObtenerVacanteID</url-pattern>
 	     <url-pattern>/InsertarCandidato</url-pattern>
+	      <url-pattern>/Fidelizacion</url-pattern>
     </filter-mapping>
     
     
@@ -36,6 +37,7 @@
 	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
 	    <url-pattern>/ObtenerVacanteID</url-pattern>
 	         <url-pattern>/InsertarCandidato</url-pattern>
+	         	      <url-pattern>/Fidelizacion</url-pattern>
 	</filter-mapping>
 
 </web-app>

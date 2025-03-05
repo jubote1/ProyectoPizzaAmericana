@@ -1,6 +1,8 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+
 import org.apache.log4j.Logger;
 
 import capaModeloCC.ClienteFidelizacion;
@@ -9,6 +11,7 @@ import capaModeloCC.Municipio;
 import conexionCC.ConexionBaseDatos;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -22,7 +25,7 @@ public class ClienteFidelizacionDAO {
 	public static ClienteFidelizacion obtenerClienteFidelizacion(String correo)
 	{
 		Logger logger = Logger.getLogger("log_file");
-		ClienteFidelizacion cliente = new ClienteFidelizacion();
+		ClienteFidelizacion cliente = null;
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
@@ -119,32 +122,38 @@ public class ClienteFidelizacionDAO {
 	}
 	
 	
-	public static boolean activarClienteFidelizacion(String correo)
-	{
+	public static boolean activarClienteFidelizacion(String correo) {
 		Logger logger = Logger.getLogger("log_file");
-		boolean respuesta = false;
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			Statement stm = con1.createStatement();
-			String update = "update cliente_fidelizacion set activo = 'S' where correo = '"+ correo + "'";
-			logger.info(update);
-			stm.executeUpdate(update);
-			respuesta = true;
-			stm.close();
-			con1.close();
-		}catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-		}
-		return(respuesta);
-	}
+        String sql = "UPDATE cliente_fidelizacion SET activo = 'S' WHERE correo = ?";
+        boolean respuesta = false;
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = null;
+        PreparedStatement stm = null;
+
+        try {
+            con1 = con.obtenerConexionBDPrincipal();
+            stm = con1.prepareStatement(sql);
+            stm.setString(1, correo);
+
+            int filasAfectadas = stm.executeUpdate();
+            respuesta = (filasAfectadas > 0); // Si se actualizó al menos una fila, es exitoso
+
+            logger.info("Cliente activado con correo: " + correo + " | Filas afectadas: " + filasAfectadas);
+        } catch (SQLException e) {
+            logger.error("Error activando cliente: " + correo, e);
+        } finally {
+            // Cerrar recursos en el orden correcto
+            try {
+                if (stm != null) stm.close();
+                if (con1 != null) con1.close();
+            } catch (SQLException e) {
+                logger.error("Error cerrando recursos", e);
+            }
+        }
+
+        return respuesta;
+    }
 	
 	public static double sumarPuntosClienteFidelizacion(String correo, double puntosSumar)
 	{

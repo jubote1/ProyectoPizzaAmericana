@@ -1,13 +1,21 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.util.Date;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Locale;
 import java.sql.ResultSet;
 import org.apache.log4j.Logger;
+
+import com.formdev.flatlaf.json.ParseException;
 
 import capaModeloCC.Cliente;
 import capaModeloCC.Tienda;
@@ -18,7 +26,14 @@ import conexionCC.ConexionBaseDatos;
  *
  */
 public class ClienteDAO {
-	
+	  private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
+	            .appendOptional(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+	            .appendOptional(DateTimeFormatter.ofPattern("MM-dd-yyyy"))
+	            .appendOptional(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+	            .appendOptional(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+	            .appendOptional(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+	            .toFormatter(Locale.getDefault())
+	            .withResolverStyle(ResolverStyle.STRICT);
 	/**
 	 * 
 	 * @param tel Dado el telef�no de un cliente se encarga de retornar en un array list de objetos tipo liente
@@ -389,13 +404,16 @@ public class ClienteDAO {
 			con1.close();
 		}
 		catch (Exception e){
+			System.out.println(e);
 			logger.error(e.toString());
 			try
 			{
 				con1.close();
 			}catch(Exception e1)
-			{
+			{ e.printStackTrace(); // Usar Logger en producción
 			}
+			
+			 e.printStackTrace(); // Usar Logger en producción
 			return(0);
 		}
 		return(idClienteInsertado);
@@ -1314,4 +1332,183 @@ public class ClienteDAO {
 	}
 	
 
+	public static Cliente obtenerClientePorCorreo(String correo) {
+	    Logger logger = Logger.getLogger("log_file");
+	    Cliente clien = null;
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    try {
+	        String consulta = "SELECT " +
+	                "    a.idcliente, " +
+	                "    b.nombre AS nombreTienda, " +
+	                "    a.idtienda, " +
+	                "    a.nombre, " +
+	                "    a.apellido, " +
+	                "    a.telefono, " +
+	                "    a.telefono_celular, " +
+	                "    a.email, " +
+	                "    a.politica_datos, " +
+	                "    a.fecha_nacimiento " +
+	                "FROM cliente a " +
+	                "LEFT JOIN tienda b ON a.idtienda = b.idtienda " +
+	                "WHERE a.email = ? " +
+	                "AND a.activo = 1 " +
+	                "ORDER BY a.idcliente DESC " +
+	                "LIMIT 1;";
+
+	        logger.info("Ejecutando consulta: " + consulta + " con correo: " + correo);
+
+	        PreparedStatement pstmt = con1.prepareStatement(consulta);
+	        pstmt.setString(1, correo);  // Asignamos el valor del correo
+
+	        ResultSet rs = pstmt.executeQuery();
+
+	        if (rs.next()) {
+	            clien = new Cliente();
+	            clien.setIdcliente(rs.getInt("idcliente"));
+	            clien.setTienda(rs.getString("nombreTienda"));
+	            clien.setIdtienda(rs.getInt("idtienda"));
+	            clien.setNombres(rs.getString("nombre"));
+	            clien.setApellidos(rs.getString("apellido"));
+	            clien.setTelefono(rs.getString("telefono"));
+	            clien.setTelefonoCelular(rs.getString("telefono_celular"));
+	            clien.setEmail(rs.getString("email"));
+	            clien.setPoliticaDatos(rs.getString("politica_datos"));
+	        }
+
+	        rs.close();
+	        pstmt.close();
+	        con1.close();
+	    } catch (Exception e) {
+	        logger.error("Error en obtenerClientePorCorreo: " + e.toString());
+	        try {
+	            con1.close();
+	        } catch (Exception e1) {
+	            logger.error("Error cerrando conexión: " + e1.toString());
+	        }
+	    }
+	    return clien;
+	}
+	
+	
+	
+	public static int insertarClienteWb(Cliente clienteInsertar) {
+		
+		System.out.println(clienteInsertar.getNombres());
+		Logger logger = Logger.getLogger("log_file");
+	    int idClienteInsertado = 0;
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    String consulta = "INSERT INTO cliente (idtienda, nombre, apellido, telefono, telefono_celular, email, politica_datos, fecha_nacimiento) " +
+	                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+	    try (PreparedStatement pstmt = con1.prepareStatement(consulta, Statement.RETURN_GENERATED_KEYS)) {
+
+	        java.sql.Date fechaSQL = convertirFecha(clienteInsertar.getFechaNacimiento());
+
+	        // Asignar valores a la consulta
+	        pstmt.setInt(1, clienteInsertar.getIdtienda());
+	        pstmt.setString(2, clienteInsertar.getNombres());
+	        pstmt.setString(3, clienteInsertar.getApellidos());
+	        pstmt.setString(4, clienteInsertar.getTelefono());
+	        pstmt.setString(5, clienteInsertar.getTelefonoCelular());
+	        pstmt.setString(6, clienteInsertar.getEmail());
+	        pstmt.setString(7, clienteInsertar.getPoliticaDatos());
+	        pstmt.setDate(8, fechaSQL); // Puede ser `null` si no hay fecha
+
+	        logger.info("Ejecutando consulta: " + pstmt.toString());	        
+	        pstmt.executeUpdate();
+
+	        // Obtener la clave generada
+	        try (ResultSet rs = pstmt.getGeneratedKeys()) {
+	            if (rs.next()) {
+	                idClienteInsertado = rs.getInt(1);
+	            }
+	        }
+	    } catch (Exception e) {
+	        logger.error("Error en insertarClienteWb: " + e.toString());
+	        return 0;
+	    } finally {
+	        try {
+	            con1.close();
+	        } catch (Exception e) {
+	            logger.error("Error cerrando conexión: " + e.toString());
+	        }
+	    }
+	    return idClienteInsertado;
+	}
+	
+	
+	public static boolean actualizarClienteWb(Cliente clienteActualizar) {
+		System.out.println( clienteActualizar.getIdtienda());
+	    Logger logger = Logger.getLogger("log_file");
+	    boolean actualizado = false;
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    String consulta = "UPDATE cliente SET idtienda = ?, nombre = ?, apellido = ?, telefono = ?, telefono_celular = ?, " +
+	                      "email = ?, politica_datos = ?, fecha_nacimiento = ? WHERE idcliente = ?";
+
+	    try (PreparedStatement pstmt = con1.prepareStatement(consulta)) {
+
+
+	        java.sql.Date fechaSQL = convertirFecha(clienteActualizar.getFechaNacimiento());
+	        // Asignar valores a la consulta
+	        pstmt.setInt(1, clienteActualizar.getIdtienda());
+	        pstmt.setString(2, clienteActualizar.getNombres());
+	        pstmt.setString(3, clienteActualizar.getApellidos());
+	        pstmt.setString(4, clienteActualizar.getTelefono());
+	        pstmt.setString(5, clienteActualizar.getTelefonoCelular());
+	        pstmt.setString(6, clienteActualizar.getEmail());
+	        pstmt.setString(7, clienteActualizar.getPoliticaDatos());
+	        pstmt.setDate(8, fechaSQL); // Puede ser `null` si no hay fecha
+	        pstmt.setInt(9, clienteActualizar.getIdcliente()); // Identificador del cliente a actualizar
+
+	        logger.info("Ejecutando consulta: " + pstmt.toString());
+
+	        int filasActualizadas = pstmt.executeUpdate();
+	        actualizado = (filasActualizadas > 0);
+	        
+	    } catch (Exception e) {
+	        logger.error("Error en actualizarClienteWb: " + e.toString());
+	        return false;
+	    } finally {
+	        try {
+	            con1.close();
+	        } catch (Exception e) {
+	            logger.error("Error cerrando conexión: " + e.toString());
+	        }
+	    }
+	    return actualizado;
+	}
+	
+	 public static java.sql.Date convertirFecha(String fecha) {
+	        if (fecha == null || fecha.trim().isEmpty()) {
+	            return null;
+	        }
+
+	        // Intenta parsear usando varios formatos
+	        DateTimeFormatter[] formatos = {
+	            DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+	            DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+	            DateTimeFormatter.ofPattern("MM-dd-yyyy"),
+	            DateTimeFormatter.ISO_LOCAL_DATE // yyyy-MM-dd
+	        };
+
+	        for (DateTimeFormatter formato : formatos) {
+	            try {
+	                LocalDate localDate = LocalDate.parse(fecha, formato);
+	                return java.sql.Date.valueOf(localDate); // Retorna un java.sql.Date
+	            } catch (Exception e) {
+	                // Ignora y prueba con el siguiente formato
+	            }
+	        }
+
+	        System.err.println("Formato de fecha no válido: " + fecha);
+	        return null;
+	    }
+
+	
 }

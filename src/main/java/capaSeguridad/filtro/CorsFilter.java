@@ -4,6 +4,8 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class CorsFilter implements Filter {
@@ -16,26 +18,18 @@ public class CorsFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        // Permitir el origen específico
-        httpResponse.setHeader("Access-Control-Allow-Origin", "http://localhost/pizzaamericana");
-
-        // Permitir los métodos HTTP necesarios
+        // Permitir CORS para cualquier origen
+        httpResponse.setHeader("Access-Control-Allow-Origin", "*");
         httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-
-        // Permitir los encabezados necesarios
         httpResponse.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-
-        // Si se necesitan credenciales, habilitarlo
         httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
 
-        // Verificar si es una solicitud preflight (OPTIONS)
+        // Manejar preflight (OPTIONS)
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
-            // En las solicitudes preflight, puedes devolver inmediatamente el estado 200
             httpResponse.setStatus(HttpServletResponse.SC_OK);
-            return; // Terminar el proceso aquí para solicitudes preflight
+            return;
         }
 
-        // Continuar con los demás filtros si no es preflight
         chain.doFilter(request, response);
     }
 
