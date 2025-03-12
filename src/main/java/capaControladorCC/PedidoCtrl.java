@@ -85,6 +85,7 @@ import capaDAOCC.PedidoTiendaVirtualDAO;
 import capaDAOCC.ProductoDAO;
 import capaDAOCC.PromocionDAO;
 import capaDAOCC.SaborTipoLiquidoDAO;
+import capaDAOCC.SolicitudConciliacionDAO;
 import capaDAOCC.SolicitudCumpleDAO;
 import capaDAOCC.SolicitudCumpleImagenesDAO;
 import capaDAOCC.SolicitudFacturaDAO;
@@ -133,6 +134,7 @@ import capaModeloCC.Promocion;
 import capaModeloCC.Resultado;
 import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
+import capaModeloCC.SolicitudConciliacion;
 import capaModeloCC.SolicitudCumple;
 import capaModeloCC.SolicitudFactura;
 import capaModeloCC.SolicitudFacturaImagenes;
@@ -7349,6 +7351,8 @@ public class PedidoCtrl {
 		String correoElecFactura = "";
 		//Hacemos inclusión de control para los condimentos
 		String condimentos = "";
+		//Incluimos campo para trabajar la devuelta
+		double devuelta = 0;
 		//Para realizar el último parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
@@ -7491,6 +7495,16 @@ public class PedidoCtrl {
 					{
 						condimentos = "";
 					}
+				}else if(clave.equals(new String("devuelta")))
+				{
+					try
+					{
+						devuelta = Double.parseDouble(strValor);
+					}catch(Exception e)
+					{
+						devuelta = 0;
+					}
+					
 				}
 
 			}
@@ -7605,6 +7619,16 @@ public class PedidoCtrl {
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
 			//Consultaremos el tiempo que la tienda está dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
+			//Deberemos de desglosar si se toma el valor de devuelta
+			//Si el pedido es efectivo y se ingreso un valor de devuelta
+			if(idFormaPago == 1 && devuelta > 0)
+			{
+				//Si el valor de devuelta es mayor o igual al total del pedido
+				if(devuelta >= valorTotalContact)
+				{
+					valorTotalContact = (long) devuelta;
+				}
+			}
 			String horaProgramado = "AHORA";
 			String pedidoProgramado = "N";
 			if(!horaPedido.equals(new String("")))
@@ -12039,6 +12063,20 @@ public class PedidoCtrl {
 	               e.printStackTrace();
 	               return false;
 	       }
+	}
+	
+	/**
+	 * Método que retornará la inserción de la solicitud de conciliación
+	 * @param solicitud
+	 * @return
+	 */
+	public String insertarSolicitudConciliacion(SolicitudConciliacion solicitud)
+	{
+		boolean insercion = SolicitudConciliacionDAO.insertarSolicitudConciliacion(solicitud);
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON.put("respuesta", insercion);
+		return(respuestaJSON.toJSONString());
+		
 	}
 	
 }
