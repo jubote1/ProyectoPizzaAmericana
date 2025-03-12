@@ -306,7 +306,7 @@ public class EmpleadoEncuestaDAO {
 	
 	// Método para insertar registros en la tabla encuesta_servicio
     public static void insertarEncuestaServicio(EncuestaServicio encuestaservicio) {
-        String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion) VALUES (?, ?, ?,?)";
+        String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion,idtienda) VALUES (?, ?, ?,?,?)";
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = null;
     //EJEMPLOO
@@ -315,7 +315,7 @@ public class EmpleadoEncuestaDAO {
             
             Integer idpedido = encuestaservicio.getIdpedido();
             String  tipo_atencion = encuestaservicio.getTipo_atencion();
-            
+            Integer idtienda =encuestaservicio.getIdtienda();
             for (RespuestaServicio value : encuestaservicio.getRespuesta()) {
                 Integer idPregunta = obtenerIdPorTitulo(value.getDescripcion(), con1);
                 
@@ -330,6 +330,7 @@ public class EmpleadoEncuestaDAO {
                     pstmt.setString(2, value.getRespuesta()); // respuesta
                     pstmt.setInt(3, idpedido);     // idpedido
                     pstmt.setString(4, tipo_atencion);     // tipo_antecion
+                    pstmt.setInt(5, idtienda);     // idtienda
                     pstmt.executeUpdate();
                     
                 } catch (SQLException e) {
