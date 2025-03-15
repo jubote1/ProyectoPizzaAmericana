@@ -12079,4 +12079,64 @@ public class PedidoCtrl {
 		
 	}
 	
+	
+	/**
+	 * Método que trae la cantidad de solicitudes de conciliación pendientes en los últimos 7 días.
+	 * @param idTienda
+	 * @return
+	 */
+	public String existeSolicitudConciliacion(int idTienda)
+	{
+		String respuesta = "";
+		int pendientes = 0;
+		pendientes = SolicitudConciliacionDAO.existeSolicitudConciliacion(idTienda);
+		if(pendientes > 0)
+		{
+			respuesta = "La tienda tiene " + pendientes + " solicitudes de conciliación pendientes de solucionar.";
+		}
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON.put("respuesta", respuesta);
+		return(respuestaJSON.toJSONString());
+	}
+	
+	
+	/**
+	 * Método que nos retornará en un json un booleano qeu nos indicará si se puede o no cerrar el sistema dado que hay que hay partidas
+	 * pendientes de validación
+	 * @param idTienda
+	 * @return
+	 */
+	public String validarCierreSolicitudConciliacion(int idTienda)
+	{
+		boolean respuesta = SolicitudConciliacionDAO.validarCierreSolicitudConciliacion(idTienda);
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON.put("respuesta", respuesta);
+		return(respuestaJSON.toJSONString());
+	}
+	
+	public static String consultarSolicitudConciliacion(int idTienda, String fechaConsulta)
+	{
+		ArrayList<SolicitudConciliacion> solicitudes =  SolicitudConciliacionDAO.consultarSolicitudConciliacion(idTienda, fechaConsulta);
+		JSONArray listJSON = new JSONArray();
+		JSONObject cadaSolTemp = new JSONObject();
+		SolicitudConciliacion solTemp = new SolicitudConciliacion();
+		for(int i = 0; i < solicitudes.size(); i++)
+		{
+			solTemp = solicitudes.get(i);
+			cadaSolTemp = new JSONObject();
+			cadaSolTemp.put("idsolicitud", solTemp.getIdSolicitud());
+			cadaSolTemp.put("fecha", solTemp.getFecha());
+			cadaSolTemp.put("origen", solTemp.getOrigen());
+			cadaSolTemp.put("descripcion", solTemp.getDescripcion());
+			cadaSolTemp.put("categoria", solTemp.getCategoria());
+			cadaSolTemp.put("valor_analizar", solTemp.getValorAnalizar());
+			cadaSolTemp.put("estado", solTemp.getEstado());
+			cadaSolTemp.put("valor_final", solTemp.getValorFinal());
+			cadaSolTemp.put("telefono", solTemp.getTelefono());
+			cadaSolTemp.put("idpedidotienda", solTemp.getIdPedidoTienda());
+			listJSON.add(cadaSolTemp);
+		}
+		return(listJSON.toJSONString());
+	}
+	
 }

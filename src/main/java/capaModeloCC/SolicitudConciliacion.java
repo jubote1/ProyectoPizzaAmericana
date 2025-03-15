@@ -91,8 +91,23 @@ public class SolicitudConciliacion {
 		this.telefono = telefono;
 		this.idPedidoTienda = idPedidoTienda;
 	}
-	
-	
-	
-
+	public SolicitudConciliacion(int idSolicitud, String fecha, String origen, String descripcion, int idTienda,
+			String categoria, double valorAnalizar, String estado, double valorFinal, String telefono,
+			int idPedidoTienda) {
+		super();
+		this.idSolicitud = idSolicitud;
+		this.fecha = fecha;
+		this.origen = origen;
+		this.descripcion = descripcion;
+		this.idTienda = idTienda;
+		this.categoria = categoria;
+		this.valorAnalizar = valorAnalizar;
+		this.estado = estado;
+		this.valorFinal = valorFinal;
+		this.telefono = telefono;
+		this.idPedidoTienda = idPedidoTienda;
+	}
+	public SolicitudConciliacion() {
+		super();
+	}
 }
