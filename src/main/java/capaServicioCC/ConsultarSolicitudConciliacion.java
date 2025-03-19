@@ -46,6 +46,13 @@ public class ConsultarSolicitudConciliacion extends HttpServlet {
 		SimpleDateFormat dateFormatOrigen = new SimpleDateFormat("dd/MM/yyyy");
 		SimpleDateFormat dateFormatDestino = new SimpleDateFormat("yyyy-MM-dd");
 		Date datFecha = new Date();
+		try {
+			datFecha = dateFormatOrigen.parse(fecha);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		fecha = dateFormatDestino.format(datFecha);
 		int idTienda;
 		try{
 			idTienda = Integer.parseInt(request.getParameter("idtienda"));

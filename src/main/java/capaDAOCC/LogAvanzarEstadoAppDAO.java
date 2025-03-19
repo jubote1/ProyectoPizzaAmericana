@@ -52,7 +52,7 @@ public class LogAvanzarEstadoAppDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String update = "update log_avanzar_estado_app set respuesta = '" + respuesta +"' where idlog = " + idLog; 
+			String update = "update log_avanzar_estado_app set respuesta = '" + respuesta +"' , fecha_respuesta = NOW() where idlog = " + idLog; 
 			logger.info(update);
 			stm.executeUpdate(update);
 			stm.close();
