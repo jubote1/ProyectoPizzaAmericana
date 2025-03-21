@@ -11,16 +11,16 @@ import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
 import capaModeloCC.EmpleadoVale;
 import capaModeloCC.HorarioEmpleado;
-import capaConexionPOS.ConexionBaseDatos;
 import capaModeloPOS.Egreso;
 import capaModeloPOS.EmpleadoEncuesta;
+import conexionCC.ConexionBaseDatos;
 
 public class EmpleadoValeDAO {
 		
 	public static int insertarEmpleadoVale(EmpleadoVale empleadoVale)
 	{
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDGeneralLocal();
+		Connection con1 = con.obtenerConexionBDGeneral();
 		String insert  = "insert into empleado_vale (idempleado, fecha,valor,descuadre,idegreso) values(" + empleadoVale.getIdEmpleado() + ", '" + empleadoVale.getFecha() + "' ," + empleadoVale.getValor() + " , '" + empleadoVale.getDescuadre() + "' ," + empleadoVale.getIdEgreso() +")" ;
 		Statement stm;
 		int idEmpleadoVale = 0;
@@ -54,7 +54,7 @@ public class EmpleadoValeDAO {
 	public static int validarEmpleadoValeNoDescuadre(String fechaInferior, String fechaSuperior, int idEmpleado)
 	{
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDGeneralLocal();
+		Connection con1 = con.obtenerConexionBDGeneral();
 		int cantidadVales = 0;
 		String select  = "select count(*) from empleado_vale where idempleado = " + idEmpleado + " and fecha >= '" + fechaInferior + "' and fecha <= '" + fechaSuperior +"' and descuadre = 'N'" ;
 		Statement stm;
@@ -89,7 +89,7 @@ public class EmpleadoValeDAO {
 	public static boolean eliminarEmpleadoVale(int idEmpleado, String fecha, int idEgreso)
 	{
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDGeneralLocal();
+		Connection con1 = con.obtenerConexionBDGeneral();
 		String delete = "delete from empleado_vale where idempleado = " + idEmpleado + " and fecha = '" + fecha + "' and idegreso = " + idEgreso ;
 		Statement stm;
 		boolean respuesta = false;
