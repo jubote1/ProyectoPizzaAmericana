@@ -6910,6 +6910,14 @@ public class PedidoCtrl {
 				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 870399,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
 				+ "        }\r\n"
 				+ "    ]\r\n"
 				+ "    }\r\n"
@@ -7499,6 +7507,8 @@ public class PedidoCtrl {
 				{
 					try
 					{
+						strValor = strValor.trim();
+						strValor = strValor.replace(".", "");
 						devuelta = Double.parseDouble(strValor);
 					}catch(Exception e)
 					{
