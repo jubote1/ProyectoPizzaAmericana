@@ -10,6 +10,7 @@ import conexionCC.ConexionBaseDatos;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -30,6 +31,7 @@ public class PeriodoNominaDAO {
 		ArrayList<PeriodoNomina> periodos = new ArrayList<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDGeneral();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		try
 		{
 			Statement stm = con1.createStatement();
@@ -40,10 +42,13 @@ public class PeriodoNominaDAO {
 			Date fechaInferior;
 			Date fechaSuperior;
 			PeriodoNomina perTem;
+			String strFechaInferior, strFechaSuperior;
 			while(rs.next()){
 				idPeriodo = rs.getInt("idperiodo");
-				fechaInferior = rs.getDate("fecha_inferior");
-				fechaSuperior = rs.getDate("fecha_superior");
+				strFechaInferior = rs.getString("fecha_inferior");
+				strFechaSuperior = rs.getString("fecha_superior");
+				fechaInferior = dateFormat.parse(strFechaInferior);
+				fechaSuperior = dateFormat.parse(strFechaSuperior);
 				perTem =  new PeriodoNomina(idPeriodo, fechaInferior, fechaSuperior);
 				periodos.add(perTem);
 			}
