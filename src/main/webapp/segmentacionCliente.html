@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Segmentación de Clientes</title>
+<link rel="stylesheet" href="css/segmentacionCliente.css">
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- CSS de Select2 -->
+<link
+	href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css"
+	rel="stylesheet">
+
+<link
+	href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme/dist/select2-bootstrap4.min.css"
+	rel="stylesheet">
+<!-- DataTables CSS -->
+
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
+<link rel="stylesheet"
+	href="https://cdn.datatables.net/2.2.2/css/dataTables.bootstrap4.css">
+<link rel="stylesheet"
+	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+	<div class="container-tbl">
+		<h4>Segmentación de Clientes</h4>
+
+		<!-- Agregar el spinner flotante en HTML (en cualquier parte de tu página) -->
+		<div id="loading-spinner">
+			<i class="fas fa-spinner fa-spin"></i>
+		</div>
+
+		<!-- Filtros de Segmentación -->
+		<div class="grid">
+			<div class="section">
+				<span class="obligatorio">*</span> <label>Cantidad de
+					pedidos mínimo:</label> <input type="number" class="form-control"
+					id="cantidadPedidos" min="1">
+			</div>
+			<div class="section">
+				<span class="obligatorio">*</span> <label>Rango de fechas:</label> <input
+					type="text" id="rangoFechas" class="form-control"
+					placeholder="Seleccionar rango">
+			</div>
+
+			<div class="section">
+				<label>Tienda:</label> <select id="selectTiendas" multiple
+					class="form-control" data-placeholder="Seleccionar">
+					<option value="">Cargando...</option>
+					<!-- Placeholder temporal -->
+				</select>
+			</div>
+		</div>
+
+
+
+		<!-- Campos para miembros del club, ocultos por defecto -->
+		<div id="camposMiembrosClub" style="display: none;">
+			<div class="grid">
+				<div class="section">
+					<label>Estado:</label> <select id="estadoMiembro"
+						class="form-control">
+						<option value="S">Activo</option>
+						<option value="N">Inactivo</option>
+					</select>
+				</div>
+				<div class="section">
+					<label>Correo:</label> <input type="text" id="correoMiembro"
+						class="form-control" placeholder="Correo">
+				</div>
+				<div class="section">
+					<label>Puntos:</label> <input type="number" id="puntosMiembro"
+						class="form-control" min="0">
+				</div>
+			</div>
+		</div>
+
+		<div class="grid_3">
+
+			<div class="section">
+				<label>Promociones :</label> <select id="selectPromociones" multiple
+					class="form-control" data-placeholder="Seleccionar">
+				</select>
+			</div>
+
+			<div class="section">
+				<input type="checkbox" id="filtrarMiembrosClub" /> Filtrar miembros
+				del club
+			</div>
+
+		</div>
+		<div class="grid_3">
+
+			<!-- Botón de Confirmación -->
+			<div class="button-container">
+				<button id="btnConsultar" class="btn btn-primary">Consultar</button>
+			</div>
+		</div>
+
+
+
+
+
+		<div class="table-responsive">
+			<div class="table-container">
+				<div id="registroTotal"
+					style="margin-bottom: 10px; font-weight: bold;"></div>
+				<table id="tablaClientes" class="table table-bordered"
+					style="width: 100%">
+					<thead>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="grid_3">
+				<div class="section">
+					<label>Clientes seleccionados (cantidad) :</label> <input
+						type="number" class="form-control" id="cantidadSeleccionada"
+						min="1">
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+
+	<div class="container-tbl">
+		<!-- Botón de Confirmación -->
+		<div class="button-container">
+			<button id="btnConfirmarEnvio" class="btn  btn-primary">Confirmar
+				Envío</button>
+
+		</div>
+		<div class="grid_3">
+			<div class="section">
+				<span class="obligatorio">*</span> <label>Plantilla de
+					correo:</label> <select id="selectPlantilla" class="form-control"
+					data-placeholder="Seleccionar">
+					<option value="">Cargando...</option>
+					<!-- Placeholder temporal -->
+				</select>
+			</div>
+		</div>
+		<div class="grid">
+
+			<div class="section">
+				<label>Correos:</label>
+				<table class="table table-bordered" id="correosManual">
+					<thead>
+						<tr>
+							<th>Email</th>
+							<th>Nombre</th>
+							<th>Acción</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><input type="text" class="form-control"
+								placeholder="Ingrese email"></td>
+							<td><input type="text" class="form-control"
+								placeholder="Ingrese nombre"></td>
+							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
+						</tr>
+						<!-- Puedes agregar más filas según sea necesario -->
+					</tbody>
+				</table>
+
+
+			</div>
+
+			<div class="section">
+				<label>Parametros Personalizado :</label>
+				<table class="table table-bordered" id="paramTable">
+					<thead>
+						<tr>
+							<th>Clave</th>
+							<th>Valor</th>
+							<th>Acción</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><input type="text" class="form-control"
+								placeholder="Ingrese clave"></td>
+							<td><select class="form-control" id="parametrosSelect"
+								placeholder="Ingrese valor">
+							</select></td>
+							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
+						</tr>
+						<!-- Puedes agregar más filas según sea necesario -->
+					</tbody>
+				</table>
+
+
+			</div>
+
+
+
+
+
+
+		</div>
+		<div class="grid">
+			<div class="section">
+				<label>Asunto:</label>
+				<!-- Usamos un div editable en lugar de un textarea -->
+				<div class="form-control" id="AsuntoG" contenteditable="true"
+					placeholder="Escribe aquí"></div>
+				<select id="selectEtiquetas" class="form-control"
+					placeholder="Seleccionar">
+					<option value="" disabled selected>Seleccionar</option>
+				</select>
+
+
+
+			</div>
+
+			<div class="section">
+				<label>Parametros Generales (Aplica para todos) :</label>
+				<table class="table table-bordered" id="paramGeneral">
+					<thead>
+						<tr>
+							<th>Clave</th>
+							<th>Valor</th>
+							<th>Acción</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><input type="text" class="form-control"
+								placeholder="Ingrese clave"></td>
+							<td><input type="text" class="form-control"
+								placeholder="Ingrese valor"></td>
+							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
+						</tr>
+						<!-- Puedes agregar más filas según sea necesario -->
+					</tbody>
+				</table>
+			</div>
+
+
+
+
+
+		</div>
+		<div class="grid"></div>
+
+
+
+	</div>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+	<!-- JS de Select2 -->
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+	<!-- Bootstrap JS -->
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+	<!-- DataTables JS -->
+	<script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+	<script
+		src="https://cdn.datatables.net/2.2.2/js/dataTables.bootstrap4.js"></script>
+
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+	<script src="js/segmentacionCliente.js"></script>
+
+</body>
+</html>

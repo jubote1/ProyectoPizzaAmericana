@@ -12,15 +12,15 @@ import capaModeloCC.ExcepcionPrecio;
 import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que implementa todos los métodos de acceso a la base de datos para la administración de la entidad Excepcion de Precio.
+ * Clase que implementa todos los mï¿½todos de acceso a la base de datos para la administraciï¿½n de la entidad Excepcion de Precio.
  * @author JuanDavid
  *
  */
 public class ExcepcionPrecioDAO {
 	
 	/**
-	 * Método que se encarga de obtener todas la excepciones de precio parametrizadas en base de datos
-	 * @return Retorna un ArrayList con objetos de Modelo Excepción Precio.
+	 * Mï¿½todo que se encarga de obtener todas la excepciones de precio parametrizadas en base de datos
+	 * @return Retorna un ArrayList con objetos de Modelo Excepciï¿½n Precio.
 	 */
 	public static ArrayList<ExcepcionPrecio> obtenerExcepcionesPrecio()
 	{
@@ -60,7 +60,7 @@ public class ExcepcionPrecioDAO {
 				controlaEspecialidades = rs.getString("controla_especialidades");
 				ofertaAbierta = rs.getString("oferta_abierta");
 				manejaOferta = rs.getString("maneja_oferta");
-				System.out.println("controlaEspecialidades " + controlaEspecialidades);
+				//System.out.println("controlaEspecialidades " + controlaEspecialidades);
 				ExcepcionPrecio excepcion = new ExcepcionPrecio(idExcepcion, idProducto, precio, descripcion,controlaCantidadIngredientes,cantidadIngredientes,"",0,partiradiciones,horaInicial, horaFinal,lunes,martes,miercoles,jueves,viernes, sabado, domingo, controlaEspecialidades);
 				excepcion.setOfertaAbierta(ofertaAbierta);
 				excepcion.setManejaOferta(manejaOferta);
@@ -83,8 +83,8 @@ public class ExcepcionPrecioDAO {
 	}
 	
 	/**
-	 * Método que se encarga de todos las excepciones Precio de la base de datos,en el formato que lo requiere el grid
-	 * de la capa de Presentación
+	 * Mï¿½todo que se encarga de todos las excepciones Precio de la base de datos,en el formato que lo requiere el grid
+	 * de la capa de Presentaciï¿½n
 	 * @return Retorna un ArrayList con objetos de Modelo ExcepcionPrecio.
 	 */
 	public static ArrayList<ExcepcionPrecio> obtenerExcepcionesPrecioGrid()
@@ -140,11 +140,11 @@ public class ExcepcionPrecioDAO {
 	}
 	
 	/**
-	 * Método que se encarga de realizar la inserción de una ExcepcionPrecio con base en la información recibida como 
-	 * parámetro.
-	 * @param Exc Recibe como parámetro un objeto de Modelo ExcepcionPrecio con base en el cual se realiza la inserción
-	 * de la información.
-	 * @return Se retorna un número entero con el idexcepcion retornado en la inserción a la base de datos.
+	 * Mï¿½todo que se encarga de realizar la inserciï¿½n de una ExcepcionPrecio con base en la informaciï¿½n recibida como 
+	 * parï¿½metro.
+	 * @param Exc Recibe como parï¿½metro un objeto de Modelo ExcepcionPrecio con base en el cual se realiza la inserciï¿½n
+	 * de la informaciï¿½n.
+	 * @return Se retorna un nï¿½mero entero con el idexcepcion retornado en la inserciï¿½n a la base de datos.
 	 */
 	public static int insertarExcepcionPrecio(ExcepcionPrecio Exc)
 	{
@@ -155,7 +155,7 @@ public class ExcepcionPrecioDAO {
 		//traemos los campos horas inicial y final para realizar ciertas validaciones de si son nulos o no
 		String horaInicial = Exc.getHoraInicial();
 		String horaFinal = Exc.getHoraFinal();
-		//Validamos si los valores son vacíos
+		//Validamos si los valores son vacï¿½os
 		if(horaInicial == ""){
 			horaInicial = null;
 		}
@@ -192,9 +192,9 @@ public class ExcepcionPrecioDAO {
 
 	
 	/**
-	 * Método qeu se encarga de validar la eliminación de la excepción precio, validando si ha sido o no asignada a un producto
+	 * Mï¿½todo qeu se encarga de validar la eliminaciï¿½n de la excepciï¿½n precio, validando si ha sido o no asignada a un producto
 	 * determinado
-	 * @param idexcepcion Recibe como parámetro el idexcepcion que desea ser eliminado.
+	 * @param idexcepcion Recibe como parï¿½metro el idexcepcion que desea ser eliminado.
 	 * Retorna un valor booleando indicando si tiene o no tiene registros
 	 */
 	public static boolean validarEliminarExcepcionPrecio(int idexcepcion)
@@ -236,8 +236,8 @@ public class ExcepcionPrecioDAO {
 	}
 	
 	/**
-	 * Método qeu se encarga de eliminar una excepción de precio con base en la información enviadad como parámetro.
-	 * @param idexcepcion Recibe como parámetro el idexcepcion que desea ser eliminado.
+	 * Mï¿½todo qeu se encarga de eliminar una excepciï¿½n de precio con base en la informaciï¿½n enviadad como parï¿½metro.
+	 * @param idexcepcion Recibe como parï¿½metro el idexcepcion que desea ser eliminado.
 	 */
 	public static void eliminarExcepcionPrecio(int idexcepcion)
 	{
@@ -266,9 +266,9 @@ public class ExcepcionPrecioDAO {
 	}
 
 	/**
-	 * Método que se encarga de consultar una excepcion Precio con base en el parámetro recibido.
-	 * @param idexcepcion Se recibe como parámetro el idexcepcion que desea ser consultado.
-	 * @return Se retorna un objeto Modelo ExcepcionPrecio que contiene la información el excepcion Precio consultada.
+	 * Mï¿½todo que se encarga de consultar una excepcion Precio con base en el parï¿½metro recibido.
+	 * @param idexcepcion Se recibe como parï¿½metro el idexcepcion que desea ser consultado.
+	 * @return Se retorna un objeto Modelo ExcepcionPrecio que contiene la informaciï¿½n el excepcion Precio consultada.
 	 */
 	public static ExcepcionPrecio retornarExcepcionPrecio(int idexcepcion)
 	{
@@ -328,9 +328,9 @@ public class ExcepcionPrecioDAO {
 	}
 
 	/**
-	 * Método que permite editar una excepción Precio con base en la información enviada como parámetro.
-	 * @param Esc Recibe como parámetro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la edición.
-	 * @return Retorna un string con el resultado del proceso de edición.
+	 * Mï¿½todo que permite editar una excepciï¿½n Precio con base en la informaciï¿½n enviada como parï¿½metro.
+	 * @param Esc Recibe como parï¿½metro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la ediciï¿½n.
+	 * @return Retorna un string con el resultado del proceso de ediciï¿½n.
 	 */
 	public static String editarExcepcionPrecio(ExcepcionPrecio Esc)
 	{
@@ -341,7 +341,7 @@ public class ExcepcionPrecioDAO {
 		//traemos los campos horas inicial y final para realizar ciertas validaciones de si son nulos o no
 				String horaInicial = Esc.getHoraInicial();
 				String horaFinal = Esc.getHoraFinal();
-				//Validamos si los valores son vacíos
+				//Validamos si los valores son vacï¿½os
 				if(horaInicial == ""){
 					horaInicial = null;
 				}
@@ -437,7 +437,7 @@ public class ExcepcionPrecioDAO {
 	
 	
 	/**
-	 * Método que permitirá validar si un código es correcto para una excepción de precio determinada
+	 * Mï¿½todo que permitirï¿½ validar si un cï¿½digo es correcto para una excepciï¿½n de precio determinada
 	 * @param codigo
 	 * @return
 	 */
