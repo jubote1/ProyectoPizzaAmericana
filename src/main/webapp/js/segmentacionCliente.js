@@ -279,10 +279,10 @@ document.addEventListener("DOMContentLoaded", function() {
 						$("td:eq(0)", row).html(index + 1); // Agregar número de fila en la primera celda
 					},
 					drawCallback: function() {
-						let totalRegistros = this.api().rows().count();
-						$("#registroTotal").text(`Total de registros: ${totalRegistros}`);
-					},
+					    let totalRegistros = this.api().rows().count();
+					    $("#registroTotal").text(`Total de registros: ${totalRegistros}`);
 
+					},
 					initComplete: function() {
 						var api = this.api();
 						var selectEtiquetas = document.getElementById("selectEtiquetas");
@@ -395,7 +395,7 @@ document.addEventListener("DOMContentLoaded", function() {
 					orderable: false,
 					className: "text-center", // Añadir clase para centrar
 					render: function(data, type, row) {
-						return `<input type="checkbox" class="row-checkbox" value="${data.email}">`;
+						return `<input type="checkbox" class="row-checkbox" value="${data.correo}">`;
 					}
 				}
 			];
