@@ -287,6 +287,6 @@ public class EmpleadoCtrl {
 	public static void main(String args[])
 	{
 		EmpleadoCtrl empCtrl = new EmpleadoCtrl();
-		empCtrl.validarEmpleadoVale(285, "2025-02-27");
+		empCtrl.validarEmpleadoVale(648, "2025-03-21");
 	}
 }

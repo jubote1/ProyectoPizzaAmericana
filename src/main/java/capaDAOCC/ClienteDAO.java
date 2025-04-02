@@ -14,9 +14,6 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.sql.ResultSet;
 import org.apache.log4j.Logger;
-
-import com.formdev.flatlaf.json.ParseException;
-
 import capaModeloCC.Cliente;
 import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
