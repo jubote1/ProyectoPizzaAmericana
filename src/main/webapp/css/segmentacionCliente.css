@@ -5,7 +5,7 @@ body {
 }
 
 .container-tbl {
-    max-width: 70%;
+    max-width: 88%;
     margin: 1rem auto;
     background-color: white;
     padding: 20px;
@@ -249,6 +249,12 @@ input[type="checkbox"]:hover {
 #selectAll:checked {
   background-color: #4CAF50;
   border-color: #4CAF50;
+}
+.cont_end {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+
 }
 
 #loading-spinner {

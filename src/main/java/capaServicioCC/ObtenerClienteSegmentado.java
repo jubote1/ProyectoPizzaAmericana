@@ -37,7 +37,14 @@ public class ObtenerClienteSegmentado extends HttpServlet {
 
             String fechaInicio = jsonObject.has("fechaInicio") ? jsonObject.get("fechaInicio").getAsString().trim() : null;
             String fechaMaxima = jsonObject.has("fechaMaxima") ? jsonObject.get("fechaMaxima").getAsString().trim() : null;
-            Integer minPedidos = jsonObject.has("minPedidos") ? jsonObject.get("minPedidos").getAsInt() : null;
+            Integer minPedidos = jsonObject.has("minPedidos") && !jsonObject.get("minPedidos").isJsonNull()
+            	    ? jsonObject.get("minPedidos").getAsInt()
+            	    : null;
+            Integer minDiasPublicidad = jsonObject.has("minDiasPublicidad") 
+            	    && !jsonObject.get("minDiasPublicidad").isJsonNull()
+            	    ? jsonObject.get("minDiasPublicidad").getAsInt()
+            	    : 0;
+
 
 
             // Validar que los valores no sean null ni vacíos, y que minPedidos sea mayor que 0
@@ -67,7 +74,7 @@ public class ObtenerClienteSegmentado extends HttpServlet {
             }
 
             // Llamar al controlador
-            String respuesta = SegmentacionClienteCtrl.obtenerClientesFiltrados(fechaInicio, fechaMaxima, minPedidos, excepciones, tiendas);
+            String respuesta = SegmentacionClienteCtrl.obtenerClientesFiltrados(fechaInicio, fechaMaxima, minPedidos, excepciones, tiendas,minDiasPublicidad);
             
  
 

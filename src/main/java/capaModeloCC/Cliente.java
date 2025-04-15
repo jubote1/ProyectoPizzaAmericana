@@ -40,6 +40,8 @@ public class Cliente {
 	private int idTipoPersona;
 	private String identificacion;
 	
+	
+
 	public Cliente(int id, String telefono, String nombres, String direccion, String zonaDireccion, String observacion,
 			String tienda, int idtienda) {
 		super();

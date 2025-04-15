@@ -85,10 +85,15 @@
 					class="form-control" data-placeholder="Seleccionar">
 				</select>
 			</div>
-
 			<div class="section">
-				<input type="checkbox" id="filtrarMiembrosClub" /> Filtrar miembros
-				del club
+				<label>Dias minimos envio publicidad:</label> <input type="number"
+					class="form-control" id="minDiasPublicidad" min="1">
+			</div>
+			<div class="cont_end">
+				<div class="section">
+					<input type="checkbox" id="filtrarMiembrosClub" /> Filtrar
+					miembros del club
+				</div>
 			</div>
 
 		</div>
@@ -123,6 +128,14 @@
 						type="number" class="form-control" id="cantidadSeleccionada"
 						min="1">
 				</div>
+				<div class="cont_end">
+					<div class="section">
+						<input type="checkbox" id="invertirSeleccion"> <label
+							for="invertirSeleccion">Selección inversa</label>
+					</div>
+				</div>
+
+
 			</div>
 
 		</div>

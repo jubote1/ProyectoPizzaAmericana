@@ -47,10 +47,10 @@ public class SegmentacionClienteCtrl {
 	}
 
 	public static String obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTienda) {
+			List<Integer> excepciones, List<Integer> idTiendas , int diasMinimosSinPublicidad) {
 		SegmentacionClienteDAO segmentacionClienteDAO = new SegmentacionClienteDAO();
 		List<ClienteSegmento> clientes = segmentacionClienteDAO.obtenerClientesFiltrados(fechaInicio, fechaMaxima,
-				minPedidos, excepciones, idTienda);
+				minPedidos, excepciones, idTiendas,diasMinimosSinPublicidad);
 
 		JSONArray jsonArray = new JSONArray();
 		for (ClienteSegmento cliente : clientes) {
@@ -76,7 +76,7 @@ public class SegmentacionClienteCtrl {
 	    JSONArray jsonArray = new JSONArray();
 	    for (ClienteClub cliente : clientes) {
 	        JSONObject jsonObject = new JSONObject();
-	        jsonObject.put("idCliente", cliente.getIdcliente());
+	        jsonObject.put("idcliente", cliente.getIdcliente());
 	        jsonObject.put("nombre", cliente.getNombre());
 	        jsonObject.put("nombreCompania", cliente.getNombrecompania());
 	        jsonObject.put("telefono", cliente.getTelefono());
@@ -166,7 +166,7 @@ public class SegmentacionClienteCtrl {
 
 	        // Manejar la respuesta
 	        if (!response.isSuccessful()) {
-	            jsonResponse.addProperty("success", false);
+	            jsonResponse.addProperty("success", false); 
 	            jsonResponse.addProperty("message", "Error en la API de Brevo: " + response.body().string());
 	        } else {
 	            jsonResponse.addProperty("success", true);
@@ -184,6 +184,10 @@ public class SegmentacionClienteCtrl {
 	    return jsonResponse;
 	}
 
-	
+	public static boolean actualizarFechaUltimaPublicidad(List<Integer> idsclientes) {
+	    SegmentacionClienteDAO segmentacionClienteDAO = new SegmentacionClienteDAO();
+		boolean respuesta =segmentacionClienteDAO.actualizarFechaUltimaPublicidad(idsclientes);
+        return respuesta;
+	}
 	
 }

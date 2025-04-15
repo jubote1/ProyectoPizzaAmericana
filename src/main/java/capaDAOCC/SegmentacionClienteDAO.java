@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import capaModeloCC.ClienteClub;
@@ -54,34 +56,41 @@ public class SegmentacionClienteDAO {
 	}
 
 	public List<ClienteSegmento> obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTiendas) {
+			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad) {
+
 		List<ClienteSegmento> clientes = new ArrayList<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		String sql = "SELECT b.idcliente, " + "       CONCAT(b.nombre, ' ', b.apellido) AS nombre,b.nombrecompania, "
+		String sql = "SELECT b.idcliente, " + "       CONCAT(b.nombre, ' ', b.apellido) AS nombre, b.nombrecompania, "
 				+ "       b.telefono, c.nombre AS nombretienda, "
 				+ "       COUNT(*) AS numeropedidos, MAX(a.fechapedido) AS fechamaxima, " + "       b.email "
 				+ "FROM pedido a " + "JOIN cliente b ON a.idcliente = b.idcliente "
 				+ "JOIN tienda c ON b.idtienda = c.idtienda " + "JOIN detalle_pedido d ON a.idpedido = d.idpedido "
-				+ "WHERE c.funcional != 'N' "; // Excluir tiendas donde funcional = 'N'
+				+ "WHERE c.funcional != 'N' ";
 
-		// Agregar condiciÃ³n para idTiendas si la lista no estÃ¡ vacÃ­a
+		// Agregar condición para idTiendas
 		if (idTiendas != null && !idTiendas.isEmpty()) {
 			String placeholders = String.join(",", Collections.nCopies(idTiendas.size(), "?"));
 			sql += "AND c.idtienda IN (" + placeholders + ") ";
 		}
 
-		// ConstrucciÃ³n dinÃ¡mica del IN si hay excepciones
+		// Agregar condición para excepciones
 		if (excepciones != null && !excepciones.isEmpty()) {
 			String placeholders = String.join(",", Collections.nCopies(excepciones.size(), "?"));
 			sql += "AND d.idexcepcion IN (" + placeholders + ") ";
 		}
 
-		sql += "AND b.email != '' " + "AND b.politica_datos = 'S' " + "AND b.envio_publicidad = 'S' "
-				+ "AND a.fechapedido >= ? " + "GROUP BY b.idcliente, b.nombre, b.telefono, c.nombre, b.email "
+		sql += "AND b.email != '' " + "AND b.politica_datos = 'S' " + "AND b.envio_publicidad = 'S' ";
+
+		// Aquí viene lo importante:
+		if (diasMinimosSinPublicidad > 0) {
+			sql += "AND (b.ultima_fecha_publicidad IS NULL OR b.ultima_fecha_publicidad <= CURRENT_DATE - INTERVAL ? DAY) ";
+		}
+
+		sql += "AND a.fechapedido >= ? " + "GROUP BY b.idcliente, b.nombre, b.telefono, c.nombre, b.email "
 				+ "HAVING MAX(fechapedido) < ? " + "AND COUNT(*) >= ?";
 
 		try {
@@ -90,21 +99,26 @@ public class SegmentacionClienteDAO {
 
 			int index = 1;
 
-			// Setear idTiendas si existen
+			// Setear idTiendas
 			if (idTiendas != null && !idTiendas.isEmpty()) {
 				for (int idTienda : idTiendas) {
 					ps.setInt(index++, idTienda);
 				}
 			}
 
-			// Setear excepciones si existen
+			// Setear excepciones
 			if (excepciones != null && !excepciones.isEmpty()) {
 				for (int excepcion : excepciones) {
 					ps.setInt(index++, excepcion);
 				}
 			}
 
-			// Setear los demÃ¡s parÃ¡metros
+			// Solo si se usó la condición de días, se setea ese parámetro
+			if (diasMinimosSinPublicidad > 0) {
+				ps.setInt(index++, diasMinimosSinPublicidad);
+			}
+
+			// Resto de parámetros
 			ps.setString(index++, fechaInicio);
 			ps.setString(index++, fechaMaxima);
 			ps.setInt(index++, minPedidos);
@@ -126,7 +140,6 @@ public class SegmentacionClienteDAO {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			// Cerrar recursos en orden inverso para evitar errores
 			try {
 				if (rs != null)
 					rs.close();
@@ -225,6 +238,62 @@ public class SegmentacionClienteDAO {
 			}
 		}
 		return clientes;
+	}
+
+	public boolean actualizarFechaUltimaPublicidad(List<Integer> idsClientes) {
+		// Definir la sentencia SQL para actualizar la fecha
+		String sql = "UPDATE cliente SET ultima_fecha_publicidad = ? WHERE idcliente = ?";
+
+		// Declaración de objetos para la conexión, el PreparedStatement y el manejo de
+		// excepciones
+		Connection con1 = null;
+		PreparedStatement ps = null;
+
+		try {
+			// Crear una nueva instancia de la clase ConexionBaseDatos (conectar a la BD)
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			con1 = con.obtenerConexionBDPrincipal(); // Obtener la conexión a la base de datos
+
+			// Obtener la fecha actual
+			Date fechaActual = new Date(); // Fecha actual
+			java.sql.Date sqlDate = new java.sql.Date(fechaActual.getTime()); // Convertir a java.sql.Date para la base
+																				// de datos
+
+			// Preparar la sentencia SQL
+			ps = con1.prepareStatement(sql);
+
+			// Iterar sobre la lista de IDs de clientes y actualizar la fecha para cada uno
+			for (Integer idCliente : idsClientes) {
+				// Establecer los parámetros de la consulta
+				ps.setDate(1, sqlDate); // Establecer la fecha actual
+				ps.setInt(2, idCliente); // Establecer el ID del cliente
+
+				// Ejecutar la actualización para el cliente actual
+				int filasAfectadas = ps.executeUpdate();
+
+				// Si alguna actualización no tuvo éxito, retornar false
+				if (filasAfectadas == 0) {
+					return false;
+				}
+			}
+
+			// Si todas las actualizaciones fueron exitosas, retornar true
+			return true;
+
+		} catch (SQLException e) {
+			e.printStackTrace(); // Manejo de errores en caso de excepciones SQL
+			return false; // Si ocurre un error, retornar false
+		} finally {
+			try {
+				// Cerrar los recursos en el bloque finally
+				if (ps != null)
+					ps.close();
+				if (con1 != null)
+					con1.close();
+			} catch (SQLException e) {
+				e.printStackTrace(); // Manejo de errores en el cierre de recursos
+			}
+		}
 	}
 
 }

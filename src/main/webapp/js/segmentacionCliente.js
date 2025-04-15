@@ -39,12 +39,32 @@ document.addEventListener("DOMContentLoaded", function() {
 		$(".row-checkbox").prop("checked", checked);
 	});
 
-	// Evento para cantidadSeleccionada: seleccionar N filas
-	$(document).on("input change", "#cantidadSeleccionada", function() {
-		let cantidad = parseInt($(this).val()) || 0;
-		$(".row-checkbox").prop("checked", false); // Desmarca todos
-		$(".row-checkbox").slice(0, cantidad).prop("checked", true); // Marca los primeros N
-	});
+	//	// Evento para cantidadSeleccionada: seleccionar N filas
+	//	$(document).on("input change", "#cantidadSeleccionada", function() {
+	//		let cantidad = parseInt($(this).val()) || 0;
+	//		$(".row-checkbox").prop("checked", false); // Desmarca todos
+	//		$(".row-checkbox").slice(0, cantidad).prop("checked", true); // Marca los primeros N
+	//	});
+	//	
+	function actualizarSeleccion() {
+		let cantidad = parseInt($("#cantidadSeleccionada").val()) || 0;
+		let invertir = $("#invertirSeleccion").is(":checked");
+		let checkboxes = $(".row-checkbox");
+
+		checkboxes.prop("checked", false); // Desmarca todos
+
+		if (cantidad > 0) {
+			if (invertir) {
+				checkboxes.slice(-cantidad).prop("checked", true);
+			} else {
+				checkboxes.slice(0, cantidad).prop("checked", true);
+			}
+		}
+	}
+
+	// Se llama esta función cuando cambia el número o el checkbox de invertir
+	$(document).on("input change", "#cantidadSeleccionada, #invertirSeleccion", actualizarSeleccion);
+
 
 	let tablaClientes = $("#tablaClientes").DataTable({
 		paging: false,
@@ -54,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		info: false,
 		data: [],
 		fixedHeader: true, // Mantiene el encabezado fijo
-		scrollY: "600px",  // Activa el scroll vertical
+		scrollY: "800px",  // Activa el scroll vertical
 		scrollCollapse: true,
 		columns: [
 			{ data: null, title: "#" },
@@ -122,6 +142,8 @@ document.addEventListener("DOMContentLoaded", function() {
 	document.getElementById('filtrarMiembrosClub').addEventListener('change', function() {
 		var camposMiembrosClub = document.getElementById('camposMiembrosClub');
 		var cantidadPedidosSection = document.getElementById('cantidadPedidos').closest('.section');
+		var minDiasPublicidadSection = document.getElementById('minDiasPublicidad').closest('.section');
+
 		var selectPromocionesSection = document.getElementById('selectPromociones').closest('.section');
 		var obligatorioFields = document.querySelectorAll('.obligatorio'); // Selecciona todos los spans con la clase obligatorio
 
@@ -132,6 +154,8 @@ document.addEventListener("DOMContentLoaded", function() {
 			// Ocultar los otros campos sin afectar el diseño
 			cantidadPedidosSection.style.visibility = 'hidden';
 			cantidadPedidosSection.style.position = 'absolute';
+			minDiasPublicidadSection.style.visibility = 'hidden';
+			minDiasPublicidadSection.style.position = 'absolute';
 			selectPromocionesSection.style.visibility = 'hidden';
 			selectPromocionesSection.style.position = 'absolute';
 
@@ -147,6 +171,8 @@ document.addEventListener("DOMContentLoaded", function() {
 			// Restaurar los otros campos sin romper el CSS
 			cantidadPedidosSection.style.visibility = 'visible';
 			cantidadPedidosSection.style.position = 'relative';
+			minDiasPublicidadSection.style.visibility = 'visible';
+			minDiasPublicidadSection.style.position = 'relative';
 			selectPromocionesSection.style.visibility = 'visible';
 			selectPromocionesSection.style.position = 'relative';
 
@@ -226,6 +252,9 @@ document.addEventListener("DOMContentLoaded", function() {
 	async function cargarClientes(data = {}, url, columns = []) {
 		const btnConsultar = document.getElementById("btnConsultar");
 		const loadingSpinner = document.getElementById("loading-spinner");
+
+		let alertaLenta = null;
+
 		try {
 			btnConsultar.disabled = true;
 			loadingSpinner.style.display = "flex";
@@ -259,59 +288,61 @@ document.addEventListener("DOMContentLoaded", function() {
 					tablaClientes.clear().destroy();
 				}
 
-				// Inicializar DataTable con columnas dinámicas
-				tablaClientes = $("#tablaClientes").DataTable({
-					paging: false,
-					lengthChange: false,
-					searching: false,
-					autoWidth: true,
-					info: false,
-					data: responseData,
-					fixedHeader: true,
-					scrollY: "600px",
-					scrollCollapse: true,
-					columns: columns,
-					responsive: true,
-					language: {
-						url: 'https://cdn.datatables.net/plug-ins/1.10.15/i18n/Spanish.json',
-					},
-					createdRow: function(row, data, index) {
-						$("td:eq(0)", row).html(index + 1); // Agregar número de fila en la primera celda
-					},
-					drawCallback: function() {
-					    let totalRegistros = this.api().rows().count();
-					    $("#registroTotal").text(`Total de registros: ${totalRegistros}`);
+				await new Promise(resolve => {
+					tablaClientes = $("#tablaClientes").DataTable({
+						paging: false,
+						lengthChange: false,
+						searching: false,
+						autoWidth: true,
+						info: false,
+						data: responseData,
+						fixedHeader: true,
+						scrollY: "800px",
+						scrollCollapse: true,
+						columns: columns,
+						responsive: true,
+						language: {
+							url: 'https://cdn.datatables.net/plug-ins/1.10.15/i18n/Spanish.json',
+						},
+						createdRow: function(row, data, index) {
+							$("td:eq(0)", row).html(index + 1);
+						},
+						drawCallback: function() {
+							let totalRegistros = this.api().rows().count();
+							$("#registroTotal").text(`Total de registros: ${totalRegistros}`);
+						},
+						initComplete: function() {
+							const api = this.api();
+							const selectEtiquetas = document.getElementById("selectEtiquetas");
+							const parametrosSelect = document.getElementById("parametrosSelect");
 
-					},
-					initComplete: function() {
-						var api = this.api();
-						var selectEtiquetas = document.getElementById("selectEtiquetas");
-						var parametrosSelect = document.getElementById("parametrosSelect");
+							let opciones = ``;
+							const totalColumns = api.columns().count();
 
-						let opciones = ``;
-						var totalColumns = api.columns().count(); // Obtiene el total de columnas
+							api.columns().header().each(function(th, index) {
+								if (index > 0 && index < totalColumns - 1) {
+									const columnName = $(th).text();
+									opciones += `<option value="${index}">${columnName}</option>`;
+								}
+							});
 
-						api.columns().header().each(function(th, index) {
-							// Ignorar la primera (index 0) y la última (index totalColumns - 1)
-							if (index > 0 && index < totalColumns - 1) {
-								var columnName = $(th).text(); // Obtiene el nombre de la columna
-								opciones += `<option value="${index}">${columnName}</option>`;
+							if (selectEtiquetas && parametrosSelect) {
+								let et = '<option value="" disabled selected>Seleccionar</option>';
+								selectEtiquetas.innerHTML = et + opciones;
+								selectEtiquetas.value = "";
+								parametrosSelect.innerHTML = opciones;
+								parametrosSelect.value = "1";
 							}
-						});
 
-						// Asegúrate de que los elementos existen antes de asignarles contenido
-						if (selectEtiquetas && parametrosSelect) {
-							let et = '<option value="" disabled selected>Seleccionar</option>'
-							selectEtiquetas.innerHTML = et + opciones;
-							selectEtiquetas.value = ""; // O puedes poner aquí un valor predeterminado si lo prefieres
-
-							parametrosSelect.innerHTML = opciones;
-							parametrosSelect.value = "1"; // Ajusta esto según el valor predeterminado que deseas
+							// 👇 Esto indica que terminó la carga de DataTable
+							resolve();
 						}
-					}
-
+					});
 				});
 
+				if (alertaLenta) {
+					Swal.close(); // cerrar mensaje de "espera"
+				}
 
 				Swal.fire({
 					icon: "success",
@@ -331,6 +362,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			}
 
 			return responseData;
+
 		} catch (error) {
 			console.error("⚠️ Error al cargar clientes:", error.message);
 			Swal.fire({
@@ -342,8 +374,8 @@ document.addEventListener("DOMContentLoaded", function() {
 			});
 			return null;
 		} finally {
+			loadingSpinner.style.display = "none"; // 👈 AHORA sí se oculta al final real
 			btnConsultar.disabled = false;
-			loadingSpinner.style.display = "none";
 		}
 	}
 
@@ -395,20 +427,22 @@ document.addEventListener("DOMContentLoaded", function() {
 					orderable: false,
 					className: "text-center", // Añadir clase para centrar
 					render: function(data, type, row) {
-						return `<input type="checkbox" class="row-checkbox" value="${data.correo}">`;
+						return `<input type="checkbox" class="row-checkbox" value="${data.correo}" data-idcliente="${row.idcliente}">`;
 					}
 				}
 			];
 
-			cargarClientes(datos, 'ObtenerMiembrosClub',columns);
+			cargarClientes(datos, 'ObtenerMiembrosClub', columns);
 
 		} else {
 			console.log("📌 Filtrando por segmentación de clientes");
 
 			const cantidadPedidos = document.getElementById("cantidadPedidos").value.trim();
+			const minDiasPublicidad = document.getElementById("minDiasPublicidad").value.trim();
 			const promocionesSeleccionadas = Array.from(document.querySelectorAll("#selectPromociones option:checked")).map(option => option.value);
 
 			if (cantidadPedidos !== "") datos.minPedidos = parseInt(cantidadPedidos, 10) || 0;
+			if (minDiasPublicidad !== "") datos.minDiasPublicidad = parseInt(minDiasPublicidad, 10) || 0;
 			if (promocionesSeleccionadas.length > 0) datos.excepciones = promocionesSeleccionadas;
 
 			if (!rangoFechas || cantidadPedidos === "") {
@@ -436,13 +470,13 @@ document.addEventListener("DOMContentLoaded", function() {
 					orderable: false,
 					className: "text-center", // Añadir clase para centrar
 					render: function(data, type, row) {
-						return `<input type="checkbox" class="row-checkbox" value="${data.email}">`;
+						return `<input type="checkbox" class="row-checkbox" value="${data.email}" data-idcliente="${row.idcliente}">`;
 					}
 				}
 			];
 
 			console.log("📤 Enviando datos de consulta:", datos);
-			cargarClientes(datos, 'ObtenerClienteSegmentado',columns);
+			cargarClientes(datos, 'ObtenerClienteSegmentado', columns);
 		}
 	});
 
@@ -471,6 +505,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		// Verificar si hay correos en la tabla manual
 		let correosManuales = [];
 		let correosInvalidos = []; // Almacena los correos inválidos
+		let idsClientes = [];
 
 		document.querySelectorAll("#correosManual tbody tr").forEach(row => {
 			let email = row.cells[0].querySelector("input").value.trim();
@@ -507,16 +542,26 @@ document.addEventListener("DOMContentLoaded", function() {
 				.replace(/<span[^>]*>.*?<\/span>/g, "")
 				.replace(/&nbsp;/g, " ")
 				.trim();
-				
-				
+
+
 		} else {
 			// Obtener correos seleccionados de la tabla original
 			let correosSeleccionados = Array.from(document.querySelectorAll(".row-checkbox:checked")).map(checkbox => {
+
 				let fila = checkbox.closest("tr");
 				let email = checkbox.value.trim();
+				let idcliente = checkbox.dataset.idcliente
 
 				let emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-				if (!emailRegex.test(email)) return null;
+				if (!emailRegex.test(email)) {
+					return null;
+				} else {
+
+					if (idcliente !== undefined && idcliente !== null && idcliente !== "") {
+						idsClientes.push(idcliente);
+					}
+
+				}
 
 				let asuntoTexto = asuntoDiv.innerHTML.trim();
 				let spans = asuntoDiv.querySelectorAll("span.etiqueta");
@@ -530,6 +575,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 				let name = fila.cells[1]?.textContent.trim() || "";
 				let obj = { email, name };
+
+
 
 				if (spans.length > 0) {
 					obj.subject = asuntoTexto;
@@ -605,16 +652,54 @@ document.addEventListener("DOMContentLoaded", function() {
 			confirmButtonText: "Sí, enviar",
 			cancelButtonText: "Cancelar",
 			reverseButtons: true
-		}).then((result) => {
+		}).then(async (result) => {
 			if (result.isConfirmed) {
+				let mensajeFinal = "";
+				let huboError = false;
+
+				// Crear un array para almacenar las promesas
+				const promesas = [];
+
+				// Envío de correos
+				const promesaEnvio = EnvioDatos(data, "EnvioCorreoBrevo", "Error en el envío de correos.");
+				promesas.push(promesaEnvio); // Añadir la promesa a la lista
+
+				// Actualización de la fecha (solo si hay clientes)
+				if (idsClientes.length > 0) {
+					const data_idcliente = { idsClientes };
+					const promesaFecha = EnvioDatos(data_idcliente, "ClienteUltimaFechaEnvio", "Error al actualizar fecha.");
+					promesas.push(promesaFecha); // Añadir la promesa a la lista
+				}
+
+				// Esperar que todas las promesas se resuelvan
 				try {
-					EnviarCorreos(data);
+					const resultados = await Promise.all(promesas);
+
+					// Recorremos los resultados de todas las promesas
+					resultados.forEach((resultado) => {
+						if (resultado.success) {
+							mensajeFinal += "✅ " + resultado.message + "\n";
+						} else {
+							mensajeFinal += "❌ " + resultado.message + "\n";
+							huboError = true;
+						}
+					});
+
+					// Mostrar el mensaje final
+					await Swal.fire({
+						icon: huboError ? "warning" : "success",
+						title: huboError ? "Proceso incompleto" : "Todo correcto",
+						text: mensajeFinal,
+						confirmButtonText: "Aceptar"
+					});
+
 				} catch (error) {
-					console.error("Error al enviar los correos:", error);
-					Swal.fire({
+					// Si alguna promesa falla, mostrar error
+					await Swal.fire({
 						icon: "error",
 						title: "Error",
-						text: "Ocurrió un problema al enviar los correos. Intenta de nuevo.",
+						text: "Ocurrió un error inesperado en uno de los procesos.",
+						confirmButtonText: "Aceptar"
 					});
 				}
 			}
@@ -752,66 +837,53 @@ document.addEventListener("DOMContentLoaded", function() {
 	inicializarTabla("correosManual");
 
 
+	async function EnvioDatos(data = {}, url, mgs) {
+		const btnConfirmarEnvio = document.getElementById("btnConfirmarEnvio");
+		const loadingSpinner = document.getElementById("loading-spinner");
 
-	async function EnviarCorreos(data = {}) {
-	    const btnConfirmarEnvio = document.getElementById("btnConfirmarEnvio");
-	    const loadingSpinner = document.getElementById("loading-spinner");
+		try {
+			// Deshabilitar el botón mientras se están cargando los datos
+			btnConfirmarEnvio.disabled = true;
+			loadingSpinner.style.display = "flex";
 
-	    try {
-	        // Deshabilitar el botón mientras se están cargando los datos
-	        btnConfirmarEnvio.disabled = true;
-	        loadingSpinner.style.display = "flex";
+			console.log("📤 Enviando datos:", data);
 
-	        console.log("📤 Enviando datos:", data);
-
-	        // Realizar la solicitud POST al servlet
-	        const response = await fetch(`${BASE_URL}/EnvioCorreoBrevo`, {
-	            method: "POST",
+			// Realizar la solicitud POST al servlet
+			const response = await fetch(`${BASE_URL}/${url}`, {
+				method: "POST",
 				headers: {
-				      "Content-Type": "application/json; charset=UTF-8"
-				  },
-	            body: JSON.stringify(data)
-	        });
+					"Content-Type": "application/json; charset=UTF-8"
+				},
+				body: JSON.stringify(data)
+			});
 
-	        const responseData = await response.json();
-			
+			const responseData = await response.json();
+
 			console.log("✅ Respuesta:", responseData);
-	        if (!response.ok || !responseData.success) {
-	            throw new Error(responseData.message || `Error ${response.status}: ${response.statusText}`);
-	        }
+			if (!response.ok || !responseData.success) {
+				let error = responseData.message || `Error ${response.status}: ${response.statusText}`;
+				console.error(error);
+				// Devuelvo la promesa con el error
+				return Promise.reject({ success: false, message: mgs + " " + error });
+			}
 
-	        console.log("✅ Respuesta recibida:", responseData);
+			console.log("✅ Respuesta recibida:", responseData);
 
-	        // Mostrar mensaje de éxito
-	        Swal.fire({
-	            icon: "success",
-	            title: "Éxito",
-	            text: responseData.message,
-	            timer: 3000,
-	            showConfirmButton: false
-	        });
+			// Devuelvo una promesa resuelta con el mensaje de éxito
+			return Promise.resolve({ success: true, message: responseData.message });
 
-	        return responseData;
-
-	    } catch (error) {
-	        console.error("⚠️ Error al enviar correos:", error.message);
-
-	        // Mostrar mensaje de error
-	        Swal.fire({
-	            icon: "error",
-	            title: "Error",
-	            text: error.message,
-	            timer: 4000,
-	            showConfirmButton: false
-	        });
-
-	        return null;
-	    } finally {
-	        // Volver a habilitar el botón y ocultar el spinner
-	        btnConfirmarEnvio.disabled = false;
-	        loadingSpinner.style.display = "none";
-	    }
+		} catch (error) {
+			console.error("⚠️ Error:", error.message);
+			// Devuelvo una promesa rechazada con el mensaje de error
+			return Promise.reject({ success: false, message: error.message });
+		} finally {
+			// Este bloque se ejecutará al final de todo, independientemente de lo que pase en la promesa
+			btnConfirmarEnvio.disabled = false;
+			loadingSpinner.style.display = "none";
+		}
 	}
+
+
 
 
 
