@@ -12573,4 +12573,12 @@ public class PedidoCtrl {
 		return(listJSON.toJSONString());
 	}
 	
+	public String obtenerCantidadProductoVendidoFecha(int idProducto)
+	{
+		JSONObject respuesta = new JSONObject();
+		int cantidad = PedidoDAO.obtenerCantidadProductoVendidoFecha(idProducto);
+		respuesta.put("cantidad", cantidad);
+		return(respuesta.toJSONString());
+	}
+	
 }

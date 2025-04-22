@@ -5669,5 +5669,44 @@ public class PedidoDAO {
 		}
 		return(respuesta);
 	}
+	
+	/**
+	 * Método que retorna la cantidad de productos vendidas en la fecha actual.
+	 * @param idProducto
+	 * @return
+	 */
+	public static int obtenerCantidadProductoVendidoFecha(int idProducto)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		int cantidadVendido = 0;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
+			Statement stm = con1.createStatement();
+			String consulta = "SELECT COUNT(*) FROM pedido a, detalle_pedido b where a.idpedido = b.idpedido AND a.fechapedido = CURDATE() AND b.idproducto = " + idProducto;
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next())
+			{
+				cantidadVendido = rs.getInt(1);
+			}
+			
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			return(0);
+		}
+		return(cantidadVendido);
+	}
 
 }
