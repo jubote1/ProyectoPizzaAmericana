@@ -28,6 +28,9 @@ import com.esri.arcgisruntime.symbology.Symbol;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
 import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
 import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import capaDAOCC.ParametrosDAO;
 import capaDAOCC.TiendaBloqueadaDAO;
@@ -37,161 +40,151 @@ import capaModeloCC.CorreoElectronico;
 import capaModeloCC.Parametro;
 import capaModeloCC.Resultado;
 import capaModeloCC.Ubicacion;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import utilidadesCC.ControladorEnvioCorreo;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 
-
-
 public class UbicacionCtrl {
-	
-	public static boolean primeraEjecucion = false;
-	
-	public static Resultado ubicarDireccionEnTienda(String direccion,String tipo_cliente,String lead)
-	{
+
+	public static Resultado ubicarDireccionEnTienda(String direccion, String tipo_cliente, String lead) {
 		Resultado resultado = new Resultado();
 		try {
-			Parametro parametro;
-//			if(!primeraEjecucion)
-//			{
-//				parametro =ParametrosDAO.obtenerParametro("LIBRERIAARCGIS");
-//				System.out.println(parametro.getValorTexto());
-//				ArcGISRuntimeEnvironment.setInstallDirectory(parametro.getValorTexto());
-//				primeraEjecucion = true;
-//			}
-			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
-			System.out.println("AQUI: "+parametro.getValorTexto());
-			System.out.println("2.1 ANTES DE INICIAR ");
-			//ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
-			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
-			System.out.println("2.2 ANTES DE INICIAR ");
-	        String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
-	        //String address = "Cl. 104 #42b-2 a 42b-30,Medellín,Antioquia";
-	        String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
-	        System.out.println(direccion);
-	        System.out.println(tipo_cliente);
-	        LocatorTask locatorTask = new LocatorTask(serviceUrl);
-	        GeocodeParameters geocodeParameters = new GeocodeParameters();
-	        geocodeParameters.getResultAttributeNames().add("*");
-	        geocodeParameters.setMaxResults(1); // Limitamos el número de resultados para obtener solo el más relevante
-	
-	        ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
-            List<GeocodeResult> geocodeResults = future.get(); 
+			inicializarApiKeyArcGIS();
 
-            if (geocodeResults != null && !geocodeResults.isEmpty()) {
-                GeocodeResult geocodeResult = geocodeResults.get(0);
-                Point displayLocation = geocodeResult.getDisplayLocation();
-                double latitude = displayLocation.getY();
-                double longitude = displayLocation.getX();
+			String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+			String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
 
-                System.out.println("Coordenadas geográficas de la dirección:");
-                System.out.println("Latitud: " + latitude);
-                System.out.println("Longitud: " + longitude);
-                
-                ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable(queryUrl);
+			Point punto = obtenerCoordenadasDesdeArcGIS(direccion, serviceUrl);
+			if (punto != null) {
+				resultado = consultarZonas(punto, tipo_cliente, lead, queryUrl);
+			}
 
-                Point point = new Point(longitude, latitude, SpatialReferences.getWgs84());
-             // Transforma las coordenadas al sistema de coordenadas de la capa de entidades (si es diferente)
-                QueryParameters query = new QueryParameters();
-                query.setGeometry(point); // Establece la geometría de la consulta (en este caso, un punto)
-                query.setSpatialRelationship(QueryParameters.SpatialRelationship.WITHIN);
- 
-               
-                    try {
-                        FeatureQueryResult result = serviceFeatureTable.queryFeaturesAsync(query,ServiceFeatureTable.QueryFeatureFields.LOAD_ALL).get();
+			// Si ArcGIS falla o no tiene cobertura
+			if (!resultado.isSuccess()) {
+				JsonObject coords = obtenerCoordenadasGMps(direccion);
+				double lat = coords.get("Latitud").getAsDouble();
+				double lng = coords.get("Longitud").getAsDouble();
+				resultado = consultarZonas(new Point(lng, lat, SpatialReferences.getWgs84()), tipo_cliente, lead,
+						queryUrl);
+			}
+			
 
-                        // Verifica si hay resultados en la consulta
-                        if (result != null && result.iterator().hasNext()) {
-                            // El punto se encuentra dentro de al menos uno de los polígonos en la capa
-                            System.out.println("El punto esta dentro de al menos uno de los polígonos en la capa.");
 
-                            // Itera sobre los resultados de la consulta
-                            for (Feature feature : result) {
-                            	  Map<String, Object> attributes = feature.getAttributes();
-                            	  Object nombre = attributes.get("nombre");
-                            	  System.out.println(nombre);
-                            		  if(tipo_cliente.toLowerCase().equals("informacion")) {
-                            			  resultado.setResultado("Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre.toString() + ",te invitamos a que sigas con tu pedido.Recuerda que toda la informacion es validada al final por nuestros asesores");    
-                            			  
-                            		  }else if(tipo_cliente.toLowerCase().equals("programado")){
-                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestras tiendas.El pedido esta siendo programado para la tienda "+ nombre.toString());    
-                            			  
-                            		  }else {
-                            			  resultado.setResultado("Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre.toString());  
-                            		  }
-
-                            	  resultado.setInfoAdicional(nombre.toString());
-                            	  //Debemos de fijar el estadoTienda, con el nombre de la tienda verificaremos si está bloqueada o no
-                            	  //Debemos de recuperar la tienda con su id
-                            	  int idTienda = capaDAOCC.TiendaDAO.obteneridTienda(nombre.toString());
-                            	  //Debemos de verificar si la tienda esta bloqueada o no
-                            	  boolean tiendaBloqueada = TiendaBloqueadaDAO.validarTiendaBloqueada(idTienda);
-                            	  if(tiendaBloqueada)
-                            	  {
-                            		  resultado.setEstadoTienda("BLOQUEADO");
-                            	  }else
-                            	  {
-                            		  resultado.setEstadoTienda("DISPONIBLE");
-                            	  }
-                            }
-                        
-                        } else {
-                            // El punto no se encuentra dentro de ningun poligono en la capa
-                            System.out.println("El punto no se encuentra dentro de ningun poligono en la capa.");
-                            resultado.setResultado("Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas.Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 para que puedas realizar tu pedido o selecciona nuevamente la opcion para volver a colocar otra direccion."); 
-
-                        }
-                    } catch (Exception e) {
-                        System.out.println("Error al realizar la consulta: " + e.getMessage());
-                        //Enviaremos correo para notificar que hay problema con la API
-                        EnvioCorreo(lead ,e.getMessage());
-                    }
-               
-                
-            } else {
-                System.out.println("No se pudo geocodificar la dirección.");
-                resultado.setResultado("Presentamos problemas encontrando tu dirección, recuerda seguir las instrucciones de nuestro BOT de mensajes, para que el sistema pueda validar bien tu dirección. Selecciona nuevamente la opcion para volver a colocar otra direccion.");
-            }
-        } catch (Exception e) {
-        	// resultado.setResultado("Presentamos problemas encontrando tu dirección,Intentalo de nuevo mas tarde");
-            System.out.println("Error al geocodificar: " + e.getMessage());
-            EnvioCorreo(lead ,e.getMessage());
-
-        }
-        return(resultado);
+		} catch (Exception e) {
+			System.out.println("Error al geocodificar: " + e.getMessage());
+			EnvioCorreo(lead, e.getMessage());
+		}
+		return resultado;
 	}
-	
-	public Ubicacion ubicarDireccionEnTiendaBatch(String direccion)
-	{
-		Ubicacion ubica = new Ubicacion(0,0);
+
+	private static void inicializarApiKeyArcGIS() throws Exception {
+		Parametro parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
+		//System.out.println(parametro.getValorTexto());
+		//ArcGISRuntimeEnvironment.setApiKey("AAPK8f44b53988ec4457b8d7cebe2d9ca927gC2JymB5EkSC3Gt71rGCqWdnJqkR1hhou3JvG83zGpZm-dnA59DqJiwzOGIeor7t");
+		ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
+	}
+
+	private static Point obtenerCoordenadasDesdeArcGIS(String direccion, String serviceUrl) throws Exception {
+		LocatorTask locatorTask = new LocatorTask(serviceUrl);
+		GeocodeParameters geocodeParameters = new GeocodeParameters();
+		geocodeParameters.getResultAttributeNames().add("*");
+		geocodeParameters.setMaxResults(1);
+
+		ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
+		List<GeocodeResult> geocodeResults = future.get();
+
+		if (geocodeResults != null && !geocodeResults.isEmpty()) {
+			GeocodeResult geocodeResult = geocodeResults.get(0);
+			Point displayLocation = geocodeResult.getDisplayLocation();
+			double latitude = displayLocation.getY();
+			double longitude = displayLocation.getX();
+
+			return displayLocation;
+		}
+		return null;
+	}
+
+	private static Resultado consultarZonas(Point punto, String tipo_cliente, String lead, String queryUrl) {
+		Resultado resultado = new Resultado();
+		ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable(queryUrl);
+		QueryParameters query = new QueryParameters();
+		query.setGeometry(punto);
+		query.setSpatialRelationship(QueryParameters.SpatialRelationship.WITHIN);
+
+		try {
+			FeatureQueryResult result = serviceFeatureTable
+					.queryFeaturesAsync(query, ServiceFeatureTable.QueryFeatureFields.LOAD_ALL).get();
+
+			if (result != null && result.iterator().hasNext()) {
+				for (Feature feature : result) {
+					Map<String, Object> attributes = feature.getAttributes();
+					String nombre = attributes.get("nombre").toString();
+
+					String mensaje = switch (tipo_cliente.toLowerCase()) {
+					case "informacion" -> "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
+							+ ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
+					case "programado" ->
+						"Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
+								+ nombre;
+					default -> "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
+					};
+					resultado.setResultado(mensaje);
+					resultado.setInfoAdicional(nombre);
+
+					int idTienda = capaDAOCC.TiendaDAO.obteneridTienda(nombre);
+					resultado.setEstadoTienda(
+							TiendaBloqueadaDAO.validarTiendaBloqueada(idTienda) ? "BLOQUEADO" : "DISPONIBLE");
+					resultado.setSuccess(true);
+					break;
+				}
+			} else {
+				resultado.setResultado(
+						"Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.");
+				resultado.setSuccess(false);
+			}
+		} catch (Exception e) {
+			System.out.println("Error al realizar la consulta: " + e.getMessage());
+			EnvioCorreo(lead, e.getMessage());
+			resultado.setSuccess(false);
+		}
+
+		return resultado;
+	}
+
+	public Ubicacion ubicarDireccionEnTiendaBatch(String direccion) {
+		Ubicacion ubica = new Ubicacion(0, 0);
 		try {
 			Parametro parametro;
-			parametro =ParametrosDAO.obtenerParametro("APIARCGIS");
+			parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
 			System.out.println(parametro.getValorTexto());
 			System.out.println("2.1 ANTES DE INICIAR ");
 			ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
 			System.out.println("2.2 ANTES DE INICIAR ");
-	        String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
-	        String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
-	        LocatorTask locatorTask = new LocatorTask(serviceUrl);
-	        GeocodeParameters geocodeParameters = new GeocodeParameters();
-	        geocodeParameters.getResultAttributeNames().add("*");
-	        geocodeParameters.setMaxResults(1); // Limitamos el número de resultados para obtener solo el más relevante
-	        ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
-            List<GeocodeResult> geocodeResults = future.get(); 
+			String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+			String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
+			LocatorTask locatorTask = new LocatorTask(serviceUrl);
+			GeocodeParameters geocodeParameters = new GeocodeParameters();
+			geocodeParameters.getResultAttributeNames().add("*");
+			geocodeParameters.setMaxResults(1); // Limitamos el número de resultados para obtener solo el más relevante
+			ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
+			List<GeocodeResult> geocodeResults = future.get();
 
-            if (geocodeResults != null && !geocodeResults.isEmpty()) {
-                GeocodeResult geocodeResult = geocodeResults.get(0);
-                Point displayLocation = geocodeResult.getDisplayLocation();
-                double latitude = displayLocation.getY();
-                double longitude = displayLocation.getX();
+			if (geocodeResults != null && !geocodeResults.isEmpty()) {
+				GeocodeResult geocodeResult = geocodeResults.get(0);
+				Point displayLocation = geocodeResult.getDisplayLocation();
+				double latitude = displayLocation.getY();
+				double longitude = displayLocation.getX();
 
-                ubica.setLatitud(latitude);
-                ubica.setLongitud(longitude);
-                
+				ubica.setLatitud(latitude);
+				ubica.setLongitud(longitude);
+
 //                ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable(queryUrl);
 //
 //                Point point = new Point(longitude, latitude, SpatialReferences.getWgs84());
@@ -240,20 +233,19 @@ public class UbicacionCtrl {
 //        				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 //        				contro.enviarCorreo();
 //                    }
-               
-                
-            } else {
-                System.out.println("No se pudo geocodificar la dirección.");
-            }
-        } catch (Exception e) {
-            System.out.println("Error al geocodificar: " + e.getMessage());
-          
-        }
-        return(ubica);
+
+			} else {
+				System.out.println("No se pudo geocodificar la dirección.");
+			}
+		} catch (Exception e) {
+			System.out.println("Error al geocodificar: " + e.getMessage());
+
+		}
+		return (ubica);
 	}
-	
-	public static void EnvioCorreo(String lead,String error) {
-        Correo correo = new Correo();
+
+	public static void EnvioCorreo(String lead, String error) {
+		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 		ArrayList correos = new ArrayList();
 		correo.setAsunto("TENEMOS PROBLEMA CON LA API ARCGIS");
@@ -263,20 +255,65 @@ public class UbicacionCtrl {
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 		String mensCorreo = "Se encontro un problema con la invocación de la API ARCGIS  " + error;
-		if(lead != null  || !lead.isEmpty()) {
-			mensCorreo = mensCorreo+"<br> Numero de Lead: "+lead;
+		if (lead != null || !lead.isEmpty()) {
+			mensCorreo = mensCorreo + "<br> Numero de Lead: " + lead;
 		}
 		correo.setMensaje(mensCorreo);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
-		
-	}
-	
-	public static void main(String[] args)
-	{
 
-	
-		Resultado resultado = ubicarDireccionEnTienda("Calle 63 A # 47 - 27, Medellin","",null);
+	}
+
+	public static JsonObject obtenerCoordenadasGMps(String direccion) {
+		OkHttpClient client = new OkHttpClient();
+		JsonObject coords = new JsonObject(); // Por defecto (coordenadas inválidas)
+		coords.addProperty("Longitud", 0);
+		coords.addProperty("Latitud", 0);
+		try {
+			Parametro param = ParametrosDAO.obtenerParametro("APIKEYGOOGLEMPS");
+			String apiKey = param.getValorTexto();
+			String direccionEncoded = URLEncoder.encode(direccion, "UTF-8");
+			String url = String.format(
+					"https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s&location_type=APPROXIMATE",
+					direccionEncoded, apiKey);
+
+			Request request = new Request.Builder().url(url).get().build();
+
+			try (Response response = client.newCall(request).execute()) {
+		
+				if (!response.isSuccessful()) {
+					return coords;
+				}
+
+				String jsonResponse = response.body().string();
+				JsonObject json = JsonParser.parseString(jsonResponse).getAsJsonObject();
+
+				String status = json.get("status").getAsString();
+				if (!"OK".equals(status)) {
+					return coords;
+				}
+
+				JsonArray results = json.getAsJsonArray("results");
+				if (results.size() > 0) {
+					JsonObject location = results.get(0).getAsJsonObject().get("geometry").getAsJsonObject()
+							.get("location").getAsJsonObject();
+
+					double lat = location.get("lat").getAsDouble();
+					double lng = location.get("lng").getAsDouble();
+
+					coords.addProperty("Longitud", lng);
+					coords.addProperty("Latitud", lat);
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Error con api de google Maps: " + e.getMessage());
+		}
+
+		return coords;
+	}
+
+	public static void main(String[] args) {
+		Resultado resultado = ubicarDireccionEnTienda("Calle 54# 86c-666, calazans, Medellin", "informacion", null);
 		System.out.println(resultado.getResultado());
 	}
 }

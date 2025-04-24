@@ -46,6 +46,7 @@
 					placeholder="Seleccionar rango">
 			</div>
 
+
 			<div class="section">
 				<label>Tienda:</label> <select id="selectTiendas" multiple
 					class="form-control" data-placeholder="Seleccionar">
@@ -53,6 +54,7 @@
 					<!-- Placeholder temporal -->
 				</select>
 			</div>
+
 		</div>
 
 
@@ -158,12 +160,21 @@
 					<!-- Placeholder temporal -->
 				</select>
 			</div>
+			<div class="section">
+				<span class="obligatorio">*</span> <label>Medio:</label> <select
+					id="selectMedio" class="form-control"
+					data-placeholder="Seleccionar">
+					<option value="0">Correo Electrónico</option>
+					<option value="1">WhatsApp</option>
+
+				</select>
+			</div>
 		</div>
 		<div class="grid">
 
 			<div class="section">
-				<label>Correos:</label>
-				<table class="table table-bordered" id="correosManual">
+				<label id="labelCorreos">Correos:</label>
+				<table class="table table-bordered" id="ValoresManual">
 					<thead>
 						<tr>
 							<th>Email</th>
@@ -173,10 +184,8 @@
 					</thead>
 					<tbody>
 						<tr>
-							<td><input type="text" class="form-control"
-								placeholder="Ingrese email"></td>
-							<td><input type="text" class="form-control"
-								placeholder="Ingrese nombre"></td>
+							<td><input type="text" class="form-control"></td>
+							<td><input type="text" class="form-control"></td>
 							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
 						</tr>
 						<!-- Puedes agregar más filas según sea necesario -->
@@ -198,10 +207,8 @@
 					</thead>
 					<tbody>
 						<tr>
-							<td><input type="text" class="form-control"
-								placeholder="Ingrese clave"></td>
-							<td><select class="form-control" id="parametrosSelect"
-								placeholder="Ingrese valor">
+							<td><input type="text" class="form-control"></td>
+							<td><select class="form-control" id="parametrosSelect">
 							</select></td>
 							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
 						</tr>
@@ -220,7 +227,7 @@
 		</div>
 		<div class="grid">
 			<div class="section">
-				<label>Asunto:</label>
+				<label id="labelAsunt">Asunto:</label>
 				<!-- Usamos un div editable en lugar de un textarea -->
 				<div class="form-control" id="AsuntoG" contenteditable="true"
 					placeholder="Escribe aquí"></div>
@@ -245,10 +252,8 @@
 					</thead>
 					<tbody>
 						<tr>
-							<td><input type="text" class="form-control"
-								placeholder="Ingrese clave"></td>
-							<td><input type="text" class="form-control"
-								placeholder="Ingrese valor"></td>
+							<td><input type="text" class="form-control"></td>
+							<td><input type="text" class="form-control"></td>
 							<td><button class="btn  btn-danger btn-eliminar">Eliminar</button></td>
 						</tr>
 						<!-- Puedes agregar más filas según sea necesario -->

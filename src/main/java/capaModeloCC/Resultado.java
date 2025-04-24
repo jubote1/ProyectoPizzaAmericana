@@ -5,8 +5,17 @@ public class Resultado {
 	private String resultado;
 	private String infoAdicional;
 	private String estadoTienda;
+	private boolean success;
 	
 	
+
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
+	}
 
 	public String getEstadoTienda() {
 		return estadoTienda;

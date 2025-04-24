@@ -19,7 +19,7 @@ public class SegmentacionClienteDAO {
 
 	public List<PlantillaBrevo> obtenerPlantillas() {
 		List<PlantillaBrevo> plantillas = new ArrayList<>();
-		String sql = "SELECT idplantilla, nombre FROM plantilla_brevo";
+		String sql = "SELECT idplantilla, nombre ,categoria FROM plantilla_brevo";
 		Connection con1 = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -35,6 +35,7 @@ public class SegmentacionClienteDAO {
 				PlantillaBrevo plantilla = new PlantillaBrevo();
 				plantilla.setIdPlantilla(rs.getInt("idplantilla"));
 				plantilla.setNombre(rs.getString("nombre"));
+				plantilla.setCategoria(rs.getString("categoria"));
 				plantillas.add(plantilla);
 			}
 		} catch (SQLException e) {
@@ -71,13 +72,13 @@ public class SegmentacionClienteDAO {
 				+ "JOIN tienda c ON b.idtienda = c.idtienda " + "JOIN detalle_pedido d ON a.idpedido = d.idpedido "
 				+ "WHERE c.funcional != 'N' ";
 
-		// Agregar condición para idTiendas
+		// Agregar condiciï¿½n para idTiendas
 		if (idTiendas != null && !idTiendas.isEmpty()) {
 			String placeholders = String.join(",", Collections.nCopies(idTiendas.size(), "?"));
 			sql += "AND c.idtienda IN (" + placeholders + ") ";
 		}
 
-		// Agregar condición para excepciones
+		// Agregar condiciï¿½n para excepciones
 		if (excepciones != null && !excepciones.isEmpty()) {
 			String placeholders = String.join(",", Collections.nCopies(excepciones.size(), "?"));
 			sql += "AND d.idexcepcion IN (" + placeholders + ") ";
@@ -85,7 +86,7 @@ public class SegmentacionClienteDAO {
 
 		sql += "AND b.email != '' " + "AND b.politica_datos = 'S' " + "AND b.envio_publicidad = 'S' ";
 
-		// Aquí viene lo importante:
+		// Aquï¿½ viene lo importante:
 		if (diasMinimosSinPublicidad > 0) {
 			sql += "AND (b.ultima_fecha_publicidad IS NULL OR b.ultima_fecha_publicidad <= CURRENT_DATE - INTERVAL ? DAY) ";
 		}
@@ -113,12 +114,12 @@ public class SegmentacionClienteDAO {
 				}
 			}
 
-			// Solo si se usó la condición de días, se setea ese parámetro
+			// Solo si se usï¿½ la condiciï¿½n de dï¿½as, se setea ese parï¿½metro
 			if (diasMinimosSinPublicidad > 0) {
 				ps.setInt(index++, diasMinimosSinPublicidad);
 			}
 
-			// Resto de parámetros
+			// Resto de parï¿½metros
 			ps.setString(index++, fechaInicio);
 			ps.setString(index++, fechaMaxima);
 			ps.setInt(index++, minPedidos);
@@ -244,7 +245,7 @@ public class SegmentacionClienteDAO {
 		// Definir la sentencia SQL para actualizar la fecha
 		String sql = "UPDATE cliente SET ultima_fecha_publicidad = ? WHERE idcliente = ?";
 
-		// Declaración de objetos para la conexión, el PreparedStatement y el manejo de
+		// Declaraciï¿½n de objetos para la conexiï¿½n, el PreparedStatement y el manejo de
 		// excepciones
 		Connection con1 = null;
 		PreparedStatement ps = null;
@@ -252,7 +253,7 @@ public class SegmentacionClienteDAO {
 		try {
 			// Crear una nueva instancia de la clase ConexionBaseDatos (conectar a la BD)
 			ConexionBaseDatos con = new ConexionBaseDatos();
-			con1 = con.obtenerConexionBDPrincipal(); // Obtener la conexión a la base de datos
+			con1 = con.obtenerConexionBDPrincipal(); // Obtener la conexiï¿½n a la base de datos
 
 			// Obtener la fecha actual
 			Date fechaActual = new Date(); // Fecha actual
@@ -264,14 +265,14 @@ public class SegmentacionClienteDAO {
 
 			// Iterar sobre la lista de IDs de clientes y actualizar la fecha para cada uno
 			for (Integer idCliente : idsClientes) {
-				// Establecer los parámetros de la consulta
+				// Establecer los parï¿½metros de la consulta
 				ps.setDate(1, sqlDate); // Establecer la fecha actual
 				ps.setInt(2, idCliente); // Establecer el ID del cliente
 
-				// Ejecutar la actualización para el cliente actual
+				// Ejecutar la actualizaciï¿½n para el cliente actual
 				int filasAfectadas = ps.executeUpdate();
 
-				// Si alguna actualización no tuvo éxito, retornar false
+				// Si alguna actualizaciï¿½n no tuvo ï¿½xito, retornar false
 				if (filasAfectadas == 0) {
 					return false;
 				}
