@@ -4,8 +4,15 @@ package capaModeloCC;
 public class PlantillaBrevo {
     private int idPlantilla;
     private String nombre;
+    private String categoria;
 
-    public PlantillaBrevo(int idPlantilla, String nombre) {
+    public String getCategoria() {
+		return categoria;
+	}
+	public void setCategoria(String categoria) {
+		this.categoria = categoria;
+	}
+	public PlantillaBrevo(int idPlantilla, String nombre) {
         this.idPlantilla = idPlantilla;
         this.nombre = nombre;
     }

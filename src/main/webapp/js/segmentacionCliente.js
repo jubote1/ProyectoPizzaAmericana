@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		disableMobile: true,
 	});
 
-	$("#selectPromociones, #selectPlantilla, #selectTiendas").select2({
+	$("#selectPromociones, #selectPlantilla, #selectTiendas ,#selectMedio").select2({
 		placeholder: function() {
 			return $(this).data("placeholder");
 		},
@@ -184,19 +184,27 @@ document.addEventListener("DOMContentLoaded", function() {
 	});
 
 
-
-
 	cargarPlantillas();
 	getListaTiendas();
 	getExcepcionesPrecio();
 
 	async function cargarPlantillas() {
 		try {
+			const medio = document.getElementById("selectMedio").value.trim();
 			const response = await fetch(`${BASE_URL}/ObtenerPlantillaBrevo`);
 			if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
 			const data = await response.json();
-			let opciones = data.map(({ idplantilla, nombre }) =>
+			// Filtrar según el valor de medio
+
+			let plantillasFiltradas = data;
+			if (medio === "0") {
+				plantillasFiltradas = data.filter(p => p.categoria === "C");
+			} else if (medio === "1") {
+				plantillasFiltradas = data.filter(p => p.categoria === "W");
+			}
+
+			const opciones = plantillasFiltradas.map(({ idplantilla, nombre }) =>
 				`<option value="${idplantilla}">${nombre}</option>`
 			).join("");
 
@@ -384,6 +392,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		const filtrarMiembrosClub = document.getElementById("filtrarMiembrosClub").checked;
 		const rangoFechas = document.getElementById("rangoFechas").value.trim();
 		const tiendas = Array.from(document.querySelectorAll("#selectTiendas option:checked")).map(option => option.value);
+		const medio = document.getElementById("selectMedio").value.trim();
 
 		let fechaInicio = "", fechaMaxima = "";
 		if (rangoFechas) {
@@ -413,7 +422,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			console.log("📤 Enviando datos de Miembros del Club:", datos);
 
 			columns = [
-				{ data: null, title: "#" }, // Agregar numeración automática},
+				{ data: null, title: "#" },
 				{ data: "nombre", title: "Nombre", defaultContent: "" },
 				{ data: "nombreCompania", title: "Empresa", defaultContent: "" },
 				{ data: "correo", title: "Email", defaultContent: "" },
@@ -427,7 +436,14 @@ document.addEventListener("DOMContentLoaded", function() {
 					orderable: false,
 					className: "text-center", // Añadir clase para centrar
 					render: function(data, type, row) {
-						return `<input type="checkbox" class="row-checkbox" value="${data.correo}" data-idcliente="${row.idcliente}">`;
+
+						return `<input
+						             type="checkbox"
+						             class="row-checkbox"
+						             data-idcliente="${row.idcliente}"
+									 data-telefono="${data.telefono}"
+									 data-correo="${data.correo}"
+						           >`;
 					}
 				}
 			];
@@ -470,7 +486,13 @@ document.addEventListener("DOMContentLoaded", function() {
 					orderable: false,
 					className: "text-center", // Añadir clase para centrar
 					render: function(data, type, row) {
-						return `<input type="checkbox" class="row-checkbox" value="${data.email}" data-idcliente="${row.idcliente}">`;
+						return `<input
+						             type="checkbox"
+						             class="row-checkbox"
+						             data-idcliente="${row.idcliente}"
+									 data-telefono="${data.telefono}"
+									 data-correo="${data.email}"
+						           >`;
 					}
 				}
 			];
@@ -480,129 +502,199 @@ document.addEventListener("DOMContentLoaded", function() {
 		}
 	});
 
+	$("#selectMedio").on("change", function() {
+		cargarPlantillas();
+		const medio = $("#selectMedio").val();
+		let selectEtiquetas = document.getElementById("selectEtiquetas");
+		if (medio === "0") {
+			selectEtiquetas.style.display = "block"; // Ocultar
+		} else {
+			selectEtiquetas.style.display = "none"; // Ocultar
+		}
+	});
+
+	$("#selectMedio, #selectPlantilla").on("change", function() {
+		const medio = $("#selectMedio").val();
+		const plantilla = $("#selectPlantilla").val();
+		const labelAsunt = document.getElementById("labelAsunt");
+		const labelCorreos = document.getElementById("labelCorreos");
+
+		let asuntoDiv = document.getElementById("AsuntoG");
+
+		
+		if (medio == "0") {
+			document.querySelector("#ValoresManual th:first-child").textContent = "Email";
+			labelCorreos.textContent = "Correos:";
+			labelAsunt.textContent = "Asunto:";
+			asuntoDiv.setAttribute("contenteditable", "true");
+		} else {
+			document.querySelector("#ValoresManual th:first-child").textContent = "Celular";
+			labelCorreos.textContent = "Telefonos:";
+			labelAsunt.textContent = "Mensaje:";
+			if (plantilla === null || plantilla === "") {
+				asuntoDiv.setAttribute("contenteditable", "true");
+			} else {
+				asuntoDiv.setAttribute("contenteditable", "false");
+				asuntoDiv.innerHTML = "";  // Limpia todo el contenido HTML, no solo el texto
+
+			}
+
+		}
+
+	});
+
 
 
 	document.getElementById("btnConfirmarEnvio").addEventListener("click", function() {
-		let plantilla = document.getElementById("selectPlantilla").value.trim();
-		let asuntoDiv = document.getElementById("AsuntoG");
+		const plantilla = document.getElementById("selectPlantilla").value.trim();
+		const asuntoDiv = document.getElementById("AsuntoG");
+		const medio = document.getElementById("selectMedio").value.trim();
 		let isEtiqueta = false;
 
-		let data = {};
-
-		if (!plantilla) {
+		if (!medio) {
 			Swal.fire({
 				icon: "warning",
-				title: "Sin plantilla",
-				text: "No se encontró una plantilla seleccionada.",
+				title: "No selecciono el  medio",
+				text: "Debe seleccionar por que medio desea enviar la información",
 				timer: 3000,
 				showConfirmButton: false
 			});
 			return;
 		}
 
-		data.idplantilla = plantilla;
 
-		// Verificar si hay correos en la tabla manual
-		let correosManuales = [];
-		let correosInvalidos = []; // Almacena los correos inválidos
-		let idsClientes = [];
+		const data = { idplantilla: plantilla };
+		data.medio = medio;
+		const manuales = [];
+		const invalidos = [];
+		const idsClientes = [];
+		let title_msg = medio === "0" ? "Correos" : "Telefonos";
 
-		document.querySelectorAll("#correosManual tbody tr").forEach(row => {
-			let email = row.cells[0].querySelector("input").value.trim();
-			let name = row.cells[1].querySelector("input").value.trim();
+		if (medio === "0") {
+			if (!plantilla) {
+				Swal.fire({
+					icon: "warning",
+					title: "Sin plantilla",
+					text: "No se encontró una plantilla seleccionada.",
+					timer: 3000,
+					showConfirmButton: false
+				});
+				return;
+			}
+		} else {
+			let mg = asuntoDiv.innerText.trim();
+			if (!plantilla && !mg) {
+				Swal.fire({
+					icon: "warning",
+					title: "Campos invalidos",
+					text: "Para el envio por Whatsapp debe seleccionar una plantilla o ingresar un mensaje.",
+					timer: 3000,
+					showConfirmButton: false
+				});
+				return;
+			}
+		}
 
-			let emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+		document.querySelectorAll("#ValoresManual tbody tr").forEach(row => {
+			const valor = row.cells[0].querySelector("input").value.trim();
+			const name = row.cells[1].querySelector("input").value.trim();
 
-			if (email) {
-				if (!emailRegex.test(email)) {
-					correosInvalidos.push(email); // Agregar a la lista de inválidos
+			const regex = medio === "0"
+				? /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+				: /^\d{10,12}$/;
+
+			if (valor) {
+				if (!regex.test(valor) || !name) {
+					invalidos.push(valor);
 				} else {
-					correosManuales.push({ email, name });
+					manuales.push(medio === "0" ? { email: valor, name } : { telefono: valor, nombre: name });
 				}
 			}
-
 		});
 
-		// Si hay correos inválidos, mostrar alerta
-		if (correosInvalidos.length > 0) {
+		if (invalidos.length > 0) {
 			Swal.fire({
 				icon: "error",
-				title: "Correos inválidos",
-				html: `Los siguientes correos no son válidos:<br><b>${correosInvalidos.join("<br>")}</b>`,
+				title: `${title_msg} Invalidos`,
+				html: `Los siguientes ${title_msg} no son válidos o no se ingreso un nombre:<br><b>${invalidos.join("<br>")}</b>`,
 				confirmButtonText: "Revisar"
 			});
-
 			return;
 		}
 
-		if (correosManuales.length > 0) {
-			// Usar los correos manuales y borrar spans en el asunto
-			data.correos = correosManuales;
-			data.asunto = asuntoDiv.innerHTML
+		if (manuales.length > 0) {
+			const contenido = asuntoDiv.innerHTML
 				.replace(/<span[^>]*>.*?<\/span>/g, "")
 				.replace(/&nbsp;/g, " ")
 				.trim();
-
-
+			data.asunto = contenido;
+			if (medio === "0") {
+				data.correos = manuales;
+			} else {
+				data.telefonos = manuales;
+			}
 		} else {
-			// Obtener correos seleccionados de la tabla original
-			let correosSeleccionados = Array.from(document.querySelectorAll(".row-checkbox:checked")).map(checkbox => {
+			const seleccionados = Array.from(document.querySelectorAll(".row-checkbox:checked"))
+				.map(checkbox => {
+					const fila = checkbox.closest("tr");
+					const valor = (medio === "0") ? checkbox.dataset.correo : checkbox.dataset.telefono;
+					const idcliente = checkbox.dataset.idcliente;
 
-				let fila = checkbox.closest("tr");
-				let email = checkbox.value.trim();
-				let idcliente = checkbox.dataset.idcliente
+					const regex = medio === "0"
+						? /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+						: /^\d{10,12}$/;
 
-				let emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-				if (!emailRegex.test(email)) {
-					return null;
-				} else {
+					if (!regex.test(valor)) return null;
 
-					if (idcliente !== undefined && idcliente !== null && idcliente !== "") {
+					if (idcliente) {
 						idsClientes.push(idcliente);
 					}
 
-				}
+					let asuntoTexto = asuntoDiv.innerHTML.trim();
+					const spans = asuntoDiv.querySelectorAll("span.etiqueta");
 
-				let asuntoTexto = asuntoDiv.innerHTML.trim();
-				let spans = asuntoDiv.querySelectorAll("span.etiqueta");
-				spans.forEach(span => {
-					let colIndex = parseInt(span.getAttribute("data-value"));
-					let valorColumna = fila.cells[colIndex]?.textContent.trim() || "";
-					asuntoTexto = asuntoTexto.replace(span.outerHTML, valorColumna);
-				});
+					spans.forEach(span => {
+						const colIndex = parseInt(span.getAttribute("data-value"));
+						const valorColumna = fila.cells[colIndex]?.textContent.trim() || "";
+						asuntoTexto = asuntoTexto.replace(span.outerHTML, valorColumna);
+					});
 
-				asuntoTexto = asuntoTexto.replace(/&nbsp;/g, " ");
+					asuntoTexto = asuntoTexto.replace(/&nbsp;/g, " ");
 
-				let name = fila.cells[1]?.textContent.trim() || "";
-				let obj = { email, name };
+					const name = fila.cells[1]?.textContent.trim() || "";
+					let obj = {};
+					if (medio === "0") {
+						obj = { email: valor, name }
+						if (spans.length > 0) {
+							obj.subject = asuntoTexto;
+							isEtiqueta = true;
+						}
 
-
-
-				if (spans.length > 0) {
-					obj.subject = asuntoTexto;
-					isEtiqueta = true;
-				}
-
-				let params = [];
-				document.querySelectorAll("#paramTable tbody tr").forEach(row => {
-					let clave = row.querySelector("input[type='text']").value.trim();
-					let select = row.querySelector("select");
-					let colIndex = select ? parseInt(select.value) : null;
-
-					if (clave && colIndex != null) {
-						let valorColumna = fila.cells[colIndex]?.textContent.trim() || "";
-						params.push({ clave, valor: valorColumna });
+					} else {
+						obj = { telefono: valor };
 					}
-				});
 
-				if (params.length > 0) {
-					obj.params = params;
-				}
+					const params = [];
+					document.querySelectorAll("#paramTable tbody tr").forEach(row => {
+						const clave = row.querySelector("input[type='text']").value.trim();
+						const select = row.querySelector("select");
+						const colIndex = select ? parseInt(select.value) : null;
 
-				return obj;
-			}).filter(Boolean);
+						if (clave && colIndex != null) {
+							const valorColumna = fila.cells[colIndex]?.textContent.trim() || "";
+							params.push({ clave, valor: valorColumna });
+						}
+					});
 
-			if (correosSeleccionados.length === 0) {
+					if (params.length > 0) {
+						obj.params = params;
+					}
+
+					return obj;
+				})
+				.filter(Boolean);
+
+			if (seleccionados.length === 0) {
 				Swal.fire({
 					icon: "warning",
 					title: "Sin selección",
@@ -613,23 +705,25 @@ document.addEventListener("DOMContentLoaded", function() {
 				return;
 			}
 
-			data.correos = correosSeleccionados;
+			if (medio === "0") {
+				data.correos = seleccionados;
+			} else {
+				data.telefonos = seleccionados;
+			}
 
-			// Si no hay parámetros en la tabla, no añadir la propiedad
 			if (!isEtiqueta) {
-				let valorAsunt = asuntoDiv.innerText.trim();
-				if (valorAsunt) {
-					data.asunto = valorAsunt;
+				const textoPlano = asuntoDiv.innerText.trim();
+				if (textoPlano) {
+					data.asunto = textoPlano;
 				}
-
 			}
 		}
 
-		// Agregar parámetros generales
-		let generalParams = [];
+		// Parámetros generales
+		const generalParams = [];
 		document.querySelectorAll("#paramGeneral tbody tr").forEach(row => {
-			let clave = row.querySelector("td:first-child input[type='text']").value.trim();
-			let valor = row.querySelector("td:nth-child(2) input[type='text']").value.trim();
+			const clave = row.querySelector("td:first-child input[type='text']").value.trim();
+			const valor = row.querySelector("td:nth-child(2) input[type='text']").value.trim();
 			if (clave && valor) {
 				generalParams.push({ clave, valor });
 			}
@@ -639,14 +733,11 @@ document.addEventListener("DOMContentLoaded", function() {
 			data.paramsDefault = generalParams;
 		}
 
-
-
-
 		console.log("📩 Datos a enviar:", data);
 
 		Swal.fire({
 			title: "¿Estás seguro?",
-			text: `Se enviará la plantilla a ${data.correos.length} clientes.`,
+			text: `Se enviará la plantilla a ${(data.correos && data.correos.length) ? data.correos.length : (data.telefonos ? data.telefonos.length : 0)} clientes.`,
 			icon: "question",
 			showCancelButton: true,
 			confirmButtonText: "Sí, enviar",
@@ -657,35 +748,30 @@ document.addEventListener("DOMContentLoaded", function() {
 				let mensajeFinal = "";
 				let huboError = false;
 
-				// Crear un array para almacenar las promesas
-				const promesas = [];
-
-				// Envío de correos
-				const promesaEnvio = EnvioDatos(data, "EnvioCorreoBrevo", "Error en el envío de correos.");
-				promesas.push(promesaEnvio); // Añadir la promesa a la lista
-
-				// Actualización de la fecha (solo si hay clientes)
-				if (idsClientes.length > 0) {
-					const data_idcliente = { idsClientes };
-					const promesaFecha = EnvioDatos(data_idcliente, "ClienteUltimaFechaEnvio", "Error al actualizar fecha.");
-					promesas.push(promesaFecha); // Añadir la promesa a la lista
-				}
-
-				// Esperar que todas las promesas se resuelvan
 				try {
-					const resultados = await Promise.all(promesas);
+					// Envío de correos
+					const resultadoEnvio = await EnvioDatos(data, "EnvioBrevo", "Error en el envío de correos.");
 
-					// Recorremos los resultados de todas las promesas
-					resultados.forEach((resultado) => {
-						if (resultado.success) {
-							mensajeFinal += "✅ " + resultado.message + "\n";
-						} else {
-							mensajeFinal += "❌ " + resultado.message + "\n";
-							huboError = true;
+					if (!resultadoEnvio.success) {
+						mensajeFinal += "❌ " + resultadoEnvio.message + "\n";
+						huboError = true;
+					} else {
+						mensajeFinal += "✅ " + resultadoEnvio.message + "\n";
+
+						// Si hay clientes y la primera fue exitosa
+						if (idsClientes.length > 0) {
+							const data_idcliente = { idsClientes };
+							const resultadoFecha = await EnvioDatos(data_idcliente, "ClienteUltimaFechaEnvio", "Error al actualizar fecha.");
+
+							if (!resultadoFecha.success) {
+								mensajeFinal += "❌ " + resultadoFecha.message + "\n";
+								huboError = true;
+							} else {
+								mensajeFinal += "✅ " + resultadoFecha.message + "\n";
+							}
 						}
-					});
+					}
 
-					// Mostrar el mensaje final
 					await Swal.fire({
 						icon: huboError ? "warning" : "success",
 						title: huboError ? "Proceso incompleto" : "Todo correcto",
@@ -694,7 +780,6 @@ document.addEventListener("DOMContentLoaded", function() {
 					});
 
 				} catch (error) {
-					// Si alguna promesa falla, mostrar error
 					await Swal.fire({
 						icon: "error",
 						title: "Error",
@@ -702,6 +787,7 @@ document.addEventListener("DOMContentLoaded", function() {
 						confirmButtonText: "Aceptar"
 					});
 				}
+
 			}
 		});
 
@@ -834,7 +920,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	// Llamar a la función de inicialización con el ID de la tabla que necesites
 	inicializarTabla("paramTable");
 	inicializarTabla("paramGeneral");
-	inicializarTabla("correosManual");
+	inicializarTabla("ValoresManual");
 
 
 	async function EnvioDatos(data = {}, url, mgs) {
@@ -860,16 +946,30 @@ document.addEventListener("DOMContentLoaded", function() {
 			const responseData = await response.json();
 
 			console.log("✅ Respuesta:", responseData);
+
 			if (!response.ok || !responseData.success) {
 				let error = responseData.message || `Error ${response.status}: ${response.statusText}`;
-				console.error(error);
-				// Devuelvo la promesa con el error
+
+				// Procesar errores detallados si existen
+				if (responseData.errores && Array.isArray(responseData.errores)) {
+					const erroresDetallados = responseData.errores.map(err => {
+						if (err.error && err.telefono) {
+							return `📱 Teléfono: ${err.telefono}\n❌ Error: ${err.error}`;
+						} else if (err.error) {
+							return `❌ Error: ${err.error}`;
+						} else {
+							return `⚠️ ${JSON.stringify(err)}`;
+						}
+					}).join("\n\n");
+
+					error += `\n\n📋 Detalles:\n${erroresDetallados}`;
+				}
+
+
 				return Promise.reject({ success: false, message: mgs + " " + error });
 			}
 
 			console.log("✅ Respuesta recibida:", responseData);
-
-			// Devuelvo una promesa resuelta con el mensaje de éxito
 			return Promise.resolve({ success: true, message: responseData.message });
 
 		} catch (error) {
