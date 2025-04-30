@@ -4331,7 +4331,7 @@ public class PedidoDAO {
 	{
 		ArrayList totalSemanaTienda = new ArrayList();
 		String consulta = "";
-		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre order by b.nombre";
+		consulta = "select sum(a.total_neto), b.nombre, b.idtienda from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre, b.idtienda order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
@@ -4370,7 +4370,7 @@ public class PedidoDAO {
 	{
 		ArrayList totalSemanaTienda = new ArrayList();
 		String consulta = "";
-		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0  and e.idforma_pago = 6 group by b.nombre order by b.nombre";
+		consulta = "select sum(a.total_neto), b.nombre, b.idtienda from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0  and e.idforma_pago = 6 group by b.nombre, b.idtienda order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
