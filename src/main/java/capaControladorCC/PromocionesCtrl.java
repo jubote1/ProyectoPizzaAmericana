@@ -22,6 +22,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.ClienteDAO;
+import capaDAOCC.CodigoRedencionPuntosDAO;
 import capaDAOCC.EmpleadoRemotoValeDAO;
 import capaDAOCC.ExcepcionPrecioDAO;
 import capaDAOCC.GeneralDAO;
@@ -87,13 +88,13 @@ public class PromocionesCtrl {
 	}
 	
 	/**
-	 * Este método debe realizar validaciones para mirar si la oferta maneja codigo promocional, en cuyo caso deberá asignar una
+	 * Este mï¿½todo debe realizar validaciones para mirar si la oferta maneja codigo promocional, en cuyo caso deberï¿½ asignar una
 	 * @param ofer
 	 * @return
 	 */
 	public String insertarOfertaCliente(OfertaCliente ofer)
 	{
-		//Validamos si la oferta maneja código promocional
+		//Validamos si la oferta maneja cï¿½digo promocional
 		Oferta condicionesOferta = OfertaDAO.retornarOferta(ofer.getIdOferta());
 		boolean manejaCodigo;
 		if(condicionesOferta.getCodigoPromocional().equals(new String("S")))
@@ -105,7 +106,7 @@ public class PromocionesCtrl {
 		}
 		//boolean manejaCodigo = OfertaDAO.manejaCodigoOferta(ofer.getIdOferta());
 		
-		//Incluimos lógica para verificar si el campo de saldo en la oferta debe ser llenadod
+		//Incluimos lï¿½gica para verificar si el campo de saldo en la oferta debe ser llenadod
 		if(condicionesOferta.getRedParcial().equals(new String("S")))
 		{
 			if(condicionesOferta.getDescuentoFijoValor() > 0 )
@@ -122,17 +123,17 @@ public class PromocionesCtrl {
 		{
 			codigoPromocional = generarCodigoPromocional();
 		}
-		//Fijamos el valor de codigo promocional que puede ser vacío o contener valor
+		//Fijamos el valor de codigo promocional que puede ser vacï¿½o o contener valor
 		ofer.setCodigoPromocion(codigoPromocional);
 		//Validamos si la oferta maneja caducidad y como la maneja
 		
 		//Validamos si la oferta tiene caducidad en caso afirmativo
 		if(condicionesOferta.getDiasCaducidad() > 0)
 		{
-			//Validamos el tipo de caducidad de la oferta si es general o particular (por el momento la general no está implementada)
+			//Validamos el tipo de caducidad de la oferta si es general o particular (por el momento la general no estï¿½ implementada)
 			if(condicionesOferta.getTipoCaducidad().equals(new String("P")))
 			{
-				//Creamos el calendario y le sumamos a la fecha actual los días de caducidad
+				//Creamos el calendario y le sumamos a la fecha actual los dï¿½as de caducidad
 				Calendar calendarioActual = Calendar.getInstance();
 				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 				calendarioActual.add(Calendar.DAY_OF_YEAR, condicionesOferta.getDiasCaducidad());
@@ -146,7 +147,7 @@ public class PromocionesCtrl {
 		JSONObject ResultadoJSON = new JSONObject();
 		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
 		ResultadoJSON.put("idofertacliente", respuesta);
-		//En este punto una vez hagamos la asignación de la oferta realizaremos la notificación de las ofertas
+		//En este punto una vez hagamos la asignaciï¿½n de la oferta realizaremos la notificaciï¿½n de las ofertas
 		enviarMensajesOferta(ofer.getIdOferta());
 		listJSON.add(ResultadoJSON);
 		System.out.println(listJSON.toJSONString());
@@ -305,14 +306,14 @@ public class PromocionesCtrl {
 	}
 	
 	
-/**Método que iterativamente se va a encargar de generar el código de promoción lo validará y lo retornará una vez encuentre que si puede ser generado
- * A hoy el método se genera con unas características
+/**Mï¿½todo que iterativamente se va a encargar de generar el cï¿½digo de promociï¿½n lo validarï¿½ y lo retornarï¿½ una vez encuentre que si puede ser generado
+ * A hoy el mï¿½todo se genera con unas caracterï¿½sticas
  * @return
  */
 	public String generarCodigoPromocional()
 	{
 		String codigo = "";
-		//variable para controlar que si hubo de generación de código único
+		//variable para controlar que si hubo de generaciï¿½n de cï¿½digo ï¿½nico
 		boolean bandera = true;
 		while(bandera)
 		{
@@ -337,7 +338,7 @@ public class PromocionesCtrl {
 
 			        }
 			 }
-			 //Validamos si el código promocional existe, en caso de que no exista regresará un false y saldrá del ciclo while
+			 //Validamos si el cï¿½digo promocional existe, en caso de que no exista regresarï¿½ un false y saldrï¿½ del ciclo while
 			 bandera = OfertaClienteDAO.validarExistenciaOfertaCliente(codigo);
 		}
 			 
@@ -346,8 +347,8 @@ public class PromocionesCtrl {
 	}
 	
 	/**
-	 * Método que desde la capa de lógica de negocio se encarga de retornar si una oferta existe y en caso positivo devuelve
-	 * la información de la oferta
+	 * Mï¿½todo que desde la capa de lï¿½gica de negocio se encarga de retornar si una oferta existe y en caso positivo devuelve
+	 * la informaciï¿½n de la oferta
 	 * @param codigoPromocional
 	 * @return
 	 */
@@ -356,7 +357,7 @@ public class PromocionesCtrl {
 		//Preparamos la respuesta del JSON
 		JSONObject ofertaJSON = new JSONObject();
 		
-		//Se validará primero si la oferta corresponde a un código promocional abierto
+		//Se validarï¿½ primero si la oferta corresponde a un cï¿½digo promocional abierto
 		Oferta ofertaAbierta = OfertaDAO.obtenerOfertaCodigoPromocional(codigoPromocional);
 		if(ofertaAbierta.getIdOferta() > 0)
 		{
@@ -373,7 +374,7 @@ public class PromocionesCtrl {
 		}else
 		{
 			OfertaCliente ofertaCliente = OfertaClienteDAO.retornarOfertaCodigoPromocional(codigoPromocional);
-			//Variable en la que marcaremos si la oferta está vigente
+			//Variable en la que marcaremos si la oferta estï¿½ vigente
 			boolean vigente = false;
 			if(ofertaCliente.getIdOfertaCliente() == 0)
 			{
@@ -406,7 +407,7 @@ public class PromocionesCtrl {
 						vigente = false;
 					}else
 					{
-						//Posteriormente incluiremos la validación de la hora si es que existe
+						//Posteriormente incluiremos la validaciï¿½n de la hora si es que existe
 						if(ofertaHora.getControlaHora().equals(new String("N")))
 						{
 							vigente = true;
@@ -429,7 +430,7 @@ public class PromocionesCtrl {
 				if(vigente && ofertaCliente.getUtilizada().equals(new String("N")))
 				{
 					ofertaJSON.put("respuesta", "OK");
-					//En el caso de qeu la oferta este vigente y no esté actualizada retoremos un par de campos indicando el saldo y si maneja redención parcial
+					//En el caso de qeu la oferta este vigente y no estï¿½ actualizada retoremos un par de campos indicando el saldo y si maneja redenciï¿½n parcial
 					if(ofertaCliente.getSaldo() > 0 && ofertaHora.getRedParcial().equals(new String("S")))
 					{
 						ofertaJSON.put("redparcial", "S");
@@ -461,7 +462,7 @@ public class PromocionesCtrl {
 		return(ofertaJSON.toJSONString());
 	}
 	
-	//Método para validar un código de excepción cerrada
+	//Mï¿½todo para validar un cï¿½digo de excepciï¿½n cerrada
 	public String validarExcepcionCerrada(String codigo, int idExcepcion)
 	{
 		//Preparamos la respuesta del JSON
@@ -473,21 +474,21 @@ public class PromocionesCtrl {
 	
 	public String enviarMensajesOferta(int idOferta)
 	{
-		//Con el siguiente método obtenemos las ofertas que tienen que enviar mensaje de texto y no lo han enviado
-		//todavía, por lo tanto se creará un arreglo para enviarlo.
+		//Con el siguiente mï¿½todo obtenemos las ofertas que tienen que enviar mensaje de texto y no lo han enviado
+		//todavï¿½a, por lo tanto se crearï¿½ un arreglo para enviarlo.
 		ArrayList<MensajeTexto> mensajesTexto = OfertaClienteDAO.obtenerMensajesTextoEnviar(idOferta);
-		//Posteriormente se realizará un procesamiento del arreglo para el envío del mensaje de texto
+		//Posteriormente se realizarï¿½ un procesamiento del arreglo para el envï¿½o del mensaje de texto
 		String telTemp = "";
 		String telCelTemp = "";
 		int totalMensajesEnviados = mensajesTexto.size();
-		//Tendremos una variable que nos indicará que si se puede enviar mensaje de texto
+		//Tendremos una variable que nos indicarï¿½ que si se puede enviar mensaje de texto
 		boolean enviarMensaje = false;
-		//Varialbles Definitivas para el envío del mensaje
+		//Varialbles Definitivas para el envï¿½o del mensaje
 		//Definimos variable con el telefono sobre el que enviaremos mensaje.
 		String telEnviarMensaje = "";
 		String mensaje1 = "";
 		String mensaje2 = "";
-		//Variable donde se almacenará el resultado del envío del mensaje
+		//Variable donde se almacenarï¿½ el resultado del envï¿½o del mensaje
 		String resultado = "";
 		for(MensajeTexto mensaje : mensajesTexto)
 		{
@@ -501,7 +502,7 @@ public class PromocionesCtrl {
 			{
 				telCelTemp = " ";
 			}
-			//Verificamos si el número celular esta bien en cuanto a que el número
+			//Verificamos si el nï¿½mero celular esta bien en cuanto a que el nï¿½mero
 			if(telCelTemp.length() > 1)
 			{
 				if ((telCelTemp.substring(0, 1).equals(new String("3"))) && (telCelTemp.length() == 10))
@@ -512,7 +513,7 @@ public class PromocionesCtrl {
 				{
 					enviarMensaje = true;
 					telEnviarMensaje = telTemp;
-				}//Sino se cumplio ninguna de las condiciones no se enviará mensaje
+				}//Sino se cumplio ninguna de las condiciones no se enviarï¿½ mensaje
 			}//Sino se cumplen estas condiciones se evalua el telefono principal
 			else if(telTemp.length() > 1)
 			{
@@ -520,7 +521,7 @@ public class PromocionesCtrl {
 				{
 					enviarMensaje = true;
 					telEnviarMensaje = telTemp;
-				}//Sino se cumplio ninguna de las condiciones no se enviará mensaje
+				}//Sino se cumplio ninguna de las condiciones no se enviarï¿½ mensaje
 			}
 			
 			
@@ -539,19 +540,19 @@ public class PromocionesCtrl {
 					//Validamos la longitud del mensaje y si cumple lo enviaremos
 					if(mensaje1.length() <= 160)
 					{
-						//Realizaríamos el llamado al programa PHP
+						//Realizarï¿½amos el llamado al programa PHP
 						resultado = ejecutarPHPEnvioMensaje( "57"+ telEnviarMensaje, mensaje1);
 						//Adicionalmente por un momento enviaremos el mensaje de WhatsApp
 						PedidoCtrl.enviarWhatsAppUltramsg(mensaje1, telEnviarMensaje);
 					}
 				}
-				//Incluimos lógica para envío de correo electrónico
+				//Incluimos lï¿½gica para envï¿½o de correo electrï¿½nico
 				String email = mensaje.getEmail();
 				if(email == null)
 				{
 					email = "";
 				}
-				//Intentará enviar correo electrónico
+				//Intentarï¿½ enviar correo electrï¿½nico
 				if(email.trim().length() > 0)
 				{
 					String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
@@ -564,7 +565,7 @@ public class PromocionesCtrl {
 					correo.setUsuarioCorreo(cuentaCorreo);
 					correo.setMensaje(mensaje1);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					//Agregamos control para que verifique con que método debe hacer el envío
+					//Agregamos control para que verifique con que mï¿½todo debe hacer el envï¿½o
 					if(cuentaCorreo.contains("@gmail.com"))
 					{
 						contro.enviarCorreo();
@@ -589,12 +590,12 @@ public class PromocionesCtrl {
 						//Validamos la longitud del mensaje y si cumple lo enviaremos
 						if(mensaje2.length() <= 160)
 						{
-							//Realizaríamos el llamado al programa PHP
+							//Realizarï¿½amos el llamado al programa PHP
 							resultado =  ejecutarPHPEnvioMensaje( "57"+ telEnviarMensaje, mensaje2);
 						}
 					}
 				}
-				//Realizamos la marcación de que ya se realizo el envío del mensaje
+				//Realizamos la marcaciï¿½n de que ya se realizo el envï¿½o del mensaje
 				OfertaClienteDAO.actualizarMensajeOferta(mensaje.getIdOfertaCliente());
 			}
 		}
@@ -653,7 +654,7 @@ public class PromocionesCtrl {
 	    return output.toString();
 	  }
 	
-	//Hacemos la prueba de la creación de un LEAD
+	//Hacemos la prueba de la creaciï¿½n de un LEAD
 	public static void crearLeadWhatsApp()
 	{
 
@@ -713,18 +714,18 @@ public class PromocionesCtrl {
 			"      } " + 
 			"   ] " + 
 			"}";
-			//Realizamos la invocación mediante el uso de HTTPCLIENT
+			//Realizamos la invocaciï¿½n mediante el uso de HTTPCLIENT
 			HttpClient client = HttpClientBuilder.create().build();
 			String rutaURLNotif = "https://us-east1-bottapizzaamericana.cloudfunctions.net/fnBottaWhatsAppNotification";
 			HttpPost request = new HttpPost(rutaURLNotif);
 			try
 			{
 				//Fijamos el header con el token
-				//NO HAY SEGURIDAD TODAVÍA
+				//NO HAY SEGURIDAD TODAVï¿½A
 				//request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
 				request.setHeader("Accept", "application/json");
 				request.setHeader("Content-type", "application/json");
-				//Fijamos los parámetros
+				//Fijamos los parï¿½metros
 				//pass the json string request in the entity
 			    HttpEntity entity = new ByteArrayEntity(jsonString.getBytes("UTF-8"));
 			    request.setEntity(entity);
@@ -744,7 +745,7 @@ public class PromocionesCtrl {
 					
 				}else
 				{
-					//Recuperar la lista de distribución para este correo
+					//Recuperar la lista de distribuciï¿½n para este correo
 					ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 					Date fecha = new Date();
 					Correo correo = new Correo();
@@ -775,7 +776,7 @@ public class PromocionesCtrl {
 	public String generarCodigoPrecioEmpleado()
 	{
 		String codigo = "";
-		//variable para controlar que si hubo de generación de código único
+		//variable para controlar que si hubo de generaciï¿½n de cï¿½digo ï¿½nico
 		boolean bandera = true;
 		while(bandera)
 		{
@@ -800,7 +801,7 @@ public class PromocionesCtrl {
 
 			        }
 			 }
-			 //Validamos si el código promocional existe, en caso de que no exista regresará un false y saldrá del ciclo while
+			 //Validamos si el cï¿½digo promocional existe, en caso de que no exista regresarï¿½ un false y saldrï¿½ del ciclo while
 			 bandera = PedidoPrecioEmpleadoDAO.validarExistenciaCodigo(codigo);
 		}
 			 
@@ -808,10 +809,10 @@ public class PromocionesCtrl {
 		return(codigo);
 	}
 	
-	public String generarCodigoEmpleadoRemotovale()
+	public String generarCodigoRedencionPuntos()
 	{
 		String codigo = "";
-		//variable para controlar que si hubo de generación de código único
+		//variable para controlar que si hubo de generaciï¿½n de cï¿½digo ï¿½nico
 		boolean bandera = true;
 		while(bandera)
 		{
@@ -836,7 +837,41 @@ public class PromocionesCtrl {
 
 			        }
 			 }
-			 //Validamos si el código promocional existe, en caso de que no exista regresará un false y saldrá del ciclo while
+			 //Validamos si el cï¿½digo promocional existe, en caso de que no exista regresarï¿½ un false y saldrï¿½ del ciclo while
+			 bandera = CodigoRedencionPuntosDAO.validarExistenciaCodigo(codigo);
+		}
+		return(codigo);
+	}
+	
+	public String generarCodigoEmpleadoRemotovale()
+	{
+		String codigo = "";
+		//variable para controlar que si hubo de generaciï¿½n de cï¿½digo ï¿½nico
+		boolean bandera = true;
+		while(bandera)
+		{
+			codigo = "";
+			int a;
+			 for (int i = 0; i < 7; i++) 
+			 {
+			        if (i < 4) {    // 0,1,2,3 posiciones de numeros
+			            codigo = (int) (Math.random() * 9) + "" + codigo;
+
+			        } else {       // 4,5,6 posiciones de letras
+			            do {
+			                a = (int) (Math.random() * 26 + 65);///
+			            } while (a == 65 || a == 69 || a == 73 || a == 79 || a == 85);
+
+			            char letra = (char) a;
+			            if (i == 4) {
+			                codigo = codigo  + letra;
+			            } else {
+			                codigo = codigo + "" + letra;
+			            }
+
+			        }
+			 }
+			 //Validamos si el cï¿½digo promocional existe, en caso de que no exista regresarï¿½ un false y saldrï¿½ del ciclo while
 			 bandera = EmpleadoRemotoValeDAO.validarExistenciaCodigo(codigo);
 		}
 			 

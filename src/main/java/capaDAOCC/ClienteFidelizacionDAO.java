@@ -188,6 +188,46 @@ public class ClienteFidelizacionDAO {
 		}
 		return(puntos);
 	}
+	
+	/**
+	 * Método que se encarga de recalcular los puntos disponibles del cliente luego de una redención
+	 * @param correo
+	 * @param puntosRedimir
+	 * @return
+	 */
+	public static double redimirPuntosClienteFidelizacion(String correo, double puntosRedimir)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		double puntos = 0;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String update = "update cliente_fidelizacion a set a.puntos_vigentes = a.puntos_vigentes - " + puntosRedimir +  " where a.correo = '"+ correo + "'";
+			logger.info(update);
+			stm.executeUpdate(update);
+			String select = "select puntos_vigentes from cliente_fidelizacion a where a.correo = '"+ correo + "'";
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				puntos = rs.getDouble(1);
+				break;
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(puntos);
+	}
 
 	public static boolean insertarClienteFidelizacion(String correo)
 	{
