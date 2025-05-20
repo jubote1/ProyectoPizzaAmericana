@@ -1,12 +1,14 @@
 .img-gallery{
-    width: 80%;
-    margin: 50px auto 50px;
+    width: 90%;
+    margin: 30px auto 30px;
     display: grid;
     grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
-    gap: 30px;
+    gap: 10px;
 }
 .img-gallery .file{
-    width: 100%;
+     width: 100%;
+    max-height: 500px;
+     max-width: 500px;
     cursor: pointer;
     transition: 1s;
 }

@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.DateFormat;
@@ -34,6 +35,7 @@ public class SolicitudPQRSDAO {
 		Date fechaTemporal = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
 		String fechaSolicitudFinal ="";
+		int descuentoRedimido = solicitud.isDescuentoRedimido() ? 1 : 0;
 		try
 		{
 			fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(solicitud.getFechaSolicitud());
@@ -47,7 +49,7 @@ public class SolicitudPQRSDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			insert = "insert into solicitudPQRS (fechasolicitud,tiposolicitud,idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable) values ('" + fechaSolicitudFinal + "', '" + solicitud.getTipoSolicitud() + "', " + solicitud.getIdcliente() + " , " + solicitud.getIdtienda() + " , '"+ solicitud.getNombres() + "' , '"+ solicitud.getApellidos() + "' , '" + solicitud.getTelefono() + "' , '" + solicitud.getDireccion() + "' , '" + solicitud.getZona() + "' , " + solicitud.getIdmunicipio() + " , '" + solicitud.getComentario() + "' , " + solicitud.getIdOrigen() + " , " + solicitud.getIdFoco() + " , '" + solicitud.getTipo() + "' , '" + solicitud.getAreaResponsable() + "')" ; 
+			insert = "insert into solicitudPQRS (fechasolicitud,tiposolicitud,idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable,idpedidotienda , valor_pedido, valor_descuento, porcentaje_descuento, descuento_redimido, idpedidoredencion) values ('" + fechaSolicitudFinal + "', '" + solicitud.getTipoSolicitud() + "', " + solicitud.getIdcliente() + " , " + solicitud.getIdtienda() + " , '"+ solicitud.getNombres() + "' , '"+ solicitud.getApellidos() + "' , '" + solicitud.getTelefono() + "' , '" + solicitud.getDireccion() + "' , '" + solicitud.getZona() + "' , " + solicitud.getIdmunicipio() + " , '" + solicitud.getComentario() + "' , " + solicitud.getIdOrigen() + " , " + solicitud.getIdFoco() + " , '" + solicitud.getTipo() + "' , '" + solicitud.getAreaResponsable() + "' , " + solicitud.getIdpedidotienda() + " , " + solicitud.getValorPedido() + " , " + solicitud.getValorDescuento() + " , " + solicitud.getPorcentajeDescuento()+" , "+descuentoRedimido+ " , "+solicitud.getIdpedidoredencion()+")" ; 
 			logger.info(insert);
 			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
 			ResultSet rs = stm.getGeneratedKeys();
@@ -86,6 +88,7 @@ public class SolicitudPQRSDAO {
 		Date fechaTemporal = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
 		String fechaSolicitudFinal ="";
+		int descuentoRedimido = solicitud.isDescuentoRedimido() ? 1 : 0;
 		try
 		{
 			fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(solicitud.getFechaSolicitud());
@@ -99,7 +102,7 @@ public class SolicitudPQRSDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			update = "update solicitudPQRS set fechasolicitud ='" + fechaSolicitudFinal + "', tiposolicitud = '" + solicitud.getTipoSolicitud() + "', idcliente =  " + solicitud.getIdcliente() + " , idtienda = " + solicitud.getIdtienda() + " , nombres = '"+ solicitud.getNombres() + "' , apellidos = '"+ solicitud.getApellidos() + "' , telefono = '" + solicitud.getTelefono() + "' , direccion = '" + solicitud.getDireccion() + "' , zona = '" + solicitud.getZona() + "' , idmunicipio = " + solicitud.getIdmunicipio() + " , comentario ='" + solicitud.getComentario() + "' , idorigen = " + solicitud.getIdOrigen() + " , idfoco = " + solicitud.getIdFoco() + " , tipo = '" + solicitud.getTipo() + "' , area_responsable = '" + solicitud.getAreaResponsable() + "' where idsolicitudpqrs =" + idSolicitudPQRSIns; 
+			update = "update solicitudPQRS set fechasolicitud ='" + fechaSolicitudFinal + "', tiposolicitud = '" + solicitud.getTipoSolicitud() + "', idcliente =  " + solicitud.getIdcliente() + " , idtienda = " + solicitud.getIdtienda() + " , nombres = '"+ solicitud.getNombres() + "' , apellidos = '"+ solicitud.getApellidos() + "' , telefono = '" + solicitud.getTelefono() + "' , direccion = '" + solicitud.getDireccion() + "' , zona = '" + solicitud.getZona() + "' , idmunicipio = " + solicitud.getIdmunicipio() + " , comentario ='" + solicitud.getComentario() + "' , idorigen = " + solicitud.getIdOrigen() + " , idfoco = " + solicitud.getIdFoco() + " , tipo = '" + solicitud.getTipo() + "' , area_responsable = '" + solicitud.getAreaResponsable() + "' ,idpedidotienda = "+solicitud.getIdpedidotienda()+ " ,valor_pedido = "+solicitud.getValorPedido()+ " ,valor_descuento = "+solicitud.getValorDescuento()+ " ,porcentaje_descuento = "+solicitud.getPorcentajeDescuento()+ " ,descuento_redimido = "+descuentoRedimido+ ", idpedidoredencion = " +solicitud.getIdpedidoredencion() +" where idsolicitudpqrs =" + idSolicitudPQRSIns; 
 			logger.info(update);
 			stm.executeUpdate(update);
 			stm.close();
@@ -185,95 +188,96 @@ public class SolicitudPQRSDAO {
 		return(respuesta);
 	}
 	
-	public static ArrayList<SolicitudPQRS> ConsultaIntegradaSolicitudesPQRS(String fechainicial, String fechafinal, String tienda, String tipoSolicitud)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		ArrayList <SolicitudPQRS> consultaSolicitudes = new ArrayList();
-		String consulta = "";
-		String fechaini = fechainicial.substring(6, 10)+"-"+fechainicial.substring(3, 5)+"-"+fechainicial.substring(0, 2);	
-		String fechafin = fechafinal.substring(6, 10)+"-"+fechafinal.substring(3, 5)+"-"+fechafinal.substring(0, 2);	
-		if((fechainicial.length()>0) && (fechafinal.length()>0) && (tienda.length()>0))
-		{
-			if (tienda.equals("TODAS"))
-			{
-				consulta = "select idsolicitudPQRS, fechasolicitud, tiposolicitud,nombres,apellidos, direccion , telefono,comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.tipo, a.area_responsable, (SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE  d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes  from solicitudPQRS a, origen_pqrs b, foco_pqrs c where a.idorigen = b.idorigen and a.idfoco = c.idfoco and fechasolicitud >=  '" + fechaini +"' and fechasolicitud <= '"+ fechafin +"'" ;
-			}else
-			{
-				consulta = "select idsolicitudPQRS, fechasolicitud, tiposolicitud,nombres,apellidos, direccion , telefono,comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.tipo, a.area_responsable, (SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE  d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes  from solicitudPQRS a, origen_pqrs b, foco_pqrs c where a.idorigen = b.idorigen and a.idfoco = c.idfoco and fechasolicitud >=  '" + fechaini +"' and fechasolicitud <= '"+ fechafin +"' and idtienda = " + tienda;
-			}
-			if(!tipoSolicitud.equals(new String("")))
-			{
-				consulta = consulta + " and a.tiposolicitud = '" + tipoSolicitud + "'";
-			}
-		}
-		logger.info(consulta);
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			Statement stm = con1.createStatement();
-			ResultSet rs = stm.executeQuery(consulta);
-			int idsolicitudpqrs = 0;
-			String fechasolicitud = "";
-			String tiposolicitud = "";
-			String nombres = "";
-			String apellidos = "";
-			String direccion = "";
-			String telefono = "";
-			String comentario = "";
-			int idOrigen = 0;
-			String origen = "";
-			int idMunicipio = 0;
-			int idTienda = 0;
-			String nombreFoco = "";
-			String tipo = "";
-			String areaResponsable = "";
-			int imagenes = 0;
-			while(rs.next())
-			{
-				idsolicitudpqrs = rs.getInt("idsolicitudPQRS");
-				fechasolicitud = rs.getString("fechasolicitud");
-				tiposolicitud = rs.getString("tiposolicitud");
-				nombres = rs.getString("nombres");
-				apellidos = rs.getString("apellidos");
-				direccion = rs.getString("direccion");
-				telefono = rs.getString("telefono");
-				comentario = rs.getString("comentario");
-				idOrigen = rs.getInt("idorigen");
-				origen = rs.getString("nombre_origen");
-				idMunicipio = rs.getInt("idmunicipio");
-				idTienda = rs.getInt("idtienda");
-				nombreFoco = rs.getString("nombre_foco");
-				tipo = rs.getString("tipo");
-				areaResponsable = rs.getString("area_responsable");
-				imagenes = rs.getInt("imagenes");
-				SolicitudPQRS cadaSolicitud = new SolicitudPQRS(idsolicitudpqrs, fechasolicitud, tiposolicitud, 0, 0,
-						nombres, apellidos, telefono, direccion, "", 0,
-						comentario, idOrigen,0, tipo, areaResponsable);
-				cadaSolicitud.setOrigen(origen);
-				cadaSolicitud.setIdmunicipio(idMunicipio);
-				cadaSolicitud.setIdtienda(idTienda);
-				cadaSolicitud.setFoco(nombreFoco);
-				cadaSolicitud.setImagenes(imagenes);
-				consultaSolicitudes.add(cadaSolicitud);
-			}
-			rs.close();
-			stm.close();
-			con1.close();
+	public static ArrayList<SolicitudPQRS> ConsultaIntegradaSolicitudesPQRS(String fechainicial, String fechafinal, String tienda, String tipoSolicitud, boolean filtrodescuentoRed) {
+	    Logger logger = Logger.getLogger("log_file");
+	    ArrayList<SolicitudPQRS> consultaSolicitudes = new ArrayList<>();
 
-		}catch(Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-			
-		}
-		return(consultaSolicitudes);
+	    String fechaini = fechainicial.substring(6, 10) + "-" + fechainicial.substring(3, 5) + "-" + fechainicial.substring(0, 2);
+	    String fechafin = fechafinal.substring(6, 10) + "-" + fechafinal.substring(3, 5) + "-" + fechafinal.substring(0, 2);
+
+	    StringBuilder consulta = new StringBuilder(
+	        "SELECT a.idsolicitudPQRS, a.fechasolicitud, a.tiposolicitud, a.nombres, a.apellidos, a.direccion, " +
+	        "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, " +
+	        "a.tipo, a.area_responsable, " +
+	        "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, " +
+	        "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion " +
+	        "FROM solicitudPQRS a " +
+	        "JOIN origen_pqrs b ON a.idorigen = b.idorigen " +
+	        "JOIN foco_pqrs c ON a.idfoco = c.idfoco " +
+	        "WHERE a.fechasolicitud BETWEEN ? AND ? "
+	    );
+
+	    // Filtros dinámicos
+	    if (!"TODAS".equalsIgnoreCase(tienda)) {
+	        consulta.append("AND a.idtienda = ? ");
+	    }
+	    if (!tipoSolicitud.trim().isEmpty()) {
+	        consulta.append("AND a.tiposolicitud = ? ");
+	    }
+	    if (filtrodescuentoRed) {
+	        consulta.append("AND a.descuento_redimido = 1 ");
+	    }
+	    
+	    logger.info("Consulta SQL: " + consulta.toString());
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(consulta.toString())) {
+
+	        int paramIndex = 1;
+	        ps.setString(paramIndex++, fechaini);
+	        ps.setString(paramIndex++, fechafin);
+
+	        if (!"TODAS".equalsIgnoreCase(tienda)) {
+	            ps.setInt(paramIndex++, Integer.parseInt(tienda));
+	        }
+	        if (!tipoSolicitud.trim().isEmpty()) {
+	            ps.setString(paramIndex++, tipoSolicitud);
+	        }
+
+	        try (ResultSet rs = ps.executeQuery()) {
+	            while (rs.next()) {
+	                SolicitudPQRS cadaSolicitud = new SolicitudPQRS(
+	                    rs.getInt("idsolicitudPQRS"),
+	                    rs.getString("fechasolicitud"),
+	                    rs.getString("tiposolicitud"),
+	                    0, 0,
+	                    rs.getString("nombres"),
+	                    rs.getString("apellidos"),
+	                    rs.getString("telefono"),
+	                    rs.getString("direccion"),
+	                    "", 0,
+	                    rs.getString("comentario"),
+	                    rs.getInt("idorigen"),
+	                    0,
+	                    rs.getString("tipo"),
+	                    rs.getString("area_responsable"),
+	                    rs.getInt("idpedidotienda"),
+	                    rs.getDouble("valor_pedido"),
+	                    rs.getDouble("valor_descuento"),
+	                    rs.getInt("porcentaje_descuento"),
+	                    rs.getBoolean("descuento_redimido"),
+	                    rs.getInt("idpedidoredencion")
+	                );
+	                cadaSolicitud.setOrigen(rs.getString("nombre_origen"));
+	                cadaSolicitud.setIdmunicipio(rs.getInt("idmunicipio"));
+	                cadaSolicitud.setIdtienda(rs.getInt("idtienda"));
+	                cadaSolicitud.setFoco(rs.getString("nombre_foco"));
+	                cadaSolicitud.setImagenes(rs.getInt("imagenes"));
+	                consultaSolicitudes.add(cadaSolicitud);
+
+	                
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        logger.error("Error al consultar PQRS: " + e.toString(), e);
+	        System.out.println("Error al consultar PQRS: " + e.toString());
+	    }
+
+	    return consultaSolicitudes;
 	}
-	
+
 	
 	/**
 	 * M�todo que se encarga de validar si una PQRS existe o no, retornando esto como un valor booleano

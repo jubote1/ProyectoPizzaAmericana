@@ -1,37 +1,52 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id ="menuprincipal">
-		  <div class="container-fluid">
-		    <div class="navbar-header">
-		      <a class="navbar-brand"><img src="LogoPizzaAmericanaPeque.png" class="img-circle" /></a>
-		      <a class="navbar-brand" href="Pedidos.html">PEDIDOS PIZZA AMERICANA</a>
-		    </div>
-		    <div class="collapse navbar-collapse" id="navbarContenido">
-			    <ul class="navbar-nav mr-auto">
-			    	<li class="nav-item active">
-        				<a class="nav-link" href="http://www.pizzaamericana.co">Home Pizza Americana<span class="sr-only">(current)</span></a>
-     				 </li>
-     				 <li class="nav-item dropdown">
-				        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				          Funciones
-				        </a>
-				        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				          <a class="dropdown-item" href="ConsultaPedidos.html">Consulta Pedidos Registrados</a>
-				          <a class="dropdown-item" href="ConsultaSolicitudFacturaElectronica.html">Consultar Solicitudes Fact Electrónicas</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="PQRS.html">Registrar PQRS</a>
-				          <a class="dropdown-item" href="ConsultaPQRS.html">Consulta PQRS</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="ValidarCodigo.html">Validar Código Promocional</a>	
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="EstadosHistorialPedido.html">Historial de Estado de un Pedido</a>
-				          <a class="dropdown-item" href="RegistroPedidoCumple.html">Registrar Pedido Cumpleanos</a>
-				          <a class="dropdown-item" href="ConsultarRegistroPedidoCumple.html">Consular Registro Pedido Cumpleanos</a>
-				          <a class="dropdown-item" href="CancelacionesPlataformas.html">Cancelaciones Plataformas</a>
-				          <a class="dropdown-item" href="ConsultarConciliacionQRDATAFONO.html">Consultar Solicitudes Conciliacion</a>	
-				        </div>
-				     </li>
-			     </ul>
-			     <p ALIGN="right">
-			     <label id="usuariologin" style="color:white;"></label></p>
-			</div>
-		  </div>
-		</nav>
+<link rel="stylesheet" href="css/nav.css" crossorigin="anonymous">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="menuprincipal">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="Pedidos.html" style="gap: 10px;">
+      <img src="images/logo-sin-fondo.png" alt="Logo Pizza Americana"
+        style="height: 80px; width: 80px; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));">
+      <span class="text-white font-weight-bold">PEDIDOS PIZZA AMERICANA</span>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContenido" aria-controls="navbarContenido" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContenido" style="margin: 10px;">
+      <ul class="navbar-nav mr-auto">
+ 	<li class="nav-item active">
+       <a class="nav-link" href="http://www.pizzaamericana.co">Pagina Web<span class="sr-only">(current)</span></a>
+     </li>
+        <!-- Dropdown Funciones -->
+	 <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Funciones
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+          <a class="dropdown-item" href="ConsultaPedidos.html">Consulta Pedidos Registrados</a>
+          <a class="dropdown-item" href="ConsultaSolicitudFacturaElectronica.html">Consultar Solicitudes Fact Electrónicas</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="PQRS.html">Registrar PQRS</a>
+          <a class="dropdown-item" href="ConsultaPQRS.html">Consulta PQRS</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="ValidarCodigo.html">Validar Código Promocional</a>	
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="EstadosHistorialPedido.html">Historial de Estado de un Pedido</a>
+          <a class="dropdown-item" href="RegistroPedidoCumple.html">Registrar Pedido Cumpleanos</a>
+          <a class="dropdown-item" href="ConsultarRegistroPedidoCumple.html">Consular Registro Pedido Cumpleanos</a>
+          <a class="dropdown-item" href="CancelacionesPlataformas.html">Cancelaciones Plataformas</a>
+          <a class="dropdown-item" href="ConsultarConciliacionQRDATAFONO.html">Consultar Solicitudes Conciliacion</a>	
+        </div>
+     </li>
+      </ul>
+
+  
+    </div>
+  <div class="ml-auto d-flex align-items-center text-white">
+  <span id="usuariologin" class="font-weight-bold mr-4">Usuario</span>
+ 
+    <a href="Index.html" class="text-white text-decoration-none"><span class="font-weight-bold d-flex align-items-center">
+    <i class="fas fa-sign-out-alt mr-1"></i>Salir</span></a>
+  
+</div>
+  </div>
+</nav>

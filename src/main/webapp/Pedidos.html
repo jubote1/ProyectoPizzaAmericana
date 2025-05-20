@@ -32,47 +32,7 @@
 	<body>
 
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label><a href="Index.html">  - Salir</a></p>
-		<script type="text/javascript">
-			
-			var getImport; 
-			var getContent;
-			//Obtenemos el valor de la variable server, con base en la URL digitada
-			var loc = window.location;
-			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-			var respuesta ='';
-			var usuario = "";
-			var plataforma = "";
-			$.ajax({ 
-		    	url: server + 'ValidarUsuarioAplicacion', 
-		    	dataType: 'json',
-		    	type: 'post', 
-		    	async: false, 
-		    	success: function(data){
-						    respuesta =  data[0].respuesta;	
-						    usuario = data[0].nombreusuario;	
-						    plataforma = data[0].plataforma;
-				} 
-			});
-			switch(respuesta)
-		    		{
-		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html");
-		    				break;
-		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html");
-		    				break;
-		    			case 'OKP':
-		    				$('#cargarMenu').load("MenuPQRS.html");
-		    				location.href = server +"ConsultaPQRS.html";
-		    				break;	
-		    			default:
-		    				location.href = server +"Index.html";
-		    				break;
-		    		}
-			    	$('#usuariologin').html(usuario);
-		</script>
+		<label id="usuariologin" style="color:black;"></label></p>
 		<div class="container">
 			<form id="cliente">
 				<h1>Tomar Pedidos</h1>

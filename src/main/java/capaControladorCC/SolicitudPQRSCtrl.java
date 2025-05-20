@@ -28,8 +28,8 @@ import utilidadesCC.ControladorEnvioCorreo;;
 public class SolicitudPQRSCtrl {
 	
 	/**
-	 * Método de la capa controladora que recibe los parámetros de la entidad SolicitudPQRS se encarga de crear el objeto correspondiente
-	 * e invoca la capa DAO para la inserción de la entidad.
+	 * Mï¿½todo de la capa controladora que recibe los parï¿½metros de la entidad SolicitudPQRS se encarga de crear el objeto correspondiente
+	 * e invoca la capa DAO para la inserciï¿½n de la entidad.
 	 * @param fechaSolicitud
 	 * @param tipoSolicitud
 	 * @param idcliente
@@ -41,22 +41,22 @@ public class SolicitudPQRSCtrl {
 	 * @param zona
 	 * @param idmunicipio
 	 * @param comentario
-	 * @return Retorna un entero con el idSolicitudPQRS que retorna la base de datos en la creación del mismo.
+	 * @return Retorna un entero con el idSolicitudPQRS que retorna la base de datos en la creaciï¿½n del mismo.
 	 */
 	public String insertarSolicitudPQRS(String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable)
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda , double valorPedido ,double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion)
 	{
 		JSONArray listJSON = new JSONArray();
 		SolicitudPQRS solicitud = new SolicitudPQRS(0,fechaSolicitud, tipoSolicitud,idcliente, idtienda,
 			 nombres, apellidos,  telefono,  direccion,  zona, idmunicipio,
-			comentario, idOrigen, idFoco, tipo, areaResponsable);
+			comentario, idOrigen, idFoco, tipo, areaResponsable, idpedidotienda, valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion);
 		
 		Tienda objTienda = TiendaDAO.retornarTienda(idtienda);
 		String nombreTienda = objTienda.getNombreTienda();
 		FocoPqrs foco = FocoPqrsDAO.retornarFocoPqrs(idFoco);
 		int idSolPQRSIns = SolicitudPQRSDAO.insertarSolicitudPQRS(solicitud);
-		// Se realiza envío del correo con la solicitud
+		// Se realiza envï¿½o del correo con la solicitud
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
@@ -64,7 +64,7 @@ public class SolicitudPQRSCtrl {
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda " + nombreTienda + " con el siguiente comentario: " + comentario + " \n Información Adicional del cliente telefono: " + telefono + " Direccion: " + direccion + ". \n Si desea más información favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: " + foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable );
+		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda " + nombreTienda + " con el siguiente comentario: " + comentario + " \n Informaciï¿½n Adicional del cliente telefono: " + telefono + " Direccion: " + direccion + ". \n Si desea mï¿½s informaciï¿½n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: " + foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable );
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
 		//
@@ -76,7 +76,7 @@ public class SolicitudPQRSCtrl {
 	
 	
 	/**
-	 * Método creado en la capa controladora para la actualización de una PQRS
+	 * Mï¿½todo creado en la capa controladora para la actualizaciï¿½n de una PQRS
 	 * @param idSolicitudPQRS
 	 * @param fechaSolicitud
 	 * @param tipoSolicitud
@@ -97,26 +97,26 @@ public class SolicitudPQRSCtrl {
 	 */
 	public String actualizarSolicitudPQRS(int idSolicitudPQRS,String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable)
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda , double valorPedido ,double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion)
 	{
 		JSONArray listJSON = new JSONArray();
 		SolicitudPQRS solicitud = new SolicitudPQRS(idSolicitudPQRS,fechaSolicitud, tipoSolicitud,idcliente, idtienda,
 			 nombres, apellidos,  telefono,  direccion,  zona, idmunicipio,
-			comentario, idOrigen, idFoco, tipo, areaResponsable);
+			comentario, idOrigen, idFoco, tipo, areaResponsable, idpedidotienda, valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion);
 		
 		Tienda objTienda = TiendaDAO.retornarTienda(idtienda);
 		String nombreTienda = objTienda.getNombreTienda();
 		FocoPqrs foco = FocoPqrsDAO.retornarFocoPqrs(idFoco);
 		int idSolPQRSIns = SolicitudPQRSDAO.actualizarSolicitudPQRS(solicitud);
-		// Se realiza envío del correo con la solicitud
+		// Se realiza envï¿½o del correo con la solicitud
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		correo.setAsunto("SE ACTUALIZÓ REGISTRO PQRS # " + idSolPQRSIns);
+		correo.setAsunto("SE ACTUALIZï¿½ REGISTRO PQRS # " + idSolPQRSIns);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda " + nombreTienda + " con el siguiente comentario: " + comentario + " \n Información Adicional del cliente telefono: " + telefono + " Direccion: " + direccion + ". \n Si desea más información favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: " + foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable );
+		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda " + nombreTienda + " con el siguiente comentario: " + comentario + " \n Informaciï¿½n Adicional del cliente telefono: " + telefono + " Direccion: " + direccion + ". \n Si desea mï¿½s informaciï¿½n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: " + foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable );
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
 		//
@@ -131,15 +131,15 @@ public class SolicitudPQRSCtrl {
 		JSONArray listJSON = new JSONArray();
 
 		int idSolPQRSIns = SolicitudPQRSDAO.descartarSolicitudPQRS(idSolicitudPQRS);
-		// Se realiza envío del correo con la solicitud
+		// Se realiza envï¿½o del correo con la solicitud
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		correo.setAsunto("SE DESCARTÓ REGISTRO PQRS # " + idSolPQRSIns);
+		correo.setAsunto("SE DESCARTï¿½ REGISTRO PQRS # " + idSolPQRSIns);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se descartó  registro PQRS " + idSolicitudPQRS );
+		correo.setMensaje("Se descartï¿½  registro PQRS " + idSolicitudPQRS );
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
 		//
@@ -149,16 +149,18 @@ public class SolicitudPQRSCtrl {
 		return listJSON.toJSONString();
 	}
 	
-	public String ConsultaIntegradaSolicitudesPQRS(String fechainicial, String fechafinal, String tienda, String tipoSolicitud)
+	public String ConsultaIntegradaSolicitudesPQRS(String fechainicial, String fechafinal, String tienda, String tipoSolicitud, boolean descuentoRedimido)
 	{
 		JSONArray listJSON = new JSONArray();
-		ArrayList <SolicitudPQRS> consultaSolicitudes = SolicitudPQRSDAO.ConsultaIntegradaSolicitudesPQRS(fechainicial, fechafinal, tienda, tipoSolicitud);
+		ArrayList <SolicitudPQRS> consultaSolicitudes = SolicitudPQRSDAO.ConsultaIntegradaSolicitudesPQRS(fechainicial, fechafinal, tienda, tipoSolicitud,descuentoRedimido);
 		for (SolicitudPQRS cadaSolicitud: consultaSolicitudes){
 			JSONObject cadaSolicitudJSON = new JSONObject();
 			cadaSolicitudJSON.put("idconsultaPQRS", cadaSolicitud.getIdsolicitud());
 			cadaSolicitudJSON.put("fechasolicitud", cadaSolicitud.getFechaSolicitud());
 			cadaSolicitudJSON.put("tiposolicitud",cadaSolicitud.getTipoSolicitud());
 			cadaSolicitudJSON.put("cliente", cadaSolicitud.getNombres() + " " + cadaSolicitud.getApellidos());
+			cadaSolicitudJSON.put("nombres", cadaSolicitud.getNombres());
+			cadaSolicitudJSON.put("apellidos", cadaSolicitud.getApellidos());
 			cadaSolicitudJSON.put("direccion", cadaSolicitud.getDireccion());
 			cadaSolicitudJSON.put("telefono", cadaSolicitud.getTelefono());
 			cadaSolicitudJSON.put("comentario", cadaSolicitud.getComentario());
@@ -172,6 +174,12 @@ public class SolicitudPQRSCtrl {
 			cadaSolicitudJSON.put("tipo", cadaSolicitud.getTipo());
 			cadaSolicitudJSON.put("arearesponsable", cadaSolicitud.getAreaResponsable());
 			cadaSolicitudJSON.put("imagenes", cadaSolicitud.getImagenes());
+			cadaSolicitudJSON.put("idpedidotienda", cadaSolicitud.getIdpedidotienda());
+			cadaSolicitudJSON.put("valorPedido", cadaSolicitud.getValorPedido());
+			cadaSolicitudJSON.put("valorDescuento", cadaSolicitud.getValorDescuento());
+			cadaSolicitudJSON.put("porcentajeDescuento", cadaSolicitud.getPorcentajeDescuento());
+			cadaSolicitudJSON.put("descuentoRedimido", cadaSolicitud.isDescuentoRedimido());
+			cadaSolicitudJSON.put("idpedidoredencion", cadaSolicitud.getIdpedidoredencion());
 			listJSON.add(cadaSolicitudJSON);
 		}
 		return listJSON.toJSONString();
@@ -207,11 +215,11 @@ public class SolicitudPQRSCtrl {
 		}
 		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOPUBLICA", "CLAVECORREOPUBLICA");
-		correo.setAsunto("SE ACTUALIZÓ REGISTRO PQRS # " + idSolicitudPQRS);
+		correo.setAsunto("SE ACTUALIZï¿½ REGISTRO PQRS # " + idSolicitudPQRS);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-		correo.setMensaje("Se Actualizó PQRS con el siguiente comentario: " + comentario + ". \n Si desea más información favor revisar en el sistema de Contact Center en el apartado de PQRS" );
+		correo.setMensaje("Se Actualizï¿½ PQRS con el siguiente comentario: " + comentario + ". \n Si desea mï¿½s informaciï¿½n favor revisar en el sistema de Contact Center en el apartado de PQRS" );
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
 		
