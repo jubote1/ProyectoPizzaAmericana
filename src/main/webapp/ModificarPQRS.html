@@ -1,290 +1,317 @@
 <!DOCTYPE html>
 <html lang="es">
-	<head>
-		<title>MODIFICAR PQRS</title>
-		<meta charset="utf-8" />
-		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />	
-		  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
-		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
-		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
-		  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>
-		  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/bootstrapValidator.min.js'></script>
-   		  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/language/es_ES.min.js'></script>
-		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">	
-		  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-        crossorigin="anonymous">
-	    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.min.css"
-	        crossorigin="anonymous">
-	    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
-	    <!-- el archivo CSS de estilo del complemento fileinput -->
-	    <link href="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/css/fileinput.min.css" media="all"
-	        rel="stylesheet" type="text/css" />
-	    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script> -->
-	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-	        crossorigin="anonymous"></script>
-	     <!-- el archivo JS del script principal fileinput plugin -->
-	    <script src="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/js/fileinput.min.js"></script>
-	    <script>$.fn.fileinput.defaults.theme = 'gly';</script>
-	    <link rel="stylesheet" href="js/mostrarImagen.css" crossorigin="anonymous">
-	</head>
-	<body>
+<head>
+<title>MODIFICAR PQRS</title>
+<meta charset="utf-8" />
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+	<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.3/css/fileinput.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap-fileinput@5.5.3/js/fileinput.min.js"></script>
+	<script> $.fn.fileinput.defaults.theme = 'gly'; </script>
+	<link rel="stylesheet" href="js/mostrarImagen.css" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+	<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+	<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+	<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+	<link rel="stylesheet" href="css/pqrs.css" crossorigin="anonymous">
+	<link rel="icon" href="img/logo.ico" type="image/x-icon">
+</head>
+<body>
 
-		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label></p>
-		<script type="text/javascript">
-			
-			var getImport; 
-			var getContent;
-			//Obtenemos el valor de la variable server, con base en la URL digitada
-			var loc = window.location;
-			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-			var respuesta ='';
-			var usuario = "";
-			$.ajax({ 
-		    	url: server + 'ValidarUsuarioAplicacion', 
-		    	dataType: 'json',
-		    	type: 'post', 
-		    	async: false, 
-		    	success: function(data){
-						    respuesta =  data[0].respuesta;	
-						    usuario = data[0].nombreusuario;	
-						    
-				} 
-			});
-			switch(respuesta)
-		    		{
-		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html");
-		    				break;
-		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html");
-		    				break;
-		    			case 'OKP':
-		    				$('#cargarMenu').load("MenuPQRS.html");
-		    				break;	
-		    			default:
-		    				location.href = server +"Index.html";
-		    				break;
-		    		}
-		    		
-			    	$('#usuariologin').html(usuario);
-		</script>
+	<div id="cargarMenu"></div>
+	<div class="container-central">
+		<div class="row">
+			<div class="col-md-7">
+				<div class="container-modPqrs">
+					<form>
+						<h1>INFORMACIÓN FILTRO CONSULTA PQRS</h1>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="row">
 
-		<div class="container">
-			<form>
-				<h1>INFORMACIÓN FILTRO CONSULTA PQRS</h1>
-				
-					<table class="table table-bordered">
-						<tbody>
-							
-								<tr>
-										<td class="active">Fecha Inicial</td>
-										<td><input type="text" id="fechainicial" name="fechainicial" class="form-control" placeholder="Fecha Inicial"></td>
-										<td class="active">Fecha Final</td>
-										<td><input type="text" id="fechafinal" name="fechafinal" class="form-control" placeholder="Fecha Final"></td>
-								</tr>
-								<tr>
-										<td class="active">Tienda</td>
-										<td>
-											<select id="selectTiendas" class="form-control"></select>
-										</td>
-										<td class="active">Tipo de Solicitud</td>
-										<td><select id="selectSolicitud" class="form-control"><option value='peticion' id ='peticion'>Peticion</option>
-										<option value='queja' id ='queja'>Queja</option>
-										<option value='reclamo' id ='reclamo'>Reclamo</option>
-										<option value='sugerencia' id ='sugerencia'>Sugerencia</option>
-										<option value='felicitacion' id ='felicitacion'>Felicitación</option>
-										<option value='todos' id ='todos' selected>Todos</option>
-										</select></td>
-								</tr>
-								
-							
-						</tbody>
-					</table>
-						<input type="button" class="btn btn-primary btn-lg" value="Consultar PQRS" onclick="consultarPQRS()">
+									<div class="col-sm-12 form-group">
+										<div class="button-conf text-right">
+											<button type="button" class="btn btn-info"
+												onclick="generarReporte()">Generar Reporte</button>
+										</div>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Fecha Inicial</label><input type="text"
+											id="fechainicial" name="fechainicial" class="form-control"
+											placeholder="Fecha Inicial" autocomplete="off">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Fecha Final</label><input type="text" id="fechafinal"
+											name="fechafinal" class="form-control"
+											placeholder="Fecha Final" autocomplete="off">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Tienda</label> <select id="selectTiendas"
+											class="form-control"></select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Tipo de Solicitud</label> <select id="selectSolicitud"
+											class="form-control">
+											<option value='peticion'>Peticion</option>
+											<option value='queja'>Queja</option>
+											<option value='reclamo'>Reclamo</option>
+											<option value='sugerencia'>Sugerencia</option>
+											<option value='felicitacion'>Felicitación</option>
+											<option value='todos' selected>Todos</option>
+										</select>
+									</div>
 
-				
-			</form>
-		</div>
-
-		<div class="container">
-					<div>
-        				<table id="grid-consultaPQRS" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="idpconsultaPQRS">Id Solicitud PQRS</th>
-								                <th data-column-id="fechasolicitud">Fecha Solicitud</th>
-								                <th data-column-id="tiposolicitud">Tipo Solicitud</th>
-								                <th data-column-id="cliente">Nombres</th>
-								                <th data-column-id="direccion">Direccion</th>
-								                <th data-column-id="telefono">Teléfono</th>
-								                <th data-column-id="comentario">Comentario</th>
-								                <th data-column-id="municipio">Municipio</th>
-								                <th data-column-id="tienda">Tienda</th>
-								                <th data-column-id="nombreorigen">Origen</th>
-								                <th data-column-id="nombrefoco">Foco</th>
-								                <th data-column-id="accion">Accion</th>
-								                <th data-column-id="tipo">Tipo</th>
-								                <th data-column-id="arearesponsable">Area</th>
-								                <th data-column-id="imagenes">Imgs</th>
-								            </tr>
-								        </thead>
-								      	<tbody>
-								      			
-								      	</tbody>
-								</table>
-						</div>
-				</div>
-								<!-- ESTO ES PARA LA ADICIÓN DE OBSERVACIONES A LA PQRS -->
-				<div class="modal fade" id="adicionarObservacion" tabindex="-1" role="dialog" aria-labelledby="addLabel">
-							 <div class="modal-dialog modal-xl" role="document">
-							    <div class="modal-content">
-							       <div class="modal-header">
-					        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					        <h4 class="modal-title" id="addLabel">Insertar Observación PQRS</h4>
-					      </div>
-					      <form>
-						      	<div class="modal-body">
-						       		<div class="form-group">
-									    <label for="labelExcepcion">Observación Adicional PQRS</label>
-									    <textarea name="comentarios" id="comentarios" rows="10" cols="100" placeholder="Escribe Comentarios"></textarea>
-									 </div>
+									<div class="col-sm-6 form-group d-flex align-items-center">
+										<label class="custom-switch mb-0"> <input
+											type="checkbox" id="filtrodescuentoRed"
+											name="filtrodescuentoRed"> <span
+											class="custom-slider"></span>
+										</label> <label for="filtrodescuentoRed" class="mb-0 ml-2">Descuento
+											redimido</label>
+									</div>
 								</div>
-							      <div class="modal-footer">
-							        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
-							        <button type="button" onClick="guardarObservacionPQRS()" class="btn btn-primary">Guardar Observacion</button>
-							      </div>
-					      </form>
-							    </div>
+								<div class="button-conf text-right">
+									<button type="button" class="btn btn-success"
+										onclick="consultarPQRS()">Consultar PQRS</button>
+								</div>
+								<div class="table-responsive-sm">
+									<table id="grid-consultaPQRS"
+										class="table table-condensed table-hover table-striped"
+										cellspacing="0" width="100%">
+										<thead>
+											<tr>
+												<th>#</th>
+												<th>Fecha</th>
+												<th>Tipo</th>
+												<th>Nombres</th>
+												<th>Direccion</th>
+												<th>Teléfono</th>
+												<th>Comentario</th>
+												<th>Municipio</th>
+												<th>Tienda</th>
+												<th>Origen</th>
+												<th>Foco</th>
+												<th>Accion</th>
+												<th>Tipo</th>
+												<th>Area</th>				
+											</tr>
+										</thead>
+										<tbody></tbody>
+									</table>
+								</div>
 							</div>
+						</div>
+					</form>
 				</div>
-<div class="container">
-			<form id="cliente">
-				<h1>MODIFICACIÓN PQRS</h1>
-				
-					<table class="table table-bordered">
-						<tbody>
-								<tr>
-										<td class="active">Número de PQRS</td>
-										<td><input type="text" id="idSolicitudPQRS" name="idSolicitudPQRS" class="form-control" placeholder="Fecha" disabled></td>
-								</tr>
-								<tr>
-										<td class="active">Fecha Solicitud</td>
-										<td><input type="text" id="fecha" name="fecha" class="form-control" placeholder="Fecha"></td>
-								</tr>
-								<tr>
-										<td class="active">Tipo de Solicitud</td>
-										<td><select id="selectSolicitudpqrs" class="form-control"><option value='peticion' id ='peticion'>Peticion</option>
-										<option value='queja' id ='queja'>Queja</option>
-										<option value='reclamo' id ='reclamo'>Reclamo</option>
-										<option value='sugerencia' id ='sugerencia'>Sugerencia</option>
-										<option value='felicitacion' id ='felicitacion'>Felicitación</option>
-										</select></td>
-								</tr>
-								<tr>
-										<td class="active">Teléfono Cliente</td>
-										<td id="encTelefono"><input type="text" id="telefono" name="telefono" class="form-control" placeholder="Telefono"maxlength="10"></td>
-								</tr>
-								<tr>
-										<td class="active">Nombres</td>
-										<td id="encNombres"><input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres" maxlength="20"></td>
-								</tr>
-								<tr>
-										<td class="active">Apellidos</td>
-										<td id="encApellidos"><input type="text" id="apellidos" name="apellidos" class="form-control" placeholder="Apellidos" maxlength="20"></td>
-								</tr>
-								<tr>
-										<td class="active">Dirección</td>
-										<td id="encDireccion">
-										
-											<div class="col-md-6"> 
-												<input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion" maxlength="30">
-											</div>
-											<div class="col-md-2"> 
-												<select id="selectMunicipio" class="form-control"></select>
-											</div>
-										</td>
-								</tr>
-								<tr>
-										<td class="active">Complemento Dirección</td>
-										<td id="encZona"><input type="text" id="zona" name="zona" class="form-control" placeholder="Zona" maxlength="30"></td>
-								</tr>
-								<tr>
-										<td class="active">Tienda PQRS</td>
-										<td><select id="selectTiendaspqrs" class="form-control"></select></td>
-								</tr>
-								<tr>
-										<td class="active">Origen PQRS</td>
-										<td><select id="selectOrigen" class="form-control"></select></td>
-								</tr>
-								<tr>
-										<td class="active">Foco PQRS</td>
-										<td><select id="selectFoco" class="form-control"></select></td>
-								</tr>
-								<tr>
-										<td class="active">Queja Externa/Interna</td>
-										<td><select id="selectTipo" class="form-control">
-											<option value="externa" selected="true">externa</option>
+			</div>
+			<div class="col-md-5">
+				<div class="container-modPqrs">
+					<form id="cliente">
+						<h1>MODIFICACIÓN PQRS</h1>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="row">
+									<div class="col-sm-6 form-group">
+										<label>Número de PQRS</label><input type="text"
+											id="idSolicitudPQRS" name="idSolicitudPQRS"
+											class="form-control" disabled>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Fecha Solicitud</label><input type="text" id="fecha"
+											name="fecha" class="form-control" placeholder="Fecha"
+											autocomplete="off">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Tipo de Solicitud</label> <select
+											id="selectSolicitudpqrs" class="form-control">
+											<option value='peticion'>Peticion</option>
+											<option value='queja'>Queja</option>
+											<option value='reclamo'>Reclamo</option>
+											<option value='sugerencia'>Sugerencia</option>
+											<option value='felicitacion'>Felicitación</option>
+										</select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Teléfono Cliente</label><input type="text"
+											id="telefono" name="telefono" class="form-control"
+											placeholder="Telefono" maxlength="10">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Nombres</label><input type="text" id="nombres"
+											name="nombres" class="form-control" placeholder="Nombres"
+											maxlength="20">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Apellidos</label><input type="text" id="apellidos"
+											name="apellidos" class="form-control" placeholder="Apellidos"
+											maxlength="20">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Dirección</label><input type="text" id="direccion"
+											name="direccion" class="form-control" placeholder="Direccion"
+											maxlength="30">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Municipio</label><select id="selectMunicipio"
+											class="form-control"></select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Complemento Dirección</label><input type="text"
+											id="zona" name="zona" class="form-control" placeholder="Zona"
+											maxlength="30">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Tienda PQRS</label><select id="selectTiendaspqrs"
+											class="form-control"></select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Origen PQRS</label><select id="selectOrigen"
+											class="form-control"></select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Foco PQRS</label><select id="selectFoco"
+											class="form-control"></select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Queja Externa/Interna</label> <select id="selectTipo"
+											class="form-control">
+											<option value="externa" selected>externa</option>
 											<option value="interna">interna</option>
-										</select></td>
-								</tr>
-								<tr>
-										<td class="active">Area Responsable</td>
-										<td><select id="selectAreaResponsable" class="form-control">
-											<option value="tienda" selected="true">tienda</option>
+										</select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Área Responsable</label> <select
+											id="selectAreaResponsable" class="form-control">
+											<option value="tienda" selected>tienda</option>
 											<option value="contact">contact</option>
-											<option value="tecnologia" >tecnologia</option>
+											<option value="tecnologia">tecnologia</option>
 											<option value="calidad">calidad</option>
-										</select></td>
-								</tr>
-								<tr>
-										<td class="active">Comentarios</td>
-										<td><textarea name="comentariosVista" id="comentariosVista" rows="10" cols="100" placeholder="Escribe Comentarios"></textarea></td>
-								</tr>
-								<tr>
-									<td class="active"><button  align='right' type="button" class="btn btn-danger btn-lg" onclick="DescartarPQRS()"><i class="fas fa-trash-restore fa-3x"></i>Descartar PQRS</button></td>
-									<td class="active"><input type="button" class="btn btn-primary btn-lg" value="Actualizar PQRS" onclick="EditarPQRS()"></td>
-								</tr>
-								<tr>
-										<td colspan="2">
-											<div class="ful-img" id="fulImgBox">
-										        <img src="" id="fulImg" alt="">
-										        <span onclick="closeImg()">X</span>
-										    </div>
-										    <div class="img-gallery" id="img-gallery">
-										    </div>
+										</select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Factura Tienda</label><input type="text"
+											id="idpedidotienda" name="idpedidotienda"
+											class="form-control" onchange="validarNumero(this);">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Valor Pedido</label> <input type="text"
+											id="valorPedido" name="valorPedido" class="form-control"
+											onchange="validarNumero(this);">
+									</div>
 
-										</td>
-								</tr>
-								<tr>
-									<td colspan="2">
+									<div class="col-sm-6 form-group">
+										<label>Porcentaje Descuento</label> <select
+											id="selectPorcentajeDesc" class="form-control"
+											onchange="calcularDescuento();">
+											<option value="0" selected>Ninguno</option>
+											<option value="10">10%</option>
+											<option value="20">20%</option>
+											<option value="50">50%</option>
+											<option value="100">100%</option>
+										</select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Valor del Descuento</label> <input type="text"
+											id="valorDescuento" name="valorDescuento"
+											class="form-control" onchange="validarNumero(this);">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Factura redención</label><input type="text"
+											id="idpedidoredencion" name="idpedidoredencion"
+											class="form-control" onchange="validarNumero(this);">
+									</div>
+						
+										<div class="col-sm-6 form-group d-flex align-items-center">
+										<label class="custom-switch mb-0"> <input
+											type="checkbox" id="descuentoRedimido"
+											name="descuentoRedimido"> <span
+											class="custom-slider"></span>
+										</label> <label for="descuentoRedimido" class="mb-0 ml-2">Descuento
+											redimido</label>
+									</div>
+
+
+									<div class="col-sm-12 form-group">
+										<label>Comentarios</label>
+										<textarea name="comentariosVista" id="comentariosVista"
+											rows="4" cols="100" placeholder="Escribe Comentarios"
+											class="form-control"></textarea>
+									</div>
+									<div class="col-sm-12 text-left">
+										<button type="button" class="btn btn-danger"
+											onclick="DescartarPQRS()">Descartar PQRS</button>
+										<button type="button" class="btn btn-primary"
+											onclick="EditarPQRS()">Actualizar PQRS</button>
+									</div>
+									<div class="col-sm-12">
+										<div class="ful-img" id="fulImgBox">
+											<img src="" id="fulImg" alt=""> <span
+												onclick="closeImg()">X</span>
+										</div>
+										<div class="img-gallery" id="img-gallery"></div>
+									</div>
+
+									<div class="col-sm-12">
 										<div class="form-group">
-							               <!-- campo en el que el usuario puede cargar uno o más archivos-->
-							                <div class="file-loading">
-							                    <input id="file-1" type="file" multiple class="file" data-overwrite-initial="false"
-							                        data-min-file-count="2" data-theme="fa5">
-							                </div>
-	            						</div>
-            						</td>
-								</tr>
-						</tbody>
-					</table>
-					<input type="button" class="btn btn-primary btn-lg" value="Confirmar PQRS" onclick="AdicionarImagenesPQRS()">
-			</form>
-</div>
-	</body>
-	<script src="js/modificarpqrs.js" type="text/javascript"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
-	<script src="js/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="js/datepicker.js"></script>
-    <script>
-    	$("#fechainicial").datepicker($.datepicker.regional["es"]);
-		$("#fechainicial").datepicker('setDate', new Date());
-		$("#fechafinal").datepicker($.datepicker.regional["es"]);
-		$("#fechafinal").datepicker('setDate', new Date());
-		$("#fecha").datepicker($.datepicker.regional["es"]);
-		$("#fecha").datepicker('setDate', new Date());
-	</script>
+											<!-- campo en el que el usuario puede cargar uno o más archivos-->
+											<div class="file-loading">
+												<input id="file-1" type="file" multiple class="file"
+													data-overwrite-initial="false" data-min-file-count="2"
+													data-theme="fa5">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+		<!-- Modal -->
+		<div class="modal fade" id="adicionarObservacion" tabindex="-1"
+			role="dialog" aria-labelledby="exampleModalCenterTitle"
+			aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLongTitle">Insertar
+							Observación PQRS</h5>
+						<button type="button" class="close" data-dismiss="modal"
+							aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<textarea name="comentarios" id="comentarios" rows="10"
+								cols="100" placeholder="Escribe tu observación..."
+								class="form-control"></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary"
+							data-dismiss="modal">Cerrar</button>
+						<button type="button" onClick="guardarObservacionPQRS()"  class="btn btn-primary">Guardar Observación</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		
+	</div>
+
+</body>
+<script
+	src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/modificarpqrs.js" type="text/javascript"></script>
+
 </html>

@@ -5,123 +5,79 @@ import java.io.PrintWriter;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import javax.servlet.http.*;
+
 import org.apache.log4j.Logger;
+import capaControladorCC.SolicitudPQRSCtrl;
 
-import capaControladorCC.SolicitudPQRSCtrl;;
-
-/**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la información de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocación a la clase en la capa Controladora.
- */
 @WebServlet("/ActualizarSolicitudPQRS")
 public class ActualizarSolicitudPQRS extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
-    public ActualizarSolicitudPQRS() {
-        super();
-        // TODO Auto-generated constructor stub
-    }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como parámetro el iddetallepedido al cual se le realizó la adicion, adicionalmente se 
-	 * envía el iddetallepedido relacionado a la adicion, la adición relacionada a la especialidad 1 o la especialidad 2 y 
-	 * las cantidades. Lo anterior invocando al método InsertarDetalleAdicion de la capa Pedido Controlador.
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-				response.addHeader("Access-Control-Allow-Origin", "*");
-				Logger logger = Logger.getLogger("log_file");
-				HttpSession sesion = request.getSession();
-				int idSolicitudPQRS = 0;
-				String fechasolicitud = "";
-				String tiposolicitud = ""; 
-				int idcliente = 0;
-				int idtienda = 0;
-				String nombres = "";
-				String apellidos = "";
-				String telefono = ""; 
-				String direccion = "";
-				String zona = "";
-				int idmunicipio = 0;
-				String comentario = "";
-				int idOrigen = 0;
-				int idFoco = 0;
-				String tipo = "";
-				String areaResponsable = "";
-				idSolicitudPQRS = Integer.parseInt(request.getParameter("idsolicitudpqrs"));
-				fechasolicitud = request.getParameter("fechasolicitud");
-				tiposolicitud = request.getParameter("tiposolicitud");
-				nombres = request.getParameter("nombres");
-				apellidos = request.getParameter("apellidos");
-				telefono = request.getParameter("telefono");
-				direccion = request.getParameter("direccion");
-				zona = request.getParameter("zona");
-				comentario = request.getParameter("comentario");
-				tipo = request.getParameter("tipo");
-				areaResponsable = request.getParameter("arearesponsable");
-		        try
-		        {
-		        	idcliente = Integer.parseInt(request.getParameter("idcliente"));
-		        }catch(Exception e)
-		        {
-		        	idcliente = 0;
-		        }
-		        try
-		        {
-		        	idtienda = Integer.parseInt(request.getParameter("idtienda"));
-		        }catch(Exception e)
-		        {
-		        	idtienda = 0;
-		        }
-		        
-		        try
-		        {
-		        	idmunicipio =  Integer.parseInt(request.getParameter("idmunicipio"));
-		        }catch(Exception e)
-		        {
-		        	idmunicipio = 0;
-		        }
-		        //Vamos a capturar el origen de la PQRS
-		        try
-		        {
-		        	idOrigen=  Integer.parseInt(request.getParameter("idorigen"));
-		        }catch(Exception e)
-		        {
-		        	idOrigen = 0;
-		        }
-		        //Vamos a capturar foco de la PQRS
-		        try
-		        {
-		        	idFoco=  Integer.parseInt(request.getParameter("idfoco"));
-		        }catch(Exception e)
-		        {
-		        	idFoco = 0;
-		        }
-		        //logger.info("Llamado a servicio InsertarSolicitudPQRS con parámetros iddetallepedidopadre: "
-		        //		+ iddetallepedidopadre + " iddetallepedidoadicion:  " + iddetallepedidoadicion + " idespecialidad1: " + idespecialidad1
-		        //		+ " idespecialidad2: " + idespecialidad2 + " cantidad1: " + cantidad1 + " cantidad2: " + cantidad2 );
-		        SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
-		        String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS,fechasolicitud, tiposolicitud, idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen, idFoco, tipo, areaResponsable);
-		        System.out.println(respuesta);
-		        PrintWriter out = response.getWriter();
-				out.write(respuesta);
+	public ActualizarSolicitudPQRS() {
+		super();
 	}
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		response.addHeader("Access-Control-Allow-Origin", "*");
+		Logger logger = Logger.getLogger("log_file");
+
+		// ParÃ¡metros tipo String
+		String fechasolicitud = request.getParameter("fechasolicitud");
+		String tiposolicitud = request.getParameter("tiposolicitud");
+		String nombres = request.getParameter("nombres");
+		String apellidos = request.getParameter("apellidos");
+		String telefono = request.getParameter("telefono");
+		String direccion = request.getParameter("direccion");
+		String zona = request.getParameter("zona");
+		String comentario = request.getParameter("comentario");
+		String tipo = request.getParameter("tipo");
+		String areaResponsable = request.getParameter("arearesponsable");
+
+		// ParÃ¡metros numÃ©ricos con parseo seguro
+		int idSolicitudPQRS = parseIntSafe(request, "idsolicitudpqrs");
+		int idcliente = parseIntSafe(request, "idcliente");
+		int idtienda = parseIntSafe(request, "idtienda");
+		int idmunicipio = parseIntSafe(request, "idmunicipio");
+		int idOrigen = parseIntSafe(request, "idorigen");
+		int idFoco = parseIntSafe(request, "idfoco");
+		int idpedidotienda = parseIntSafe(request, "idpedidotienda");
+		double valorPedido = parseDoubleSafe(request, "valorPedido");
+		double valorDescuento = parseDoubleSafe(request, "valorDescuento");
+		int porcentajeDescuento= parseIntSafe(request,"porcentajeDescuento");
+		boolean descuentoRedimido = "true".equalsIgnoreCase(request.getParameter("descuentoRedimido"));
+		int idpedidoredencion = parseIntSafe(request ,"idpedidoredencion");
+		// LÃ³gica principal
+		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
+		String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS, fechasolicitud, tiposolicitud,
+				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen,
+				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion);
+
+		// Salida
+		PrintWriter out = response.getWriter();
+		out.write(respuesta);
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		doGet(request, response);
 	}
 
+	// MÃ©todos auxiliares de parseo seguro
+	private int parseIntSafe(HttpServletRequest request, String paramName) {
+		try {
+			return Integer.parseInt(request.getParameter(paramName));
+		} catch (Exception e) {
+			return 0;
+		}
+	}
+
+	private double parseDoubleSafe(HttpServletRequest request, String paramName) {
+		try {
+			return Double.parseDouble(request.getParameter(paramName));
+		} catch (Exception e) {
+			return 0.0;
+		}
+	}
 }

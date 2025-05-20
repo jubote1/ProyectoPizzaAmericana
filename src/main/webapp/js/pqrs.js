@@ -1,508 +1,391 @@
-	
+// Inicializar datepicker
 
-// Se definen las variables globales.
-var server;
+flatpickr("#fecha", {
+	dateFormat: "d/m/Y",
+	locale: "es",
+	defaultDate: "today",   // Fecha actual
+	onChange: function(selectedDates, dateStr, instance) {
+		if (!existeFecha(dateStr)) {
+			Swal.fire({
+				icon: 'error',
+				title: 'Fecha incorrecta',
+				text: 'La fecha de la solicitud no es correcta'
+			});
+			instance.setDate(new Date());
+			return;
+		}
+
+		if (selectedDates.length > 0) {
+			const fecha = selectedDates[0];
+			const esValida = validarFechaNoMayorAHoy(fecha);
+			if (!esValida) {
+				Swal.fire({
+					icon: 'error',
+					title: 'Fecha incorrecta',
+					text: 'La fecha de la solicitud no puede ser futura, favor corregir'
+				});
+				instance.setDate(new Date());
+			}
+		}
+	}
+});
+// Definición de variables
+var loc = window.location;
+var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+var respuesta = '';
+var usuario = "";
 var tiendas;
 var table;
 var productos;
 var memcode = 0;
 var idCliente = 0;
-//Configuramos el campo fileinput 
-var g = $("#file-1").fileinput({
-    theme: 'fa5',
-    uploadUrl: 'http://172.19.0.25:4200/service_upload.php',
-    showRemove: false,
-    showUpload: false,
-    allowedFileExtensions: ['jpg', 'png', 'gif', 'pdf', 'jpeg'],
-    overwriteInitial: false,
-    maxFilesNum: 10,
-    showCaption: false,
-    browseClass: "btn btn-danger",
-    uploadAsync: true,
-    browseLabel: "",
-    browseIcon: "<i class='fa fa-plus'></i>",
-    fileActionSettings: {
-        showUpload: false,
-        showZoom: false,
-    },
-    slugCallback: function (filename) {
-        return filename.replace('(', '_').replace(']', '_');
-    }
 
+// Validar usuario
+$.ajax({
+	url: server + 'ValidarUsuarioAplicacion',
+	dataType: 'json',
+	type: 'post',
+	async: false,
+	success: function(data) {
+		respuesta = data[0].respuesta;
+		usuario = data[0].nombreusuario;
+	}
+});
+switch (respuesta) {
+	case 'OK':
+		$('#cargarMenu').load("Menu.html");
+		break;
+
+	case 'OKA':
+		$('#cargarMenu').load("MenuAdm.html", function () {
+			// Este callback se ejecuta después de que MenuAdm.html se ha cargado
+			console.log("holi: "+usuario)
+			$('#cargarMenu').find('#usuariologin').html(usuario);
+		});
+		break;
+
+	case 'OKP':
+		$('#cargarMenu').load("MenuPQRS.html");
+		break;
+
+	default:
+		location.href = server + "Index.html";
+		break;
+}
+
+
+
+// Configuración de fileinput
+$("#file-1").fileinput({
+	theme: 'fa5',
+	uploadUrl: 'http://172.19.0.25:4200/service_upload.php',
+	showRemove: true,
+	showUpload: false,
+	showCancel: false,
+	allowedFileExtensions: ['jpg', 'png', 'gif', 'pdf', 'jpeg'],
+	overwriteInitial: false,
+	maxFilesNum: 10,
+	showCaption: false,
+	browseClass: "btn btn-danger",
+	uploadAsync: true,
+	browseLabel: "",
+	browseIcon: "<i class='fa fa-plus'></i>",
+	fileActionSettings: {
+		showUpload: false,
+		showZoom: false
+	},
+	slugCallback: filename => filename.replace('(', '_').replace(']', '_')
 });
 
-
-// A continuación  la ejecucion luego de cargada la pagina
+// Al cargar la página
 $(document).ready(function() {
 
-			
-
-//validamos el contenido del campo fecha del pedido y el evento que lo controlará
-$("#fecha").change(function(){
-    var fechaped = $("#fecha").val();
-    if(existeFecha(fechaped))
-	{
-	}
-	else
-	{
-		alert ('La fecha de la solicitud no es correcta');
-		$("#fecha").datepicker('setDate', new Date());
-		return;
-	}
-
-	if(validarFechaMenorActual(fechaped))
-	{
-	}
-	else
-	{
-		alert ('La fecha de la solicitud es menor a la fecha actual, favor corregir');
-		$("#fecha").datepicker('setDate', new Date());
-		return;
-	}
-});
-
-
-	//Se invoca servicio para traerse la información de los productos disponibles en el sistema
-	// En resumen se invocan todos servicios que se encargan de llenar la data del formulario.
 	getListaTiendas();
 	getListaMunicipios();
 	getListaOrigenes();
 	getListaFocos();
-	setInterval('validarVigenciaLogueo()',600000);
-	// Llevamos a cero los campos cálculos de los totales
-	// Se define evento para campo valor a devolver.
-	
-	// Se realiza la creación del DATATABLE DE CLIENTES
-    table = $('#grid-clientes').DataTable( {
-    		"aoColumns": [
-            { "mData": "idCliente" },
-            { "mData": "tienda" },
-            { "mData": "nombre" },
-            { "mData": "apellido" },
-            { "mData": "nombrecompania" },
-            { "mData": "direccion" },
-            { "mData": "zona" },
-            { "mData": "observacion" },
-            { "mData": "telefono" },
-            { "mData": "memcode"  , "visible": false }
-        ]
-    	} );
+	setInterval(validarVigenciaLogueo, 600000);
 
-    
-    $('#grid-clientes tbody').on('click', 'tr', function () {
-        datos = table.row( this ).data();
-        //alert( 'Diste clic en  '+datos.nombre+'\'s row' );
-        $('#nombres').val(datos.nombre);
-        $('#apellidos').val(datos.apellido);
-        $('#nombreCompania').val(datos.nombrecompania);
-        $('#direccion').val(datos.direccion);
-        $('#zona').val(datos.zona);
-        $('#observacionDir').val(datos.observacion);
-        $("#selectTiendas").val(datos.tienda);
-        // Para evitar que modifiquen la tienda
-        $("#selectMunicipio").val(datos.municipio);
-        memcode = datos.memcode;
-        idCliente = datos.idCliente;
-        var municipio = datos.municipio;
-        var dirbuscar = datos.direccion + " " + municipio.toLowerCase();
-        
-     } );
- 	
-
-  	
-
-	} );
-
-
-function validarVigenciaLogueo()
-{
-	var d = new Date();
-	
-	var respuesta ='';
-	$.ajax({ 
-	   	url: server + 'ValidarUsuarioAplicacion', 
-	   	dataType: 'json',
-	   	type: 'post', 
-	   	async: false, 
-	   	success: function(data){
-			    respuesta =  data[0].respuesta;		
-		} 
-	});
-	switch(respuesta)
-	{
-		case 'OK':
-				break;
-		case 'OKA':
-				break;
-		case 'OKP':
-				break;
-		default:
-				location.href = server +"Index.html";
-		    	break;
-	}
-		    		
-}
-
-// Método que se encarga luego de introducido un teléfono en el campo de teléfono del cliente llamar al servicio
-function validarTelefono(){
-
-	// Validamos el tema de la longitud del pedido
-	var lngTel = $("#telefono").val().length;
-	if (lngTel < 10)
-	{
-		alert("Tenga precaución el teléfono tiene una lontitud menor a 10");
-	}
-
-	if (!/^([0-9])*$/.test($("#telefono").val()))
-	{
-      alert("El valor " + $("#telefono").val() + " no es un número");
-	}
-	// Validamos que sean solo números
-	if ( $.fn.dataTable.isDataTable( '#grid-clientes' ) ) {
-    	table = $('#grid-clientes').DataTable();
-    }
-	
-	$.getJSON(server + 'GetCliente?telefono=' + telefono.value, function(data1){
-			table.clear().draw();
-			for(var i = 0; i < data1.length;i++){
-				var cadaCliente  = data1[i];
-				table.row.add(data1[i]).draw();
+	const table = $('#grid-clientes').DataTable({
+		responsive: true,
+		autoWidth: false,
+		lengthChange: true, // muestra el selector de cantidad de registros
+		language: {
+			search: "Buscar:",
+			lengthMenu: "Mostrar _MENU_ registros por página",
+			zeroRecords: "No se encontraron resultados",
+			info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+			infoEmpty: "Mostrando 0 registros",
+			infoFiltered: "(filtrado de _MAX_ registros totales)",
+			paginate: {
+				previous: "Anterior",
+				next: "Siguiente"
 			}
+		},
+		columns: [
+			{ data: "idCliente" },
+			{ data: "tienda" },
+			{ data: "nombre" },
+			{ data: "apellido" },
+			{ data: "nombrecompania" },
+			{ data: "direccion" },
+			{ data: "zona" },
+			{ data: "observacion" },
+			{ data: "telefono" },
+			{ data: "memcode", visible: false }
+		]
+	});
+
+	$('#grid-clientes tbody').on('click', 'tr', function() {
+		const datos = table.row(this).data();
+		$('#nombres').val(datos.nombre);
+		$('#apellidos').val(datos.apellido);
+		$('#direccion').val(datos.direccion);
+		$('#zona').val(datos.zona);
+		$('#comentarios').val(datos.observacion);
+		$("#selectTiendas").val(datos.tienda);
+		$("#selectMunicipio").val(datos.municipio || ""); // asegúrate de tener esta columna
+
+		// Opcional si los campos existen
+		$('#nombreCompania').val(datos.nombrecompania || "");
+		$('#observacionDir').val(datos.observacion || "");
+
+		memcode = datos.memcode;
+		idCliente = datos.idCliente;
+	});
+});
+
+// Validar vigencia de sesión
+function validarVigenciaLogueo() {
+	$.ajax({
+		url: server + 'ValidarUsuarioAplicacion',
+		dataType: 'json',
+		type: 'post',
+		async: false,
+		success: function(data) {
+			let respuesta = data[0].respuesta;
+			if (!['OK', 'OKA', 'OKP'].includes(respuesta)) {
+				location.href = server + "Index.html";
+			}
+		}
+	});
+}
+
+// Validar número de teléfono
+function validarTelefono() {
+	let tel = $("#telefono").val();
+	if (tel.length < 10) {
+		Swal.fire({
+			icon: 'error',
+			title: 'Teléfono incorrecta',
+			text: "Teléfono tiene longitud menor a 10"
 		});
-		
-}
+	}
+	if (!/^[0-9]*$/.test(tel)) {
+		Swal.fire({
+			icon: 'error',
+			title: 'Teléfono incorrecta',
+			text: `El valor ${tel} no es un número`
+		});
+	}
 
 
+	if ($.fn.dataTable.isDataTable('#grid-clientes')) {
+		table = $('#grid-clientes').DataTable();
+	}
 
-// Método que invoca el servicio para listar las tiendas donde se pondrán tomar domicilios.
-function getListaTiendas(){
-	$.getJSON(server + 'GetTiendas', function(data){
-		tiendas = data;
-		var str = '';
-		for(var i = 0; i < data.length;i++){
-			var cadaTienda  = data[i];
-			str +='<option value="'+ cadaTienda.nombre +'" id ="'+ cadaTienda.id +'">' + cadaTienda.nombre +'</option>';
-		}
-		$('#selectTiendas').html(str);
-		// Realizamos cambio para que la tienda no esté seleccionada por defecto
-		$("#selectTiendas").val('');
+	$.getJSON(server + 'GetCliente?telefono=' + tel, function(data) {
+		table.clear().draw();
+		data.forEach(cliente => table.row.add(cliente).draw());
 	});
 }
 
-function getListaOrigenes(){
-	$.getJSON(server + 'CRUDOrigenPqrs?idoperacion=5', function(data){
-		var origenes = data;
-		var str = '';
-		for(var i = 0; i < data.length;i++){
-			var cadaOrigen  = data[i];
-			str +='<option value="'+ cadaOrigen.nombreorigen +'" id ="'+ cadaOrigen.idorigen +'">' + cadaOrigen.nombreorigen +'</option>';
-		}
-		$('#selectOrigen').html(str);
-		// Realizamos cambio para que la tienda no esté seleccionada por defecto
-		$("#selectOrigen").val('');
-	});
-}
-
-function getListaFocos(){
-	$.getJSON(server + 'CRUDFocoPqrs?idoperacion=5', function(data){
-		var str = '';
-		for(var i = 0; i < data.length;i++){
-			var cadaFoco  = data[i];
-			str +='<option value="'+ cadaFoco.nombrefoco +'" id ="'+ cadaFoco.idfoco +'">' + cadaFoco.nombrefoco +'</option>';
-		}
-		$('#selectFoco').html(str);
-		// Realizamos cambio para que la tienda no esté seleccionada por defecto
-		$("#selectFoco").val('');
-	});
+function validarNumero(input) {
+	input.value = input.value.replace(/\D/g, ''); // Solo dígitos
 }
 
 
-//Método que invoca el servicio para obtener lista de municipios parametrizados en el sistema
-function getListaMunicipios(){
+function calcularDescuento() {
+	const valorPedido = parseFloat(document.getElementById('valorPedido').value);
+	const porcentaje = parseFloat(document.getElementById('selectPorcentajeDesc').value);
+	const inputDescuento = document.getElementById('valorDescuento');
 
-	$.getJSON(server + 'CRUDMunicipio?idoperacion=5', function(data){
-		
-		var str = '';
-		for(var i = 0; i < data.length;i++){
-			var cadaMunicipio  = data[i];
-			str +='<option value="'+ cadaMunicipio.nombre +'" id ="'+ cadaMunicipio.idmunicipio +'">' + cadaMunicipio.nombre +'</option>';
-		}
+	if (isNaN(valorPedido)) {
+		inputDescuento.value = '';
+		return;
+	}
+
+	const descuento = valorPedido * (porcentaje / 100);
+	inputDescuento.value = Math.round(descuento);
+}
+
+function getListaTiendas() {
+	$.getJSON(server + 'GetTiendas', function(data) {
+		let placeholder = `<option value="">Seleccionar...</option>`;
+		let str = data.map(t => `<option value="${t.nombre}" id="${t.id}">${t.nombre}</option>`).join('');
+		$('#selectTiendas').html(placeholder + str).val('');
+	});
+}
+
+function getListaOrigenes() {
+	let placeholder = `<option value="">Seleccionar...</option>`;
+	$.getJSON(server + 'CRUDOrigenPqrs?idoperacion=5', function(data) {
+		let str = data.map(o => `<option value="${o.nombreorigen}" id="${o.idorigen}">${o.nombreorigen}</option>`).join('');
+		$('#selectOrigen').html(placeholder + str).val('');
+	});
+}
+
+function getListaFocos() {
+	let placeholder = `<option value="">Seleccionar...</option>`;
+	$.getJSON(server + 'CRUDFocoPqrs?idoperacion=5', function(data) {
+		let str = data.map(f => `<option value="${f.nombrefoco}" id="${f.idfoco}">${f.nombrefoco}</option>`).join('');
+		$('#selectFoco').html(placeholder + str).val('');
+	});
+}
+
+function getListaMunicipios() {
+	$.getJSON(server + 'CRUDMunicipio?idoperacion=5', function(data) {
+		let str = data.map(m => `<option value="${m.nombre}" id="${m.idmunicipio}">${m.nombre}</option>`).join('');
 		$('#selectMunicipio').html(str);
 	});
-
 }
 
+// Limpiar cliente
+function limpiarSeleccionCliente() {
+	// Limpiar campos de texto y numéricos
+	$('#telefono, #nombres, #apellidos, #direccion, #zona, #comentarios, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento').val("");
 
+	// Reiniciar selects a la primera opción
+	$('#selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc').prop('selectedIndex', 0);
+	$('#descuentoRedimido').prop('checked',false);
+	// Reiniciar valor del cliente
+	idCliente = 0;
 
-
-
-function limpiarSeleccionCliente()
-{
-		$('#telefono').val("");
-		$('#nombres').val("");
-        $('#apellidos').val("");
-        $('#direccion').val("");
-        $('#zona').val("");
-        $("#comentarios").val('');
-        $("#selectTiendas").val("");
-        $("#selectMunicipio").val("");
-        $("#selectTipo").val("externa");
-        $("#selectAreaResponsable").val("tienda");
-        idCliente = 0;
-        if ( $.fn.dataTable.isDataTable( '#grid-clientes' ) ) 
-        {
-			table = $('#grid-clientes').DataTable();
-			table.clear().draw();
-		}
-}
-
-function existeFecha(fecha){
-      var fechaf = fecha.split("/");
-      var day = fechaf[0];
-      var month = fechaf[1];
-      var year = fechaf[2];
-      var date = new Date(year,month,'0');
-      if((day-0)>(date.getDate()-0)){
-            return false;
-      }
-      return true;
-}
-
-function validarFechaMenorActual(date1){
-      	var hoy = new Date();
-		var dd = hoy.getDate();
-		var mm = hoy.getMonth()+1; //January is 0!
-
-		var yyyy = hoy.getFullYear();
-		if(dd<10){
-		    dd='0'+dd;
-		} 
-		if(mm<10){
-		    mm='0'+mm;
-		} 
-		var date2 = dd+'/'+mm+'/'+yyyy;
-      var fechaPedido = new Date();
-      var fechaActual = new Date();
-      var fecha1 = date1.split("/");
-      var fecha2 = date2.split("/");
-      fechaPedido.setFullYear(fecha1[2],fecha1[1]-1,fecha1[0]);
-      fechaActual.setFullYear(fecha2[2],fecha2[1]-1,fecha2[0]);
-      
-      if (fechaPedido >= fechaActual)
-      {
-        return true;
-   	  }
-      else
-      {
-        return false;
-      }
-}
-
-function ConfirmarPQRS()
-{
-	var valida = ValidacionesDatos();
-	if (valida != 1)
-	{
-		return;
+	// Limpiar DataTable si existe
+	if ($.fn.dataTable.isDataTable('#grid-clientes')) {
+		const table = $('#grid-clientes').DataTable();
+		table.clear().draw();
 	}
-	var fechaSolicitud = $("#fecha").val();
-	var tipoSolicitud = $("#selectSolicitud option:selected").val();
-	//idCliente
-	var tempTienda =  $("#selectTiendas option:selected").attr('id');
-	var idOrigen = $("#selectOrigen option:selected").attr('id');
-	var idFoco = $("#selectFoco option:selected").attr('id');
-	var nombresEncode = $("#nombres").val();
-	var apellidosEncode = $("#apellidos").val();
-	var tel = $("#telefono").val();
-	var direccionEncode = $("#direccion").val();
-	var zonaEncode = $("#zona").val(); 
-	var tempMunicipio = $("#selectMunicipio option:selected").attr('id');
-	var comentarioEncode = $("#comentarios").val();
-	var tipo = $("#selectTipo option:selected").val();
-	var areaResponsable = $("#selectAreaResponsable option:selected").val();
-	$.confirm(
-	{
-		'title'		: 'Confirmacion SolicitudPQRS',
-		'content'	: 'Desea confirmar la inserción de la Solicitud PQRS.' ,
-		'buttons'	: 
-		{
-			'Si'	: 
-			{
-				'class'	: 'blue',
-				'action': function()
-				{
-					$.ajax(
-					{
-		    				url: server + 'InsertarSolicitudPQRS' , 
-		    				dataType: 'json', 
-		    				type: 'post', 
-							data: 
-							{'fechasolicitud' : fechaSolicitud,
-							 'tiposolicitud' : tipoSolicitud,
-							 'idcliente' : idCliente,
-							 'idtienda' : tempTienda,
-							 'nombres' : nombresEncode,
-							 'apellidos' : apellidosEncode,
-							 'telefono' : tel,
-							 'direccion' : direccionEncode,
-							 'zona' : zonaEncode,
-							 'idmunicipio' : tempMunicipio,
-							 'comentario' : comentarioEncode,
-							 'idorigen' : idOrigen,
-							 'idfoco' : idFoco,
-							 'tipo' : tipo,
-							 'arearesponsable' : areaResponsable
-							}, 
-		    				async: false, 
-			    			success: function(data1)
-			    			{
-								var respuesta = data1[0];
-								if(respuesta.idSolicitudPQRS > 0)
-		    					{
-		    						alert('Se ha insertado correctamente la solicitud PQRS número  ' + respuesta.idSolicitudPQRS);
-		    						var filestack = $('#file-1').fileinput('getFileList');
-								    const fd = new FormData();
+}
 
-								    //Se guarda un array con las imagenes dentro de los datos del formulario
-								    filestack.forEach(element => 
-								    {
-								        fd.append('files[]', element);
-								    });
 
-								  //se llama al servicio php para subir las imagenes.
-								    $.ajax(
-								    {
-								        url: 'http://172.19.0.25:4200/service_upload.php',
-								        method: 'POST',
-								        data: fd,
-								        dataType: "json",
-								        cache: false,
-								        contentType: false,
-								        processData: false,
-								        async: false, 
-								        success: function(resp) 
-								        {
-								        	console.log(resp);
-								            //En este punto deberemos insertar las imágenes
-								            for(var i = 0; i < resp.length;i++)
-								            {
-													var cadaResp  = resp[i];
-													console.log(cadaResp.name);
-													$.ajax({ 
-													   	url: server + 'InsertarSolicitudPQRSImagenes?idsolicitudpqrs=' + respuesta.idSolicitudPQRS + '&rutaimagen=' + cadaResp.name, 
-													   	dataType: 'json',
-													   	type: 'post', 
-													   	async: false, 
-													   	success: function(data){
-															    
-														}
-													});
-													$('#file-1').fileinput('reset');
-											}
-											
-																												
-								        }
-		    					 	});
-		    						//antes del final
-		    						$('#telefono').val('');
-									$('#nombres').val('');
-									$('#apellidos').val('');
-									$('#direccion').val('');
-									$('#zona').val('');
-									$("#selectTiendas").val('');
-									$("#selectOrigen").val('');
-									$("#selectFoco").val('');
-									$("#selectMunicipio").val(1);
-									$("#comentarios").val('');
-									$("#selectTipo").val("externa");
-					    			$("#selectAreaResponsable").val("tienda");
-									idCliente = 0;
-									if ( $.fn.dataTable.isDataTable( '#grid-clientes' ) ) 
-									{
-										table = $('#grid-clientes').DataTable();
-										table.clear().draw();
-									}
-		    					}
-							}
-					});
+// Validar fecha
+function existeFecha(fecha) {
+	let [day, month, year] = fecha.split("/");
+	let date = new Date(year, month, 0);
+	return (parseInt(day) <= date.getDate());
+}
+
+function validarFechaNoMayorAHoy(fechaIngresada) {
+	const hoy = new Date();
+	const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+	// Convertir a fecha sin hora para la comparación
+	const f = new Date(fechaIngresada.getFullYear(), fechaIngresada.getMonth(), fechaIngresada.getDate());
+
+	return f <= fechaHoy;
+}
+
+
+
+// Confirmar PQRS
+function ConfirmarPQRS() {
+	if (ValidacionesDatos() !== 1) return;
+
+	let data = {
+		fechasolicitud: $("#fecha").val(),
+		tiposolicitud: $("#selectSolicitud").val(),
+		idcliente: idCliente,
+		idtienda: $("#selectTiendas option:selected").attr('id'),
+		idorigen: $("#selectOrigen option:selected").attr('id'),
+		idfoco: $("#selectFoco option:selected").attr('id'),
+		nombre: $("#nombres").val(),
+		apellido: $("#apellidos").val(),
+		telefono: $("#telefono").val(),
+		direccion: $("#direccion").val(),
+		zona: $("#zona").val(),
+		idmunicipio: $("#selectMunicipio option:selected").attr('id'),
+		comentario: $("#comentarios").val(),
+		tipo: $("#selectTipo").val(),
+		arearesponsable: $("#selectAreaResponsable").val(),
+		idpedidotienda: $("#idpedidotienda").val(),
+		idpedidoredencion: $("#idpedidoredencion").val(),
+		valorPedido: $("#valorPedido").val(),
+		valorDescuento: $("#valorDescuento").val(),
+		porcentajeDescuento: $("#selectPorcentajeDesc").val(),
+		descuentoRedimido: document.getElementById("descuentoRedimido").checked
+	};
+	console.log("datos a insertar:");
+	console.log(data);
+	Swal.fire({
+		title: 'Confirmación de Solicitud PQRS',
+		text: '¿Desea confirmar la inserción de la solicitud PQRS?',
+		icon: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Sí',
+		cancelButtonText: 'No',
+		confirmButtonColor: 'blue', // Personaliza el color del botón de "Sí"
+		cancelButtonColor: 'gray', // Personaliza el color del botón de "No"
+	}).then((result) => {
+		if (result.isConfirmed) {
+			// Si el usuario hace clic en "Sí"
+			$.ajax({
+				url: server + 'InsertarSolicitudPQRS',
+				dataType: 'json',
+				type: 'post',
+				data: data,
+				success: function(resp) {
+					if (resp[0].idSolicitudPQRS != 0) {
+						Swal.fire({
+							icon: 'success',
+							title: 'Éxito',
+							text: 'Solicitud ingresada correctamente'
+						});
+						limpiarSeleccionCliente();
+					} else {
+						Swal.fire({
+							icon: 'error',
+							title: 'Error',
+							text: "Error al insertar" 
+						});
+					}
 				}
-			},
-			'No'	: 
-			{
-				'class'	: 'gray',
-				'action': function()
-				{
-
-				}	// Nothing to do in this case. You can as well omit the action property.
-			}
+			});
 		}
 	});
+
 }
 
-function ValidacionesDatos()
-{
-	//validamos campo de telefono
-	var tele =  telefono.value;
-	if (tele == '' || tele == null)
-	{
-		alert ('Debe ingresar un telefono de contacto para el cliente');
+
+function ValidacionesDatos() {
+	let errores = [];
+
+	if (!telefono.value) {
+		errores.push("Debe ingresar un teléfono de contacto.");
+	} else if (!/^\d+$/.test(telefono.value)) {
+		errores.push(`El valor "${telefono.value}" no es un número válido.`);
+	}
+
+	if (!nombres.value) errores.push("Debe ingresar los nombres del cliente.");
+	if (!direccion.value) errores.push("Debe ingresar la dirección del cliente.");
+	if (!$("#selectTiendas").val()) errores.push("Debe seleccionar una tienda.");
+	if (!$("#selectOrigen").val()) errores.push("Debe seleccionar el origen de la PQRS.");
+	if (!$("#selectFoco").val()) errores.push("Debe seleccionar el foco de la PQRS.");
+	if (!$("#selectMunicipio").val()) errores.push("Debe seleccionar el municipio.");
+	if (!comentarios.value) errores.push("Debe ingresar un comentario.");
+
+	if (errores.length > 0) {
+		Swal.fire({
+			icon: 'warning',
+			title: 'Faltan datos requeridos',
+			html: `<ul style="text-align:left;">${errores.map(e => `<li>${e}</li>`).join('')}</ul>`,
+			confirmButtonText: 'Entendido',
+			confirmButtonColor: 'blue'
+						
+		});
 		return;
 	}
 
-
-	if (!/^([0-9])*$/.test(tele))
-	{
-      alert("El valor " + tele + " no es un número");
-      return;
-	}
-
-	//validamos campo Nombres
-	var nomb = nombres.value;
-	if (nomb == '' || nomb == null)
-	{
-		alert ('Debe ingresar los nombres del Cliente');
-		return;
-	}
-		//validamos campo Direccion
-	var dir = direccion.value;
-	if (dir == '' || dir == null)
-	{
-		alert ('Debe ingresar la dirección del cliente');
-		return;
-	}
-	var tien = $("#selectTiendas option:selected").val();
-	if (tien == '' || tien == null || tien == undefined)
-	{
-		alert ('Debe ingresar la tienda del cliente PQRS');
-		return;
-	}
-	//Validamos la selección del origen de PQRS
-	var origen = $("#selectOrigen option:selected").val();
-	if (origen == '' || origen == null || origen == undefined)
-	{
-		alert ('Debe ingresar el origen de la PQRS');
-		return;
-	}
-	//Validamos la selección del foco de PQRS
-	var foco = $("#selectFoco option:selected").val();
-	if (foco == '' || foco == null || foco == undefined)
-	{
-		alert ('Debe ingresar el foco de la PQRS');
-		return;
-	}
-	var muni = $("#selectMunicipio option:selected").val();
-	if (muni == '' || muni == null|| muni == undefined)
-	{
-		alert ('Debe ingresar el Municipio del Cliente del PQRS');
-		return;
-	}
-	
-	var coment = comentarios.value;
-	if (coment == '' || coment == null || coment == undefined)
-	{
-		alert ('Debe ingresar el comentario del PQRS');
-		return;
-	}
-
-	return(1);
+	return 1;
 }

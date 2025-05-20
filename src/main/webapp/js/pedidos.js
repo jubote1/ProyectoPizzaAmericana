@@ -1,7 +1,13 @@
 	
 
 // Se definen las variables globales.
-var server;
+// Definición de variables
+var loc = window.location;
+var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+var respuesta = '';
+var usuario = "";
+var plataforma = "";
 var tiendas;
 var tiposPedido;
 var tiendasBloqueadas;
@@ -70,6 +76,42 @@ var descuentoPorcentaje = 0;
 var idOfertaClienteActual = 0;
 var idExcepcionOferta = 0;
 var montoFactura = 0;
+
+// Validar usuario
+$.ajax({
+	url: server + 'ValidarUsuarioAplicacion',
+	dataType: 'json',
+	type: 'post',
+	async: false,
+	success: function(data) {
+		respuesta = data[0].respuesta;
+		usuario = data[0].nombreusuario;
+		plataforma = data[0].plataforma;
+	}
+});
+
+
+switch (respuesta) {
+	case 'OK':
+		$('#cargarMenu').load("Menu.html");
+		break;
+
+	case 'OKA':
+		$('#cargarMenu').load("MenuAdm.html", function () {
+
+			$('#cargarMenu').find('#usuariologin').html(usuario);
+		});
+		break;
+
+	case 'OKP':
+		$('#cargarMenu').load("MenuPQRS.html");
+		location.href = server +"ConsultaPQRS.html";
+		break;
+
+	default:
+		location.href = server + "Index.html";
+		break;
+}
 
 // A continuación  la ejecucion luego de cargada la pagina
 $(document).ready(function() {

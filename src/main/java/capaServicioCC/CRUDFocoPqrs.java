@@ -31,11 +31,11 @@ public class CRUDFocoPqrs extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se recibirá como parámetro principal el idoperacion con base en los siguientes valores 
-	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedirán los otros parámetros y se invocará el método en la capa controlador.
+	 * Se recibirï¿½ como parï¿½metro principal el idoperacion con base en los siguientes valores 
+	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedirï¿½n los otros parï¿½metros y se invocarï¿½ el mï¿½todo en la capa controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operación idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaciï¿½n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");		
 		HttpSession sesion = request.getSession();
 				response.addHeader("Access-Control-Allow-Origin", "*");
@@ -68,7 +68,7 @@ public class CRUDFocoPqrs extends HttpServlet {
 				{
 					respuesta = PqrsCtrl.obtenerFocosPqrs();
 				}
-				System.out.println(respuesta);
+				
 				PrintWriter out = response.getWriter();
 				out.write(respuesta);
 	}

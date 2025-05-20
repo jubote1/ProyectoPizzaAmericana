@@ -30,8 +30,8 @@ public class ConsultaIntegradaSolicitudesPQRS extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio se encarga de recibir como parámetros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
-	 * tomados bajo estos parámetros, se invoca en la capa controlador al método ConsultaIntegradaPedidos.
+	 * Este servicio se encarga de recibir como parï¿½metros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
+	 * tomados bajo estos parï¿½metros, se invoca en la capa controlador al mï¿½todo ConsultaIntegradaPedidos.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -42,9 +42,10 @@ public class ConsultaIntegradaSolicitudesPQRS extends HttpServlet {
         String fechafinal = request.getParameter("fechafinal");
         String tienda = request.getParameter("tienda");
         String tipoSolicitud = request.getParameter("tiposolicitud");
-        logger.info("Llamado a servicio con parámetros fechainicial " + fechainicial + " fechafinal " + fechafinal + " tienda "+ tienda);
+        boolean descuentoRedimido = "true".equalsIgnoreCase(request.getParameter("descuentoredimido"));
+        logger.info("Llamado a servicio con parï¿½metros fechainicial " + fechainicial + " fechafinal " + fechafinal + " tienda "+ tienda);
         SolicitudPQRSCtrl consultasolicitudes = new SolicitudPQRSCtrl();
-        String respuestaConsulta = consultasolicitudes.ConsultaIntegradaSolicitudesPQRS(fechainicial, fechafinal, tienda, tipoSolicitud);
+        String respuestaConsulta = consultasolicitudes.ConsultaIntegradaSolicitudesPQRS(fechainicial, fechafinal, tienda, tipoSolicitud,descuentoRedimido);
         PrintWriter out = response.getWriter();
         logger.debug(respuestaConsulta);
 		out.write(respuestaConsulta);

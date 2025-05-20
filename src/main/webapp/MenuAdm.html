@@ -1,88 +1,102 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id ="menuprincipal">
-		  <div class="container-fluid">
-		    <div class="navbar-header">
-		      <a class="navbar-brand"><img src="LogoPizzaAmericanaPeque.png" class="img-circle" /></a>
-		      <a class="navbar-brand" href="Pedidos.html">PEDIDOS PIZZA AMERICANA</a>
-		    </div>
-		    <div class="collapse navbar-collapse" id="navbarContenido">
-			    <ul class="navbar-nav mr-auto">
-     				 <li class="nav-item dropdown">
-				        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				          Funciones
-				        </a>
-				        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				          <a class="dropdown-item" href="Pedidos.html">Nuevo Pedido</a>
-				          <a class="dropdown-item" href="ConsultaPedidos.html">Consulta Pedidos Registrados</a>
-				          <a class="dropdown-item" href="EstadosPedidosTienda.html">Consultar Estados Pedido Tienda</a>
-				          <a class="dropdown-item" href="ConsultaPedidosEnCurso.html">Consultar Pedidos En Curso</a>
-				          <a class="dropdown-item" href="ConsultaPedidosNuevaTienda.html">Consultar Ped TIENDA VIRTUAL</a>
-				          <a class="dropdown-item" href="ConsultaPedidosAPP.html">Consultar Pedidos APP</a>
-				          <a class="dropdown-item" href="ConsultaPedidosDomicom.html">Consulta Plataforma Domicilios</a>
-				          <a class="dropdown-item" href="ConsultaPedidosCRMBOT.html">Consulta Pedidos CRM BOT</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="PQRS.html">Registrar PQRS</a>
-				          <a class="dropdown-item" href="ConsultaPQRS.html">Consulta PQRS</a>
-				          <a class="dropdown-item" href="ModificarPQRS.html">Modificar PQRS</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="ConsultaTiemposPedidos.html">Consulta Tiempos Tiendas</a>
-				          <a class="dropdown-item" href="CRMClientes.html">Administración de Clientes</a>
-				          <a class="dropdown-item" href="ValidarCodigo.html">Validar Código Promocional</a>	
-				          <a class="dropdown-item" href="ConsultaDireccionFueraZona.html">Consulta Dirección Fuera Zona</a>	
-				          <!--<a class="dropdown-item" href="ConsultaPedidosMapa.html">Ubicar Pedidos Tomados en Mapa</a> -->
-				          <a class="dropdown-item" href="ConsultaPedidosMapaEvolutivo.html">Ubicar Pedidos Tomados en Mapa-Zona</a>	
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="ResultadoEncuesta.html">Resultado Encuesta Mejor Empleado</a>
-				          <a class="dropdown-item" href="EstadosHistorialPedido.html">Historial de Estado de un Pedido</a>
-				          <a class="dropdown-item" href="ConsultaSolicitudFacturaElectronica.html">Consultar Solicitudes Fact Electrónicas</a>
-				          <a class="dropdown-item" href="ConsultaVentaEmpresarial.html">Consultar Ventas Empresariales</a>			          
-				        </div>
-				     </li>
+<link rel="stylesheet" href="css/nav.css" crossorigin="anonymous">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="menuprincipal">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="Pedidos.html" style="gap: 10px;">
+      <img src="images/logo-sin-fondo.png" alt="Logo Pizza Americana"
+        style="height: 80px; width: 80px; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));">
+      <span class="text-white font-weight-bold">PEDIDOS PIZZA AMERICANA</span>
+    </a>
 
-				      <li class="nav-item dropdown">
-				        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				          Parametrización
-				        </a>
-				        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				          <a class="dropdown-item" href="Especialidad.html">Especialidades</a>
-				          <a class="dropdown-item" href="ExcepcionPrecio.html">Excepciones de Precios</a>
-				          <a class="dropdown-item" href="Oferta.html">Administrar Ofertas</a>
-				          <a class="dropdown-item" href="EstadoPedido.html">Estado Pedido</a>
-				          <a class="dropdown-item" href="Producto.html">Productos</a>
-				          <a class="dropdown-item" href="SaborTipoLiquido.html">Sabor por Tipo de Liquido</a>
-				          <a class="dropdown-item" href="Tienda.html">Tiendas</a>
-				          <a class="dropdown-item" href="TiendaBloqueada.html">Tiendas Bloqueadas</a>	
-				          <a class="dropdown-item" href="TipoLiquido.html">Tipo Liquido</a>
-				          <a class="dropdown-item" href="MarcarProductoNoExistente.html">Productos No Existentes</a>	
-				          <a class="dropdown-item" href="AsignarTiemposPedidos.html">Asignar Tiempos Pedido Tiendas</a>
-				          <a class="dropdown-item" href="CRMClientesFull.html">Administración de Clientes Full</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="mapbox/mapa.jsp">Consultar Ubicacion Domiciliario</a>
-				          <div class="dropdown-divider"></div>
-				          <a class="dropdown-item" href="ModificarGeneralPedido.html">Modificación General Pedido</a>				          
-				        </div>
-				     </li>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContenido" aria-controls="navbarContenido" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-				     <li class="nav-item dropdown">
-				        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				          Monitoreo
-				        </a>
-				        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				          <a class="dropdown-item" href="MonitoreoPlataformas.html">Monitoreo Plataformas Domicilios</a>
-				          <a class="dropdown-item" href="MonitoreoPagosVirtuales.html">Monitoreo Pagos Virtuales</a>
-				          <a class="dropdown-item" href="CancelacionesPlataformas.html">Cancelaciones Plataformas</a>
+    <div class="collapse navbar-collapse" id="navbarContenido" style="margin: 10px;">
+      <ul class="navbar-nav mr-auto">
 
-				          <a class="dropdown-item" href="ConsultaPuntosCliente.html">Consulta Puntos Cliente</a>		
-				           <a class="dropdown-item" href="segmentacionCliente.html">Segmentacion Cliente</a>		       
+        <!-- Dropdown Funciones -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Funciones
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
+            <a class="dropdown-item" href="Pedidos.html">Nuevo Pedido</a>
+            <a class="dropdown-item" href="ConsultaPedidos.html">Consulta Pedidos Registrados</a>
+            <a class="dropdown-item" href="EstadosPedidosTienda.html">Consultar Estados Pedido Tienda</a>
+            <a class="dropdown-item" href="ConsultaPedidosEnCurso.html">Consultar Pedidos En Curso</a>
+            <a class="dropdown-item" href="ConsultaPedidosNuevaTienda.html">Consultar Ped TIENDA VIRTUAL</a>
+            <a class="dropdown-item" href="ConsultaPedidosAPP.html">Consultar Pedidos APP</a>
+            <a class="dropdown-item" href="ConsultaPedidosDomicom.html">Consulta Plataforma Domicilios</a>
+            <a class="dropdown-item" href="ConsultaPedidosCRMBOT.html">Consulta Pedidos CRM BOT</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="PQRS.html">Registrar PQRS</a>
+            <a class="dropdown-item" href="ConsultaPQRS.html">Consulta PQRS</a>
+            <a class="dropdown-item" href="ModificarPQRS.html">Modificar PQRS</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="ConsultaTiemposPedidos.html">Consulta Tiempos Tiendas</a>
+            <a class="dropdown-item" href="CRMClientes.html">Administración de Clientes</a>
+            <a class="dropdown-item" href="ValidarCodigo.html">Validar Código Promocional</a>
+            <a class="dropdown-item" href="ConsultaDireccionFueraZona.html">Consulta Dirección Fuera Zona</a>
+            <a class="dropdown-item" href="ConsultaPedidosMapaEvolutivo.html">Ubicar Pedidos Tomados en Mapa-Zona</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="ResultadoEncuesta.html">Resultado Encuesta Mejor Empleado</a>
+            <a class="dropdown-item" href="EstadosHistorialPedido.html">Historial de Estado de un Pedido</a>
+            <a class="dropdown-item" href="ConsultaSolicitudFacturaElectronica.html">Consultar Solicitudes Fact Electrónicas</a>
+            <a class="dropdown-item" href="ConsultaVentaEmpresarial.html">Consultar Ventas Empresariales</a>
+          </div>
+        </li>
 
-				          <a class="dropdown-item" href="ConsultaPuntosCliente.html">Consulta Puntos Cliente</a>
-				          <a class="dropdown-item" href="ConciliacionQRDATAFONO.html">Ingresar Solicitud Conciliacion</a>
-				          <a class="dropdown-item" href="ConsultarConciliacionQRDATAFONO.html">Consultar Solicitudes Conciliacion</a>			       
+        <!-- Dropdown Parametrización -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Parametrización
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+            <a class="dropdown-item" href="Especialidad.html">Especialidades</a>
+            <a class="dropdown-item" href="ExcepcionPrecio.html">Excepciones de Precios</a>
+            <a class="dropdown-item" href="Oferta.html">Administrar Ofertas</a>
+            <a class="dropdown-item" href="EstadoPedido.html">Estado Pedido</a>
+            <a class="dropdown-item" href="Producto.html">Productos</a>
+            <a class="dropdown-item" href="SaborTipoLiquido.html">Sabor por Tipo de Liquido</a>
+            <a class="dropdown-item" href="Tienda.html">Tiendas</a>
+            <a class="dropdown-item" href="TiendaBloqueada.html">Tiendas Bloqueadas</a>
+            <a class="dropdown-item" href="TipoLiquido.html">Tipo Liquido</a>
+            <a class="dropdown-item" href="MarcarProductoNoExistente.html">Productos No Existentes</a>
+            <a class="dropdown-item" href="AsignarTiemposPedidos.html">Asignar Tiempos Pedido Tiendas</a>
+            <a class="dropdown-item" href="CRMClientesFull.html">Administración de Clientes Full</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="mapbox/mapa.jsp">Consultar Ubicacion Domiciliario</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="ModificarGeneralPedido.html">Modificación General Pedido</a>
+          </div>
+        </li>
 
-				        </div>
-				     </li>
-			     </ul>
-			     <p ALIGN="right">
-			     <label id="usuariologin" style="color:white;"></label></p>
-			</div>
-		  </div>
-		</nav>
+        <!-- Dropdown Monitoreo -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Monitoreo
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
+            <a class="dropdown-item" href="MonitoreoPlataformas.html">Monitoreo Plataformas Domicilios</a>
+            <a class="dropdown-item" href="MonitoreoPagosVirtuales.html">Monitoreo Pagos Virtuales</a>
+            <a class="dropdown-item" href="CancelacionesPlataformas.html">Cancelaciones Plataformas</a>
+            <a class="dropdown-item" href="ConsultaPuntosCliente.html">Consulta Puntos Cliente</a>
+            <a class="dropdown-item" href="segmentacionCliente.html">Segmentacion Cliente</a>
+            <a class="dropdown-item" href="ConciliacionQRDATAFONO.html">Ingresar Solicitud Conciliacion</a>
+            <a class="dropdown-item" href="ConsultarConciliacionQRDATAFONO.html">Consultar Solicitudes Conciliacion</a>
+          </div>
+        </li>
+      </ul>
+
+  
+    </div>
+<div class="ml-auto d-flex align-items-center text-white">
+  <span id="usuariologin" class="font-weight-bold mr-4">Usuario</span>
+ 
+    <a href="Index.html" class="text-white text-decoration-none"><span class="font-weight-bold d-flex align-items-center">
+    <i class="fas fa-sign-out-alt mr-1"></i>Salir</span></a>
+  
+</div>
+</div>
+  
+</nav>

@@ -8570,7 +8570,7 @@ public class PedidoCtrl {
 				cliente = clienteCtrl.obtenerClienteporIDObj(1);
 			}
 			SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
-			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda");
+			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda",0,0,0,0,false,0);
 			//Realizar notificación WhatsApp
 			String notificacion = "Ha ingreasado una PQRS por el BOT Pizza Americana, por favor revisar con el LEAD # " + lead;
 			//Recuperaremos los celulares para notificar de la situación de la queja

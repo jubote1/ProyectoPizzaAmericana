@@ -26,8 +26,49 @@ public class SolicitudPQRS {
 	private String tipo;
 	private String areaResponsable;
 	private int imagenes;
+	private int idpedidotienda;
+	private double valorPedido;
+	private double valorDescuento;
+	private int porcentajeDescuento;
+	private boolean descuentoRedimido;
+	private int idpedidoredencion;
 	
-	
+	public int getIdpedidoredencion() {
+		return idpedidoredencion;
+	}
+	public void setIdpedidoredencion(int idpedidoredencion) {
+		this.idpedidoredencion = idpedidoredencion;
+	}
+	public boolean isDescuentoRedimido() {
+		return descuentoRedimido;
+	}
+	public void setDescuentoRedimido(boolean descuentoRedimido) {
+		this.descuentoRedimido = descuentoRedimido;
+	}
+	public int getPorcentajeDescuento() {
+		return porcentajeDescuento;
+	}
+	public void setPorcentajeDescuento(int porcentajeDescuento) {
+		this.porcentajeDescuento = porcentajeDescuento;
+	}
+	public int getIdpedidotienda() {
+		return idpedidotienda;
+	}
+	public void setIdpedidotienda(int idpedidotienda) {
+		this.idpedidotienda = idpedidotienda;
+	}
+	public double getValorPedido() {
+		return valorPedido;
+	}
+	public void setValorPedido(double valorPedido) {
+		this.valorPedido = valorPedido;
+	}
+	public double getValorDescuento() {
+		return valorDescuento;
+	}
+	public void setValorDescuento(double valorDescuento) {
+		this.valorDescuento = valorDescuento;
+	}
 	public int getImagenes() {
 		return imagenes;
 	}
@@ -144,7 +185,7 @@ public class SolicitudPQRS {
 	}
 	public SolicitudPQRS(int idsolicitud, String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable) {
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion) {
 		super();
 		this.idsolicitud = idsolicitud;
 		this.fechaSolicitud = fechaSolicitud;
@@ -162,6 +203,13 @@ public class SolicitudPQRS {
 		this.idFoco = idFoco;
 		this.tipo = tipo;
 		this.areaResponsable = areaResponsable;
+		this.idpedidotienda = idpedidotienda;
+		this.valorPedido = valorPedido;
+		this.valorDescuento = valorDescuento;
+		this.porcentajeDescuento = porcentajeDescuento;
+		this.descuentoRedimido = descuentoRedimido;
+		this.idpedidoredencion =idpedidoredencion;
+		
 	}
 	
 	
