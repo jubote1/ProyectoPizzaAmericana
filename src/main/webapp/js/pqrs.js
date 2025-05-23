@@ -1,5 +1,5 @@
 // Inicializar datepicker
-
+const historialContainer = document.getElementById("historialComentarios");
 flatpickr("#fecha", {
 	dateFormat: "d/m/Y",
 	locale: "es",
@@ -58,9 +58,8 @@ switch (respuesta) {
 		break;
 
 	case 'OKA':
-		$('#cargarMenu').load("MenuAdm.html", function () {
-			// Este callback se ejecuta después de que MenuAdm.html se ha cargado
-			console.log("holi: "+usuario)
+		$('#cargarMenu').load("MenuAdm.html", function() {
+
 			$('#cargarMenu').find('#usuariologin').html(usuario);
 		});
 		break;
@@ -105,6 +104,8 @@ $(document).ready(function() {
 	getListaMunicipios();
 	getListaOrigenes();
 	getListaFocos();
+	getUsuariosActivos();
+	getEstadoPqrs();
 	setInterval(validarVigenciaLogueo, 600000);
 
 	const table = $('#grid-clientes').DataTable({
@@ -143,7 +144,6 @@ $(document).ready(function() {
 		$('#apellidos').val(datos.apellido);
 		$('#direccion').val(datos.direccion);
 		$('#zona').val(datos.zona);
-		$('#comentarios').val(datos.observacion);
 		$("#selectTiendas").val(datos.tienda);
 		$("#selectMunicipio").val(datos.municipio || ""); // asegúrate de tener esta columna
 
@@ -254,13 +254,14 @@ function getListaMunicipios() {
 // Limpiar cliente
 function limpiarSeleccionCliente() {
 	// Limpiar campos de texto y numéricos
-	$('#telefono, #nombres, #apellidos, #direccion, #zona, #comentarios, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento').val("");
+	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento').val("");
 
 	// Reiniciar selects a la primera opción
-	$('#selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc').prop('selectedIndex', 0);
-	$('#descuentoRedimido').prop('checked',false);
+	$('#selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado').prop('selectedIndex', 0);
+	$('#descuentoRedimido').prop('checked', false);
 	// Reiniciar valor del cliente
 	idCliente = 0;
+	historialContainer.innerHTML = '';
 
 	// Limpiar DataTable si existe
 	if ($.fn.dataTable.isDataTable('#grid-clientes')) {
@@ -289,9 +290,22 @@ function validarFechaNoMayorAHoy(fechaIngresada) {
 
 
 
-// Confirmar PQRS
 function ConfirmarPQRS() {
 	if (ValidacionesDatos() !== 1) return;
+
+	const comentarios = historialContainer.querySelectorAll("textarea");
+	const listaComentarios = [];
+
+	comentarios.forEach(textarea => {
+		const id = parseInt(textarea.getAttribute("data-id") || "0");
+		const fecha = textarea.getAttribute("data-fecha");
+		const estado = textarea.getAttribute("data-estado");
+		const texto = textarea.value.trim();
+
+		if (!texto || (estado == "false" && id === 0)) return;
+
+		listaComentarios.push({ id, comentario: texto, fecha, idSolicitud: 0, estado });
+	});
 
 	let data = {
 		fechasolicitud: $("#fecha").val(),
@@ -306,7 +320,6 @@ function ConfirmarPQRS() {
 		direccion: $("#direccion").val(),
 		zona: $("#zona").val(),
 		idmunicipio: $("#selectMunicipio option:selected").attr('id'),
-		comentario: $("#comentarios").val(),
 		tipo: $("#selectTipo").val(),
 		arearesponsable: $("#selectAreaResponsable").val(),
 		idpedidotienda: $("#idpedidotienda").val(),
@@ -314,10 +327,13 @@ function ConfirmarPQRS() {
 		valorPedido: $("#valorPedido").val(),
 		valorDescuento: $("#valorDescuento").val(),
 		porcentajeDescuento: $("#selectPorcentajeDesc").val(),
-		descuentoRedimido: document.getElementById("descuentoRedimido").checked
+		descuentoRedimido: document.getElementById("descuentoRedimido").checked,
+		listaComentarios: JSON.stringify(listaComentarios),
+		idusuarioRegistro: $("#selectUsuarioRegistro").val(),
+		idusuarioRedencion: $("#selectUsuarioRedencion").val(),
+		idestado: $("#selectEstado").val()
 	};
-	console.log("datos a insertar:");
-	console.log(data);
+
 	Swal.fire({
 		title: 'Confirmación de Solicitud PQRS',
 		text: '¿Desea confirmar la inserción de la solicitud PQRS?',
@@ -325,67 +341,311 @@ function ConfirmarPQRS() {
 		showCancelButton: true,
 		confirmButtonText: 'Sí',
 		cancelButtonText: 'No',
-		confirmButtonColor: 'blue', // Personaliza el color del botón de "Sí"
-		cancelButtonColor: 'gray', // Personaliza el color del botón de "No"
+		confirmButtonColor: 'blue',
+		cancelButtonColor: 'gray',
 	}).then((result) => {
-		if (result.isConfirmed) {
-			// Si el usuario hace clic en "Sí"
-			$.ajax({
-				url: server + 'InsertarSolicitudPQRS',
-				dataType: 'json',
-				type: 'post',
-				data: data,
-				success: function(resp) {
-					if (resp[0].idSolicitudPQRS != 0) {
-						Swal.fire({
-							icon: 'success',
-							title: 'Éxito',
-							text: 'Solicitud ingresada correctamente'
+		if (!result.isConfirmed) return;
+
+		$.ajax({
+			url: server + 'InsertarSolicitudPQRS',
+			dataType: 'json',
+			type: 'post',
+			data: data,
+			success: function(resp) {
+				const idSolicitud = resp[0]?.idSolicitudPQRS || 0;
+
+				if (idSolicitud === 0) {
+					return Swal.fire({
+						icon: 'error',
+						title: 'Error',
+						text: "Error al insertar la solicitud."
+					});
+				}
+
+				const filestack = $('#file-1').fileinput('getFileList');
+				const fd = new FormData();
+				const erroresImagenes = [];
+
+				filestack.forEach(file => fd.append('files[]', file));
+
+				$.ajax({
+					url: 'http://172.19.0.25:4200/service_upload.php',
+					method: 'POST',
+					data: fd,
+					dataType: "json",
+					cache: false,
+					contentType: false,
+					processData: false,
+					async: false,
+					success: function(uploadResp) {
+						let total = uploadResp.length;
+						let procesados = 0;
+
+						uploadResp.forEach((imgResp, index) => {
+							if (!imgResp.name) {
+								erroresImagenes.push(`Archivo ${index + 1}: No se recibió nombre del archivo.`);
+								procesados++;
+								if (procesados === total) mostrarResultadoFinal();
+								return;
+							}
+
+							$.ajax({
+								url: `${server}InsertarSolicitudPQRSImagenes?idsolicitudpqrs=${idSolicitud}&rutaimagen=${imgResp.name}`,
+								dataType: 'json',
+								type: 'post',
+								async: false,
+								error: function() {
+									erroresImagenes.push(`Error al insertar imagen "${imgResp.name}".`);
+								},
+								complete: function() {
+									procesados++;
+									if (procesados === total) mostrarResultadoFinal();
+								}
+							});
 						});
-						limpiarSeleccionCliente();
-					} else {
+
+						function mostrarResultadoFinal() {
+							$('#file-1').fileinput('reset');
+
+							if (erroresImagenes.length > 0) {
+								Swal.fire({
+									icon: 'warning',
+									title: 'Solicitud registrada con advertencias',
+									html: 'La solicitud fue registrada, pero algunas imágenes tuvieron errores:<br><ul>' +
+										erroresImagenes.map(e => `<li>${e}</li>`).join('') +
+										'</ul>'
+								});
+							} else {
+								Swal.fire({
+									icon: 'success',
+									title: 'Éxito',
+									text: 'Solicitud ingresada correctamente con todas las imágenes.'
+								});
+							}
+
+							limpiarSeleccionCliente();
+						}
+					},
+					error: function() {
 						Swal.fire({
 							icon: 'error',
 							title: 'Error',
-							text: "Error al insertar" 
+							text: 'Error al subir las imágenes.'
 						});
 					}
-				}
-			});
-		}
+				});
+			},
+			error: function() {
+				Swal.fire({
+					icon: 'error',
+					title: 'Error',
+					text: "Fallo la conexión con el servidor."
+				});
+			}
+		});
 	});
-
 }
 
 
-function ValidacionesDatos() {
-	let errores = [];
 
-	if (!telefono.value) {
-		errores.push("Debe ingresar un teléfono de contacto.");
-	} else if (!/^\d+$/.test(telefono.value)) {
-		errores.push(`El valor "${telefono.value}" no es un número válido.`);
+function ValidacionesDatos() {
+	const errores = [];
+	var telefono = document.getElementById("telefono").value;
+	var nombres = document.getElementById("nombres").value;
+	var direccion = document.getElementById("direccion").value;
+	// Validaciones de campos simples
+	validarCampoVacio(telefono, "Debe ingresar un teléfono de contacto.");
+	if (telefono && !/^\d+$/.test(telefono)) {
+		errores.push(`El valor "${telefono}" no es un número válido.`);
 	}
 
-	if (!nombres.value) errores.push("Debe ingresar los nombres del cliente.");
-	if (!direccion.value) errores.push("Debe ingresar la dirección del cliente.");
-	if (!$("#selectTiendas").val()) errores.push("Debe seleccionar una tienda.");
-	if (!$("#selectOrigen").val()) errores.push("Debe seleccionar el origen de la PQRS.");
-	if (!$("#selectFoco").val()) errores.push("Debe seleccionar el foco de la PQRS.");
-	if (!$("#selectMunicipio").val()) errores.push("Debe seleccionar el municipio.");
-	if (!comentarios.value) errores.push("Debe ingresar un comentario.");
+	validarCampoVacio(nombres, "Debe ingresar los nombres del cliente.");
+	validarCampoVacio(direccion, "Debe ingresar la dirección del cliente.");
+	validarCampoVacio($("#selectTiendas").val(), "Debe seleccionar una tienda.");
+	validarCampoVacio($("#selectOrigen").val(), "Debe seleccionar el origen de la PQRS.");
+	validarCampoVacio($("#selectFoco").val(), "Debe seleccionar el foco de la PQRS.");
+	validarCampoVacio($("#selectMunicipio").val(), "Debe seleccionar el municipio.");
 
+
+	if ($("#selectUsuarioRegistro").val() === "0") {
+		errores.push("Debe seleccionar el usuario que registra la PQRS.");
+	}
+	if ($("#selectEstado").val() === "0") {
+		errores.push("Debe seleccionar un estado");
+	}
+
+
+	const comentariosTextArea = historialContainer.querySelectorAll("textarea");
+	if (comentariosTextArea.length === 0) {
+		errores.push("Debe ingresar un comentario.");
+	}
+
+	// Mostrar errores si existen
 	if (errores.length > 0) {
-		Swal.fire({
-			icon: 'warning',
-			title: 'Faltan datos requeridos',
-			html: `<ul style="text-align:left;">${errores.map(e => `<li>${e}</li>`).join('')}</ul>`,
-			confirmButtonText: 'Entendido',
-			confirmButtonColor: 'blue'
-						
-		});
+		mostrarErrores(errores);
 		return;
 	}
 
 	return 1;
+
+	// Función auxiliar para validar campos vacíos
+	function validarCampoVacio(valor, mensaje) {
+		if (!valor) errores.push(mensaje);
+	}
+
+	// Función para mostrar errores con SweetAlert
+	function mostrarErrores(listaErrores) {
+		Swal.fire({
+			icon: 'warning',
+			title: 'Faltan datos requeridos',
+			html: `<ul style="text-align:left;">${listaErrores.map(e => `<li>${e}</li>`).join('')}</ul>`,
+			confirmButtonText: 'Entendido',
+			confirmButtonColor: 'blue'
+		});
+	}
 }
+
+
+function crearGrupoFecha(fecha) {
+	const grupo = document.createElement("div");
+	grupo.className = "grupo-fecha mb-3";
+	grupo.setAttribute("data-fecha", fecha);
+	grupo.innerHTML = `
+        <h6 class="mb-2">${fecha}</h6>
+        <div class="comentarios"></div>
+    `;
+	historialContainer.appendChild(grupo);
+	return grupo.querySelector('.comentarios');
+}
+
+function agregarComentarioVisual(fecha, id, texto) {
+	let grupo = document.querySelector(`.grupo-fecha[data-fecha='${fecha}'] .comentarios`);
+	if (!grupo) {
+		grupo = crearGrupoFecha(fecha);
+	}
+
+	// Crear contenedor
+	const wrapper = document.createElement("div");
+	wrapper.className = "position-relative mb-2 comentario-item";
+
+	// Crear textarea
+	const textarea = document.createElement("textarea");
+	textarea.className = "form-control";
+	textarea.rows = 2;
+	textarea.value = texto;
+	textarea.setAttribute("data-id", id);
+	textarea.setAttribute("data-fecha", fecha);
+	textarea.setAttribute("data-estado", "true"); // por defecto activo
+
+	// Crear icono eliminar
+	const iconoEliminar = document.createElement("span");
+	iconoEliminar.innerHTML = "🗑️";
+	iconoEliminar.className = "position-absolute";
+	iconoEliminar.style.top = "5px";
+	iconoEliminar.style.right = "5px";
+	iconoEliminar.style.cursor = "pointer";
+	iconoEliminar.style.fontSize = "0.8rem";
+	iconoEliminar.style.color = "red";
+	iconoEliminar.title = "Eliminar comentario";
+	iconoEliminar.addEventListener("click", () => {
+		wrapper.remove();
+		const visibles = grupo.querySelectorAll("textarea:not(.d-none)");
+		if (visibles.length === 0) {
+			const contenedorGrupo = grupo.closest(".grupo-fecha");
+			if (contenedorGrupo) contenedorGrupo.remove();
+		}
+	});
+	wrapper.appendChild(textarea);
+	wrapper.appendChild(iconoEliminar);
+	grupo.appendChild(wrapper);
+}
+
+
+// Acción para nuevo comentario
+document.getElementById("btnAgregarComentario").addEventListener("click", () => {
+	const nuevoTexto = document.getElementById("nuevoComentario").value.trim();
+	if (!nuevoTexto) return;
+
+	const hoy = new Date().toISOString().split("T")[0]; // formato YYYY-MM-DD
+	agregarComentarioVisual(hoy, 0, nuevoTexto);
+
+	document.getElementById("nuevoComentario").value = "";
+});
+
+function getUsuariosActivos() {
+	fetch(server + 'ObtenerUsuariosActivos')
+		.then(res => res.json())
+		.then(usuarios => {
+			const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
+			const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+
+			selectUsuRegistro.innerHTML = '';
+			selectUsuRedencion.innerHTML = '';
+
+			// Opción por defecto
+			const optionDefault = new Option("Seleccionar...", 0);
+			selectUsuRegistro.appendChild(optionDefault.cloneNode(true));
+			selectUsuRedencion.appendChild(optionDefault.cloneNode(true));
+			if (usuarios) {
+				usuarios.forEach(usuario => {
+					const option = new Option(usuario.nombreLargo, usuario.id);
+					selectUsuRegistro.appendChild(option.cloneNode(true));
+					selectUsuRedencion.appendChild(option.cloneNode(true));
+				});
+
+
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron usuarios'
+				});
+
+			}
+
+
+		}).catch(err => {
+			console.error("Error al cargar usuarios activos:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar los usuarios activos.'
+			});
+		});
+}
+
+
+function getEstadoPqrs() {
+	fetch(server + 'ObtenerEstadoPqrs')
+		.then(res => res.json())
+		.then(estados => {
+			const selectEstado = document.getElementById("selectEstado");
+			selectEstado.innerHTML = '';
+
+			// Opción por defecto
+			const optionDefault = new Option("Seleccionar...", 0);
+			selectEstado.appendChild(optionDefault);
+			if (estados) {
+				estados.forEach(estado => {
+					const option = new Option(estado.descripcion, estado.idestado);
+					selectEstado.appendChild(option);
+				});
+
+
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron los estados de Pqrs'
+				});
+
+			}
+
+
+		}).catch(err => {
+			console.error("Error al cargar los estados de Pqrs:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar los estados de Pqrs.'
+			});
+		});
+}
+
+

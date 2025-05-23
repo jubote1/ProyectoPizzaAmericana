@@ -18,6 +18,7 @@ var div;
 var datosReporte = [];
 var fecha_inicial = "";
 var fecha_final = "";
+const contenedorComentarios = document.getElementById("contenedorComentarios");
 // Validar usuario
 $.ajax({
 	url: server + 'ValidarUsuarioAplicacion',
@@ -79,28 +80,66 @@ $(document).ready(function() {
 			{ "mData": "cliente" },
 			{ "mData": "direccion" },
 			{ "mData": "telefono" },
-			{ "mData": "comentario", "visible": false },
-			{ "mData": "municipio" },
 			{ "mData": "tienda" },
 			{ "mData": "nombreorigen" },
 			{ "mData": "nombrefoco" },
-			{ "mData": "accion" },
+			{
+			  "mData": "nombreEstado",
+			  "render": function(data, type, row) {
+	
+			    return data ? data : "Ninguno";
+			  }
+			},
+			{
+				"mData": null,
+				"sTitle": "Archivo",
+				"orderable": false,
+				"searchable": false,
+				"render": function(data, type, row) {
+					if (row.imagenes > 0) {
+						return '<center><i class="fa fa-check text-success" title="Tiene imágenes"></i></center>';
+					} else {
+						return '<center><i class="fa fa-times text-danger" title="Sin imágenes"></i></center>';
+					}
+				}
+			},
 			{ "mData": "tipo", "visible": false },
 			{ "mData": "arearesponsable", "visible": false },
 			{ "mData": "imagenes", "visible": false }
+	
+
 		],
 		"fnRowCallback": function(nRow, aData, iDisplayIndex) {
-			if (aData.imagenes > 0) {
-				$(nRow).css('background-color', '#d8ffcf');
-			} else {
+			// Remueve cualquier clase previa de color
+			$(nRow).removeClass('resaltar-amarillo resaltar-azul resaltar-naranja resaltar-verde');
+
+			switch (aData.idestado) {
+				case 1:
+					$(nRow).addClass('resaltar-amarillo');
+					break;
+				case 2:
+					$(nRow).addClass('resaltar-azul');
+					break;
+				case 3:
+					$(nRow).addClass('resaltar-naranja');
+					break;
+				case 4:
+					$(nRow).addClass('resaltar-verde');
+					break;
+				default:
+					// Si es 0, null, undefined u otro valor no esperado, no aplicar color
+					break;
 			}
 		}
 
+
 	});
+
 
 	//validamos el contenido del campo fecha del pedido y el evento que lo controlará
 	//Se invoca servicio para traerse la información de los productos disponibles en el sistema
 	// En resumen se invocan todos servicios que se encargan de llenar la data del formulario.
+	getUsuariosActivos();
 	getListaTiendas();
 	setInterval('validarVigenciaLogueo()', 600000);
 
@@ -111,13 +150,13 @@ $(document).ready(function() {
 		$('#fecha').val(datos.fechasolicitud);
 		$('#tipoSolicitud').val(datos.tiposolicitud);
 		$('#telefono').val(datos.telefono);
-		$('#nombres').val(datos.cliente);
+		$('#nombres').val(datos.nombres);
+		$('#apellidos').val(datos.apellidos);
 		$('#direccion').val(datos.direccion);
 		$('#municipio').val(datos.municipio);
 		$("#tienda").val(datos.tienda);
 		$("#origen").val(datos.nombreorigen);
 		$("#foco").val(datos.nombrefoco);
-		$('#comentariosVista').val(datos.comentario);
 		$('#tipo').val(datos.tipo);
 		$('#arearesponsable').val(datos.arearesponsable);
 		$('#idpedidotienda').val(datos.idpedidotienda);
@@ -126,6 +165,34 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#idpedidoredencion').val(datos.idpedidoredencion);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
+		$('#estado').val(datos.nombreEstado);
+
+		const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
+		const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+
+		function seleccionarOpcionSeguro(select, valor) {
+			if ([...select.options].some(option => option.value === String(valor))) {
+				select.value = valor;
+			} else {
+				select.value = "0";
+			}
+		}
+
+		seleccionarOpcionSeguro(selectUsuRegistro, datos.idusuarioRegistro);
+		seleccionarOpcionSeguro(selectUsuRedencion, datos.idusuarioRedencion);
+
+
+		contenedorComentarios.innerHTML = "";
+		const listaComentarios = datos.listaComentarios;
+
+
+		// Cargar comentarios iniciales
+		Object.keys(listaComentarios).forEach(fecha => {
+			listaComentarios[fecha].forEach(com => {
+				agregarComentarioVisual(fecha, com.id, com.comentario);
+			});
+		});
+
 		//Posteriormente hacemos la consulta para las imagenes de la pqrs
 		$.getJSON(server + 'ConsultarSolicitudPQRSImagenes?idsolicitudpqrs=' + datos.idconsultaPQRS, function(data1) {
 			//recibimos respueta que es un json con los nombres de todas las imagenes
@@ -258,12 +325,10 @@ function consultarPQRS() {
 				"cliente": data1[i].cliente,
 				"direccion": data1[i].direccion,
 				"telefono": data1[i].telefono,
-				"comentario": data1[i].comentario,
 				"municipio": data1[i].municipio,
 				"tienda": data1[i].tienda,
 				"nombreorigen": data1[i].nombreorigen,
 				"nombrefoco": data1[i].nombrefoco,
-				"accion": '<button type="button" class="btn btn-default btn-xs" onclick="mostrarModalObservacion(' + data1[i].idconsultaPQRS + ')"><i class="fas fa-cart-plus fa-2x"></i></button>',
 				"tipo": data1[i].tipo,
 				"arearesponsable": data1[i].arearesponsable,
 				"imagenes": data1[i].imagenes,
@@ -274,7 +339,12 @@ function consultarPQRS() {
 				"porcentajeDescuento": data1[i].porcentajeDescuento,
 				"nombres": data1[i].nombres,
 				"apellidos": data1[i].apellidos,
-				"descuentoRedimido": data1[i].descuentoRedimido
+				"descuentoRedimido": data1[i].descuentoRedimido,
+				"listaComentarios": data1[i].listaComentarios,
+				"idusuarioRegistro": data1[i].idusuarioRegistro,
+				"idusuarioRedencion": data1[i].idusuarioRedencion,
+				"idestado" :data1[i].idestado,
+				"nombreEstado" :data1[i].nombreEstado
 			}).draw();
 		}
 	});
@@ -284,117 +354,37 @@ function consultarPQRS() {
 
 
 function ValidacionesDatos() {
-	var fechaini = $("#fechainicial").val();
-	var fechafin = $("#fechafinal").val();
-	var tienda = $("#selectTiendas option:selected").attr('id');
-	if (fechaini == '' || fechaini == null) {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha inicial debe ser diferente a vacía'
-		});
+	const fechaini = $("#fechainicial").val();
+	const fechafin = $("#fechafinal").val();
+	const tienda = $("#selectTiendas option:selected").attr('id');
 
-		return;
+	// Validar campos vacíos
+	if (!fechaini) {
+		return mostrarAlerta('warning', 'La fecha inicial debe ser diferente a vacía');
 	}
-
-	if (fechafin == '' || fechafin == null) {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha final debe ser diferente a vacía'
-		});
-
-		return;
+	if (!fechafin) {
+		return mostrarAlerta('warning', 'La fecha final debe ser diferente a vacía');
 	}
-	if (existeFecha(fechaini)) {
-	}
-	else {
-		Swal.fire({
-			icon: 'error',
-			text: 'La fecha inicial no es correcta'
-		});
-		return;
+	if (!tienda) {
+		return mostrarAlerta('error', 'La tienda no puede estar vacía');
 	}
 
-	if (existeFecha(fechafin)) {
+	// Validar formato de fechas
+	if (!existeFecha(fechaini)) {
+		return mostrarAlerta('error', 'La fecha inicial no es correcta');
 	}
-	else {
-		Swal.fire({
-			icon: 'error',
-			text: 'La fecha final no es correcta'
-		});
-
-		return;
-	}
-	if (validarFechas(fechaini, fechafin)) {
-	}
-	else {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha inicial es mayor a la fecha final, favor corregir'
-		});
-
-		return;
+	if (!existeFecha(fechafin)) {
+		return mostrarAlerta('error', 'La fecha final no es correcta');
 	}
 
-	if (tienda == '' || tienda == null) {
-		Swal.fire({
-			icon: 'error',
-			text: 'La tienda no puede estar vacía'
-		});
-		return;
+	// Validar rango de fechas
+	if (!validarFechas(fechaini, fechafin)) {
+		return mostrarAlerta('warning', 'La fecha inicial es mayor a la fecha final, favor corregir');
 	}
 
-	return (1);
+	return 1; // Todo está correcto
 }
 
-
-function mostrarModalObservacion(idSolPQRS) {
-	idSolicitudPQRS = idSolPQRS;
-	$('#adicionarObservacion').modal('show');
-}
-
-
-
-function guardarObservacionPQRS() {
-	var comentariosAd = encodeURIComponent($('#comentarios').val());
-	if (comentariosAd == '') {
-		Swal.fire({
-			icon: 'warning',
-			text: 'El comentario a adicionar debe tener algún texto.'
-		});
-
-		return;
-	}
-	var controlador = false;
-	$.ajax({
-		url: server + 'AdicionarComentarioPQRS?pqrs=' + idSolicitudPQRS + "&comentario=" + comentariosAd,
-		dataType: 'json',
-		async: false,
-		success: function(data) {
-			var resultado = data;
-			if (resultado[0].resultado == 'OK') {
-				Swal.fire({
-					icon: 'success',
-					text: 'Se ha insertado exitosamente el comentario.'
-				});
-
-				controlador = true;
-			} else {
-				Swal.fire({
-					icon: 'error',
-					text: 'Se tuvo un ERROR al insertar el comentario'
-				});
-
-			}
-		}
-	});
-	if (controlador == true) {
-		$('#comentarios').val('');
-		idSolicitudPQRS = 0;
-		$('#adicionarObservacion').modal('hide');
-		consultarPQRS();
-	}
-
-}
 
 
 function limpiarConsultaPQRS() {
@@ -409,9 +399,11 @@ function limpiarConsultaPQRS() {
 	$("#origen").val('');
 	$("#tipo").val('');
 	$("#foco").val('');
-	$('#comentariosVista').val('');
+	$("#estado").val("");
+	$('#selectUsuarioRegistro,#selectUsuarioRedencion').prop('selectedIndex', 0);
 	$('#descuentoRedimido').prop('checked', false);
 	$(' #apellidos, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #arearesponsable, #PorcentajeDesc').val("")
+	contenedorComentarios.innerHTML = "";
 }
 
 
@@ -537,15 +529,15 @@ async function generarReporte() {
 				cell.value = val;
 				cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
 				cell.alignment = { horizontal: 'center' };
-				
+
 				// Aquí aplicamos el color amarillo muy claro si redimido es true
-							if (redimido) {
-								cell.fill = {
-									type: 'pattern',
-									pattern: 'solid',
-									fgColor: { argb: 'FFFFF9C4' } // Amarillo muy claro
-								};
-							}
+				if (redimido) {
+					cell.fill = {
+						type: 'pattern',
+						pattern: 'solid',
+						fgColor: { argb: 'FFFFF9C4' } // Amarillo muy claro
+					};
+				}
 			});
 
 			subtotal += r.valorDescuento;
@@ -582,8 +574,8 @@ async function generarReporte() {
 			cellValor.value = valor;
 			cellValor.font = { bold: true };
 			cellValor.alignment = { horizontal: 'center' };
-			
-			
+
+
 			fila++;
 		});
 
@@ -603,7 +595,7 @@ async function generarReporte() {
 		const celdaValor = worksheet.getCell(filaResumen, 10); // Columna J
 
 		celdaLabel.value = label;
-		celdaLabel.font = { bold: true, size :12 , color: { argb: 'FFFFFFFF' } };
+		celdaLabel.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
 		celdaLabel.fill = {
 			type: 'pattern',
 			pattern: 'solid',
@@ -650,13 +642,68 @@ async function generarReporte() {
 	worksheet.getColumn(8).width = 10;
 
 
-    const buffer = await workbook.xlsx.writeBuffer();
+	const buffer = await workbook.xlsx.writeBuffer();
 	const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 	saveAs(blob, "PQRS_Descuentos_" + fecha_inicial + "_Al_" + fecha_final + ".xlsx");
 }
 
 
+function agregarComentarioVisual(fecha, id, comentario) {
+	const contenedor = document.getElementById("contenedorComentarios");
 
+	// Buscar o crear sección por fecha
+	let seccionFecha = document.getElementById(`comentarios-${fecha}`);
+	if (!seccionFecha) {
+		seccionFecha = document.createElement("div");
+		seccionFecha.id = `comentarios-${fecha}`;
+		seccionFecha.classList.add("mb-3");
+
+		// Encabezado de fecha (más pequeño y color negro)
+		const encabezado = document.createElement("div");
+		encabezado.textContent = fecha;
+		encabezado.classList.add("text-dark", "mb-2");
+		encabezado.style.fontSize = "0.9rem"; // Tamaño pequeño
+		encabezado.style.fontWeight = "bold";
+
+		seccionFecha.appendChild(encabezado);
+		contenedor.appendChild(seccionFecha);
+	}
+
+	// Crear elemento de comentario
+	const comentarioDiv = document.createElement("div");
+	comentarioDiv.classList.add("p-2", "mb-2", "bg-light", "rounded", "border");
+	comentarioDiv.textContent = comentario;
+
+	seccionFecha.appendChild(comentarioDiv);
+}
+
+function getUsuariosActivos() {
+	fetch(server + 'ObtenerUsuariosActivos')
+		.then(res => res.json())
+		.then(usuarios => {
+			const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
+			const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+			const idUsuarioSeleccionado = 0; // Este puede venir de otro lado
+
+			selectUsuRegistro.innerHTML = '';
+			selectUsuRedencion.innerHTML = '';
+
+			// Opción por defecto
+			const optionDefault = new Option("Sin Usuario", 0);
+			selectUsuRegistro.appendChild(optionDefault.cloneNode(true));
+			selectUsuRedencion.appendChild(optionDefault.cloneNode(true));
+
+			usuarios.forEach(usuario => {
+				const option = new Option(usuario.nombreLargo, usuario.id);
+				selectUsuRegistro.appendChild(option.cloneNode(true));
+				selectUsuRedencion.appendChild(option.cloneNode(true));
+			});
+
+			// Establecer valor seleccionado programáticamente
+			selectUsuRegistro.value = idUsuarioSeleccionado;
+			selectUsuRedencion.value = idUsuarioSeleccionado;
+		});
+}
 
 
 

@@ -3,18 +3,27 @@ package capaDAOCC;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import capaModeloCC.ComentarioPqrs;
+import capaModeloCC.EstadoPqrs;
 import capaModeloCC.FormaPago;
 import capaModeloCC.Pedido;
 import capaModeloCC.SolicitudPQRS;
 import capaModeloCC.Tienda;
+import capaModeloCC.Usuario;
 import conexionCC.ConexionBaseDatos;
 
 public class SolicitudPQRSDAO {
@@ -49,7 +58,7 @@ public class SolicitudPQRSDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			insert = "insert into solicitudPQRS (fechasolicitud,tiposolicitud,idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable,idpedidotienda , valor_pedido, valor_descuento, porcentaje_descuento, descuento_redimido, idpedidoredencion) values ('" + fechaSolicitudFinal + "', '" + solicitud.getTipoSolicitud() + "', " + solicitud.getIdcliente() + " , " + solicitud.getIdtienda() + " , '"+ solicitud.getNombres() + "' , '"+ solicitud.getApellidos() + "' , '" + solicitud.getTelefono() + "' , '" + solicitud.getDireccion() + "' , '" + solicitud.getZona() + "' , " + solicitud.getIdmunicipio() + " , '" + solicitud.getComentario() + "' , " + solicitud.getIdOrigen() + " , " + solicitud.getIdFoco() + " , '" + solicitud.getTipo() + "' , '" + solicitud.getAreaResponsable() + "' , " + solicitud.getIdpedidotienda() + " , " + solicitud.getValorPedido() + " , " + solicitud.getValorDescuento() + " , " + solicitud.getPorcentajeDescuento()+" , "+descuentoRedimido+ " , "+solicitud.getIdpedidoredencion()+")" ; 
+			insert = "insert into solicitudPQRS (fechasolicitud,tiposolicitud,idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable,idpedidotienda , valor_pedido, valor_descuento, porcentaje_descuento, descuento_redimido, idpedidoredencion,id_usuario_registro,id_usuario_redencion,idestado) values ('" + fechaSolicitudFinal + "', '" + solicitud.getTipoSolicitud() + "', " + solicitud.getIdcliente() + " , " + solicitud.getIdtienda() + " , '"+ solicitud.getNombres() + "' , '"+ solicitud.getApellidos() + "' , '" + solicitud.getTelefono() + "' , '" + solicitud.getDireccion() + "' , '" + solicitud.getZona() + "' , " + solicitud.getIdmunicipio() + " , '" + solicitud.getComentario() + "' , " + solicitud.getIdOrigen() + " , " + solicitud.getIdFoco() + " , '" + solicitud.getTipo() + "' , '" + solicitud.getAreaResponsable() + "' , " + solicitud.getIdpedidotienda() + " , " + solicitud.getValorPedido() + " , " + solicitud.getValorDescuento() + " , " + solicitud.getPorcentajeDescuento()+" , "+descuentoRedimido+ " , "+solicitud.getIdpedidoredencion()+ " , "+solicitud.getIdusuarioRegistro()+ " , "+solicitud.getIdusuarioRedencion()+ " , " +solicitud.getIdestado()+")" ; 
 			logger.info(insert);
 			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
 			ResultSet rs = stm.getGeneratedKeys();
@@ -102,7 +111,7 @@ public class SolicitudPQRSDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			update = "update solicitudPQRS set fechasolicitud ='" + fechaSolicitudFinal + "', tiposolicitud = '" + solicitud.getTipoSolicitud() + "', idcliente =  " + solicitud.getIdcliente() + " , idtienda = " + solicitud.getIdtienda() + " , nombres = '"+ solicitud.getNombres() + "' , apellidos = '"+ solicitud.getApellidos() + "' , telefono = '" + solicitud.getTelefono() + "' , direccion = '" + solicitud.getDireccion() + "' , zona = '" + solicitud.getZona() + "' , idmunicipio = " + solicitud.getIdmunicipio() + " , comentario ='" + solicitud.getComentario() + "' , idorigen = " + solicitud.getIdOrigen() + " , idfoco = " + solicitud.getIdFoco() + " , tipo = '" + solicitud.getTipo() + "' , area_responsable = '" + solicitud.getAreaResponsable() + "' ,idpedidotienda = "+solicitud.getIdpedidotienda()+ " ,valor_pedido = "+solicitud.getValorPedido()+ " ,valor_descuento = "+solicitud.getValorDescuento()+ " ,porcentaje_descuento = "+solicitud.getPorcentajeDescuento()+ " ,descuento_redimido = "+descuentoRedimido+ ", idpedidoredencion = " +solicitud.getIdpedidoredencion() +" where idsolicitudpqrs =" + idSolicitudPQRSIns; 
+			update = "update solicitudPQRS set fechasolicitud ='" + fechaSolicitudFinal + "', tiposolicitud = '" + solicitud.getTipoSolicitud() + "', idcliente =  " + solicitud.getIdcliente() + " , idtienda = " + solicitud.getIdtienda() + " , nombres = '"+ solicitud.getNombres() + "' , apellidos = '"+ solicitud.getApellidos() + "' , telefono = '" + solicitud.getTelefono() + "' , direccion = '" + solicitud.getDireccion() + "' , zona = '" + solicitud.getZona() + "' , idmunicipio = " + solicitud.getIdmunicipio() + " , comentario ='" + solicitud.getComentario() + "' , idorigen = " + solicitud.getIdOrigen() + " , idfoco = " + solicitud.getIdFoco() + " , tipo = '" + solicitud.getTipo() + "' , area_responsable = '" + solicitud.getAreaResponsable() + "' ,idpedidotienda = "+solicitud.getIdpedidotienda()+ " ,valor_pedido = "+solicitud.getValorPedido()+ " ,valor_descuento = "+solicitud.getValorDescuento()+ " ,porcentaje_descuento = "+solicitud.getPorcentajeDescuento()+ " ,descuento_redimido = "+descuentoRedimido+ ", idpedidoredencion = " +solicitud.getIdpedidoredencion() + ", id_usuario_registro = "+solicitud.getIdusuarioRegistro() +" , id_usuario_redencion = "+ solicitud.getIdusuarioRedencion() +" , idestado = "+solicitud.getIdestado()+" where idsolicitudpqrs = " + idSolicitudPQRSIns; 
 			logger.info(update);
 			stm.executeUpdate(update);
 			stm.close();
@@ -200,10 +209,11 @@ public class SolicitudPQRSDAO {
 	        "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, " +
 	        "a.tipo, a.area_responsable, " +
 	        "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, " +
-	        "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion " +
+	        "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion , a.id_usuario_registro , a.id_usuario_redencion ,a.idestado , e.descripcion as nombreEstado " +
 	        "FROM solicitudPQRS a " +
 	        "JOIN origen_pqrs b ON a.idorigen = b.idorigen " +
 	        "JOIN foco_pqrs c ON a.idfoco = c.idfoco " +
+	        "LEFT JOIN  estado_pqrs e ON a.idestado = e.idestado " +
 	        "WHERE a.fechasolicitud BETWEEN ? AND ? "
 	    );
 
@@ -257,13 +267,17 @@ public class SolicitudPQRSDAO {
 	                    rs.getDouble("valor_descuento"),
 	                    rs.getInt("porcentaje_descuento"),
 	                    rs.getBoolean("descuento_redimido"),
-	                    rs.getInt("idpedidoredencion")
+	                    rs.getInt("idpedidoredencion"),
+	                    rs.getInt("id_usuario_registro"),
+	                    rs.getInt("id_usuario_redencion"),
+	                    rs.getInt("idestado")
 	                );
 	                cadaSolicitud.setOrigen(rs.getString("nombre_origen"));
 	                cadaSolicitud.setIdmunicipio(rs.getInt("idmunicipio"));
 	                cadaSolicitud.setIdtienda(rs.getInt("idtienda"));
 	                cadaSolicitud.setFoco(rs.getString("nombre_foco"));
 	                cadaSolicitud.setImagenes(rs.getInt("imagenes"));
+	                cadaSolicitud.setNombreEstado(rs.getString("nombreEstado"));
 	                consultaSolicitudes.add(cadaSolicitud);
 
 	                
@@ -395,5 +409,175 @@ public class SolicitudPQRSDAO {
 		}
 		return(cantidadPQRS);
 	}
+	
+	
+	public static boolean modificarComentariosPqrs(int idSolicitudPqrs, List<ComentarioPqrs> listaComentarios) {
+	    if (idSolicitudPqrs == 0 || listaComentarios == null) {
+	        return false;
+	    }
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    String sqlInsert = "INSERT INTO pqrs_comentario (idsolicitud_pqrs, comentario, fecha_comentario) VALUES (?, ?, ?)";
+	    String sqlUpdate = "UPDATE pqrs_comentario SET comentario = ?, fecha_comentario = ? WHERE idpqrs_comentario = ?";
+	    String sqlDelete = "DELETE FROM pqrs_comentario WHERE idpqrs_comentario = ?";
+
+	    try (Connection conn = con1) {
+	        conn.setAutoCommit(false);  // Transacción
+
+	        try (PreparedStatement stmtInsert = conn.prepareStatement(sqlInsert);
+	             PreparedStatement stmtUpdate = conn.prepareStatement(sqlUpdate);
+	            		 PreparedStatement stmtDelete = conn.prepareStatement(sqlDelete)) {
+
+	            for (ComentarioPqrs comentario : listaComentarios) {
+	                // Convertir fecha String a java.sql.Date
+	                java.sql.Date fechaSql = null;
+	                try {
+	                    fechaSql = java.sql.Date.valueOf(comentario.getFecha()); // Espera "yyyy-MM-dd"
+	                } catch (IllegalArgumentException e) {
+	                    System.err.println("Fecha inválida: " + comentario.getFecha());
+	                    conn.rollback();
+	                    return false;
+	                }
+	                
+	                if(comentario.isEstado()) {
+	                	 if (comentario.getId() == 0) {
+	 	                    // Insertar
+	 	                    stmtInsert.setInt(1, idSolicitudPqrs);
+	 	                    stmtInsert.setString(2, comentario.getComentario());
+	 	                    stmtInsert.setDate(3, fechaSql);
+	 	                    stmtInsert.addBatch();
+	 	                } else {
+	 	                    // Actualizar
+	 	                    stmtUpdate.setString(1, comentario.getComentario());
+	 	                    stmtUpdate.setDate(2, fechaSql);
+	 	                    stmtUpdate.setInt(3, comentario.getId());
+	 	                    stmtUpdate.addBatch();
+	 	                }
+	                }else {
+	                	if (comentario.getId() > 0) {
+	                	    stmtDelete.setInt(1, comentario.getId());
+	                	    stmtDelete.addBatch();
+	                	}	 
+	                	
+	                }
+
+	               
+	            }
+
+	            int[] insertResults = stmtInsert.executeBatch();
+	            int[] updateResults = stmtUpdate.executeBatch();
+	            int[] deleteResults = stmtDelete.executeBatch(); // <-- FALTA ESTO
+
+	            for (int res : insertResults) {
+	                if (res == PreparedStatement.EXECUTE_FAILED) {
+	                    conn.rollback();
+	                    return false;
+	                }
+	            }
+	            for (int res : updateResults) {
+	                if (res == PreparedStatement.EXECUTE_FAILED) {
+	                    conn.rollback();
+	                    return false;
+	                }
+	            }
+	            for (int res : deleteResults) {
+	                if (res == PreparedStatement.EXECUTE_FAILED) {
+	                    conn.rollback();
+	                    return false;
+	                }
+	            }
+
+	            conn.commit();
+
+	            return true;
+
+	        } catch (SQLException e) {
+	            conn.rollback();
+	            System.err.println("Error en inserción/actualización comentarios: " + e.getMessage());
+	            return false;
+	        } finally {
+	            conn.setAutoCommit(true);
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Error en conexión BD: " + e.getMessage());
+	        return false;
+	    }
+	}
+
+
+	
+	
+	public static Map<String, List<ComentarioPqrs>> obtenerComentariosPqrs(int idSolicitudPqrs) {
+	    Map<String, List<ComentarioPqrs>> comentariosPorFecha = new LinkedHashMap<>();
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    String sql = "SELECT idpqrs_comentario, idsolicitud_pqrs, comentario, fecha_comentario " +
+	                 "FROM pqrs_comentario WHERE idsolicitud_pqrs = ? ORDER BY fecha_comentario ASC, idpqrs_comentario ASC";
+
+	    try (Connection conn = con1; PreparedStatement stmt = conn.prepareStatement(sql)) {
+	        stmt.setInt(1, idSolicitudPqrs);
+	        ResultSet rs = stmt.executeQuery();
+
+	        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+	        while (rs.next()) {
+	            String fechaStr = sdf.format(rs.getDate("fecha_comentario"));
+
+	            ComentarioPqrs comentario = new ComentarioPqrs(
+	                rs.getInt("idpqrs_comentario"),
+	                rs.getInt("idsolicitud_pqrs"),
+	                rs.getString("comentario"),
+	                fechaStr
+	            );
+
+	            comentariosPorFecha.computeIfAbsent(fechaStr, k -> new ArrayList<>()).add(comentario);
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Error al obtener comentarios: " + e.getMessage());
+	    }
+
+	    return comentariosPorFecha;
+	}
+	
+	public static List<EstadoPqrs> obtenerEstadoPqrs() {
+		List<EstadoPqrs> ListaEstados = new ArrayList<>();
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection conn = con.obtenerConexionBDPrincipal();
+
+	    String consulta = "SELECT idestado,descripcion  FROM estado_pqrs";
+
+	    try (
+	        PreparedStatement stmt = conn.prepareStatement(consulta);
+	        ResultSet rs = stmt.executeQuery()
+	    ) {
+	
+	    	while (rs.next()) {
+	    		EstadoPqrs estado = new EstadoPqrs();
+	    		estado.setIdestado(rs.getInt("idestado"));
+	    		estado.setDescripcion(rs.getString("descripcion"));
+	    		ListaEstados.add(estado);
+	        }
+	    } catch (SQLException e) {
+	        logger.info("Error al consultar usuarios activos: " + e.getMessage());
+	    } finally {
+	        try {
+	            conn.close();
+	        } catch (SQLException e) {
+	            logger.info("Error al cerrar conexión: " + e.getMessage());
+	        }
+	    }
+        
+	    return ListaEstados;
+	    
+	}
+
+
+
 
 }
