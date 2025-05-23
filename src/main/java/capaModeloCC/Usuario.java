@@ -7,11 +7,26 @@ package capaModeloCC;
  */
 public class Usuario {
 	
+	private int id;
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+
 	private String nombreUsuario;
 	private String contrasena;
 	private String nombreLargo;
 	private String plataforma;
+	private boolean activo;
 	
+	public boolean isActivo() {
+		return activo;
+	}
+	public void setActivo(boolean activo) {
+		this.activo = activo;
+	}
 	public String getPlataforma() {
 		return plataforma;
 	}
@@ -47,6 +62,10 @@ public class Usuario {
 		this.nombreUsuario = nombreUsuario;
 	}
 	
+	public Usuario() {
+		
+	
+	}
 	
 	
 	

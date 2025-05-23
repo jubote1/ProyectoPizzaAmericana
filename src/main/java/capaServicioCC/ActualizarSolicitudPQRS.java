@@ -2,13 +2,21 @@ package capaServicioCC;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Type;
+import java.util.Enumeration;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 
 import org.apache.log4j.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import capaControladorCC.SolicitudPQRSCtrl;
+import capaModeloCC.ComentarioPqrs;
 
 @WebServlet("/ActualizarSolicitudPQRS")
 public class ActualizarSolicitudPQRS extends HttpServlet {
@@ -31,7 +39,6 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		String telefono = request.getParameter("telefono");
 		String direccion = request.getParameter("direccion");
 		String zona = request.getParameter("zona");
-		String comentario = request.getParameter("comentario");
 		String tipo = request.getParameter("tipo");
 		String areaResponsable = request.getParameter("arearesponsable");
 
@@ -48,11 +55,23 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		int porcentajeDescuento= parseIntSafe(request,"porcentajeDescuento");
 		boolean descuentoRedimido = "true".equalsIgnoreCase(request.getParameter("descuentoRedimido"));
 		int idpedidoredencion = parseIntSafe(request ,"idpedidoredencion");
+		int idusuarioRegistro = parseIntSafe(request ,"idusuarioRegistro");
+		int idusuarioRedencion = parseIntSafe(request,"idusuarioRedencion");
+		String listaComentariosStr = request.getParameter("listaComentarios");
+		Type listType = new TypeToken<List<ComentarioPqrs>>(){}.getType();
+		List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
+		int idestado = parseIntSafe(request,"idestado");
+//		Enumeration<String> paramNames = request.getParameterNames();
+//		while (paramNames.hasMoreElements()) {
+//		    String paramName = paramNames.nextElement();
+//		    String paramValue = request.getParameter(paramName);
+//		    System.out.println("Parámetro: " + paramName + " = " + paramValue);
+//		}
 		// Lógica principal
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS, fechasolicitud, tiposolicitud,
-				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen,
-				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion);
+				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen,
+				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado);
 
 		// Salida
 		PrintWriter out = response.getWriter();

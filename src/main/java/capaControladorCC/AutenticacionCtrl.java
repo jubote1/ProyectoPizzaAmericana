@@ -1,9 +1,12 @@
 package capaControladorCC;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
+import com.google.gson.Gson;
 
 import capaDAOCC.AuthKunoDAO;
 import capaDAOCC.PermisosGrupoDAO;
@@ -12,7 +15,7 @@ import capaModeloCC.PermisosGrupo;
 import capaModeloCC.Usuario;
 
 /**
- * Clase AutenticacionCtrl tiene como objetivo hacer las veces de Controlador para la autenticación de usuarios
+ * Clase AutenticacionCtrl tiene como objetivo hacer las veces de Controlador para la autenticaciï¿½n de usuarios
  * en el aplicatiov
  * @author Juan David Botero Duque
  * @
@@ -32,10 +35,10 @@ public class AutenticacionCtrl {
 	
 	/**
 	 * 
-	 * @param usuario El usuario de logueo de la aplicación
-	 * @param contrasena Contraseña asociada al usuario que se está logueando
-	 * @return Se retona un valor booleano indicando si el usuario y contraseña corresponde con alguien logueado
-	 * en al aplicación
+	 * @param usuario El usuario de logueo de la aplicaciï¿½n
+	 * @param contrasena Contraseï¿½a asociada al usuario que se estï¿½ logueando
+	 * @return Se retona un valor booleano indicando si el usuario y contraseï¿½a corresponde con alguien logueado
+	 * en al aplicaciï¿½n
 	 */
 	public boolean autenticarUsuario(String usuario, String contrasena){
 		Usuario usu = new Usuario(usuario, contrasena, "");
@@ -68,8 +71,8 @@ public class AutenticacionCtrl {
 	
 	/**
 	 * 
-	 * @param usuario Se recibe el usuario de aplicación con el fin de validar si el usuario pasado como parámetro está
-	 * o no logueado en la aplicación
+	 * @param usuario Se recibe el usuario de aplicaciï¿½n con el fin de validar si el usuario pasado como parï¿½metro estï¿½
+	 * o no logueado en la aplicaciï¿½n
 	 * @return Se retorna un valor booleano indicando si el usuario se encuentra o no logueado en el aplicativo.
 	 */
 	public String validarAutenticacion(String usuario)
@@ -112,6 +115,13 @@ public class AutenticacionCtrl {
 			}
 		}
 		return(respuesta);
+	}
+	
+	
+	public String obtenerUsuarioActivo() {
+	    List<Usuario> usuarios = UsuarioDAO.obtenerUsuarioActivo(); // esta ya retorna lista
+	    Gson gson = new Gson();
+	    return gson.toJson(usuarios); // convierte a JSON
 	}
 
 }

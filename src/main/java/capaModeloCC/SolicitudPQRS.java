@@ -32,7 +32,35 @@ public class SolicitudPQRS {
 	private int porcentajeDescuento;
 	private boolean descuentoRedimido;
 	private int idpedidoredencion;
+	private int idusuarioRegistro;
+	private int idusuarioRedencion;
+	private int idestado;
+	private String NombreEstado;
 	
+	public String getNombreEstado() {
+		return NombreEstado;
+	}
+	public void setNombreEstado(String nombreEstado) {
+		NombreEstado = nombreEstado;
+	}
+	public int getIdestado() {
+		return idestado;
+	}
+	public void setIdestado(int idestado) {
+		this.idestado = idestado;
+	}
+	public int getIdusuarioRegistro() {
+		return idusuarioRegistro;
+	}
+	public void setIdusuarioRegistro(int idusuarioRegistro) {
+		this.idusuarioRegistro = idusuarioRegistro;
+	}
+	public int getIdusuarioRedencion() {
+		return idusuarioRedencion;
+	}
+	public void setIdusuarioRedencion(int idusuarioRedencion) {
+		this.idusuarioRedencion = idusuarioRedencion;
+	}
 	public int getIdpedidoredencion() {
 		return idpedidoredencion;
 	}
@@ -185,7 +213,7 @@ public class SolicitudPQRS {
 	}
 	public SolicitudPQRS(int idsolicitud, String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion) {
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion,int idusuarioRegistro,int idusuarioRedencion,int idestado) {
 		super();
 		this.idsolicitud = idsolicitud;
 		this.fechaSolicitud = fechaSolicitud;
@@ -209,6 +237,10 @@ public class SolicitudPQRS {
 		this.porcentajeDescuento = porcentajeDescuento;
 		this.descuentoRedimido = descuentoRedimido;
 		this.idpedidoredencion =idpedidoredencion;
+		this.idusuarioRegistro =idusuarioRegistro;
+		this.idusuarioRedencion =idusuarioRedencion;
+		this.idestado =idestado;
+		
 		
 	}
 	

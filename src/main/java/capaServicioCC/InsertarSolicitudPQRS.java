@@ -2,6 +2,8 @@ package capaServicioCC;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Type;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -10,8 +12,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.apache.log4j.Logger;
-
-import capaControladorCC.SolicitudPQRSCtrl;;
+import capaModeloCC.ComentarioPqrs;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import capaControladorCC.SolicitudPQRSCtrl;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Servlet implementation class InseratarSolicitudPQRS Este servicio se encarga
@@ -41,7 +46,6 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		String telefono = request.getParameter("telefono");
 		String direccion = request.getParameter("direccion");
 		String zona = request.getParameter("zona");
-		String comentario = request.getParameter("comentario");
 		String tipo = request.getParameter("tipo");
 		String areaResponsable = request.getParameter("arearesponsable");
 
@@ -57,15 +61,23 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		int porcentajeDescuento= parseIntSafe(request.getParameter("porcentajeDescuento"));
 		boolean descuentoRedimido = "true".equalsIgnoreCase(request.getParameter("descuentoRedimido"));
 		int idpedidoredencion = parseIntSafe(request.getParameter("idpedidoredencion"));
+		int idusuarioRegistro = parseIntSafe(request.getParameter("idusuarioRegistro"));
+		int idusuarioRedencion = parseIntSafe(request.getParameter("idusuarioRedencion"));
+		int idestado = parseIntSafe(request.getParameter("idestado"));
+
+		String listaComentariosStr = request.getParameter("listaComentarios");
+		Type listType = new TypeToken<List<ComentarioPqrs>>(){}.getType();
+		List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
+		
 
 
 		// Llamar a controlador
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.insertarSolicitudPQRS(fechasolicitud, tiposolicitud, idcliente, idtienda,
-				nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen, idFoco, tipo,
-				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion);
+				nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen, idFoco, tipo,
+				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion ,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado);
 
-		System.out.println(respuesta);
+		
 		response.getWriter().write(respuesta);
 	}
 

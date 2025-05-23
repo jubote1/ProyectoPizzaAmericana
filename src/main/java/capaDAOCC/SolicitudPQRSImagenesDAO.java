@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 
 import capaModeloCC.FormaPago;
 import capaModeloCC.Pedido;
@@ -20,10 +21,10 @@ import conexionCC.ConexionBaseDatos;
 public class SolicitudPQRSImagenesDAO {
 	
 	/**
-	 * Método de la capa DAO que se encarga de implementar la inserción de la entidad solicitudPQRS, recibiendo como parámetro
-	 * un objeto tipo SolicitudPQRS, retornará como resultado de la inserción el idsolicitudPQRS asignado por la base de datos
+	 * Mï¿½todo de la capa DAO que se encarga de implementar la inserciï¿½n de la entidad solicitudPQRS, recibiendo como parï¿½metro
+	 * un objeto tipo SolicitudPQRS, retornarï¿½ como resultado de la inserciï¿½n el idsolicitudPQRS asignado por la base de datos
 	 * en base a un campo configurado como autoincrementable en la misma.
-	 * @param solicitud Se recibe como parámetro un objeto de la capaModelo SolicitudPQRS
+	 * @param solicitud Se recibe como parï¿½metro un objeto de la capaModelo SolicitudPQRS
 	 * @return Se retorna valor intero con el idSolicitudPQRS asignado por la base de datos.
 	 */
 	public static int insertarSolicitudPQRSImagen(SolicitudPQRSImagenes solicitud)
@@ -59,10 +60,45 @@ public class SolicitudPQRSImagenesDAO {
 		return(idSolicitudPQRSImaIns);
 	}
 	
-	public static ArrayList<String> consultarSolicitudPQRSImagenes(int idSolicitudPRQS)
+	public static boolean eliminarSolicitudPQRSImagenPorId(int idImagen) {
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    boolean eliminado = false;
+
+	    try {
+	        Statement stm = con1.createStatement();
+	        String deleteSQL = "DELETE FROM solicitudpqrs_imagenes WHERE idimagen = " + idImagen;
+	        logger.info(deleteSQL);
+
+	        int filasAfectadas = stm.executeUpdate(deleteSQL);
+	        eliminado = filasAfectadas > 0;
+
+	        if (eliminado) {
+	            logger.info("Imagen con ID " + idImagen + " eliminada correctamente.");
+	        } else {
+	            logger.warn("No se encontrÃ³ imagen con ID " + idImagen + " para eliminar.");
+	        }
+
+	        stm.close();
+	        con1.close();
+	    } catch (Exception e) {
+	        logger.error("Error al eliminar imagen con ID " + idImagen + ": " + e.toString());
+	        try {
+	            con1.close();
+	        } catch (Exception e1) {
+	            logger.error("Error al cerrar conexiÃ³n: " + e1.toString());
+	        }
+	        return false;
+	    }
+
+	    return eliminado;
+	}
+
+	public static ArrayList<JSONObject> consultarSolicitudPQRSImagenes(int idSolicitudPRQS)
 	{
 		Logger logger = Logger.getLogger("log_file");
-		ArrayList<String> imagenes = new ArrayList();
+		ArrayList<JSONObject> imagenes = new ArrayList();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
@@ -72,9 +108,12 @@ public class SolicitudPQRSImagenesDAO {
 			logger.info(select);
 			ResultSet rs = stm.executeQuery(select);
 			while(rs.next())
-			{
+			{   JSONObject obj = new JSONObject();
 				String imagenTmp = rs.getString("rutaimagen");
-				imagenes.add(imagenTmp);
+				int idimagen = rs.getInt("idimagen");
+				obj.put("rutaimagen", imagenTmp);
+				obj.put("idimagen", idimagen);
+				imagenes.add(obj);
 			}
 			rs.close();
 			stm.close();

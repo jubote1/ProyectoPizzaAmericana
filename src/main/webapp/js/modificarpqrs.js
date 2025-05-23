@@ -19,6 +19,7 @@ var div;
 var datosReporte = [];
 var fecha_inicial = "";
 var fecha_final = "";
+const historialContainer = document.getElementById("historialComentarios");
 // Validar usuario
 $.ajax({
 	url: server + 'ValidarUsuarioAplicacion',
@@ -38,7 +39,7 @@ switch (respuesta) {
 		break;
 
 	case 'OKA':
-		$('#cargarMenu').load("MenuAdm.html", function () {
+		$('#cargarMenu').load("MenuAdm.html", function() {
 
 			$('#cargarMenu').find('#usuariologin').html(usuario);
 		});
@@ -99,6 +100,7 @@ $(document).ready(function() {
 
 
 
+
 	dtconsultasPQRS = $('#grid-consultaPQRS').DataTable({
 		"aoColumns": [
 			{ "mData": "idconsultaPQRS" },
@@ -107,26 +109,61 @@ $(document).ready(function() {
 			{ "mData": "cliente" },
 			{ "mData": "direccion" },
 			{ "mData": "telefono" },
-			{ "mData": "comentario", "visible": false },
-			{ "mData": "municipio" },
 			{ "mData": "tienda" },
 			{ "mData": "nombreorigen" },
 			{ "mData": "nombrefoco" },
-			{ "mData": "accion" },
+			{
+				"mData": "nombreEstado",
+				"render": function(data, type, row) {
+
+					return data ? data : "Ninguno";
+				}
+			},
+			{
+				"mData": null,
+				"sTitle": "Archivo",
+				"orderable": false,
+				"searchable": false,
+				"render": function(data, type, row) {
+					if (row.imagenes > 0) {
+						return '<center><i class="fa fa-check text-success" title="Tiene imágenes"></i></center>';
+					} else {
+						return '<center><i class="fa fa-times text-danger" title="Sin imágenes"></i></center>';
+					}
+				}
+			},
 			{ "mData": "tipo", "visible": false },
 			{ "mData": "arearesponsable", "visible": false },
-			{ "mData": "imagenes", "visible": false },
+			{ "mData": "imagenes", "visible": false }
 
 
 		],
 		"fnRowCallback": function(nRow, aData, iDisplayIndex) {
-			if (aData.imagenes > 0) {
-				$(nRow).css('background-color', '#d8ffcf');
-			} else {
+			// Remueve cualquier clase previa de color
+			$(nRow).removeClass('resaltar-amarillo resaltar-azul resaltar-naranja resaltar-verde');
+
+			switch (aData.idestado) {
+				case 1:
+					$(nRow).addClass('resaltar-amarillo');
+					break;
+				case 2:
+					$(nRow).addClass('resaltar-azul');
+					break;
+				case 3:
+					$(nRow).addClass('resaltar-naranja');
+					break;
+				case 4:
+					$(nRow).addClass('resaltar-verde');
+					break;
+				default:
+					// Si es 0, null, undefined u otro valor no esperado, no aplicar color
+					break;
 			}
 		}
 
+
 	});
+
 
 	//validamos el contenido del campo fecha del pedido y el evento que lo controlará
 	//Se invoca servicio para traerse la información de los productos disponibles en el sistema
@@ -135,6 +172,8 @@ $(document).ready(function() {
 	getListaMunicipios();
 	getListaOrigenes();
 	getListaFocos();
+	getUsuariosActivos();
+	getEstadoPqrs();
 	setInterval('validarVigenciaLogueo()', 600000);
 
 	//Colocamos acción al DataTable en caso de dar clic sobre el DATATABLE
@@ -153,7 +192,6 @@ $(document).ready(function() {
 		$("#selectTiendaspqrs").val(datos.tienda);
 		$("#selectOrigen").val(datos.nombreorigen);
 		$("#selectFoco").val(datos.nombrefoco);
-		$('#comentariosVista').val(datos.comentario);
 		$('#tipo').val(datos.tipo);
 		$('#selectAreaResponsable').val(datos.arearesponsable);
 		$('#selectPorcentajeDesc').val(datos.porcentajeDescuento);
@@ -162,6 +200,23 @@ $(document).ready(function() {
 		$('#valorPedido').val(datos.valorPedido);
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
+		$('#selectEstado').val(datos.idestado);
+
+		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
+		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
+
+
+		historialContainer.innerHTML = '';
+		const listaComentarios = datos.listaComentarios;
+
+
+		// Cargar comentarios iniciales
+		Object.keys(listaComentarios).forEach(fecha => {
+			listaComentarios[fecha].forEach(com => {
+				agregarComentarioVisual(fecha, com.id, com.comentario);
+			});
+		});
+
 
 
 		//Posteriormente hacemos la consulta para las imagenes de la pqrs
@@ -171,7 +226,7 @@ $(document).ready(function() {
 			imgs = new Array(imagenes.length);
 			for (var i = 0; i < imagenes.length; i++) {
 				var cadaResp = imagenes[i];
-				imgs[i] = cadaResp.rutaimagen;
+				imgs[i] = cadaResp
 			}
 			//Una vez cargadas todas las imagenes realizamos la carga de las mismas
 			agregarImagen();
@@ -181,6 +236,16 @@ $(document).ready(function() {
 
 
 });
+
+function seleccionarOpcionSeguro(selector, valor) {
+	const $select = $(selector);
+	if ($select.find(`option[value="${valor}"]`).length > 0) {
+		$select.val(valor);
+	} else {
+		$select.val('0');
+	}
+}
+
 
 
 function validarVigenciaLogueo() {
@@ -274,7 +339,7 @@ function consultarPQRS() {
 	if (tipoSolicitud == "todos") {
 		tipoSolicitud = "";
 	}
-  
+
 	var filtrodescuentoRed = document.getElementById("filtrodescuentoRed").checked;
 
 	if (valida != 1) {
@@ -286,7 +351,7 @@ function consultarPQRS() {
 
 	}
 	$.getJSON(server + 'ConsultaIntegradaSolicitudesPQRS?fechainicial=' + fechaini + "&fechafinal=" + fechafin + "&tienda=" + tienda + "&tiposolicitud=" + tipoSolicitud + "&descuentoredimido=" + filtrodescuentoRed, function(data1) {
-	
+
 		datosReporte = data1;
 		fecha_inicial = fechaini;
 		fecha_final = fechafin;
@@ -299,12 +364,10 @@ function consultarPQRS() {
 				"cliente": data1[i].cliente,
 				"direccion": data1[i].direccion,
 				"telefono": data1[i].telefono,
-				"comentario": data1[i].comentario,
 				"municipio": data1[i].municipio,
 				"tienda": data1[i].tienda,
 				"nombreorigen": data1[i].nombreorigen,
 				"nombrefoco": data1[i].nombrefoco,
-				"accion": '<button type="button" class="btn btn-default btn-xs" onclick="mostrarModalObservacion(' + data1[i].idconsultaPQRS + ')"><i class="fas fa-cart-plus fa-2x"></i></button>',
 				"tipo": data1[i].tipo,
 				"arearesponsable": data1[i].arearesponsable,
 				"imagenes": data1[i].imagenes,
@@ -315,7 +378,12 @@ function consultarPQRS() {
 				"porcentajeDescuento": data1[i].porcentajeDescuento,
 				"nombres": data1[i].nombres,
 				"apellidos": data1[i].apellidos,
-				"descuentoRedimido": data1[i].descuentoRedimido
+				"descuentoRedimido": data1[i].descuentoRedimido,
+				"listaComentarios": data1[i].listaComentarios,
+				"idusuarioRegistro": data1[i].idusuarioRegistro,
+				"idusuarioRedencion": data1[i].idusuarioRedencion,
+				'idestado': data1[i].idestado,
+				'nombreEstado': data1[i].nombreEstado
 			}).draw();
 		}
 	});
@@ -343,115 +411,102 @@ function calcularDescuento() {
 }
 
 function ValidacionesDatos() {
-	var fechaini = $("#fechainicial").val();
-	var fechafin = $("#fechafinal").val();
-	var tienda = $("#selectTiendas option:selected").attr('id');
-	if (fechaini == '' || fechaini == null) {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha inicial debe ser diferente a vacía'
-		});
+	const fechaini = $("#fechainicial").val();
+	const fechafin = $("#fechafinal").val();
+	const tienda = $("#selectTiendas option:selected").attr('id');
 
-		return;
+	// Validar campos vacíos
+	if (!fechaini) {
+		return mostrarAlerta('warning', 'La fecha inicial debe ser diferente a vacía');
 	}
-
-	if (fechafin == '' || fechafin == null) {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha final debe ser diferente a vacía'
-		});
-
-		return;
+	if (!fechafin) {
+		return mostrarAlerta('warning', 'La fecha final debe ser diferente a vacía');
 	}
-	if (existeFecha(fechaini)) {
-	}
-	else {
-		Swal.fire({
-			icon: 'error',
-			text: 'La fecha inicial no es correcta'
-		});
-		return;
+	if (!tienda) {
+		return mostrarAlerta('error', 'La tienda no puede estar vacía');
 	}
 
-	if (existeFecha(fechafin)) {
+	// Validar formato de fechas
+	if (!existeFecha(fechaini)) {
+		return mostrarAlerta('error', 'La fecha inicial no es correcta');
 	}
-	else {
-		Swal.fire({
-			icon: 'error',
-			text: 'La fecha final no es correcta'
-		});
-
-		return;
-	}
-	if (validarFechas(fechaini, fechafin)) {
-	}
-	else {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La fecha inicial es mayor a la fecha final, favor corregir'
-		});
-
-		return;
+	if (!existeFecha(fechafin)) {
+		return mostrarAlerta('error', 'La fecha final no es correcta');
 	}
 
-	if (tienda == '' || tienda == null) {
-		Swal.fire({
-			icon: 'error',
-			text: 'La tienda no puede estar vacía'
-		});
-		return;
+	// Validar rango de fechas
+	if (!validarFechas(fechaini, fechafin)) {
+		return mostrarAlerta('warning', 'La fecha inicial es mayor a la fecha final, favor corregir');
 	}
 
-	return (1);
+	return 1; // Todo está correcto
 }
 
 
-function mostrarModalObservacion(idSolPQRS) {
-	idSolicitudPQRS = idSolPQRS;
-	$('#adicionarObservacion').modal('show');
+
+
+function mostrarAlerta(icono, mensaje) {
+	Swal.fire({ icon: icono, text: mensaje });
+	return; // Para cortar la ejecución del flujo
 }
 
 
-function guardarObservacionPQRS() {
-	var comentariosAd = encodeURIComponent($('#comentarios').val());
-	if (comentariosAd == '') {
-		Swal.fire({
-			icon: 'warning',
-			text: 'El comentario a adicionar debe tener algún texto.'
-		});
 
+function ValidarDatosActualizados() {
+
+	const errores = [];
+	var telefono = document.getElementById("telefono").value;
+	var nombres = document.getElementById("nombres").value;
+	var direccion = document.getElementById("direccion").value;
+	// Validaciones de campos simples
+	validarCampoVacio(telefono, "Debe ingresar un teléfono de contacto.");
+	if (telefono && !/^\d+$/.test(telefono)) {
+		errores.push(`El valor "${telefono}" no es un número válido.`);
+	}
+
+	validarCampoVacio(nombres, "Debe ingresar los nombres del cliente.");
+	validarCampoVacio(direccion, "Debe ingresar la dirección del cliente.");
+	validarCampoVacio($("#selectTiendaspqrs").val(), "Debe seleccionar una tienda.");
+	validarCampoVacio($("#selectOrigen").val(), "Debe seleccionar el origen de la PQRS.");
+	validarCampoVacio($("#selectFoco").val(), "Debe seleccionar el foco de la PQRS.");
+	validarCampoVacio($("#selectMunicipio").val(), "Debe seleccionar el municipio.");
+
+	if ($("#selectUsuarioRegistro").val() === "0") {
+		errores.push("Debe seleccionar el usuario que registra la PQRS.");
+	}
+
+	if ($("#selectEstado").val() === "0") {
+		errores.push("Debe seleccionar un estado");
+	}
+
+	const comentariosTextArea = historialContainer.querySelectorAll("textarea");
+	if (comentariosTextArea.length === 0) {
+		errores.push("Debe ingresar un comentario.");
+	}
+
+	// Mostrar errores si existen
+	if (errores.length > 0) {
+		mostrarErrores(errores);
 		return;
 	}
-	var controlador = false;
-	$.ajax({
-		url: server + 'AdicionarComentarioPQRS?pqrs=' + idSolicitudPQRS + "&comentario=" + comentariosAd,
-		dataType: 'json',
-		async: false,
-		success: function(data) {
-			var resultado = data;
-			if (resultado[0].resultado == 'OK') {
-				Swal.fire({
-					icon: 'success',
-					text: 'Se ha insertado exitosamente el comentario.'
-				});
 
-				controlador = true;
-			} else {
-				Swal.fire({
-					icon: 'error',
-					text: 'Se tuvo un ERROR al insertar el comentario'
-				});
+	return 1;
 
-			}
-		}
-	});
-	if (controlador == true) {
-		$('#comentarios').val('');
-		idSolicitudPQRS = 0;
-		$('#adicionarObservacion').modal('hide');
-		consultarPQRS();
+	// Función auxiliar para validar campos vacíos
+	function validarCampoVacio(valor, mensaje) {
+		if (!valor) errores.push(mensaje);
 	}
 
+	// Función para mostrar errores con SweetAlert
+	function mostrarErrores(listaErrores) {
+		Swal.fire({
+			icon: 'warning',
+			title: 'Faltan datos requeridos',
+			html: `<ul style="text-align:left;">${listaErrores.map(e => `<li>${e}</li>`).join('')}</ul>`,
+			confirmButtonText: 'Entendido',
+			confirmButtonColor: 'blue'
+		});
+	}
 }
 
 
@@ -465,46 +520,76 @@ function limpiarConsultaPQRS() {
 	$('#municipio').val('');
 	$("#tienda").val('');
 	$("#selectOrigen").val('');
-	$('#comentariosVista').val('');
 	$('#descuentoRedimido').prop('checked', false);
-	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc').prop('selectedIndex', 0);
-	$(' #apellidos, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento,#selectSolicitudpqrs, #selectFoco,#selectTiendaspqrs').val("");
+	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado').prop('selectedIndex', 0);
+	$(' #apellidos, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #selectFoco,#selectTiendaspqrs').val("");
+	historialContainer.innerHTML = '';
+
 }
 
 function agregarImagen() {
-
 	$('#img-gallery').html('');
 	imgs.forEach(item => {
-		elemento = null;
-		//validamos si el archivo es pdf
-		if (item.includes('.pdf')) {
+		let container = document.createElement('div');
+		container.className = 'img-container';
+
+		let trashButton = document.createElement('button');
+		trashButton.className = 'btn-trash';
+		trashButton.type = 'button';
+		trashButton.title = 'Eliminar archivo';
+		trashButton.innerHTML = '<i class="fa fa-trash"></i>';
+
+		trashButton.onclick = function() {
+			Swal.fire({
+				title: '¿Está seguro?',
+				text: "Esta acción eliminará el archivo.",
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonText: 'Sí, eliminar',
+				cancelButtonText: 'Cancelar'
+			}).then((result) => {
+				if (result.isConfirmed) {
+					EliminarImg(item);
+				}
+			});
+		};
+
+		let elemento;
+		let src = "http://172.19.0.25:4200/imagenes/" + item.rutaimagen;
+
+		if (item.rutaimagen.includes('.pdf')) {
 			elemento = document.createElement('div');
-			embed = document.createElement('embed');
-			a = document.createElement('a');
-			src = "http://172.19.0.25:4200/imagenes/" + item
+
+			let embed = document.createElement('embed');
 			embed.src = src;
 			embed.width = '320px';
 			embed.height = '350px';
-			a.href = src
-			a.innerHTML = "<br><strong>Ver documento completo</strong>"
-			a.target = "_blank"
 			embed.style.display = 'block';
-			embed.className = "file"
-			elemento.appendChild(embed)
-			elemento.appendChild(a);
+			embed.className = 'file';
 
+			let a = document.createElement('a');
+			a.href = src;
+			a.target = "_blank";
+			a.innerHTML = "<br><strong>Ver documento completo</strong>";
+
+			elemento.appendChild(embed);
+			elemento.appendChild(a);
 		} else {
 			elemento = document.createElement('img');
-			elemento.className = "file"
-			src = "http://172.19.0.25:4200/imagenes/" + item
 			elemento.src = src;
-			elemento.onclick = function() { openFulImg(this.src) };
-
+			elemento.className = 'file';
+			elemento.onclick = function() {
+				openFulImg(this.src);
+			};
 		}
 
-		div.appendChild(elemento);
+		container.appendChild(trashButton);
+		container.appendChild(elemento);
+		document.getElementById('img-gallery').appendChild(container);
 	});
 }
+
+
 
 
 function openFulImg(reference) {
@@ -587,11 +672,11 @@ function AdicionarImagenesPQRS() {
 				processData: false,
 				async: false,
 				success: function(resp) {
-					console.log(resp);
+
 					//En este punto deberemos insertar las imágenes
 					for (var i = 0; i < resp.length; i++) {
 						var cadaResp = resp[i];
-						console.log(cadaResp.name);
+
 						$.ajax({
 							url: server + 'InsertarSolicitudPQRSImagenes?idsolicitudpqrs=' + idSolicitudPQRS + '&rutaimagen=' + cadaResp.name,
 							dataType: 'json',
@@ -608,6 +693,64 @@ function AdicionarImagenesPQRS() {
 			});
 	}
 }
+function EliminarImg(item) {
+	$.ajax({
+		url: 'http://172.19.0.25:4200/delete_upload.php',
+		method: 'POST',
+		data: JSON.stringify({ filename: item.rutaimagen }),
+		dataType: "json",
+		contentType: "application/json",
+		processData: false,
+		cache: false,
+		async: false,
+		success: function(resp) {
+			if (resp.status === "error") {
+				Swal.fire({
+					icon: 'error',
+					text: resp.message
+				});
+			}
+
+			$.ajax({
+				url: server + 'EliminarSolicitudPQRSImagenes?idimagen=' + item.idimagen,
+				type: 'POST',
+				dataType: 'json',
+				async: false,
+				success: function(data) {
+					if (data.respuesta) {
+						const mensaje = (resp.status === "error")
+							? "Se eliminó el registro del archivo en la base de datos, pero no se pudo eliminar el archivo físico."
+							: "Se eliminó correctamente el archivo.";
+
+						Swal.fire({
+							icon: (resp.status === "error") ? 'error' : 'success',
+							text: mensaje
+						});
+					} else {
+						Swal.fire({
+							icon: 'error',
+							text: "No se pudo eliminar el registro del archivo en la base de datos."
+						});
+					}
+				}
+			});
+
+			$('#file-1').fileinput('reset');
+			refrescarImagenes();
+		},
+		error: function(xhr, status, error) {
+			console.error("Error al eliminar el archivo:", error);
+			Swal.fire({
+				icon: 'error',
+				text: 'Error en la conexión o al procesar la solicitud.'
+			});
+		}
+	});
+}
+
+
+
+
 
 function refrescarImagenes() {
 	$.getJSON(server + 'ConsultarSolicitudPQRSImagenes?idsolicitudpqrs=' + idSolicitudPQRS, function(data1) {
@@ -616,7 +759,7 @@ function refrescarImagenes() {
 		imgs = new Array(imagenes.length);
 		for (var i = 0; i < imagenes.length; i++) {
 			var cadaResp = imagenes[i];
-			imgs[i] = cadaResp.rutaimagen;
+			imgs[i] = cadaResp
 		}
 		//Una vez cargadas todas las imagenes realizamos la carga de las mismas
 		agregarImagen();
@@ -624,6 +767,12 @@ function refrescarImagenes() {
 }
 
 function EditarPQRS() {
+
+	var valido = ValidarDatosActualizados();
+
+	if (valido != 1) {
+		return
+	}
 	if (idSolicitudPQRS == 0) {
 		Swal.fire({
 			icon: 'warning',
@@ -643,7 +792,6 @@ function EditarPQRS() {
 		var direccionEncode = $("#direccion").val();
 		var zonaEncode = $("#zona").val();
 		var tempMunicipio = $("#selectMunicipio option:selected").attr('id');
-		var comentarioEncode = $("#comentariosVista").val();
 		var tipo = $("#selectTipo option:selected").val();
 		var areaResponsable = $("#selectAreaResponsable option:selected").val();
 		var idpedidotienda = $("#idpedidotienda").val();
@@ -652,6 +800,30 @@ function EditarPQRS() {
 		var valorDescuento = $("#valorDescuento").val();
 		var porcentajeDescuento = $("#selectPorcentajeDesc option:selected").val();
 		var descuentoRedimido = document.getElementById("descuentoRedimido").checked;
+		var idusuarioRegistro = $("#selectUsuarioRegistro option:selected").val();
+		var idusuarioRedencion = $("#selectUsuarioRedencion option:selected").val();
+		var idestado = $("#selectEstado option:selected").val();
+
+		const comentarios = historialContainer.querySelectorAll("textarea");
+
+
+		const listaComentarios = [];
+
+		comentarios.forEach(textarea => {
+			const id = parseInt(textarea.getAttribute("data-id") || "0");
+			const fecha = textarea.getAttribute("data-fecha");
+			const estado = textarea.getAttribute("data-estado");
+			const texto = textarea.value.trim();
+
+			if (!texto) return; // Saltar vacíos
+
+			if (estado == "false" && id == "0") {
+				return
+			}
+
+			listaComentarios.push({ id, comentario: texto, fecha, idSolicitud: idSolicitudPQRS, estado });
+		});
+
 
 		Swal.fire({
 			title: 'Confirmacion Actualización',
@@ -681,7 +853,6 @@ function EditarPQRS() {
 							'direccion': direccionEncode,
 							'zona': zonaEncode,
 							'idmunicipio': tempMunicipio,
-							'comentario': comentarioEncode,
 							'idorigen': idOrigen,
 							'idfoco': idFoco,
 							'tipo': tipo,
@@ -692,7 +863,12 @@ function EditarPQRS() {
 							'valorPedido': valorPedido,
 							'valorDescuento': valorDescuento,
 							'porcentajeDescuento': porcentajeDescuento,
-							'descuentoRedimido': descuentoRedimido
+							'descuentoRedimido': descuentoRedimido,
+							'listaComentarios': JSON.stringify(listaComentarios),
+							'idusuarioRegistro': idusuarioRegistro,
+							'idusuarioRedencion': idusuarioRedencion,
+							'idestado': idestado
+
 						},
 						async: false,
 						success: function(data1) {
@@ -764,13 +940,13 @@ function DescartarPQRS() {
 
 function limpiarPQRS() {
 	// Limpiar campos de texto y numéricos
-	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc').prop('selectedIndex', 0);
-	$('#telefono, #nombres, #apellidos, #direccion, #zona, #comentariosVista, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento').val("");
+	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#idestado').prop('selectedIndex', 0);
+	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha').val("");
 	// Reiniciar selects a la primera opción
-	$('#selectTiendaspqrs, #selectOrigen , #selectFoco , #selectMunicipio, #selectSolicitudpqrs, #selectAreaResponsable').val("");
+	$('#selectTiendaspqrs, #selectOrigen , #selectFoco , #selectMunicipio, #selectAreaResponsable').val("");
 
 	$('#descuentoRedimido').prop('checked', false);
-
+	historialContainer.innerHTML = '';
 	// Limpiar DataTable si existe
 	if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
 		const table = $('#grid-consultaPQRS').DataTable();
@@ -854,15 +1030,15 @@ async function generarReporte() {
 				cell.value = val;
 				cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
 				cell.alignment = { horizontal: 'center' };
-				
+
 				// Aquí aplicamos el color amarillo muy claro si redimido es true
-							if (redimido) {
-								cell.fill = {
-									type: 'pattern',
-									pattern: 'solid',
-									fgColor: { argb: 'FFFFF9C4' } // Amarillo muy claro
-								};
-							}
+				if (redimido) {
+					cell.fill = {
+						type: 'pattern',
+						pattern: 'solid',
+						fgColor: { argb: 'FFFFF9C4' } // Amarillo muy claro
+					};
+				}
 			});
 
 			subtotal += r.valorDescuento;
@@ -899,8 +1075,8 @@ async function generarReporte() {
 			cellValor.value = valor;
 			cellValor.font = { bold: true };
 			cellValor.alignment = { horizontal: 'center' };
-			
-			
+
+
 			fila++;
 		});
 
@@ -920,7 +1096,7 @@ async function generarReporte() {
 		const celdaValor = worksheet.getCell(filaResumen, 10); // Columna J
 
 		celdaLabel.value = label;
-		celdaLabel.font = { bold: true, size :12 , color: { argb: 'FFFFFFFF' } };
+		celdaLabel.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
 		celdaLabel.fill = {
 			type: 'pattern',
 			pattern: 'solid',
@@ -967,7 +1143,7 @@ async function generarReporte() {
 	worksheet.getColumn(8).width = 10;
 
 
-    const buffer = await workbook.xlsx.writeBuffer();
+	const buffer = await workbook.xlsx.writeBuffer();
 	const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 	saveAs(blob, "PQRS_Descuentos_" + fecha_inicial + "_Al_" + fecha_final + ".xlsx");
 }
@@ -975,8 +1151,223 @@ async function generarReporte() {
 
 
 
+function crearGrupoFecha(fecha) {
+	const grupo = document.createElement("div");
+	grupo.className = "grupo-fecha mb-3";
+	grupo.setAttribute("data-fecha", fecha);
+	grupo.innerHTML = `
+        <h6 class="mb-2">${fecha}</h6>
+        <div class="comentarios"></div>
+    `;
+	historialContainer.appendChild(grupo);
+	return grupo.querySelector('.comentarios');
+}
+
+function agregarComentarioVisual(fecha, id, texto) {
+	let grupo = document.querySelector(`.grupo-fecha[data-fecha='${fecha}'] .comentarios`);
+	if (!grupo) {
+		grupo = crearGrupoFecha(fecha);
+	}
+
+	// Crear contenedor
+	const wrapper = document.createElement("div");
+	wrapper.className = "position-relative mb-2 comentario-item";
+
+	// Crear textarea
+	const textarea = document.createElement("textarea");
+	textarea.className = "form-control";
+	textarea.rows = 2;
+	textarea.value = texto;
+	textarea.setAttribute("data-id", id);
+	textarea.setAttribute("data-fecha", fecha);
+	textarea.setAttribute("data-estado", "true"); // por defecto activo
+
+	// Crear icono eliminar
+	const iconoEliminar = document.createElement("span");
+	iconoEliminar.innerHTML = "🗑️";
+	iconoEliminar.className = "position-absolute";
+	iconoEliminar.style.top = "5px";
+	iconoEliminar.style.right = "5px";
+	iconoEliminar.style.cursor = "pointer";
+	iconoEliminar.style.fontSize = "0.8rem";
+	iconoEliminar.style.color = "red";
+	iconoEliminar.title = "Eliminar comentario";
+	iconoEliminar.addEventListener("click", () => {
+		const idComentario = parseInt(textarea.getAttribute("data-id") || "0");
+
+		if (idComentario === 0) {
+			// Si es nuevo (no guardado en BD), eliminar completamente
+			wrapper.remove();
+		} else {
+			// Si ya existe en BD, marcar como eliminado y ocultar visualmente
+			textarea.setAttribute("data-estado", "false");
+			textarea.classList.add("d-none");
+			iconoEliminar.remove();
+		}
+
+		const visibles = grupo.querySelectorAll("textarea:not(.d-none)");
+		if (visibles.length === 0) {
+			const contenedorGrupo = grupo.closest(".grupo-fecha");
+			if (idComentario === 0) {
+				// Si todos eran nuevos, eliminar completamente el grupo del DOM
+				if (contenedorGrupo) contenedorGrupo.remove();
+			} else {
+				// Si eran existentes, solo ocultar visualmente
+				if (contenedorGrupo) contenedorGrupo.style.display = "none";
+			}
+		}
+	});
 
 
+	wrapper.appendChild(textarea);
+	wrapper.appendChild(iconoEliminar);
+	grupo.appendChild(wrapper);
+}
+
+
+// Acción para nuevo comentario
+document.getElementById("btnAgregarComentario").addEventListener("click", () => {
+	const nuevoTexto = document.getElementById("nuevoComentario").value.trim();
+	if (!nuevoTexto) return;
+
+	const hoy = new Date().toISOString().split("T")[0]; // formato YYYY-MM-DD
+	agregarComentarioVisual(hoy, 0, nuevoTexto);
+
+	document.getElementById("nuevoComentario").value = "";
+});
+
+function getUsuariosActivos() {
+	fetch(server + 'ObtenerUsuariosActivos')
+		.then(res => res.json())
+		.then(usuarios => {
+			const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
+			const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+			// Limpiar el select antes de llenarlo
+			selectUsuRegistro.innerHTML = '';
+			selectUsuRedencion.innerHTML = '';
+
+			// Opción por defecto para select de registro
+			const optionDefaultRegistro = document.createElement("option");
+			optionDefaultRegistro.textContent = "Seleccionar...";
+			optionDefaultRegistro.value = 0;
+			selectUsuRegistro.appendChild(optionDefaultRegistro);
+
+			// Opción por defecto para select de redención
+			const optionDefaultRedencion = document.createElement("option");
+			optionDefaultRedencion.textContent = "Seleccionar...";
+			optionDefaultRedencion.value = 0;
+			selectUsuRedencion.appendChild(optionDefaultRedencion);
+
+			// Llenar con usuarios activos
+			if (usuarios) {
+				usuarios.forEach(usuario => {
+					// Para select de registro
+					const optionRegistro = document.createElement("option");
+					optionRegistro.value = usuario.id;
+					optionRegistro.textContent = usuario.nombreLargo;
+					selectUsuRegistro.appendChild(optionRegistro);
+
+					// Para select de redención
+					const optionRedencion = document.createElement("option");
+					optionRedencion.value = usuario.id;
+					optionRedencion.textContent = usuario.nombreLargo;
+					selectUsuRedencion.appendChild(optionRedencion);
+				});
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron usuarios'
+				});
+
+			}
+
+		})
+		.catch(err => {
+			console.error("Error al cargar usuarios activos:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar los usuarios activos.'
+			});
+		});
+}
+
+
+
+function getUsuariosActivos() {
+	fetch(server + 'ObtenerUsuariosActivos')
+		.then(res => res.json())
+		.then(usuarios => {
+			const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
+			const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+
+			selectUsuRegistro.innerHTML = '';
+			selectUsuRedencion.innerHTML = '';
+
+			// Opción por defecto
+			const optionDefault = new Option("Seleccionar...", 0);
+			selectUsuRegistro.appendChild(optionDefault.cloneNode(true));
+			selectUsuRedencion.appendChild(optionDefault.cloneNode(true));
+			if (usuarios) {
+				usuarios.forEach(usuario => {
+					const option = new Option(usuario.nombreLargo, usuario.id);
+					selectUsuRegistro.appendChild(option.cloneNode(true));
+					selectUsuRedencion.appendChild(option.cloneNode(true));
+				});
+
+
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron usuarios'
+				});
+
+			}
+
+
+		}).catch(err => {
+			console.error("Error al cargar usuarios activos:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar los usuarios activos.'
+			});
+		});
+}
+
+
+function getEstadoPqrs() {
+	fetch(server + 'ObtenerEstadoPqrs')
+		.then(res => res.json())
+		.then(estados => {
+			const selectEstado = document.getElementById("selectEstado");
+			selectEstado.innerHTML = '';
+
+			// Opción por defecto
+			const optionDefault = new Option("Seleccionar...", 0);
+			selectEstado.appendChild(optionDefault);
+			if (estados) {
+				estados.forEach(estado => {
+					const option = new Option(estado.descripcion, estado.idestado);
+					selectEstado.appendChild(option);
+				});
+
+
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron los estados de Pqrs'
+				});
+
+			}
+
+
+		}).catch(err => {
+			console.error("Error al cargar los estados de Pqrs:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar los estados de Pqrs.'
+			});
+		});
+}
 
 
 

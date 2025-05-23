@@ -133,6 +133,25 @@
 								<option value="interna">Interna</option></select>
 						</div>
 						<div class="col-sm-6 form-group">
+							<label>Área Responsable</label><select id="selectAreaResponsable"
+								class="form-control"><option value="tienda" selected>Tienda</option>
+								<option value="contact">Contact</option>
+								<option value="tecnologia">Tecnología</option>
+								<option value="calidad">Calidad</option></select>
+						</div>
+						<div class="col-sm-6 form-group">
+							<label>Registrado por</label><select id="selectUsuarioRegistro"
+								class="form-control"></select>
+						</div>
+						<div class="col-sm-6 form-group">
+							<label>Redimido por</label><select id="selectUsuarioRedencion"
+								class="form-control"></select>
+						</div>
+						<div class="col-sm-6 form-group">
+							<label>Estado</label><select id="selectEstado"
+								class="form-control"></select>
+						</div>
+						<div class="col-sm-6 form-group">
 							<label>Factura Tienda</label><input type="text"
 								id="idpedidotienda" name="idpedidotienda" class="form-control"
 								onchange="validarNumero(this);">
@@ -162,31 +181,41 @@
 						</div>
 
 
-						<div class="col-sm-12 form-group">
-							<label>Área Responsable</label><select id="selectAreaResponsable"
-								class="form-control"><option value="tienda" selected>Tienda</option>
-								<option value="contact">Contact</option>
-								<option value="tecnologia">Tecnología</option>
-								<option value="calidad">Calidad</option></select>
-						</div>
+
 						<div class="col-sm-6 form-group">
 							<label>Factura redención</label><input type="text"
 								id="idpedidoredencion" name="idpedidoredencion"
 								class="form-control" onchange="validarNumero(this);">
 						</div>
-		
+
 						<div class="col-sm-6 form-group d-flex align-items-center">
 							<label class="custom-switch mb-0"> <input type="checkbox"
-								id="descuentoRedimido" name="descuentoRedimido"> <span
-								class="custom-slider"></span>
-							</label> <label for="descuentoRedimido" class="mb-0 ml-2">Descuento
-								redimido</label>
+								id="descuentoRedimido" name="descuentoRedimido"> <!-- Aquí está el cambio -->
+								<span class="custom-slider"></span>
+							</label> <label for="descuentoRedimido" class="mb-0 ml-2">
+								Descuento redimido </label>
 						</div>
 
+
 						<div class="col-sm-12 form-group">
-							<label>Comentarios</label>
-							<textarea name="comentarios" id="comentarios" rows="4"
-								class="form-control"></textarea>
+							<div class="card mt-4">
+								<div class="card-header">
+									<h5 class="mb-0">Comentarios</h5>
+								</div>
+								<div class="card-body">
+									<!-- Historial de comentarios -->
+									<div id="historialComentarios" class="mb-4">
+										<!-- Comentarios cargados dinámicamente por JS -->
+									</div>
+
+									<!-- Nuevo comentario -->
+									<div class="form-group">
+										<textarea id="nuevoComentario" class="form-control" rows="3"></textarea>
+										<button id="btnAgregarComentario" type="button"
+											class="btn btn-primary mt-2">Añadir comentario</button>
+									</div>
+								</div>
+							</div>
 						</div>
 						<div class="col-sm-12 text-lefth">
 							<button type="button" class="btn btn-warning"

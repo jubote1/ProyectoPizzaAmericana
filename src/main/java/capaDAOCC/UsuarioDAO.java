@@ -1,7 +1,12 @@
 package capaDAOCC;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import org.apache.log4j.Logger;
 
 import capaModeloCC.Usuario;
@@ -140,5 +145,44 @@ public class UsuarioDAO {
 		return(usuario);
 		
 	}
+	
+	public static List<Usuario> obtenerUsuarioActivo() {
+		List<Usuario> ListaUsuario = new ArrayList<>();
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection conn = con.obtenerConexionBDPrincipal();
+
+	    String consulta = "SELECT id, nombre, nombre_largo, plataforma ,activo FROM usuario WHERE activo = 1";
+
+	    try (
+	        PreparedStatement stmt = conn.prepareStatement(consulta);
+	        ResultSet rs = stmt.executeQuery()
+	    ) {
+	
+	    	while (rs.next()) {
+	        	Usuario usuario = new Usuario();
+	            usuario = new Usuario();
+	            usuario.setId(rs.getInt("id"));
+	            usuario.setNombreUsuario(rs.getString("nombre"));
+	            usuario.setNombreLargo(rs.getString("nombre_largo"));
+	            usuario.setPlataforma(rs.getString("plataforma"));
+	            usuario.setActivo(rs.getBoolean("activo"));
+
+	            ListaUsuario.add(usuario);
+	        }
+	    } catch (SQLException e) {
+	        logger.info("Error al consultar usuarios activos: " + e.getMessage());
+	    } finally {
+	        try {
+	            conn.close();
+	        } catch (SQLException e) {
+	            logger.info("Error al cerrar conexión: " + e.getMessage());
+	        }
+	    }
+        
+	    return ListaUsuario;
+	    
+	}
+
 	
 }
