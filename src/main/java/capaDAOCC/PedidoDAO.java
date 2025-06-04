@@ -1793,7 +1793,7 @@ public class PedidoDAO {
 	 * @param numeropedido En caso de desearlo se puede filtrar por un n�mero de pedido en espec�fico.
 	 * @return Se retorna un ArrayList con objetos de tipo pedido con la informaci�n de los pedidos consultados.
 	 */
-	public static ArrayList<Pedido> ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
+	public static ArrayList<Pedido> ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel, boolean pedProg)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList <Pedido> consultaPedidos = new ArrayList();
@@ -1822,6 +1822,10 @@ public class PedidoDAO {
 		if(enviadoPixel != -1)
 		{
 			consulta = consulta + " and enviadopixel = " + enviadoPixel;
+		}
+		if(pedProg)
+		{
+			consulta = consulta + " and a.programado = 'S'";
 		}
 		logger.info(consulta);
 		System.out.println(consulta);

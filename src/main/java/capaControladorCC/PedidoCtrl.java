@@ -915,10 +915,10 @@ public class PedidoCtrl {
 	}
 	
 	
-	public String ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
+	public String ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel, boolean pedProg)
 	{
 		JSONArray listJSON = new JSONArray();
-		ArrayList <Pedido> consultaPedidos = PedidoDAO.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel);
+		ArrayList <Pedido> consultaPedidos = PedidoDAO.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel, pedProg);
 		for (Pedido cadaPedido: consultaPedidos){
 			JSONObject cadaPedidoJSON = new JSONObject();
 			cadaPedidoJSON.put("idpedido", cadaPedido.getIdpedido());

@@ -528,6 +528,7 @@ function consultarPedido()
 	var numpedido = $("#numeropedido").val();
 	var estado = $("#selectEstado").val();
 	var estadoTienda = $("#selectEstadoTienda").val();
+	var pedProg = $("#pedProg").is(":checked");
 	if(fechaini == '' || fechaini == null)
 	{
 		alert ('La fecha inicial debe ser diferente a vacía');
@@ -584,7 +585,7 @@ function consultarPedido()
 	if ( $.fn.dataTable.isDataTable( '#grid-encabezadopedido' ) ) {
     		table = $('#grid-encabezadopedido').DataTable();
     }
-	$.getJSON(server + 'ConsultaIntegradaPedidos?fechainicial=' + fechaini +"&fechafinal=" + fechafin + "&tienda=" + tienda +  "&numeropedido=" + numpedido + "&estado=" + estado+"&estadotienda=" + estadoTienda, function(data1){
+	$.getJSON(server + 'ConsultaIntegradaPedidos?fechainicial=' + fechaini +"&fechafinal=" + fechafin + "&tienda=" + tienda +  "&numeropedido=" + numpedido + "&estado=" + estado+"&estadotienda=" + estadoTienda + "&pedidoprogramado=" + pedProg, function(data1){
 	                		
 	                		table.clear().draw();
 							for(var i = 0; i < data1.length;i++){
