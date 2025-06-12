@@ -138,19 +138,24 @@ public class EmpleadoCtrl {
 	            float total_esperado = 0;
 	            float p_t = 0;
 	            int longitud = 0;
-	            
+
+	            float porcentaje_total_sql = (float) json.get("porcentaje_total");
+
+	            // ✅ Salta solo esta iteración si ya tiene valor
+	            if (porcentaje_total_sql != 0) continue;
+
 	            ArrayList<JSONObject> obtenerResultDet = EmpleadoEncuestaDAO.obtenerResultEncuestaOperacionDetalle(idempleadoencuesta);
-	            
+
 	            for (int j = 0; j < obtenerResultDet.size(); j++) {
 	                JSONObject json2 = obtenerResultDet.get(j);
 	                float porcentaje = (float) json2.get("porcentaje");
 	                float respuesta = 0;
 	                String respuestatxt = (String) json2.get("respuesta");
-	                
+
 	                if (respuestatxt != null && !respuestatxt.isEmpty()) {
 	                    respuesta = Float.valueOf(respuestatxt);
 	                }
-	                
+
 	                if (respuesta != 0) {
 	                    if (porcentaje != 0) {
 	                        if (respuesta == -1) {
@@ -161,43 +166,42 @@ public class EmpleadoCtrl {
 	                    }
 	                }
 	            }
-	            
+
 	            for (int j = 0; j < obtenerResultDet.size(); j++) {
 	                JSONObject json2 = obtenerResultDet.get(j);
 	                float porcentaje = (float) json2.get("porcentaje");
 	                float respuesta = 0;
 	                String respuestatxt = (String) json2.get("respuesta");
-	                
+
 	                if (respuestatxt != null && !respuestatxt.isEmpty()) {
 	                    respuesta = Float.valueOf(respuestatxt);
 	                }
-	                
+
 	                if (respuesta != 0) {
 	                    if (respuesta == -1) {
 	                        porcentaje = 0;
-	                    } else {
-	                        if (p_t > 0 && longitud > 0 && porcentaje != 0) {
-	                            porcentaje += p_t / longitud;
-	                        }
+	                    } else if (p_t > 0 && longitud > 0 && porcentaje != 0) {
+	                        porcentaje += p_t / longitud;
 	                    }
-	                    
+
 	                    float valor_final = (float) json2.get("valor_final");
 	                    float valor_esperado = (porcentaje * valor_final) / 100;
 	                    float valor_obtenido = (porcentaje * respuesta) / 100;
-	                    
+
 	                    total_esperado += valor_esperado;
 	                    total_obtenido += valor_obtenido;
 	                }
 	            }
-	            
+
 	            double numeroRedondeado = 0;
 	            if (total_esperado > 0) {
 	                float result_porcentaje = (total_obtenido / total_esperado) * 100;
 	                numeroRedondeado = Math.round(result_porcentaje * 100.0) / 100.0;
 	            }
-	            
+
 	            obtenerResult.get(i).put("porcentaje_total", numeroRedondeado);
 	        }
+
 	    } catch (Exception e) {
 	        System.out.println(e);
 	    }

@@ -3,8 +3,13 @@ package capaDAOCC;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import capaModeloCC.EmpleadoEncuestaDetalle;
 import conexionCC.ConexionBaseDatos;
@@ -12,50 +17,83 @@ import conexionCC.ConexionBaseDatos;
 
 public class EmpleadoEncuestaDetalleDAO {
 
-	public static int insertarEmpleadoEncuestaDetalle(EmpleadoEncuestaDetalle empEncuestaDetalle) {
-		Logger logger = Logger.getLogger("log_file");
-		int idEmpleadoEncuestaDetalle = 0;
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
+	public static JSONObject insertarEmpleadoEncuestaDetalle(List<EmpleadoEncuestaDetalle> lista, float porcentaje_total) {
+	    JSONObject result = new JSONObject();
+	    JSONArray errores = new JSONArray();
+	    int failedCount = 0;
 
-		try {
-			con1 = con.obtenerConexionBDGeneral();
+	    String sql = "INSERT INTO empleado_encuesta_detalle "
+	               + "(idempleadoencuesta, idencuestadetalle, respuesta_si, respuesta_no, observacion, observacion_adi) "
+	               + "VALUES (?, ?, ?, ?, ?, ?)";
 
-			String insert = "INSERT INTO empleado_encuesta_detalle "
-					+ "(idempleadoencuesta, idencuestadetalle, respuesta_si, respuesta_no, observacion, observacion_adi) "
-					+ "VALUES (?, ?, ?, ?, ?, ?)";
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection conn = con.obtenerConexionBDGeneral();
+	         PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-			pstmt = con1.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+	        conn.setAutoCommit(false);
 
-			pstmt.setInt(1, empEncuestaDetalle.getIdEmpleadoEncuesta());
-			pstmt.setInt(2, empEncuestaDetalle.getIdEncuestaDetalle());
-			pstmt.setString(3, empEncuestaDetalle.getRespuestaSi());
-			pstmt.setString(4, empEncuestaDetalle.getRespuestaNo());
-			pstmt.setString(5, empEncuestaDetalle.getObservacion());
-			pstmt.setString(6, empEncuestaDetalle.getObservacionAdicional());
+	        for (EmpleadoEncuestaDetalle det : lista) {
+	            try {
+	                pstmt.setInt(1, det.getIdEmpleadoEncuesta());
+	                pstmt.setInt(2, det.getIdEncuestaDetalle());
+	                pstmt.setString(3, det.getRespuestaSi());
+	                pstmt.setString(4, det.getRespuestaNo());
+	                pstmt.setString(5, det.getObservacion());
+	                pstmt.setString(6, det.getObservacionAdicional());
+	                pstmt.executeUpdate();
 
-			pstmt.executeUpdate();
+	            } catch (SQLException exItem) {
+	                System.out.println("Error insertando detalle con ID " + det.getIdEncuestaDetalle() + ": " + exItem.toString());
+	                errores.put(det.getIdEncuestaDetalle());
+	                failedCount++;
+	            }
+	        }
 
-			rs = pstmt.getGeneratedKeys();
-			if (rs.next()) {
-				idEmpleadoEncuestaDetalle = rs.getInt(1);
-			}
-		} catch (Exception e) {
-			logger.error("Error insertando EmpleadoEncuestaDetalle: " + e.toString());
-			System.out.println("Error: " + e.toString());
-			return 0;
-		} finally {
-			try {
-				if (rs != null) rs.close();
-				if (pstmt != null) pstmt.close();
-				if (con1 != null) con1.close();
-			} catch (Exception e2) {
-				logger.error("Error cerrando recursos: " + e2.toString());
-			}
-		}
+	        conn.commit();
 
-		return idEmpleadoEncuestaDetalle;
+	    } catch (Exception e) {
+	    	  System.out.println("Error en bloque de inserción: " + e.toString());
+	        failedCount = lista.size();
+	        for (EmpleadoEncuestaDetalle det : lista) {
+	            errores.put(det.getIdEncuestaDetalle());
+	        }
+	    }
+	    boolean act = true;
+	    if(porcentaje_total  != 0) {
+	    	 // Actualizar porcentaje
+		   act = actualizarPorcentajeTotalEncuesta(lista.get(0).getIdEmpleadoEncuesta(), porcentaje_total);
+
+	    }
+	   
+	    result.put("errors_insercion", errores);
+	    result.put("failed_count", failedCount);
+	    result.put("porcentaje_actualizado", act);
+	    result.put("success", failedCount == 0);
+
+	    
+	 
+	    return result;
 	}
+
+	public static boolean actualizarPorcentajeTotalEncuesta(int idempleadoencuesta, float porcentaje_total) {
+	    String sqlUpdate = "UPDATE empleado_encuesta "
+	                     + "SET porcentaje_total = ? "
+	                     + "WHERE idempleadoencuesta = ?";
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection conn = con.obtenerConexionBDGeneral();
+	         PreparedStatement pstmt = conn.prepareStatement(sqlUpdate)) {
+
+	        pstmt.setFloat(1, porcentaje_total);
+	        pstmt.setInt(2, idempleadoencuesta);
+
+	        int affectedRows = pstmt.executeUpdate();
+	        return affectedRows > 0;
+
+	    } catch (Exception e) {
+	    	  System.out.println("Error actualizando porcentaje_total: " + e.toString());
+	        return false;
+	    }
+	}
+
 }

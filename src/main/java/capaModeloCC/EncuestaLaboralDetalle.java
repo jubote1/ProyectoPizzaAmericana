@@ -14,9 +14,23 @@ public class EncuestaLaboralDetalle {
 	private String valorAlertar;
 	private String obligatorio;
 	private int  orden;
+	private float porcentaje; 
+	private String dependencia;
 	
 	
 	
+	public String getDependencia() {
+		return dependencia;
+	}
+	public void setDependencia(String dependencia) {
+		this.dependencia = dependencia;
+	}
+	public float getPorcentaje() {
+		return porcentaje;
+	}
+	public void setPorcentaje(float porcentaje) {
+		this.porcentaje = porcentaje;
+	}
 	public int getOrden() {
 		return orden;
 	}
@@ -90,7 +104,7 @@ public class EncuestaLaboralDetalle {
 		this.tipoRespuesta = tipoRespuesta;
 	}
 	public EncuestaLaboralDetalle(int idEncuestaDetalle, int idEncuesta, String descripcion, String tipoRespuesta,
-			double valorInicial, double valorFinal, double valorEscala, double valorDefecto, String alertar, String valorAlertar,int orden) {
+			double valorInicial, double valorFinal, double valorEscala, double valorDefecto, String alertar, String valorAlertar,int orden, float porcentaje) {
 		super();
 		this.idEncuestaDetalle = idEncuestaDetalle;
 		this.idEncuesta = idEncuesta;
@@ -103,6 +117,7 @@ public class EncuestaLaboralDetalle {
 		this.alertar = alertar;
 		this.valorAlertar = valorAlertar;
 		this.orden = orden;
+		this.porcentaje =porcentaje; 
 	}
 	
 	

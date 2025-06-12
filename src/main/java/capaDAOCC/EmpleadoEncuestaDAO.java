@@ -29,7 +29,7 @@ public class EmpleadoEncuestaDAO {
 		String select  = "SELECT a.nombre_largo AS nombre, SUM(observacion)/COUNT(*) AS promedio, (SELECT COUNT(*) FROM empleado_encuesta d WHERE d.id_evaluar = a.id AND d.fecha_ingreso >= '" + fechaInferior + " 00:00:00' AND d.fecha_ingreso <= '" + fechaSuperior + " 23:59:00' AND d.idencuesta = " + idEncuesta + " and d.idtienda = " + idTienda + ") AS cantidad FROM empleado a, empleado_encuesta b, empleado_encuesta_detalle c " + 
 				" WHERE a.id = b.id_evaluar AND b.idempleadoencuesta = c.idempleadoencuesta AND b.fecha_ingreso >= '" + fechaInferior + " 00:00:00' AND b.fecha_ingreso <= '" + fechaSuperior +" 23:59:00' AND b.idencuesta = " + idEncuesta + " and b.idtienda = " + idTienda + " GROUP BY a.nombre_largo, cantidad";
 		Statement stm;
-		System.out.println(select);
+		
 		try
 		{
 			stm = con1.createStatement();
@@ -70,7 +70,7 @@ public class EmpleadoEncuestaDAO {
 		String select  = "SELECT a.nombre_largo AS nombre, SUM(observacion)/COUNT(*) AS promedio, (SELECT COUNT(*) FROM empleado_encuesta d WHERE d.id_evaluar = a.id AND d.fecha_ingreso >= '" + fechaInferior + " 00:00:00' AND d.fecha_ingreso <= '" + fechaSuperior + " 23:59:00' AND d.idencuesta = " + idEncuesta + ") AS cantidad FROM empleado a, empleado_encuesta b, empleado_encuesta_detalle c " + 
 				" WHERE a.id = b.id_evaluar AND b.idempleadoencuesta = c.idempleadoencuesta AND b.fecha_ingreso >= '" + fechaInferior + " 00:00:00' AND b.fecha_ingreso <= '" + fechaSuperior +" 23:59:00' AND b.idencuesta = " + idEncuesta + " GROUP BY a.nombre_largo, cantidad";
 		Statement stm;
-		System.out.println(select);
+	
 		try
 		{
 			stm = con1.createStatement();
@@ -166,7 +166,8 @@ public class EmpleadoEncuestaDAO {
 					+ "    em.nombre_largo AS nombre_empleado,\n"
 					+ "    e.fecha_ingreso,\n"
 					+ "    e.idtienda AS tienda_id,\n"
-					+ "    l.descripcion AS descripcion_encuesta\n"
+					+ "    l.descripcion AS descripcion_encuesta,\n"
+					+ "    e.porcentaje_total\n"
 					+ "\n"
 					+ "FROM \n"
 					+ "    empleado_encuesta AS e\n"
@@ -190,6 +191,7 @@ public class EmpleadoEncuestaDAO {
 	                String nombreEmpleado = resultSet.getString("nombre_empleado");
 	                String fechaIngreso = resultSet.getString("fecha_ingreso");
 	                int tiendaId = resultSet.getInt("tienda_id");
+	                float porcentaje_total =  resultSet.getFloat("porcentaje_total");
 	                String descripcionEncuesta = resultSet.getString("descripcion_encuesta");
 	                JSONObject json = new JSONObject();
 	                json.put("idempleadoencuesta", idempleadoencuesta);
@@ -197,6 +199,7 @@ public class EmpleadoEncuestaDAO {
 	                json.put("fecha_hora", fechaIngreso);
 	                json.put("idtienda", tiendaId);
 	                json.put("descripcion_encuesta", descripcionEncuesta);
+	                json.put("porcentaje_total", porcentaje_total);
 	                repResultadoEncuesta.add(json);
 
 	            }
@@ -245,7 +248,7 @@ public class EmpleadoEncuestaDAO {
 					+ "    \n"
 					+ "\n"
 					+ "FROM \n"
-					+ "    empleado_encuesta_detalle AS d\n"
+					+ "    empleado_encuesta_detalle AS d  "
 					+ "JOIN \n"
 					+ "    encuesta_laboral_detalle AS el ON d.idencuestadetalle = el.idencuestadetalle\n"
 					+ "WHERE \n"
@@ -258,6 +261,7 @@ public class EmpleadoEncuestaDAO {
 
 	            // Procesar los resultados
 	            while (resultSet.next()) {
+	      
 	                // Acceder a los valores de las columnas
 	                String item = resultSet.getString("item");
 	                String tipo_respuesta = resultSet.getString("tipo_respuesta");
@@ -300,7 +304,8 @@ public class EmpleadoEncuestaDAO {
             	System.out.println(e.toString());
             }
         }
-
+		
+	
 		return repResultadoEncuesta;
 	}
 	
