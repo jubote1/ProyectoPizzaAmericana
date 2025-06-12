@@ -40,7 +40,7 @@ public class ObtenerEncuestaDetalleTiendasAPP extends HttpServlet {
 		EncuestaCtrl encCtrl = new EncuestaCtrl();
 		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
         String respuesta = encCtrl.obtenerEncLaboralDetalle(idencuesta);
-        System.out.println(respuesta);
+
         PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}

@@ -19,8 +19,15 @@ public class FidelizacionCtrl {
 	public String existeClienteFidelizacion(String correo)
 	{
 		JSONObject respuesta = new JSONObject();
-		boolean existe = ClienteFidelizacionDAO.existeClienteFidelizacion(correo);
-		respuesta.put("respuesta", existe);
+		ClienteFidelizacion existe = ClienteFidelizacionDAO.obtenerClienteFidelizacion(correo);
+		
+		if(existe != null) {
+			respuesta.put("activo", existe.getActivo());
+			respuesta.put("respuesta", true);
+		}else {
+			respuesta.put("respuesta", false);
+		}
+		
 		return(respuesta.toJSONString());
 	}
 	
@@ -307,12 +314,12 @@ public class FidelizacionCtrl {
 
 	    if (idCliente == null || idCliente <= 0) {
 	        int id = ClienteDAO.insertarClienteWb(cliente);
-	        System.out.println("Cliente registrado con ID: " + id);
+	   
 	        return id > 0;
 	    } else {
 	        cliente.setIdcliente(idCliente);
 	        boolean actualizado = ClienteDAO.actualizarClienteWb(cliente);
-	        System.out.println("Cliente actualizado: " + actualizado);
+	  
 	        return actualizado;
 	    }
 	}

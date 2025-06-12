@@ -1,6 +1,8 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+
 import org.apache.log4j.Logger;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
@@ -9,6 +11,7 @@ import capaModeloCC.EncuestaLaboralDetalle;
 import conexionCC.ConexionBaseDatos;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -20,83 +23,55 @@ import java.util.ArrayList;
 public class EncuestaLaboralDetalleDAO {
 	
 
-	public static ArrayList<EncuestaLaboralDetalle> obtenerEncLaboralDetalle(int idEncuesta)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDGeneral();
-		ArrayList<EncuestaLaboralDetalle> encLaboralDetalle = new ArrayList<EncuestaLaboralDetalle>();
-		EncuestaLaboralDetalle encLaboralDetTemp = new EncuestaLaboralDetalle(0, 0, "", "", 0, 0, 0, 0,"", "",0);
-		try
-		{
-			Statement stm = con1.createStatement();
-			String consulta = "select * from encuesta_laboral_detalle where idencuesta =" + idEncuesta + " order by orden";
-			logger.info(consulta);
-			ResultSet rs = stm.executeQuery(consulta);
-			int idEncuestaDetalle;
-			String descripcion;
-			String tipoRespuesta;
-			double valorInicial, valorFinal, valorEscala, valorDefecto;
-			String alertar;
-			String valorAlertar;
-			String obligatorio;
-			int orden;
-			while(rs.next()){
-				idEncuestaDetalle = rs.getInt("idencuestadetalle");
-				descripcion = rs.getString("descripcion");
-				tipoRespuesta = rs.getString("tipo_respuesta");
-				orden = rs.getInt("orden");
-				try
-				{
-					valorInicial = rs.getDouble("valor_inicial");
-				}catch(Exception e)
-				{
-					valorInicial = 0;
-				}
-				try
-				{
-					valorFinal = rs.getDouble("valor_final");
-				}catch(Exception e)
-				{
-					valorFinal = 0;
-				}
-				try
-				{
-					valorEscala = rs.getDouble("valor_escala");
-				}catch(Exception e)
-				{
-					valorEscala = 0;
-				}
-				try
-				{
-					valorDefecto = rs.getDouble("valor_defecto");
-				}catch(Exception e)
-				{
-					valorDefecto = 0;
-				}
-				alertar = rs.getString("alertar");
-				valorAlertar = rs.getString("valor_alertar");
-				//obligatorio = rs.getString("obligatorio");
-				encLaboralDetTemp = new EncuestaLaboralDetalle(idEncuestaDetalle, idEncuesta, descripcion, tipoRespuesta, valorInicial, valorFinal, valorEscala, valorDefecto, alertar, valorAlertar,orden);
-				encLaboralDetalle.add(encLaboralDetTemp);
-			}
-			rs.close();
-			stm.close();
-			con1.close();
-		}catch (Exception e){
-			logger.error(e.toString());
-			
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-		}
-		return(encLaboralDetalle);
-		
+	public static ArrayList<EncuestaLaboralDetalle> obtenerEncLaboralDetalle(int idEncuesta) {
+
+	    Logger logger = Logger.getLogger("log_file");
+	    ArrayList<EncuestaLaboralDetalle> detalles = new ArrayList<>();
+	    String sql = "SELECT ed.idencuestadetalle, ed.descripcion, ed.tipo_respuesta, ed.valor_inicial, "
+	               + "ed.valor_final, ed.valor_escala, ed.valor_defecto, ed.alertar, ed.valor_alertar, "
+	               + "ed.orden, ed.porcentaje, e.dependencia "
+	               + "FROM encuesta_laboral_detalle ed "
+	               + "INNER JOIN encuesta_laboral e ON e.idencuesta = ed.idencuesta "
+	               + "WHERE e.idencuesta = ? "
+	               + "ORDER BY ed.orden";
+
+	    try (Connection con = new ConexionBaseDatos().obtenerConexionBDGeneral();
+	         PreparedStatement ps = con.prepareStatement(sql)) {
+
+	        ps.setInt(1, idEncuesta);
+	        ResultSet rs = ps.executeQuery();
+
+	        while (rs.next()) {
+
+	            int idDetalle = rs.getInt("idencuestadetalle");
+	            String descripcion = rs.getString("descripcion");
+	            String tipoRespuesta = rs.getString("tipo_respuesta");
+	            double valorInicial = rs.getDouble("valor_inicial");
+	            double valorFinal = rs.getDouble("valor_final");
+	            double valorEscala = rs.getDouble("valor_escala");
+	            double valorDefecto = rs.getDouble("valor_defecto");
+	            String alertar = rs.getString("alertar");
+	            String valorAlertar = rs.getString("valor_alertar");
+	            int orden = rs.getInt("orden");
+	            float porcentaje = rs.getFloat("porcentaje");
+	            String dependencia = rs.getString("dependencia");
+
+	            EncuestaLaboralDetalle detalle = new EncuestaLaboralDetalle(
+	                idDetalle, idEncuesta, descripcion, tipoRespuesta,
+	                valorInicial, valorFinal, valorEscala, valorDefecto,
+	                alertar, valorAlertar, orden, porcentaje
+	            );
+	            detalle.setDependencia(dependencia);
+	            detalles.add(detalle);
+	        }
+
+	    } catch (SQLException e) {
+	        logger.error("Error al obtener encuesta laboral detalle: " + e.toString());
+	    }
+
+	    return detalles;
 	}
-	
+
 	
 
 
