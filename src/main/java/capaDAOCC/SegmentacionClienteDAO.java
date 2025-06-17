@@ -57,7 +57,7 @@ public class SegmentacionClienteDAO {
 	}
 
 	public List<ClienteSegmento> obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad) {
+			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal) {
 
 		List<ClienteSegmento> clientes = new ArrayList<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
@@ -89,6 +89,11 @@ public class SegmentacionClienteDAO {
 		// Aqu� viene lo importante:
 		if (diasMinimosSinPublicidad > 0) {
 			sql += "AND (b.ultima_fecha_publicidad IS NULL OR b.ultima_fecha_publicidad <= CURRENT_DATE - INTERVAL ? DAY) ";
+		}
+		
+		if(!canal.equals(new String("")))
+		{
+			sql += "AND a.origen = '" + canal + "' ";
 		}
 
 		sql += "AND a.fechapedido >= ? " + "GROUP BY b.idcliente, b.nombre, b.telefono, c.nombre, b.email "

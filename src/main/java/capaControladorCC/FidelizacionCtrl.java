@@ -1,6 +1,8 @@
 package capaControladorCC;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -9,9 +11,16 @@ import capaDAOCC.ClienteDAO;
 import capaDAOCC.ClienteFidelizacionDAO;
 import capaDAOCC.CodigoRedencionPuntosDAO;
 import capaDAOCC.FidelizacionTransaccionDAO;
+import capaDAOCC.IntegracionCRMDAO;
 import capaModeloCC.ClienteFidelizacion;
 import capaModeloCC.CodigoRedencionPuntos;
 import capaModeloCC.FidelizacionTransaccion;
+import capaModeloCC.IntegracionCRM;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class FidelizacionCtrl {
 	
@@ -43,9 +52,76 @@ public class FidelizacionCtrl {
 	{
 		JSONObject respuesta = new JSONObject();
 		boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo);
+		//Enviamos correo Bienvenida
+		enviarCorreoBienvenida(correo);
+	    //Finalizacion
 		respuesta.put("respuesta", inserto);
 		return(respuesta.toJSONString());
 	}
+	
+	public void enviarCorreoBienvenida(String correo)
+	{
+		//Realizamos modificación para que cuando se haga matricula de programa de fidelizacion
+				IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
+				//Se realiza logica para envio de correo
+				OkHttpClient client = new OkHttpClient();
+			    // Configuración global
+			    String apiKey = brevo.getAccessToken();
+			    String senderEmail = "mercadeo@pizzaamericana.com.co";
+			    String senderName = "Pizza Americana";
+			    String subjectDefault = "Puntos, premios y mas sabor para ti🍕";
+			    int templateId = 14; // ID de la plantilla en Brevo
+			    // Construcción del JSON principal
+				JSONObject paramsDefault = new JSONObject();
+				paramsDefault.put("nombre", "Correo");
+		        JSONObject jsonRequest = new JSONObject();
+		        jsonRequest.put("subject", subjectDefault);
+		        JSONObject jsonObjectCorreo = new JSONObject();
+		        jsonObjectCorreo.put("email", senderEmail);
+		        jsonObjectCorreo.put("name", senderName);
+		        jsonRequest.put("sender", jsonObjectCorreo);
+		        jsonRequest.put("templateId", templateId);
+		        jsonRequest.put("params", paramsDefault);
+		        JSONArray messageVersions = new JSONArray();
+		        JSONObject messageVersion = new JSONObject();
+		        JSONObject jsonObjectDest = new JSONObject();
+		        JSONArray jsonArrayCorreo = new JSONArray();
+		        JSONObject jsonObjectTO = new JSONObject();
+		        jsonObjectTO.put("email", correo);
+		        jsonObjectTO.put("name", "Correo");
+		        jsonArrayCorreo.add(jsonObjectTO);
+		        JSONObject params = new JSONObject();
+		        params.put("nombre", "Correo");
+		        messageVersion.put("to", jsonArrayCorreo);
+		        messageVersion.put("params", params);
+		        messageVersion.put("subject", "Puntos, premios y mas sabor para ti🍕");  
+	            messageVersions.add(messageVersion);
+		        jsonRequest.put("messageVersions", messageVersions);
+
+		        // Envío de la solicitud HTTP
+		        RequestBody body = RequestBody.create(MediaType.parse("application/json"), jsonRequest.toString());
+		        Request request = new Request.Builder()
+		                .url("https://api.brevo.com/v3/smtp/email")
+		                .post(body)
+		                .addHeader("Content-Type", "application/json")
+		                .addHeader("Accept", "application/json")
+		                .addHeader("api-key", apiKey)
+		                .build();
+		        // Ejecución de la solicitud
+		        try (Response response = client.newCall(request).execute()) {
+		            System.out.println("Response Code: " + response.code());
+		            System.out.println("Response Body: " + response.body().string());
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+	}
+	
+	public static void main(String[] args)
+	{
+		FidelizacionCtrl prueba = new FidelizacionCtrl();
+		prueba.enviarCorreoBienvenida("jubote1@gmail.com");
+	}
+	
 	
 
 	public String activarClienteFidelizacion(String correo)
