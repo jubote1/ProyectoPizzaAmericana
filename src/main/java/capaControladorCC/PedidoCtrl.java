@@ -95,6 +95,7 @@ import capaDAOCC.TmpPedidosPoligonoDAO;
 import capaDAOPOS.EmpleadoEventoDAO;
 import capaDAOPOS.EmpleadoTemporalDiaDAO;
 import capaModeloCC.AdicionTiendaVirtual;
+import capaModeloCC.AlertaEntregaDom;
 import capaModeloCC.Cliente;
 import capaModeloCC.ComentarioPqrs;
 import capaModeloCC.Correo;
@@ -12578,11 +12579,19 @@ public class PedidoCtrl {
 		return(listJSON.toJSONString());
 	}
 	
+
+	public static String registrarAlertaEntregaDom(AlertaEntregaDom alertaEntregaDom) {
+		//int idpedido ,int idusuario, String descripcion, boolean error ,double lat_dom ,double long_dom ,double lat_cli ,double long_cli
+		JSONObject respuesta = new JSONObject();
+		boolean registroAlerta = PedidoDAO.registrarAlertaEntregaDom(alertaEntregaDom);
+		respuesta.put("success", registroAlerta);
+
 	public String obtenerCantidadProductoVendidoFecha(int idProducto)
 	{
 		JSONObject respuesta = new JSONObject();
 		int cantidad = PedidoDAO.obtenerCantidadProductoVendidoFecha(idProducto);
 		respuesta.put("cantidad", cantidad);
+
 		return(respuesta.toJSONString());
 	}
 	
