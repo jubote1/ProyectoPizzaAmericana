@@ -393,6 +393,12 @@ document.addEventListener("DOMContentLoaded", function() {
 		const rangoFechas = document.getElementById("rangoFechas").value.trim();
 		const tiendas = Array.from(document.querySelectorAll("#selectTiendas option:checked")).map(option => option.value);
 		const medio = document.getElementById("selectMedio").value.trim();
+		const canal = document.getElementById("selectCanal").value.trim();
+
+		if(canal != "TODOS")
+		{
+			datos.canal = canal;
+		}
 
 		let fechaInicio = "", fechaMaxima = "";
 		if (rangoFechas) {

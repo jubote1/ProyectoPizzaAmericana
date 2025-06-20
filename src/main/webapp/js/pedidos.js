@@ -373,6 +373,23 @@ $("#fechapedido").change(function(){
         $('#num3').val(datos.num3);
         $('#telcelular').val(datos.telefonocelular);
         $('#email').val(datos.email);
+        //En esta parte del email validaremos si está en un plan de fidelizacion
+        $.ajax({ 
+                        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo='+ datos.email, 
+                        dataType: 'json', 
+                        async: false, 
+                        success: function(dataResp){ 
+                            if(dataResp.respuesta)
+                            {
+                                $.alert('El cliente ya existe en el programa de fidelizacion.');
+                                $('#email').css("background-color","#00FF00");
+                            }else
+                            {
+                                $('#email').css("background-color","#FFFFFF");
+                            }
+                            
+                        } 
+            });
         //Agregamos los campos de facturación electronica
         if(datos.clientesiniden == 'N')
         {
@@ -3040,6 +3057,7 @@ function ReiniciarPedido()
 																	$('#telefono').val('');
                                                                     $('#telcelular').val('');
                                                                     $('#email').val('');
+                                                                    $('#email').css("background-color","#FFFFFF");
                                                                     $('#clientesinidentificar').prop('checked', true);
                                                                     $('#emailfact').val('');
                                                                     $('#selectTipoPersona').val('');
@@ -3457,6 +3475,7 @@ function ConfirmarPedido()
 									$('#telefono').val('');
                                     $('#telcelular').val('');
                                     $('#email').val('');
+                                    $('#email').css("background-color","#FFFFFF");
                                     $('#clientesinidentificar').prop('checked', true);
                                     $('#emailfact').val('');
                                     $('#selectTipoPersona').val('');
@@ -5265,6 +5284,7 @@ function limpiarSeleccionCliente()
 		$('#telefono').val("");
         $('#telcelular').val('');
         $('#email').val('');
+        $('#email').css("background-color","#FFFFFF");
         $('#clientesinidentificar').prop('checked', true);
         $('#emailfact').val('');
         $('#selectTipoPersona').val('');

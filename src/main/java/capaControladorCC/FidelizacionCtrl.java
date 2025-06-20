@@ -1,15 +1,26 @@
 package capaControladorCC;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import capaModeloCC.Cliente;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.ClienteFidelizacionDAO;
+import capaDAOCC.CodigoRedencionPuntosDAO;
 import capaDAOCC.FidelizacionTransaccionDAO;
+import capaDAOCC.IntegracionCRMDAO;
 import capaModeloCC.ClienteFidelizacion;
+import capaModeloCC.CodigoRedencionPuntos;
 import capaModeloCC.FidelizacionTransaccion;
+import capaModeloCC.IntegracionCRM;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class FidelizacionCtrl {
 	
@@ -29,13 +40,88 @@ public class FidelizacionCtrl {
 		return(respuesta.toJSONString());
 	}
 	
+	public boolean existeClienteFidelizacionBoolean(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean existe = ClienteFidelizacionDAO.existeClienteFidelizacion(correo);
+		return(existe);
+
+	}
+	
 	public String insertarClienteFidelizacion(String correo)
 	{
 		JSONObject respuesta = new JSONObject();
 		boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo);
+		//Enviamos correo Bienvenida
+		enviarCorreoBienvenida(correo);
+	    //Finalizacion
 		respuesta.put("respuesta", inserto);
 		return(respuesta.toJSONString());
 	}
+	
+	public void enviarCorreoBienvenida(String correo)
+	{
+		//Realizamos modificación para que cuando se haga matricula de programa de fidelizacion
+				IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
+				//Se realiza logica para envio de correo
+				OkHttpClient client = new OkHttpClient();
+			    // Configuración global
+			    String apiKey = brevo.getAccessToken();
+			    String senderEmail = "mercadeo@pizzaamericana.com.co";
+			    String senderName = "Pizza Americana";
+			    String subjectDefault = "Puntos, premios y mas sabor para ti🍕";
+			    int templateId = 14; // ID de la plantilla en Brevo
+			    // Construcción del JSON principal
+				JSONObject paramsDefault = new JSONObject();
+				paramsDefault.put("nombre", "Correo");
+		        JSONObject jsonRequest = new JSONObject();
+		        jsonRequest.put("subject", subjectDefault);
+		        JSONObject jsonObjectCorreo = new JSONObject();
+		        jsonObjectCorreo.put("email", senderEmail);
+		        jsonObjectCorreo.put("name", senderName);
+		        jsonRequest.put("sender", jsonObjectCorreo);
+		        jsonRequest.put("templateId", templateId);
+		        jsonRequest.put("params", paramsDefault);
+		        JSONArray messageVersions = new JSONArray();
+		        JSONObject messageVersion = new JSONObject();
+		        JSONObject jsonObjectDest = new JSONObject();
+		        JSONArray jsonArrayCorreo = new JSONArray();
+		        JSONObject jsonObjectTO = new JSONObject();
+		        jsonObjectTO.put("email", correo);
+		        jsonObjectTO.put("name", "Correo");
+		        jsonArrayCorreo.add(jsonObjectTO);
+		        JSONObject params = new JSONObject();
+		        params.put("nombre", "Correo");
+		        messageVersion.put("to", jsonArrayCorreo);
+		        messageVersion.put("params", params);
+		        messageVersion.put("subject", "Puntos, premios y mas sabor para ti🍕");  
+	            messageVersions.add(messageVersion);
+		        jsonRequest.put("messageVersions", messageVersions);
+
+		        // Envío de la solicitud HTTP
+		        RequestBody body = RequestBody.create(MediaType.parse("application/json"), jsonRequest.toString());
+		        Request request = new Request.Builder()
+		                .url("https://api.brevo.com/v3/smtp/email")
+		                .post(body)
+		                .addHeader("Content-Type", "application/json")
+		                .addHeader("Accept", "application/json")
+		                .addHeader("api-key", apiKey)
+		                .build();
+		        // Ejecución de la solicitud
+		        try (Response response = client.newCall(request).execute()) {
+		            System.out.println("Response Code: " + response.code());
+		            System.out.println("Response Body: " + response.body().string());
+		        } catch (IOException e) {
+		            e.printStackTrace();
+		        }
+	}
+	
+	public static void main(String[] args)
+	{
+		FidelizacionCtrl prueba = new FidelizacionCtrl();
+		prueba.enviarCorreoBienvenida("jubote1@gmail.com");
+	}
+	
 	
 
 	public String activarClienteFidelizacion(String correo)
@@ -79,6 +165,21 @@ public class FidelizacionCtrl {
 		
 		return(respuesta.toJSONString());
 	}
+	
+	/**
+	 * Método que se encarga de redimir los puntos del plan de fidelización
+	 * @param correo
+	 * @param puntosRedimir
+	 * @param idTienda
+	 * @param idPedidoTienda
+	 * @return
+	 */
+	public double redimirPuntosClienteFidelizacion(String correo, double puntosRedimir)
+	{
+		double puntosRestantes =  0;
+		puntosRestantes=  ClienteFidelizacionDAO.redimirPuntosClienteFidelizacion(correo, puntosRedimir);
+		return(puntosRestantes);
+	}
 
 	public String  obtenerFidelizacionTransacciones(String correo)
 	{
@@ -107,6 +208,64 @@ public class FidelizacionCtrl {
 		double puntos = ClienteFidelizacionDAO.obtenerCantidadPuntosCliente(correo);
 		respuesta.put("puntos", puntos);
 		return(respuesta.toJSONString());
+	}
+	
+	
+	/**
+	 * Método que se encarga de validar la redención de los puntos por un cliente determinado con su correo
+	 * @param correo
+	 * @param puntosRedimir
+	 * @return
+	 */
+	public String validarRedencionPuntos(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		ClienteFidelizacion clienteF = ClienteFidelizacionDAO.obtenerClienteFidelizacion(correo);
+
+        if (clienteF == null) {
+            // No existe en fidelización
+            respuesta.put("respuesta", "NOK");
+            respuesta.put("puntos", 0);
+            return respuesta.toJSONString();
+        }
+        
+        if(clienteF != null)
+        {
+        	respuesta.put("respuesta", "OK");
+        	respuesta.put("puntos", clienteF.getPuntosVigentes());
+        	
+        }
+		return(respuesta.toJSONString());
+	}
+	
+	
+	/**
+	 * Método que crea un código y lo inserta en la tabla de codigo para redención de puntos para posteriormente validar
+	 * @param codRed
+	 * @return
+	 */
+	public String crearCodigoValidarRedencionPuntos(CodigoRedencionPuntos codRed)
+	{
+		JSONObject respuesta = new JSONObject();
+		PromocionesCtrl promoCtrl = new PromocionesCtrl();
+		String codigoRedencionGen = promoCtrl.generarCodigoRedencionPuntos();
+		codRed.setCodigo(codigoRedencionGen);
+		CodigoRedencionPuntosDAO.insertarCodigoRedencionPuntos(codRed);
+        respuesta.put("codigo", codigoRedencionGen);
+		return(respuesta.toJSONString());
+	}
+	
+	public String validarExistenciaCodigoRedencion(String codigo, String correo, String fechaSistema)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean existeCodigo = CodigoRedencionPuntosDAO.validarExistenciaCodigoRedencion(codigo, correo, fechaSistema);
+		if(existeCodigo)
+		{
+			respuesta.put("respuesta", true);
+		}else {
+			respuesta.put("respuesta", false);
+		}
+		return(respuesta.toJSONString());	
 	}
 	
 	
@@ -154,6 +313,16 @@ public class FidelizacionCtrl {
 	    return respuesta.toJSONString();
 	}
 
+	/**
+	 * Método que retorna el cliente fidelización dado un correo
+	 * @param correo
+	 * @return
+	 */
+	public ClienteFidelizacion ConsultarClienteFidelizacionOBJ(String correo) 
+	{
+	    ClienteFidelizacion clienteF = ClienteFidelizacionDAO.obtenerClienteFidelizacion(correo);
+	    return(clienteF);
+	}
 
 
 	public String RegistrarClienteFidelizacionWb(String correo, String nombre, String telefono, String fechaNacimiento, String apellido, int idtienda, String politicaDatos) {
@@ -232,6 +401,39 @@ public class FidelizacionCtrl {
 	}
 
 
+
+	public String realizarRedencionPuntos(String codigo, String  correo, double puntosRedimir, int idTienda, int idPedido)
+	{
+		JSONObject respuesta = new JSONObject();
+
+		boolean creaTransaccion = false;
+		ClienteFidelizacion cliente = ConsultarClienteFidelizacionOBJ(correo);
+		if(cliente == null)
+		{
+			//Cliente no existe en plan de fidelizacion
+			respuesta.put("respuesta", "NOK2");
+			respuesta.put("puntosrestantes", 0);
+			return(respuesta.toJSONString());
+		}
+		if(cliente.getPuntosVigentes() < puntosRedimir)
+		{
+			//No hay puntos suficientes
+			respuesta.put("respuesta", "NOK1");
+			respuesta.put("puntosrestantes", 0);
+			return(respuesta.toJSONString());
+		}
+		//Marcamos como validado el código
+		CodigoRedencionPuntosDAO.marcarValidadoRedencionPuntos(codigo);
+		//Crearemos transacción para que quede la información
+		FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedido, 0, puntosRedimir);
+		creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
+		//Posteriormente hacemos la resta de los puntos
+		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir);
+		respuesta.put("respuesta", "OK");
+		respuesta.put("puntosrestantes", puntosRestantes);
+		return(respuesta.toJSONString());
+		
+	}
 
 
 }

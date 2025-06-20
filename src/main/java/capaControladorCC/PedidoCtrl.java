@@ -1,5 +1,4 @@
 package capaControladorCC;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -917,10 +916,10 @@ public class PedidoCtrl {
 	}
 	
 	
-	public String ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
+	public String ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel, boolean pedProg)
 	{
 		JSONArray listJSON = new JSONArray();
-		ArrayList <Pedido> consultaPedidos = PedidoDAO.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel);
+		ArrayList <Pedido> consultaPedidos = PedidoDAO.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel, pedProg);
 		for (Pedido cadaPedido: consultaPedidos){
 			JSONObject cadaPedidoJSON = new JSONObject();
 			cadaPedidoJSON.put("idpedido", cadaPedido.getIdpedido());
@@ -4902,7 +4901,7 @@ public class PedidoCtrl {
 //	}
 	
 	//TIENDA VIRTUAL KUNO
-	public static void main(String[] args) throws IOException
+	public static void main2(String[] args) throws IOException
 	{	
 		PedidoCtrl pedCtrl = new PedidoCtrl();
 		/*String strInicial = "{\"count\":1,\"orders\":[{\"instructions\":\"\",\"coupons\":[492832],\"tax_list\":[],\"missed_reason\":null,\"billing_details\":null,\"fulfillment_option\":null,\"table_number\":null,\"ready\":false,\"updated_at\":\"2024-07-10T16:41:38.000Z\",\"id\":891094316,\"total_price\":42000,\"sub_total_price\":39000,\"tax_value\":0,\"persons\":0,\"latitude\":\"6.2596580486090545\",\"longitude\":\"-75.55999257605743\",\"client_first_name\":\"Pedido\",\"client_last_name\":\"PRUEBAA\",\"client_email\":\"pedidopruebaAA@gmail.com\",\"client_phone\":\"+573124066229\",\"restaurant_name\":\"Pizza Americana Manrique Piloto\",\"currency\":\"COP\",\"type\":\"delivery\",\"status\":\"accepted\",\"source\":\"website\",\"pin_skipped\":false,\"accepted_at\":\"2024-07-10T16:41:38.000Z\",\"tax_type\":\"GROSS\",\"tax_name\":\"Sales Tax\",\"fulfill_at\":\"2024-07-10T17:41:38.000Z\",\"client_language\":\"es\",\"integration_payment_provider\":null,\"integration_payment_amount\":0,\"reference\":null,\"restaurant_id\":267607,\"client_id\":68478556,\"restaurant_phone\":\"+5744444553\",\"restaurant_timezone\":\"America/Bogota\",\"delivery_zone_name\":\"Piloto\",\"outside_delivery_area\":null,\"card_type\":null,\"used_payment_methods\":[\"CASH\"],\"company_account_id\":993823,\"pos_system_id\":29888,\"restaurant_key\":\"r1RkYFNQZzaCk9yxTgqOdQjHsJiFnPTbR\",\"restaurant_country\":\"Colombia\",\"restaurant_city\":\"Medellin\",\"restaurant_zipcode\":\"050011\",\"restaurant_street\":\"Calle 68 #43-05\",\"restaurant_latitude\":\"6.263416100000011\",\"restaurant_longitude\":\"-75.55329222209016\",\"client_marketing_consent\":true,\"restaurant_token\":\"11\",\"gateway_transaction_id\":null,\"gateway_type\":null,\"client_order_count\":0,\"api_version\":2,\"payment\":\"CASH\",\"for_later\":false,\"client_address\":\"Cra. 48 #63A-35, Medellín\",\"client_address_parts\":{\"street\":\"Cra. 48 #63A-35\",\"city\":\"Medellín\"},\"items\":[{\"id\":1184916042,\"name\":\"Deditos\",\"total_item_price\":11000,\"price\":0,\"quantity\":1,\"instructions\":null,\"type\":\"promo_cart_item\",\"type_id\":492832,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916093,\"name\":\"DEDITOS DE MASA CON QUESO\",\"total_item_price\":11000,\"price\":11000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655698,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":1184916042,\"item_discount\":11000,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184916585,\"name\":\"DELIVERY_FEE\",\"total_item_price\":3000,\"price\":3000,\"quantity\":1,\"instructions\":null,\"type\":\"delivery_fee\",\"type_id\":565857,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[]},{\"id\":1184917115,\"name\":\"PIZZA AMERICANA\",\"total_item_price\":39000,\"price\":19000,\"quantity\":1,\"instructions\":\"\",\"type\":\"item\",\"type_id\":8655672,\"tax_rate\":0,\"tax_value\":0,\"parent_id\":null,\"item_discount\":0,\"cart_discount_rate\":0,\"cart_discount\":0,\"tax_type\":\"GROSS\",\"options\":[{\"id\":1028538629,\"name\":\"Mediana (6 porciones)\",\"price\":16000,\"group_name\":\"Tamaño\",\"quantity\":1,\"type\":\"size\",\"type_id\":6982284},{\"id\":1028538630,\"name\":\"Coca Cola Zero\",\"price\":4000,\"group_name\":\"Selecciona tu bebida 1.5 Litros\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680737},{\"id\":1028538631,\"name\":\"Sal de Ajo\",\"price\":0,\"group_name\":\"Condimentos\",\"quantity\":1,\"type\":\"option\",\"type_id\":8680744}]}]}]}";
@@ -6920,6 +6919,54 @@ public class PedidoCtrl {
 				+ "                    \"value\": \"\"\r\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868055,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868057,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868059,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868061,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868063,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
+				+ "        } ,\r\n"
+				+ "        {\r\n"
+				+ "             \"field_id\": 868065,\r\n"
+				+ "            \"values\": [\r\n"
+				+ "                {\r\n"
+				+ "                    \"value\": \"\"\r\n"
+				+ "                }\r\n"
+				+ "            ]\r\n"
 				+ "        }\r\n"
 				+ "    ]\r\n"
 				+ "    }\r\n"
@@ -7279,7 +7326,7 @@ public class PedidoCtrl {
 		}else
 		{
 			//No necesariamente si solo es promoción también se debe validar si es combo para todos
-			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA"))))
+			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA")) || nombreDelCombo.equals(new String("COMBO FUTBOLERO")) ))
 			{
 				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento);
 			}else
@@ -7318,6 +7365,305 @@ public class PedidoCtrl {
 						PedidoDAO.InsertarDetallePedido(detPedidoInc);
 					}
 				}
+			}
+		}
+		return(log);
+	}
+	
+	
+	/**
+	 * Método que se encarga pizzas o productos adicionales dentro de un pedido del CRMBOT
+	 */
+	public String insertarProductoBOTCRMMultiple(int idPedido, String nombreDelCombo, String sabor1, String sabor2, String adicion, String bebida, String detalle)
+	{
+		ParametrosCtrl parCtrl = new ParametrosCtrl();
+		//Información del domicilio
+		int idProductoDomicilio = 0;
+		double valorDomicilio = 0;
+		int idEspecialidad = 0;
+		int idEspecialidad2 = 0;
+		int idSaborTipoLiquido = 0;
+		int idSaborTipoLiquido2 = 0;
+		//Tendremos un arreglo con las adiciones para este line_items
+		ArrayList<AdicionTiendaVirtual> adiciones = new ArrayList();
+		//Tendremos un arreglo con los condimentos
+		ArrayList<AdicionTiendaVirtual> modificadoresCon = new ArrayList();
+		//Creamos objeto de AdicionTiendaVirtual temporal
+		AdicionTiendaVirtual adiTemp = new AdicionTiendaVirtual();
+		ArrayList<ProductoIncluido> productosIncluidos = PedidoDAO.obtenerProductosIncluidos();
+		//Procesamos nombre del combo
+		int idProducto = 0;
+		int idProductoCon = 0;
+		String strCON = "";
+		int idProductoAcompa = 0;
+		int cantidad = 1;
+		boolean esPromocion = false;
+		int idProductoAdicion = 0;
+		String strAdiciones = "";
+		int idDetInser = 0;
+		double valorUnitarioAdicion = 0;
+		double valorUnitarioCon = 0;
+		double valorUnitario = 0;
+		double valorUnitario2 = 0;
+		double valorAdicional = 0;
+		double valorAdicional2 = 0;
+		int idDetallePedido = 0;
+		ExcepcionPrecio excepcionPrecioTemp = parCtrl.homologarExcepcionTiendaVirtual(nombreDelCombo);
+		int idExcepcion = excepcionPrecioTemp.getIdExcepcion();
+		double valorExcepcion = excepcionPrecioTemp.getPrecio();
+		String log = "";
+		//Hacemos la validación de si no se logró identificar dentro de los productos de precio menú 
+		if(excepcionPrecioTemp.getIdExcepcion() != 0)
+		{
+			idProducto = excepcionPrecioTemp.getIdProducto();
+			valorUnitario = valorExcepcion;
+			esPromocion = true;
+		}else
+		{
+			idProducto = parCtrl.homologarProductoTiendaVirtual(nombreDelCombo);
+			valorUnitario = ProductoDAO.retornarProducto(idProducto).getPreciogeneral();
+		}
+		if(detalle.equals(new String("")))
+		{
+			//Procesamos cuando es la pizza Burger
+			//validaremos si nombre del combo tiene la palabra combo
+			String sinMod = "";
+			int idProductoSin = 0;
+			if(nombreDelCombo.contains("burger"))
+			{
+				if(sabor1.equals("con todo") ||sabor1.equals(""))
+				{
+					
+				}else
+				{
+					//Separamos por el caracter,
+					StringTokenizer strTokenTiempo = new StringTokenizer(sabor1, ",");
+					while(strTokenTiempo.hasMoreTokens())
+					{
+						try
+						{
+							sinMod = strTokenTiempo.nextToken().trim();
+							idProductoSin = parCtrl.homologarProductoTiendaVirtual( sinMod + " burger" );
+							strCON = strCON + " " + "SIN " + sinMod;
+							adiTemp = new AdicionTiendaVirtual();
+							adiTemp.setCantidad(1);
+							adiTemp.setIdProductoAdicion(idProductoSin);
+							adiTemp.setIdDetallePedido(0);
+							adiTemp.setPosicionPizza(1);
+							modificadoresCon.add(adiTemp);
+						}catch(Exception e)
+						{
+						}
+						
+					}
+				}
+			}
+		}else if(detalle.equals(new String("una sola especialidad"))||detalle.equals(new String("pizza una sola especialidad")))
+		{
+			idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual("Pizza "+ sabor1);
+			idEspecialidad2 = idEspecialidad;
+			if(!sabor1.equals(new String("")))
+			{
+				if(idEspecialidad == 0) 
+				{
+					log = log + " Problema al homologar " + "Pizza " + sabor1 + "-";
+				}
+			}
+		}else if(detalle.equals(new String("mitad y mitad"))||detalle.equals(new String("pizza mitad y mitad")))
+		{
+			idEspecialidad = parCtrl.homologarEspecialidadTiendaVirtual("Pizza "+ sabor1);
+			idEspecialidad2 = parCtrl.homologarEspecialidadTiendaVirtual("Pizza "+ sabor2);
+			if(!sabor1.equals(new String("")))
+			{
+				if(idEspecialidad == 0) 
+				{
+					log = log + " Problema al homologar " + "Pizza " + sabor1 + "-";
+				}
+			}
+			if(!sabor2.equals(new String("")))
+			{
+				if(idEspecialidad2 == 0) 
+				{
+					log = log + " Problema al homologar " + "Pizza " + sabor1 + "-";
+				}
+			}
+		}
+		//Procesamos las adiciones
+		if(!adicion.equals(new String("")))
+		{
+			idProductoAdicion = parCtrl.homologarProductoTiendaVirtual(adicion);
+			strAdiciones = strAdiciones + " " + idProductoAdicion + "-" + adicion;
+			valorUnitarioAdicion = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
+			DetallePedido detPedidoAdicion = new DetallePedido(idProductoAdicion,idPedido,1,0,0,valorUnitarioAdicion,valorUnitarioAdicion, adicion , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/, "", "");
+			idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoAdicion);
+			adiTemp = new AdicionTiendaVirtual();
+			adiTemp.setCantidad(1);
+			adiTemp.setIdProductoAdicion(idProductoAdicion);
+			adiTemp.setIdDetallePedido(idDetInser);
+			adiciones.add(adiTemp);
+			if(!adicion.equals(new String("")))
+			{
+				if(idProductoAdicion == 0) 
+				{
+					log = log + " Problema al homologar " + adicion + "-";
+				}
+			}
+		}
+		//Procesamos los modificadores CON solo se hará en promociones, dado que en precio menú no tenemos arma tu pizza
+		if(esPromocion && idEspecialidad == 0)
+		{
+			String comTamano = "";
+			if(nombreDelCombo.equals(new String("Pizzeta (4 porciones)")))
+			{
+				comTamano = "PIZ";
+			}else if(nombreDelCombo.equals(new String("Mediana (6 porciones)")))
+			{
+				comTamano = "MED";
+			}else if(nombreDelCombo.equals(new String("Grande (8 porciones)")))
+			{
+				comTamano = "GRA";
+			}else if(nombreDelCombo.equals(new String("Extragrande (12 porciones)")))
+			{
+				comTamano = "EXT";
+			}else if(nombreDelCombo.equals(new String("COMBO DELI GRANDE")))
+			{
+				comTamano = "GRA";
+			}else if(nombreDelCombo.equals(new String("PROMO MEDIANA MAX")))
+			{
+				comTamano = "MED";
+			}else if(nombreDelCombo.equals(new String("COMBO PARA TODOS")))
+			{
+				comTamano = "EXT";
+			}else if(nombreDelCombo.equals(new String("Pizzeta promo poblado")))
+			{
+				comTamano = "PIZ";
+			}
+			//Realizamos la labor con el Sabor1
+			idProductoCon = parCtrl.homologarProductoTiendaVirtual("CON " + sabor1 + " " + comTamano);
+			if(idProductoCon !=0)
+			{
+				strCON = strCON + " " + "CON " + sabor1;
+				valorUnitarioCon = ProductoDAO.retornarProducto(idProductoCon).getPreciogeneral();
+				if(valorUnitarioCon > 0)
+				{
+					DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitarioCon,valorUnitarioCon*cantidad, "CON " + sabor1 , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
+					idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoCon);
+				}
+				adiTemp = new AdicionTiendaVirtual();
+				adiTemp.setCantidad(1);
+				adiTemp.setIdProductoAdicion(idProductoCon);
+				adiTemp.setIdDetallePedido(idDetInser);
+				adiTemp.setPosicionPizza(1);
+				modificadoresCon.add(adiTemp);
+			}
+			//Realizamos la labor cn el Sabor 2
+			idProductoCon = parCtrl.homologarProductoTiendaVirtual("CON " + sabor2 + " " + comTamano);
+			if(idProductoCon !=0)
+			{
+				strCON = strCON + " " + "CON " + sabor2;
+				valorUnitarioCon = ProductoDAO.retornarProducto(idProductoCon).getPreciogeneral();
+				if(valorUnitarioCon > 0)
+				{
+					DetallePedido detPedidoCon = new DetallePedido(idProductoCon,idPedido,cantidad,0,0,valorUnitarioCon,valorUnitarioCon*cantidad, "CON " + sabor2 , "" /*observacion*/,  0 /*idSaborTipoLiquido*/, 0 /*idexcepcion*/,"", "");
+					idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoCon);
+				}
+				adiTemp = new AdicionTiendaVirtual();
+				adiTemp.setCantidad(1);
+				adiTemp.setIdProductoAdicion(idProductoCon);
+				adiTemp.setIdDetallePedido(idDetInser);
+				adiTemp.setPosicionPizza(1);
+				modificadoresCon.add(adiTemp);
+			}
+		}
+		//Recordar que los valores adicionales se dan si no estan dentro de promociones
+		if(idExcepcion == 0)
+		{
+			if(idEspecialidad > 0  && idEspecialidad2 == 0)
+			{
+				valorAdicional = EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad, idProducto);
+			}else if(idEspecialidad > 0 && idEspecialidad2 > 0)
+			{
+				valorAdicional = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad, idProducto))/2;
+				valorAdicional2 = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad2, idProducto))/2;
+			}	
+			valorUnitario = valorUnitario + valorAdicional + valorAdicional2;
+		}else if(idExcepcion > 0)
+		{
+			if(idEspecialidad > 0  && idEspecialidad2 == 0)
+			{
+				valorAdicional = EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad, idProducto);
+				valorUnitario = valorUnitario + valorAdicional;
+			}else if(idEspecialidad > 0 && idEspecialidad2 > 0)
+			{
+				
+				valorAdicional = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad, idProducto))/2;
+				valorAdicional2 = (EspecialidadDAO.obtenerPrecioExcepcionEspecialidad(idEspecialidad2, idProducto))/2;
+				valorUnitario = valorUnitario + valorAdicional + valorAdicional2;	
+			}	
+		}
+		//Homologamos la bebida
+		if(esPromocion)
+		{
+			idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual("Selecciona tu bebida " + bebida + " Extragrande (12 porciones)");
+		}
+		else
+		{
+			idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual("Selecciona tu bebida " + bebida + " " + nombreDelCombo);
+		}
+		DetallePedido detPedidoGaseosaAdi = new DetallePedido();
+		detPedidoGaseosaAdi.setIdproducto(0);
+		if(idSaborTipoLiquido > 0)
+		{
+			int idProductoGas = SaborTipoLiquidoDAO.retornarProductoSaborTipoLiquido(idSaborTipoLiquido);
+			Producto prodGas = ProductoDAO.retornarProducto(idProductoGas);
+			//Intevenimos si debemos o no de cobrar el liquido
+			if(((esPromocion) && (excepcionPrecioTemp.getIncluyeliquido().equals(new String("S"))))||(nombreDelCombo.contains("burger")))
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,0,0*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}else
+			{
+				detPedidoGaseosaAdi = new DetallePedido(idProductoGas,idPedido,cantidad,0,0,(prodGas.getPrecioOferta()),(prodGas.getPrecioOferta())*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+			}
+		}
+		DetallePedido detPedido = new DetallePedido(idProducto,idPedido,cantidad,idEspecialidad,idEspecialidad2,valorUnitario,valorUnitario*cantidad, strAdiciones , "" /*observacion*/, 0 /*idSaborTipoLiquido*/, idExcepcion, strCON, "");
+		idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedido);
+		if(detPedidoGaseosaAdi.getIdproducto() > 0)
+		{
+			PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+		}
+		//Revisaremos si hay productos incluidos para agregar
+		for(int j = 0; j < productosIncluidos.size(); j++)
+		{
+			ProductoIncluido proIncTemp = productosIncluidos.get(j);
+			if(proIncTemp.getIdproductopadre() == idProducto)
+			{
+				//Realizamos una modificación para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+				DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetallePedido, 0, 0 /*idexcepcion*/, "", "");
+				PedidoDAO.InsertarDetallePedido(detPedidoInc);
+			}
+		}
+		//Revisaremos los modificadores con
+		for(int j = 0; j < modificadoresCon.size(); j++)
+		{
+			AdicionTiendaVirtual modTempIns = modificadoresCon.get(j);
+			ModificadorDetallePedido modDetPedido = new ModificadorDetallePedido(0,idDetallePedido, modTempIns.getIdProductoAdicion(), 0, modTempIns.getCantidad(), modTempIns.getIdDetallePedido());
+			PedidoDAO.InsertarModificadorDetallePedido(modDetPedido);
+		}
+		//Revisaremos las adiciones
+		for(int j = 0; j < adiciones.size(); j++)
+		{
+			if(idEspecialidad > 0 && idEspecialidad2 >0)
+			{
+				AdicionTiendaVirtual adiTempIns = adiciones.get(j);
+				DetallePedidoAdicion detPedidoAdiTemp = new DetallePedidoAdicion(idDetallePedido, adiTempIns.getIdDetallePedido(), idEspecialidad, 0, 0.5 , 0);
+				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
+				detPedidoAdiTemp = new DetallePedidoAdicion(idDetallePedido, adiTempIns.getIdDetallePedido(), 0 , idEspecialidad2, 0 , 0.5);
+				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
+			}else
+			{
+				AdicionTiendaVirtual adiTempIns = adiciones.get(j);
+				DetallePedidoAdicion detPedidoAdiTemp = new DetallePedidoAdicion(idDetallePedido, adiTempIns.getIdDetallePedido(), 0, 0, 1 , 0);
+				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
 			}
 		}
 		return(log);
@@ -7363,6 +7709,13 @@ public class PedidoCtrl {
 		String condimentos = "";
 		//Incluimos campo para trabajar la devuelta
 		double devuelta = 0;
+		//Agregamos campos para segunda Pizza
+		String nombreDelCombo_2 = "";
+		String detalles_2 = "";
+		String sabor1_2 = "";
+		String sabor2_2 = "";
+		String adicion_2 = "";
+		String bebida_2 = "";
 		//Para realizar el último parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
@@ -7425,23 +7778,43 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("nombre del combo")))
 				{
 					nombreDelCombo = strValor;
+				}else if(clave.equals(new String("nombre del combo  #2")))
+				{
+					nombreDelCombo_2 = strValor;
 				}else if(clave.equals(new String("detalles")))
 				{
 					detalles = strValor.toLowerCase();
+				}else if(clave.equals(new String("detalles #2")))
+				{
+					detalles_2 = strValor.toLowerCase();
 				}else if(clave.equals(new String("sabor 1")))
 				{
 					sabor1  = strValor;
+				}else if(clave.equals(new String("sabor 1 #2")))
+				{
+					sabor1_2  = strValor;
 				}else if(clave.equals(new String("sabor 2")))
 				{
 					sabor2 = strValor;
+				}else if(clave.equals(new String("sabor 2 #2")))
+				{
+					sabor2_2 = strValor;
 				}else if(clave.equals(new String("adicion")))
 				{
 					//En este punto si podrán ser varios
 					adicion = strValor;
 					
+				}else if(clave.equals(new String("adicion #2")))
+				{
+					//En este punto si podrán ser varios
+					adicion_2 = strValor;
+					
 				}else if(clave.equals(new String("bebida")))
 				{
 					bebida = strValor;
+				}else if(clave.equals(new String("bebida #2")))
+				{
+					bebida_2 = strValor;
 				}else if(clave.equals(new String("acompañamiento")))
 				{
 					acompanamiento = strValor;
@@ -7626,6 +7999,11 @@ public class PedidoCtrl {
 			//Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido,nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento,  bebida2, detalles, idTipoPedido, condimentos);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
+			//Agregamos el procesamiento del segundo producto si lo hay
+			if(!nombreDelCombo_2.equals(new String("")))
+			{
+				insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2);
+			}
 			//Luego de insertar el pedido haremos las últimas validaciones
 			//Posteriormente realizamos los pasos para la finalización del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
@@ -8744,7 +9122,7 @@ public class PedidoCtrl {
 	 * @param args
 	 * @throws IOException
 	 */
-	public static void main1(String args[]) throws IOException
+	public static void main(String args[]) throws IOException
 	{
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();
 		
@@ -8753,10 +9131,11 @@ public class PedidoCtrl {
 		
 		//PedidoCtrl.consultarCoberturaCRMBOT("{\"id\":21100107,\"name\":\"Lead #21100107\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58812344,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1697835183,\"updated_at\":1697835320,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":858274,\"field_name\":\"Dirección de envío\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"calle 63a # 47 -27\"}]},{\"field_id\":863427,\"field_name\":\"Barrio y Municipio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"prado centro , medellin\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/21100107?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "21100107", 0);
 
-		//PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"2\",\"type\":\"orderNew\",\"timestamp\":1694821682,\"data\":{\"order_id\":5764625991884408029,\"order_info\":{\"order_id\":5764625991884408029,\"status\":100,\"order_index\":162005,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1694824858,\"create_time\":1694821681,\"pay_time\":1694821681,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":2446200,\"items_discount\":1306200,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607591205045162,\"app_shop_id\":\"2\",\"shop_addr\":\"Carrera 53 #23-102 bello antioquia\",\"shop_name\":\"Pizza Americana - Bello\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"ud835udcf8ud835udcfcud835udcf9ud835udcf2ud835udcf7ud835udcea\",\"calling_code\":\"+57\",\"phone\":\"322***2741\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Combo Pizzeta + Gaseosa 400 ml\",\"total_price\":2446200,\"sku_price\":2446200,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400 ml\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":2,\"real_price\":1590000,\"promotion_detail\":{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},\"promo_list\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200}]}],\"promotions\":[{\"promo_type\":2,\"promo_discount\":856200,\"shop_subside_price\":642200},{\"promo_type\":11,\"promo_discount\":450000,\"shop_subside_price\":0}]}}}", "revisar");
+		//PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051225,\"app_shop_id\":\"2\",\"type\":\"orderNew\",\"timestamp\":1744075453,\"data\":{\"order_id\":5764640909379570480,\"order_info\":{\"order_id\":5764640909379570480,\"status\":100,\"order_index\":162006,\"order_channel\":\"DiDi Food\",\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1744078679,\"create_time\":1744075452,\"pay_time\":1744075453,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"c_cancel_preference\":7,\"price\":{\"order_price\":6950000,\"items_discount\":0,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0,\"store_charged_delivery_price\":720900},\"shop\":{\"shop_id\":5764607591205045162,\"app_shop_id\":\"2\",\"shop_addr\":\"Carrera 53 #23-102 bello antioquia\",\"shop_name\":\"Pizza Americana - Bello\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"\",\"calling_code\":\"+57\",\"phone\":\"311***6027\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"mdu_id\":\"23B6EF642ABDFC0A7913D0584EB972AC\",\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Gaseosa Coca Cola Zero 1.5 L\",\"total_price\":800000,\"sku_price\":800000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[],\"promo_type\":0,\"real_price\":800000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}},{\"mdu_id\":\"71737BB9E564AD7EDB7B61A5CCBCDA13\",\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizzas Estofadas Grande\",\"total_price\":6150000,\"sku_price\":5300000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizza Estofada Pepperoni y Queso Grande\",\"total_price\":350000,\"sku_price\":350000,\"amount\":1,\"app_content_id\":\"\",\"content_name\":\"Escoge tu sabor de Pizza Estofada GD\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Coca Cola Zero 1.5 L\",\"total_price\":500000,\"sku_price\":500000,\"amount\":1,\"app_content_id\":\"\",\"content_name\":\"Elige el sabor de tu bebida 1.5 L\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":0,\"real_price\":6150000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}}]}}}", "revisar");
+		
 		//PedidoCtrl.procesarFACBOTCRM("{\"id\":20617795,\"name\":\"Pizza Americana Manrique Piloto - Order #744528864 confirmed\",\"price\":34,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":59471960,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1692742678,\"updated_at\":1694608827,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":491608,\"field_name\":\"Tienda web:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana Manrique Piloto\"}]},{\"field_id\":491706,\"field_name\":\"Tipo:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"DELIVERY\"}]},{\"field_id\":492800,\"field_name\":\"Metodo de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"CASH\"}]},{\"field_id\":849448,\"field_name\":\"Llego\",\"field_code\":null,\"field_type\":\"multiselect\",\"values\":[{\"value\":\"Si\",\"enum_id\":537026,\"enum_code\":null}]},{\"field_id\":849440,\"field_name\":\"Conforme con producto\",\"field_code\":null,\"field_type\":\"numeric\",\"values\":[{\"value\":\"0\"}]},{\"field_id\":863599,\"field_name\":\"# Factura de venta\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"192993\"}]},{\"field_id\":863607,\"field_name\":\"# Tipo de cliente FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Empresa\"}]},{\"field_id\":863601,\"field_name\":\"# NIT o CC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"901290745\"}]},{\"field_id\":863603,\"field_name\":\"# Nombre empresa o cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana SAS\"}]},{\"field_id\":863609,\"field_name\":\"# Correo electrónico FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"jubote1@gmail.com\"}]},{\"field_id\":863605,\"field_name\":\"# Teléfono FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3148807773\"}]},{\"field_id\":863701,\"field_name\":\"# Documento FAC\",\"field_code\":null,\"field_type\":\"file\",\"values\":[{\"value\":{\"file_uuid\":\"044ffe1f-dd92-46d0-b866-f0c52b51d804\",\"version_uuid\":\"9afb3f07-7eb7-4510-aab3-aecbb1dc5c6e\",\"file_name\":\"_SOLICITUD PIEZAS GRÁFICAS junio 2023.pdf\",\"file_size\":529070,\"is_deleted\":false}}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20617795?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":6000,\"name\":\"VENTA ONLINE\",\"color\":null}],\"companies\":[]}}", "20617795", 0);
-		int idOrdenRappi = (int)(Math.random()*10000 + 1);
-		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":3900.0,\"description\":\"Disfruta de 10 % de descuento en productos seleccionados. Verás el descuento reflejado los productos seleccionados.\",\"title\":\"VFD pizzas medianas \",\"product_id\":2095543675,\"type\":\"offer_by_product\",\"raw_value\":10,\"value_type\":\"percentage\",\"max_value\":null,\"includes_toppings\":false,\"percentage_by_rappi\":0.0,\"percentage_by_partners\":100.0,\"amount_by_rappi\":0.0,\"amount_by_partner\":3900.0,\"discount_product_units\":1,\"discount_product_unit_value\":3900.0,\"sku\":\"2135092180\"},{\"value\":4500.0,\"description\":\"Envíos GRATIS en compras mayores a $15000 pagando con tarjeta de crédito\",\"title\":\"Envíos GRATIS en compras mayores a $15000 pagando con tarjeta de crédito\",\"product_id\":null,\"type\":\"prime_discount_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":null,\"includes_toppings\":false,\"percentage_by_rappi\":100,\"percentage_by_partners\":0,\"amount_by_rappi\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null},{\"value\":550.0,\"description\":\"30%OFF Service Fee\",\"title\":\"30%OFF Service Fee Prime\",\"product_id\":null,\"type\":\"service_fee\",\"raw_value\":30,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":550.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":25,\"min_cooking_time\":15,\"max_cooking_time\":60,\"created_at\":\"2024-04-08 21:18:01\",\"delivery_method\":\"marketplace\",\"payment_method\":\"cc\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"52 \",\"complete_main_street_number\":\"9b Sur\",\"main_street_number_letter\":\"b\",\"complementary_street_quadrant\":null,\"city\":\"Medellín\",\"meter\":\"23\",\"complete_address\":\"Cl. 9b Sur #52 23\",\"complementary_street_prefix\":null,\"complete_main_street\":\"Cl. 9b Sur\",\"main_street_type\":\"Cl.\",\"main_street_number_or_name\":\"9\",\"complementary_street_letter\":\"\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"52 23\",\"complementary_street_number\":\"52\",\"complementary_street_prefix_letter\":null,\"neighborhood\":null,\"complement\":\"por favor no timbre 🛎️, estoy pendiente del pedido \",\"postal_code\":\"050023\",\"main_street_quadrant\":\"Sur\"},\"totals\":{\"total_products\":43000.0,\"total_discounts\":8950.0,\"total_products_with_discount\":39100,\"total_products_without_discount\":43000,\"total_other_discounts\":0,\"total_order\":43600,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":3900.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":39000,\"toppingId\":null,\"categoryDescription\":null,\"sku\":\"2135092180\",\"id\":\"2095543675\",\"name\":\"Pizza Carnes Mediana\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":35100,\"unit_price_without_discount\":39000,\"percentage_discount\":10,\"quantity\":1,\"toppingCategoryId\":null,\"subitems\":[{\"price\":4000,\"toppingId\":\"11993077\",\"categoryDescription\":\"Elige tu bebida\",\"sku\":\"1000000011\",\"id\":\"25121577\",\"name\":\"Coca cola zero 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":4000,\"unit_price_without_discount\":4000,\"percentage_discount\":0,\"quantity\":1,\"toppingCategoryId\":\"11993077\",\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Santiago\",\"last_name\":\"Arteaga\",\"phone_number\":\"3192918068\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1007645135\"},\"store\":{\"internal_id\":\"900171985\",\"external_id\":\"900171985\",\"name\":\"Pizza Americana La Mota\"}}", "");
+//		int idOrdenRappi = (int)(Math.random()*10000 + 1);
+//		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":3900.0,\"description\":\"Disfruta de 10 % de descuento en productos seleccionados. Verás el descuento reflejado los productos seleccionados.\",\"title\":\"VFD pizzas medianas \",\"product_id\":2095543675,\"type\":\"offer_by_product\",\"raw_value\":10,\"value_type\":\"percentage\",\"max_value\":null,\"includes_toppings\":false,\"percentage_by_rappi\":0.0,\"percentage_by_partners\":100.0,\"amount_by_rappi\":0.0,\"amount_by_partner\":3900.0,\"discount_product_units\":1,\"discount_product_unit_value\":3900.0,\"sku\":\"2135092180\"},{\"value\":4500.0,\"description\":\"Envíos GRATIS en compras mayores a $15000 pagando con tarjeta de crédito\",\"title\":\"Envíos GRATIS en compras mayores a $15000 pagando con tarjeta de crédito\",\"product_id\":null,\"type\":\"prime_discount_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":null,\"includes_toppings\":false,\"percentage_by_rappi\":100,\"percentage_by_partners\":0,\"amount_by_rappi\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null},{\"value\":550.0,\"description\":\"30%OFF Service Fee\",\"title\":\"30%OFF Service Fee Prime\",\"product_id\":null,\"type\":\"service_fee\",\"raw_value\":30,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":550.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":25,\"min_cooking_time\":15,\"max_cooking_time\":60,\"created_at\":\"2024-04-08 21:18:01\",\"delivery_method\":\"marketplace\",\"payment_method\":\"cc\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"52 \",\"complete_main_street_number\":\"9b Sur\",\"main_street_number_letter\":\"b\",\"complementary_street_quadrant\":null,\"city\":\"Medellín\",\"meter\":\"23\",\"complete_address\":\"Cl. 9b Sur #52 23\",\"complementary_street_prefix\":null,\"complete_main_street\":\"Cl. 9b Sur\",\"main_street_type\":\"Cl.\",\"main_street_number_or_name\":\"9\",\"complementary_street_letter\":\"\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"52 23\",\"complementary_street_number\":\"52\",\"complementary_street_prefix_letter\":null,\"neighborhood\":null,\"complement\":\"por favor no timbre 🛎️, estoy pendiente del pedido \",\"postal_code\":\"050023\",\"main_street_quadrant\":\"Sur\"},\"totals\":{\"total_products\":43000.0,\"total_discounts\":8950.0,\"total_products_with_discount\":39100,\"total_products_without_discount\":43000,\"total_other_discounts\":0,\"total_order\":43600,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":3900.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":39000,\"toppingId\":null,\"categoryDescription\":null,\"sku\":\"2135092180\",\"id\":\"2095543675\",\"name\":\"Pizza Carnes Mediana\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":35100,\"unit_price_without_discount\":39000,\"percentage_discount\":10,\"quantity\":1,\"toppingCategoryId\":null,\"subitems\":[{\"price\":4000,\"toppingId\":\"11993077\",\"categoryDescription\":\"Elige tu bebida\",\"sku\":\"1000000011\",\"id\":\"25121577\",\"name\":\"Coca cola zero 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":4000,\"unit_price_without_discount\":4000,\"percentage_discount\":0,\"quantity\":1,\"toppingCategoryId\":\"11993077\",\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Santiago\",\"last_name\":\"Arteaga\",\"phone_number\":\"3192918068\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1007645135\"},\"store\":{\"internal_id\":\"900171985\",\"external_id\":\"900171985\",\"name\":\"Pizza Americana La Mota\"}}", "");
 //		idOrdenRappi = (int)(Math.random()*10000 + 1);
 //		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":4500.0,\"description\":\"Aprovecha envío GRATIS cerca a ti\",\"title\":\"DESCUENTOS CERCANOS\",\"product_id\":null,\"type\":\"free_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":20,\"min_cooking_time\":14,\"max_cooking_time\":26,\"created_at\":\"2023-08-22 16:18:11\",\"delivery_method\":\"marketplace\",\"payment_method\":\"nequi\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"43 A \",\"complete_main_street_number\":\"48 C SUR\",\"main_street_number_letter\":\"C\",\"complementary_street_quadrant\":null,\"city\":\"Envigado\",\"meter\":\"50\",\"complete_address\":\"CL 48 C SUR # 43 A 50\",\"complementary_street_prefix\":null,\"complete_main_street\":\"CL 48 C SUR\",\"main_street_type\":\"CL\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"A\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"43 A 50\",\"complementary_street_number\":\"43\",\"complementary_street_prefix_letter\":null,\"neighborhood\":\"Primavera\",\"complement\":\"casa 170 cuidadela real\",\"postal_code\":\"055422\",\"main_street_quadrant\":\"SUR\"},\"totals\":{\"total_products\":46000.0,\"total_discounts\":4500.0,\"total_products_with_discount\":46000,\"total_products_without_discount\":46000,\"total_other_discounts\":0,\"total_order\":50500,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":46000,\"sku\":\"2135092234\",\"id\":\"2095543663\",\"name\":\"Pizza Hawaiana Extra Grande\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":46000,\"unit_price_without_discount\":46000,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[{\"price\":3500,\"sku\":\"2135092232\",\"id\":\"21584967\",\"name\":\"Colombiana 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Pablo\",\"last_name\":\"Hernández \",\"phone_number\":\"3238060575\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1020404113\"},\"store\":{\"internal_id\":\"900171988\",\"external_id\":\"900171988\",\"name\":\"Pizza Americana Envigado  (Solo maleta grande)\"}}", "");
 //		int idOrdenDidi = (int)(Math.random()*10000 + 1);
@@ -8769,7 +9148,7 @@ public class PedidoCtrl {
 		//PedidoCtrl.consultarCoberturaCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20424793&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=58822804&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5421266&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=58812344&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5421266&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "HTTP Authorization header: No authorization header");
 		//PedidoCtrl.obtenerMensajePedidoBOTCRM("3003861204");
 		//PedidoCtrl.capturarEventoPagoWompi("{\"event\":\"transaction.updated\",\"data\":{\"transaction\":{\"id\":\"17415-1690508372-39946\",\"created_at\":\"2023-07-28T01:39:32.482Z\",\"finalized_at\":\"2023-07-28T02:24:43.627Z\",\"amount_in_cents\":4100000,\"reference\":\"o7uauu_1690508299_xwdlTld0Y\",\"customer_email\":\"erikazapata7193@gmail.com\",\"currency\":\"COP\",\"payment_method_type\":\"NEQUI\",\"payment_method\":{\"type\":\"NEQUI\",\"extra\":{\"is_three_ds\":false,\"transaction_id\":\"350-123-200774-1690508373TD3e\",\"external_identifier\":\"1690508373TD3e\",\"nequi_transaction_id\":\"350-123-200774-1690508373TD3e\"},\"phone_number\":\"3012630615\"},\"status\":\"APPROVED\",\"status_message\":\"La transacción caducó\",\"shipping_address\":null,\"redirect_url\":\"https://pizzaamericana.co\",\"payment_source_id\":null,\"payment_link_id\":\"o7uauu\",\"customer_data\":{\"full_name\":\"Erika Zapata \",\"phone_number\":\"+573012630615\"},\"billing_data\":null}},\"sent_at\":\"2023-07-28T02:24:43.676Z\",\"timestamp\":1690511083,\"signature\":{\"checksum\":\"e9575a0dfbb7ded7b8bf30e028458fcf459e2426e4624259a1b7f700b2776527\",\"properties\":[\"transaction.id\",\"transaction.status\",\"transaction.amount_in_cents\"]},\"environment\":\"prod\"}");
-		//PedidoCtrl.procesarPedidoBOTCRM("{\"id\":20288899,\"name\":\"Lead #20288899\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58725736,\"pipeline_id\":7052584,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1689875327,\"updated_at\":1690466036,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862089,\"field_name\":\"numero de teléfono\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3185020068\"}]},{\"field_id\":861855,\"field_name\":\"Nombre del combo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Grande (8 porciones)\"}]},{\"field_id\":862081,\"field_name\":\"Detalles\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Mitad y Mitad\"}]},{\"field_id\":857712,\"field_name\":\"Sabor 1\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Paisa\"}]},{\"field_id\":857714,\"field_name\":\"Sabor 2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Mexicana\"}]},{\"field_id\":861771,\"field_name\":\"Adicion\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Adiciones de Grande Peperoni\"}]},{\"field_id\":861775,\"field_name\":\"Bebida\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pepsi\"}]},{\"field_id\":861773,\"field_name\":\"Acompañamiento\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Deditos de masa con queso\"}]},{\"field_id\":862087,\"field_name\":\"nombre cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sebastian\"}]},{\"field_id\":862901,\"field_name\":\"FECHA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"27/07/2023\"}]},{\"field_id\":862847,\"field_name\":\"HORA PEDIDO\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"16:30\"}]},{\"field_id\":858274,\"field_name\":\"Dirección de envío\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Calle 67a # 31 AE - 39\"}]},{\"field_id\":858276,\"field_name\":\"Referencia\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Torre 4\"}]},{\"field_id\":862091,\"field_name\":\"correo electrónico\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sbotero0601@gmail.com\"}]},{\"field_id\":858272,\"field_name\":\"Forma de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pago Virtual Link Wompi\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20288899?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":93039,\"name\":\"PROGRAMADO\",\"color\":null}],\"companies\":[]}}", "20288899", 0);
+		PedidoCtrl.procesarPedidoBOTCRM("{\"id\":26514227,\"name\":\"Lead #26514227\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58812344,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1744142803,\"updated_at\":1744143065,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":861855,\"field_name\":\"Nombre del combo\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Extragrande (12 porciones)\"}],\"is_computed\":false},{\"field_id\":862081,\"field_name\":\"Detalles\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Una sola especialidad\"}],\"is_computed\":false},{\"field_id\":857712,\"field_name\":\"Sabor 1\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Hawaiana\"}],\"is_computed\":false},{\"field_id\":861771,\"field_name\":\"Adicion\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Adiciones de Extragrande Tocineta\"}],\"is_computed\":false},{\"field_id\":861775,\"field_name\":\"Bebida\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Coca Cola\"}],\"is_computed\":false},{\"field_id\":868055,\"field_name\":\"Nombre del combo  #2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizzeta (4 porciones)\"}],\"is_computed\":false},{\"field_id\":868057,\"field_name\":\"Detalles #2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Mitad y Mitad\"}],\"is_computed\":false},{\"field_id\":868059,\"field_name\":\"sabor 1 #2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Vegetariana\"}],\"is_computed\":false},{\"field_id\":868061,\"field_name\":\"sabor 2 #2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Mexicana\"}],\"is_computed\":false},{\"field_id\":868065,\"field_name\":\"Bebida #2\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Coca Cola\"}],\"is_computed\":false},{\"field_id\":867749,\"field_name\":\"Condimentos\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"sal de ajo\"}],\"is_computed\":false},{\"field_id\":861773,\"field_name\":\"Acompañamiento\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Madurito\"}],\"is_computed\":false},{\"field_id\":862087,\"field_name\":\"nombre cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sebas\"}],\"is_computed\":false},{\"field_id\":865679,\"field_name\":\"TIPO DE CLIENTE\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"INFORMACION\"}],\"is_computed\":false},{\"field_id\":862089,\"field_name\":\"numero de teléfono\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3185020068\"}],\"is_computed\":false},{\"field_id\":862091,\"field_name\":\"correo electrónico\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Sbotero0601@gmail.com\"}],\"is_computed\":false},{\"field_id\":858274,\"field_name\":\"Dirección de envío\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Calle 63a # 47 -27\"}],\"is_computed\":false},{\"field_id\":863427,\"field_name\":\"Municipio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Medellin\"}],\"is_computed\":false},{\"field_id\":858276,\"field_name\":\"Barrio\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Prado centro\"}],\"is_computed\":false},{\"field_id\":866919,\"field_name\":\"Referencia\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Casa blanca\"}],\"is_computed\":false},{\"field_id\":870325,\"field_name\":\"ESTADO TIENDA\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"SIN VALIDAR\"}],\"is_computed\":false}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"is_price_computed\":true,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/26514227?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "26514227", 0);
 		//PedidoCtrl.consultarPedidoCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20017019&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=53955335&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5064734&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=142&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5064734&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana","prueba");
 		//PedidoCtrl.limpiarLeadCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=19895821&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=47301113&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5010344&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=53365371&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5010344&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "");
 		//PedidoCtrl.procesarPQRSBOTCRM("{\"id\":20780873,\"name\":\"Lead #20780873\",\"price\":0,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":58728028,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1694391557,\"updated_at\":1694391802,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":862681,\"field_name\":\"Tipo de atención\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Punto de venta\"}]},{\"field_id\":862683,\"field_name\":\"punto de venta pqrs\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Envigado\"}]},{\"field_id\":862673,\"field_name\":\"Nombre cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Arley Eduardo Palacio Cardona\"}]},{\"field_id\":862675,\"field_name\":\"Teléfono cliente PQRS\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"312 7038619\"}]},{\"field_id\":862677,\"field_name\":\"descripción del problema\",\"field_code\":null,\"field_type\":\"textarea\",\"values\":[{\"value\":\"Pedí unos palitos con queso y arequipe y no me enviaron el arequipe\"}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20780873?page=1&limit=250\"}},\"_embedded\":{\"tags\":[],\"companies\":[]}}", "20780873", 0);
@@ -10011,6 +10390,34 @@ public class PedidoCtrl {
 							break;
 						}
 					}
+					//Realizamos revisión de acompañante en combo
+					HomologacionProductoRappi homProductoAcom;
+					double precioAcom = 0;
+					int idProductoAcom = 0;
+					for(int j = 0; j < subItemsOrdenArray.size(); j++)
+					{
+						JSONObject subProductoTemp = (JSONObject) subItemsOrdenArray.get(j);
+						String nombreAcompanante = (String)subProductoTemp.get("name");
+						String nombreContenedor = (String)subProductoTemp.get("content_name");
+						try
+						{
+							precioAcom = ((long)subProductoTemp.get("total_price"))/100;
+							
+						}catch(Exception e1)
+						{
+							precioAcom = 0;
+						}
+						if(nombreContenedor.contains("Escoge tu acompa"))
+						{
+							homProductoAcom = HomologacionProductoRappiDAO.obtenerHomologacionProductoRappi(nombreAcompanante);
+							idProductoAcom = homProductoAcom.getIdProducto();
+						}
+						if(idProductoAcom != 0)
+						{
+							break;
+						}
+					}
+					
 					DetallePedido detPedido = new DetallePedido();
 					DetallePedido detPedidoGaseosaAdi = new DetallePedido();
 					detPedidoGaseosaAdi.setIdproducto(0);
@@ -10073,6 +10480,22 @@ public class PedidoCtrl {
 						if(detPedidoGaseosaAdi.getIdproducto() > 0)
 						{
 							PedidoDAO.InsertarDetallePedido(detPedidoGaseosaAdi);
+						}
+						if(idProductoAcom > 0)
+						{
+							DetallePedido detPedidoAcomp = new DetallePedido(idProductoAcom,idPedido,douCantidad,0,0,precioAcom,precioAcom*cantidad, "" /*strAdiciones*/ , "" /*observacion*/, 0/*idSaborTipoLiquido*/, 0/*idExcepcion*/, "" /*strCON*/, "");
+							int idDetalleAcomp = PedidoDAO.InsertarDetallePedido(detPedidoAcomp);
+							//Muy posiblemente como son productos acompañantes tienen productos incluidos
+							for(int j = 0; j < productosIncluidos.size(); j++)
+							{
+								ProductoIncluido proIncTemp = productosIncluidos.get(j);
+								if(proIncTemp.getIdproductopadre() == detPedidoAcomp.getIdproducto())
+								{
+									//Realizamos una modificación para que la cantidad a incluir se debe multiplicar por la cantidad de productos adicionados
+									DetallePedido detPedidoInc = new DetallePedido(proIncTemp.getIdproductohijo(),idPedido,proIncTemp.getCantidad()*cantidad,0,0,0,0, "" , "Producto Incluido-"+idDetalleAcomp, 0, 0 /*idexcepcion*/, "", "");
+									PedidoDAO.InsertarDetallePedido(detPedidoInc);
+								}
+							}
 						}
 					}
 					//Realizamos modificación para agregar los acompañantes adicionales de productos incluidos
@@ -12156,11 +12579,19 @@ public class PedidoCtrl {
 		return(listJSON.toJSONString());
 	}
 	
+
 	public static String registrarAlertaEntregaDom(AlertaEntregaDom alertaEntregaDom) {
 		//int idpedido ,int idusuario, String descripcion, boolean error ,double lat_dom ,double long_dom ,double lat_cli ,double long_cli
 		JSONObject respuesta = new JSONObject();
 		boolean registroAlerta = PedidoDAO.registrarAlertaEntregaDom(alertaEntregaDom);
 		respuesta.put("success", registroAlerta);
+
+	public String obtenerCantidadProductoVendidoFecha(int idProducto)
+	{
+		JSONObject respuesta = new JSONObject();
+		int cantidad = PedidoDAO.obtenerCantidadProductoVendidoFecha(idProducto);
+		respuesta.put("cantidad", cantidad);
+
 		return(respuesta.toJSONString());
 	}
 	

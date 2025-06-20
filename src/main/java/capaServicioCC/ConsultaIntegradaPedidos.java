@@ -30,8 +30,8 @@ public class ConsultaIntegradaPedidos extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio se encarga de recibir como parámetros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
-	 * tomados bajo estos parámetros, se invoca en la capa controlador al método ConsultaIntegradaPedidos.
+	 * Este servicio se encarga de recibir como parï¿½metros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
+	 * tomados bajo estos parï¿½metros, se invoca en la capa controlador al mï¿½todo ConsultaIntegradaPedidos.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -41,6 +41,15 @@ public class ConsultaIntegradaPedidos extends HttpServlet {
 		String fechainicial = request.getParameter("fechainicial");
         String fechafinal = request.getParameter("fechafinal");
         String tienda = request.getParameter("tienda");
+        String pedidoProgramado = request.getParameter("pedidoprogramado");
+        boolean pedProg;
+        try
+        {
+        	pedProg = Boolean.parseBoolean(pedidoProgramado);
+        }catch(Exception e)
+        {
+        	pedProg = false;
+        }
         int idEstadoPedido = 0;
         int enviadoPixel = 0;
         int numeropedido;
@@ -65,11 +74,11 @@ public class ConsultaIntegradaPedidos extends HttpServlet {
         {
         	enviadoPixel = -1;
         }
-        logger.info("Llamado a servicio con parámetros fechainicial " + fechainicial + " fechafinal " + fechafinal + " tienda "+ tienda + "numeropedido " + numeropedido);
+        logger.info("Llamado a servicio con parï¿½metros fechainicial " + fechainicial + " fechafinal " + fechafinal + " tienda "+ tienda + "numeropedido " + numeropedido);
         PedidoCtrl consultapedido = new PedidoCtrl();
-        String respuestaConsulta = consultapedido.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel);
+        String respuestaConsulta = consultapedido.ConsultaIntegradaPedidos(fechainicial, fechafinal, tienda, numeropedido, idEstadoPedido, enviadoPixel, pedProg);
         PrintWriter out = response.getWriter();
-        //Comentamos resultado de la consulta debido a que consultas grandes pueden generar mucha información
+        //Comentamos resultado de la consulta debido a que consultas grandes pueden generar mucha informaciï¿½n
         //logger.debug(respuestaConsulta);
 		out.write(respuestaConsulta);
 	}

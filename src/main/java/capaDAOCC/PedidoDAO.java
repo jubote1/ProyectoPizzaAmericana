@@ -1795,7 +1795,7 @@ public class PedidoDAO {
 	 * @param numeropedido En caso de desearlo se puede filtrar por un n�mero de pedido en espec�fico.
 	 * @return Se retorna un ArrayList con objetos de tipo pedido con la informaci�n de los pedidos consultados.
 	 */
-	public static ArrayList<Pedido> ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
+	public static ArrayList<Pedido> ConsultaIntegradaPedidos(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel, boolean pedProg)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList <Pedido> consultaPedidos = new ArrayList();
@@ -1824,6 +1824,10 @@ public class PedidoDAO {
 		if(enviadoPixel != -1)
 		{
 			consulta = consulta + " and enviadopixel = " + enviadoPixel;
+		}
+		if(pedProg)
+		{
+			consulta = consulta + " and a.programado = 'S'";
 		}
 		logger.info(consulta);
 		System.out.println(consulta);
@@ -4333,7 +4337,7 @@ public class PedidoDAO {
 	{
 		ArrayList totalSemanaTienda = new ArrayList();
 		String consulta = "";
-		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre order by b.nombre";
+		consulta = "select sum(a.total_neto), b.nombre, b.idtienda from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.fechapagovirtual IS NOT NULL and e.virtual = 'S' group by b.nombre, b.idtienda order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
@@ -4372,7 +4376,7 @@ public class PedidoDAO {
 	{
 		ArrayList totalSemanaTienda = new ArrayList();
 		String consulta = "";
-		consulta = "select sum(a.total_neto), b.nombre from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0  and e.idforma_pago = 6 group by b.nombre order by b.nombre";
+		consulta = "select sum(a.total_neto), b.nombre, b.idtienda from pedido a, tienda b,  forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.fechapedido >= '" + fechaAnterior + "' and a.fechapedido <= '" + fechaActual + "' and a.idestadopedido = 2 and a.enviadopixel = 1 and a.numposheader > 0  and e.idforma_pago = 6 group by b.nombre, b.idtienda order by b.nombre";
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
 		Connection con1 = con.obtenerConexionBDPrincipal();
@@ -5672,6 +5676,7 @@ public class PedidoDAO {
 		return(respuesta);
 	}
 	
+
 	public static boolean registrarAlertaEntregaDom(AlertaEntregaDom alertaEntregaDom) {
         boolean resultado = false;
     	ConexionBaseDatos con = new ConexionBaseDatos();
@@ -5700,6 +5705,45 @@ public class PedidoDAO {
         }
 
         return resultado;
+
+	/**
+	 * Método que retorna la cantidad de productos vendidas en la fecha actual.
+	 * @param idProducto
+	 * @return
+	 */
+	public static int obtenerCantidadProductoVendidoFecha(int idProducto)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		int cantidadVendido = 0;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
+			Statement stm = con1.createStatement();
+			String consulta = "SELECT COUNT(*) FROM pedido a, detalle_pedido b where a.idpedido = b.idpedido AND a.fechapedido = CURDATE() AND b.idproducto = " + idProducto;
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			while(rs.next())
+			{
+				cantidadVendido = rs.getInt(1);
+			}
+			
+			stm.close();
+			con1.close();
+		}
+		catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			return(0);
+		}
+		return(cantidadVendido);
+
 	}
 
 }

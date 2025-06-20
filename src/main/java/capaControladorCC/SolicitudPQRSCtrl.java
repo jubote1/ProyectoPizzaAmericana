@@ -31,7 +31,8 @@ import capaModeloCC.SolicitudPQRS;
 import capaModeloCC.SolicitudPQRSImagenes;
 import capaModeloCC.Tienda;
 import capaModeloCC.Usuario;
-import utilidadesCC.ControladorEnvioCorreo;;
+import utilidadesCC.ControladorEnvioCorreo;
+import capaModeloCC.ComentarioPqrs;
 
 public class SolicitudPQRSCtrl {
 
@@ -73,6 +74,12 @@ public class SolicitudPQRSCtrl {
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		//Extraemos el comentario para enviar el correo
+		String comentarioCorreo = "";
+		for (ComentarioPqrs comentarioTemp : listaComentarios) 
+		{
+			comentarioCorreo = comentarioCorreo + " " + comentarioTemp.getComentario();
+		}
 		correo.setAsunto("SE REGISTRO PQRS # " + idSolPQRSIns);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
