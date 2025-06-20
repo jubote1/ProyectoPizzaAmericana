@@ -39,7 +39,6 @@ public class AvanzarEstadoPedidoDomicilioLog extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
 		int idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
 		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
 		String claveUsuario = request.getParameter("claveusuario");

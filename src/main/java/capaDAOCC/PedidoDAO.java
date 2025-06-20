@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
+import capaModeloCC.AlertaEntregaDom;
 import capaModeloCC.Cliente;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
@@ -43,7 +44,8 @@ import capaModeloCC.TipoLiquido;
 import conexionCC.ConexionBaseDatos;
 import pixelposCC.Main;
 import utilidadesCC.ControladorEnvioCorreo;
-
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.util.Date;
 
@@ -5668,6 +5670,36 @@ public class PedidoDAO {
 			}
 		}
 		return(respuesta);
+	}
+	
+	public static boolean registrarAlertaEntregaDom(AlertaEntregaDom alertaEntregaDom) {
+        boolean resultado = false;
+    	ConexionBaseDatos con = new ConexionBaseDatos();
+		
+
+        String sql = "INSERT INTO alerta_entrega_domiciliario (idpedido ,clave_dom, descripcion, error , latitud_domiciliario ,longitud_domiciliario,latitud_cliente, longitud_cliente ,idtienda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection con1 = con.obtenerConexionBDPrincipal();  // tu clase de conexión aquí
+             PreparedStatement ps = con1.prepareStatement(sql)) {
+
+        	ps.setInt(1, alertaEntregaDom.getIdPedido() );
+            ps.setString(2, alertaEntregaDom.getClaveDom());
+            ps.setString(3, alertaEntregaDom.getDescripcion());
+            ps.setBoolean(4, alertaEntregaDom.isError());
+            ps.setDouble(5, alertaEntregaDom.getLatDom());
+            ps.setDouble(6, alertaEntregaDom.getLongDom());
+            ps.setDouble(7, alertaEntregaDom.getLatCli());
+            ps.setDouble(8, alertaEntregaDom.getLongCli());
+            ps.setInt(9, alertaEntregaDom.getIdTienda());
+
+            int filas = ps.executeUpdate();
+            resultado = (filas > 0);
+
+        } catch (SQLException e) {
+            e.printStackTrace(); // o usa logger
+        }
+
+        return resultado;
 	}
 
 }
