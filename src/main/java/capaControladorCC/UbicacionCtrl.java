@@ -274,8 +274,8 @@ public class UbicacionCtrl {
 			String apiKey = param.getValorTexto();
 			String direccionEncoded = URLEncoder.encode(direccion, "UTF-8");
 			String url = String.format(
-					"https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s&location_type=APPROXIMATE",
-					direccionEncoded, apiKey);
+				    "https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s&location_type=ROOFTOP",
+				    direccionEncoded, apiKey);
 
 			Request request = new Request.Builder().url(url).get().build();
 
