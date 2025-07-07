@@ -12588,6 +12588,7 @@ public class PedidoCtrl {
 		return(respuesta.toJSONString());
 	}
 
+
 	public String obtenerCantidadProductoVendidoFecha(int idProducto)
 	{
 		JSONObject respuesta = new JSONObject();
