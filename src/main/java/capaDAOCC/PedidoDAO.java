@@ -5706,6 +5706,7 @@ public class PedidoDAO {
 
         return resultado;
 	}
+
 	/**
 	 * Método que retorna la cantidad de productos vendidas en la fecha actual.
 	 * @param idProducto

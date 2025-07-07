@@ -12585,9 +12585,10 @@ public class PedidoCtrl {
 		JSONObject respuesta = new JSONObject();
 		boolean registroAlerta = PedidoDAO.registrarAlertaEntregaDom(alertaEntregaDom);
 		respuesta.put("success", registroAlerta);
-		
-	        return(respuesta.toJSONString());
+		return(respuesta.toJSONString());
 	}
+
+
 	public String obtenerCantidadProductoVendidoFecha(int idProducto)
 	{
 		JSONObject respuesta = new JSONObject();
