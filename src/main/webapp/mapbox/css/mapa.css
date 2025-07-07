@@ -31,6 +31,15 @@ body {
     min-width: 100px;
 }
 
+.my-swal .swal2-icon {
+  transform: scale(0.7); /* 70% del tamaño original */
+}
+.leaflet-interactive:focus {
+  outline: none !important;
+
+}
+
+
 .titulo-pagina {
     font-family: 'Poppins', sans-serif; /* Aplica la fuente Poppins */
     font-size: 1.5rem; /* Tamaño de fuente más grande */

@@ -13,89 +13,71 @@ $(document).ready(function() {
 	let markers = {};
 	const userDetails = document.getElementById("user-details");
 	const infoDetails = document.getElementById("info");
+	var marcadorDetalle;
+	var longitudInicial = -75.5818;
+	var latitudInicial = 6.2527;
+	var zoomInicial = 11;
+
 	// Llamadas optimizadas
 	Promise.all([
-	    cargarParametro("ARCGIS-JS", "a_js"),
-	    cargarParametro("MAPBOX-JS", "mp_js")
+		cargarParametro("ARCGIS-JS", "a_js"),
 	]).then(() => {
 		// Configuración de Mapbox
 
-		// Inicialización de Mapbox
-		 map = new mapboxgl.Map({
-			container: 'map',
-			style: 'mapbox://styles/mapbox/streets-v11',
-			center: [longitudInicial, latitudInicial],
-			zoom: zoomInicial
-		});
+		map = L.map('map').setView(
+		    [latitudInicial, longitudInicial],
+		    zoomInicial);
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '&copy; OpenStreetMap contributors'
+		}).addTo(map);
+
+		map_detalle = L.map('mapa-detalle').setView(
+		    [latitudInicial, longitudInicial],
+		    zoomInicial);
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '&copy; OpenStreetMap contributors'
+		}).addTo(map_detalle);
 
 
-		map_detalle = new mapboxgl.Map({
-			container: 'mapa-detalle',
-			style: 'mapbox://styles/mapbox/streets-v11',
-			center: [longitudInicial, latitudInicial],
-			zoom: zoomInicial
-		});
-		
-		// Cargar polígonos en el mapa
-		map.on('load', () => {
-			map.addSource('states', { 'type': 'geojson', 'data': 'zonas-polig.geojson' });
-			map.addLayer({
-				'id': 'states-layer',
-				'type': 'fill',
-				'source': 'states',
-				'paint': {
-					'fill-color': ['match', ['get', 'id'], 1, 'rgba(255, 0, 0, 0.1)', 2, 'rgba(0, 255, 0, 0.1)', 3, 'rgba(0, 0, 255, 0.1)', 'rgba(200, 100, 240, 0.1)'],
-					'fill-outline-color': 'rgba(0, 0, 0, 0.3)'
-				}
-			});
-			map.addLayer({
-				'id': 'states-labels',
-				'type': 'symbol',
-				'source': 'states',
-				'layout': {
-					'text-field': ['get', 'name'],
-					'text-size': 12,
-					'text-offset': [0, 1.5],
-					'text-anchor': 'top'
-				},
-				'paint': {
-					'text-color': '#000',
-					'text-halo-color': '#fff',
-					'text-halo-width': 1
-				}
-			});
-		});
 
-		map_detalle.on('load', () => {
+		marcadorDetalle = L.marker([0, 0]).addTo(map_detalle);
 
-			map_detalle.addSource('states-detalle', { 'type': 'geojson', 'data': 'zonas-polig.geojson' });
-			map_detalle.addLayer({
-				'id': 'states-layer-detalle',
-				'type': 'fill',
-				'source': 'states-detalle',
-				'paint': {
-					'fill-color': ['match', ['get', 'id'], 1, 'rgba(255, 0, 0, 0.1)', 2, 'rgba(0, 255, 0, 0.1)', 3, 'rgba(0, 0, 255, 0.1)', 'rgba(200, 100, 240, 0.1)'],
-					'fill-outline-color': 'rgba(0, 0, 0, 0.3)'
-				}
-			});
-			map_detalle.addLayer({
-				'id': 'states-labels-detalle',
-				'type': 'symbol',
-				'source': 'states-detalle',
-				'layout': {
-					'text-field': ['get', 'name'],
-					'text-size': 12,
-					'text-offset': [0, 1.5],
-					'text-anchor': 'top'
-				},
-				'paint': {
-					'text-color': '#000',
-					'text-halo-color': '#fff',
-					'text-halo-width': 1
-				}
-			});
-		});
-		
+		fetch('zonas-polig.geojson')
+		  .then(r => r.json())
+		  .then(geojson => {
+		    const geojsonOptions = {
+		      style: feature => ({
+		        fillColor: { 1: 'red', 2: 'green', 3: 'blue' }[feature.properties.id] || 'purple',
+		        fillOpacity: 0.1,
+		        color: '#000',
+		        weight: 1
+		      }),
+		      onEachFeature: (feature, layer) => {
+		        // Mostrar tooltip solo si tiene nombre
+		        if (feature.properties.name?.trim()) {
+		          layer.bindTooltip(feature.properties.name, {
+		            direction: 'top',
+		            sticky: true,
+		            permanent: false
+		          });
+		        }
+
+		        // Evitar que al hacer clic aparezca un recuadro o se enfoque
+		        layer.on('click', function(e) {
+		          L.DomEvent.stopPropagation(e);
+		          L.DomEvent.preventDefault(e);
+		        });
+		      }
+		    };
+
+		    L.geoJSON(geojson, geojsonOptions).addTo(map);
+		    L.geoJSON(geojson, geojsonOptions).addTo(map_detalle);
+		  });
+
 		initializePage();
 	});
 
@@ -109,8 +91,8 @@ $(document).ready(function() {
 		const currentDate = `${year}-${month}-${day}`;
 		// Asignar la fecha actual a los campos de fecha
 		startDate.val(currentDate);
-		endDate.val(currentDate); 
-		
+		endDate.val(currentDate);
+
 		EnvioDatos({ tiendaId: tiendaidH, action: "historial", startDate: startDate.val(), endDate: endDate.val() });
 	}
 
@@ -119,9 +101,9 @@ $(document).ready(function() {
 
 
 	const map_detalleContainer = $('#mapa-detalle');
-	
 
-	
+
+
 
 	// Inicialización de DataTable
 	const table = $('#table-container').DataTable({
@@ -130,7 +112,7 @@ $(document).ready(function() {
 			"sInfo": "", "sInfoEmpty": "", "sInfoFiltered": ""
 		},
 		"responsive": true,
-			"autoWidth": false,
+		"autoWidth": false,
 	});
 
 	const tableHistorial = $('#table-historial').DataTable({
@@ -157,14 +139,11 @@ $(document).ready(function() {
 	});
 
 
-	var longitudInicial = -75.5818;
-	var latitudInicial = 6.2527;
-	var zoomInicial = 11;
 
 
 
 	const tiendaMap = {};
-	
+
 
 	// Función de geocodificación inversa
 	function updateAddress(address) {
@@ -172,6 +151,8 @@ $(document).ready(function() {
 	}
 
 	function reverseGeocode(latitude, longitude) {
+		if (!accessToken) return updateAddress("Token no disponible");
+		
 		const url = `https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?f=pjson&location=${longitude},${latitude}&token=${accessToken}`;
 		fetch(url)
 			.then(response => response.json())
@@ -180,36 +161,43 @@ $(document).ready(function() {
 	}
 
 
-	
 
 
-	// Función para actualizar o crear fila y marcador
+
 	function updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda) {
-		let row = document.getElementById(`row-${clave_usuario}`);
 		const nombreTienda = tiendaMap[idtienda] || "Tienda desconocida";
+		const rowId = `row-${clave_usuario}`;
+		const existingRow = document.getElementById(rowId);
 
-		if (!row) {
-			row = document.createElement("tr");
-			row.id = `row-${clave_usuario}`;
-			row.classList.add("table-row");
-			row.innerHTML = `
-                <td>${nombre_usuario}</td>
-                <td>${fecha_hora}</td>
-                <td>${nombreTienda}</td>
-            `;
-			table.row.add($(row)).draw(false);
+		if (existingRow) {
+			// ✅ Si la fila ya existe, actualiza los datos en DataTables
+			const dataTableRow = table.row(existingRow);
+			dataTableRow.data([
+				nombre_usuario,
+				fecha_hora,
+				nombreTienda
+			]).draw(false);
 		} else {
-			row.children[1].textContent = fecha_hora;
-			row.children[2].textContent = nombreTienda;
+			// ✅ Si no existe, crea una nueva fila
+			const newRow = table.row.add([
+				nombre_usuario,
+				fecha_hora,
+				nombreTienda
+			]).draw(false).node();
+
+			newRow.id = rowId;
+			newRow.classList.add("table-row");
 		}
 
+		// Marcador
 		if (!markers[clave_usuario]) {
-			const popup = new mapboxgl.Popup({ offset: 25 }).setText(nombre_usuario);
-			markers[clave_usuario] = new mapboxgl.Marker().setLngLat([longitude, latitude]).setPopup(popup).addTo(map);
+			const popup = L.popup().setContent(nombre_usuario);
+			markers[clave_usuario] = L.marker([latitude, longitude]).bindPopup(popup).addTo(map);
 		} else {
-			markers[clave_usuario].setLngLat([longitude, latitude]);
+			markers[clave_usuario].setLatLng([latitude, longitude]);
 		}
 	}
+
 
 	// Manejador de clics en las filas de la tabla
 	table.on('click', 'tr', function() {
@@ -220,10 +208,14 @@ $(document).ready(function() {
 		const nombreTienda = row.children().eq(2).text();
 
 		if (markers[clave_usuario]) {
-			const lat = markers[clave_usuario].getLngLat().lat;
-			const lon = markers[clave_usuario].getLngLat().lng;
 
-			map.flyTo({ center: [lon, lat], zoom: 17, essential: true });
+			const latlng = markers[clave_usuario].getLatLng();
+			const lat = latlng.lat;
+			const lon = latlng.lng;
+
+
+			map.setView([lat, lon], 17);
+
 			userDetails.innerHTML = `
                 <h3>Detalles del Usuario</h3>
                 <p><strong>Nombre:</strong> ${nombre_usuario}</p>
@@ -236,7 +228,7 @@ $(document).ready(function() {
 			reverseGeocode(lat, lon);
 		}
 	});
-	var marcadorDetalle = new mapboxgl.Marker().setLngLat([0, 0]).addTo(map_detalle);
+
 	tableHistorial.on('click', 'tr', function() {
 
 		var rowData = tableHistorial.row(this).data();  // Obtiene los datos visibles de la fila
@@ -268,7 +260,7 @@ $(document).ready(function() {
 		EnvioDatos({ tiendaId: tiendaId, action: "rastreo" });
 	});
 
-	
+
 
 	selectTiendaHist.change(function() {
 		tiendaidH = $(this).val();
@@ -282,12 +274,53 @@ $(document).ready(function() {
 	});
 
 
-	const socket = io("http://172.19.0.25:8082", { reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000 });
+	const socket = io("http://172.19.0.25:8082", { reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 2000 ,  timeout: 5000});
 
 	// Escuchar datos desde el servidor
 	socket.on('updateLocation', (data) => {
 		const { clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda } = data;
 		updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda);
+	});
+
+
+	let yaMostroErrorSocket = false;
+
+	// Cuando se conecta exitosamente (por primera vez o tras reconectar)
+	socket.on("connect", () => {
+		if (yaMostroErrorSocket) {
+			Swal.fire({
+				icon: 'success',
+				title: 'Conexión restablecida',
+				text: 'La conexión en tiempo real ha sido restablecida.',
+				timer: 3000,
+				showConfirmButton: false
+			});
+		}
+		yaMostroErrorSocket = false; // Reinicia el estado
+	});
+
+	// Si ocurre un error de conexión
+	socket.on("connect_error", (err) => {
+		console.warn("Error de conexión:", err.message);
+
+		if (!yaMostroErrorSocket) {
+			yaMostroErrorSocket = true;
+
+			Swal.fire({
+				icon: 'info',
+				html: '<center><strong>Sin conexión en tiempo real </strong></center><br>No se logró la conexión con el servidor. Puede que esté apagado o fuera de horario.',
+				confirmButtonText: 'Cerrar',
+				customClass: {
+				   popup: 'my-swal'
+				 }
+			});
+		}
+	});
+
+	// Si definitivamente falla la reconexión
+	socket.on("reconnect_failed", () => {
+		console.warn("No se pudo reconectar. Desconectando...");
+		socket.disconnect();
 	});
 
 
@@ -306,7 +339,7 @@ $(document).ready(function() {
 		botones.siguiente.prop("disabled", paginaActual === paginas.length - 1);
 	}
 
-	botones.anterior.click(() => { if (paginaActual > 0) { paginaActual--; actualizarPaginador(); } map.resize(); });
+	botones.anterior.click(() => { if (paginaActual > 0) { paginaActual--; actualizarPaginador(); } map.invalidateSize(); });
 	botones.siguiente.click(() => { if (paginaActual < paginas.length - 1) { paginaActual++; actualizarPaginador(); } });
 
 	actualizarPaginador();
@@ -317,7 +350,7 @@ $(document).ready(function() {
 			method: "POST",
 			data: data,
 			success: function(response) {
-			
+
 				if (data.action == "rastreo") {
 					table.clear().draw();
 					Object.keys(markers).forEach(clave_usuario => markers[clave_usuario].remove());
@@ -379,42 +412,44 @@ $(document).ready(function() {
 
 
 	$('#modalDetalles').on('shown.bs.modal', function() {
-		map_detalle.resize(); // Redimensionar el mapa de detalle
+		map_detalle.invalidateSize();
 		map_detalleContainer.css('visibility', 'visible');
 	});
 
 	map_detalleContainer.css('visibility', 'hidden');
-	
 
-	$(document).on('click', '.centrar-fila', function () {
-		var fila = $(this).closest('tr');
+
+	$(document).on('click', '.centrar-fila', function() {
+		const fila = $(this).closest('tr');
 		var latitud = fila.attr('data-latitud');
 		var longitud = fila.attr('data-longitud');
 
-			if (longitud && latitud) {
-				// Actualiza la posición del marcador
-				marcadorDetalle.setLngLat([longitud, latitud]);
-				// Centra el mapa en las coordenadas del marcador
-				map_detalle.flyTo({ center: [longitud, latitud], zoom: 16 });
+		if (longitud && latitud) {
+			// Actualiza la posición del marcador
+			marcadorDetalle.setLatLng([latitud, longitud]);
 
-				const url = `https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?f=pjson&location=${longitud},${latitud}&token=${accessToken}`;
-				fetch(url)
-					.then(response => response.json())
-					.then(data => {
+			// Centra el mapa en las coordenadas del marcador
+			map_detalle.setView([latitud, longitud], 16);
 
-						infoDetails.innerHTML = ` <h3>Dirección:</h3>
+
+			const url = `https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?f=pjson&location=${longitud},${latitud}&token=${accessToken}`;
+			fetch(url)
+				.then(response => response.json())
+				.then(data => {
+
+					infoDetails.innerHTML = ` <h3>Dirección:</h3>
 							                <p><strong>Nombre:</strong> ${data.address.LongLabel || "No disponible"}</p>`;
-					})
-					.catch(() => {
-						infoDetails.innerHTML = ` <h3>Dirección:</h3>
+				})
+				.catch(() => {
+					infoDetails.innerHTML = ` <h3>Dirección:</h3>
 																                <p><strong>Nombre:</strong> ${"Error al obtener dirección"}</p>`;
-					});
+				});
 
-			} else {
-				mostrarMensajeError('Coordenadas no disponibles para esta fila.')
+		} else {
+			mostrarMensajeError('Coordenadas no disponibles para esta fila.')
 
-			}
-		
+		}
+
 	});
 	// Clase CSS para resaltar filas seleccionadas
 	const CLASE_SELECCIONADA = 'fila-seleccionada';
@@ -422,215 +457,182 @@ $(document).ready(function() {
 	// Arreglo para almacenar las filas seleccionadas
 	var seleccionados = [];
 
-	$(document).on('click', '.seleccionar-fila', function () {
-	    var fila = $(this).closest('tr');
-	    var latitud = fila.attr('data-latitud');
-	    var longitud = fila.attr('data-longitud');
-	    var fecha = fila.find('td:eq(0)').text();
-	
-	    // Si la fila ya está seleccionada
-	    if (fila.hasClass(CLASE_SELECCIONADA)) {
-	        // Desmarcar la fila si ya está seleccionada
-	        fila.removeClass(CLASE_SELECCIONADA);
-	        // Eliminar la fila del arreglo
-	        seleccionados = seleccionados.filter(item => item.fila[0] !== fila[0]);
+	$(document).on('click', '.seleccionar-fila', function() {
+		var fila = $(this).closest('tr');
+		var latitud = fila.attr('data-latitud');
+		var longitud = fila.attr('data-longitud');
+		var fecha = fila.find('td:eq(0)').text();
 
-	    } else {
-	        // Si ya hay 2 filas seleccionadas
-	        if (seleccionados.length >= 2) {
-	            // Desmarcar las filas anteriores
-	            seleccionados.forEach(item => item.fila.removeClass(CLASE_SELECCIONADA));
-	            // Limpiar el arreglo y agregar solo la nueva fila seleccionada
-	            seleccionados = [{ fila, fecha, latitud, longitud }];
-	            fila.addClass(CLASE_SELECCIONADA); // Marcar la nueva fila
+		// Si la fila ya está seleccionada
+		if (fila.hasClass(CLASE_SELECCIONADA)) {
+			// Desmarcar la fila si ya está seleccionada
+			fila.removeClass(CLASE_SELECCIONADA);
+			// Eliminar la fila del arreglo
+			seleccionados = seleccionados.filter(item => item.fila[0] !== fila[0]);
 
-	        } else {
-	            // Si no hay 2 filas seleccionadas, agregar la nueva fila al arreglo
-	            seleccionados.push({ fila, fecha, latitud, longitud });
-				
-	            fila.addClass(CLASE_SELECCIONADA); // Marcar la nueva fila
-			
-	        }
-	    }
+		} else {
+			// Si ya hay 2 filas seleccionadas
+			if (seleccionados.length >= 2) {
+				// Desmarcar las filas anteriores
+				seleccionados.forEach(item => item.fila.removeClass(CLASE_SELECCIONADA));
+				// Limpiar el arreglo y agregar solo la nueva fila seleccionada
+				seleccionados = [{ fila, fecha, latitud, longitud }];
+				fila.addClass(CLASE_SELECCIONADA); // Marcar la nueva fila
 
-	    // Si hay exactamente dos filas seleccionadas, procesar la ruta
-	    if (seleccionados.length === 2) {
-	        obtenerCoordenadasEntreFilas(seleccionados[0], seleccionados[1]);
-	    }
-		
-		
+			} else {
+				// Si no hay 2 filas seleccionadas, agregar la nueva fila al arreglo
+				seleccionados.push({ fila, fecha, latitud, longitud });
+
+				fila.addClass(CLASE_SELECCIONADA); // Marcar la nueva fila
+
+			}
+		}
+
+		// Si hay exactamente dos filas seleccionadas, procesar la ruta
+		if (seleccionados.length === 2) {
+			obtenerCoordenadasEntreFilas(seleccionados[0], seleccionados[1]);
+		}
+
+
 	});
 
 
 	function obtenerCoordenadasEntreFilas(fila1, fila2) {
 		ocultarMensajeError();
 		limpiarMapa();
-	    const fechaInicio = new Date(fila1.fecha);
-	    const fechaFin = new Date(fila2.fecha);
-	    const coordenadas = [];
+		const fechaInicio = new Date(fila1.fecha);
+		const fechaFin = new Date(fila2.fecha);
+		const coordenadas = [];
 
-	    // Asegurar que fechaInicio sea menor
-	    const inicio = fechaInicio < fechaFin ? fechaInicio : fechaFin;
-	    const fin = fechaInicio > fechaFin ? fechaInicio : fechaFin;
+		// Asegurar que fechaInicio sea menor
+		const inicio = fechaInicio < fechaFin ? fechaInicio : fechaFin;
+		const fin = fechaInicio > fechaFin ? fechaInicio : fechaFin;
 
-	    // Recorrer filas y filtrar coordenadas en el rango
-	    tableDetalles.rows().every(function () {
-	        const fila = this.node();
-	        const fecha = new Date($(fila).find('td:eq(0)').text());
-	        if (fecha >= inicio && fecha <= fin) {
-	            coordenadas.push([
-	                $(fila).attr('data-longitud'),
-	                $(fila).attr('data-latitud'),
-	            ]);
-	        }
-	    });
+		// Recorrer filas y filtrar coordenadas en el rango
+		tableDetalles.rows().every(function() {
+			const fila = this.node();
+			const fecha = new Date($(fila).find('td:eq(0)').text());
+			if (fecha >= inicio && fecha <= fin) {
+				coordenadas.push([
+					$(fila).attr('data-longitud'),
+					$(fila).attr('data-latitud'),
+				]);
+			}
+		});
 
-	    if (coordenadas.length > 1) {
-	        enviarRutaSegmentada(coordenadas);
-	    } else {
+		if (coordenadas.length > 1) {
+			enviarRutaSegmentada(coordenadas);
+		} else {
 			mostrarMensajeError('Se necesitan al menos dos coordenadas para procesar la ruta.')
 
-	    }
+		}
+	}
+
+	function agregarRutaLineal(coordenadas) {
+		// Leaflet espera [lat, lng] (orden invertido)
+		const latLngs = coordenadas.map(([lng, lat]) => [lat, lng]);
+
+		const polyline = L.polyline(latLngs, {
+			color: '#03AA46',
+			weight: 6,
+			opacity: 0.8
+		}).addTo(map_detalle);
+
+		const bounds = polyline.getBounds();
+		map_detalle.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+
+		// Guarda para limpiar después
+		map_detalle._rutaActual = polyline;
 	}
 
 	async function enviarRuta(coordenadas) {
-
-	    const coordsString = coordenadas.map(coord => coord.join(',')).join(';');
-
-	    try {
-	        const response = await fetch(
-				`https://api.mapbox.com/matching/v5/mapbox/walking/${coordsString}?geometries=geojson&steps=true&access_token=${mapboxgl.accessToken}`
-	        );
-	        const data = await response.json();
-
-	        if (data.code === 'Ok') {
-	            agregarRuta(data.matchings[0].geometry);
-	        } else {
-				mostrarMensajeError('No se pudo procesar la ruta. Verifica las coordenadas.')
-
-	        }
-	    } catch (error) {
-			mostrarMensajeError('No se pudo procesar la ruta. se presento un error')
-			 console.log('Error al solicitar la API:', error);
-	    }
+		agregarRutaLineal(coordenadas);
 	}
 
 	async function enviarRutaSegmentada(coordenadas, segmento = 50) {
-	    for (let i = 0; i < coordenadas.length; i += segmento) {
-	        const segmentoCoords = coordenadas.slice(i, i + segmento);
-	        await enviarRuta(segmentoCoords);
-	    }
+		// Puedes unir todos los segmentos en una sola línea, ya que no usamos una API externa
+		agregarRutaLineal(coordenadas);
 	}
 
-	
-	function agregarRuta(geometry) {
-		
-	    map_detalle.addSource('route', {
-	        type: 'geojson',
-	        data: { type: 'Feature', properties: {}, geometry },
-	    });
-
-	    map_detalle.addLayer({
-	        id: 'route',
-	        type: 'line',
-	        source: 'route',
-	        layout: { 'line-join': 'round', 'line-cap': 'round' },
-	        paint: { 'line-color': '#03AA46', 'line-width': 8, 'line-opacity': 0.8 },
-	    });
-		
-		// Centrar el mapa en la ruta
-		   const coordinates = geometry.coordinates; // Obtener las coordenadas de la geometría
-		   const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-
-		   map_detalle.fitBounds(bounds, {
-		       padding: 50, // Espacio alrededor de la ruta
-		       maxZoom: 18, // Nivel máximo de zoom permitido
-		       duration: 1000, // Duración de la animación en milisegundos
-		   });
-	}
 
 
 	function limpiarMapa() {
-		if (map_detalle.getSource('route')) {
-		    map_detalle.removeLayer('route');
-		    map_detalle.removeSource('route');
+		if (map_detalle._rutaActual) {
+			map_detalle.removeLayer(map_detalle._rutaActual);
+			delete map_detalle._rutaActual;
 		}
 
 		infoDetails.innerHTML = ` <h3>Dirección:</h3><p>Seleccione un registro de la tabla para mostrar la información...</p></p>`;
-		marcadorDetalle.remove();
-		marcadorDetalle = new mapboxgl.Marker().setLngLat([0, 0]).addTo(map_detalle);
-		map_detalle.flyTo({ center: [longitudInicial, latitudInicial], zoom: zoomInicial });
+		marcadorDetalle.setLatLng([0, 0]);
+		map_detalle.setView([latitudInicial, longitudInicial], zoomInicial);
 		ocultarMensajeError();
-}
+	}
 
 
 
-function mostrarMensajeError(mensaje) {
-    const divError = document.getElementById('errorMensaje');
-    divError.textContent = mensaje; // Actualiza el texto del mensaje
-    divError.style.display = 'block'; // Muestra el mensaje
-}
+	function mostrarMensajeError(mensaje) {
+		const divError = document.getElementById('errorMensaje');
+		divError.textContent = mensaje; // Actualiza el texto del mensaje
+		divError.style.display = 'block'; // Muestra el mensaje
+	}
 
-function ocultarMensajeError() {
-    const divError = document.getElementById('errorMensaje');
-    divError.style.display = 'none'; // Oculta el mensaje
-}
+	function ocultarMensajeError() {
+		const divError = document.getElementById('errorMensaje');
+		divError.style.display = 'none'; // Oculta el mensaje
+	}
 
 
-function initializePage(){
+	function initializePage() {
 
-	    $.ajax({
-	        url: "/ProyectoPizzaAmericana/GetTiendas", 
-	        method: "GET",
-	        dataType: "json",
-	        success: function (data) {
-				tiendas =data;
-				
+		$.ajax({
+			url: "/ProyectoPizzaAmericana/GetTiendas",
+			method: "GET",
+			dataType: "json",
+			success: function(data) {
+				tiendas = data;
+
 				[selectTienda, selectTiendaHist].forEach(select => {
-						tiendas.forEach(function(tienda) {
-							select.append(
-								$('<option>', {
-									value: tienda.id,
-									text: tienda.nombre
-								})
-							);
-						});
+					tiendas.forEach(function(tienda) {
+						select.append(
+							$('<option>', {
+								value: tienda.id,
+								text: tienda.nombre
+							})
+						);
 					});
-					
-					tiendas.forEach(tienda => tiendaMap[tienda.id] = tienda.nombre);
+				});
 
-	        },
-	        error: function (err) {
-	            console.error("Error al obtener datos:", err);
-	        }
-	    });
-		
+				tiendas.forEach(tienda => tiendaMap[tienda.id] = tienda.nombre);
+
+			},
+			error: function(err) {
+				console.error("Error al obtener datos:", err);
+			}
+		});
+
 		EnvioDatos({ tiendaId: 0, action: "rastreo" });
 
-}
+	}
 
 
-	  function cargarParametro(parametro, asignarVariable) {
-		    return $.ajax({
-		        url: `/ProyectoPizzaAmericana/GetParametro?parametro=${parametro}`,
-		        method: "GET",
-		        dataType: "json"
-		    }).done(function (data) {
-				
-				if(asignarVariable == "a_js"){
-					
-						accessToken = data.valortexto;
-				}else{
-						mapboxgl.accessToken =  data.valortexto;
-				}
-				
-			
-		    }).fail(function (err) {
-		        console.error(`Error al obtener datos para ${parametro}:`, err);
-		    });
-		}
-		
+	function cargarParametro(parametro, asignarVariable) {
+		return $.ajax({
+			url: `/ProyectoPizzaAmericana/GetParametro?parametro=${parametro}`,
+			method: "GET",
+			dataType: "json"
+		}).done(function(data) {
 
-	
-	});
+			if (asignarVariable == "a_js") {
+
+				accessToken = data.valortexto;
+			}
+
+		}).fail(function(err) {
+			console.error(`Error al obtener datos para ${parametro}:`, err);
+		});
+	}
+
+
+
+});
 
