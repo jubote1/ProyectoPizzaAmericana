@@ -1,4 +1,62 @@
 document.addEventListener("DOMContentLoaded", function() {
+	
+	// Obtener la URL base de tu proyecto "ProyectoPizzaAmericana"
+	const loc = window.location;
+	const pathParts = loc.pathname.split('/');
+	const baseFolder = "ProyectoPizzaAmericana";
+	const index = pathParts.indexOf(baseFolder);
+
+	// Reconstruir la URL base completa del proyecto
+	const server = `${loc.origin}/${pathParts.slice(1, index + 1).join("/")}/`;
+
+	// Variable para almacenar la respuesta del servidor
+	let respuesta = '';
+	let usuario = '';
+
+	// Validar el usuario mediante una petición AJAX síncrona
+	$.ajax({
+	    url: server + 'ValidarUsuarioAplicacion',
+	    dataType: 'json',
+	    type: 'POST',
+	    async: false, // ⚠️ Sincrónico: se recomienda cambiar si puedes usar async/await
+	    success: function (data) {
+	        respuesta = data[0]?.respuesta || '';
+	        usuario = data[0]?.nombreusuario || '';
+	    },
+	    error: function () {
+	        console.error("Error al validar el usuario.");
+	        location.href = server + "Index.html";
+	    }
+	});
+
+	// Cargar el menú o redirigir según el tipo de usuario
+	switch (respuesta) {
+	    case 'OK': // Usuario común
+	        $('#cargarMenu').load(server +"Menu.html", function () {
+					    $('#usuariologin').text(usuario);
+					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+					});
+	        break;
+
+	    case 'OKA': // Usuario administrador		
+			$('#cargarMenu').load(server + "MenuAdm.html", function () {
+			    $('#usuariologin').text(usuario);
+			    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+			});
+	        break;
+
+	    case 'OKP': // Usuario PQRS
+	        $('#cargarMenu').load(server +"MenuPQRS.html", function () {
+					    $('#usuariologin').text(usuario);
+					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+					});
+	        break;
+
+	    default: // No válido o sin sesión
+	        location.href = server + "Index.html";
+	        break;
+	}
+
 	flatpickr("#rangoFechas", {
 		locale: "es",
 		mode: "range",

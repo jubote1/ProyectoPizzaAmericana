@@ -222,14 +222,14 @@ function calcularDescuento() {
 
 function getListaTiendas() {
 	$.getJSON(server + 'GetTiendas', function(data) {
-		let placeholder = `<option value="">Seleccionar...</option>`;
+		let placeholder = `<option value="" disabled selected hidden>Seleccione una opción</option>`;
 		let str = data.map(t => `<option value="${t.nombre}" id="${t.id}">${t.nombre}</option>`).join('');
 		$('#selectTiendas').html(placeholder + str).val('');
 	});
 }
 
 function getListaOrigenes() {
-	let placeholder = `<option value="">Seleccionar...</option>`;
+	let placeholder = `<option value="" disabled selected hidden>Seleccione una opción</option>`;
 	$.getJSON(server + 'CRUDOrigenPqrs?idoperacion=5', function(data) {
 		let str = data.map(o => `<option value="${o.nombreorigen}" id="${o.idorigen}">${o.nombreorigen}</option>`).join('');
 		$('#selectOrigen').html(placeholder + str).val('');
@@ -237,7 +237,7 @@ function getListaOrigenes() {
 }
 
 function getListaFocos() {
-	let placeholder = `<option value="">Seleccionar...</option>`;
+	let placeholder = `<option value="" disabled selected hidden>Seleccione una opción</option>`;
 	$.getJSON(server + 'CRUDFocoPqrs?idoperacion=5', function(data) {
 		let str = data.map(f => `<option value="${f.nombrefoco}" id="${f.idfoco}">${f.nombrefoco}</option>`).join('');
 		$('#selectFoco').html(placeholder + str).val('');
@@ -257,7 +257,16 @@ function limpiarSeleccionCliente() {
 	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento').val("");
 
 	// Reiniciar selects a la primera opción
-	$('#selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado').prop('selectedIndex', 0);
+	//$('#selectFoco, #selectOrigen , #selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado,#selectSolicitud').prop('selectedIndex', 0);
+	$('select').each(function () {
+	  $(this).prop('selectedIndex', 0);
+
+	  if (this.value === "0") {
+	    this.classList.add("placeholder");
+	  } else {
+	    this.classList.remove("placeholder");
+	  }
+	});
 	$('#descuentoRedimido').prop('checked', false);
 	// Reiniciar valor del cliente
 	idCliente = 0;
@@ -290,7 +299,9 @@ function validarFechaNoMayorAHoy(fechaIngresada) {
 
 
 
+
 function ConfirmarPQRS() {
+
 	if (ValidacionesDatos() !== 1) return;
 
 	const comentarios = historialContainer.querySelectorAll("textarea");
@@ -365,6 +376,18 @@ function ConfirmarPQRS() {
 				const filestack = $('#file-1').fileinput('getFileList');
 				const fd = new FormData();
 				const erroresImagenes = [];
+				console.log(filestack)
+				if (filestack.length === 0) {
+					// No hay imágenes: mostrar éxito y limpiar
+					Swal.fire({
+						icon: 'success',
+						title: 'Éxito',
+						text: 'Solicitud ingresada correctamente.'
+					});
+					limpiarSeleccionCliente();
+					return;
+				}
+
 
 				filestack.forEach(file => fd.append('files[]', file));
 
@@ -465,6 +488,9 @@ function ValidacionesDatos() {
 	validarCampoVacio($("#selectOrigen").val(), "Debe seleccionar el origen de la PQRS.");
 	validarCampoVacio($("#selectFoco").val(), "Debe seleccionar el foco de la PQRS.");
 	validarCampoVacio($("#selectMunicipio").val(), "Debe seleccionar el municipio.");
+	validarCampoVacio($("#selectSolicitud").val(), "Debe seleccionar el tipo de solicitud.");
+	validarCampoVacio($("#selectAreaResponsable").val(), "Debe seleccionar area responsable.");
+	validarCampoVacio($("#selectTipo").val(), "Debe seleccionar tipo de queja.");
 
 
 	if ($("#selectUsuarioRegistro").val() === "0") {
@@ -572,6 +598,16 @@ document.getElementById("btnAgregarComentario").addEventListener("click", () => 
 	document.getElementById("nuevoComentario").value = "";
 });
 
+document.querySelectorAll('select').forEach(select => {
+  select.addEventListener("change", () => {
+    if (select.value === "0") {
+      select.classList.add("placeholder");
+    } else {
+      select.classList.remove("placeholder");
+    }
+  });
+});
+
 function getUsuariosActivos() {
 	fetch(server + 'ObtenerUsuariosActivos')
 		.then(res => res.json())
@@ -592,7 +628,8 @@ function getUsuariosActivos() {
 					selectUsuRegistro.appendChild(option.cloneNode(true));
 					selectUsuRedencion.appendChild(option.cloneNode(true));
 				});
-
+				
+		
 
 			} else {
 				Swal.fire({
@@ -600,6 +637,14 @@ function getUsuariosActivos() {
 					text: 'No se encontraron usuarios'
 				});
 
+			}
+			
+			if (selectUsuRegistro.value === "0") {
+			  selectUsuRegistro.classList.add("placeholder");
+			}
+			
+			if (selectUsuRedencion.value === "0") {
+			  selectUsuRedencion.classList.add("placeholder");
 			}
 
 
@@ -637,6 +682,10 @@ function getEstadoPqrs() {
 				});
 
 			}
+			
+			if (selectEstado.value === "0") {
+			  selectEstado.classList.add("placeholder");
+			} 
 
 
 		}).catch(err => {

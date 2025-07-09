@@ -168,7 +168,8 @@
 									<div class="col-sm-6 form-group">
 										<label>Tipo de Solicitud</label> <select
 											id="selectSolicitudpqrs" class="form-control"
-											placeholder="Tipo Solicitud">
+											placeholder="Tipo Solicitud" required>
+											 <option value="" disabled selected hidden>Seleccione una opción</option>
 											<option value='peticion'>Peticion</option>
 											<option value='queja'>Queja</option>
 											<option value='reclamo'>Reclamo</option>
@@ -207,27 +208,29 @@
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Tienda PQRS</label><select id="selectTiendaspqrs"
-											class="form-control"></select>
+											class="form-control" required></select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Origen PQRS</label><select id="selectOrigen"
-											class="form-control"></select>
+											class="form-control" required></select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Foco PQRS</label><select id="selectFoco"
-											class="form-control"></select>
+											class="form-control" required></select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Queja Externa/Interna</label> <select id="selectTipo"
-											class="form-control">
-											<option value="externa" selected>externa</option>
+											class="form-control" required>
+											 <option value="" disabled selected hidden>Seleccione una opción</option>
+											<option value="externa" >externa</option>
 											<option value="interna">interna</option>
 										</select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Área Responsable</label> <select
-											id="selectAreaResponsable" class="form-control">
-											<option value="tienda" selected>tienda</option>
+											id="selectAreaResponsable" class="form-control" required>
+											 <option value="" disabled selected hidden>Seleccione una opción</option>
+											<option value="tienda">tienda</option>
 											<option value="contact">contact</option>
 											<option value="tecnologia">tecnologia</option>
 											<option value="calidad">calidad</option>
@@ -235,11 +238,11 @@
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Registrado por</label><select
-											id="selectUsuarioRegistro" class="form-control"></select>
+											id="selectUsuarioRegistro" required class="form-control"></select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Redimido por</label><select id="selectUsuarioRedencion"
-											class="form-control"></select>
+											class="form-control" required></select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Estado</label><select id="selectEstado"

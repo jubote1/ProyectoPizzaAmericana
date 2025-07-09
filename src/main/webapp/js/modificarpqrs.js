@@ -192,7 +192,7 @@ $(document).ready(function() {
 		$("#selectTiendaspqrs").val(datos.tienda);
 		$("#selectOrigen").val(datos.nombreorigen);
 		$("#selectFoco").val(datos.nombrefoco);
-		$('#tipo').val(datos.tipo);
+		$('#selectTipo').val(datos.tipo);
 		$('#selectAreaResponsable').val(datos.arearesponsable);
 		$('#selectPorcentajeDesc').val(datos.porcentajeDescuento);
 		$('#idpedidotienda').val(datos.idpedidotienda);
@@ -205,7 +205,17 @@ $(document).ready(function() {
 		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
 		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
 
+		['#selectEstado', '#selectUsuarioRegistro', '#selectUsuarioRedencion'].forEach(id => {
+		  const $select = $(id);
+		  if ($select.val() === "0") {
+		    $select.addClass("placeholder");
+		  } else {
+		    $select.removeClass("placeholder");
+		  }
+		});
 
+		
+		
 		historialContainer.innerHTML = '';
 		const listaComentarios = datos.listaComentarios;
 
@@ -470,6 +480,9 @@ function ValidarDatosActualizados() {
 	validarCampoVacio($("#selectOrigen").val(), "Debe seleccionar el origen de la PQRS.");
 	validarCampoVacio($("#selectFoco").val(), "Debe seleccionar el foco de la PQRS.");
 	validarCampoVacio($("#selectMunicipio").val(), "Debe seleccionar el municipio.");
+	validarCampoVacio($("#selectSolicitudpqrs").val(), "Debe seleccionar el tipo de solicitud.");
+	validarCampoVacio($("#selectAreaResponsable").val(), "Debe seleccionar area responsable.");
+	validarCampoVacio($("#selectTipo").val(), "Debe seleccionar tipo de queja.");
 
 	if ($("#selectUsuarioRegistro").val() === "0") {
 		errores.push("Debe seleccionar el usuario que registra la PQRS.");
@@ -621,7 +634,7 @@ function getListaOrigenes() {
 	$.getJSON(server + 'CRUDOrigenPqrs?idoperacion=5', function(data) {
 		var origenes = data;
 		var str = '';
-		let placeholder = `<option value="">Seleccionar...</option>`;
+		let placeholder = `<option value="" disabled selected hidden>Seleccione una opción</option>`;
 		for (var i = 0; i < data.length; i++) {
 			var cadaOrigen = data[i];
 			str += '<option value="' + cadaOrigen.nombreorigen + '" id ="' + cadaOrigen.idorigen + '">' + cadaOrigen.nombreorigen + '</option>';
@@ -635,7 +648,7 @@ function getListaOrigenes() {
 function getListaFocos() {
 	$.getJSON(server + 'CRUDFocoPqrs?idoperacion=5', function(data) {
 		var str = '';
-		let placeholder = `<option value="">Seleccionar...</option>`;
+		let placeholder = `<option value="" disabled selected hidden>Seleccione una opción</option>`;
 		for (var i = 0; i < data.length; i++) {
 			var cadaFoco = data[i];
 			str += '<option value="' + cadaFoco.nombrefoco + '" id ="' + cadaFoco.idfoco + '">' + cadaFoco.nombrefoco + '</option>';
@@ -940,10 +953,19 @@ function DescartarPQRS() {
 
 function limpiarPQRS() {
 	// Limpiar campos de texto y numéricos
-	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#idestado').prop('selectedIndex', 0);
+	//$('#selectTipo,#selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#idestado').prop('selectedIndex', 0);
 	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha').val("");
 	// Reiniciar selects a la primera opción
-	$('#selectTiendaspqrs, #selectOrigen , #selectFoco , #selectMunicipio, #selectAreaResponsable').val("");
+	$('#selectTiendaspqrs, #selectOrigen , #selectFoco').val("");
+	$('select').each(function () {
+	  $(this).prop('selectedIndex', 0);
+
+	  if (this.value === "0") {
+	    this.classList.add("placeholder");
+	  } else {
+	    this.classList.remove("placeholder");
+	  }
+	});
 
 	$('#descuentoRedimido').prop('checked', false);
 	historialContainer.innerHTML = '';
@@ -1236,7 +1258,19 @@ document.getElementById("btnAgregarComentario").addEventListener("click", () => 
 	document.getElementById("nuevoComentario").value = "";
 });
 
+
+document.querySelectorAll('select').forEach(select => {
+  select.addEventListener("change", () => {
+    if (select.value === "0") {
+      select.classList.add("placeholder");
+    } else {
+      select.classList.remove("placeholder");
+    }
+  });
+});
+
 function getUsuariosActivos() {
+
 	fetch(server + 'ObtenerUsuariosActivos')
 		.then(res => res.json())
 		.then(usuarios => {
@@ -1280,6 +1314,16 @@ function getUsuariosActivos() {
 				});
 
 			}
+	
+			
+			if (selectUsuRegistro.value === "0") {
+					  selectUsuRegistro.classList.add("placeholder");
+					}
+					
+					if (selectUsuRedencion.value === "0") {
+					  selectUsuRedencion.classList.add("placeholder");
+					}
+
 
 		})
 		.catch(err => {
@@ -1292,46 +1336,6 @@ function getUsuariosActivos() {
 }
 
 
-
-function getUsuariosActivos() {
-	fetch(server + 'ObtenerUsuariosActivos')
-		.then(res => res.json())
-		.then(usuarios => {
-			const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
-			const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
-
-			selectUsuRegistro.innerHTML = '';
-			selectUsuRedencion.innerHTML = '';
-
-			// Opción por defecto
-			const optionDefault = new Option("Seleccionar...", 0);
-			selectUsuRegistro.appendChild(optionDefault.cloneNode(true));
-			selectUsuRedencion.appendChild(optionDefault.cloneNode(true));
-			if (usuarios) {
-				usuarios.forEach(usuario => {
-					const option = new Option(usuario.nombreLargo, usuario.id);
-					selectUsuRegistro.appendChild(option.cloneNode(true));
-					selectUsuRedencion.appendChild(option.cloneNode(true));
-				});
-
-
-			} else {
-				Swal.fire({
-					icon: 'error',
-					text: 'No se encontraron usuarios'
-				});
-
-			}
-
-
-		}).catch(err => {
-			console.error("Error al cargar usuarios activos:", err);
-			Swal.fire({
-				icon: 'error',
-				text: 'No se pudieron cargar los usuarios activos.'
-			});
-		});
-}
 
 
 function getEstadoPqrs() {
@@ -1358,6 +1362,10 @@ function getEstadoPqrs() {
 				});
 
 			}
+			
+			if (selectEstado.value === "0") {
+						  selectEstado.classList.add("placeholder");
+						} 
 
 
 		}).catch(err => {

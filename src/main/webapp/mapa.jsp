@@ -41,7 +41,8 @@
 <link rel="stylesheet" href="css/mapa.css">
 </head>
 <body>
-
+<div id="cargarMenu"></div>
+<div class="content-home">
 	<div id="paginador" class="d-flex justify-content-between">
 		<button id="anterior" class="btn btn-secondary" disabled>
 			<i class="fas fa-arrow-left"></i> Anterior
@@ -193,6 +194,7 @@
 
 
 
+		</div>
 		</div>
 		<script
 			src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>

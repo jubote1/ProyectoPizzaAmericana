@@ -3,9 +3,8 @@
     box-sizing: border-box;
 }
 
-/* Estilo del cuerpo */
-body {
-    padding: 20px;
+.content-home{
+	padding: 1.5rem;
 }
 
 .pagina-activa {
