@@ -123,8 +123,20 @@ function consultarEstadoDatafonos()
 	$.getJSON(urlTienda + 'ConsultarEstadoDatafonos' , function(data1){
 	                		
 	                		table1.clear().draw();
-	                		var datafonos = JSON.parse(data1.datafonos);
-	                		var datafonosUsados = JSON.parse(data1.datafonosusados);
+	                		var datafonos;
+	                		var datafonosUsados;
+	                		try {
+	                			datafonos = JSON.parse(data1.datafonos);
+	                		}catch(error)
+	                		{
+	                			datafonos = data1.datafonos;
+	                		}
+	                		try{
+	                			datafonosUsados = JSON.parse(data1.datafonosusados);
+	                		}catch(error2)
+	                		{
+	                			datafonosUsados = data1.datafonosusados;
+	                		}
 							for(var i = 0; i < datafonos.length;i++){
 								table1.row.add(datafonos[i]).draw();
 							}

@@ -364,6 +364,8 @@ public class FidelizacionCtrl {
 
 	        // Si el cliente NO está en fidelización, registrarlo
 	        boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo);
+	        //Enviamos correo Bienvenida
+			enviarCorreoBienvenida(correo);
 	        respuesta.put("respuesta", inserto);
 	        respuesta.put("mensaje", inserto ? "registro_exitoso" : "registro_fallido");
 
