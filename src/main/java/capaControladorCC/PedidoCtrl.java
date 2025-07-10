@@ -6229,7 +6229,7 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-	    String txtdirecc = direccion + " ," + Barrio+","+ Municipio+",Antioquia,Colombia";
+	    String txtdirecc = direccion + ", " +Municipio+", "+Barrio+", Antioquia, Colombia";
 		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(txtdirecc,tipo_cliente,lead);
 		System.out.println("3. RESULTADO DEL PROCESO " +  resultado);
 		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);

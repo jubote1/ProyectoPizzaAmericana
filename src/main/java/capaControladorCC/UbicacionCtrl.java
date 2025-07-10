@@ -313,7 +313,11 @@ public class UbicacionCtrl {
 	}
 
 	public static void main(String[] args) {
-		Resultado resultado = ubicarDireccionEnTienda("Calle 54# 86c-666, calazans, Medellin", "informacion", null);
+		String direccion = "Calle 42 Sur #69A 68 - UNIDAD MANZANILLO Int 2325 T 3 SAN ANTONIO DE PRADO";
+		String  Barrio = "Urbanizacion Manzanillo";
+		String Municipio ="San antonio de prado";
+		String txtdirecc = direccion + ", " +Municipio+", "+Barrio+", Antioquia, Colombia";
+		Resultado resultado = ubicarDireccionEnTienda(txtdirecc, "informacion", null);
 		System.out.println(resultado.getResultado());
 	}
 }
