@@ -38,9 +38,6 @@ public class TiendaCtrl {
 	
 	public static void main(String args[])
 	{
-		TiendaCtrl tCtrl = new TiendaCtrl();
-	    System.out.println(tCtrl.ServicioVerificarConexInternet());
-	    
 
 		
 	}
@@ -175,7 +172,7 @@ public class TiendaCtrl {
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("resultado", resultado);
 		listJSON.add(ResultadoJSON);
-		System.out.println(listJSON.toJSONString());
+		//System.out.println(listJSON.toJSONString());
 		return listJSON.toJSONString();
 	}	
 	

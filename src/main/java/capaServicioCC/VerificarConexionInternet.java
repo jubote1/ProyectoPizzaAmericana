@@ -37,11 +37,13 @@ public class VerificarConexionInternet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
 		//	HttpSession sesion = request.getSession();
 
-			response.addHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Origin", "*");
+			response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+			response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
 			response.setContentType("application/json");
 			TiendaCtrl tiendaCtrl = new TiendaCtrl();
 			String respuesta = tiendaCtrl.ServicioVerificarConexInternet();

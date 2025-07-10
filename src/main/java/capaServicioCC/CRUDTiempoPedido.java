@@ -31,14 +31,14 @@ public class CRUDTiempoPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se recibirá como parámetro principal el idoperacion con base en los siguientes valores 
-	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedirán los otros parámetros y se invocará el método en la capa controlador.
+	 * Se recibirï¿½ como parï¿½metro principal el idoperacion con base en los siguientes valores 
+	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedirï¿½n los otros parï¿½metros y se invocarï¿½ el mï¿½todo en la capa controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operación idoperacion 1 actualizar 2 consultar
+		//Operaciï¿½n idoperacion 1 actualizar 2 consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");		
 		HttpSession sesion = request.getSession();
-		//Capturamos la información de la sesion del usuario que está ejecutando la inserción
+		//Capturamos la informaciï¿½n de la sesion del usuario que estï¿½ ejecutando la inserciï¿½n
 		Usuario usuario = (Usuario) sesion.getAttribute("usuario");
 		String user = "" ;
 		//Al no existir el usuario logueado es posible que produza una excepcion
@@ -72,7 +72,7 @@ public class CRUDTiempoPedido extends HttpServlet {
 			int idtienda = Integer.parseInt(request.getParameter("idtienda"));
 			respuesta = ParametrosCtrl.retornarTiempoPedidoTienda(idtienda);
 		}
-		System.out.println(respuesta);
+		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}
