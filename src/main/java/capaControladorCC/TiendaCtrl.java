@@ -1,14 +1,27 @@
 package capaControladorCC;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
+import com.google.gson.Gson;
+
 import capaDAOCC.LogBloqueoTiendaDAO;
 import capaDAOCC.TiendaDAO;
 import capaModeloCC.LogBloqueoTienda;
+import capaModeloCC.MonitoreoTienda;
 import capaModeloCC.Tienda;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class TiendaCtrl {
 	
@@ -277,4 +290,60 @@ public class TiendaCtrl {
 	            return false;
 	        }
 	}
+	
+    
+	public String obtenerMonitoreoEstadoLocal() {
+	    ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
+	    Gson gson = new Gson();
+	    OkHttpClient client = new OkHttpClient();
+
+	    ExecutorService executor = Executors.newFixedThreadPool(6); // Puedes ajustar el número
+	    List<Callable<MonitoreoTienda>> tasks = new ArrayList<>();
+
+	    for (JSONObject tienda : tiendas) {
+	        String hosbd = (String) tienda.get("hosbd");
+	        String nombre = (String) tienda.get("nombre");
+	        String funcional = (String) tienda.get("funcional");
+
+	        if (hosbd == null || hosbd.isEmpty() || !"S".equals(funcional)) continue;
+
+	        tasks.add(() -> {
+	            String url = "http://" + hosbd + ":8188/ProyectoTiendaAmericana/ObtenerMonitoreoEstadoPedido";
+	            Request request = new Request.Builder().url(url).build();
+	            MonitoreoTienda estado;
+
+	            try (Response response = client.newCall(request).execute()) {
+	                if (!response.isSuccessful()) throw new IOException("Error en IP: " + hosbd);
+	                String json = response.body().string();
+	                estado = gson.fromJson(json, MonitoreoTienda.class);
+	                estado.tienda = nombre;
+	                estado.error = false;
+	            } catch (Exception e) {
+	                estado = new MonitoreoTienda();
+	                estado.tienda = nombre;
+	                estado.error = true;
+	            }
+
+	            return estado;
+	        });
+	    }
+
+	    List<MonitoreoTienda> resultados = new ArrayList<>();
+	    try {
+	        List<Future<MonitoreoTienda>> futures = executor.invokeAll(tasks, 15, TimeUnit.SECONDS);
+	        for (Future<MonitoreoTienda> future : futures) {
+	            if (future.isDone()) {
+	                resultados.add(future.get());
+	            }
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace(); // Log o manejo de error
+	    } finally {
+	        executor.shutdown();
+	    }
+
+	    return gson.toJson(resultados);
+	}
+
+	
 }
