@@ -265,6 +265,33 @@ public class ClienteFidelizacionDAO {
 		return(respuesta);
 	}
 	
+	public static boolean insertarLogRedencion(String correo, double puntosRedimir)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String insert = "insert into fidelizacion_redencion (correo,puntos_redimidos) values ('" + correo + "', " + puntosRedimir +")";
+			logger.info(insert);
+			stm.executeUpdate(insert);
+			respuesta = true;
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
+	}
+	
 	public static double obtenerCantidadPuntosCliente(String correo)
 	{
 		Logger logger = Logger.getLogger("log_file");

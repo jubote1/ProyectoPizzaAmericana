@@ -178,6 +178,8 @@ public class FidelizacionCtrl {
 	{
 		double puntosRestantes =  0;
 		puntosRestantes=  ClienteFidelizacionDAO.redimirPuntosClienteFidelizacion(correo, puntosRedimir);
+		//Instalar log de la redención
+		ClienteFidelizacionDAO.insertarLogRedencion(correo, puntosRedimir);
 		return(puntosRestantes);
 	}
 
