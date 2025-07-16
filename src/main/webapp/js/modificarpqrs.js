@@ -201,7 +201,13 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
-
+		if(datos.idestado == 3)
+		{
+			$('#escalar').attr('disabled', false);
+		}else
+		{
+			$('#escalar').attr('disabled', true);
+		}
 		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
 		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
 
@@ -338,9 +344,15 @@ function validarFechas(date1, date2) {
 
 
 
+function escalarPQRS()
+{
+	$('#modalescalarpqrs').modal('show');
+}
+
 
 function consultarPQRS() {
 
+	$('#escalar').attr('disabled', true);
 	var fechaini = $("#fechainicial").val();
 	var fechafin = $("#fechafinal").val();
 	var tienda = $("#selectTiendas option:selected").attr('id');
