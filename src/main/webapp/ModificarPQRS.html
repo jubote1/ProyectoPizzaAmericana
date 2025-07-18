@@ -117,6 +117,30 @@
 
 
 								</div>
+								<div class="button-conf text-left">
+									<button type="button" class="btn btn-success"
+										onclick="escalarPQRS()" id="escalar" name="escalar" disabled>Escalar</button>
+								</div>
+								<!-- ESCALAMIENTO DE LA PQRS -->
+								<div class="modal fade" id="modalescalarpqrs" tabindex="-1" role="dialog" aria-labelledby="addLabel">
+									 <div class="modal-dialog modal-xl" role="document">
+									    <div class="modal-content">
+									      <div class="modal-header">
+									      	<h4 class="modal-title" id="addLabel">Área para Escalar</h4>
+									        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+									      </div>
+									      	<select
+													id="selectAreaResponsableEscalar" name="selectAreaResponsableEscalar" class="form-control" required>
+													<option value="" disabled selected hidden>Seleccione una opción</option>
+													<option value="tienda">tienda</option>
+													<option value="contact">contact</option>
+													<option value="tecnologia">tecnologia</option>
+													<option value="calidad">calidad</option>
+											</select>
+											<input type="button" id="btnEscalarPQRS" name="btnEscalarPQRS" class="btn btn-primary btn-lg" value="ESCALAR PQRS" onclick="realizarEscalamientoPQRS()">
+									    </div>
+									</div>
+								</div>
 								<div class="button-conf text-right">
 									<button type="button" class="btn btn-success"
 										onclick="consultarPQRS()">Consultar PQRS</button>
