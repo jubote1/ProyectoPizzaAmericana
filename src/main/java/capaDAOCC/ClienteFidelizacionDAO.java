@@ -238,7 +238,7 @@ public class ClienteFidelizacionDAO {
 		return(puntos);
 	}
 
-	public static boolean insertarClienteFidelizacion(String correo)
+	public static boolean insertarClienteFidelizacion(String correo, String canal)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		boolean respuesta = false;
@@ -247,7 +247,7 @@ public class ClienteFidelizacionDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String insert = "insert into cliente_fidelizacion (correo) values ('" + correo +"')";
+			String insert = "insert into cliente_fidelizacion (correo, canal) values ('" + correo + "' , '" + canal +"')";
 			logger.info(insert);
 			stm.executeUpdate(insert);
 			respuesta = true;

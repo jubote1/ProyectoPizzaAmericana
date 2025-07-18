@@ -6384,7 +6384,7 @@ function incluirFidelizacion()
                             else 
                             {
                                 $.ajax({ 
-                                            url: server + 'ServiciosClienteFidelizacion?idoperacion=2&correo='+ $("#email").val(), 
+                                            url: server + 'ServiciosClienteFidelizacion?idoperacion=2&correo='+ $("#email").val() +'&canal=CONTACT', 
                                             dataType: 'json', 
                                             async: false, 
                                             success: function(data){ 

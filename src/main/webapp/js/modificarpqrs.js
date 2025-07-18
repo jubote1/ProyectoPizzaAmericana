@@ -349,6 +349,26 @@ function escalarPQRS()
 	$('#modalescalarpqrs').modal('show');
 }
 
+function realizarEscalamientoPQRS()
+{
+	var areaResponsable = encodeURIComponent($("#selectAreaResponsableEscalar option:selected").val());
+	if(areaResponsable != "" && idSolicitudPQRS > 0)
+	{
+		$.getJSON(server + 'InsertarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudPQRS + "&arearesponsable=" + areaResponsable, function(data) {
+		if(data.resultado == 'OK')
+		{
+			mostrarAlerta('warning','Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
+			$('#modalescalarpqrs').modal('hide');
+
+		}else 
+		{
+			mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
+		}
+		
+	});
+	}
+}
+
 
 function consultarPQRS() {
 

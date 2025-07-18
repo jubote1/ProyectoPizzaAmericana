@@ -48,10 +48,10 @@ public class FidelizacionCtrl {
 
 	}
 	
-	public String insertarClienteFidelizacion(String correo)
+	public String insertarClienteFidelizacion(String correo, String canal)
 	{
 		JSONObject respuesta = new JSONObject();
-		boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo);
+		boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo, canal);
 		//Enviamos correo Bienvenida
 		enviarCorreoBienvenida(correo);
 	    //Finalizacion
@@ -365,7 +365,7 @@ public class FidelizacionCtrl {
 	        }
 
 	        // Si el cliente NO está en fidelización, registrarlo
-	        boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo);
+	        boolean inserto = ClienteFidelizacionDAO.insertarClienteFidelizacion(correo, "WEB");
 	        //Enviamos correo Bienvenida
 			enviarCorreoBienvenida(correo);
 	        respuesta.put("respuesta", inserto);

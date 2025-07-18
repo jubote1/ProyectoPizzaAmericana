@@ -10,6 +10,7 @@ import org.json.simple.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import capaDAOCC.EscalamientoPQRSDAO;
 import capaDAOCC.FocoPqrsDAO;
 import capaDAOCC.GeneralDAO;
 import capaDAOCC.MunicipioDAO;
@@ -23,6 +24,7 @@ import capaDAOCC.UsuarioDAO;
 import capaModeloCC.ComentarioPqrs;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
+import capaModeloCC.EscalamientoPQRS;
 import capaModeloCC.EstadoPqrs;
 import capaModeloCC.FocoPqrs;
 import capaModeloCC.OrigenPqrs;
@@ -327,6 +329,11 @@ public class SolicitudPQRSCtrl {
 	    List<EstadoPqrs> estados = SolicitudPQRSDAO.obtenerEstadoPqrs(); // esta ya retorna lista
 	    Gson gson = new Gson();
 	    return gson.toJson(estados); // convierte a JSON
+	}
+	
+	public void insertarEscalamientoPQRS(EscalamientoPQRS escalamiento)
+	{
+		EscalamientoPQRSDAO.insertarEscalamientoPQRS(escalamiento);
 	}
 
 
