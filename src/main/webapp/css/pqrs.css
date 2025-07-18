@@ -245,6 +245,42 @@ button:active {
   overflow-x: auto;    /* ✅ Previene desbordes horizontales */
 }
 
+.prioridad-urgente {
+	background-color: #f8d7da; /* rojo claro */
+	color: #721c24;
+	font-weight: bold;
+	text-align: center;
+}
+
+.prioridad-alta {
+	background-color: #fff3cd; /* amarillo claro */
+	color: #856404;
+	font-weight: bold;
+	text-align: center;
+}
+
+.prioridad-media {
+	background-color: #ffe5b4; /* naranja claro */
+	color: #7a5200;           
+	text-align: center;
+}
+
+
+.prioridad-baja {
+	background-color: #d4edda; /* verde claro */
+	color: #155724;
+	text-align: center;
+}
+
+
+
+.prioridad-default {
+	background-color: white; /* verde claro */
+	text-align: center;
+}
+
+
+
 .form-control::placeholder {
   color: #999 !important;
 }

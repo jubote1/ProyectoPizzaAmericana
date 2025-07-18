@@ -31,15 +31,24 @@ public class EmpleadoEncuestaDetalleDAO {
 	         PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
 	        conn.setAutoCommit(false);
-
 	        for (EmpleadoEncuestaDetalle det : lista) {
 	            try {
+	                String observacion = det.getObservacion();
+	                if (observacion != null && observacion.length() > 1000) {
+	                    observacion = observacion.substring(0, 1000);
+	                }
+
+	                String observacionAdi = det.getObservacionAdicional();
+	                if (observacionAdi != null && observacionAdi.length() > 500) {
+	                    observacionAdi = observacionAdi.substring(0, 500);
+	                }
+
 	                pstmt.setInt(1, det.getIdEmpleadoEncuesta());
 	                pstmt.setInt(2, det.getIdEncuestaDetalle());
 	                pstmt.setString(3, det.getRespuestaSi());
 	                pstmt.setString(4, det.getRespuestaNo());
-	                pstmt.setString(5, det.getObservacion());
-	                pstmt.setString(6, det.getObservacionAdicional());
+	                pstmt.setString(5, observacion);
+	                pstmt.setString(6, observacionAdi);
 	                pstmt.executeUpdate();
 
 	            } catch (SQLException exItem) {
@@ -48,6 +57,7 @@ public class EmpleadoEncuestaDetalleDAO {
 	                failedCount++;
 	            }
 	        }
+
 
 	        conn.commit();
 

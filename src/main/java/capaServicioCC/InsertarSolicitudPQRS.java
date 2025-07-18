@@ -35,6 +35,9 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("application/json; charset=UTF-8");
 		HttpSession sesion = request.getSession(); // no se usa, puedes eliminar si no se necesita
 		Logger logger = Logger.getLogger("log_file");
 
@@ -64,10 +67,13 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		int idusuarioRegistro = parseIntSafe(request.getParameter("idusuarioRegistro"));
 		int idusuarioRedencion = parseIntSafe(request.getParameter("idusuarioRedencion"));
 		int idestado = parseIntSafe(request.getParameter("idestado"));
-
+		int idprioridad = parseIntSafe(request.getParameter("idprioridad"));
+		int idmotivo = parseIntSafe(request.getParameter("idmotivo"));
+		boolean ccVinculado = "true".equalsIgnoreCase(request.getParameter("ccVinculado"));
 		String listaComentariosStr = request.getParameter("listaComentarios");
 		Type listType = new TypeToken<List<ComentarioPqrs>>(){}.getType();
 		List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
+		
 		
 
 
@@ -75,7 +81,7 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.insertarSolicitudPQRS(fechasolicitud, tiposolicitud, idcliente, idtienda,
 				nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen, idFoco, tipo,
-				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion ,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado);
+				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion ,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado);
 
 		
 		response.getWriter().write(respuesta);

@@ -104,6 +104,27 @@ $(document).ready(function() {
 	dtconsultasPQRS = $('#grid-consultaPQRS').DataTable({
 		"aoColumns": [
 			{ "mData": "idconsultaPQRS" },
+			{
+				"mData": null,
+				"sTitle": "Prioridad",
+				"render": function(data, type, row) {
+					const prioridades = {
+						1: { texto: "Urgente", color: "#dc3545" },   // rojo
+						2: { texto: "Alta", color: "#ffc107" },   // naranja
+						3: { texto: "Media", color: "#fd7e14" },   // amarillo
+						4: { texto: "Baja", color: "#28a745" },   // verde
+					};
+					const p = prioridades[row.idprioridad];
+					if (!p) return "N/A";
+
+					return `
+				<span style="display: inline-flex; align-items: center; gap: 0.4em;">
+					<span style="width: 10px; height: 10px; background-color: ${p.color}; border-radius: 50%; display: inline-block;"></span>
+					${p.texto}
+				</span>
+			`;
+				}
+			},
 			{ "mData": "fechasolicitud" },
 			{ "mData": "tiposolicitud" },
 			{ "mData": "cliente" },
@@ -139,7 +160,7 @@ $(document).ready(function() {
 
 		],
 		"fnRowCallback": function(nRow, aData, iDisplayIndex) {
-			// Remueve cualquier clase previa de color
+
 			$(nRow).removeClass('resaltar-amarillo resaltar-azul resaltar-naranja resaltar-verde');
 
 			switch (aData.idestado) {
@@ -154,9 +175,6 @@ $(document).ready(function() {
 					break;
 				case 4:
 					$(nRow).addClass('resaltar-verde');
-					break;
-				default:
-					// Si es 0, null, undefined u otro valor no esperado, no aplicar color
 					break;
 			}
 		}
@@ -174,16 +192,19 @@ $(document).ready(function() {
 	getListaFocos();
 	getUsuariosActivos();
 	getEstadoPqrs();
+	getListaMotivoPrioridad();
 	setInterval('validarVigenciaLogueo()', 600000);
 
 	//Colocamos acción al DataTable en caso de dar clic sobre el DATATABLE
 	$('#grid-consultaPQRS tbody').on('click', 'tr', function() {
+
+		limpiarPQRS();
 		datos = table.row(this).data();
 		$('#idSolicitudPQRS').val(datos.idconsultaPQRS);
 		idSolicitudPQRS = datos.idconsultaPQRS;
 		var fechaPQRS = new Date(datos.fechasolicitud + " 12:00:00 GMT-0500");
 		picker.setDate(fechaPQRS);
-		$("#selectSolicitudpqrs").val(datos.tiposolicitud);
+		$("#selectSolicitudpqrs").val(datos.tiposolicitud).trigger("change");
 		$("#selectMunicipio").val(datos.municipio);
 		$('#telefono').val(datos.telefono);
 		$('#nombres').val(datos.nombres);
@@ -201,6 +222,13 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
+
+		$('#zona').val(datos.zona);
+		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
+		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
+		$('#ccVinculado').prop('checked', datos.ccVinculado);
+
+
 		if(datos.idestado == 3)
 		{
 			$('#escalar').attr('disabled', false);
@@ -208,20 +236,20 @@ $(document).ready(function() {
 		{
 			$('#escalar').attr('disabled', true);
 		}
+
 		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
 		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
 
 		['#selectEstado', '#selectUsuarioRegistro', '#selectUsuarioRedencion'].forEach(id => {
-		  const $select = $(id);
-		  if ($select.val() === "0") {
-		    $select.addClass("placeholder");
-		  } else {
-		    $select.removeClass("placeholder");
-		  }
+			const $select = $(id);
+			$select.removeClass("placeholder");
+			if ($select.val() === "0") {
+				$select.addClass("placeholder");
+			}
 		});
 
-		
-		
+
+
 		historialContainer.innerHTML = '';
 		const listaComentarios = datos.listaComentarios;
 
@@ -303,8 +331,8 @@ function getListaTiendas() {
 			str += '<option value="' + cadaTienda.nombre + '" id ="' + cadaTienda.id + '">' + cadaTienda.nombre + '</option>';
 		}
 		$('#selectTiendaspqrs').html(placeholder + str);
-		str += '<option value="' + 'TODAS' + '" id ="' + 'TODAS' + '"  selected>' + 'TODAS' + '</option>';
-		$('#selectTiendas').html(str);
+		strTiendas = '<option value="' + 'TODAS' + '" id ="' + 'TODAS' + '"  selected>' + 'TODAS' + '</option>';
+		$('#selectTiendas').html(strTiendas + str);
 		// Realizamos cambio para que la tienda no esté seleccionada por defecto
 		//$("#selectTiendas").val('');
 	});
@@ -425,11 +453,15 @@ function consultarPQRS() {
 				"idusuarioRegistro": data1[i].idusuarioRegistro,
 				"idusuarioRedencion": data1[i].idusuarioRedencion,
 				'idestado': data1[i].idestado,
-				'nombreEstado': data1[i].nombreEstado
+				'nombreEstado': data1[i].nombreEstado,
+				'idmotivo': data1[i].idmotivo,
+				'idprioridad': data1[i].idprioridad,
+				'zona': data1[i].zona,
+				 'ccVinculado':data1[i].ccVinculado
 			}).draw();
 		}
 	});
-	limpiarConsultaPQRS();
+	limpiarPQRS();
 
 }
 
@@ -515,6 +547,8 @@ function ValidarDatosActualizados() {
 	validarCampoVacio($("#selectSolicitudpqrs").val(), "Debe seleccionar el tipo de solicitud.");
 	validarCampoVacio($("#selectAreaResponsable").val(), "Debe seleccionar area responsable.");
 	validarCampoVacio($("#selectTipo").val(), "Debe seleccionar tipo de queja.");
+	validarCampoVacio($("#selectMotivo").val(), "Debe seleccionar un motivo");
+	validarCampoVacio($("#selectPrioridad").val(), "Debe seleccionar una prioridad.");
 
 	if ($("#selectUsuarioRegistro").val() === "0") {
 		errores.push("Debe seleccionar el usuario que registra la PQRS.");
@@ -555,23 +589,22 @@ function ValidarDatosActualizados() {
 }
 
 
-function limpiarConsultaPQRS() {
+/*function limpiarConsultaPQRS() {
+
 	$('#idSolicitudPQRS').val('');
 	$('#fecha').val('');
-	$('#tipoSolicitud').val('');
+	$('#selectSolicitud').val('');
 	$('#telefono').val('');
 	$('#nombres').val('');
 	$('#direccion').val('');
-	$('#municipio').val('');
-	$("#tienda").val('');
 	$("#selectOrigen").val('');
 	$('#descuentoRedimido').prop('checked', false);
-	$(' #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado').prop('selectedIndex', 0);
-	$(' #apellidos, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #selectFoco,#selectTiendaspqrs').val("");
+	$('#selectTiendas, #selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado').prop('selectedIndex', 0);
+	$(' #apellidos, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #selectFoco,#selectTiendaspqrs,#selectMotivo,#selectPrioridad').val("");
 	historialContainer.innerHTML = '';
-
+	
 }
-
+*/
 function agregarImagen() {
 	$('#img-gallery').html('');
 	imgs.forEach(item => {
@@ -691,6 +724,62 @@ function getListaFocos() {
 	});
 }
 
+let motivos = [];
+let prioridades = [];
+
+function getListaMotivoPrioridad() {
+	$.getJSON(server + 'MotivoPrioridadPqrs', function(data) {
+		if (data && data.motivo_pqrs && data.prioridad_pqrs) {
+
+			motivos = data.motivo_pqrs
+			prioridades = data.prioridad_pqrs
+
+			const $selectPrioridad = $('#selectPrioridad');
+			$selectPrioridad.empty().append('<option value="" disabled selected hidden>Seleccione una prioridad</option>');
+
+			if (prioridades) {
+				prioridades.forEach(p => {
+					$selectPrioridad.append(
+						$('<option>', { value: p.idprioridad, text: p.descripcion })
+					);
+				});
+			}
+
+
+
+		}
+	});
+}
+
+
+// Al cambiar el tipo de solicitud, llenar motivos
+$('#selectSolicitudpqrs').on('change', function() {
+	const tipoSeleccionado = $(this).val();
+	const $selectMotivo = $('#selectMotivo');
+	$selectMotivo.empty().append('<option value="" disabled selected hidden>Seleccione un motivo</option>');
+	const $selectPrioridad = $('#selectPrioridad');
+	$selectPrioridad.val("");
+	motivos
+		.filter(m => m.tiposolicitud.toLowerCase() === tipoSeleccionado.toLowerCase())
+		.forEach(m => {
+			$selectMotivo.append(
+				$('<option>', { value: m.idmotivo, text: m.descripcion })
+					.attr('data-prioridad-id', m.idprioridad) // opcional, si quieres guardar relación
+			);
+		});
+
+});
+
+// Al cambiar el motivo, llenar prioridad
+$('#selectMotivo').on('change', function() {
+	const $opcionSeleccionada = $(this).find('option:selected'); // opción seleccionada
+	const prioridadId = $opcionSeleccionada.data('prioridad-id'); // accede al data attribute
+
+	const $selectPrioridad = $('#selectPrioridad');
+	$selectPrioridad.val(prioridadId); // ← Establece el valor usando jQuery
+});
+
+
 function AdicionarImagenesPQRS() {
 	if (idSolicitudPQRS == 0) {
 		Swal.fire({
@@ -738,6 +827,7 @@ function AdicionarImagenesPQRS() {
 			});
 	}
 }
+
 function EliminarImg(item) {
 	$.ajax({
 		url: 'http://172.19.0.25:4200/delete_upload.php',
@@ -848,6 +938,10 @@ function EditarPQRS() {
 		var idusuarioRegistro = $("#selectUsuarioRegistro option:selected").val();
 		var idusuarioRedencion = $("#selectUsuarioRedencion option:selected").val();
 		var idestado = $("#selectEstado option:selected").val();
+		var idmotivo = $("#selectMotivo option:selected").val();
+		var idprioridad = $("#selectPrioridad option:selected").val();
+		var ccVinculado = document.getElementById("ccVinculado").checked;
+
 
 		const comentarios = historialContainer.querySelectorAll("textarea");
 
@@ -871,65 +965,91 @@ function EditarPQRS() {
 
 
 		Swal.fire({
-			title: 'Confirmacion Actualización',
-			text: 'Desea confirmar la actualización de la Solicitud PQRS.',
+			title: 'Confirmación Actualización',
+			text: '¿Desea confirmar la actualización de la Solicitud PQRS?',
 			icon: 'warning',
 			showCancelButton: true,
 			confirmButtonText: 'Sí',
 			cancelButtonText: 'No',
-			confirmButtonColor: 'blue', // Personaliza el color del botón de "Sí"
-			cancelButtonColor: 'gray', // Personaliza el color del botón de "No"
-		}).then((result) => {
+			confirmButtonColor: 'blue',
+			cancelButtonColor: 'gray'
+		}).then(async (result) => {
 			if (result.isConfirmed) {
-				$.ajax(
-					{
+				// Muestra el spinner
+				Swal.fire({
+					title: 'Actualizando...',
+					text: 'Por favor espere un momento',
+					allowOutsideClick: false,
+					didOpen: () => {
+						Swal.showLoading();
+					}
+				});
+
+				try {
+					const response = await $.ajax({
 						url: server + 'ActualizarSolicitudPQRS',
 						dataType: 'json',
-						type: 'post',
-						data:
-						{
-							'fechasolicitud': fechaSolicitud,
-							'tiposolicitud': tipoSolicitud,
-							'idcliente': idCliente,
-							'idtienda': tempTienda,
-							'nombres': nombresEncode,
-							'apellidos': apellidosEncode,
-							'telefono': tel,
-							'direccion': direccionEncode,
-							'zona': zonaEncode,
-							'idmunicipio': tempMunicipio,
-							'idorigen': idOrigen,
-							'idfoco': idFoco,
-							'tipo': tipo,
-							'arearesponsable': areaResponsable,
-							'idsolicitudpqrs': idSolicitudPQRS,
-							'idpedidotienda': idpedidotienda,
-							'idpedidoredencion': idpedidoredencion,
-							'valorPedido': valorPedido,
-							'valorDescuento': valorDescuento,
-							'porcentajeDescuento': porcentajeDescuento,
-							'descuentoRedimido': descuentoRedimido,
-							'listaComentarios': JSON.stringify(listaComentarios),
-							'idusuarioRegistro': idusuarioRegistro,
-							'idusuarioRedencion': idusuarioRedencion,
-							'idestado': idestado
-
-						},
-						async: false,
-						success: function(data1) {
-							var respuesta = data1[0];
-							if (respuesta.idSolicitudPQRS > 0) {
-								Swal.fire({
-									icon: 'success',
-									text: 'Se ha actualizado correctamente la solicitud PQRS número  ' + respuesta.idSolicitudPQRS
-								});
-
-								limpiarPQRS()
-							}
+						type: 'POST',
+						data: {
+							fechasolicitud: fechaSolicitud,
+							tiposolicitud: tipoSolicitud,
+							idcliente: idCliente,
+							idtienda: tempTienda,
+							nombres: nombresEncode,
+							apellidos: apellidosEncode,
+							telefono: tel,
+							direccion: direccionEncode,
+							zona: zonaEncode,
+							idmunicipio: tempMunicipio,
+							idorigen: idOrigen,
+							idfoco: idFoco,
+							tipo: tipo,
+							arearesponsable: areaResponsable,
+							idsolicitudpqrs: idSolicitudPQRS,
+							idpedidotienda: idpedidotienda,
+							idpedidoredencion: idpedidoredencion,
+							valorPedido: valorPedido,
+							valorDescuento: valorDescuento,
+							porcentajeDescuento: porcentajeDescuento,
+							descuentoRedimido: descuentoRedimido,
+							listaComentarios: JSON.stringify(listaComentarios),
+							idusuarioRegistro: idusuarioRegistro,
+							idusuarioRedencion: idusuarioRedencion,
+							idestado: idestado,
+							idmotivo: idmotivo,
+							idprioridad: idprioridad,
+							ccVinculado:ccVinculado
 						}
 					});
+
+					const respuesta = response[0];
+					if (respuesta.idSolicitudPQRS > 0) {
+						Swal.fire({
+							icon: 'success',
+							title: '¡Actualizado!',
+							text: 'Se ha actualizado correctamente la solicitud PQRS número ' + respuesta.idSolicitudPQRS
+						});
+
+						limpiarPQRS();
+
+						if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
+							const table = $('#grid-consultaPQRS').DataTable();
+							table.clear().draw();
+						}
+					} else {
+						throw new Error('La solicitud no fue actualizada correctamente.');
+					}
+				} catch (error) {
+					console.error('Error al actualizar solicitud:', error);
+					Swal.fire({
+						icon: 'error',
+						title: 'Error',
+						text: 'Ocurrió un error al actualizar la solicitud. Intente nuevamente.'
+					});
+				}
 			}
 		});
+
 
 
 	}
@@ -972,7 +1092,11 @@ function DescartarPQRS() {
 									text: 'Se ha descartado correctamente la solicitud PQRS número  ' + respuesta.idSolicitudPQRS
 								});
 
-								limpiarPQRS()
+								limpiarPQRS();
+								if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
+									const table = $('#grid-consultaPQRS').DataTable();
+									table.clear().draw();
+								}
 							}
 						}
 					});
@@ -984,28 +1108,24 @@ function DescartarPQRS() {
 
 
 function limpiarPQRS() {
-	// Limpiar campos de texto y numéricos
-	//$('#selectTipo,#selectMunicipio, #selectAreaResponsable, #selectPorcentajeDesc,#selectSolicitudpqrs,#selectUsuarioRegistro,#selectUsuarioRedencion,#idestado').prop('selectedIndex', 0);
-	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha').val("");
+	historialContainer.innerHTML = '';
+	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha,#selectMotivo,#selectPrioridad,#selectSolicitudpqrs,#selectPorcentajeDesc,#selectTipo,#selectUsuarioRegistro,#selectEstado,#selectAreaResponsable').val("");
 	// Reiniciar selects a la primera opción
 	$('#selectTiendaspqrs, #selectOrigen , #selectFoco').val("");
-	$('select').each(function () {
-	  $(this).prop('selectedIndex', 0);
+	$('select').each(function() {
+		// $(this).prop('selectedIndex', 0);
 
-	  if (this.value === "0") {
-	    this.classList.add("placeholder");
-	  } else {
-	    this.classList.remove("placeholder");
-	  }
+		if (this.value === "0") {
+			this.classList.add("placeholder");
+		} else {
+			this.classList.remove("placeholder");
+		}
 	});
 
-	$('#descuentoRedimido').prop('checked', false);
-	historialContainer.innerHTML = '';
-	// Limpiar DataTable si existe
-	if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
-		const table = $('#grid-consultaPQRS').DataTable();
-		table.clear().draw();
-	}
+	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
+	$('#img-gallery').html('');
+
+
 
 }
 
@@ -1020,11 +1140,13 @@ async function generarReporte() {
 	}
 
 	const agrupados = {};
+
 	filtrados.forEach(d => {
-		const tienda = d.tienda || 'Sin Tienda';
-		if (!agrupados[tienda]) agrupados[tienda] = [];
-		agrupados[tienda].push(d);
+		const grupo = d.ccVinculado === true ? 'Vinculado Contact Center' : (d.tienda || 'Sin Tienda');
+		if (!agrupados[grupo]) agrupados[grupo] = [];
+		agrupados[grupo].push(d);
 	});
+
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet("Reporte");
@@ -1036,9 +1158,9 @@ async function generarReporte() {
 	let totalGlobalRegistros = 0;
 
 	Object.entries(agrupados).forEach(([tienda, registros]) => {
-		worksheet.mergeCells(`A${fila}:G${fila}`);
+		worksheet.mergeCells(`A${fila}:H${fila}`);
 		const celdaTitulo = worksheet.getCell(`A${fila}`);
-		celdaTitulo.value = `Tienda:  ${tienda}`;
+		celdaTitulo.value = tienda === 'Vinculado Contact Center' ? tienda : `Tienda:  ${tienda}`;
 		celdaTitulo.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
 		celdaTitulo.fill = {
 			type: 'pattern',
@@ -1048,7 +1170,7 @@ async function generarReporte() {
 		celdaTitulo.alignment = { horizontal: 'center', vertical: 'middle' };
 		fila++;
 
-		const headers = ['#', 'Factura', 'Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
+		const headers = ['#', 'Factura', 'Teléfono','Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
 		headers.forEach((h, i) => {
 			const cell = worksheet.getCell(fila, i + 1);
 			cell.value = h;
@@ -1072,6 +1194,7 @@ async function generarReporte() {
 			const valores = [
 				r.idconsultaPQRS,
 				r.idpedidotienda,
+			    r.telefono || 'No disponible',
 				r.valorPedido,
 				r.porcentajeDescuento > 0 ? r.porcentajeDescuento + '%' : 'No Aplica',
 				r.valorDescuento,
@@ -1146,8 +1269,8 @@ async function generarReporte() {
 
 	let filaResumen = 6; // Puedes ajustar si quieres que empiece más abajo
 	resumenGlobal.forEach(([label, valor]) => {
-		const celdaLabel = worksheet.getCell(filaResumen, 9); // Columna I
-		const celdaValor = worksheet.getCell(filaResumen, 10); // Columna J
+		const celdaLabel = worksheet.getCell(filaResumen, 10); // Columna I
+		const celdaValor = worksheet.getCell(filaResumen, 11); // Columna J
 
 		celdaLabel.value = label;
 		celdaLabel.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
@@ -1194,7 +1317,7 @@ async function generarReporte() {
 		});
 		col.width = maxLength + 2;
 	});
-	worksheet.getColumn(8).width = 10;
+	worksheet.getColumn(9).width = 10;
 
 
 	const buffer = await workbook.xlsx.writeBuffer();
@@ -1292,13 +1415,13 @@ document.getElementById("btnAgregarComentario").addEventListener("click", () => 
 
 
 document.querySelectorAll('select').forEach(select => {
-  select.addEventListener("change", () => {
-    if (select.value === "0") {
-      select.classList.add("placeholder");
-    } else {
-      select.classList.remove("placeholder");
-    }
-  });
+	select.addEventListener("change", () => {
+		if (select.value === "0") {
+			select.classList.add("placeholder");
+		} else {
+			select.classList.remove("placeholder");
+		}
+	});
 });
 
 function getUsuariosActivos() {
@@ -1346,15 +1469,15 @@ function getUsuariosActivos() {
 				});
 
 			}
-	
-			
+
+
 			if (selectUsuRegistro.value === "0") {
-					  selectUsuRegistro.classList.add("placeholder");
-					}
-					
-					if (selectUsuRedencion.value === "0") {
-					  selectUsuRedencion.classList.add("placeholder");
-					}
+				selectUsuRegistro.classList.add("placeholder");
+			}
+
+			if (selectUsuRedencion.value === "0") {
+				selectUsuRedencion.classList.add("placeholder");
+			}
 
 
 		})
@@ -1394,10 +1517,10 @@ function getEstadoPqrs() {
 				});
 
 			}
-			
+
 			if (selectEstado.value === "0") {
-						  selectEstado.classList.add("placeholder");
-						} 
+				selectEstado.classList.add("placeholder");
+			}
 
 
 		}).catch(err => {

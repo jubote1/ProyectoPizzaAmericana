@@ -76,12 +76,13 @@
 									<div class="col-sm-6 form-group">
 										<label>Tipo de Solicitud</label> <select id="selectSolicitud"
 											class="form-control">
+													<option value=""  selected>Seleccione
+												una opción</option>
 											<option value='peticion'>Peticion</option>
 											<option value='queja'>Queja</option>
 											<option value='reclamo'>Reclamo</option>
 											<option value='sugerencia'>Sugerencia</option>
 											<option value='felicitacion'>Felicitación</option>
-											<option value='todos' selected>Todos</option>
 										</select>
 									</div>
 
@@ -125,6 +126,7 @@
 										<thead>
 											<tr>
 												<th>#</th>
+												<th>Prioridad</th>
 												<th>Fecha</th>
 												<th>Tipo</th>
 												<th>Nombres</th>
@@ -134,8 +136,7 @@
 												<th>Origen</th>
 												<th>Foco</th>	
 												<th>Estado</th>
-												<th>Archivo</th>
-
+												<th>Archivo</th>									
 											</tr>
 										</thead>
 										<tbody></tbody>
@@ -166,7 +167,18 @@
 									<div class="col-sm-6 form-group">
 										<label>Tipo de Solicitud</label><input type="text"
 											id="tipoSolicitud" name="tipoSolicitud" class="form-control"
-											placeholder="Tipo Solicitud" disabled>
+											placeholder="Tipo Solicitud" disabled required>
+									</div>
+										<div class="col-sm-6 form-group">
+										<label>Motivo</label> <select id="selectMotivo"
+											class="form-control" disabled>
+										</select>
+									</div>
+
+									<div class="col-sm-6 form-group">
+										<label>Prioridad</label> <select id="selectPrioridad"
+											class="form-control" disabled>
+										</select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Teléfono Cliente</label><input type="text"
@@ -265,6 +277,14 @@
 											<span class="custom-slider"></span>
 										</label> <label for="descuentoRedimido" class="mb-0 ml-2">
 											Descuento redimido </label>
+									</div>
+									
+										<div class="col-sm-6 form-group">
+										<label> <input type="checkbox"
+											id="ccVinculado" name="ccVinculado"
+											style="margin-right: 6px;" disabled> Vinculado al Contact
+											Center
+										</label>
 									</div>
 
 

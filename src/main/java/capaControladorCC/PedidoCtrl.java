@@ -8955,7 +8955,7 @@ public class PedidoCtrl {
 			String fechaComent = dateFormatComent.format(fecha);
 		    ComentarioPqrs comentPqrs =  new ComentarioPqrs(0,0,descripcionProblema,fechaComent);
 		    listaComentarios.add(comentPqrs);
-			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda",0,0,0,0,false,0,listaComentarios,0,0,1);
+			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda",0,0,0,0,false,0,listaComentarios,0,0,1,2,0,false);
 			//Realizar notificación WhatsApp
 			String notificacion = "Ha ingreasado una PQRS por el BOT Pizza Americana, por favor revisar con el LEAD # " + lead;
 			//Recuperaremos los celulares para notificar de la situación de la queja

@@ -106,6 +106,7 @@ $(document).ready(function() {
 	getListaFocos();
 	getUsuariosActivos();
 	getEstadoPqrs();
+	getListaMotivoPrioridad();
 	setInterval(validarVigenciaLogueo, 600000);
 
 	const table = $('#grid-clientes').DataTable({
@@ -251,6 +252,61 @@ function getListaMunicipios() {
 	});
 }
 
+let motivos = [];
+let prioridades = [];
+
+function getListaMotivoPrioridad() {
+    $.getJSON(server + 'MotivoPrioridadPqrs', function (data) {
+        if (data && data.motivo_pqrs && data.prioridad_pqrs) {
+
+            motivos =data.motivo_pqrs
+            prioridades = data.prioridad_pqrs
+			
+			const $selectPrioridad = $('#selectPrioridad');
+			      $selectPrioridad.empty().append('<option value="" disabled selected hidden>Seleccione una prioridad</option>');
+
+			      if (prioridades) {
+			          prioridades.forEach(p => {
+			              $selectPrioridad.append(
+			                  $('<option>', { value: p.idprioridad, text: p.descripcion })
+			              );
+			          });
+			      }
+
+				
+			
+        }
+    });
+}
+
+
+// Al cambiar el tipo de solicitud, llenar motivos
+$('#selectSolicitud').on('change', function () {
+    const tipoSeleccionado = $(this).val();
+    const $selectMotivo = $('#selectMotivo');
+    $selectMotivo.empty().append('<option value="" disabled selected hidden>Seleccione un motivo</option>');
+	const $selectPrioridad = $('#selectPrioridad');
+	$selectPrioridad.val(""); 
+    motivos
+        .filter(m => m.tiposolicitud.toLowerCase() === tipoSeleccionado.toLowerCase())
+        .forEach(m => {
+            $selectMotivo.append(
+                $('<option>', { value: m.idmotivo, text: m.descripcion })
+                    .attr('data-prioridad-id', m.idprioridad) // opcional, si quieres guardar relación
+            );
+        });
+
+});
+
+// Al cambiar el motivo, llenar prioridad
+$('#selectMotivo').on('change', function () {
+	const $opcionSeleccionada = $(this).find('option:selected'); // opción seleccionada
+	const prioridadId = $opcionSeleccionada.data('prioridad-id'); // accede al data attribute
+	console.log("prioridadId:", prioridadId);
+    const $selectPrioridad = $('#selectPrioridad');
+	$selectPrioridad.val(prioridadId); // ← Establece el valor usando jQuery
+});
+
 // Limpiar cliente
 function limpiarSeleccionCliente() {
 	// Limpiar campos de texto y numéricos
@@ -267,7 +323,7 @@ function limpiarSeleccionCliente() {
 	    this.classList.remove("placeholder");
 	  }
 	});
-	$('#descuentoRedimido').prop('checked', false);
+	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	// Reiniciar valor del cliente
 	idCliente = 0;
 	historialContainer.innerHTML = '';
@@ -342,7 +398,11 @@ function ConfirmarPQRS() {
 		listaComentarios: JSON.stringify(listaComentarios),
 		idusuarioRegistro: $("#selectUsuarioRegistro").val(),
 		idusuarioRedencion: $("#selectUsuarioRedencion").val(),
-		idestado: $("#selectEstado").val()
+		idestado: $("#selectEstado").val(),
+		idprioridad: $("#selectPrioridad").val(),
+		idmotivo: $("#selectMotivo").val(),
+		ccVinculado: document.getElementById("ccVinculado").checked
+		
 	};
 
 	Swal.fire({
@@ -362,6 +422,7 @@ function ConfirmarPQRS() {
 			dataType: 'json',
 			type: 'post',
 			data: data,
+			contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
 			success: function(resp) {
 				const idSolicitud = resp[0]?.idSolicitudPQRS || 0;
 
@@ -491,6 +552,8 @@ function ValidacionesDatos() {
 	validarCampoVacio($("#selectSolicitud").val(), "Debe seleccionar el tipo de solicitud.");
 	validarCampoVacio($("#selectAreaResponsable").val(), "Debe seleccionar area responsable.");
 	validarCampoVacio($("#selectTipo").val(), "Debe seleccionar tipo de queja.");
+	validarCampoVacio($("#selectMotivo").val(), "Debe seleccionar un motivo");
+	validarCampoVacio($("#selectPrioridad").val(), "Debe seleccionar una prioridad.");
 
 
 	if ($("#selectUsuarioRegistro").val() === "0") {

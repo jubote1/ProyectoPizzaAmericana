@@ -29,6 +29,9 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("application/json; charset=UTF-8");
 		Logger logger = Logger.getLogger("log_file");
 
 		// Parámetros tipo String
@@ -61,6 +64,10 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		Type listType = new TypeToken<List<ComentarioPqrs>>(){}.getType();
 		List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
 		int idestado = parseIntSafe(request,"idestado");
+		int idprioridad = parseIntSafe(request,"idprioridad");
+		int idmotivo = parseIntSafe(request,"idmotivo");
+		boolean ccVinculado = "true".equalsIgnoreCase(request.getParameter("ccVinculado"));
+
 //		Enumeration<String> paramNames = request.getParameterNames();
 //		while (paramNames.hasMoreElements()) {
 //		    String paramName = paramNames.nextElement();
@@ -71,7 +78,7 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS, fechasolicitud, tiposolicitud,
 				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen,
-				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado);
+				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado);
 
 		// Salida
 		PrintWriter out = response.getWriter();
