@@ -75,13 +75,13 @@
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Tipo de Solicitud</label> <select id="selectSolicitud"
-											class="form-control">
+											class="form-control" required>
+											<option value="" selected>Seleccione una opción</option>
 											<option value='peticion'>Peticion</option>
 											<option value='queja'>Queja</option>
 											<option value='reclamo'>Reclamo</option>
 											<option value='sugerencia'>Sugerencia</option>
 											<option value='felicitacion'>Felicitación</option>
-											<option value='todos' selected>Todos</option>
 										</select>
 									</div>
 
@@ -123,11 +123,12 @@
 								</div>
 								<div class="table-responsive-sm">
 									<table id="grid-consultaPQRS"
-										class="table table-condensed table-hover "
-										cellspacing="0" width="100%">
+										class="table table-condensed table-hover " cellspacing="0"
+										width="100%">
 										<thead>
 											<tr>
 												<th>#</th>
+												<th>Prioridad</th>
 												<th>Fecha</th>
 												<th>Tipo</th>
 												<th>Nombres</th>
@@ -169,12 +170,28 @@
 										<label>Tipo de Solicitud</label> <select
 											id="selectSolicitudpqrs" class="form-control"
 											placeholder="Tipo Solicitud" required>
-											 <option value="" disabled selected hidden>Seleccione una opción</option>
+											<option value="" disabled selected hidden>Seleccione
+												una opción</option>
 											<option value='peticion'>Peticion</option>
 											<option value='queja'>Queja</option>
 											<option value='reclamo'>Reclamo</option>
 											<option value='sugerencia'>Sugerencia</option>
 											<option value='felicitacion'>Felicitación</option>
+										</select>
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Motivo</label> <select id="selectMotivo"
+											class="form-control" required>
+											<option value="" disabled selected hidden>Seleccione
+												un motivo</option>
+										</select>
+									</div>
+
+									<div class="col-sm-6 form-group">
+										<label>Prioridad</label> <select id="selectPrioridad"
+											class="form-control" required>
+											<option value="" disabled selected hidden>Seleccione
+												una prioridad</option>
 										</select>
 									</div>
 									<div class="col-sm-6 form-group">
@@ -221,15 +238,17 @@
 									<div class="col-sm-6 form-group">
 										<label>Queja Externa/Interna</label> <select id="selectTipo"
 											class="form-control" required>
-											 <option value="" disabled selected hidden>Seleccione una opción</option>
-											<option value="externa" >externa</option>
+											<option value="" disabled selected hidden>Seleccione
+												una opción</option>
+											<option value="externa">externa</option>
 											<option value="interna">interna</option>
 										</select>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Área Responsable</label> <select
 											id="selectAreaResponsable" class="form-control" required>
-											 <option value="" disabled selected hidden>Seleccione una opción</option>
+											<option value="" disabled selected hidden>Seleccione
+												una opción</option>
 											<option value="tienda">tienda</option>
 											<option value="contact">contact</option>
 											<option value="tecnologia">tecnologia</option>
@@ -291,6 +310,14 @@
 										</label> <label for="descuentoRedimido" class="mb-0 ml-2">
 											Descuento redimido </label>
 									</div>
+									<div class="col-sm-6 form-group">
+										<label> <input type="checkbox"
+											id="ccVinculado" name="ccVinculado"
+											style="margin-right: 6px;"> Vinculado al Contact
+											Center
+										</label>
+									</div>
+
 
 
 

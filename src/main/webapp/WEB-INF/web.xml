@@ -23,6 +23,7 @@
 	    <url-pattern>/ObtenerVacanteID</url-pattern>
 	     <url-pattern>/InsertarCandidato</url-pattern>
 	      <url-pattern>/Fidelizacion</url-pattern>
+	        <url-pattern>/InsertarPqrsWeb</url-pattern>
     </filter-mapping>
     
     
@@ -38,6 +39,7 @@
 	    <url-pattern>/ObtenerVacanteID</url-pattern>
 	         <url-pattern>/InsertarCandidato</url-pattern>
 	         	      <url-pattern>/Fidelizacion</url-pattern>
+	         	      	        <url-pattern>/InsertarPqrsWeb</url-pattern>
 	</filter-mapping>
 
 </web-app>

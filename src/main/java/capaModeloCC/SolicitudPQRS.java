@@ -8,6 +8,12 @@ package capaModeloCC;
 public class SolicitudPQRS {
 	
 	private int idsolicitud;
+	public int getIdmotivo() {
+		return idmotivo;
+	}
+	public void setIdmotivo(int idmotivo) {
+		this.idmotivo = idmotivo;
+	}
 	private String fechaSolicitud;
 	private String tipoSolicitud;
 	private int idcliente;
@@ -36,7 +42,22 @@ public class SolicitudPQRS {
 	private int idusuarioRedencion;
 	private int idestado;
 	private String NombreEstado;
+	private int idprioridad;
+	private int idmotivo;
+	private boolean ccVinculado;
 	
+	public boolean isCcVinculado() {
+		return ccVinculado;
+	}
+	public void setCcVinculado(boolean ccVinculado) {
+		this.ccVinculado = ccVinculado;
+	}
+	public int getIdprioridad() {
+		return idprioridad;
+	}
+	public void setIdprioridad(int idprioridad) {
+		this.idprioridad = idprioridad;
+	}
 	public String getNombreEstado() {
 		return NombreEstado;
 	}
@@ -213,7 +234,7 @@ public class SolicitudPQRS {
 	}
 	public SolicitudPQRS(int idsolicitud, String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion,int idusuarioRegistro,int idusuarioRedencion,int idestado) {
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion,int idusuarioRegistro,int idusuarioRedencion,int idestado,int idprioridad,int idmotivo, boolean ccVinculado) {
 		super();
 		this.idsolicitud = idsolicitud;
 		this.fechaSolicitud = fechaSolicitud;
@@ -240,6 +261,10 @@ public class SolicitudPQRS {
 		this.idusuarioRegistro =idusuarioRegistro;
 		this.idusuarioRedencion =idusuarioRedencion;
 		this.idestado =idestado;
+		this.idprioridad =idprioridad;
+		this.idmotivo =idmotivo;
+		this.ccVinculado =ccVinculado;
+		
 		
 		
 	}

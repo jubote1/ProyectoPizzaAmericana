@@ -337,6 +337,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			let responseData;
 
 			try {
+				console.log(responseText);
 				responseData = JSON.parse(responseText);
 			} catch {
 				throw new Error(`Respuesta no válida del servidor: ${responseText}`);

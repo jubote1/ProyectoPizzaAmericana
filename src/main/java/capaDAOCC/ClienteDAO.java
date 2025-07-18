@@ -432,7 +432,7 @@ public class ClienteDAO {
 			Statement stm = con1.createStatement();
 			String consulta = "select a.idcliente, b.nombre nombreTienda, a.idtienda, a.nombre, a.apellido, a.nombrecompania, a.direccion, a.zona, a.observacion, a.telefono, c.nombre nombremunicipio, c.idmunicipio, a.latitud, a.longitud, a.memcode, a.idnomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, d.nomenclatura, a.distancia_tienda, a.telefono_celular, a.email, a.politica_datos, a.observacion_virtual, a.email_facturacion, a.facturar_sin, a.idtipopersona, a.identificacion from cliente a JOIN tienda b ON a.idtienda = b.idtienda JOIN municipio c ON a.idmunicipio = c.idmunicipio left join nomenclatura_direccion d on a.idnomenclatura = d.idnomenclatura  where a.idcliente = " + id +"";
 			logger.info(consulta);
-			System.out.println(consulta);
+
 			ResultSet rs = stm.executeQuery(consulta);
 			int idcliente;
 			String nombreTienda;
@@ -1250,7 +1250,7 @@ public class ClienteDAO {
 				String update = "update cliente set latitud  = " + latitud +" , longitud = " + longitud + " where idcliente = " + idCliente; 
 				logger.info(update);
 				stm.executeUpdate(update);
-				System.out.println(update);
+
 			}else
 			{
 				logger.info("No se pudo hacer actualizaci�n dado que el idCliente venia en ceros o vac�o");
@@ -1392,7 +1392,6 @@ public class ClienteDAO {
 	
 	public static int insertarClienteWb(Cliente clienteInsertar) {
 		
-		System.out.println(clienteInsertar.getNombres());
 		Logger logger = Logger.getLogger("log_file");
 	    int idClienteInsertado = 0;
 	    ConexionBaseDatos con = new ConexionBaseDatos();
@@ -1439,7 +1438,7 @@ public class ClienteDAO {
 	
 	
 	public static boolean actualizarClienteWb(Cliente clienteActualizar) {
-		System.out.println( clienteActualizar.getIdtienda());
+
 	    Logger logger = Logger.getLogger("log_file");
 	    boolean actualizado = false;
 	    ConexionBaseDatos con = new ConexionBaseDatos();

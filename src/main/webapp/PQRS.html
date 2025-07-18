@@ -3,7 +3,7 @@
 <head>
 
 <title>Peticiones Quejas Reclamos Sugerencias</title>
-<meta charset="utf-8" />
+<meta charset="UTF-8">
 <link rel="stylesheet"
 	href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
 
@@ -79,6 +79,20 @@
 								<option value='reclamo'>Reclamo</option>
 								<option value='sugerencia'>Sugerencia</option>
 								<option value='felicitacion'>Felicitación</option></select>
+						</div>
+						
+						<div class="col-sm-6 form-group">
+						    <label>Motivo</label>
+						    <select id="selectMotivo" class="form-control" required>
+						        <option value="" disabled selected hidden>Seleccione un motivo</option>
+						    </select>
+						</div>
+						
+						<div class="col-sm-6 form-group">
+						    <label>Prioridad</label>
+						    <select id="selectPrioridad" class="form-control" required>
+						        <option value="" disabled selected hidden>Seleccione una prioridad</option>
+						    </select>
 						</div>
 						<div class="col-sm-6 form-group">
 							<label>Teléfono Cliente</label><input type="text" id="telefono"
@@ -201,6 +215,14 @@
 							</label> <label for="descuentoRedimido" class="mb-0 ml-2">
 								Descuento redimido </label>
 						</div>
+						
+							<div class="col-sm-6 form-group">
+										<label> <input type="checkbox"
+											id="ccVinculado" name="ccVinculado"
+											style="margin-right: 6px;"> Vinculado al Contact
+											Center
+										</label>
+									</div>
 
 
 						<div class="col-sm-12 form-group">

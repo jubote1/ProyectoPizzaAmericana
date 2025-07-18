@@ -161,90 +161,122 @@ public class SegmentacionClienteDAO {
 	}
 
 	public List<ClienteClub> obtenerClientesClub(String estadoMiembro, String correoMiembro, int puntosMiembro,
-			String fechaMaxima, String fechaInicio, List<Integer> tiendas) {
-		List<ClienteClub> clientes = new ArrayList<>();
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection conn = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+	        String fechaMaxima, String fechaInicio, List<Integer> tiendas) {
 
-		String sql = "SELECT cf.correo, cf.fecha_vinculacion, cf.activo, cf.puntos_vigentes, "
-				+ "       c.idcliente, CONCAT(c.nombre, ' ', c.apellido) AS nombre, "
-				+ "       c.nombrecompania, c.telefono, t.nombre AS nombre_tienda " + "FROM cliente_fidelizacion cf "
-				+ "JOIN cliente c ON cf.correo = c.email " + "JOIN tienda t ON c.idtienda = t.idtienda "
-				+ "WHERE c.idcliente = (SELECT MAX(c2.idcliente) FROM cliente c2 WHERE c2.email = c.email) ";
+	    List<ClienteClub> clientes = new ArrayList<>();
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection conn = null;
+	    PreparedStatement ps = null;
+	    ResultSet rs = null;
 
-		List<Object> params = new ArrayList<>();
+	    String sql = "SELECT \r\n"
+	    		+ "    cf.correo, \r\n"
+	    		+ "    cf.fecha_vinculacion, \r\n"
+	    		+ "    cf.activo, \r\n"
+	    		+ "    cf.puntos_vigentes,\r\n"
+	    		+ "    c.idcliente, \r\n"
+	    		+ "    CONCAT(COALESCE(c.nombre, ''), ' ', COALESCE(c.apellido, '')) AS nombre,\r\n"
+	    		+ "    c.nombrecompania, \r\n"
+	    		+ "    c.telefono, \r\n"
+	    		+ "    t.nombre AS nombre_tienda\r\n"
+	    		+ "FROM cliente_fidelizacion cf\r\n"
+	    		+ "LEFT JOIN (\r\n"
+	    		+ "    SELECT c1.*\r\n"
+	    		+ "    FROM cliente c1\r\n"
+	    		+ "    INNER JOIN (\r\n"
+	    		+ "        SELECT email, MAX(idcliente) AS idcliente\r\n"
+	    		+ "        FROM cliente\r\n"
+	    		+ "        GROUP BY email\r\n"
+	    		+ "    ) c2 ON c1.email = c2.email AND c1.idcliente = c2.idcliente\r\n"
+	    		+ ") c ON cf.correo = c.email\r\n"
+	    		+ "LEFT JOIN tienda t ON c.idtienda = t.idtienda\r\n"
+	    		+ "WHERE 1=1\r\n"
+	    		+ " ";
 
-		if (estadoMiembro != null && !estadoMiembro.isEmpty()) {
-			sql += " AND cf.activo = ?";
-			params.add(estadoMiembro);
-		}
-		if (correoMiembro != null && !correoMiembro.isEmpty()) {
-			sql += " AND cf.correo = ?";
-			params.add(correoMiembro);
-		}
-		if (puntosMiembro > 0) {
-			sql += " AND cf.puntos_vigentes >= ?";
-			params.add(puntosMiembro);
-		}
-		if (fechaInicio != null && !fechaInicio.isEmpty()) {
-			sql += " AND cf.fecha_vinculacion >= ?";
-			params.add(fechaInicio);
-		}
-		if (fechaMaxima != null && !fechaMaxima.isEmpty()) {
-			sql += " AND cf.fecha_vinculacion <= ?";
-			params.add(fechaMaxima);
-		}
-		if (tiendas != null && !tiendas.isEmpty()) {
-			String placeholders = String.join(",", Collections.nCopies(tiendas.size(), "?"));
-			sql += " AND c.idtienda IN (" + placeholders + ")";
-			params.addAll(tiendas);
-		}
+	    List<Object> params = new ArrayList<>();
 
-		try {
-			conn = con.obtenerConexionBDPrincipal();
-			ps = conn.prepareStatement(sql);
+	    if (estadoMiembro != null && !estadoMiembro.isEmpty()) {
+	        sql += " AND cf.activo = ?";
+	        params.add(estadoMiembro);
+	    }
+	    if (correoMiembro != null && !correoMiembro.isEmpty()) {
+	        sql += " AND cf.correo = ?";
+	        params.add(correoMiembro);
+	    }
+	    if (puntosMiembro > 0) {
+	        sql += " AND cf.puntos_vigentes >= ?";
+	        params.add(puntosMiembro);
+	    }
+	    if (fechaInicio != null && !fechaInicio.isEmpty()) {
+	        sql += " AND cf.fecha_vinculacion >= ?";
+	        params.add(fechaInicio);
+	    }
+	    if (fechaMaxima != null && !fechaMaxima.isEmpty()) {
+	        sql += " AND cf.fecha_vinculacion <= ?";
+	        params.add(fechaMaxima);
+	    }
+	    if (tiendas != null && !tiendas.isEmpty()) {
+	        String placeholders = String.join(",", Collections.nCopies(tiendas.size(), "?"));
+	        sql += " AND c.idtienda IN (" + placeholders + ")";
+	        params.addAll(tiendas);
+	    }
 
-			for (int i = 0; i < params.size(); i++) {
-				if (params.get(i) instanceof Integer) {
-					ps.setInt(i + 1, (Integer) params.get(i));
-				} else {
-					ps.setString(i + 1, (String) params.get(i));
-				}
-			}
+	    try {
+	        conn = con.obtenerConexionBDPrincipal();
+	        ps = conn.prepareStatement(sql);
 
-			rs = ps.executeQuery();
+	        for (int i = 0; i < params.size(); i++) {
+	            if (params.get(i) instanceof Integer) {
+	                ps.setInt(i + 1, (Integer) params.get(i));
+	            } else {
+	                ps.setString(i + 1, (String) params.get(i));
+	            }
+	        }
 
-			while (rs.next()) {
-				ClienteClub cliente = new ClienteClub();
-				cliente.setCorreo(rs.getString("correo"));
-				cliente.setFechaVinculado(rs.getDate("fecha_vinculacion"));
-				cliente.setActivo(rs.getString("activo"));
-				cliente.setPuntos(rs.getInt("puntos_vigentes"));
-				cliente.setIdcliente(rs.getInt("idcliente"));
-				cliente.setNombre(rs.getString("nombre"));
-				cliente.setNombrecompania(rs.getString("nombrecompania"));
-				cliente.setTelefono(rs.getString("telefono"));
-				cliente.setNombreTienda(rs.getString("nombre_tienda"));
-				clientes.add(cliente);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if (ps != null)
-					ps.close();
-				if (conn != null)
-					conn.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-		return clientes;
+	        rs = ps.executeQuery();
+
+	        while (rs.next()) {
+	            ClienteClub cliente = new ClienteClub();
+	            cliente.setCorreo(rs.getString("correo"));
+	            cliente.setFechaVinculado(rs.getDate("fecha_vinculacion"));
+	            cliente.setActivo(rs.getString("activo"));
+	            cliente.setPuntos(rs.getInt("puntos_vigentes"));
+
+	            cliente.setIdcliente(rs.getInt("idcliente"));
+
+	            String nombre = rs.getString("nombre");
+	            cliente.setNombre(nombre != null && !nombre.trim().isEmpty() ? nombre : "No identificado");
+
+	            String compania = rs.getString("nombrecompania");
+	            cliente.setNombrecompania(compania != null ? compania : "N/A");
+
+	            String telefono = rs.getString("telefono");
+	            cliente.setTelefono(telefono != null ? telefono : "Sin número");
+
+	            String tienda = rs.getString("nombre_tienda");
+	            cliente.setNombreTienda(tienda != null ? tienda : "Sin tienda");
+
+	            clientes.add(cliente);
+	        }
+
+	  
+
+	    } catch (SQLException e) {
+	        System.out.println(e.getMessage());
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	            if (rs != null) rs.close();
+	            if (ps != null) ps.close();
+	            if (conn != null) conn.close();
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
+
+	    return clientes;
 	}
+
 
 	public boolean actualizarFechaUltimaPublicidad(List<Integer> idsClientes) {
 		// Definir la sentencia SQL para actualizar la fecha

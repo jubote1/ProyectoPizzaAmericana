@@ -74,7 +74,29 @@ $(document).ready(function() {
 
 	dtconsultasPQRS = $('#grid-consultaPQRS').DataTable({
 		"aoColumns": [
+			
 			{ "mData": "idconsultaPQRS" },
+			{
+				"mData": null,
+				"sTitle": "Prioridad",
+				"render": function(data, type, row) {
+					const prioridades = {
+						1: { texto: "Urgente", color: "#dc3545" },   // rojo
+						2: { texto: "Alta", color: "#ffc107" },   // naranja
+						3: { texto: "Media", color: "#fd7e14" },   // amarillo
+						4: { texto: "Baja", color: "#28a745" },   // verde
+					};
+					const p = prioridades[row.idprioridad];
+					if (!p) return "N/A";
+
+					return `
+				<span style="display: inline-flex; align-items: center; gap: 0.4em;">
+					<span style="width: 10px; height: 10px; background-color: ${p.color}; border-radius: 50%; display: inline-block;"></span>
+					${p.texto}
+				</span>
+			`;
+				}
+			},
 			{ "mData": "fechasolicitud" },
 			{ "mData": "tiposolicitud" },
 			{ "mData": "cliente" },
@@ -110,9 +132,10 @@ $(document).ready(function() {
 
 		],
 		"fnRowCallback": function(nRow, aData, iDisplayIndex) {
-			// Remueve cualquier clase previa de color
+
 			$(nRow).removeClass('resaltar-amarillo resaltar-azul resaltar-naranja resaltar-verde');
 
+	
 			switch (aData.idestado) {
 				case 1:
 					$(nRow).addClass('resaltar-amarillo');
@@ -126,10 +149,8 @@ $(document).ready(function() {
 				case 4:
 					$(nRow).addClass('resaltar-verde');
 					break;
-				default:
-					// Si es 0, null, undefined u otro valor no esperado, no aplicar color
-					break;
 			}
+
 		}
 
 
@@ -141,10 +162,12 @@ $(document).ready(function() {
 	// En resumen se invocan todos servicios que se encargan de llenar la data del formulario.
 	getUsuariosActivos();
 	getListaTiendas();
+	getListaMotivoPrioridad();
 	setInterval('validarVigenciaLogueo()', 600000);
 
 	//Colocamos acción al DataTable en caso de dar clic sobre el DATATABLE
 	$('#grid-consultaPQRS tbody').on('click', 'tr', function() {
+		limpiarConsultaPQRS();
 		datos = table.row(this).data();
 		$('#idSolicitudPQRS').val(datos.idconsultaPQRS);
 		$('#fecha').val(datos.fechasolicitud);
@@ -166,9 +189,14 @@ $(document).ready(function() {
 		$('#idpedidoredencion').val(datos.idpedidoredencion);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#estado').val(datos.nombreEstado);
+		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
+		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
+		$('#ccVinculado').prop('checked', datos.ccVinculado);
 
 		const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
 		const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
+		const selectPrioridad = document.getElementById("selectPrioridad");
+		const selectMotivo = document.getElementById("selectMotivo");
 
 		function seleccionarOpcionSeguro(select, valor) {
 			if ([...select.options].some(option => option.value === String(valor))) {
@@ -177,10 +205,21 @@ $(document).ready(function() {
 				select.value = "0";
 			}
 		}
+		
 
 		seleccionarOpcionSeguro(selectUsuRegistro, datos.idusuarioRegistro);
 		seleccionarOpcionSeguro(selectUsuRedencion, datos.idusuarioRedencion);
-
+		seleccionarOpcionSeguro(selectPrioridad, datos.idprioridad);
+		seleccionarOpcionSeguro(selectMotivo, datos.idmotivo);
+       
+		
+		['#selectEstado', '#selectUsuarioRegistro', '#selectUsuarioRedencion', '#selectPrioridad','#selectMotivo'].forEach(id => {
+			  const $select = $(id);
+			  $select.removeClass("placeholder");
+			  if ($select.val() === "0") {
+			    $select.addClass("placeholder");
+			  }
+			});
 
 		contenedorComentarios.innerHTML = "";
 		const listaComentarios = datos.listaComentarios;
@@ -246,12 +285,11 @@ function validarVigenciaLogueo() {
 function getListaTiendas() {
 	$.getJSON(server + 'GetTiendas', function(data) {
 		tiendas = data;
-		var str = '';
+		var str = '<option value="' + 'TODAS' + '" id ="' + 'TODAS' + '" selected>' + 'TODAS' + '</option>';
 		for (var i = 0; i < data.length; i++) {
 			var cadaTienda = data[i];
 			str += '<option value="' + cadaTienda.nombre + '" id ="' + cadaTienda.id + '">' + cadaTienda.nombre + '</option>';
 		}
-		str += '<option value="' + 'TODAS' + '" id ="' + 'TODAS' + '" selected>' + 'TODAS' + '</option>';
 		$('#selectTiendas').html(str);
 		// Realizamos cambio para que la tienda no esté seleccionada por defecto
 		//$("#selectTiendas").val('');
@@ -344,7 +382,10 @@ function consultarPQRS() {
 				"idusuarioRegistro": data1[i].idusuarioRegistro,
 				"idusuarioRedencion": data1[i].idusuarioRedencion,
 				"idestado" :data1[i].idestado,
-				"nombreEstado" :data1[i].nombreEstado
+				"nombreEstado" :data1[i].nombreEstado,
+				"idprioridad" :data1[i].idprioridad,
+				"idmotivo" :data1[i].idmotivo,
+				"ccVinculado":data1[i].ccVinculado
 			}).draw();
 		}
 	});
@@ -385,12 +426,17 @@ function ValidacionesDatos() {
 	return 1; // Todo está correcto
 }
 
+function mostrarAlerta(icono, mensaje) {
+	Swal.fire({ icon: icono, text: mensaje });
+	return; // Para cortar la ejecución del flujo
+}
+
+
 
 
 function limpiarConsultaPQRS() {
 	$('#idSolicitudPQRS').val('');
 	$('#fecha').val('');
-	$('#tipoSolicitud').val('');
 	$('#telefono').val('');
 	$('#nombres').val('');
 	$('#direccion').val('');
@@ -400,10 +446,12 @@ function limpiarConsultaPQRS() {
 	$("#tipo").val('');
 	$("#foco").val('');
 	$("#estado").val("");
-	$('#selectUsuarioRegistro,#selectUsuarioRedencion').prop('selectedIndex', 0);
-	$('#descuentoRedimido').prop('checked', false);
+	$("#tipoSolicitud").val("");
+	$('#selectUsuarioRegistro,#selectUsuarioRedencion,#selectPrioridad,#selectMotivo').prop('selectedIndex', 0);
+	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	$(' #apellidos, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #arearesponsable, #PorcentajeDesc').val("")
 	contenedorComentarios.innerHTML = "";
+	$('#img-gallery').html('');
 }
 
 
@@ -465,11 +513,13 @@ async function generarReporte() {
 	}
 
 	const agrupados = {};
+
 	filtrados.forEach(d => {
-		const tienda = d.tienda || 'Sin Tienda';
-		if (!agrupados[tienda]) agrupados[tienda] = [];
-		agrupados[tienda].push(d);
+		const grupo = d.ccVinculado === true ? 'Vinculado Contact Center' : (d.tienda || 'Sin Tienda');
+		if (!agrupados[grupo]) agrupados[grupo] = [];
+		agrupados[grupo].push(d);
 	});
+
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet("Reporte");
@@ -481,9 +531,9 @@ async function generarReporte() {
 	let totalGlobalRegistros = 0;
 
 	Object.entries(agrupados).forEach(([tienda, registros]) => {
-		worksheet.mergeCells(`A${fila}:G${fila}`);
+		worksheet.mergeCells(`A${fila}:H${fila}`);
 		const celdaTitulo = worksheet.getCell(`A${fila}`);
-		celdaTitulo.value = `Tienda:  ${tienda}`;
+		celdaTitulo.value = tienda === 'Vinculado Contact Center' ? tienda : `Tienda:  ${tienda}`;
 		celdaTitulo.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
 		celdaTitulo.fill = {
 			type: 'pattern',
@@ -493,7 +543,7 @@ async function generarReporte() {
 		celdaTitulo.alignment = { horizontal: 'center', vertical: 'middle' };
 		fila++;
 
-		const headers = ['#', 'Factura', 'Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
+		const headers = ['#', 'Factura', 'Teléfono','Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
 		headers.forEach((h, i) => {
 			const cell = worksheet.getCell(fila, i + 1);
 			cell.value = h;
@@ -517,6 +567,7 @@ async function generarReporte() {
 			const valores = [
 				r.idconsultaPQRS,
 				r.idpedidotienda,
+			    r.telefono || 'No disponible',
 				r.valorPedido,
 				r.porcentajeDescuento > 0 ? r.porcentajeDescuento + '%' : 'No Aplica',
 				r.valorDescuento,
@@ -591,8 +642,8 @@ async function generarReporte() {
 
 	let filaResumen = 6; // Puedes ajustar si quieres que empiece más abajo
 	resumenGlobal.forEach(([label, valor]) => {
-		const celdaLabel = worksheet.getCell(filaResumen, 9); // Columna I
-		const celdaValor = worksheet.getCell(filaResumen, 10); // Columna J
+		const celdaLabel = worksheet.getCell(filaResumen, 10); // Columna I
+		const celdaValor = worksheet.getCell(filaResumen, 11); // Columna J
 
 		celdaLabel.value = label;
 		celdaLabel.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
@@ -639,7 +690,7 @@ async function generarReporte() {
 		});
 		col.width = maxLength + 2;
 	});
-	worksheet.getColumn(8).width = 10;
+	worksheet.getColumn(9).width = 10;
 
 
 	const buffer = await workbook.xlsx.writeBuffer();
@@ -677,6 +728,18 @@ function agregarComentarioVisual(fecha, id, comentario) {
 	seccionFecha.appendChild(comentarioDiv);
 }
 
+
+document.querySelectorAll('select').forEach(select => {
+  select.addEventListener("change", () => {
+    if (select.value === "0") {
+      select.classList.add("placeholder");
+    } else {
+      select.classList.remove("placeholder");
+    }
+  });
+});
+
+
 function getUsuariosActivos() {
 	fetch(server + 'ObtenerUsuariosActivos')
 		.then(res => res.json())
@@ -689,7 +752,7 @@ function getUsuariosActivos() {
 			selectUsuRedencion.innerHTML = '';
 
 			// Opción por defecto
-			const optionDefault = new Option("Sin Usuario", 0);
+			const optionDefault = new Option("Sin Usuario", "0");
 			selectUsuRegistro.appendChild(optionDefault.cloneNode(true));
 			selectUsuRedencion.appendChild(optionDefault.cloneNode(true));
 
@@ -702,8 +765,53 @@ function getUsuariosActivos() {
 			// Establecer valor seleccionado programáticamente
 			selectUsuRegistro.value = idUsuarioSeleccionado;
 			selectUsuRedencion.value = idUsuarioSeleccionado;
+			selectUsuRedencion.dispatchEvent(new Event("change"));
+			selectUsuRegistro.dispatchEvent(new Event("change"));
 		});
 }
+
+let motivos = [];
+let prioridades = [];
+
+
+
+
+
+function getListaMotivoPrioridad() {
+    $.getJSON(server + 'MotivoPrioridadPqrs', function (data) {
+        if (data && data.motivo_pqrs && data.prioridad_pqrs) {
+
+            motivos =data.motivo_pqrs
+            prioridades = data.prioridad_pqrs
+			
+			const $selectPrioridad = $('#selectPrioridad');
+			      $selectPrioridad.empty().append('<option value="0" selected>Prioridad</option>');
+			      if (prioridades) {
+			          prioridades.forEach(p => {
+			              $selectPrioridad.append(
+			                  $('<option>', { value: p.idprioridad, text: p.descripcion })
+			              );
+			          });
+			      }
+				  			  
+		    const $selectMotivo = $('#selectMotivo');
+				 $selectMotivo.empty().append('<option value="0" selected>Motivo</option>');
+				        if (motivos) {
+				            motivos.forEach(p => {
+				                $selectMotivo.append(
+				                    $('<option>', { value: p.idmotivo, text: p.descripcion })
+				                );
+				            });
+				        }
+						selectMotivo.dispatchEvent(new Event("change"));
+								selectPrioridad.dispatchEvent(new Event("change"));
+
+				
+			
+        }
+    });
+}
+
 
 
 
