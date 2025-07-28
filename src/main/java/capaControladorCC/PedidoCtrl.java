@@ -466,6 +466,8 @@ public class PedidoCtrl {
 			cadaExcepcionJSON.put("controlaespecialidades", exc.getControlaEspecialidades());
 			cadaExcepcionJSON.put("ofertaabierta", exc.getOfertaAbierta());
 			cadaExcepcionJSON.put("manejaoferta", exc.getManejaOferta());
+			cadaExcepcionJSON.put("idproductodepende", exc.getIdProductoDepende());
+			cadaExcepcionJSON.put("preciopuntos", exc.getPrecioPuntos());
 			listJSON.add(cadaExcepcionJSON);
 		}
 		
@@ -12577,6 +12579,14 @@ public class PedidoCtrl {
 			listJSON.add(cadaSolTemp);
 		}
 		return(listJSON.toJSONString());
+	}
+	
+	public String validarExistenciaProductoPedido(int idPedido, int idProducto) 
+	{
+		boolean respuesta = PedidoDAO.validarExistenciaPedido(idPedido, idProducto);
+		JSONObject resultado = new JSONObject();
+		resultado.put("respuesta", respuesta);
+		return(resultado.toJSONString());
 	}
 	
 

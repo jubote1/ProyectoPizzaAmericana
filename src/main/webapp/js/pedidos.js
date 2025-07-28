@@ -37,6 +37,8 @@ var marcardorProductoSin = 0;
 var canvas;
 var ctx;
 var totalpedido = 0;
+//Variable que almacenará el total de puntos que vale el pedido
+var totalpuntospedido = 0;
 //Tendremos una variable total general 
 var totalpedidogeneral = 0;
 var radioEsp1Ant= 0;
@@ -177,6 +179,7 @@ $("#fechapedido").change(function(){
 	$('#transferircliente').attr('disabled', true);
 	// Llevamos a cero los campos cálculos de los totales
 	$("#totalpedido").val('0');
+    $("#totalpuntospedido").val('0');
 	$("#valorpago").val('0');
 	$("#valordevolver").val('0');
 	$('input:radio[name=adicion]')[1].checked = true;
@@ -1538,6 +1541,21 @@ function getExcepcionesPrecios(){
                     var diasSemana = new Array("domingo","lunes","martes","miercoles","jueves","viernes","sabado");
                     //Realizamos la validacion primero que todo del diá de la promoción
                     var diaSemana = diasSemana[fechaActual.getDay()];
+                    var idProductoDepende = cadaExc.idproductodepende;
+                    if(idProductoDepende > 0)
+                    {
+                        $.getJSON(server + 'ValidarExistenciaProductoPedido?idpedido=' + idPedido + "&idproducto=" + idProductoDepende, function(data2){
+                            var respuesta2 = data2;
+                            if(!respuesta2.respuesta)
+                            {
+                                $.alert('Recuerde que esta promoción exige que se lleve otro producto dentro del pedido, como no se ha agregado dicho producto, NO SE PUEDE SELECCIONAR ESTA PROMO.');
+                                // Limpiamos la selección de la promoción
+                                $("#selectExcepcion").val("vacio");
+                                return;
+                            }
+                        });
+                        
+                    }
                     if((diaSemana == "domingo")&&(cadaExc.domingo == "N"))
                     {
                         fueraHora = true;
@@ -3111,6 +3129,7 @@ function ReiniciarPedido()
 
 															    	$('input:radio[name=adicion]')[1].checked = true;
 															    	totalpedido = 0;
+                                                                    totalpuntospedido = 0;
                                                                     totalpedidogeneral = 0;
                                                                     descuentoPedido = 0;
                                                                     motivoDescuento = "";
@@ -3118,6 +3137,7 @@ function ReiniciarPedido()
                                                                     $("#verMotivoDescuento").val('');
                                                                     distanciaTienda = 0;
 															    	$("#totalpedido").val('0');
+                                                                    $("#totalpuntos").val('0');
 																	$("#valorpago").val('0');
 																	$("#valordevolver").val('0');
                                                                     $("#selectTipoPedido").prop("selectedIndex", 0).val();
@@ -3528,6 +3548,7 @@ function ConfirmarPedido()
                                     idExcepcionOferta = 0;
 							    	$('input:radio[name=adicion]')[1].checked = true;
 							    	totalpedido = 0;
+                                    totalpuntospedido = 0;
                                     totalpedidogeneral = 0;
                                     descuentoPedido = 0;
                                     motivoDescuento = "";
@@ -3535,6 +3556,7 @@ function ConfirmarPedido()
                                     $("#verMotivoDescuento").val('');
                                     distanciaTienda = 0;
 							    	$("#totalpedido").val('0');
+                                    $("#totalpuntos").val('0');
 									$("#valorpago").val('0');
 									$("#valordevolver").val('0');
                                     $("#selectTipoPedido").prop("selectedIndex", 0).val();
@@ -4697,7 +4719,7 @@ function agregarProducto()
 						{
 							valorunitario = cadaExcepcion.precio + valorAdiGas;
 							valortotal = valorunitario * cantidad;
-							
+							totalpuntospedido = totalpuntospedido + cadaExcepcion.preciopuntos;
 							//totalpedido  = totalpedido + valortotal; 
 						}
 						else{
@@ -4908,6 +4930,7 @@ function agregarProducto()
 	    $('#observacion').val('');
 	    $('input:radio[name=adicion]')[1].checked = true;
 	    $('#totalpedido').val(totalpedido);
+        $('#totalpuntos').val(totalpuntospedido);
 	    if ($("input:radio[name=requiereDevuelta]:checked").val() == "completo")
 		{
 			$("#valorpago").val(totalpedido);

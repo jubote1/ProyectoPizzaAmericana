@@ -28,6 +28,7 @@ public class ExcepcionPrecioDAO {
 		ArrayList<ExcepcionPrecio> excepciones = new ArrayList<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		int idProductoDepende = 0;
 		try
 		{
 			Statement stm = con1.createStatement();
@@ -38,10 +39,12 @@ public class ExcepcionPrecioDAO {
 			String controlaEspecialidades;
 			String ofertaAbierta;
 			String manejaOferta;
+			
 			while(rs.next()){
 				int idExcepcion = rs.getInt("idexcepcion");
 				int idProducto = rs.getInt("idproducto");
 				double precio = rs.getDouble("precio");
+				double precioPuntos = rs.getDouble("precio_puntos");
 				String descripcion = rs.getString("descripcion");
 				String incluye_liquido  = rs.getString("incluye_liquido");
 				int idtipoliquido = rs.getInt("idtipoliquido");
@@ -60,10 +63,13 @@ public class ExcepcionPrecioDAO {
 				controlaEspecialidades = rs.getString("controla_especialidades");
 				ofertaAbierta = rs.getString("oferta_abierta");
 				manejaOferta = rs.getString("maneja_oferta");
+				idProductoDepende = rs.getInt("id_producto_depende");
 				//System.out.println("controlaEspecialidades " + controlaEspecialidades);
 				ExcepcionPrecio excepcion = new ExcepcionPrecio(idExcepcion, idProducto, precio, descripcion,controlaCantidadIngredientes,cantidadIngredientes,"",0,partiradiciones,horaInicial, horaFinal,lunes,martes,miercoles,jueves,viernes, sabado, domingo, controlaEspecialidades);
 				excepcion.setOfertaAbierta(ofertaAbierta);
 				excepcion.setManejaOferta(manejaOferta);
+				excepcion.setIdProductoDepende(idProductoDepende);
+				excepcion.setPrecioPuntos(precioPuntos);
 				excepciones.add(excepcion);
 			}
 			rs.close();
