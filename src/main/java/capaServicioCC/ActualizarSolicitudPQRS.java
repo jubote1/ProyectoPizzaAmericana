@@ -44,7 +44,7 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		String zona = request.getParameter("zona");
 		String tipo = request.getParameter("tipo");
 		String areaResponsable = request.getParameter("arearesponsable");
-
+		String correo = request.getParameter("correo");
 		// Parámetros numéricos con parseo seguro
 		int idSolicitudPQRS = parseIntSafe(request, "idsolicitudpqrs");
 		int idcliente = parseIntSafe(request, "idcliente");
@@ -78,7 +78,7 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS, fechasolicitud, tiposolicitud,
 				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen,
-				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado);
+				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado,correo);
 
 		// Salida
 		PrintWriter out = response.getWriter();

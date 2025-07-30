@@ -73,26 +73,30 @@
 						<div class="col-sm-6 form-group">
 							<label>Tipo de Solicitud</label><select id="selectSolicitud"
 								class="form-control" required>
-						  <option value="" disabled selected hidden>Seleccione una opción</option>
+								<option value="" disabled selected hidden>Seleccione
+									una opción</option>
 								<option value='peticion'>Petición</option>
 								<option value='queja'>Queja</option>
 								<option value='reclamo'>Reclamo</option>
 								<option value='sugerencia'>Sugerencia</option>
-								<option value='felicitacion'>Felicitación</option></select>
+								<option value='felicitacion'>Felicitación</option>
+							</select>
 						</div>
-						
+
 						<div class="col-sm-6 form-group">
-						    <label>Motivo</label>
-						    <select id="selectMotivo" class="form-control" required>
-						        <option value="" disabled selected hidden>Seleccione un motivo</option>
-						    </select>
+							<label>Motivo</label> <select id="selectMotivo"
+								class="form-control" required>
+								<option value="" disabled selected hidden>Seleccione un
+									motivo</option>
+							</select>
 						</div>
-						
+
 						<div class="col-sm-6 form-group">
-						    <label>Prioridad</label>
-						    <select id="selectPrioridad" class="form-control" required>
-						        <option value="" disabled selected hidden>Seleccione una prioridad</option>
-						    </select>
+							<label>Prioridad</label> <select id="selectPrioridad"
+								class="form-control" required>
+								<option value="" disabled selected hidden>Seleccione
+									una prioridad</option>
+							</select>
 						</div>
 						<div class="col-sm-6 form-group">
 							<label>Teléfono Cliente</label><input type="text" id="telefono"
@@ -107,6 +111,13 @@
 							<label>Apellidos</label><input type="text" id="apellidos"
 								name="apellidos" class="form-control">
 						</div>
+						<div class="col-sm-6 form-group">
+							<label>Correo Electrónico</label><input type="email" id="correo"
+								name="correo" class="form-control"
+								placeholder="Ej. persona@correo.com">
+					<div id="errorCorreo" style="color: red; display: none;">Correo inválido</div>
+						</div>
+
 						<div class="col-sm-6 form-group">
 							<label>Dirección</label><input type="text" id="direccion"
 								name="direccion" class="form-control">
@@ -146,18 +157,22 @@
 						<div class="col-sm-6 form-group">
 							<label>Queja Externa/Interna</label><select id="selectTipo"
 								class="form-control" required>
-							   <option value="" disabled selected hidden>Seleccione una opción</option>
+								<option value="" disabled selected hidden>Seleccione
+									una opción</option>
 								<option value="externa">Externa</option>
-								<option value="interna">Interna</option></select>
+								<option value="interna">Interna</option>
+							</select>
 						</div>
 						<div class="col-sm-6 form-group">
 							<label>Área Responsable</label><select id="selectAreaResponsable"
 								class="form-control" required>
-									  <option value="" disabled selected hidden>Seleccione una opción</option>
+								<option value="" disabled selected hidden>Seleccione
+									una opción</option>
 								<option value="tienda">Tienda</option>
 								<option value="contact">Contact</option>
 								<option value="tecnologia">Tecnología</option>
-								<option value="calidad">Calidad</option></select>
+								<option value="calidad">Calidad</option>
+							</select>
 						</div>
 						<div class="col-sm-6 form-group">
 							<label>Registrado por</label><select id="selectUsuarioRegistro"
@@ -215,14 +230,13 @@
 							</label> <label for="descuentoRedimido" class="mb-0 ml-2">
 								Descuento redimido </label>
 						</div>
-						
-							<div class="col-sm-6 form-group">
-										<label> <input type="checkbox"
-											id="ccVinculado" name="ccVinculado"
-											style="margin-right: 6px;"> Vinculado al Contact
-											Center
-										</label>
-									</div>
+
+						<div class="col-sm-6 form-group">
+							<label> <input type="checkbox" id="ccVinculado"
+								name="ccVinculado" style="margin-right: 6px;"> Vinculado
+								al Contact Center
+							</label>
+						</div>
 
 
 						<div class="col-sm-12 form-group">

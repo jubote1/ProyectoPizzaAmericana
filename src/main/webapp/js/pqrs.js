@@ -40,6 +40,7 @@ var table;
 var productos;
 var memcode = 0;
 var idCliente = 0;
+var validarCorreo = true;
 
 // Validar usuario
 $.ajax({
@@ -135,6 +136,7 @@ $(document).ready(function() {
 			{ data: "zona" },
 			{ data: "observacion" },
 			{ data: "telefono" },
+			{ data: "correo" },
 			{ data: "memcode", visible: false }
 		]
 	});
@@ -147,7 +149,8 @@ $(document).ready(function() {
 		$('#zona').val(datos.zona);
 		$("#selectTiendas").val(datos.tienda);
 		$("#selectMunicipio").val(datos.municipio || ""); // asegúrate de tener esta columna
-
+		$("#correo").val(datos.correo || "")
+		document.getElementById('correo').dispatchEvent(new Event('input'));
 		// Opcional si los campos existen
 		$('#nombreCompania').val(datos.nombrecompania || "");
 		$('#observacionDir').val(datos.observacion || "");
@@ -201,6 +204,34 @@ function validarTelefono() {
 		data.forEach(cliente => table.row.add(cliente).draw());
 	});
 }
+
+const inputCorreo = document.getElementById('correo');
+const errorDiv = document.getElementById('errorCorreo');
+
+inputCorreo.addEventListener('input', () => {
+	const valor = inputCorreo.value.trim();
+	const esValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+
+	if (valor === '') {
+		inputCorreo.classList.remove('is-valid', 'is-invalid');
+		errorDiv.style.display = 'none';
+		validarCorreo = true; // o false, según si lo consideras válido vacío
+		return;
+	}
+
+	if (esValido) {
+		inputCorreo.classList.add('is-valid');
+		inputCorreo.classList.remove('is-invalid');
+		errorDiv.style.display = 'none';
+		validarCorreo = true;
+	} else {
+		inputCorreo.classList.add('is-invalid');
+		inputCorreo.classList.remove('is-valid');
+		errorDiv.style.display = 'block';
+		validarCorreo = false;
+	}
+});
+
 
 function validarNumero(input) {
 	input.value = input.value.replace(/\D/g, ''); // Solo dígitos
@@ -256,72 +287,72 @@ let motivos = [];
 let prioridades = [];
 
 function getListaMotivoPrioridad() {
-    $.getJSON(server + 'MotivoPrioridadPqrs', function (data) {
-        if (data && data.motivo_pqrs && data.prioridad_pqrs) {
+	$.getJSON(server + 'MotivoPrioridadPqrs', function(data) {
+		if (data && data.motivo_pqrs && data.prioridad_pqrs) {
 
-            motivos =data.motivo_pqrs
-            prioridades = data.prioridad_pqrs
-			
+			motivos = data.motivo_pqrs
+			prioridades = data.prioridad_pqrs
+
 			const $selectPrioridad = $('#selectPrioridad');
-			      $selectPrioridad.empty().append('<option value="" disabled selected hidden>Seleccione una prioridad</option>');
+			$selectPrioridad.empty().append('<option value="" disabled selected hidden>Seleccione una prioridad</option>');
 
-			      if (prioridades) {
-			          prioridades.forEach(p => {
-			              $selectPrioridad.append(
-			                  $('<option>', { value: p.idprioridad, text: p.descripcion })
-			              );
-			          });
-			      }
+			if (prioridades) {
+				prioridades.forEach(p => {
+					$selectPrioridad.append(
+						$('<option>', { value: p.idprioridad, text: p.descripcion })
+					);
+				});
+			}
 
-				
-			
-        }
-    });
+
+
+		}
+	});
 }
 
 
 // Al cambiar el tipo de solicitud, llenar motivos
-$('#selectSolicitud').on('change', function () {
-    const tipoSeleccionado = $(this).val();
-    const $selectMotivo = $('#selectMotivo');
-    $selectMotivo.empty().append('<option value="" disabled selected hidden>Seleccione un motivo</option>');
+$('#selectSolicitud').on('change', function() {
+	const tipoSeleccionado = $(this).val();
+	const $selectMotivo = $('#selectMotivo');
+	$selectMotivo.empty().append('<option value="" disabled selected hidden>Seleccione un motivo</option>');
 	const $selectPrioridad = $('#selectPrioridad');
-	$selectPrioridad.val(""); 
-    motivos
-        .filter(m => m.tiposolicitud.toLowerCase() === tipoSeleccionado.toLowerCase())
-        .forEach(m => {
-            $selectMotivo.append(
-                $('<option>', { value: m.idmotivo, text: m.descripcion })
-                    .attr('data-prioridad-id', m.idprioridad) // opcional, si quieres guardar relación
-            );
-        });
+	$selectPrioridad.val("");
+	motivos
+		.filter(m => m.tiposolicitud.toLowerCase() === tipoSeleccionado.toLowerCase())
+		.forEach(m => {
+			$selectMotivo.append(
+				$('<option>', { value: m.idmotivo, text: m.descripcion })
+					.attr('data-prioridad-id', m.idprioridad) // opcional, si quieres guardar relación
+			);
+		});
 
 });
 
 // Al cambiar el motivo, llenar prioridad
-$('#selectMotivo').on('change', function () {
+$('#selectMotivo').on('change', function() {
 	const $opcionSeleccionada = $(this).find('option:selected'); // opción seleccionada
 	const prioridadId = $opcionSeleccionada.data('prioridad-id'); // accede al data attribute
 	console.log("prioridadId:", prioridadId);
-    const $selectPrioridad = $('#selectPrioridad');
+	const $selectPrioridad = $('#selectPrioridad');
 	$selectPrioridad.val(prioridadId); // ← Establece el valor usando jQuery
 });
 
 // Limpiar cliente
 function limpiarSeleccionCliente() {
 	// Limpiar campos de texto y numéricos
-	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento').val("");
+	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda, #idpedidoredencion ,#valorDescuento, #correo').val("");
 
 	// Reiniciar selects a la primera opción
 	//$('#selectFoco, #selectOrigen , #selectTiendas, #selectMunicipio, #selectTipo, #selectAreaResponsable, #selectPorcentajeDesc,#selectUsuarioRegistro,#selectUsuarioRedencion,#selectEstado,#selectSolicitud').prop('selectedIndex', 0);
-	$('select').each(function () {
-	  $(this).prop('selectedIndex', 0);
+	$('select').each(function() {
+		$(this).prop('selectedIndex', 0);
 
-	  if (this.value === "0") {
-	    this.classList.add("placeholder");
-	  } else {
-	    this.classList.remove("placeholder");
-	  }
+		if (this.value === "0") {
+			this.classList.add("placeholder");
+		} else {
+			this.classList.remove("placeholder");
+		}
 	});
 	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	// Reiniciar valor del cliente
@@ -401,8 +432,9 @@ function ConfirmarPQRS() {
 		idestado: $("#selectEstado").val(),
 		idprioridad: $("#selectPrioridad").val(),
 		idmotivo: $("#selectMotivo").val(),
-		ccVinculado: document.getElementById("ccVinculado").checked
-		
+		ccVinculado: document.getElementById("ccVinculado").checked,
+		correo: $("#correo").val()
+
 	};
 
 	Swal.fire({
@@ -414,120 +446,129 @@ function ConfirmarPQRS() {
 		cancelButtonText: 'No',
 		confirmButtonColor: 'blue',
 		cancelButtonColor: 'gray',
-	}).then((result) => {
+	}).then(async (result) => {
 		if (!result.isConfirmed) return;
 
-		$.ajax({
-			url: server + 'InsertarSolicitudPQRS',
-			dataType: 'json',
-			type: 'post',
-			data: data,
-			contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-			success: function(resp) {
-				const idSolicitud = resp[0]?.idSolicitudPQRS || 0;
+		// Muestra spinner
+		Swal.fire({
+			title: 'Registrando...',
+			text: 'Por favor espere un momento',
+			allowOutsideClick: false,
+			didOpen: () => {
+				Swal.showLoading();
+			}
+		});
 
-				if (idSolicitud === 0) {
-					return Swal.fire({
-						icon: 'error',
-						title: 'Error',
-						text: "Error al insertar la solicitud."
-					});
-				}
+		try {
+			// Paso 1: Insertar la solicitud
+			const response = await $.ajax({
+				url: server + 'InsertarSolicitudPQRS',
+				dataType: 'json',
+				type: 'POST',
+				data: data,
+				contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+			});
 
-				const filestack = $('#file-1').fileinput('getFileList');
-				const fd = new FormData();
-				const erroresImagenes = [];
-				console.log(filestack)
-				if (filestack.length === 0) {
-					// No hay imágenes: mostrar éxito y limpiar
-					Swal.fire({
-						icon: 'success',
-						title: 'Éxito',
-						text: 'Solicitud ingresada correctamente.'
-					});
-					limpiarSeleccionCliente();
+			const respuesta = response?.[0];
+			const idSolicitud = respuesta?.idSolicitudPQRS || 0;
+
+			if (idSolicitud === 0) {
+				return Swal.fire({
+					icon: 'error',
+					title: 'Error',
+					text: "Error al insertar la solicitud."
+				});
+			}
+
+			// Paso 2: Subir imágenes si existen
+			const input = document.getElementById('file-1');
+			const files = input?.files || [];
+
+			if (files.length === 0) {
+				Swal.fire({
+					icon: 'success',
+					title: 'Éxito',
+					text: 'Solicitud ingresada correctamente.'
+				});
+				limpiarSeleccionCliente();
+				return;
+			}
+
+			// Enviar archivos
+			const formData = new FormData();
+			for (let i = 0; i < files.length; i++) {
+				formData.append('files[]', files[i]);
+			}
+
+			const uploadResp = await $.ajax({
+				url: 'http://172.19.0.25:4200/service_upload.php',
+				method: 'POST',
+				data: formData,
+				dataType: 'json',
+				cache: false,
+				contentType: false,
+				processData: false,
+			});
+
+			if (!Array.isArray(uploadResp) || uploadResp.length === 0) {
+				return Swal.fire({
+					icon: 'warning',
+					title: 'Solicitud registrada',
+					text: 'La solicitud fue registrada, pero no se subieron imágenes correctamente.'
+				});
+			}
+
+			// Paso 3: Registrar las rutas de las imágenes
+			const erroresImagenes = [];
+
+			await Promise.all(uploadResp.map(async (imgResp, index) => {
+				if (!imgResp.name) {
+					erroresImagenes.push(`Archivo ${index + 1}: No se recibió nombre del archivo.`);
 					return;
 				}
 
+				try {
+					await $.ajax({
+						url: `${server}InsertarSolicitudPQRSImagenes?idsolicitudpqrs=${idSolicitud}&rutaimagen=${encodeURIComponent(imgResp.name)}`,
+						dataType: 'json',
+						type: 'POST',
+					});
+				} catch (e) {
+					erroresImagenes.push(`Error al insertar imagen "${imgResp.name}".`);
+				}
+			}));
 
-				filestack.forEach(file => fd.append('files[]', file));
-
-				$.ajax({
-					url: 'http://172.19.0.25:4200/service_upload.php',
-					method: 'POST',
-					data: fd,
-					dataType: "json",
-					cache: false,
-					contentType: false,
-					processData: false,
-					async: false,
-					success: function(uploadResp) {
-						let total = uploadResp.length;
-						let procesados = 0;
-
-						uploadResp.forEach((imgResp, index) => {
-							if (!imgResp.name) {
-								erroresImagenes.push(`Archivo ${index + 1}: No se recibió nombre del archivo.`);
-								procesados++;
-								if (procesados === total) mostrarResultadoFinal();
-								return;
-							}
-
-							$.ajax({
-								url: `${server}InsertarSolicitudPQRSImagenes?idsolicitudpqrs=${idSolicitud}&rutaimagen=${imgResp.name}`,
-								dataType: 'json',
-								type: 'post',
-								async: false,
-								error: function() {
-									erroresImagenes.push(`Error al insertar imagen "${imgResp.name}".`);
-								},
-								complete: function() {
-									procesados++;
-									if (procesados === total) mostrarResultadoFinal();
-								}
-							});
-						});
-
-						function mostrarResultadoFinal() {
-							$('#file-1').fileinput('reset');
-
-							if (erroresImagenes.length > 0) {
-								Swal.fire({
-									icon: 'warning',
-									title: 'Solicitud registrada con advertencias',
-									html: 'La solicitud fue registrada, pero algunas imágenes tuvieron errores:<br><ul>' +
-										erroresImagenes.map(e => `<li>${e}</li>`).join('') +
-										'</ul>'
-								});
-							} else {
-								Swal.fire({
-									icon: 'success',
-									title: 'Éxito',
-									text: 'Solicitud ingresada correctamente con todas las imágenes.'
-								});
-							}
-
-							limpiarSeleccionCliente();
-						}
-					},
-					error: function() {
-						Swal.fire({
-							icon: 'error',
-							title: 'Error',
-							text: 'Error al subir las imágenes.'
-						});
-					}
-				});
-			},
-			error: function() {
+			// Paso 4: Resultado final
+			input.value = ''; // limpiar input
+			$('#file-1').fileinput('clear'); // para plugin
+			if (erroresImagenes.length > 0) {
 				Swal.fire({
-					icon: 'error',
-					title: 'Error',
-					text: "Fallo la conexión con el servidor."
+					icon: 'warning',
+					title: 'Solicitud registrada con advertencias',
+					html: '<ul style="text-align:left;">' +
+						erroresImagenes.map(e => `<li>${e}</li>`).join('') +
+						'</ul>'
+				});
+			} else {
+				Swal.fire({
+					icon: 'success',
+					title: 'Éxito',
+					text: 'Solicitud ingresada correctamente con todas las imágenes.'
 				});
 			}
-		});
+
+			limpiarSeleccionCliente();
+
+		} catch (error) {
+			console.error('Error al insertar solicitud:', error);
+			Swal.fire({
+				icon: 'error',
+				title: 'Error',
+				text: 'Ocurrió un error al insertar la solicitud. Intente nuevamente.'
+			});
+		}
 	});
+
 }
 
 
@@ -561,6 +602,10 @@ function ValidacionesDatos() {
 	}
 	if ($("#selectEstado").val() === "0") {
 		errores.push("Debe seleccionar un estado");
+	}
+
+	if (!validarCorreo) {
+		errores.push("El correo ingresado no es valido.");
 	}
 
 
@@ -662,13 +707,13 @@ document.getElementById("btnAgregarComentario").addEventListener("click", () => 
 });
 
 document.querySelectorAll('select').forEach(select => {
-  select.addEventListener("change", () => {
-    if (select.value === "0") {
-      select.classList.add("placeholder");
-    } else {
-      select.classList.remove("placeholder");
-    }
-  });
+	select.addEventListener("change", () => {
+		if (select.value === "0") {
+			select.classList.add("placeholder");
+		} else {
+			select.classList.remove("placeholder");
+		}
+	});
 });
 
 function getUsuariosActivos() {
@@ -691,8 +736,8 @@ function getUsuariosActivos() {
 					selectUsuRegistro.appendChild(option.cloneNode(true));
 					selectUsuRedencion.appendChild(option.cloneNode(true));
 				});
-				
-		
+
+
 
 			} else {
 				Swal.fire({
@@ -701,13 +746,13 @@ function getUsuariosActivos() {
 				});
 
 			}
-			
+
 			if (selectUsuRegistro.value === "0") {
-			  selectUsuRegistro.classList.add("placeholder");
+				selectUsuRegistro.classList.add("placeholder");
 			}
-			
+
 			if (selectUsuRedencion.value === "0") {
-			  selectUsuRedencion.classList.add("placeholder");
+				selectUsuRedencion.classList.add("placeholder");
 			}
 
 
@@ -745,10 +790,10 @@ function getEstadoPqrs() {
 				});
 
 			}
-			
+
 			if (selectEstado.value === "0") {
-			  selectEstado.classList.add("placeholder");
-			} 
+				selectEstado.classList.add("placeholder");
+			}
 
 
 		}).catch(err => {

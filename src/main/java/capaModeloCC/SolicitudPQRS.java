@@ -45,6 +45,15 @@ public class SolicitudPQRS {
 	private int idprioridad;
 	private int idmotivo;
 	private boolean ccVinculado;
+
+	private String correo;
+	
+	public String getCorreo() {
+		return correo;
+	}
+	public void setCorreo(String correo) {
+		this.correo = correo;
+
 	private String tienda;
 	private String prioridad;
 	
@@ -60,6 +69,7 @@ public class SolicitudPQRS {
 	}
 	public void setPrioridad(String prioridad) {
 		this.prioridad = prioridad;
+
 	}
 	public boolean isCcVinculado() {
 		return ccVinculado;
@@ -249,7 +259,7 @@ public class SolicitudPQRS {
 	}
 	public SolicitudPQRS(int idsolicitud, String fechaSolicitud, String tipoSolicitud, int idcliente, int idtienda,
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
-			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion,int idusuarioRegistro,int idusuarioRedencion,int idestado,int idprioridad,int idmotivo, boolean ccVinculado) {
+			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable,int idpedidotienda, double valorPedido , double valorDescuento,int porcentajeDescuento,boolean descuentoRedimido,int idpedidoredencion,int idusuarioRegistro,int idusuarioRedencion,int idestado,int idprioridad,int idmotivo, boolean ccVinculado, String correo ) {
 		super();
 		this.idsolicitud = idsolicitud;
 		this.fechaSolicitud = fechaSolicitud;
@@ -279,6 +289,7 @@ public class SolicitudPQRS {
 		this.idprioridad =idprioridad;
 		this.idmotivo =idmotivo;
 		this.ccVinculado =ccVinculado;
+		this.correo  = correo;
 		
 		
 		

@@ -15,12 +15,17 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 import capaModeloCC.EncuestaServicio;
@@ -89,6 +94,7 @@ import capaDAOCC.SolicitudCumpleDAO;
 import capaDAOCC.SolicitudCumpleImagenesDAO;
 import capaDAOCC.SolicitudFacturaDAO;
 import capaDAOCC.SolicitudFacturaImagenesDAO;
+import capaDAOCC.SolicitudPQRSDAO;
 import capaDAOCC.TiempoPedidoDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
@@ -106,6 +112,8 @@ import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
 import capaModeloCC.DomiciliarioPedido;
+import capaModeloCC.EncuestaPqrs;
+import capaModeloCC.EncuestaPqrs.RespuestaEncuestaPqrs;
 import capaModeloCC.Especialidad;
 import capaModeloCC.Estadistica;
 import capaModeloCC.EstadisticaPromocion;
@@ -6574,427 +6582,69 @@ public class PedidoCtrl {
 		return(datosLead);
 	} 
 	
-	public String limpiarLeadCRM(String lead) throws IOException
-	{
-		String datosLead = "";
-		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		String mensaje = "\r\n"
-				+ "[\r\n"
-				+ "    {   \"id\": " + lead + ",\r\n"
-				+ "        \"custom_fields_values\": [\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 861855,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862081,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 857712,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 861771,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 861775,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862087,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 858274,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 858276,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862091,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862089,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 858272,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 857714,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862847,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862901,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862155,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"enum_id\": null\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862153,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"enum_id\": null\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 861773,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "        {\r\n"
-				+ "            \"field_id\": 862083,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 864379,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 863191,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 863427,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 865067,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 865069,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "                {\r\n"
-				+ "            \"field_id\": 866919,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },          {\r\n"
-				+ "             \"field_id\": 864379,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "            {\r\n"
-				+ "             \"field_id\": 867885,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "            {\r\n"
-				+ "             \"field_id\": 867887,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        },\r\n"
-				+ "             {\r\n"
-				+ "             \"field_id\": 868227,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }\r\n"
-				+ "        ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868045,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }\r\n"
-				+ "        ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868051,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }\r\n"
-				+ "\r\n"
-				+ "          ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868231,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }\r\n"
-				+ "             ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868233,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }        ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868055,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868057,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868059,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }, \r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868061,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868063,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868065,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 870325,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 870327,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 865679,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 870399,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868055,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868057,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868059,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868061,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868063,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        } ,\r\n"
-				+ "        {\r\n"
-				+ "             \"field_id\": 868065,\r\n"
-				+ "            \"values\": [\r\n"
-				+ "                {\r\n"
-				+ "                    \"value\": \"\"\r\n"
-				+ "                }\r\n"
-				+ "            ]\r\n"
-				+ "        }\r\n"
-				+ "    ]\r\n"
-				+ "    }\r\n"
-				+ "]\r\n"
-				+ "     ";
+	public String limpiarLeadCRM(String lead) throws IOException {
+	    String datosLead = "";
 
-		OkHttpClient client = new OkHttpClient();
-		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
-		RequestBody body = RequestBody.create(mediaType, mensaje );
-		Request request = new Request.Builder()
-		  .url("https://pizzaamericana.kommo.com/api/v4/leads")
-		  .patch(body)
-		  .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
-		  .build();
-		try
-		{
-			okhttp3.Response response = client.newCall(request).execute();
-			String respuestaJSON = response.body().string();
-			System.out.println("1 " + response.toString());
-			datosLead = respuestaJSON;
-		}catch (Exception e2) {
-            e2.printStackTrace();
-            System.out.println(e2.toString());
-        }
-		return(datosLead);
+	    IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+
+	    // Lista única de field_ids a limpiar
+	    Set<Integer> fieldIds = new LinkedHashSet<>(Arrays.asList(
+	        861855, 862081, 857712, 861771, 861775, 862087, 858274, 858276, 862091,
+	        862089, 858272, 857714, 862847, 862901, 862155, 862153, 861773, 862083,
+	        864379, 863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227,
+	        868045, 868051, 868231, 868233, 868055, 868057, 868059, 868061, 868063,
+	        868065, 870325, 870327, 865679, 870399, 872191, 872193, 972195, 872197,
+	        872199, 872201, 862673, 862675, 872069
+	    ));
+
+	    // Construimos la estructura JSON
+	    List<Map<String, Object>> customFields = new ArrayList<>();
+	    for (Integer id : fieldIds) {
+	        Map<String, Object> field = new HashMap<>();
+	        field.put("field_id", id);
+
+	        Map<String, Object> valueMap = new HashMap<>();
+	        // Algunos campos usan enum_id null, puedes ajustar según necesidad
+	        if (id.equals(862153) || id.equals(862155)) {
+	            valueMap.put("enum_id", null);
+	        } else {
+	            valueMap.put("value", "");
+	        }
+
+	        field.put("values", Collections.singletonList(valueMap));
+	        customFields.add(field);
+	    }
+
+	    Map<String, Object> leadData = new HashMap<>();
+	    leadData.put("id", lead);
+	    leadData.put("custom_fields_values", customFields);
+
+	    String jsonBody = new ObjectMapper().writeValueAsString(Collections.singletonList(leadData));
+
+	    // Enviar petición
+	    OkHttpClient client = new OkHttpClient();
+	    RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"),jsonBody );
+
+	    Request request = new Request.Builder()
+	            .url("https://pizzaamericana.kommo.com/api/v4/leads")
+	            .patch(body)
+	            .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
+	            .build();
+
+	    try (okhttp3.Response response = client.newCall(request).execute()) {
+	        if (response.body() != null) {
+	            datosLead = response.body().string();
+	        } else {
+	            System.out.println("Respuesta vacía del servidor.");
+	        }
+	        System.out.println("Respuesta: " + response);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return datosLead;
 	}
+
 	
 	/**
 	 * Método que recibe la información capturada en el CRM BOT y realiza una inserción del pedido, teniendo las características
@@ -8865,6 +8515,7 @@ public class PedidoCtrl {
 		String nombreCliente = "";
 		String telefono = "";
 		String descripcionProblema = "";
+	    String correoCliente ="";
 		//Para realizar el último parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
@@ -8917,6 +8568,8 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("descripción del problema")))
 				{
 					descripcionProblema = strValor;
+				}else if(clave.equals(new String("Correo PQRS"))) {
+					correoCliente = strValor;
 				}
 			}
 			//Realizamos envío de CORREO
@@ -8957,7 +8610,7 @@ public class PedidoCtrl {
 			String fechaComent = dateFormatComent.format(fecha);
 		    ComentarioPqrs comentPqrs =  new ComentarioPqrs(0,0,descripcionProblema,fechaComent);
 		    listaComentarios.add(comentPqrs);
-			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda",0,0,0,0,false,0,listaComentarios,0,0,1,2,0,false);
+			String respuesta = solicitudCtrl.insertarSolicitudPQRS(strFechaSol, "peticion", cliente.getIdcliente(), cliente.getIdtienda(), nombreCliente, "", telefono, cliente.getDireccion(), cliente.getZonaDireccion(), cliente.getIdMunicipio(), descripcionProblema, 3, 2 , "externa", "tienda",0,0,0,0,false,0,listaComentarios,0,0,1,2,0,false,correoCliente);
 			//Realizar notificación WhatsApp
 			String notificacion = "Ha ingreasado una PQRS por el BOT Pizza Americana, por favor revisar con el LEAD # " + lead;
 			//Recuperaremos los celulares para notificar de la situación de la queja
@@ -12433,6 +12086,77 @@ public class PedidoCtrl {
 	        //Resto de acciones
 	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
 	        EmpleadoEncuestaDAO.insertarClienteServicio(encuestaServicio);
+
+	    } catch (Exception e) {
+	        respuesta = "Error al procesar datos: " + e.getMessage();
+	    }
+
+	    return respuesta;
+	}
+	
+
+	public String procesarEncuestaPqrs(String datos, String authHeader) {
+	    String respuesta = "";
+	    try {
+	        String parametrosDecode = URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+	        Map<String, String> parametros = separarURL(parametrosDecode);
+	        String lead = parametros.get("leads[status][0][id]");
+	        if (lead == null || lead.isEmpty()) {
+	            return "No se encontró información del LEAD.";
+	        }
+
+	        String infLead = obtenerInformacionLeadCRM(lead);
+
+	        EncuestaPqrs encuestaPqrs = new EncuestaPqrs();
+	        List<RespuestaEncuestaPqrs> respuestaEncuestapqrs = new ArrayList<>();
+	        int idpqrs = 0;
+	        String nombre_cliente = "";
+	        String telefono_cliente = "";
+
+	        Set<String> camposEncuesta = Set.of(
+	            "@te sentiste escuchado?", 
+	            "@solucion clara?", 
+	            "@calificacion de atencion", 
+	            "@volverias a comprar", 
+	            "@comentarios del cliente"
+	        );
+
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
+	        JSONArray customFieldsArray = (JSONArray) jsonGeneral.get("custom_fields_values");
+
+	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
+	            for (Object obj : customFieldsArray) {
+	                JSONObject campo = (JSONObject) obj;
+	                String rawClave = (String) campo.get("field_name");
+	                if (rawClave == null) continue;
+	                String clave = rawClave.toLowerCase();
+	                JSONArray valuesArray = (JSONArray) campo.get("values");
+
+	                if (valuesArray != null && !valuesArray.isEmpty()) {
+	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                    String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
+
+	                    if (camposEncuesta.contains(clave)) {
+	                        respuestaEncuestapqrs.add(new RespuestaEncuestaPqrs(clave, valor));
+	                    } else if (clave.equalsIgnoreCase("id pqrs")) {
+	                        try {
+	                            idpqrs = Integer.parseInt(valor);
+	                        } catch (NumberFormatException e) {
+	                            idpqrs = 0;
+	                        }
+	                    } else if (clave.equalsIgnoreCase("nombre cliente pqrs")) {
+	                        nombre_cliente = valor;
+	                    } else if (clave.equalsIgnoreCase("teléfono cliente pqrs")) {
+	                        telefono_cliente = valor;
+	                    }
+	                }
+	            }
+	        }
+
+	        encuestaPqrs.setIdpqrs(idpqrs);
+	        encuestaPqrs.setRespuesta(respuestaEncuestapqrs);
+	        SolicitudPQRSDAO.insertarEncuestaPqrs(encuestaPqrs);
 
 	    } catch (Exception e) {
 	        respuesta = "Error al procesar datos: " + e.getMessage();

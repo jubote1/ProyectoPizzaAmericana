@@ -10,39 +10,37 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import capaControladorCC.SolicitudPQRSCtrl;
 import capaControladorCC.VacanteCtrl;
 import capaModeloCC.Vacante;
 
 
-@WebServlet("/ObtenerVacanteID")
-public class ObtenerVacanteID extends HttpServlet {
 
-    private VacanteCtrl vacanteCtrl;
+@WebServlet("/PendientePqrs")
+public class PendientePqrs extends HttpServlet {
+
+    private SolicitudPQRSCtrl solicitudCtrl;
 
     @Override
     public void init() throws ServletException {
-        vacanteCtrl = new VacanteCtrl();
+    	solicitudCtrl = new SolicitudPQRSCtrl();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
-            int idVacante = Integer.parseInt(request.getParameter("idvacante"));
-            Vacante contenidos = vacanteCtrl.obtenerVacantePorId(idVacante);
-            // Convertir la lista de contenidos a JSON
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(contenidos);
+        	response.addHeader("Access-Control-Allow-Origin", "*");
+			response.setContentType("application/json");
+            String fecha = request.getParameter("fecha");
+            String respuesta = solicitudCtrl.obtenerPendientesPqrs(fecha);
 
-            // Configurar la respuesta
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            response.getWriter().write(json);
+            response.getWriter().write(respuesta);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"error\":\"Ocurrió un error al obtener los vacantes.\"}");
+            response.getWriter().write("{\"error\":\"Ocurrió un error al obtener las solicitudes.\"}");
         }
     }
-    
-    
 
 }

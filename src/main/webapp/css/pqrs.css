@@ -272,6 +272,9 @@ button:active {
 	text-align: center;
 }
 
+.swal-icon-small {
+  font-size: 0.5rem !important;  /* Puedes ajustar el tamaño */
+}
 
 
 .prioridad-default {
@@ -279,6 +282,12 @@ button:active {
 	text-align: center;
 }
 
+.is-valid {
+  border-color: #28a745;
+}
+.is-invalid {
+  border-color: #dc3545;
+}
 
 
 .form-control::placeholder {
