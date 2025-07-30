@@ -242,7 +242,7 @@ $(document).ready(function() {
 				$select.addClass("placeholder");
 			}
 		});
- 
+
 
 
 		historialContainer.innerHTML = '';
@@ -1041,30 +1041,34 @@ function EditarPQRS() {
 						// Enviar encuesta automáticamente si está cerrada
 						const cliente = nombresEncode;
 						const correo = correo;
-						const telefono = tel;
 						const idpqrs = respuesta.idSolicitudPQRS;
+						const telefonoLimpio = tel.replace(/\D/g, ''); // Elimina espacios, guiones, etc.
+						const regexCelularColombia = /^3\d{9}$/;
+						
+						if (telefonoLimpio && regexCelularColombia.test(telefonoLimpio)) {
+							const telefono = telefonoLimpio;
+							try {
+								const result = await fetch(server + "CorreoEncuestaPqrs", {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/x-www-form-urlencoded"
+									},
+									body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
+								});
 
-						try {
-							const result = await fetch(server + "CorreoEncuestaPqrs", {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/x-www-form-urlencoded"
-								},
-								body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
-							});
+								const data = await result.json();
 
-							const data = await result.json();
-
-							if (data.success) {
-								mensajeFinal += "\n\n✅ La encuesta de satisfacción fue enviada correctamente.";
-							} else {
-								mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero no se pudo enviar la encuesta: " + data.message;
+								if (data.success) {
+									mensajeFinal += "\n\n✅ La encuesta de satisfacción fue enviada correctamente.";
+								} else {
+									mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero no se pudo enviar la encuesta: " + data.message;
+									iconoFinal = 'warning';
+								}
+							} catch (error) {
+								console.error("Error al enviar encuesta:", error);
+								mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero ocurrió un error al enviar la encuesta.";
 								iconoFinal = 'warning';
 							}
-						} catch (error) {
-							console.error("Error al enviar encuesta:", error);
-							mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero ocurrió un error al enviar la encuesta.";
-							iconoFinal = 'warning';
 						}
 					}
 
@@ -1666,23 +1670,23 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 		});
 		return;
 	}
-		
-	   // Escapar HTML peligroso para evitar inyección
-	   contenido = contenido
-	     .replace(/&/g, "&amp;")
-	     .replace(/</g, "&lt;")
-	     .replace(/>/g, "&gt;");
 
-	   // Convertir **negrita** a <strong>
-	   contenido = contenido.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+	// Escapar HTML peligroso para evitar inyección
+	contenido = contenido
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
 
-	   // 🔽 ELIMINA saltos de línea no deseados (como los que aparecen por copiar desde Word o PDF)
-	   contenido = contenido.replace(/([^\.\n])\n(?=[^\n])/g, '$1 ');
+	// Convertir **negrita** a <strong>
+	contenido = contenido.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
-	   // 🔽 Luego sí convierte los saltos de línea reales a <br>
-	   contenido = contenido.replace(/\n/g, "<br>");
-	   
-	   console.log(contenido);
+	// 🔽 ELIMINA saltos de línea no deseados (como los que aparecen por copiar desde Word o PDF)
+	contenido = contenido.replace(/([^\.\n])\n(?=[^\n])/g, '$1 ');
+
+	// 🔽 Luego sí convierte los saltos de línea reales a <br>
+	contenido = contenido.replace(/\n/g, "<br>");
+
+	console.log(contenido);
 
 
 	Swal.fire({
@@ -1749,8 +1753,8 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 });
 
 
-document.getElementById('btnEnviarEncuestaS').addEventListener('click', function () {
-	
+document.getElementById('btnEnviarEncuestaS').addEventListener('click', function() {
+
 	const idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
 
 	if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
@@ -1813,32 +1817,32 @@ document.getElementById('btnEnviarEncuestaS').addEventListener('click', function
 					telefono
 				})
 			})
-			.then(response => response.json())
-			.then(data => {
-				Swal.close();
-				if (data.success) {
-					Swal.fire({
-						icon: 'success',
-						text: '¡Encuesta enviada con éxito!',
-						customClass: { icon: 'swal-icon-small' }
-					});
-				} else {
+				.then(response => response.json())
+				.then(data => {
+					Swal.close();
+					if (data.success) {
+						Swal.fire({
+							icon: 'success',
+							text: '¡Encuesta enviada con éxito!',
+							customClass: { icon: 'swal-icon-small' }
+						});
+					} else {
+						Swal.fire({
+							icon: 'error',
+							text: "Error: " + data.message,
+							customClass: { icon: 'swal-icon-small' }
+						});
+					}
+				})
+				.catch(error => {
+					Swal.close();
+					console.error("Error en la solicitud:", error);
 					Swal.fire({
 						icon: 'error',
-						text: "Error: " + data.message,
+						text: "No se pudo enviar el correo. Verifica la consola.",
 						customClass: { icon: 'swal-icon-small' }
 					});
-				}
-			}) 
-			.catch(error => {
-				Swal.close();
-				console.error("Error en la solicitud:", error);
-				Swal.fire({
-					icon: 'error',
-					text: "No se pudo enviar el correo. Verifica la consola.",
-					customClass: { icon: 'swal-icon-small' }
 				});
-			});
 		}
 	});
 });
