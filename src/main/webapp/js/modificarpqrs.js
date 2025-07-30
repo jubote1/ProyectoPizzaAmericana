@@ -19,6 +19,8 @@ var div;
 var datosReporte = [];
 var fecha_inicial = "";
 var fecha_final = "";
+var validarCorreo = true;
+var estadoTexto = "";
 const historialContainer = document.getElementById("historialComentarios");
 // Validar usuario
 $.ajax({
@@ -208,6 +210,8 @@ $(document).ready(function() {
 		$("#selectMunicipio").val(datos.municipio);
 		$('#telefono').val(datos.telefono);
 		$('#nombres').val(datos.nombres);
+		$('#correo').val(datos.correo);
+		document.getElementById('correo').dispatchEvent(new Event('input'));
 		$('#apellidos').val(datos.apellidos);
 		$('#direccion').val(datos.direccion);
 		$("#selectTiendaspqrs").val(datos.tienda);
@@ -222,6 +226,7 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
+		estadoTexto = $("#selectEstado option:selected").text().trim();
 		$('#zona').val(datos.zona);
 		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
@@ -237,7 +242,7 @@ $(document).ready(function() {
 				$select.addClass("placeholder");
 			}
 		});
-
+ 
 
 
 		historialContainer.innerHTML = '';
@@ -421,7 +426,8 @@ function consultarPQRS() {
 				'idmotivo': data1[i].idmotivo,
 				'idprioridad': data1[i].idprioridad,
 				'zona': data1[i].zona,
-				 'ccVinculado':data1[i].ccVinculado
+				'ccVinculado': data1[i].ccVinculado,
+				'correo': data1[i].correo
 			}).draw();
 		}
 	});
@@ -522,6 +528,10 @@ function ValidarDatosActualizados() {
 		errores.push("Debe seleccionar un estado");
 	}
 
+	if (!validarCorreo) {
+		errores.push("El correo ingresado no es valido.");
+	}
+
 	const comentariosTextArea = historialContainer.querySelectorAll("textarea");
 	if (comentariosTextArea.length === 0) {
 		errores.push("Debe ingresar un comentario.");
@@ -552,6 +562,32 @@ function ValidarDatosActualizados() {
 	}
 }
 
+const inputCorreo = document.getElementById('correo');
+const errorDiv = document.getElementById('errorCorreo');
+
+inputCorreo.addEventListener('input', () => {
+	const valor = inputCorreo.value.trim();
+	const esValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+
+	if (valor === '') {
+		inputCorreo.classList.remove('is-valid', 'is-invalid');
+		errorDiv.style.display = 'none';
+		validarCorreo = true; // o false, según si lo consideras válido vacío
+		return;
+	}
+
+	if (esValido) {
+		inputCorreo.classList.add('is-valid');
+		inputCorreo.classList.remove('is-invalid');
+		errorDiv.style.display = 'none';
+		validarCorreo = true;
+	} else {
+		inputCorreo.classList.add('is-invalid');
+		inputCorreo.classList.remove('is-valid');
+		errorDiv.style.display = 'block';
+		validarCorreo = false;
+	}
+});
 
 /*function limpiarConsultaPQRS() {
 
@@ -905,6 +941,7 @@ function EditarPQRS() {
 		var idmotivo = $("#selectMotivo option:selected").val();
 		var idprioridad = $("#selectPrioridad option:selected").val();
 		var ccVinculado = document.getElementById("ccVinculado").checked;
+		var correo = $("#correo").val();
 
 
 		const comentarios = historialContainer.querySelectorAll("textarea");
@@ -927,7 +964,6 @@ function EditarPQRS() {
 			listaComentarios.push({ id, comentario: texto, fecha, idSolicitud: idSolicitudPQRS, estado });
 		});
 
-
 		Swal.fire({
 			title: 'Confirmación Actualización',
 			text: '¿Desea confirmar la actualización de la Solicitud PQRS?',
@@ -938,79 +974,124 @@ function EditarPQRS() {
 			confirmButtonColor: 'blue',
 			cancelButtonColor: 'gray'
 		}).then(async (result) => {
-			if (result.isConfirmed) {
-				// Muestra el spinner
-				Swal.fire({
-					title: 'Actualizando...',
-					text: 'Por favor espere un momento',
-					allowOutsideClick: false,
-					didOpen: () => {
-						Swal.showLoading();
+			if (!result.isConfirmed) return;
+
+			// Muestra spinner
+			Swal.fire({
+				title: 'Actualizando...',
+				text: 'Por favor espere un momento',
+				allowOutsideClick: false,
+				didOpen: () => {
+					Swal.showLoading();
+				}
+			});
+
+			try {
+				// Enviar solicitud AJAX
+				const response = await $.ajax({
+					url: server + 'ActualizarSolicitudPQRS',
+					dataType: 'json',
+					type: 'POST',
+					data: {
+						fechasolicitud: fechaSolicitud,
+						tiposolicitud: tipoSolicitud,
+						idcliente: idCliente,
+						idtienda: tempTienda,
+						nombres: nombresEncode,
+						apellidos: apellidosEncode,
+						telefono: tel,
+						direccion: direccionEncode,
+						zona: zonaEncode,
+						idmunicipio: tempMunicipio,
+						idorigen: idOrigen,
+						idfoco: idFoco,
+						tipo: tipo,
+						arearesponsable: areaResponsable,
+						idsolicitudpqrs: idSolicitudPQRS,
+						idpedidotienda: idpedidotienda,
+						idpedidoredencion: idpedidoredencion,
+						valorPedido: valorPedido,
+						valorDescuento: valorDescuento,
+						porcentajeDescuento: porcentajeDescuento,
+						descuentoRedimido: descuentoRedimido,
+						listaComentarios: JSON.stringify(listaComentarios),
+						idusuarioRegistro: idusuarioRegistro,
+						idusuarioRedencion: idusuarioRedencion,
+						idestado: idestado,
+						idmotivo: idmotivo,
+						idprioridad: idprioridad,
+						ccVinculado: ccVinculado,
+						correo: correo
 					}
 				});
 
-				try {
-					const response = await $.ajax({
-						url: server + 'ActualizarSolicitudPQRS',
-						dataType: 'json',
-						type: 'POST',
-						data: {
-							fechasolicitud: fechaSolicitud,
-							tiposolicitud: tipoSolicitud,
-							idcliente: idCliente,
-							idtienda: tempTienda,
-							nombres: nombresEncode,
-							apellidos: apellidosEncode,
-							telefono: tel,
-							direccion: direccionEncode,
-							zona: zonaEncode,
-							idmunicipio: tempMunicipio,
-							idorigen: idOrigen,
-							idfoco: idFoco,
-							tipo: tipo,
-							arearesponsable: areaResponsable,
-							idsolicitudpqrs: idSolicitudPQRS,
-							idpedidotienda: idpedidotienda,
-							idpedidoredencion: idpedidoredencion,
-							valorPedido: valorPedido,
-							valorDescuento: valorDescuento,
-							porcentajeDescuento: porcentajeDescuento,
-							descuentoRedimido: descuentoRedimido,
-							listaComentarios: JSON.stringify(listaComentarios),
-							idusuarioRegistro: idusuarioRegistro,
-							idusuarioRedencion: idusuarioRedencion,
-							idestado: idestado,
-							idmotivo: idmotivo,
-							idprioridad: idprioridad,
-							ccVinculado:ccVinculado
-						}
-					});
+				const respuesta = response?.[0];
 
-					const respuesta = response[0];
-					if (respuesta.idSolicitudPQRS > 0) {
-						Swal.fire({
-							icon: 'success',
-							title: '¡Actualizado!',
-							text: 'Se ha actualizado correctamente la solicitud PQRS número ' + respuesta.idSolicitudPQRS
-						});
-
-						limpiarPQRS();
-
-						if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
-							const table = $('#grid-consultaPQRS').DataTable();
-							table.clear().draw();
-						}
-					} else {
-						throw new Error('La solicitud no fue actualizada correctamente.');
-					}
-				} catch (error) {
-					console.error('Error al actualizar solicitud:', error);
+				if (respuesta?.idSolicitudPQRS > 0) {
 					Swal.fire({
-						icon: 'error',
-						title: 'Error',
-						text: 'Ocurrió un error al actualizar la solicitud. Intente nuevamente.'
+						icon: 'success',
+						title: '¡Actualizado!',
+						text: `Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}`
 					});
+					estadoTexto = $("#selectEstado option:selected").text().trim();
+					let mensajeFinal = `Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
+					let iconoFinal = 'success';
+
+					if (estadoTexto && estadoTexto.toLowerCase() === "cerrado") {
+						// Enviar encuesta automáticamente si está cerrada
+						const cliente = nombresEncode;
+						const correo = correo;
+						const telefono = tel;
+						const idpqrs = respuesta.idSolicitudPQRS;
+
+						try {
+							const result = await fetch(server + "CorreoEncuestaPqrs", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/x-www-form-urlencoded"
+								},
+								body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
+							});
+
+							const data = await result.json();
+
+							if (data.success) {
+								mensajeFinal += "\n\n✅ La encuesta de satisfacción fue enviada correctamente.";
+							} else {
+								mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero no se pudo enviar la encuesta: " + data.message;
+								iconoFinal = 'warning';
+							}
+						} catch (error) {
+							console.error("Error al enviar encuesta:", error);
+							mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero ocurrió un error al enviar la encuesta.";
+							iconoFinal = 'warning';
+						}
+					}
+
+					Swal.fire({
+						icon: iconoFinal,
+						title: 'Resultado',
+						text: mensajeFinal
+					});
+
+
+					limpiarPQRS();
+
+					// Recargar DataTable si existe
+					if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
+						$('#grid-consultaPQRS').DataTable().clear().draw();
+					}
+				} else {
+					throw new Error('La respuesta no contiene un ID válido.');
 				}
+
+			} catch (error) {
+				console.error('Error al actualizar solicitud:', error);
+				Swal.fire({
+					icon: 'error',
+					title: 'Error',
+					text: 'Ocurrió un error al actualizar la solicitud. Intente nuevamente.'
+				});
 			}
 		});
 
@@ -1073,7 +1154,7 @@ function DescartarPQRS() {
 
 function limpiarPQRS() {
 	historialContainer.innerHTML = '';
-	$('#telefono, #nombres, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha,#selectMotivo,#selectPrioridad,#selectSolicitudpqrs,#selectPorcentajeDesc,#selectTipo,#selectUsuarioRegistro,#selectEstado,#selectAreaResponsable').val("");
+	$('#telefono, #nombres,#correo, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha,#selectMotivo,#selectPrioridad,#selectSolicitudpqrs,#selectPorcentajeDesc,#selectTipo,#selectUsuarioRegistro,#selectEstado,#selectAreaResponsable').val("");
 	// Reiniciar selects a la primera opción
 	$('#selectTiendaspqrs, #selectOrigen , #selectFoco').val("");
 	$('select').each(function() {
@@ -1085,6 +1166,8 @@ function limpiarPQRS() {
 			this.classList.remove("placeholder");
 		}
 	});
+	idSolicitudPQRS = 0;
+	estadoTexto = "";
 
 	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	$('#img-gallery').html('');
@@ -1134,7 +1217,7 @@ async function generarReporte() {
 		celdaTitulo.alignment = { horizontal: 'center', vertical: 'middle' };
 		fila++;
 
-		const headers = ['#', 'Factura', 'Teléfono','Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
+		const headers = ['#', 'Factura', 'Teléfono', 'Valor Pedido', 'Porcentaje Descuento', 'Valor Descuento', 'Redimido', 'Factura Redención'];
 		headers.forEach((h, i) => {
 			const cell = worksheet.getCell(fila, i + 1);
 			cell.value = h;
@@ -1158,7 +1241,7 @@ async function generarReporte() {
 			const valores = [
 				r.idconsultaPQRS,
 				r.idpedidotienda,
-			    r.telefono || 'No disponible',
+				r.telefono || 'No disponible',
 				r.valorPedido,
 				r.porcentajeDescuento > 0 ? r.porcentajeDescuento + '%' : 'No Aplica',
 				r.valorDescuento,
@@ -1496,6 +1579,266 @@ function getEstadoPqrs() {
 		});
 }
 
+function abrirModalRespuesta() {
+	var idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
+
+	if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
+		Swal.fire({
+			icon: 'warning',
+			text: 'Por favor, seleccione una solicitud antes de continuar.',
+			customClass: {
+				icon: 'swal-icon-small'
+			}
+		});
+		return;
+	}
+	document.getElementById('idpqrs_envio').value = idSolicitudPQRS;
+	document.getElementById('cliente_envio').value = $("#nombres").val();;
+	document.getElementById('correo_envio').value = $("#correo").val();;
+
+	// Limpiar contenido del correo
+	document.getElementById('contenidoCorreo').value = '';
 
 
+	$('#modalEnvioRespuesta').modal('show');
+}
 
+const inputCorreoEnvio = document.getElementById('correo_envio');
+const errorCorreoDiv = document.getElementById('errorCorreoEnv');
+let validarCorreoEnv = false;
+
+// Evento cuando el usuario escribe en el input
+inputCorreoEnvio.addEventListener('input', () => {
+	const valor = inputCorreoEnvio.value.trim();
+
+	// Expresión regular simple para validar correo
+	const esValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+
+	if (valor === '') {
+		inputCorreoEnvio.classList.add('is-invalid');
+		inputCorreoEnvio.classList.remove('is-valid');
+		errorCorreoDiv.style.display = 'block';
+		errorCorreoDiv.textContent = 'El correo no puede estar vacío.';
+		validarCorreoEnv = false;
+		return;
+	}
+
+	if (esValido) {
+		inputCorreoEnvio.classList.remove('is-invalid');
+		inputCorreoEnvio.classList.add('is-valid');
+		errorCorreoDiv.style.display = 'none';
+		validarCorreoEnv = true;
+	} else {
+		inputCorreoEnvio.classList.add('is-invalid');
+		inputCorreoEnvio.classList.remove('is-valid');
+		errorCorreoDiv.style.display = 'block';
+		errorCorreoDiv.textContent = 'El correo no tiene un formato válido.';
+		validarCorreoEnv = false;
+	}
+});
+
+
+document.getElementById('btnEnviarCorreo').addEventListener('click', function() {
+	// Recolectar datos
+	const idpqrs = document.getElementById('idpqrs_envio').value;
+	const cliente = document.getElementById('cliente_envio').value;
+	const correo = document.getElementById('correo_envio').value;
+	let contenido = document.getElementById('contenidoCorreo').value;
+
+	if (!correo || !contenido || !cliente) {
+		Swal.fire({
+			icon: 'warning',
+			text: 'Por favor completa todos los campos antes de enviar.',
+			customClass: {
+				icon: 'swal-icon-small'
+			}
+		});
+		return;
+	}
+
+	if (!validarCorreoEnv) {
+		Swal.fire({
+			icon: 'warning',
+			text: 'Correo inválido',
+			customClass: {
+				icon: 'swal-icon-small'
+			}
+		});
+		return;
+	}
+		
+	   // Escapar HTML peligroso para evitar inyección
+	   contenido = contenido
+	     .replace(/&/g, "&amp;")
+	     .replace(/</g, "&lt;")
+	     .replace(/>/g, "&gt;");
+
+	   // Convertir **negrita** a <strong>
+	   contenido = contenido.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+	   // 🔽 ELIMINA saltos de línea no deseados (como los que aparecen por copiar desde Word o PDF)
+	   contenido = contenido.replace(/([^\.\n])\n(?=[^\n])/g, '$1 ');
+
+	   // 🔽 Luego sí convierte los saltos de línea reales a <br>
+	   contenido = contenido.replace(/\n/g, "<br>");
+	   
+	   console.log(contenido);
+
+
+	Swal.fire({
+		title: '¿Estás seguro?',
+		text: "Se enviará un correo al cliente con la respuesta PQRS.",
+		icon: 'question',
+		showCancelButton: true,
+		confirmButtonText: 'Sí, enviar',
+		cancelButtonText: 'Cancelar'
+	}).then((result) => {
+		if (result.isConfirmed) {
+			// Mostrar spinner
+			Swal.showLoading();
+
+			fetch(server + "CorreoRespuestaPqrs", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				},
+				body: new URLSearchParams({
+					cliente,
+					correo,
+					idpqrs,
+					contenido
+				})
+			})
+				.then(response => response.json())
+				.then(data => {
+					Swal.close();
+					if (data.success) {
+						Swal.fire({
+							icon: 'success',
+							text: 'Éxito',
+							customClass: {
+								icon: 'swal-icon-small'
+							}
+						});
+						$('#modalEnvioRespuesta').modal('hide');
+					} else {
+						Swal.fire({
+							icon: 'error',
+							text: "Error: " + data.message,
+							customClass: {
+								icon: 'swal-icon-small'
+							}
+						});
+
+					}
+				})
+				.catch(error => {
+					Swal.close();
+					console.error("Error en la solicitud:", error);
+					Swal.fire({
+						icon: 'error',
+						text: "No se pudo enviar el correo. Verifica la consola.",
+						customClass: {
+							icon: 'swal-icon-small'
+						}
+					});
+				});
+
+		}
+	});
+});
+
+
+document.getElementById('btnEnviarEncuestaS').addEventListener('click', function () {
+	
+	const idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
+
+	if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
+		Swal.fire({
+			icon: 'warning',
+			text: 'Por favor, seleccione una solicitud antes de continuar.',
+			customClass: { icon: 'swal-icon-small' }
+		});
+		return;
+	}
+
+	if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
+		Swal.fire({
+			icon: 'warning',
+			text: 'La solicitud PQRS debe estar en estado "Cerrado" para enviar la encuesta.',
+			customClass: { icon: 'swal-icon-small' }
+		});
+		return;
+	}
+
+	const idpqrs = idSolicitudPQRS;
+	const cliente = document.getElementById("nombres").value;
+	const correo = document.getElementById("correo").value;
+	const telefonoInput = document.getElementById("telefono").value;
+
+	Swal.fire({
+		title: 'Encuesta de satisfacción',
+		input: 'text',
+		inputLabel: 'Teléfono del cliente',
+		inputPlaceholder: 'Ingrese un número...',
+		inputValue: telefonoInput,
+		showCancelButton: true,
+		confirmButtonText: 'Enviar',
+		cancelButtonText: 'Cancelar',
+		inputValidator: (value) => {
+			if (!value) {
+				return '¡Debes ingresar un número de celular!';
+			}
+			const regexCelularColombia = /^3\d{9}$/;
+			if (!regexCelularColombia.test(value)) {
+				return '¡Número inválido! Debe empezar por 3 y tener 10 dígitos.';
+			}
+			return null;
+		}
+	}).then((result) => {
+		if (result.isConfirmed) {
+			const telefono = result.value;
+
+			Swal.showLoading();
+
+			fetch(server + "CorreoEncuestaPqrs", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				},
+				body: new URLSearchParams({
+					cliente,
+					correo,
+					idpqrs,
+					telefono
+				})
+			})
+			.then(response => response.json())
+			.then(data => {
+				Swal.close();
+				if (data.success) {
+					Swal.fire({
+						icon: 'success',
+						text: '¡Encuesta enviada con éxito!',
+						customClass: { icon: 'swal-icon-small' }
+					});
+				} else {
+					Swal.fire({
+						icon: 'error',
+						text: "Error: " + data.message,
+						customClass: { icon: 'swal-icon-small' }
+					});
+				}
+			}) 
+			.catch(error => {
+				Swal.close();
+				console.error("Error en la solicitud:", error);
+				Swal.fire({
+					icon: 'error',
+					text: "No se pudo enviar el correo. Verifica la consola.",
+					customClass: { icon: 'swal-icon-small' }
+				});
+			});
+		}
+	});
+});

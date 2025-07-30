@@ -51,6 +51,7 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		String zona = request.getParameter("zona");
 		String tipo = request.getParameter("tipo");
 		String areaResponsable = request.getParameter("arearesponsable");
+		String correo = request.getParameter("correo");
 
 		// Enteros con método auxiliar
 		int idcliente = parseIntSafe(request.getParameter("idcliente"));
@@ -81,7 +82,7 @@ public class InsertarSolicitudPQRS extends HttpServlet {
 		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 		String respuesta = solicitudCtrl.insertarSolicitudPQRS(fechasolicitud, tiposolicitud, idcliente, idtienda,
 				nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen, idFoco, tipo,
-				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion ,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado);
+				areaResponsable, idpedidotienda,valorPedido,valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion ,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado,correo);
 
 		
 		response.getWriter().write(respuesta);

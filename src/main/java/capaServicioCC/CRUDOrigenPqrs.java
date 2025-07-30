@@ -31,14 +31,15 @@ public class CRUDOrigenPqrs extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se recibe como parámetro principal el id operación de acuerdo a los siguientes valores 
-	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a esto se pedirán el resto del parámetros y se invocará el método correspondiente en la capa controlador.
+	 * Se recibe como parï¿½metro principal el id operaciï¿½n de acuerdo a los siguientes valores 
+	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a esto se pedirï¿½n el resto del parï¿½metros y se invocarï¿½ el mï¿½todo correspondiente en la capa controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operación idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaciï¿½n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 				response.addHeader("Access-Control-Allow-Origin", "*");
-				HttpSession sesion = request.getSession();
-				response.addHeader("Access-Control-Allow-Origin", "*");
+				request.setCharacterEncoding("UTF-8");
+				response.setCharacterEncoding("UTF-8");
+				response.setContentType("application/json; charset=UTF-8");
 				String idoperacion = request.getParameter("idoperacion");
 				SolicitudPQRSCtrl solPQRSCtrl = new SolicitudPQRSCtrl();
 				int operacion;

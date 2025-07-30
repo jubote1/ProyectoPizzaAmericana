@@ -22,6 +22,10 @@ public class ComentarioPqrs {
         this.comentario = comentario;
         this.fecha = fecha;
     }
+    
+    public ComentarioPqrs() {
+    	
+    }
 
     // Getters y Setters
     public int getId() { return id; }

@@ -69,6 +69,7 @@ public class ClienteCtrl {
 			cadaViajeJSON.put("emailfact", cliente.getEmailFacturacion());
 			cadaViajeJSON.put("idtipopersona", cliente.getIdTipoPersona());
 			cadaViajeJSON.put("identificacion", cliente.getIdentificacion());
+			cadaViajeJSON.put("correo", cliente.getEmail());
 			listJSON.add(cadaViajeJSON);
 		}
 		//String temp = listJSON.toJSONString();

@@ -151,9 +151,11 @@
 			</div>
 			<div class="col-md-6">
 				<div class="container-modPqrs">
+
 					<form id="cliente">
 						<h1>MODIFICACIÓN PQRS</h1>
 						<div class="row">
+
 							<div class="col-md-12">
 								<div class="row">
 									<div class="col-sm-6 form-group">
@@ -203,6 +205,13 @@
 										<label>Nombres</label><input type="text" id="nombres"
 											name="nombres" class="form-control" placeholder="Nombres"
 											maxlength="20">
+									</div>
+									<div class="col-sm-6 form-group">
+										<label>Correo Electrónico</label><input type="email"
+											id="correo" name="correo" class="form-control"
+											placeholder="Ej. persona@correo.com">
+										<div id="errorCorreo" style="color: red; display: none;">Correo
+											inválido</div>
 									</div>
 									<div class="col-sm-6 form-group">
 										<label>Apellidos</label><input type="text" id="apellidos"
@@ -311,14 +320,17 @@
 											Descuento redimido </label>
 									</div>
 									<div class="col-sm-6 form-group">
-										<label> <input type="checkbox"
-											id="ccVinculado" name="ccVinculado"
-											style="margin-right: 6px;"> Vinculado al Contact
-											Center
+										<label> <input type="checkbox" id="ccVinculado"
+											name="ccVinculado" style="margin-right: 6px;">
+											Vinculado al Contact Center
 										</label>
 									</div>
+									<div class="col-sm-6 form-group text-right">
+										<button type="button" class="btn btn-primary"
+											onclick="abrirModalRespuesta()">Correo de Respuesta</button>
+								<button id="btnEnviarEncuestaS" type="button" class="btn btn-warning">Encuesta de satisfacción</button>
 
-
+									</div>
 
 
 									<div class="col-sm-12 form-group">
@@ -377,7 +389,57 @@
 			</div>
 		</div>
 
+		<div class="modal fade" id="modalEnvioRespuesta">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Envio Respuesta Pqrs</h5>
+						<button type="button" class="close" data-dismiss="modal"
+							aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<form>
+							<div class="row">
+								<div class="col-md-3">
+									<div class="form-group">
+										<label class="text-black font-w500">ID</label> <input
+											id="idpqrs_envio" type="text" class="form-control" disabled>
+									</div>
+								</div>
+								<div class="col-md-9">
+									<div class="form-group">
+										<label class="text-black font-w500">Cliente</label> <input
+										id="cliente_envio"	type="text" class="form-control">
+									</div>
+								</div>
 
+
+							</div>
+
+							<div class="form-group">
+								<label class="text-black font-w500">Correo Electrónico</label> <input
+									id="correo_envio" type="text" class="form-control">
+									<div id="errorCorreoEnv" style="color: red; display: none;">Correo
+											inválido</div>
+							</div>
+
+							<div class="form-group">
+								<label class="text-black font-w500">Contenido del correo</label>
+								<textarea class="form-control" id="contenidoCorreo" rows="6" style="white-space: pre-wrap; word-wrap: break-word;"
+									placeholder="Escribe aquí el mensaje que deseas enviar al cliente..."
+									required></textarea>
+							</div>
+							<div class="form-group">
+								<button id="btnEnviarCorreo" type="button" class="btn btn-primary">Enviar</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+		</div>
 
 	</div>
 

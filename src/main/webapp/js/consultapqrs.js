@@ -192,6 +192,7 @@ $(document).ready(function() {
 		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
 		$('#ccVinculado').prop('checked', datos.ccVinculado);
+		$('#correo').val(datos.correo);
 
 		const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
 		const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
@@ -385,7 +386,8 @@ function consultarPQRS() {
 				"nombreEstado" :data1[i].nombreEstado,
 				"idprioridad" :data1[i].idprioridad,
 				"idmotivo" :data1[i].idmotivo,
-				"ccVinculado":data1[i].ccVinculado
+				"ccVinculado":data1[i].ccVinculado,
+				"correo":data1[i].correo
 			}).draw();
 		}
 	});
@@ -449,7 +451,7 @@ function limpiarConsultaPQRS() {
 	$("#tipoSolicitud").val("");
 	$('#selectUsuarioRegistro,#selectUsuarioRedencion,#selectPrioridad,#selectMotivo').prop('selectedIndex', 0);
 	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
-	$(' #apellidos, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #arearesponsable, #PorcentajeDesc').val("")
+	$(' #apellidos,#correo, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #arearesponsable, #PorcentajeDesc').val("")
 	contenedorComentarios.innerHTML = "";
 	$('#img-gallery').html('');
 }

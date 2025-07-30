@@ -314,7 +314,7 @@ public class EmpleadoEncuestaDAO {
         String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion,idtienda) VALUES (?, ?, ?,?,?)";
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = null;
-    //EJEMPLOO
+
         try {
             con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
             
