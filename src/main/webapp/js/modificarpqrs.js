@@ -226,11 +226,22 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
+
 		estadoTexto = $("#selectEstado option:selected").text().trim();
+
 		$('#zona').val(datos.zona);
 		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
 		$('#ccVinculado').prop('checked', datos.ccVinculado);
+
+
+		if(datos.idestado == 3)
+		{
+			$('#escalar').attr('disabled', false);
+		}else
+		{
+			$('#escalar').attr('disabled', true);
+		}
 
 		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
 		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
@@ -367,9 +378,35 @@ function validarFechas(date1, date2) {
 
 
 
+function escalarPQRS()
+{
+	$('#modalescalarpqrs').modal('show');
+}
+
+function realizarEscalamientoPQRS()
+{
+	var areaResponsable = encodeURIComponent($("#selectAreaResponsableEscalar option:selected").val());
+	if(areaResponsable != "" && idSolicitudPQRS > 0)
+	{
+		$.getJSON(server + 'InsertarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudPQRS + "&arearesponsable=" + areaResponsable, function(data) {
+		if(data.resultado == 'OK')
+		{
+			mostrarAlerta('warning','Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
+			$('#modalescalarpqrs').modal('hide');
+
+		}else 
+		{
+			mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
+		}
+		
+	});
+	}
+}
+
 
 function consultarPQRS() {
 
+	$('#escalar').attr('disabled', true);
 	var fechaini = $("#fechainicial").val();
 	var fechafin = $("#fechafinal").val();
 	var tienda = $("#selectTiendas option:selected").attr('id');

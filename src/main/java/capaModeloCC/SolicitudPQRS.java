@@ -45,6 +45,7 @@ public class SolicitudPQRS {
 	private int idprioridad;
 	private int idmotivo;
 	private boolean ccVinculado;
+
 	private String correo;
 	
 	public String getCorreo() {
@@ -52,6 +53,23 @@ public class SolicitudPQRS {
 	}
 	public void setCorreo(String correo) {
 		this.correo = correo;
+
+	private String tienda;
+	private String prioridad;
+	
+
+	public String getTienda() {
+		return tienda;
+	}
+	public void setTienda(String tienda) {
+		this.tienda = tienda;
+	}
+	public String getPrioridad() {
+		return prioridad;
+	}
+	public void setPrioridad(String prioridad) {
+		this.prioridad = prioridad;
+
 	}
 	public boolean isCcVinculado() {
 		return ccVinculado;

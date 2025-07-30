@@ -22,6 +22,8 @@ import com.google.gson.GsonBuilder;
 import capaConexionPOS.ConexionBaseDatos;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.EmpleadoEncuestaDAO;
+import capaDAOCC.EscalamientoPQRSDAO;
+
 import capaDAOCC.FocoPqrsDAO;
 import capaDAOCC.GeneralDAO;
 import capaDAOCC.LogEncuestaServicioDAO;
@@ -38,8 +40,11 @@ import capaModeloCC.Cliente;
 import capaModeloCC.ComentarioPqrs;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
+
 import capaModeloCC.EncuestaPqrs;
 import capaModeloCC.EncuestaServicio;
+import capaModeloCC.EscalamientoPQRS;
+
 import capaModeloCC.EstadoPqrs;
 import capaModeloCC.FocoPqrs;
 import capaModeloCC.OrigenPqrs;
@@ -365,6 +370,7 @@ public class SolicitudPQRSCtrl {
 	    return gson.toJson(estados); // convierte a JSON
 	}
 	
+
 	
 	public String insertarPqrsWeb(
 	        String fechasolicitud,
@@ -460,6 +466,12 @@ public class SolicitudPQRSCtrl {
 	    Gson gson = new Gson();
 	    return gson.toJson(solicitudes);
 	}
+
+	public void insertarEscalamientoPQRS(EscalamientoPQRS escalamiento)
+	{
+		EscalamientoPQRSDAO.insertarEscalamientoPQRS(escalamiento);
+	}
+
 
 
 	

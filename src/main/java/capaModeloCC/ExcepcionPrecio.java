@@ -1,7 +1,7 @@
 package capaModeloCC;
 
 /**
- * Clase que implementa la entidad Excepción Precio.
+ * Clase que implementa la entidad Excepciï¿½n Precio.
  * @author JuanDavid
  *
  */
@@ -30,9 +30,26 @@ public class ExcepcionPrecio {
 	private String controlaEspecialidades;
 	private String ofertaAbierta;
 	private String manejaOferta;
+	private int idProductoDepende;
+	private double precioPuntos;
 	
 	
-	
+	public double getPrecioPuntos() {
+		return precioPuntos;
+	}
+
+	public void setPrecioPuntos(double precioPuntos) {
+		this.precioPuntos = precioPuntos;
+	}
+
+	public int getIdProductoDepende() {
+		return idProductoDepende;
+	}
+
+	public void setIdProductoDepende(int idProductoDepende) {
+		this.idProductoDepende = idProductoDepende;
+	}
+
 	public String getManejaOferta() {
 		return manejaOferta;
 	}

@@ -5746,5 +5746,42 @@ public class PedidoDAO {
 		return(cantidadVendido);
 
 	}
+	
+	
+	/**
+	 * Método que se encarga de validar si un producto determinado está o no incluido en un pedido
+	 * @param idPedido
+	 * @param idProducto
+	 * @param auditoria
+	 * @return
+	 */
+	public static boolean validarExistenciaPedido(int idPedido, int idProducto) {
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con2 = con.obtenerConexionBDPrincipal();
+		boolean productoExiste = false;
+
+		try {
+			Statement stm = con2.createStatement();
+			String select = "select * from pedido a , detalle_pedido b where a.idpedido = b.idpedido and a.idpedido = " + idPedido + " and b.idproducto = " + idProducto;
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				productoExiste = true;
+				break;
+			}
+			rs.close();
+			stm.close();
+			con2.close();
+		} catch (Exception e) {
+			System.out.println("ERROR ACTUALIZACIÓN ESTADO " + e.toString());
+			logger.error((Object) e.toString());
+			try {
+				con2.close();
+			} catch (Exception ex) {
+			}
+		}
+		return productoExiste;
+	}
 
 }

@@ -346,6 +346,98 @@ public class SolicitudPQRSDAO {
 		return consultaSolicitudes;
 	}
 
+
+	/**
+	 * Método construido especificamente para retornar las PQRS para el reporte diario de las PQRS construido para llegar automaticamente
+	 * todas las noches
+	 * @param fecha
+	 * @return
+	 */
+	public static ArrayList<SolicitudPQRS> ConsultaSolicitudesReportePQRS(String fecha) {
+	    Logger logger = Logger.getLogger("log_file");
+	    ArrayList<SolicitudPQRS> consultaSolicitudes = new ArrayList<>();
+
+	    StringBuilder consulta = new StringBuilder(
+	        "SELECT a.idsolicitudPQRS, a.fechasolicitud, a.tiposolicitud, a.nombres, a.apellidos, a.direccion,a.zona, a.idfoco, " +
+	        "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.idcliente,a.cc_vinculado," +
+	        "a.tipo, a.area_responsable, " +
+	        "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, " +
+	        "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion , a.id_usuario_registro , a.id_usuario_redencion ,a.idestado , a.idprioridad ,a.idmotivo, e.descripcion as nombreEstado, f.nombre as nombretienda, g.descripcion as prioridad " +
+	        "FROM solicitudPQRS a " +
+	        "JOIN origen_pqrs b ON a.idorigen = b.idorigen " +
+	        "JOIN foco_pqrs c ON a.idfoco = c.idfoco " +
+	        "JOIN tienda f ON a.idtienda = f.idtienda " +
+	        "JOIN prioridad_pqrs g ON a.idprioridad = g.idprioridad " +
+	        "LEFT JOIN  estado_pqrs e ON a.idestado = e.idestado " +
+	        "WHERE a.fechasolicitud = ? and a.idestado != 1"
+	    );
+
+
+	    logger.info("Consulta SQL: " + consulta.toString());
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(consulta.toString())) {
+
+	        int paramIndex = 1;
+	        ps.setString(1, fecha);
+
+
+	        try (ResultSet rs = ps.executeQuery()) {
+	            while (rs.next()) {
+	                SolicitudPQRS cadaSolicitud = new SolicitudPQRS(
+	                    rs.getInt("idsolicitudPQRS"),
+	                    rs.getString("fechasolicitud"),
+	                    rs.getString("tiposolicitud"),
+	                    rs.getInt("idcliente"),
+	                    rs.getInt("idtienda"),
+	                    rs.getString("nombres"),
+	                    rs.getString("apellidos"),
+	                    rs.getString("telefono"),
+	                    rs.getString("direccion"),
+	                    rs.getString("zona"),
+	                    rs.getInt("idmunicipio"),
+	                    rs.getString("comentario"),
+	                    rs.getInt("idorigen"),
+	                    rs.getInt("idfoco"),
+	                    rs.getString("tipo"),
+	                    rs.getString("area_responsable"),
+	                    rs.getInt("idpedidotienda"),
+	                    rs.getDouble("valor_pedido"),
+	                    rs.getDouble("valor_descuento"),
+	                    rs.getInt("porcentaje_descuento"),
+	                    rs.getBoolean("descuento_redimido"),
+	                    rs.getInt("idpedidoredencion"),
+	                    rs.getInt("id_usuario_registro"),
+	                    rs.getInt("id_usuario_redencion"),
+	                    rs.getInt("idestado"),
+	                    rs.getInt("idprioridad"),
+	                    rs.getInt("idmotivo"),
+	                    rs.getBoolean("cc_vinculado")
+	                    
+	                );
+	                cadaSolicitud.setOrigen(rs.getString("nombre_origen"));
+	                cadaSolicitud.setIdmunicipio(rs.getInt("idmunicipio"));
+	                cadaSolicitud.setIdtienda(rs.getInt("idtienda"));
+	                cadaSolicitud.setFoco(rs.getString("nombre_foco"));
+	                cadaSolicitud.setImagenes(rs.getInt("imagenes"));
+	                cadaSolicitud.setNombreEstado(rs.getString("nombreEstado"));
+	                cadaSolicitud.setTienda(rs.getString("nombretienda"));
+	                cadaSolicitud.setPrioridad(rs.getString("prioridad"));
+	                consultaSolicitudes.add(cadaSolicitud);
+
+	                
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        logger.error("Error al consultar PQRS: " + e.toString(), e);
+	        System.out.println("Error al consultar PQRS: " + e.toString());
+	    }
+
+	    return consultaSolicitudes;
+	}
+	
 	/**
 	 * M�todo que se encarga de validar si una PQRS existe o no, retornando esto
 	 * como un valor booleano
@@ -578,6 +670,39 @@ public class SolicitudPQRSDAO {
 		return comentariosPorFecha;
 	}
 
+	/**
+	 * Método que se encarga de traer un string con los comentarios de la pqrs
+	 * @param idSolicitudPqrs
+	 * @return
+	 */
+	public static String obtenerComentariosStrPqrs(int idSolicitudPqrs) {
+	    String respuesta = "";
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    String sql = "SELECT comentario, fecha_comentario " +
+	                 "FROM pqrs_comentario WHERE idsolicitud_pqrs = ? ORDER BY fecha_comentario ASC, idpqrs_comentario ASC";
+
+	    try (Connection conn = con1; PreparedStatement stmt = conn.prepareStatement(sql)) {
+	        stmt.setInt(1, idSolicitudPqrs);
+	        ResultSet rs = stmt.executeQuery();
+
+	        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+	        String fechaStr = "";
+	        String comentario = "";
+	        while (rs.next()) {
+	            fechaStr = sdf.format(rs.getDate("fecha_comentario"));
+	            comentario = rs.getString("comentario");
+	            respuesta = respuesta + "\\n" + fechaStr + "-" + comentario;
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Error al obtener comentarios: " + e.getMessage());
+	    }
+
+	    return respuesta;
+	}
+	
 	public static List<EstadoPqrs> obtenerEstadoPqrs() {
 		List<EstadoPqrs> ListaEstados = new ArrayList<>();
 		Logger logger = Logger.getLogger("log_file");
