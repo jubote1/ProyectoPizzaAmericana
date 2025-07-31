@@ -39,6 +39,7 @@ var ctx;
 var totalpedido = 0;
 //Variable que almacenará el total de puntos que vale el pedido
 var totalpuntospedido = 0;
+var puntosredimidos = 0;
 //Tendremos una variable total general 
 var totalpedidogeneral = 0;
 var radioEsp1Ant= 0;
@@ -3130,6 +3131,7 @@ function ReiniciarPedido()
 															    	$('input:radio[name=adicion]')[1].checked = true;
 															    	totalpedido = 0;
                                                                     totalpuntospedido = 0;
+                                                                    puntosredimidos = 0;
                                                                     totalpedidogeneral = 0;
                                                                     descuentoPedido = 0;
                                                                     motivoDescuento = "";
@@ -3246,6 +3248,16 @@ function ConfirmarPedido()
         $.alert('El descuento del pedido no puede ser mayor al total general del pedido.');
         return;
     }
+    //Incluimos la validacion de si hay puntos para redimir y no se han redimido
+    if(totalpuntospedido > 0)
+    {
+        if(totalpuntospedido > puntosredimidos)
+        {
+            $.alert('Debe redimir el total de los puntos del pedido.');
+            return;
+        }
+    }
+
     //Incluimos mensaje para validación de factura electrónica
     if($("#totalpedido").val() > montoFactura)
     {
@@ -3549,6 +3561,7 @@ function ConfirmarPedido()
 							    	$('input:radio[name=adicion]')[1].checked = true;
 							    	totalpedido = 0;
                                     totalpuntospedido = 0;
+                                    puntosredimidos = 0;
                                     totalpedidogeneral = 0;
                                     descuentoPedido = 0;
                                     motivoDescuento = "";
@@ -6429,6 +6442,11 @@ function incluirFidelizacion()
             });
         }
     }
+}
+
+function RedimirPuntos()
+{
+    
 }
 
 $('#email').on('input', validate);

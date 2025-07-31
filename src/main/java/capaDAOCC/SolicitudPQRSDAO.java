@@ -360,7 +360,7 @@ public class SolicitudPQRSDAO {
 	    StringBuilder consulta = new StringBuilder(
 	        "SELECT a.idsolicitudPQRS, a.fechasolicitud, a.tiposolicitud, a.nombres, a.apellidos, a.direccion,a.zona, a.idfoco, " +
 	        "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.idcliente,a.cc_vinculado," +
-	        "a.tipo, a.area_responsable, a.correo , " +
+	        "a.tipo, a.area_responsable, a.correo," +
 	        "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, " +
 	        "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion , a.id_usuario_registro , a.id_usuario_redencion ,a.idestado , a.idprioridad ,a.idmotivo, e.descripcion as nombreEstado, f.nombre as nombretienda, g.descripcion as prioridad " +
 	        "FROM solicitudPQRS a " +
