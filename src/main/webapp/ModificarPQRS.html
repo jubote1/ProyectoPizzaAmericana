@@ -122,23 +122,30 @@
 										onclick="escalarPQRS()" id="escalar" name="escalar" disabled>Escalar</button>
 								</div>
 								<!-- ESCALAMIENTO DE LA PQRS -->
-								<div class="modal fade" id="modalescalarpqrs" tabindex="-1" role="dialog" aria-labelledby="addLabel">
-									 <div class="modal-dialog modal-xl" role="document">
-									    <div class="modal-content">
-									      <div class="modal-header">
-									      	<h4 class="modal-title" id="addLabel">Área para Escalar</h4>
-									        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-									      </div>
-									      	<select
-													id="selectAreaResponsableEscalar" name="selectAreaResponsableEscalar" class="form-control" required>
-													<option value="" disabled selected hidden>Seleccione una opción</option>
-													<option value="tienda">tienda</option>
-													<option value="contact">contact</option>
-													<option value="tecnologia">tecnologia</option>
-													<option value="calidad">calidad</option>
-											</select>
-											<input type="button" id="btnEscalarPQRS" name="btnEscalarPQRS" class="btn btn-primary btn-lg" value="ESCALAR PQRS" onclick="realizarEscalamientoPQRS()">
-									    </div>
+								<div class="modal fade" id="modalescalarpqrs" tabindex="-1"
+									role="dialog" aria-labelledby="addLabel">
+									<div class="modal-dialog modal-xl" role="document">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h4 class="modal-title" id="addLabel">Área para Escalar</h4>
+												<button type="button" class="close" data-dismiss="modal"
+													aria-label="Close">
+													<span aria-hidden="true">&times;</span>
+												</button>
+											</div>
+											<select id="selectAreaResponsableEscalar"
+												name="selectAreaResponsableEscalar" class="form-control"
+												required>
+												<option value="" disabled selected hidden>Seleccione
+													una opción</option>
+												<option value="tienda">tienda</option>
+												<option value="contact">contact</option>
+												<option value="tecnologia">tecnologia</option>
+												<option value="calidad">calidad</option>
+											</select> <input type="button" id="btnEscalarPQRS"
+												name="btnEscalarPQRS" class="btn btn-primary btn-lg"
+												value="ESCALAR PQRS" onclick="realizarEscalamientoPQRS()">
+										</div>
 									</div>
 								</div>
 								<div class="button-conf text-right">
@@ -349,11 +356,13 @@
 											Vinculado al Contact Center
 										</label>
 									</div>
-									<div class="col-sm-6 form-group text-right">
-										<button type="button" class="btn btn-primary"
-											onclick="abrirModalRespuesta()">Correo de Respuesta</button>
-								<button id="btnEnviarEncuestaS" type="button" class="btn btn-warning">Encuesta de satisfacción</button>
-
+									<div class="col-sm-6 form-group">
+										<div class="content-btn">
+											<button type="button" class="btn btn-primary"
+												onclick="abrirModalRespuesta()">Correo de Respuesta</button>
+											<button id="btnEnviarEncuestaS" type="button"
+												class="btn btn-warning">Encuesta de satisfacción</button>
+										</div>
 									</div>
 
 
@@ -435,7 +444,7 @@
 								<div class="col-md-9">
 									<div class="form-group">
 										<label class="text-black font-w500">Cliente</label> <input
-										id="cliente_envio"	type="text" class="form-control">
+											id="cliente_envio" type="text" class="form-control">
 									</div>
 								</div>
 
@@ -445,18 +454,20 @@
 							<div class="form-group">
 								<label class="text-black font-w500">Correo Electrónico</label> <input
 									id="correo_envio" type="text" class="form-control">
-									<div id="errorCorreoEnv" style="color: red; display: none;">Correo
-											inválido</div>
+								<div id="errorCorreoEnv" style="color: red; display: none;">Correo
+									inválido</div>
 							</div>
 
 							<div class="form-group">
 								<label class="text-black font-w500">Contenido del correo</label>
-								<textarea class="form-control" id="contenidoCorreo" rows="6" style="white-space: pre-wrap; word-wrap: break-word;"
+								<textarea class="form-control" id="contenidoCorreo" rows="6"
+									style="white-space: pre-wrap; word-wrap: break-word;"
 									placeholder="Escribe aquí el mensaje que deseas enviar al cliente..."
 									required></textarea>
 							</div>
 							<div class="form-group">
-								<button id="btnEnviarCorreo" type="button" class="btn btn-primary">Enviar</button>
+								<button id="btnEnviarCorreo" type="button"
+									class="btn btn-primary">Enviar</button>
 							</div>
 						</form>
 					</div>
