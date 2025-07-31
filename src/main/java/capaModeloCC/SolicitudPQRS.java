@@ -53,6 +53,7 @@ public class SolicitudPQRS {
 	}
 	public void setCorreo(String correo) {
 		this.correo = correo;
+	}
 
 	private String tienda;
 	private String prioridad;
