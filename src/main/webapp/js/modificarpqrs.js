@@ -1065,19 +1065,14 @@ function EditarPQRS() {
 				const respuesta = response?.[0];
 
 				if (respuesta?.idSolicitudPQRS > 0) {
-					Swal.fire({
-						icon: 'success',
-						title: '¡Actualizado!',
-						text: `Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}`
-					});
+
 					estadoTexto = $("#selectEstado option:selected").text().trim();
-					let mensajeFinal = `Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
+					let mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
 					let iconoFinal = 'success';
 
 					if (estadoTexto && estadoTexto.toLowerCase() === "cerrado") {
 						// Enviar encuesta automáticamente si está cerrada
 						const cliente = nombresEncode;
-						const correo = correo;
 						const idpqrs = respuesta.idSolicitudPQRS;
 						const telefonoLimpio = tel.replace(/\D/g, ''); // Elimina espacios, guiones, etc.
 						const regexCelularColombia = /^3\d{9}$/;
@@ -1096,23 +1091,27 @@ function EditarPQRS() {
 								const data = await result.json();
 
 								if (data.success) {
-									mensajeFinal += "\n\n✅ La encuesta de satisfacción fue enviada correctamente.";
+									mensajeFinal += "<br>✅ La encuesta de satisfacción fue enviada correctamente.";
 								} else {
-									mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero no se pudo enviar la encuesta: " + data.message;
+									mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción: " + data.message;
 									iconoFinal = 'warning';
 								}
 							} catch (error) {
 								console.error("Error al enviar encuesta:", error);
-								mensajeFinal += "\n\n⚠️ La solicitud se actualizó, pero ocurrió un error al enviar la encuesta.";
+								mensajeFinal += "<br>⚠️ Ocurrió un error al enviar la encuesta de satisfacción.";
 								iconoFinal = 'warning';
 							}
+						}else{
+							mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción por que el teléfono registrado era invalido.: " + data.message;
+							iconoFinal = 'warning';
 						}
 					}
 
 					Swal.fire({
 						icon: iconoFinal,
 						title: 'Resultado',
-						text: mensajeFinal
+						html: mensajeFinal,
+						customClass: { icon: 'swal-icon-small' }
 					});
 
 
@@ -1696,6 +1695,8 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 		});
 		return;
 	}
+	
+	inputCorreoEnvio.dispatchEvent(new Event('input'));
 
 	if (!validarCorreoEnv) {
 		Swal.fire({
@@ -1803,14 +1804,14 @@ document.getElementById('btnEnviarEncuestaS').addEventListener('click', function
 		return;
 	}
 
-	if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
+	/*if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
 		Swal.fire({
 			icon: 'warning',
 			text: 'La solicitud PQRS debe estar en estado "Cerrado" para enviar la encuesta.',
 			customClass: { icon: 'swal-icon-small' }
 		});
 		return;
-	}
+	}*/
 
 	const idpqrs = idSolicitudPQRS;
 	const cliente = document.getElementById("nombres").value;

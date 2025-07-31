@@ -120,6 +120,13 @@ textarea.form-control {
   text-align: right;
 }
 
+.content-btn {
+  display: flex;
+  flex-wrap: wrap;         /* permite que se vayan a la línea siguiente si no caben */
+  gap: 10px;                /* espacio entre botones */
+  justify-content: flex-end; /* alineados a la derecha */
+}
+
 /* Botones responsivos */
 @media (max-width: 576px) {
   .button-conf {
