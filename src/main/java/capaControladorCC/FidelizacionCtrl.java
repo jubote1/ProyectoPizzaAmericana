@@ -2,6 +2,7 @@ package capaControladorCC;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.json.simple.JSONArray;
@@ -11,9 +12,12 @@ import capaDAOCC.ClienteDAO;
 import capaDAOCC.ClienteFidelizacionDAO;
 import capaDAOCC.CodigoRedencionPuntosDAO;
 import capaDAOCC.FidelizacionTransaccionDAO;
+import capaDAOCC.GeneralDAO;
 import capaDAOCC.IntegracionCRMDAO;
+import capaDAOCC.ParametrosDAO;
 import capaModeloCC.ClienteFidelizacion;
 import capaModeloCC.CodigoRedencionPuntos;
+import capaModeloCC.Correo;
 import capaModeloCC.FidelizacionTransaccion;
 import capaModeloCC.IntegracionCRM;
 import okhttp3.MediaType;
@@ -21,6 +25,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import utilidadesCC.ControladorEnvioCorreo;
 
 public class FidelizacionCtrl {
 	
@@ -254,6 +259,22 @@ public class FidelizacionCtrl {
 		codRed.setCodigo(codigoRedencionGen);
 		CodigoRedencionPuntosDAO.insertarCodigoRedencionPuntos(codRed);
         respuesta.put("codigo", codigoRedencionGen);
+        //Realizamos envío del correo electrónico indicando el código de redención al cliente
+
+		//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
+		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		Date fecha = new Date();
+		Correo correo = new Correo();
+		correo.setAsunto("ENVIO CODIGO VALIDACIÓN REDENCIÓN PUNTOS PIZZA AMERICANA" + fecha.toString());
+		ArrayList correos = new ArrayList();
+		correos.add(codRed.getCorreo());
+		correo.setContrasena(claveCorreo);
+		correo.setUsuarioCorreo(cuentaCorreo);
+		String mensajeCuerpoCorreo = "Por favor debes facilitar tu código de redención de tus puntos en la tienda " + codigoRedencionGen ;
+		correo.setMensaje(mensajeCuerpoCorreo);
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		contro.enviarCorreo();
 		return(respuesta.toJSONString());
 	}
 	
