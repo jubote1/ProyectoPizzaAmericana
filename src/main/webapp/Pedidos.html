@@ -305,6 +305,53 @@
 							    </div>
 							</div>
 						</div>
+						<!-- ESTO ES REDIMIR LOS PUNTOS -->
+						<div class="modal fade" id="modalRedimirPuntosPrograma" tabindex="-1" role="dialog" aria-labelledby="addLabel">
+							 <div class="modal-dialog modal-xl" role="document">
+							    <div class="modal-content">
+							      <div class="modal-header">
+							      	<h4 class="modal-title" id="addLabel">Redención Puntos Programa Fidelización</h4>
+							       </div>
+							      <form id='regOferta'>
+							      	<table class="table table-bordered">
+										<tbody>
+												
+												<tr>
+														<td class="active">Correo Cliente Programa </td>
+														<td><input type="text" id="correoclienteprograma" name="correoclienteprograma" class="form-control" disabled></td>
+												</tr>
+
+												<tr>
+														<td class="active">Puntos a Redimir</td>
+														<td><input type="text" id="puntosaredimir" name="puntosaredimir" class="form-control" placeholder="Puntos a Redimir"  disabled></td>
+												</tr>
+												<tr>
+													<td>
+														<input type="button" id="enviarcodigoredencion" name="enviarcodigoredencion" class="btn btn-primary btn-lg" value="Enviar Código Redención" onclick="enviarCodigoRedencion()">
+													</td>
+												</tr>
+												<tr>
+														<td class="active">Código Verificación</td>
+														<td><input type="text" id="codigoverificacion" name="codigoverificacion" class="form-control" placeholder="Ingresar código verificación Cliente"></td>
+												</tr>
+												<tr>
+													<td>
+														<input type="button" id="validarcodigoverificacion" name="validarcodigoverificacion" class="btn btn-success btn-lg" value="Validar Código Verificación" onclick="validarCodigoVerificacion()" disabled>
+													</td>
+												</tr>
+												<tr>
+													<td><input type="button" id="continuarredencion" name="continuarredencion" class="btn btn-success btn-lg" value="Continuar" onclick="continuarRedencion()" disabled></td>
+													<td><input type="button" id="salirredencion" name="salirredencion" class="btn btn-success btn-lg" value="Salir" onclick="salirRedencion()"></td>
+												</tr>
+												
+										</tbody>
+									</table>
+								  </form>
+							    </div>
+							</div>
+						</div>
+
+
 				</div>
 				<button type="button" class="btn btn-success btn-md" onclick="ingresarCodigoPromocion()"><i class="fas fa-cart-plus fa-3x"></i> Agregar Oferta</button>	
 				<button type="button" class="btn btn-warning btn-md" onclick="eliminarCodigoPromocion()"><i class="fas fa-cart-plus fa-3x"></i> Eliminar oferta</button>	
@@ -811,7 +858,7 @@
 									<tr>
 										<td class="active">Valor Total Puntos</td>
 										<td class="active"><input type="text" class="form-control" id="totalpuntos" placeholder="Valor total Puntos" disabled></td>
-										<td class="active"><button  align='left' type="button" class="btn btn-primary btn-lg" onclick="RedimirPuntos()"><i class="fas fa-check fa-3x"></i> Redimir Puntos</button></td>
+										<td class="active"><button  align='left' type="button" class="btn btn-success btn-md" onclick="RedimirPuntos()"><i class="fas fa-thumbs-up fa-2x"></i> Redimir Puntos</button></td>
 									</tr>
 									<tr>
 										<td class="active">Valor Total del Pedido</td>
@@ -834,7 +881,7 @@
 											<button  align='right' type="button" class="btn btn-danger btn-lg" onclick="ReiniciarPedido()"><i class="fas fa-trash-restore fa-3x"></i> Reiniciar Pedido</button>
 										</td>
 										<td>
-											<button  align='left' type="button" class="btn btn-primary btn-lg" onclick="ConfirmarPedido()"><i class="fas fa-check fa-3x"></i> Confimar Pedido</button>
+											<button  align='left' type="button" class="btn btn-primary btn-lg" onclick="ConfirmarPedido()"><i class="fas fa-check fa-3x"></i> Confirmar Pedido</button>
 										</td>
 									</tr>
 								</tbody>

@@ -40,6 +40,7 @@ var totalpedido = 0;
 //Variable que almacenará el total de puntos que vale el pedido
 var totalpuntospedido = 0;
 var puntosredimidos = 0;
+var puntosProcesoRedencion = 0;
 //Tendremos una variable total general 
 var totalpedidogeneral = 0;
 var radioEsp1Ant= 0;
@@ -6446,7 +6447,119 @@ function incluirFidelizacion()
 
 function RedimirPuntos()
 {
+    if((totalpuntospedido - puntosredimidos) > 0)
+    {
+        if($("#email").val() == '')
+        {
+            $.alert('El cliente debe tener un correo en sus datos para poder realizar la redención.');
+            return;
+        }else 
+        {
+            $('#modalRedimirPuntosPrograma').modal('show');
+            $('#correoclienteprograma').val($("#email").val());
+            $('#puntosaredimir').val(totalpuntospedido - puntosredimidos);
+            $('#continuarredencion').attr('disabled', true);
+
+        }
+        
+    }else{
+        $.alert('No hay puntos pendientes por redimir.');
+    }
     
+}
+
+function salirRedencion()
+{
+    $('#modalRedimirPuntosPrograma').modal('hide');
+}
+
+//Método que se encarga de validar si el cliente tiene puntos suficientes y de enviar al cliente los puntos correspondientes
+function enviarCodigoRedencion()
+{
+    puntosProcesoRedencion = totalpuntospedido - puntosredimidos;
+    $.getJSON(server + 'ValidarRedencionPuntos?correo=' + $('#correoclienteprograma').val() +'&puntosredimir=' + puntosProcesoRedencion, function(data1){
+            respuesta = data1;
+            if(respuesta.respuesta == 'NOK')
+            {
+                $.alert('El cliente no existe en el plan de fidelización.');
+                return;
+            }
+            var puntosCliente = respuesta.puntos;
+            if(puntosCliente < puntosProcesoRedencion)
+            {
+                $.alert('El cliente tiene ' + puntosCliente + " y requiere redimir " + puntosProcesoRedencion  + " por lo tanto no tiene puntos suficientes.");
+                return;
+            }
+            //En este punto sino ha retornado se podrá enviar el código de redención y se avisará que fue enviado y se espera la respuesta del cliente
+            var fechaSistema = obtenerFechaFormatoBD();
+            $.getJSON(server + 'CrearCodigoValidarRedencionPuntos?correo=' + $('#correoclienteprograma').val() +'&puntosredimir=' + puntosProcesoRedencion + '&fechasistema=' + fechaSistema, function(data2){
+                    var respuesta2 = data2;
+                    if(respuesta2 != '')
+                    {
+                         $.alert('Se ha enviado el código para la redención al correo electrónico del cliente por favor, solicitarlo y escribirlo para validación.');
+                         $('#validarcodigoverificacion').attr('disabled', false);
+                         $('#enviarcodigoredencion').attr('disabled', true);
+                    }
+
+            });
+
+    });
+
+}
+
+function validarCodigoVerificacion()
+{
+    var codigoValidar = $('#codigoverificacion').val();
+    if(codigoValidar == '')
+    {
+         $.alert('Debe ingresar el código para validar si es posible o no realizar la redención de puntos.');
+         return;
+    }
+    var fechaSistema = obtenerFechaFormatoBD();
+    $.getJSON(server + 'ValidarExistenciaCodigoRedencion?correo=' + $('#correoclienteprograma').val() +'&codigo=' + codigoValidar + '&fechasistema=' + fechaSistema, function(data1){
+            var respuesta1 = data1;
+            if(respuesta1.respuesta)
+            {
+                $('#continuarredencion').attr('disabled', false);
+            }else 
+            {
+                $.alert('La validación del código fue incorrecta.');
+            }
+
+    });
+}
+
+function continuarRedencion()
+{
+    //Hacemos la redención de los puntos y si todo termina bien continuamos el proceso del pedido
+    var fechaSistema = obtenerFechaFormatoBD();
+    var codigoValidar = $('#codigoverificacion').val();
+    var idtienReden = $("#selectTiendas option:selected").attr('id');
+    $.getJSON(server + "RealizarRedencionPuntos?correo=" + $('#correoclienteprograma').val() + "&codigo=" + codigoValidar + "&puntosredimir=" + puntosProcesoRedencion + "&idtienda=" + idtienReden + "&idpedido=" + idPedido, function(data1){
+            var respuesta1 = data1;
+            if(respuesta1.respuesta == 'OK')
+            {
+                 $.alert('Finalizó correctamente el proceso de REDENCIÓN!');
+            }else 
+            {
+                $.alert('No se pudo finalizar la redención, comunicar al área de tecnologia!');
+                return;
+            }
+
+    });
+    puntosredimidos = puntosredimidos + puntosProcesoRedencion;
+    $('#continuarredencion').attr('disabled', true);
+    $('#codigoverificacion').val('');
+    $('#modalRedimirPuntosPrograma').modal('hide');
+}
+
+function obtenerFechaFormatoBD()
+{
+    const date = new Date(); // Or any other Date object
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, so add 1
+    const day = String(date.getDate()).padStart(2, '0');
+    return(`${year}/${month}/${day}`);
 }
 
 $('#email').on('input', validate);
