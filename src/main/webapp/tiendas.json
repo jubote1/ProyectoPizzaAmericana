@@ -44,10 +44,10 @@
 
     },
     {
-        "title": "Poblado",
-        "zona":"Poblado",
-        "coordinates": {"lng": -75.55984400835283,
-            "lat":6.2066485560767415
+        "title": "Niquia",
+        "zona":"Niquia",
+        "coordinates": {"lng": -75.5499612076178,
+            "lat":6.337781519121857
        },
        "lugar_cercano":{"lng":-75.56908289523498,"lat": 6.213587165813872}
 
