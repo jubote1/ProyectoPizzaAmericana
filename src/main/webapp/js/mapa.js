@@ -84,19 +84,23 @@ $(document).ready(function() {
 		    [latitudInicial, longitudInicial],
 		    zoomInicial);
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 19,
-			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(map);
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+			  attribution: '&copy; <a href="https://carto.com/">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+			  subdomains: 'abcd',
+			  maxZoom: 19
+			}).addTo(map);
+
 
 		map_detalle = L.map('mapa-detalle').setView(
 		    [latitudInicial, longitudInicial],
 		    zoomInicial);
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 19,
-			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(map_detalle);
+			L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+					  attribution: '&copy; <a href="https://carto.com/">CARTO</a> | &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+					  subdomains: 'abcd',
+					  maxZoom: 19
+					}).addTo(map_detalle);
+
 
 
 
@@ -109,7 +113,7 @@ $(document).ready(function() {
 		      style: feature => ({
 		        fillColor: { 1: 'red', 2: 'green', 3: 'blue' }[feature.properties.id] || 'purple',
 		        fillOpacity: 0.1,
-		        color: '#000',
+		        color: '#FFFFFF',
 		        weight: 1
 		      }),
 		      onEachFeature: (feature, layer) => {

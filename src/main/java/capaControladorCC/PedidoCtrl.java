@@ -6582,7 +6582,7 @@ public class PedidoCtrl {
 		return(datosLead);
 	} 
 	
-	public  String limpiarLeadCRM(String lead) throws IOException {
+	public  static String limpiarLeadCRM(String lead) throws IOException {
 	    String datosLead = "";
 
 	    IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
@@ -6624,7 +6624,7 @@ public class PedidoCtrl {
 	    // Enviar petición
 	    OkHttpClient client = new OkHttpClient();
 	    RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"),jsonBody );
-
+	    System.out.println("body: "+body);
 	    Request request = new Request.Builder()
 	            .url("https://pizzaamericana.kommo.com/api/v4/leads")
 	            .patch(body)
@@ -8800,7 +8800,7 @@ public class PedidoCtrl {
 //		PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"11\",\"type\":\"orderNew\",\"timestamp\":1692580650,\"data\":{\"order_id\":"+ idOrdenDidi +",\"order_info\":{\"order_id\":"+ idOrdenDidi +",\"status\":100,\"order_index\":938010,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1692583124,\"create_time\":1692580650,\"pay_time\":1692580650,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":1900000,\"items_discount\":0,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607772705162938,\"app_shop_id\":\"11\",\"shop_addr\":\"Calle 68 # 43 u2013 05 medellin, Medellu00edn, Antioquia, Colombia\",\"shop_name\":\"Pizza Americana - Manrique Piloto\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"\",\"calling_code\":\"+57\",\"phone\":\"310***3910\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizzeta por Mitades\",\"total_price\":1900000,\"sku_price\":1900000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400ml\",\"total_price\":200000,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Americana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":0,\"real_price\":1900000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}}]}}}", "revisar");
 		
 		//OTROS TEMAS DE PRUEBAS
-
+		limpiarLeadCRM("27579239");
 		//PedidoCtrl.consultarCoberturaCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20424793&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=58822804&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5421266&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=58812344&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5421266&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "HTTP Authorization header: No authorization header");
 		//PedidoCtrl.obtenerMensajePedidoBOTCRM("3003861204");
 		//PedidoCtrl.capturarEventoPagoWompi("{\"event\":\"transaction.updated\",\"data\":{\"transaction\":{\"id\":\"17415-1690508372-39946\",\"created_at\":\"2023-07-28T01:39:32.482Z\",\"finalized_at\":\"2023-07-28T02:24:43.627Z\",\"amount_in_cents\":4100000,\"reference\":\"o7uauu_1690508299_xwdlTld0Y\",\"customer_email\":\"erikazapata7193@gmail.com\",\"currency\":\"COP\",\"payment_method_type\":\"NEQUI\",\"payment_method\":{\"type\":\"NEQUI\",\"extra\":{\"is_three_ds\":false,\"transaction_id\":\"350-123-200774-1690508373TD3e\",\"external_identifier\":\"1690508373TD3e\",\"nequi_transaction_id\":\"350-123-200774-1690508373TD3e\"},\"phone_number\":\"3012630615\"},\"status\":\"APPROVED\",\"status_message\":\"La transacción caducó\",\"shipping_address\":null,\"redirect_url\":\"https://pizzaamericana.co\",\"payment_source_id\":null,\"payment_link_id\":\"o7uauu\",\"customer_data\":{\"full_name\":\"Erika Zapata \",\"phone_number\":\"+573012630615\"},\"billing_data\":null}},\"sent_at\":\"2023-07-28T02:24:43.676Z\",\"timestamp\":1690511083,\"signature\":{\"checksum\":\"e9575a0dfbb7ded7b8bf30e028458fcf459e2426e4624259a1b7f700b2776527\",\"properties\":[\"transaction.id\",\"transaction.status\",\"transaction.amount_in_cents\"]},\"environment\":\"prod\"}");

@@ -95,7 +95,9 @@ public class DomiciliarioPedidoDAO {
 	}
 	
 	
-	
+	// ✅ VERSIÓN LIMPIA DE LOS 3 MÉTODOS
+	// ✅ SIN UNION. CON LEFT JOIN A EMPLEADO Y EMPLEADO_TEMPORAL
+
 	public static List<JSONObject> HistorialActualUbicacion(int id) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
 	    StringBuilder sql = new StringBuilder();
@@ -103,104 +105,80 @@ public class DomiciliarioPedidoDAO {
 	    Connection con1 = con.obtenerConexionBDPrincipal();
 
 	    try {
-	        // Construir la consulta SQL
 	        sql.append("WITH UbicacionesConRow AS ( ")
-	           .append("    SELECT ubi.clave_dom, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ubi.fecha, e.nombre_largo, ")
+	           .append("    SELECT ubi.clave_dom, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
+	           .append("           COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, ")
 	           .append("           ROW_NUMBER() OVER (PARTITION BY ubi.clave_dom ORDER BY ubi.fecha DESC) AS rn ")
 	           .append("    FROM ubicacion_domiciliario ubi ")
 	           .append("    LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
+	           .append("    LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
 	           .append("    LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
-	           .append("    WHERE e.claverapida IS NOT NULL ");
+	           .append("    WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ");
 
-	        // Filtrar por idtienda si se pasa un id diferente a cero
 	        if (id != 0) {
 	            sql.append("AND ubi.idtienda = ").append(id).append(" ");
 	        }
 
-	        // Filtrar por la fecha actual (siempre se consulta la fecha actual)
-	        sql.append("AND DATE(ubi.fecha) = CURRENT_DATE ");
+	        sql.append("AND DATE(ubi.fecha) = CURRENT_DATE ")
+	           .append(") ")
+	           .append("SELECT clave_dom, tienda, idtienda, latitud, longitud, fecha, nombre_largo FROM UbicacionesConRow WHERE rn = 1");
 
-	        sql.append(") ")
-	           .append("SELECT clave_dom, tienda, idtienda, latitud, longitud, fecha, nombre_largo ")
-	           .append("FROM UbicacionesConRow ")
-	           .append("WHERE rn = 1 "); // Solo seleccionamos la fila más reciente para cada usuario
+	        try (PreparedStatement statement = con1.prepareStatement(sql.toString());
+	             ResultSet rs = statement.executeQuery()) {
 
-	 
-
-	        // Preparar y ejecutar la consulta
-	        try (PreparedStatement statement = con1.prepareStatement(sql.toString())) {
-	            try (ResultSet rs = statement.executeQuery()) {
-	                while (rs.next()) {
-	                    JSONObject js = new JSONObject();
-	                    js.put("clave_usuario", rs.getString("clave_dom"));
-	                    js.put("idtienda", rs.getString("idtienda"));
-	                    js.put("tienda", rs.getString("tienda"));
-	                    js.put("latitud", rs.getString("latitud"));
-	                    js.put("longitud", rs.getString("longitud"));
-	                    js.put("fecha", rs.getString("fecha"));
-	                    js.put("nombre_usuario", rs.getString("nombre_largo"));
-
-	                    lista.add(js);
-	                }
+	            while (rs.next()) {
+	                JSONObject js = new JSONObject();
+	                js.put("clave_usuario", rs.getString("clave_dom"));
+	                js.put("idtienda", rs.getString("idtienda"));
+	                js.put("tienda", rs.getString("tienda"));
+	                js.put("latitud", rs.getString("latitud"));
+	                js.put("longitud", rs.getString("longitud"));
+	                js.put("fecha", rs.getString("fecha"));
+	                js.put("nombre_usuario", rs.getString("nombre_largo"));
+	                lista.add(js);
 	            }
 	        }
 
 	    } catch (Exception e) {
-	        System.out.println("Error: " + e.toString());
+	        System.out.println("Error HistorialActualUbicacion: " + e);
 	    } finally {
-	        if (con1 != null) {
-	            con1.close();
-	        }
+	        if (con1 != null) con1.close();
 	    }
-
 	    return lista;
 	}
 
-	
+
 	public static List<JSONObject> HistorialUsuariosPorFecha(int idTienda, String fechaInicio, String fechaFin) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
-	    String sql = "WITH UbicacionesConRow AS ( "
-	            + "    SELECT ubi.clave_dom, e.nombre_largo, DATE(ubi.fecha) AS fecha, ti.nombre AS tienda, ubi.idtienda, "
-	            + "           ROW_NUMBER() OVER (PARTITION BY ubi.clave_dom, DATE(ubi.fecha) ORDER BY ubi.fecha DESC) AS rn "
-	            + "    FROM ubicacion_domiciliario ubi "
-	            + "    LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida "
-	            + "    LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda "
-	            + "    WHERE e.claverapida IS NOT NULL ";
+	    StringBuilder sql = new StringBuilder();
+	    sql.append("WITH UbicacionesConRow AS ( ")
+	       .append("  SELECT ubi.clave_dom, COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, DATE(ubi.fecha) AS fecha, ")
+	       .append("         ti.nombre AS tienda, ubi.idtienda, ")
+	       .append("         ROW_NUMBER() OVER (PARTITION BY ubi.clave_dom, DATE(ubi.fecha) ORDER BY ubi.fecha DESC) AS rn ")
+	       .append("  FROM ubicacion_domiciliario ubi ")
+	       .append("  LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
+	       .append("  LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
+	       .append("  LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
+	       .append("  WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ");
 
-	    // Filtrar por idtienda si se pasa un id diferente a cero
 	    if (idTienda != 0) {
-	        sql += "AND ubi.idtienda = ? ";
+	        sql.append("AND ubi.idtienda = ? ");
 	    }
-
-	    // Filtrar por rango de fechas
 	    if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
-	        sql += "AND DATE(ubi.fecha) BETWEEN ? AND ? ";
+	        sql.append("AND DATE(ubi.fecha) BETWEEN ? AND ? ");
 	    } else {
-	        return lista; // Retorna lista vacía si no hay fechas
+	        return lista;
 	    }
 
-	    sql += ") "
-	            + "SELECT clave_dom, nombre_largo, fecha, tienda, idtienda "
-	            + "FROM UbicacionesConRow "
-	            + "WHERE rn = 1 "
-	            + "ORDER BY fecha, nombre_largo";
-
-	
+	    sql.append(") SELECT clave_dom, nombre_largo, fecha, tienda, idtienda FROM UbicacionesConRow WHERE rn = 1 ORDER BY fecha, nombre_largo");
 
 	    try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
-	         PreparedStatement statement = con1.prepareStatement(sql)) {
+	         PreparedStatement statement = con1.prepareStatement(sql.toString())) {
 
 	        int paramIndex = 1;
-
-	        // Establecer parámetros
-	        if (idTienda != 0) {
-	            statement.setInt(paramIndex++, idTienda);
-	        }
-
-	        if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
-	            statement.setString(paramIndex++, fechaInicio);
-	            statement.setString(paramIndex++, fechaFin);
-	        }
+	        if (idTienda != 0) statement.setInt(paramIndex++, idTienda);
+	        statement.setString(paramIndex++, fechaInicio);
+	        statement.setString(paramIndex++, fechaFin);
 
 	        try (ResultSet rs = statement.executeQuery()) {
 	            while (rs.next()) {
@@ -210,73 +188,51 @@ public class DomiciliarioPedidoDAO {
 	                js.put("fecha", rs.getString("fecha"));
 	                js.put("tienda", rs.getString("tienda"));
 	                js.put("idtienda", rs.getString("idtienda"));
-
 	                lista.add(js);
 	            }
 	        }
-	    } catch (SQLException e) {
-	        // Registrar el error en vez de solo imprimirlo
-	        e.printStackTrace();
-	        throw new SQLException("Error al obtener el historial de ubicaciones.", e);
 	    }
-
-	   
 	    return lista;
 	}
-	
+
+
 	public static List<JSONObject> DetalleHistorialUsuariosPorFecha(int idTienda, String fecha, String claveRapida) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
-	    String sql = "SELECT ubi.clave_dom, "
-	            + "       e.nombre_largo, "
-	            + "       ubi.fecha, "
-	            + "       ti.nombre AS tienda, "
-	            + "       ubi.idtienda, "
-	            + "       ubi.latitud, "
-	            + "       ubi.longitud "
-	            + "FROM ubicacion_domiciliario ubi "
-	            + "LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida "
-	            + "LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda "
-	            + "WHERE e.claverapida IS NOT NULL "
-	            + "AND ubi.idtienda = ? "
-	            + "AND DATE(ubi.fecha) = ? "
-	            + "AND ubi.clave_dom = ? "
-	            + "ORDER BY ubi.fecha DESC, e.nombre_largo";
+	    StringBuilder sql = new StringBuilder();
+	    sql.append("SELECT ubi.clave_dom, COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, ")
+	       .append("       ubi.fecha, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud ")
+	       .append("FROM ubicacion_domiciliario ubi ")
+	       .append("LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
+	       .append("LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
+	       .append("LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
+	       .append("WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ")
+	       .append("AND ubi.idtienda = ? AND DATE(ubi.fecha) = ? AND ubi.clave_dom = ? ")
+	       .append("ORDER BY ubi.fecha DESC, nombre_largo");
 
 	    try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
-	         PreparedStatement statement = con1.prepareStatement(sql)) {
+	         PreparedStatement statement = con1.prepareStatement(sql.toString())) {
 
 	        int paramIndex = 1;
-
-	        // Establecer parámetros
-	        statement.setInt(paramIndex++, idTienda);  // ID de la tienda
-	        statement.setString(paramIndex++, fecha);  // Fecha exacta
-	        statement.setString(paramIndex++, claveRapida);  // Clave rápida (usuario)
+	        statement.setInt(paramIndex++, idTienda);
+	        statement.setString(paramIndex++, fecha);
+	        statement.setString(paramIndex++, claveRapida);
 
 	        try (ResultSet rs = statement.executeQuery()) {
 	            while (rs.next()) {
 	                JSONObject js = new JSONObject();
 	                js.put("clave_usuario", rs.getString("clave_dom"));
 	                js.put("nombre_usuario", rs.getString("nombre_largo"));
-	                js.put("fecha", rs.getString("fecha"));  // Fecha con hora
+	                js.put("fecha", rs.getString("fecha"));
 	                js.put("tienda", rs.getString("tienda"));
 	                js.put("idtienda", rs.getString("idtienda"));
 	                js.put("latitud", rs.getDouble("latitud"));
 	                js.put("longitud", rs.getDouble("longitud"));
-
 	                lista.add(js);
 	            }
 	        }
-	    } catch (SQLException e) {
-	        // Registrar el error en vez de solo imprimirlo
-	        e.printStackTrace();
-	        throw new SQLException("Error al obtener el historial de ubicaciones.", e);
 	    }
-
-	
 	    return lista;
 	}
-
-
 	
 	
 	public ArrayList<JSONObject> ListaTiendas() {

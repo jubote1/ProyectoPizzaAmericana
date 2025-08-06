@@ -568,7 +568,8 @@ public class SolicitudPQRSDAO {
 					// Convertir fecha String a java.sql.Date
 					java.sql.Date fechaSql = null;
 					try {
-						fechaSql = java.sql.Date.valueOf(comentario.getFecha()); // Espera "yyyy-MM-dd"
+						LocalDate localDate = LocalDate.parse(comentario.getFecha()); // "yyyy-MM-dd"
+						fechaSql = java.sql.Date.valueOf(localDate);
 					} catch (IllegalArgumentException e) {
 						System.err.println("Fecha inválida: " + comentario.getFecha());
 						conn.rollback();
@@ -652,10 +653,11 @@ public class SolicitudPQRSDAO {
 			stmt.setInt(1, idSolicitudPqrs);
 			ResultSet rs = stmt.executeQuery();
 
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			//SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
 			while (rs.next()) {
-				String fechaStr = sdf.format(rs.getDate("fecha_comentario"));
+				LocalDate date = rs.getObject("fecha_comentario", LocalDate.class);
+				String fechaStr = date.toString(); // Ya formateado yyyy-MM-dd
 
 				ComentarioPqrs comentario = new ComentarioPqrs(rs.getInt("idpqrs_comentario"),
 						rs.getInt("idsolicitud_pqrs"), rs.getString("comentario"), fechaStr);

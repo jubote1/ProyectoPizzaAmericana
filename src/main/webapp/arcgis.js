@@ -1,17 +1,34 @@
 var marker = null;
 var view = null;
 
-require(["esri/config", 
-"esri/Map", "esri/views/MapView", 
-"esri/layers/GraphicsLayer","esri/Graphic",
-"esri/symbols/PictureMarkerSymbol" ,"esri/rest/locator",
- "esri/widgets/Search", "esri/layers/FeatureLayer"], function(esriConfig, Map, MapView,GraphicsLayer,Graphic,PictureMarkerSymbol,locator,FeatureLayer) {
+require([
+  "esri/config",
+  "esri/Map", 
+  "esri/views/MapView",
+  "esri/layers/GraphicsLayer",
+  "esri/Graphic",
+  "esri/symbols/PictureMarkerSymbol",
+  "esri/rest/locator",
+  "esri/widgets/Search",                // 8
+  "esri/layers/FeatureLayer"            // 9
+], function(
+  esriConfig,
+  Map,
+  MapView,
+  GraphicsLayer,
+  Graphic,
+  PictureMarkerSymbol,
+  locator,
+  Search,                               // 8 = Search
+  FeatureLayer                          // 9 = FeatureLayer ✅
+) {
+
 
     esriConfig.apiKey = "AAPK211b4727a21c467cab976021a4014485adqFPyZ19VbYqn4_ZnjeAgaKts7YkcKdGxdFqB_ZcyEJasSP102byhIk3tVtW_IO";
     const serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
     const map = new Map({
-      basemap: "arcgis-topographic", // Basemap layer service,
+  basemap: "gray-vector",
     ground: "world-elevation"
     });
 
@@ -33,42 +50,57 @@ require(["esri/config",
 
       });
 
-   //agregamos los poligonos que encierran las zonas
+	  const palette = [
+	    [255, 99, 71, 0.2],     // rojo
+	    [60, 179, 113, 0.2],    // verde
+	    [65, 105, 225, 0.2],    // azul
+	    [238, 130, 238, 0.2],   // violeta
+	    [255, 165, 0, 0.2],     // naranja
+	    [100, 149, 237, 0.2],   // azul claro
+	    [154, 205, 50, 0.2],    // verde lima
+	    [220, 20, 60, 0.2],     // rojo oscuro
+	    [30, 144, 255,0.2],    // azul intenso
+	    [127, 255, 212, 0.2],   // aguamarina
+	    [218, 112, 214, 0.2]    // orquídea
+	  ];
 
-     readTextFile("poligonos2.json", function(text){
-        var data = JSON.parse(text);
-        for(var i= 0;i< data.length;i++){
-        var points=data[i]["coordinates"]
-        var color =data[i]["color"]
+	  // ⚠️ Este bloque ahora no usa .when()
+	  const zonasLayer = new FeatureLayer({
+	    url: "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0",
+	    outFields: ["nombre"],
+	    popupTemplate: {
+	      title: "{nombre}",
+	      content: "Zona: {nombre}"
+	    }
+	  });
 
-        polygon = {
-            type: "polygon",
-            rings: points
-         };
+	  // Consulta los nombres únicos
+	  zonasLayer.queryFeatures({
+	    where: "1=1",
+	    outFields: ["nombre"],
+	    returnGeometry: false
+	  }).then((result) => {
+	    const uniqueNames = [...new Set(result.features.map(f => f.attributes.nombre))];
 
-             
-        simpleFillSymbol = {
-            type: "simple-fill",
-            color: color,  // Orange, opacity 80%
-            outline: {
-                color: [255, 255, 255],
-                width: 1
-            }
-        };
+	    const uniqueValueInfos = uniqueNames.map((name, idx) => ({
+	      value: name,
+	      label: name,
+	      symbol: {
+	        type: "simple-fill",
+	        color: palette[idx % palette.length],
+	        outline: { color: [255, 255, 255], width: 1 }
+	      }
+	    }));
 
+	    // Asigna renderer único
+	    zonasLayer.renderer = {
+	      type: "unique-value",
+	      field: "nombre",
+	      uniqueValueInfos: uniqueValueInfos
+	    };
 
-        polygonGraphic = new Graphic({
-            geometry: polygon,
-            symbol: simpleFillSymbol,
-        
-         });
-         graphicsLayer.add(polygonGraphic);
-        }
-
-    
-       
-      });
-
+	    map.add(zonasLayer);
+	  });
       
       const text_tienda = {
         type: "text",  // autocasts as new TextSymbol()
@@ -220,14 +252,11 @@ require(["esri/config",
                   fijarCoordenadasManualmente(response[0].location.latitude,response[0].location.longitude);
               }
             });
-  
     
           }
-    
   
       }
     
-
       $("#buscarmapa").on("click",function(){
     
         findAddress()

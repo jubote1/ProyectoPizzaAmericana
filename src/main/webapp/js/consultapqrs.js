@@ -226,10 +226,12 @@ $(document).ready(function() {
 		const listaComentarios = datos.listaComentarios;
 
 
+
 		// Cargar comentarios iniciales
 		Object.keys(listaComentarios).forEach(fecha => {
 			listaComentarios[fecha].forEach(com => {
 				agregarComentarioVisual(fecha, com.id, com.comentario);
+			
 			});
 		});
 
