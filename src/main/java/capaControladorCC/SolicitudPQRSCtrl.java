@@ -206,9 +206,9 @@ public class SolicitudPQRSCtrl {
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se descart�  registro PQRS " + idSolicitudPQRS);
+		correo.setMensaje("Se descarto  registro PQRS " + idSolicitudPQRS);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();
+		//contro.enviarCorreo();
 		//
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
@@ -297,14 +297,14 @@ public class SolicitudPQRSCtrl {
 		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOPUBLICA",
 				"CLAVECORREOPUBLICA");
-		correo.setAsunto("SE ACTUALIZ� REGISTRO PQRS # " + idSolicitudPQRS);
+		correo.setAsunto("SE ACTUALIZO REGISTRO PQRS # " + idSolicitudPQRS);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-		correo.setMensaje("Se Actualiz� PQRS con el siguiente comentario: " + comentario
+		correo.setMensaje("Se Actualizo PQRS con el siguiente comentario: " + comentario
 				+ ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS");
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();
+		//contro.enviarCorreo();
 
 		listJSON.add(respuestaJSON);
 		return (listJSON.toJSONString());
