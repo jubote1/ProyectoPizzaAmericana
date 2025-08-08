@@ -185,7 +185,7 @@ public class SolicitudPQRSCtrl {
 				+ ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: "
 				+ foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();
+		//contro.enviarCorreo();
 		//
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
