@@ -109,24 +109,34 @@ $(document).ready(function() {
 		fetch('zonas-polig.geojson')
 		  .then(r => r.json())
 		  .then(geojson => {
+		    const colorMap = {}; // Para almacenar un color por cada ID
+		    const generateColor = (key) => {
+		      // Si ya tiene un color asignado, lo usamos
+		      if (colorMap[key]) return colorMap[key];
+
+		      // Si no, generamos un color aleatorio pastel y lo guardamos
+		      const randomPastelColor = `hsl(${Math.floor(Math.random() * 360)}, 70%, 70%)`;
+		      colorMap[key] = randomPastelColor;
+		      return randomPastelColor;
+		    };
+
 		    const geojsonOptions = {
 		      style: feature => ({
-		        fillColor: { 1: 'red', 2: 'green', 3: 'blue' }[feature.properties.id] || 'purple',
+		        fillColor: generateColor(feature.properties.id || feature.properties.name),
 		        fillOpacity: 0.1,
-		        color: '#FFFFFF',
+		        color: '#888', // borde del polígono
 		        weight: 1
 		      }),
 		      onEachFeature: (feature, layer) => {
-		        // Mostrar tooltip solo si tiene nombre
+		        // Tooltip con nombre, si existe
 		        if (feature.properties.name?.trim()) {
 		          layer.bindTooltip(feature.properties.name, {
 		            direction: 'top',
-		            sticky: true,
-		            permanent: false
+		            sticky: true
 		          });
 		        }
 
-		        // Evitar que al hacer clic aparezca un recuadro o se enfoque
+		        // Evitar recuadro al hacer clic
 		        layer.on('click', function(e) {
 		          L.DomEvent.stopPropagation(e);
 		          L.DomEvent.preventDefault(e);
@@ -134,9 +144,12 @@ $(document).ready(function() {
 		      }
 		    };
 
+		    // Añadir a ambos mapas
 		    L.geoJSON(geojson, geojsonOptions).addTo(map);
 		    L.geoJSON(geojson, geojsonOptions).addTo(map_detalle);
-		  });
+		  })
+		  .catch(err => console.error("Error cargando GeoJSON:", err));
+
 
 		initializePage();
 	});
@@ -605,6 +618,31 @@ $(document).ready(function() {
 		map_detalle._rutaActual = polyline;
 	}
 
+	
+	function agregarRutaRealista(coordenadas) {
+	    // Asegurar que están en formato [lat, lng]
+	    const waypoints = coordenadas.map(([lng, lat]) => L.latLng(lat, lng));
+
+	    // Crear la ruta con Leaflet Routing Machine y OSRM público
+	    const control = L.Routing.control({
+	        waypoints: waypoints,
+	        router: L.Routing.osrmv1({
+	            serviceUrl: 'https://router.project-osrm.org/route/v1'
+	        }),
+	        lineOptions: {
+	            styles: [{ color: '#03AA46', weight: 6, opacity: 0.8 }]
+	        },
+	        createMarker: function () { return null; }, // sin marcadores
+	        addWaypoints: false,
+	        draggableWaypoints: false,
+	        fitSelectedRoutes: true,
+	        show: false
+	    }).addTo(map_detalle);
+
+	    // Guardar para poder eliminar después
+	    map_detalle._rutaControl = control;
+	}
+
 	async function enviarRuta(coordenadas) {
 		agregarRutaLineal(coordenadas);
 	}
@@ -621,6 +659,12 @@ $(document).ready(function() {
 			map_detalle.removeLayer(map_detalle._rutaActual);
 			delete map_detalle._rutaActual;
 		}
+		
+		// Si ya hay una ruta previa, eliminarla
+		    if (map_detalle._rutaControl) {
+		        map_detalle.removeControl(map_detalle._rutaControl);
+		    }
+
 
 		infoDetails.innerHTML = ` <h3>Dirección:</h3><p>Seleccione un registro de la tabla para mostrar la información...</p></p>`;
 		marcadorDetalle.setLatLng([0, 0]);

@@ -51,17 +51,17 @@ require([
       });
 
 	  const palette = [
-	    [255, 99, 71, 0.2],     // rojo
-	    [60, 179, 113, 0.2],    // verde
-	    [65, 105, 225, 0.2],    // azul
-	    [238, 130, 238, 0.2],   // violeta
-	    [255, 165, 0, 0.2],     // naranja
-	    [100, 149, 237, 0.2],   // azul claro
-	    [154, 205, 50, 0.2],    // verde lima
-	    [220, 20, 60, 0.2],     // rojo oscuro
-	    [30, 144, 255,0.2],    // azul intenso
-	    [127, 255, 212, 0.2],   // aguamarina
-	    [218, 112, 214, 0.2]    // orquídea
+	    [255, 99, 71, 0.1],     // rojo
+	    [60, 179, 113, 0.1],    // verde
+	    [65, 105, 225, 0.1],    // azul
+	    [238, 130, 238, 0.1],   // violeta
+	    [255, 165, 0, 0.1],     // naranja
+	    [100, 149, 237, 0.1],   // azul claro
+	    [154, 205, 50, 0.1],    // verde lima
+	    [220, 20, 60, 0.1],     // rojo oscuro
+	    [30, 144, 255,0.1],    // azul intenso
+	    [127, 255, 212, 0.1],   // aguamarina
+	    [218, 112, 214, 0.1]    // orquídea
 	  ];
 
 	  // ⚠️ Este bloque ahora no usa .when()
@@ -88,7 +88,7 @@ require([
 	      symbol: {
 	        type: "simple-fill",
 	        color: palette[idx % palette.length],
-	        outline: { color: [255, 255, 255], width: 1 }
+	        outline: { color: [194, 194, 194], width: 1 }
 	      }
 	    }));
 
@@ -111,7 +111,7 @@ require([
         xoffset: 3,
         yoffset: 3,
         font: {  // autocasts as new Font()
-          size: 9,
+          size: 8,
           family: "Orbitron",
           weight: "bold"
         }
