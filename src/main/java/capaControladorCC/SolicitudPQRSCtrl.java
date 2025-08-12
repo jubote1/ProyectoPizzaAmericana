@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import capaConexionPOS.ConexionBaseDatos;
+import capaDAOCC.AreaEscalamientoPQRSDAO;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EscalamientoPQRSDAO;
@@ -470,6 +471,18 @@ public class SolicitudPQRSCtrl {
 	public void insertarEscalamientoPQRS(EscalamientoPQRS escalamiento)
 	{
 		EscalamientoPQRSDAO.insertarEscalamientoPQRS(escalamiento);
+		//Realizamos envio de correo al area encargada del escalamiento
+		ArrayList correos = AreaEscalamientoPQRSDAO.obtenerCorreoAreaEscalamientoPQRS(escalamiento.getAreaResponsable());
+		System.out.println(correos.toString());
+		Correo correo = new Correo();
+		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		correo.setAsunto("SE LE HA ESCALADO LA PQRS # " + escalamiento.getIdSolicitudPQRS());
+		correo.setContrasena(claveCorreo);
+		correo.setUsuarioCorreo(cuentaCorreo);
+		correo.setMensaje("Se le ha escalado la PQRS # " + escalamiento.getIdSolicitudPQRS() + " por favor ingresar al sistema y revisar.");
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		contro.enviarCorreo();
 	}
 
 
