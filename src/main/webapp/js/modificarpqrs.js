@@ -21,6 +21,9 @@ var fecha_inicial = "";
 var fecha_final = "";
 var validarCorreo = true;
 var estadoTexto = "";
+var fecha_hora_registro = "";
+var fecha_hora_cierre = "";
+var envioEncuestaPqrs = false;
 const historialContainer = document.getElementById("historialComentarios");
 // Validar usuario
 $.ajax({
@@ -233,13 +236,13 @@ $(document).ready(function() {
 		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
 		$('#ccVinculado').prop('checked', datos.ccVinculado);
+		fecha_hora_registro = datos.fecha_hora_registro || "";
+		fecha_hora_cierre = datos.fecha_hora_cierre || "";
+		envioEncuestaPqrs = datos.envio_encuesta || false;
 
-
-		if(datos.idestado == 3)
-		{
+		if (datos.idestado == 3) {
 			$('#escalar').attr('disabled', false);
-		}else
-		{
+		} else {
 			$('#escalar').attr('disabled', true);
 		}
 
@@ -378,28 +381,23 @@ function validarFechas(date1, date2) {
 
 
 
-function escalarPQRS()
-{
+function escalarPQRS() {
 	$('#modalescalarpqrs').modal('show');
 }
 
-function realizarEscalamientoPQRS()
-{
+function realizarEscalamientoPQRS() {
 	var areaResponsable = encodeURIComponent($("#selectAreaResponsableEscalar option:selected").val());
-	if(areaResponsable != "" && idSolicitudPQRS > 0)
-	{
+	if (areaResponsable != "" && idSolicitudPQRS > 0) {
 		$.getJSON(server + 'InsertarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudPQRS + "&arearesponsable=" + areaResponsable, function(data) {
-		if(data.resultado == 'OK')
-		{
-			mostrarAlerta('warning','Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
-			$('#modalescalarpqrs').modal('hide');
+			if (data.resultado == 'OK') {
+				mostrarAlerta('warning', 'Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
+				$('#modalescalarpqrs').modal('hide');
 
-		}else 
-		{
-			mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
-		}
-		
-	});
+			} else {
+				mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
+			}
+
+		});
 	}
 }
 
@@ -464,7 +462,10 @@ function consultarPQRS() {
 				'idprioridad': data1[i].idprioridad,
 				'zona': data1[i].zona,
 				'ccVinculado': data1[i].ccVinculado,
-				'correo': data1[i].correo
+				'correo': data1[i].correo,
+				'fecha_hora_registro': data1[i].fecha_hora_registro,
+				'fecha_hora_cierre': data1[i].fecha_hora_cierre,
+				'envio_encuesta': data1[i].envio_encuesta
 			}).draw();
 		}
 	});
@@ -954,7 +955,6 @@ function EditarPQRS() {
 	} else {
 		var fechaSolicitud = $("#fecha").val();
 		var tipoSolicitud = $("#selectSolicitudpqrs option:selected").val();
-		//idCliente
 		var tempTienda = $("#selectTiendaspqrs option:selected").attr('id');
 		var idOrigen = $("#selectOrigen option:selected").attr('id');
 		var idFoco = $("#selectFoco option:selected").attr('id');
@@ -1022,7 +1022,8 @@ function EditarPQRS() {
 					Swal.showLoading();
 				}
 			});
-
+			let iconoFinal = 'success';
+			let mensajeFinal = '';
 			try {
 				// Enviar solicitud AJAX
 				const response = await $.ajax({
@@ -1064,75 +1065,101 @@ function EditarPQRS() {
 
 				const respuesta = response?.[0];
 
-				if (respuesta?.idSolicitudPQRS > 0) {
 
-					estadoTexto = $("#selectEstado option:selected").text().trim();
-					let mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
-					let iconoFinal = 'success';
+				if (respuesta && respuesta.idSolicitudPQRS) {
+					mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
+					let estadoTexto = $("#selectEstado option:selected").text().trim();
+
 
 					if (estadoTexto && estadoTexto.toLowerCase() === "cerrado") {
-						// Enviar encuesta automáticamente si está cerrada
-						const cliente = nombresEncode;
-						const idpqrs = respuesta.idSolicitudPQRS;
-						const telefonoLimpio = tel.replace(/\D/g, ''); // Elimina espacios, guiones, etc.
-						const regexCelularColombia = /^3\d{9}$/;
 						
-						if (telefonoLimpio && regexCelularColombia.test(telefonoLimpio)) {
-							const telefono = telefonoLimpio;
-							try {
-								const result = await fetch(server + "CorreoEncuestaPqrs", {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/x-www-form-urlencoded"
-									},
-									body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
-								});
+						
+						if(!envioEncuestaPqrs){
+							// Enviar encuesta automáticamente si está cerrada
+											const cliente = nombresEncode;
+											const idpqrs = respuesta.idSolicitudPQRS;
+											const telefonoLimpio = tel.replace(/\D/g, ''); // Elimina espacios, guiones, etc.
+											const regexCelularColombia = /^3\d{9}$/;
 
-								const data = await result.json();
+											if (telefonoLimpio && regexCelularColombia.test(telefonoLimpio)) {
+												const telefono = telefonoLimpio;
+												try {
+													const result = await fetch(server + "CorreoEncuestaPqrs", {
+														method: "POST",
+														headers: {
+															"Content-Type": "application/x-www-form-urlencoded"
+														},
+														body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
+													});
 
-								if (data.success) {
-									mensajeFinal += "<br>✅ La encuesta de satisfacción fue enviada correctamente.";
-								} else {
-									mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción: " + data.message;
-									iconoFinal = 'warning';
-								}
-							} catch (error) {
-								console.error("Error al enviar encuesta:", error);
-								mensajeFinal += "<br>⚠️ Ocurrió un error al enviar la encuesta de satisfacción.";
-								iconoFinal = 'warning';
-							}
+													const data = await result.json();
+
+													if (data.success) {
+														mensajeFinal += "<br>✅ La encuesta de satisfacción fue enviada correctamente.";
+														const resutActEnvio = await fetch(server + "ActualizarEstadoEncuestaPqrs", {
+															method: "POST",
+															headers: {
+																"Content-Type": "application/x-www-form-urlencoded"
+															},
+															body: new URLSearchParams({ idsolicitudpqrs: idpqrs,envio_encuesta: true })
+														});
+														
+														const data_actEnvio = await resutActEnvio.json();
+														if (!data_actEnvio.success) {
+															mensajeFinal += "<br>⚠️ El estado del envío de la encuesta podría no haberse actualizado correctamente.";
+														}
+
+													} else {
+														mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción: " + data.message;
+														iconoFinal = 'warning';
+													}
+												} catch (error) {
+													console.error("Error al enviar encuesta:", error);
+													mensajeFinal += "<br>⚠️ Ocurrió un error al enviar la encuesta de satisfacción.";
+													iconoFinal = 'warning';
+												}
+											} else {
+												mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción porque el teléfono registrado era inválido.";
+												iconoFinal = 'warning';
+											}
 						}else{
-							mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción por que el teléfono registrado era invalido.: " + data.message;
-							iconoFinal = 'warning';
+							
+							mensajeFinal += "<br>✅ El envío de la encuesta ya había sido registrado anteriormente.";
 						}
+						
+				
 					}
 
-					Swal.fire({
-						icon: iconoFinal,
-						title: 'Resultado',
-						html: mensajeFinal,
-						customClass: { icon: 'swal-icon-small' }
-					});
 
-
-					limpiarPQRS();
-
-					// Recargar DataTable si existe
-					if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
-						$('#grid-consultaPQRS').DataTable().clear().draw();
-					}
 				} else {
-					throw new Error('La respuesta no contiene un ID válido.');
+					mensajeFinal = "No se pudo actualizar la pqrs. La respuesta no contiene un ID válido.";
+					iconoFinal = "error";
 				}
 
 			} catch (error) {
-				console.error('Error al actualizar solicitud:', error);
+				mensajeFinal = '❌ Ocurrió un error inesperado: ' + error.message;
+				iconoFinal = 'error';
+			} finally {
+
+				Swal.close(); // Cierra el spinner primero
+
+
 				Swal.fire({
-					icon: 'error',
-					title: 'Error',
-					text: 'Ocurrió un error al actualizar la solicitud. Intente nuevamente.'
+					icon: iconoFinal,
+					title: 'Resultado',
+					html: mensajeFinal,
+					customClass: { icon: 'swal-icon-small' }
 				});
+
+
+				limpiarPQRS();
+
+				// Recargar DataTable si existe
+				if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
+					$('#grid-consultaPQRS').DataTable().clear().draw();
+				}
 			}
+
 		});
 
 
@@ -1208,6 +1235,9 @@ function limpiarPQRS() {
 	});
 	idSolicitudPQRS = 0;
 	estadoTexto = "";
+	fecha_hora_registro = "";
+	fecha_hora_cierre ="";
+	envioEncuestaPqrs = false;
 
 	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	$('#img-gallery').html('');
@@ -1695,7 +1725,7 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 		});
 		return;
 	}
-	
+
 	inputCorreoEnvio.dispatchEvent(new Event('input'));
 
 	if (!validarCorreoEnv) {
@@ -1724,7 +1754,7 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 	// 🔽 Luego sí convierte los saltos de línea reales a <br>
 	contenido = contenido.replace(/\n/g, "<br>");
 
-	console.log(contenido);
+	
 
 
 	Swal.fire({
@@ -1792,95 +1822,114 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 
 
 document.getElementById('btnEnviarEncuestaS').addEventListener('click', function() {
+    const idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
 
-	const idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
+    if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
+        Swal.fire({
+            icon: 'warning',
+            text: 'Por favor, seleccione una solicitud antes de continuar.',
+            customClass: { icon: 'swal-icon-small' }
+        });
+        return;
+    }
 
-	if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
-		Swal.fire({
-			icon: 'warning',
-			text: 'Por favor, seleccione una solicitud antes de continuar.',
+    let mensajesAdvertencia = [];
+   
+    if (envioEncuestaPqrs) {
+        mensajesAdvertencia.push("⚠️ La encuesta ya fue enviada anteriormente.");
+    }
+
+    if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
+        mensajesAdvertencia.push("⚠️ La solicitud no está cerrada.");
+    }
+
+    if (mensajesAdvertencia.length > 0) {
+        Swal.fire({
+            html: mensajesAdvertencia.join("<br>") + "<br><br>¿Desea enviar la encuesta igualmente?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, enviar',
+            cancelButtonText: 'Cancelar',
 			customClass: { icon: 'swal-icon-small' }
-		});
-		return;
-	}
+        }).then((result) => {
+            if (result.isConfirmed) {
+                enviarEncuesta();
+            }
+        });
+    } else {
+        enviarEncuesta();
+    }
 
-	/*if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
-		Swal.fire({
-			icon: 'warning',
-			text: 'La solicitud PQRS debe estar en estado "Cerrado" para enviar la encuesta.',
-			customClass: { icon: 'swal-icon-small' }
-		});
-		return;
-	}*/
+    function enviarEncuesta() {
+        const idpqrs = idSolicitudPQRS;
+        const cliente = document.getElementById("nombres").value;
+        const correo = document.getElementById("correo").value;
+        const telefonoInput = document.getElementById("telefono").value;
 
-	const idpqrs = idSolicitudPQRS;
-	const cliente = document.getElementById("nombres").value;
-	const correo = document.getElementById("correo").value;
-	const telefonoInput = document.getElementById("telefono").value;
+        Swal.fire({
+            title: 'Encuesta de satisfacción',
+            input: 'text',
+            inputLabel: 'Teléfono del cliente',
+            inputPlaceholder: 'Ingrese un número...',
+            inputValue: telefonoInput,
+            showCancelButton: true,
+            confirmButtonText: 'Enviar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value) {
+                    return '¡Debes ingresar un número de celular!';
+                }
+                const regexCelularColombia = /^3\d{9}$/;
+                if (!regexCelularColombia.test(value)) {
+                    return '¡Número inválido! Debe empezar por 3 y tener 10 dígitos.';
+                }
+                return null;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const telefono = result.value;
+                Swal.showLoading();
 
-	Swal.fire({
-		title: 'Encuesta de satisfacción',
-		input: 'text',
-		inputLabel: 'Teléfono del cliente',
-		inputPlaceholder: 'Ingrese un número...',
-		inputValue: telefonoInput,
-		showCancelButton: true,
-		confirmButtonText: 'Enviar',
-		cancelButtonText: 'Cancelar',
-		inputValidator: (value) => {
-			if (!value) {
-				return '¡Debes ingresar un número de celular!';
-			}
-			const regexCelularColombia = /^3\d{9}$/;
-			if (!regexCelularColombia.test(value)) {
-				return '¡Número inválido! Debe empezar por 3 y tener 10 dígitos.';
-			}
-			return null;
-		}
-	}).then((result) => {
-		if (result.isConfirmed) {
-			const telefono = result.value;
-
-			Swal.showLoading();
-
-			fetch(server + "CorreoEncuestaPqrs", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded"
-				},
-				body: new URLSearchParams({
-					cliente,
-					correo,
-					idpqrs,
-					telefono
-				})
-			})
-				.then(response => response.json())
-				.then(data => {
-					Swal.close();
-					if (data.success) {
-						Swal.fire({
-							icon: 'success',
-							text: '¡Encuesta enviada con éxito!',
-							customClass: { icon: 'swal-icon-small' }
-						});
-					} else {
-						Swal.fire({
-							icon: 'error',
-							text: "Error: " + data.message,
-							customClass: { icon: 'swal-icon-small' }
-						});
-					}
-				})
-				.catch(error => {
-					Swal.close();
-					console.error("Error en la solicitud:", error);
-					Swal.fire({
-						icon: 'error',
-						text: "No se pudo enviar el correo. Verifica la consola.",
-						customClass: { icon: 'swal-icon-small' }
-					});
-				});
-		}
-	});
+                fetch(server + "CorreoEncuestaPqrs", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        cliente,
+                        correo,
+                        idpqrs,
+                        telefono
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        Swal.close();
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                text: '¡Encuesta enviada con éxito!',
+                                customClass: { icon: 'swal-icon-small' }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                text: "Error: " + data.message,
+                                customClass: { icon: 'swal-icon-small' }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.close();
+                        console.error("Error en la solicitud:", error);
+                        Swal.fire({
+                            icon: 'error',
+                            text: "No se pudo enviar el correo. Verifica la consola.",
+                            customClass: { icon: 'swal-icon-small' }
+                        });
+                    });
+            }
+        });
+    }
 });
+

@@ -65,8 +65,8 @@ public class SolicitudPQRSDAO {
 			return 0;
 		}
 
-		String insert = "INSERT INTO solicitudPQRS (fechasolicitud, tiposolicitud, idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable, idpedidotienda, valor_pedido, valor_descuento, porcentaje_descuento, descuento_redimido, idpedidoredencion, id_usuario_registro, id_usuario_redencion, idestado, idprioridad, idmotivo, cc_vinculado, correo) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		String insert = "INSERT INTO solicitudPQRS (fechasolicitud, tiposolicitud, idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idorigen, idfoco, tipo, area_responsable, idpedidotienda, valor_pedido, valor_descuento, porcentaje_descuento, descuento_redimido, idpedidoredencion, id_usuario_registro, id_usuario_redencion, idestado, idprioridad, idmotivo, cc_vinculado, correo, fecha_hora_cierre) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 		try (PreparedStatement pstmt = con1.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS)) {
 			pstmt.setString(1, fechaSolicitudFinal);
@@ -97,6 +97,13 @@ public class SolicitudPQRSDAO {
 			pstmt.setInt(26, solicitud.getIdmotivo());
 			pstmt.setInt(27, solicitud.isCcVinculado() ? 1 : 0);
 			pstmt.setString(28, correo);
+			
+			   // Si el estado es 4, ponemos la fecha/hora actual, si no, null
+		    if (solicitud.getIdestado() == 4) {
+		        pstmt.setTimestamp(29, new Timestamp(System.currentTimeMillis()));
+		    } else {
+		        pstmt.setNull(29, java.sql.Types.TIMESTAMP);
+		    }
 
 			logger.info("Ejecutando: " + pstmt.toString());
 			pstmt.executeUpdate();
@@ -140,6 +147,7 @@ public class SolicitudPQRSDAO {
 
 		int descuentoRedimido = solicitud.isDescuentoRedimido() ? 1 : 0;
 		int ccVinculado = solicitud.isCcVinculado() ? 1 : 0;
+		int envio_encuesta = solicitud.isEnvio_encuesta() ? 1 : 0;
 		String correo = solicitud.getCorreo().isEmpty() ? null : solicitud.getCorreo();
 
 		try {
@@ -153,7 +161,7 @@ public class SolicitudPQRSDAO {
 		String update = "UPDATE solicitudPQRS SET "
 				+ "fechasolicitud = ?, tiposolicitud = ?, idcliente = ?, idtienda = ?, nombres = ?, apellidos = ?, telefono = ?, direccion = ?, zona = ?, idmunicipio = ?, comentario = ?, "
 				+ "idorigen = ?, idfoco = ?, tipo = ?, area_responsable = ?, idpedidotienda = ?, valor_pedido = ?, valor_descuento = ?, porcentaje_descuento = ?, descuento_redimido = ?, "
-				+ "idpedidoredencion = ?, id_usuario_registro = ?, id_usuario_redencion = ?, idestado = ?, idprioridad = ?, idmotivo = ? ,cc_vinculado = ? , correo = ? "
+				+ "idpedidoredencion = ?, id_usuario_registro = ?, id_usuario_redencion = ?, idestado = ?, idprioridad = ?, idmotivo = ? ,cc_vinculado = ? , correo = ?, fecha_hora_cierre = ? "
 				+ "WHERE idsolicitudpqrs = ?";
 
 		try (PreparedStatement pstmt = con1.prepareStatement(update)) {
@@ -185,7 +193,15 @@ public class SolicitudPQRSDAO {
 			pstmt.setInt(26, solicitud.getIdmotivo());
 			pstmt.setInt(27, ccVinculado);
 			pstmt.setString(28, correo);
-			pstmt.setInt(29, idSolicitudPQRSIns);
+			
+		    // Si el estado es 4, ponemos la fecha/hora actual, si no, null
+		    if (solicitud.getIdestado() == 4) {
+		        pstmt.setTimestamp(29, new Timestamp(System.currentTimeMillis()));
+		    } else {
+		        pstmt.setNull(29, java.sql.Types.TIMESTAMP);
+		    }
+			pstmt.setInt(30, idSolicitudPQRSIns);
+
 
 			logger.info("Ejecutando: " + pstmt.toString());
 			pstmt.executeUpdate();
@@ -276,7 +292,7 @@ public class SolicitudPQRSDAO {
 		StringBuilder consulta = new StringBuilder(
 				"SELECT a.idsolicitudPQRS, a.fechasolicitud, a.tiposolicitud, a.nombres, a.apellidos, a.direccion,a.zona, a.idfoco, "
 						+ "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.idcliente,a.cc_vinculado, a.correo, "
-						+ "a.tipo, a.area_responsable, "
+						+ "a.tipo, a.area_responsable, a.fecha_hora_registro ,a.fecha_hora_cierre,a.envio_encuesta , "
 						+ "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, "
 						+ "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion , a.id_usuario_registro , a.id_usuario_redencion ,a.idestado , a.idprioridad ,a.idmotivo, e.descripcion as nombreEstado "
 						+ "FROM solicitudPQRS a " + "JOIN origen_pqrs b ON a.idorigen = b.idorigen "
@@ -333,6 +349,17 @@ public class SolicitudPQRSDAO {
 					cadaSolicitud.setFoco(rs.getString("nombre_foco"));
 					cadaSolicitud.setImagenes(rs.getInt("imagenes"));
 					cadaSolicitud.setNombreEstado(rs.getString("nombreEstado"));
+					Timestamp tsRegistro = rs.getTimestamp("fecha_hora_registro");
+					if (tsRegistro != null) {
+					    cadaSolicitud.setFecha_hora_registro(tsRegistro.toLocalDateTime());
+					}
+
+					Timestamp tsCierre = rs.getTimestamp("fecha_hora_cierre");
+					if (tsCierre != null) {
+					    cadaSolicitud.setFecha_hora_cierre(tsCierre.toLocalDateTime());
+					}
+
+					cadaSolicitud.setEnvio_encuesta(rs.getBoolean("envio_encuesta"));
 					consultaSolicitudes.add(cadaSolicitud);
 
 				}
@@ -566,10 +593,11 @@ public class SolicitudPQRSDAO {
 
 				for (ComentarioPqrs comentario : listaComentarios) {
 					// Convertir fecha String a java.sql.Date
-					java.sql.Date fechaSql = null;
+				    LocalDate localDate  = null;
+
 					try {
-						LocalDate localDate = LocalDate.parse(comentario.getFecha()); // "yyyy-MM-dd"
-						fechaSql = java.sql.Date.valueOf(localDate);
+						localDate = LocalDate.parse(comentario.getFecha()); // "yyyy-MM-dd"
+	
 					} catch (IllegalArgumentException e) {
 						System.err.println("Fecha inválida: " + comentario.getFecha());
 						conn.rollback();
@@ -581,12 +609,12 @@ public class SolicitudPQRSDAO {
 							// Insertar
 							stmtInsert.setInt(1, idSolicitudPqrs);
 							stmtInsert.setString(2, comentario.getComentario());
-							stmtInsert.setDate(3, fechaSql);
+							stmtInsert.setObject(3, localDate);
 							stmtInsert.addBatch();
 						} else {
 							// Actualizar
 							stmtUpdate.setString(1, comentario.getComentario());
-							stmtUpdate.setDate(2, fechaSql);
+							stmtUpdate.setObject(2, localDate);
 							stmtUpdate.setInt(3, comentario.getId());
 							stmtUpdate.addBatch();
 						}
@@ -920,5 +948,31 @@ public class SolicitudPQRSDAO {
 
         return idPregunta;
     }
+    
+    public static boolean actualizarEnvioEncuestaPqrs(int idpqrs, boolean estado) {
+        if (idpqrs <= 0) {
+            System.out.println("ID inválido para actualizar PQRS.");
+            return false;
+        }
+
+        String update = "UPDATE solicitudPQRS SET envio_encuesta = ? WHERE idsolicitudpqrs = ?";
+        int envio_encuesta = estado ? 1 : 0;
+
+        try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+             PreparedStatement pstmt = con1.prepareStatement(update)) {
+
+            pstmt.setInt(1, envio_encuesta);
+            pstmt.setInt(2, idpqrs);
+
+            int filasAfectadas = pstmt.executeUpdate();
+            return filasAfectadas > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error al actualizar PQRS: " + e);
+            return false;
+        }
+    }
+
+    
 
 }
