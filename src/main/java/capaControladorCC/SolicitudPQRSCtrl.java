@@ -486,7 +486,37 @@ public class SolicitudPQRSCtrl {
 	}
 
 
-
+	/**
+	 * Método que retorna un arreglo JSON con los escalamientos de una pqrs.
+	 * @param idSolicitudPQRS
+	 * @return
+	 */
+	public String consultarEscalamientoPQRS(int idSolicitudPQRS)
+	{
+		ArrayList<EscalamientoPQRS> escalamientos = EscalamientoPQRSDAO.consultarEscalamientoPQRS(idSolicitudPQRS);
+		JSONArray listJSON = new JSONArray();
+		JSONObject objectJSON = new JSONObject();
+		String strSol = "";
+		for(EscalamientoPQRS escTemp: escalamientos)
+		{
+			objectJSON = new JSONObject();
+			objectJSON.put("idescalamiento", escTemp.getIdEscalamiento());
+			objectJSON.put("idsolicitudpqrs", escTemp.getIdSolicitudPQRS());
+			objectJSON.put("arearesponsable", escTemp.getAreaResponsable());
+			objectJSON.put("fechaescalamiento", escTemp.getFechaEscalamiento());
+			objectJSON.put("fecharesolucion", escTemp.getFechaResolucion());
+			if(escTemp.isSolucionado())
+			{
+				strSol = "SI";
+			}else
+			{
+				strSol = "NO";
+			}
+			objectJSON.put("solucionado", strSol);
+			listJSON.add(objectJSON);
+		}
+		return(listJSON.toJSONString());
+	}
 	
     
 	   public static void main(String[] args) {

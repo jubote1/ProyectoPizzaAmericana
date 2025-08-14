@@ -11,6 +11,7 @@ var productos;
 var memcode = 0;
 var idCliente = 0;
 var dtconsultasPQRS;
+var dtEscalamientoPQRS;
 var idSolicitudPQRS;
 var imgs;
 var fulImgBox;
@@ -101,7 +102,16 @@ $(document).ready(function() {
 	div = document.getElementById("img-gallery");
 
 
-
+	dtEscalamientoPQRS =  $('#grid-escalamientoPQRS').DataTable( {
+    		"aoColumns": [
+            { "mData": "idescalamiento" },
+            { "mData": "idsolicitudpqrs" },
+            { "mData": "arearesponsable" },
+            { "mData": "fechaescalamiento" },
+            { "mData": "fecharesolucion" },
+            { "mData": "solucionado" }
+        ]
+    	} );
 
 	dtconsultasPQRS = $('#grid-consultaPQRS').DataTable({
 		"aoColumns": [
@@ -281,6 +291,22 @@ $(document).ready(function() {
 			//Una vez cargadas todas las imagenes realizamos la carga de las mismas
 			agregarImagen();
 		});
+		//Hacemos consulta para llenar los escalamientos
+		$.getJSON(server + 'ConsultarEscalamientoPQRS?idsolicitudpqrs=' + datos.idconsultaPQRS, function(data2) {
+
+			var escalamientos = data2;
+			dtEscalamientoPQRS.clear().draw();
+			for (var i = 0; i < data2.length; i++) {
+				dtEscalamientoPQRS.row.add({
+				"idescalamiento": data2[i].idescalamiento,
+				"idsolicitudpqrs": data2[i].idsolicitudpqrs,
+				"arearesponsable": data2[i].arearesponsable,
+				"fechaescalamiento": data2[i].fechaescalamiento,
+				"fecharesolucion": data2[i].fecharesolucion,
+				"solucionado": data2[i].solucionado
+			}).draw();
+			}
+		});
 	});
 
 
@@ -424,6 +450,11 @@ function consultarPQRS() {
 	// Si pasa a este punto es porque paso las validaciones
 	if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
 		table = $('#grid-consultaPQRS').DataTable();
+
+	}
+
+	if ($.fn.dataTable.isDataTable('#grid-escalamientoPQRS')) {
+		dtEscalamientoPQRS = $('#grid-escalamientoPQRS').DataTable();
 
 	}
 	$.getJSON(server + 'ConsultaIntegradaSolicitudesPQRS?fechainicial=' + fechaini + "&fechafinal=" + fechafin + "&tienda=" + tienda + "&tiposolicitud=" + tipoSolicitud + "&descuentoredimido=" + filtrodescuentoRed, function(data1) {
