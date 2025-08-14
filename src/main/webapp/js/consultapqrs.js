@@ -18,6 +18,9 @@ var div;
 var datosReporte = [];
 var fecha_inicial = "";
 var fecha_final = "";
+
+var fecha_hora_registro = "";
+var fecha_hora_cierre = "";
 const contenedorComentarios = document.getElementById("contenedorComentarios");
 // Validar usuario
 $.ajax({
@@ -193,7 +196,9 @@ $(document).ready(function() {
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
 		$('#ccVinculado').prop('checked', datos.ccVinculado);
 		$('#correo').val(datos.correo);
-
+		fecha_hora_registro = datos.fecha_hora_registro || "";
+		fecha_hora_cierre = datos.fecha_hora_cierre || "";
+		
 		const selectUsuRegistro = document.getElementById("selectUsuarioRegistro");
 		const selectUsuRedencion = document.getElementById("selectUsuarioRedencion");
 		const selectPrioridad = document.getElementById("selectPrioridad");
@@ -389,7 +394,9 @@ function consultarPQRS() {
 				"idprioridad" :data1[i].idprioridad,
 				"idmotivo" :data1[i].idmotivo,
 				"ccVinculado":data1[i].ccVinculado,
-				"correo":data1[i].correo
+				"correo":data1[i].correo,				
+				'fecha_hora_registro': data1[i].fecha_hora_registro,
+				'fecha_hora_cierre': data1[i].fecha_hora_cierre
 			}).draw();
 		}
 	});
@@ -456,6 +463,9 @@ function limpiarConsultaPQRS() {
 	$(' #apellidos,#correo, #valorPedido, #idpedidotienda, #idpedidoredencion , #valorDescuento, #arearesponsable, #PorcentajeDesc').val("")
 	contenedorComentarios.innerHTML = "";
 	$('#img-gallery').html('');
+	
+	fecha_hora_registro ="";
+	fecha_hora_cierre ="";
 }
 
 

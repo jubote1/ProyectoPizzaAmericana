@@ -20,90 +20,66 @@ import capaModeloCC.ComentarioPqrs;
 
 @WebServlet("/ActualizarSolicitudPQRS")
 public class ActualizarSolicitudPQRS extends HttpServlet {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public ActualizarSolicitudPQRS() {
-		super();
-	}
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setHeader("Access-Control-Allow-Origin", "*");
+        resp.setContentType("application/json; charset=UTF-8");
+        req.setCharacterEncoding("UTF-8");
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		request.setCharacterEncoding("UTF-8");
-		response.setCharacterEncoding("UTF-8");
-		response.setContentType("application/json; charset=UTF-8");
-		Logger logger = Logger.getLogger("log_file");
+        SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
 
-		// Parámetros tipo String
-		String fechasolicitud = request.getParameter("fechasolicitud");
-		String tiposolicitud = request.getParameter("tiposolicitud");
-		String nombres = request.getParameter("nombres");
-		String apellidos = request.getParameter("apellidos");
-		String telefono = request.getParameter("telefono");
-		String direccion = request.getParameter("direccion");
-		String zona = request.getParameter("zona");
-		String tipo = request.getParameter("tipo");
-		String areaResponsable = request.getParameter("arearesponsable");
-		String correo = request.getParameter("correo");
-		// Parámetros numéricos con parseo seguro
-		int idSolicitudPQRS = parseIntSafe(request, "idsolicitudpqrs");
-		int idcliente = parseIntSafe(request, "idcliente");
-		int idtienda = parseIntSafe(request, "idtienda");
-		int idmunicipio = parseIntSafe(request, "idmunicipio");
-		int idOrigen = parseIntSafe(request, "idorigen");
-		int idFoco = parseIntSafe(request, "idfoco");
-		int idpedidotienda = parseIntSafe(request, "idpedidotienda");
-		double valorPedido = parseDoubleSafe(request, "valorPedido");
-		double valorDescuento = parseDoubleSafe(request, "valorDescuento");
-		int porcentajeDescuento= parseIntSafe(request,"porcentajeDescuento");
-		boolean descuentoRedimido = "true".equalsIgnoreCase(request.getParameter("descuentoRedimido"));
-		int idpedidoredencion = parseIntSafe(request ,"idpedidoredencion");
-		int idusuarioRegistro = parseIntSafe(request ,"idusuarioRegistro");
-		int idusuarioRedencion = parseIntSafe(request,"idusuarioRedencion");
-		String listaComentariosStr = request.getParameter("listaComentarios");
-		Type listType = new TypeToken<List<ComentarioPqrs>>(){}.getType();
-		List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
-		int idestado = parseIntSafe(request,"idestado");
-		int idprioridad = parseIntSafe(request,"idprioridad");
-		int idmotivo = parseIntSafe(request,"idmotivo");
-		boolean ccVinculado = "true".equalsIgnoreCase(request.getParameter("ccVinculado"));
+        String listaComentariosStr = req.getParameter("listaComentarios");
+        Type listType = new TypeToken<List<ComentarioPqrs>>() {}.getType();
+        List<ComentarioPqrs> listaComentarios = new Gson().fromJson(listaComentariosStr, listType);
 
-//		Enumeration<String> paramNames = request.getParameterNames();
-//		while (paramNames.hasMoreElements()) {
-//		    String paramName = paramNames.nextElement();
-//		    String paramValue = request.getParameter(paramName);
-//		    System.out.println("Parámetro: " + paramName + " = " + paramValue);
-//		}
-		// Lógica principal
-		SolicitudPQRSCtrl solicitudCtrl = new SolicitudPQRSCtrl();
-		String respuesta = solicitudCtrl.actualizarSolicitudPQRS(idSolicitudPQRS, fechasolicitud, tiposolicitud,
-				idcliente, idtienda, nombres, apellidos, telefono, direccion, zona, idmunicipio, "", idOrigen,
-				idFoco, tipo, areaResponsable, idpedidotienda, valorPedido, valorDescuento,porcentajeDescuento,descuentoRedimido,idpedidoredencion,listaComentarios,idusuarioRegistro,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado,correo);
+        String respuesta = solicitudCtrl.actualizarSolicitudPQRS(
+            parseInt(req, "idsolicitudpqrs"),
+            req.getParameter("fechasolicitud"),
+            req.getParameter("tiposolicitud"),
+            parseInt(req, "idcliente"),
+            parseInt(req, "idtienda"),
+            req.getParameter("nombres"),
+            req.getParameter("apellidos"),
+            req.getParameter("telefono"),
+            req.getParameter("direccion"),
+            req.getParameter("zona"),
+            parseInt(req, "idmunicipio"),
+            "", // Comentario vacío
+            parseInt(req, "idorigen"),
+            parseInt(req, "idfoco"),
+            req.getParameter("tipo"),
+            req.getParameter("arearesponsable"),
+            parseInt(req, "idpedidotienda"),
+            parseDouble(req, "valorPedido"),
+            parseDouble(req, "valorDescuento"),
+            parseInt(req, "porcentajeDescuento"),
+            Boolean.parseBoolean(req.getParameter("descuentoRedimido")),
+            parseInt(req, "idpedidoredencion"),
+            listaComentarios,
+            parseInt(req, "idusuarioRegistro"),
+            parseInt(req, "idusuarioRedencion"),
+            parseInt(req, "idestado"),
+            parseInt(req, "idprioridad"),
+            parseInt(req, "idmotivo"),
+            Boolean.parseBoolean(req.getParameter("ccVinculado")),
+            req.getParameter("correo")
+        );
 
-		// Salida
-		PrintWriter out = response.getWriter();
-		out.write(respuesta);
-	}
+        resp.getWriter().write(respuesta);
+    }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		doGet(request, response);
-	}
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        doGet(req, resp);
+    }
 
-	// Métodos auxiliares de parseo seguro
-	private int parseIntSafe(HttpServletRequest request, String paramName) {
-		try {
-			return Integer.parseInt(request.getParameter(paramName));
-		} catch (Exception e) {
-			return 0;
-		}
-	}
+    private int parseInt(HttpServletRequest req, String name) {
+        try { return Integer.parseInt(req.getParameter(name)); } catch (Exception e) { return 0; }
+    }
 
-	private double parseDoubleSafe(HttpServletRequest request, String paramName) {
-		try {
-			return Double.parseDouble(request.getParameter(paramName));
-		} catch (Exception e) {
-			return 0.0;
-		}
-	}
+    private double parseDouble(HttpServletRequest req, String name) {
+        try { return Double.parseDouble(req.getParameter(name)); } catch (Exception e) { return 0.0; }
+    }
 }

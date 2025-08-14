@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -258,6 +259,7 @@ public class SolicitudPQRSCtrl {
 			cadaSolicitudJSON.put("zona", cadaSolicitud.getZona() );
 			cadaSolicitudJSON.put("ccVinculado", cadaSolicitud.isCcVinculado() );
 			cadaSolicitudJSON.put("correo", cadaSolicitud.getCorreo() );
+			cadaSolicitudJSON.put("envio_encuesta", cadaSolicitud.isEnvio_encuesta());
 			
 
 			try {
@@ -530,7 +532,10 @@ public class SolicitudPQRSCtrl {
 			}
 	    }
 	   
-	   
+	   public String actualizarEstadoEncPqrs(int idpqrs, boolean estado) {
+		    return "{\"success\":" + SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idpqrs, estado) + "}";
+		}
+
 }
 
 

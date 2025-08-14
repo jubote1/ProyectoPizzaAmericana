@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.net.URLEncoder;
+import java.text.Normalizer;
 import java.util.ArrayList;
 
 public class UbicacionCtrl {
@@ -60,7 +61,7 @@ public class UbicacionCtrl {
 
 			String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 			String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
-
+            
 			Point punto = obtenerCoordenadasDesdeArcGIS(direccion, serviceUrl);
 			if (punto != null) {
 				resultado = consultarZonas(punto, tipo_cliente, lead, queryUrl);
@@ -71,6 +72,8 @@ public class UbicacionCtrl {
 				JsonObject coords = obtenerCoordenadasGMps(direccion);
 				double lat = coords.get("Latitud").getAsDouble();
 				double lng = coords.get("Longitud").getAsDouble();
+				System.out.println("punto g: "+lat);
+				System.out.println("punto g: "+lng);
 				resultado = consultarZonas(new Point(lng, lat, SpatialReferences.getWgs84()), tipo_cliente, lead,
 						queryUrl);
 			}
@@ -106,6 +109,9 @@ public class UbicacionCtrl {
 			double latitude = displayLocation.getY();
 			double longitude = displayLocation.getX();
 
+			
+			System.out.println("punto a: "+latitude);
+			System.out.println("punto a: "+longitude);
 			return displayLocation;
 		}
 		return null;
@@ -303,6 +309,8 @@ public class UbicacionCtrl {
 
 					coords.addProperty("Longitud", lng);
 					coords.addProperty("Latitud", lat);
+					
+					
 				}
 			}
 		} catch (Exception e) {
@@ -313,11 +321,67 @@ public class UbicacionCtrl {
 	}
 
 	public static void main(String[] args) {
-		String direccion = "Calle 42 Sur #69A 68 - UNIDAD MANZANILLO Int 2325 T 3 SAN ANTONIO DE PRADO";
-		String  Barrio = "Urbanizacion Manzanillo";
-		String Municipio ="San antonio de prado";
-		String txtdirecc = direccion + ", " +Municipio+", "+Barrio+", Antioquia, Colombia";
-		Resultado resultado = ubicarDireccionEnTienda(txtdirecc, "informacion", null);
+		String direccion = "Carrera 36#66g114";
+		String  Barrio = "Manrique";
+		String Municipio ="Medellin";
+
+		 String lm = limpiarDireccion(direccion,Municipio,Barrio);
+	
+
+		Resultado resultado = ubicarDireccionEnTienda(lm, "informacion", null);
 		System.out.println(resultado.getResultado());
+		System.out.println(lm);
 	}
+	
+
+
+	public static String limpiarDireccion(String direccion, String municipio, String barrio) {
+	    // 1. Quitar emojis y caracteres raros
+	    direccion = direccion.replaceAll("[^\\p{ASCII}]", " ");
+	    barrio = barrio.replaceAll("[^\\p{ASCII}]", " ");
+	    municipio = municipio.replaceAll("[^\\p{ASCII}]", " ");
+
+	    // 2. Cortar en la primera coma (evita textos adicionales largos)
+	    int comaDir = direccion.indexOf(",");
+	    if (comaDir > 0) direccion = direccion.substring(0, comaDir);
+
+	    int comaBarrio = barrio.indexOf(",");
+	    if (comaBarrio > 0) barrio = barrio.substring(0, comaBarrio);
+
+	    // 3. Concatenar todo
+	    String completa = direccion + ", " + municipio + ", " + barrio + ", Antioquia, Colombia";
+
+	    // 4. Quitar tildes
+	    completa = java.text.Normalizer.normalize(completa, java.text.Normalizer.Form.NFD);
+	    completa = completa.replaceAll("\\p{M}", "");
+
+	    // 5. Pasar todo a minúsculas para normalizar
+	    completa = completa.toLowerCase();
+
+	    // 6. Normalizar abreviaturas comunes
+	    completa = completa.replaceAll("\\bcrra\\b|\\bcrr\\b|\\bcra\\b|\\bcr\\b", "carrera");
+	    completa = completa.replaceAll("\\bcll\\b|\\bcalle\\b", "calle");
+	    completa = completa.replaceAll("\\bav\\b|\\bavenida\\b", "avenida");
+	    completa = completa.replaceAll("\\bint\\b|\\binterior\\b", "interior");
+	    completa = completa.replaceAll("\\bapto\\b|\\bapartamento\\b", "apartamento");
+
+	    // 7. Separar letras y números pegados
+	    completa = completa.replaceAll("(?<=[a-zA-Z])(?=\\d)", " ");
+	    completa = completa.replaceAll("(?<=\\d)(?=[a-zA-Z])", " ");
+
+	    // 8. Separar cardinales (sur, norte, etc.)
+	    completa = completa.replaceAll("(\\d+\\s*[a-zA-Z])\\s*(sur|norte|este|oeste)", "$1 $2");
+
+	    // 9. Unir número y letra si están separados por un espacio
+	    completa = completa.replaceAll("\\b(\\d+)\\s+([A-Za-z]{1,2})\\b", "$1$2");
+
+	    // 10. Quitar espacios múltiples
+	    completa = completa.replaceAll("\\s+", " ").trim();
+
+	    return completa;
+	}
+
+
+
+
 }
