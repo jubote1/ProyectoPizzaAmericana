@@ -4,6 +4,8 @@ package capaControladorCC;
 import javax.mail.*;
 import javax.mail.internet.*;
 
+import org.json.JSONObject;
+
 import com.google.gson.JsonObject;
 
 import capaDAOCC.GeneralDAO;
@@ -43,8 +45,8 @@ public class CorreoPQRS {
         return new String(input.readAllBytes(), StandardCharsets.UTF_8);
     }
 
-    private static JsonObject enviarCorreo(String destinatario, String asunto, String contenidoHtml, CorreoElectronico infoCorreo) throws Exception {
-  	    JsonObject json = new JsonObject();
+    private static JSONObject enviarCorreo(String destinatario, String asunto, String contenidoHtml, CorreoElectronico infoCorreo) throws Exception {
+    	JSONObject json = new JSONObject();
   	    
   	    try {
   	        Session session = configurarSesion(infoCorreo);
@@ -64,22 +66,22 @@ public class CorreoPQRS {
   	        Transport.send(message);
   	        
   	        // ✅ JSON de éxito
-  	        json.addProperty("success", true);
-  	        json.addProperty("message", ""); // mensaje vacío si todo fue bien
+  	        json.put("success", true);
+  	        json.put("message", ""); // mensaje vacío si todo fue bien
   	    }catch(Exception e) {
   	    	
   	        e.printStackTrace();
   	        // ❌ JSON de error
-  	        json.addProperty("success", false);
-  	        json.addProperty("message", "Error al enviar el correo: " + e.getMessage());
+  	        json.put("success", false);
+  	        json.put("message", "Error al enviar el correo: " + e.getMessage());
   	    }
 
   	    return json;
 
     }
 
-    public static JsonObject enviarConfirmacion(String correo, String nombreCliente, int idpqrs) {
-  	    JsonObject json = new JsonObject();
+    public static JSONObject enviarConfirmacion(String correo, String nombreCliente, int idpqrs) {
+    	JSONObject json = new JSONObject();
         try {
         
             CorreoElectronico credenciales = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
@@ -94,16 +96,16 @@ public class CorreoPQRS {
 
         } catch (Exception e) {
             e.printStackTrace();
-  	        json.addProperty("success", false);
-  	        json.addProperty("message", "Error al enviar el correo: " + e.getMessage());
+  	        json.put("success", false);
+  	        json.put("message", "Error al enviar el correo: " + e.getMessage());
 
         }
         
         return json;
     }
 
-    public static JsonObject enviarRespuesta(String correo, String nombreCliente, int idpqrs, String respuesta) {
-  	    JsonObject json = new JsonObject();
+    public static JSONObject enviarRespuesta(String correo, String nombreCliente, int idpqrs, String respuesta) {
+    	JSONObject json = new JSONObject();
     	try {
         	
             CorreoElectronico credenciales = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
@@ -119,15 +121,15 @@ public class CorreoPQRS {
 
         } catch (Exception e) {
             e.printStackTrace();
-  	        json.addProperty("success", false);
-  	        json.addProperty("message", "Error al enviar el correo: " + e.getMessage());
+  	        json.put("success", false);
+  	        json.put("message", "Error al enviar el correo: " + e.getMessage());
         }
     	return json;
     }
     
     
-    public static JsonObject enviarParsing(String correoCliente, String nombreCliente,String  telefono, int idpqrs) {
-    	 JsonObject json = new JsonObject();
+    public static JSONObject enviarParsing(String correoCliente, String nombreCliente,String  telefono, int idpqrs) {
+    	JSONObject json = new JSONObject();
         try {
 			//Recuperamos el correo para envío del parsing
 			ArrayList correos = GeneralDAO.obtenerCorreosParametro("PARSERENCUESTAFINALPQRS");
@@ -147,18 +149,19 @@ public class CorreoPQRS {
 					boolean resp = contro.enviarCorreo();
 					
 					if(resp) {
-				        json.addProperty("success", true);
-			  	        json.addProperty("message", ""); // mensaje vacío si todo fue bien
+				        json.put("success", true);
+			  	        json.put("message", ""); // mensaje vacío si todo fue bien
 					}else {
-				        json.addProperty("success", false);
-			  	        json.addProperty("message", "Ocurrio un error al enviar el correo que dispara la encuesta de satisfacción.");
+				        json.put("success", false);
+			  	        json.put("message", "Ocurrio un error al enviar el correo que dispara la encuesta de satisfacción.");
 
 					}
         } catch (Exception e) {
             e.printStackTrace();
-	        json.addProperty("success", false);
-  	        json.addProperty("message", "Error al enviar el correo que dispara la encuesta de satisfacción: " + e.getMessage());
+	        json.put("success", false);
+  	        json.put("message", "Error al enviar el correo que dispara la encuesta de satisfacción: " + e.getMessage());
         }
+
         return json;
     }
 }

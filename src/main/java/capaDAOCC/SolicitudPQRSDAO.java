@@ -349,14 +349,20 @@ public class SolicitudPQRSDAO {
 					cadaSolicitud.setFoco(rs.getString("nombre_foco"));
 					cadaSolicitud.setImagenes(rs.getInt("imagenes"));
 					cadaSolicitud.setNombreEstado(rs.getString("nombreEstado"));
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
 					Timestamp tsRegistro = rs.getTimestamp("fecha_hora_registro");
 					if (tsRegistro != null) {
-					    cadaSolicitud.setFecha_hora_registro(tsRegistro.toLocalDateTime());
+					    cadaSolicitud.setFecha_hora_registro(tsRegistro.toLocalDateTime().format(formatter));
+					} else {
+					    cadaSolicitud.setFecha_hora_registro("");
 					}
 
 					Timestamp tsCierre = rs.getTimestamp("fecha_hora_cierre");
 					if (tsCierre != null) {
-					    cadaSolicitud.setFecha_hora_cierre(tsCierre.toLocalDateTime());
+					    cadaSolicitud.setFecha_hora_cierre(tsCierre.toLocalDateTime().format(formatter));
+					} else {
+					    cadaSolicitud.setFecha_hora_cierre("");
 					}
 
 					cadaSolicitud.setEnvio_encuesta(rs.getBoolean("envio_encuesta"));
@@ -810,6 +816,7 @@ public class SolicitudPQRSDAO {
 				prioridad.setDescripcion(rs.getString("descripcion"));
 				prioridad.setT_resp_min(rs.getInt("t_resp_min"));
 				prioridad.setT_resp_max(rs.getInt("t_resp_max"));
+				prioridad.setColor(rs.getString("color"));
 				ListaPrioridad.add(prioridad);
 			}
 		} catch (SQLException e) {

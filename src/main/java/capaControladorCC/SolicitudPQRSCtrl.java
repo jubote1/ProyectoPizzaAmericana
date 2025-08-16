@@ -19,7 +19,7 @@ import org.json.simple.parser.JSONParser;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
+import capaModeloCC.AreaEscalamiento;
 import capaConexionPOS.ConexionBaseDatos;
 import capaDAOCC.AreaEscalamientoPQRSDAO;
 import capaDAOCC.ClienteDAO;
@@ -87,48 +87,48 @@ public class SolicitudPQRSCtrl {
 			String nombres, String apellidos, String telefono, String direccion, String zona, int idmunicipio,
 			String comentario, int idOrigen, int idFoco, String tipo, String areaResponsable, int idpedidotienda,
 			double valorPedido, double valorDescuento, int porcentajeDescuento, boolean descuentoRedimido,
-			int idpedidoredencion,List<ComentarioPqrs> listaComentarios,int idusuarioRegistro,int idusuarioRedencion,int idestado,int idprioridad,int idmotivo,boolean ccVinculado,String correo) {
+			int idpedidoredencion, List<ComentarioPqrs> listaComentarios, int idusuarioRegistro, int idusuarioRedencion,
+			int idestado, int idprioridad, int idmotivo, boolean ccVinculado, String correo) {
 		JSONArray listJSON = new JSONArray();
 		SolicitudPQRS solicitud = new SolicitudPQRS(0, fechaSolicitud, tipoSolicitud, idcliente, idtienda, nombres,
 				apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen, idFoco, tipo, areaResponsable,
-				idpedidotienda, valorPedido, valorDescuento, porcentajeDescuento, descuentoRedimido, idpedidoredencion ,idusuarioRegistro ,idusuarioRedencion,idestado,idprioridad,idmotivo,ccVinculado,correo);
+				idpedidotienda, valorPedido, valorDescuento, porcentajeDescuento, descuentoRedimido, idpedidoredencion,
+				idusuarioRegistro, idusuarioRedencion, idestado, idprioridad, idmotivo, ccVinculado, correo);
 
-		//Tienda objTienda = TiendaDAO.retornarTienda(idtienda);
-		//String nombreTienda = objTienda.getNombreTienda();
-		//FocoPqrs foco = FocoPqrsDAO.retornarFocoPqrs(idFoco);
+		// Tienda objTienda = TiendaDAO.retornarTienda(idtienda);
+		// String nombreTienda = objTienda.getNombreTienda();
+		// FocoPqrs foco = FocoPqrsDAO.retornarFocoPqrs(idFoco);
 		int idSolPQRSIns = SolicitudPQRSDAO.insertarSolicitudPQRS(solicitud);
-		boolean registroComent =SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns,listaComentarios);
+		boolean registroComent = SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns, listaComentarios);
 		/*
-		// Se realiza env�o del correo con la solicitud
-		Correo correo = new Correo();
-		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		//Extraemos el comentario para enviar el correo
-		String comentarioCorreo = "";
-		for (ComentarioPqrs comentarioTemp : listaComentarios) 
-		{
-			comentarioCorreo = comentarioCorreo + " " + comentarioTemp.getComentario();
-		}
-	  	correo.setAsunto("SE REGISTRO PQRS # " + idSolPQRSIns);
-		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
-		correo.setContrasena(claveCorreo);
-		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda "
-				+ nombreTienda + " con el siguiente comentario: " + comentario
-				+ " \n Informaci�n Adicional del cliente telefono: " + telefono + " Direccion: " + direccion
-				+ ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: "
-				+ foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable);
-		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();	
-		*/		
-		if(idSolPQRSIns != 0 && registroComent) {
+		 * // Se realiza env�o del correo con la solicitud Correo correo = new Correo();
+		 * String cuentaCorreo =
+		 * ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI"); String
+		 * claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		 * //Extraemos el comentario para enviar el correo String comentarioCorreo = "";
+		 * for (ComentarioPqrs comentarioTemp : listaComentarios) { comentarioCorreo =
+		 * comentarioCorreo + " " + comentarioTemp.getComentario(); }
+		 * correo.setAsunto("SE REGISTRO PQRS # " + idSolPQRSIns); ArrayList correos =
+		 * GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
+		 * correo.setContrasena(claveCorreo); correo.setUsuarioCorreo(cuentaCorreo);
+		 * correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " +
+		 * apellidos + " para la tienda " + nombreTienda +
+		 * " con el siguiente comentario: " + comentario +
+		 * " \n Informaci�n Adicional del cliente telefono: " + telefono +
+		 * " Direccion: " + direccion +
+		 * ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: "
+		 * + foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " +
+		 * areaResponsable); ControladorEnvioCorreo contro = new
+		 * ControladorEnvioCorreo(correo, correos); contro.enviarCorreo();
+		 */
+		if (idSolPQRSIns != 0 && registroComent) {
 			CorreoPQRS confpqrs = new CorreoPQRS();
-			if(correo != null && !correo.isEmpty()) {
-				confpqrs.enviarConfirmacion(correo,nombres,idSolPQRSIns);
+			if (correo != null && !correo.isEmpty()) {
+				confpqrs.enviarConfirmacion(correo, nombres, idSolPQRSIns);
 			}
-		
+
 		}
-			
+
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
 		ResultadoJSON.put("registroComentarios", registroComent);
@@ -161,37 +161,72 @@ public class SolicitudPQRSCtrl {
 			int idcliente, int idtienda, String nombres, String apellidos, String telefono, String direccion,
 			String zona, int idmunicipio, String comentario, int idOrigen, int idFoco, String tipo,
 			String areaResponsable, int idpedidotienda, double valorPedido, double valorDescuento,
-			int porcentajeDescuento, boolean descuentoRedimido, int idpedidoredencion ,List<ComentarioPqrs> listaComentarios ,int idusuarioRegistro,int idusuarioRedencion,int idestado,int idprioridad,int idmotivo, boolean ccVinculado, String correo_cliente) {
+			int porcentajeDescuento, boolean descuentoRedimido, int idpedidoredencion,
+			List<ComentarioPqrs> listaComentarios, int idusuarioRegistro, int idusuarioRedencion, int idestado,
+			int idprioridad, int idmotivo, boolean ccVinculado, String correo_cliente, boolean envio_encuesta) {
+
 		JSONArray listJSON = new JSONArray();
+		JSONObject ResultadoJSON = new JSONObject();
+
+		// Crear y actualizar solicitud
 		SolicitudPQRS solicitud = new SolicitudPQRS(idSolicitudPQRS, fechaSolicitud, tipoSolicitud, idcliente, idtienda,
 				nombres, apellidos, telefono, direccion, zona, idmunicipio, comentario, idOrigen, idFoco, tipo,
 				areaResponsable, idpedidotienda, valorPedido, valorDescuento, porcentajeDescuento, descuentoRedimido,
-				idpedidoredencion ,idusuarioRegistro ,idusuarioRedencion,idestado,idprioridad,idmotivo, ccVinculado, correo_cliente);
+				idpedidoredencion, idusuarioRegistro, idusuarioRedencion, idestado, idprioridad, idmotivo, ccVinculado,
+				correo_cliente);
 
-		Tienda objTienda = TiendaDAO.retornarTienda(idtienda);
-		String nombreTienda = objTienda.getNombreTienda();
-		FocoPqrs foco = FocoPqrsDAO.retornarFocoPqrs(idFoco);
+		String nombreTienda = TiendaDAO.retornarTienda(idtienda).getNombreTienda();
+		String focoNombre = FocoPqrsDAO.retornarFocoPqrs(idFoco).getNombreFoco();
+
 		int idSolPQRSIns = SolicitudPQRSDAO.actualizarSolicitudPQRS(solicitud);
-		boolean registroComent =SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns,listaComentarios);
-		// Se realiza env�o del correo con la solicitud
+		boolean registroComent = SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns, listaComentarios);
+
+		// Datos correo (no se envía ahora)
 		Correo correo = new Correo();
-		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		correo.setAsunto("SE ACTUALIZ� REGISTRO PQRS # " + idSolPQRSIns);
-		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
-		correo.setContrasena(claveCorreo);
-		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se registro PQRS para el cliente " + nombres + " " + apellidos + " para la tienda "
-				+ nombreTienda + " con el siguiente comentario: " + comentario
-				+ " \n Informaci�n Adicional del cliente telefono: " + telefono + " Direccion: " + direccion
-				+ ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS \n\n Foco de la PQRS: "
-				+ foco.getNombreFoco() + " \n\n Tipo: " + tipo + " , Area Responble: " + areaResponsable);
-		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		//contro.enviarCorreo();
-		//
-		JSONObject ResultadoJSON = new JSONObject();
+		correo.setAsunto("SE ACTUALIZÓ REGISTRO PQRS # " + idSolPQRSIns);
+		correo.setUsuarioCorreo(ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI"));
+		correo.setContrasena(ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI"));
+		correo.setMensaje("Se registró PQRS para el cliente " + nombres + " " + apellidos + " para la tienda "
+				+ nombreTienda + " con el siguiente comentario: " + comentario + "\n Información Adicional: Teléfono: "
+				+ telefono + ", Dirección: " + direccion + "\n Revisar en Contact Center > PQRS"
+				+ "\n\n Foco de la PQRS: " + focoNombre + "\n\n Tipo: " + tipo + ", Área Responsable: "
+				+ areaResponsable);
+		// ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+		// contro.enviarCorreo();
+
+		// Variables de control
+		boolean nuevo_envio = false;
+		boolean estado_encuesta = false;
+		boolean telefono_valido = true;
+
+		// Validar envío encuesta
+		if (idSolPQRSIns > 0 && idestado == 4 && !envio_encuesta) {
+			String telefonoLimpio = (telefono != null) ? telefono.replaceAll("\\D", "") : "";
+			telefono_valido = telefonoLimpio.matches("^3\\d{9}$");
+
+			if (telefono_valido) {
+				try {
+					org.json.JSONObject respuesta = new CorreoPQRS().enviarParsing(correo_cliente, nombres,
+							telefonoLimpio, idSolPQRSIns);
+					nuevo_envio = respuesta.getBoolean("success");
+
+					if (nuevo_envio) {
+						estado_encuesta = SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idSolPQRSIns, true);
+					}
+				} catch (Exception e) {
+					System.out.println("Error envío encuesta PQRS: " + e.getMessage());
+					e.printStackTrace();
+				}
+			}
+		}
+
+		// Construir respuesta
+		ResultadoJSON.put("envioEncuesta", nuevo_envio);
 		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
 		ResultadoJSON.put("registroComentarios", registroComent);
+		ResultadoJSON.put("estadoEncuesta", estado_encuesta);
+		ResultadoJSON.put("telefono_valido", telefono_valido);
+
 		listJSON.add(ResultadoJSON);
 		return listJSON.toJSONString();
 	}
@@ -210,7 +245,7 @@ public class SolicitudPQRSCtrl {
 		correo.setUsuarioCorreo(cuentaCorreo);
 		correo.setMensaje("Se descarto  registro PQRS " + idSolicitudPQRS);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		//contro.enviarCorreo();
+		// contro.enviarCorreo();
 		//
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
@@ -251,23 +286,25 @@ public class SolicitudPQRSCtrl {
 			cadaSolicitudJSON.put("descuentoRedimido", cadaSolicitud.isDescuentoRedimido());
 			cadaSolicitudJSON.put("idpedidoredencion", cadaSolicitud.getIdpedidoredencion());
 			cadaSolicitudJSON.put("idusuarioRegistro", cadaSolicitud.getIdusuarioRegistro());
-			cadaSolicitudJSON.put("idusuarioRedencion", cadaSolicitud.getIdusuarioRedencion() );
-			cadaSolicitudJSON.put("idestado", cadaSolicitud.getIdestado() );
+			cadaSolicitudJSON.put("idusuarioRedencion", cadaSolicitud.getIdusuarioRedencion());
+			cadaSolicitudJSON.put("idestado", cadaSolicitud.getIdestado());
 			cadaSolicitudJSON.put("nombreEstado", cadaSolicitud.getNombreEstado());
-			cadaSolicitudJSON.put("idprioridad", cadaSolicitud.getIdprioridad() );
-			cadaSolicitudJSON.put("idmotivo", cadaSolicitud.getIdmotivo() );
-			cadaSolicitudJSON.put("zona", cadaSolicitud.getZona() );
-			cadaSolicitudJSON.put("ccVinculado", cadaSolicitud.isCcVinculado() );
-			cadaSolicitudJSON.put("correo", cadaSolicitud.getCorreo() );
+			cadaSolicitudJSON.put("idprioridad", cadaSolicitud.getIdprioridad());
+			cadaSolicitudJSON.put("idmotivo", cadaSolicitud.getIdmotivo());
+			cadaSolicitudJSON.put("zona", cadaSolicitud.getZona());
+			cadaSolicitudJSON.put("ccVinculado", cadaSolicitud.isCcVinculado());
+			cadaSolicitudJSON.put("correo", cadaSolicitud.getCorreo());
 			cadaSolicitudJSON.put("envio_encuesta", cadaSolicitud.isEnvio_encuesta());
-			
+			cadaSolicitudJSON.put("fecha_hora_registro",cadaSolicitud.getFecha_hora_registro());
+			cadaSolicitudJSON.put("fecha_hora_cierre",cadaSolicitud.getFecha_hora_cierre());
 
 			try {
-				cadaSolicitudJSON.put("listaComentarios",obtenerComentariosPqrs(cadaSolicitud.getIdsolicitud()));			
+				cadaSolicitudJSON.put("listaComentarios", obtenerComentariosPqrs(cadaSolicitud.getIdsolicitud()));
 			} catch (Exception e) {
 				System.err.println("Error al obtener comentarios para solicitud " + cadaSolicitud.getIdsolicitud()
 						+ ": " + e.getMessage());
-				cadaSolicitudJSON.put("listaComentarios",  new org.json.JSONObject() ); // valor por defecto en caso de error
+				cadaSolicitudJSON.put("listaComentarios", new org.json.JSONObject()); // valor por defecto en caso de
+																						// error
 			}
 
 			listJSON.add(cadaSolicitudJSON);
@@ -307,7 +344,7 @@ public class SolicitudPQRSCtrl {
 		correo.setMensaje("Se Actualizo PQRS con el siguiente comentario: " + comentario
 				+ ". \n Si desea m�s informaci�n favor revisar en el sistema de Contact Center en el apartado de PQRS");
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		//contro.enviarCorreo();
+		// contro.enviarCorreo();
 
 		listJSON.add(respuestaJSON);
 		return (listJSON.toJSONString());
@@ -345,7 +382,7 @@ public class SolicitudPQRSCtrl {
 		resultadoJSON.put("idimagen", idImagen);
 		return (resultadoJSON.toJSONString());
 	}
-	
+
 	public String eliminarSolicitudPQRSImagen(int idimagen) {
 		boolean resultado = SolicitudPQRSImagenesDAO.eliminarSolicitudPQRSImagenPorId(idimagen);
 		JSONObject resultadoJSON = new JSONObject();
@@ -353,128 +390,119 @@ public class SolicitudPQRSCtrl {
 		return (resultadoJSON.toJSONString());
 	}
 
-
 	public String consultarSolicitudPQRSImagenes(int idSolicitudPRQS) {
-		ArrayList<org.json.JSONObject> imagenes = SolicitudPQRSImagenesDAO.consultarSolicitudPQRSImagenes(idSolicitudPRQS);
+		ArrayList<org.json.JSONObject> imagenes = SolicitudPQRSImagenesDAO
+				.consultarSolicitudPQRSImagenes(idSolicitudPRQS);
 		return (imagenes.toString());
 	}
 
 	public org.json.JSONObject obtenerComentariosPqrs(int idSolicitudPqrs) {
-	    Map<String, List<ComentarioPqrs>> comentarios = SolicitudPQRSDAO.obtenerComentariosPqrs(idSolicitudPqrs);
-	    Gson gson = new Gson();  // Ya no se necesita formateador de fechas
-	    String jsonString = gson.toJson(comentarios); // convierte Map a JSON string
-	    org.json.JSONObject comentariosJson = new org.json.JSONObject(jsonString); // parsea string a JSONObject
-	    return comentariosJson;
+		Map<String, List<ComentarioPqrs>> comentarios = SolicitudPQRSDAO.obtenerComentariosPqrs(idSolicitudPqrs);
+		Gson gson = new Gson(); // Ya no se necesita formateador de fechas
+		String jsonString = gson.toJson(comentarios); // convierte Map a JSON string
+		org.json.JSONObject comentariosJson = new org.json.JSONObject(jsonString); // parsea string a JSONObject
+		return comentariosJson;
 	}
 
 	public String obtenerEstadoPqrs() {
-	    List<EstadoPqrs> estados = SolicitudPQRSDAO.obtenerEstadoPqrs(); // esta ya retorna lista
-	    Gson gson = new Gson();
-	    return gson.toJson(estados); // convierte a JSON
+		List<EstadoPqrs> estados = SolicitudPQRSDAO.obtenerEstadoPqrs(); // esta ya retorna lista
+		Gson gson = new Gson();
+		return gson.toJson(estados); // convierte a JSON
 	}
-	
 
-	
-	public String insertarPqrsWeb(
-	        String fechasolicitud,
-	        String tiposolicitud,
-	        int idtienda,
-	        String nombres,
-	        String apellidos,
-	        String telefono,
-	        String direccion,
-	        int idmunicipio,
-	        String comentario,
-	        String politicaDatos,
-	        String email
-	) {
-	    String fechaFormateada = "";
-	    try {
-	        SimpleDateFormat formatoEntrada = new SimpleDateFormat("dd/MM/yyyy");
-	        SimpleDateFormat formatoSalida = new SimpleDateFormat("yyyy-MM-dd");
-	        Date fechaDate = formatoEntrada.parse(fechasolicitud);
-	        fechaFormateada = formatoSalida.format(fechaDate);
-	    } catch (Exception e) {
-	        System.err.println("⚠️ Error al convertir fecha: " + fechasolicitud);
-	        e.printStackTrace();
-	    }
+	public String obtenerAreasEscalamiento() {
+		List<AreaEscalamiento> areas = AreaEscalamientoPQRSDAO.obtenerAreaEscalamientoPQRS(); // esta ya retorna lista
+		Gson gson = new Gson();
+		return gson.toJson(areas); // convierte a JSON
+	}
 
-	    ClienteCtrl clienteCtrl = new ClienteCtrl();
-	    Cliente cliente = clienteCtrl.obtenerClienteUltimoPedido(telefono);
-	    int idcliente;
-	    int idtiendaCliente;
-	    if (cliente.getIdcliente() == 0) {
-	        Cliente clienteObj = new Cliente();
-	        clienteObj.setIdtienda(idtienda);
-	        clienteObj.setTelefonoCelular(telefono);
-	        clienteObj.setTelefono(telefono);
-	        clienteObj.setNombres(nombres);
-	        clienteObj.setApellidos(apellidos);
-	        clienteObj.setEmail(email);
-	        clienteObj.setPoliticaDatos(politicaDatos);
-	        idcliente = ClienteDAO.insertarClienteWb(clienteObj);
-	        idtiendaCliente = idtienda;
-	    } else {
-	        idcliente = cliente.getIdcliente();
-	        idtiendaCliente = cliente.getIdtienda();
-	    }
-	    
-	    SolicitudPQRS solicitud = new SolicitudPQRS(
-	        0, fechasolicitud, tiposolicitud, idcliente, idtiendaCliente, nombres,
-	        apellidos, telefono, direccion, "", idmunicipio, "", 2, 2,
-	        "externa", "tienda", 0, 0.0, 0.0, 0, false, 0, 0, 0, 1, 2,0,false,email
-	    );
+	public String insertarPqrsWeb(String fechasolicitud, String tiposolicitud, int idtienda, String nombres,
+			String apellidos, String telefono, String direccion, int idmunicipio, String comentario,
+			String politicaDatos, String email) {
+		String fechaFormateada = "";
+		try {
+			SimpleDateFormat formatoEntrada = new SimpleDateFormat("dd/MM/yyyy");
+			SimpleDateFormat formatoSalida = new SimpleDateFormat("yyyy-MM-dd");
+			Date fechaDate = formatoEntrada.parse(fechasolicitud);
+			fechaFormateada = formatoSalida.format(fechaDate);
+		} catch (Exception e) {
+			System.err.println("⚠️ Error al convertir fecha: " + fechasolicitud);
+			e.printStackTrace();
+		}
 
-	    int idSolPQRSIns = SolicitudPQRSDAO.insertarSolicitudPQRS(solicitud);
+		ClienteCtrl clienteCtrl = new ClienteCtrl();
+		Cliente cliente = clienteCtrl.obtenerClienteUltimoPedido(telefono);
+		int idcliente;
+		int idtiendaCliente;
+		if (cliente.getIdcliente() == 0) {
+			Cliente clienteObj = new Cliente();
+			clienteObj.setIdtienda(idtienda);
+			clienteObj.setTelefonoCelular(telefono);
+			clienteObj.setTelefono(telefono);
+			clienteObj.setNombres(nombres);
+			clienteObj.setApellidos(apellidos);
+			clienteObj.setEmail(email);
+			clienteObj.setPoliticaDatos(politicaDatos);
+			idcliente = ClienteDAO.insertarClienteWb(clienteObj);
+			idtiendaCliente = idtienda;
+		} else {
+			idcliente = cliente.getIdcliente();
+			idtiendaCliente = cliente.getIdtienda();
+		}
 
-	    boolean registroComent = false;
-	    if (comentario != null && !comentario.trim().isEmpty()) {
-	        ComentarioPqrs comentarioPqrs = new ComentarioPqrs(0, 0, comentario.trim(), fechaFormateada, true);
-	        List<ComentarioPqrs> comentarioList = new ArrayList<>();
-	        comentarioList.add(comentarioPqrs);
-	        registroComent = SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns, comentarioList);
-	    }
-	    
-		if(idSolPQRSIns != 0 && registroComent) {
+		SolicitudPQRS solicitud = new SolicitudPQRS(0, fechasolicitud, tiposolicitud, idcliente, idtiendaCliente,
+				nombres, apellidos, telefono, direccion, "", idmunicipio, "", 2, 2, "externa", "tienda", 0, 0.0, 0.0, 0,
+				false, 0, 0, 0, 1, 2, 0, false, email);
+
+		int idSolPQRSIns = SolicitudPQRSDAO.insertarSolicitudPQRS(solicitud);
+
+		boolean registroComent = false;
+		if (comentario != null && !comentario.trim().isEmpty()) {
+			ComentarioPqrs comentarioPqrs = new ComentarioPqrs(0, 0, comentario.trim(), fechaFormateada, true);
+			List<ComentarioPqrs> comentarioList = new ArrayList<>();
+			comentarioList.add(comentarioPqrs);
+			registroComent = SolicitudPQRSDAO.modificarComentariosPqrs(idSolPQRSIns, comentarioList);
+		}
+
+		if (idSolPQRSIns != 0 && registroComent) {
 			CorreoPQRS confpqrs = new CorreoPQRS();
-			if(email != null && !email.isEmpty()) {
-				confpqrs.enviarConfirmacion(email,nombres,idSolPQRSIns);
+			if (email != null && !email.isEmpty()) {
+				confpqrs.enviarConfirmacion(email, nombres, idSolPQRSIns);
 			}
 		}
 
-	    JSONArray listJSON = new JSONArray();
-	    JSONObject ResultadoJSON = new JSONObject();
-	    ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
-	    ResultadoJSON.put("registroComentarios", registroComent);
-	    listJSON.add(ResultadoJSON);
+		JSONArray listJSON = new JSONArray();
+		JSONObject ResultadoJSON = new JSONObject();
+		ResultadoJSON.put("idSolicitudPQRS", idSolPQRSIns);
+		ResultadoJSON.put("registroComentarios", registroComent);
+		listJSON.add(ResultadoJSON);
 
-	    return listJSON.toJSONString();
+		return listJSON.toJSONString();
 	}
-	
-	
+
 	public String ObtenerMotivosPrioridadPqrs() {
-	    List<PrioridadPqrs> prioridad = SolicitudPQRSDAO.obtenerPrioridadPqrs();
-	    List<MotivoPqrs> motivo = SolicitudPQRSDAO.obtenerMotivosPqrs();
+		List<PrioridadPqrs> prioridad = SolicitudPQRSDAO.obtenerPrioridadPqrs();
+		List<MotivoPqrs> motivo = SolicitudPQRSDAO.obtenerMotivosPqrs();
 
-	    Map<String, Object> respuesta = new HashMap<>();
-	    respuesta.put("prioridad_pqrs", prioridad);
-	    respuesta.put("motivo_pqrs", motivo);
+		Map<String, Object> respuesta = new HashMap<>();
+		respuesta.put("prioridad_pqrs", prioridad);
+		respuesta.put("motivo_pqrs", motivo);
 
-	    Gson gson = new Gson();
-	    return gson.toJson(respuesta);
+		Gson gson = new Gson();
+		return gson.toJson(respuesta);
 	}
 
-	public static  String obtenerPendientesPqrs(String fecha) {
-	    List<PendientePqrs> solicitudes = SolicitudPQRSDAO.obtenerPendientePqrs(fecha); // <-- devuelve objetos Java
-	    Gson gson = new Gson();
-	    return gson.toJson(solicitudes);
+	public static String obtenerPendientesPqrs(String fecha) {
+		List<PendientePqrs> solicitudes = SolicitudPQRSDAO.obtenerPendientePqrs(fecha); // <-- devuelve objetos Java
+		Gson gson = new Gson();
+		return gson.toJson(solicitudes);
 	}
 
-	public void insertarEscalamientoPQRS(EscalamientoPQRS escalamiento)
-	{
+	public void insertarEscalamientoPQRS(EscalamientoPQRS escalamiento) {
 		EscalamientoPQRSDAO.insertarEscalamientoPQRS(escalamiento);
-		//Realizamos envio de correo al area encargada del escalamiento
-		ArrayList correos = AreaEscalamientoPQRSDAO.obtenerCorreoAreaEscalamientoPQRS(escalamiento.getAreaResponsable());
+		// Realizamos envio de correo al area encargada del escalamiento
+		ArrayList correos = AreaEscalamientoPQRSDAO
+				.obtenerCorreoAreaEscalamientoPQRS(escalamiento.getAreaResponsable());
 		System.out.println(correos.toString());
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
@@ -482,60 +510,49 @@ public class SolicitudPQRSCtrl {
 		correo.setAsunto("SE LE HA ESCALADO LA PQRS # " + escalamiento.getIdSolicitudPQRS());
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
-		correo.setMensaje("Se le ha escalado la PQRS # " + escalamiento.getIdSolicitudPQRS() + " por favor ingresar al sistema y revisar.");
+		correo.setMensaje("Se le ha escalado la PQRS # " + escalamiento.getIdSolicitudPQRS()
+				+ " por favor ingresar al sistema y revisar.");
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
 	}
 
-
 	/**
 	 * Método que retorna un arreglo JSON con los escalamientos de una pqrs.
+	 * 
 	 * @param idSolicitudPQRS
 	 * @return
 	 */
-	public String consultarEscalamientoPQRS(int idSolicitudPQRS)
-	{
-		ArrayList<EscalamientoPQRS> escalamientos = EscalamientoPQRSDAO.consultarEscalamientoPQRS(idSolicitudPQRS);
-		JSONArray listJSON = new JSONArray();
-		JSONObject objectJSON = new JSONObject();
-		String strSol = "";
-		for(EscalamientoPQRS escTemp: escalamientos)
-		{
-			objectJSON = new JSONObject();
-			objectJSON.put("idescalamiento", escTemp.getIdEscalamiento());
-			objectJSON.put("idsolicitudpqrs", escTemp.getIdSolicitudPQRS());
-			objectJSON.put("arearesponsable", escTemp.getAreaResponsable());
-			objectJSON.put("fechaescalamiento", escTemp.getFechaEscalamiento());
-			objectJSON.put("fecharesolucion", escTemp.getFechaResolucion());
-			if(escTemp.isSolucionado())
-			{
-				strSol = "SI";
-			}else
-			{
-				strSol = "NO";
-			}
-			objectJSON.put("solucionado", strSol);
-			listJSON.add(objectJSON);
-		}
-		return(listJSON.toJSONString());
-	}
-	
-    
-	   public static void main(String[] args) {
+	public String consultarEscalamientoPQRS(int[] idsSolicitudPQRS) {
+	    ArrayList<EscalamientoPQRS> escalamientos = EscalamientoPQRSDAO.consultarEscalamientoPQRS(idsSolicitudPQRS);
+	    JSONArray listJSON = new JSONArray();
+	    JSONObject objectJSON;
 
-	        try {
-				String res= obtenerPendientesPqrs("2025-07-22");
-				System.out.println(res);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	    for (EscalamientoPQRS escTemp : escalamientos) {
+	        objectJSON = new JSONObject();
+	        objectJSON.put("idescalamiento", escTemp.getIdEscalamiento());
+	        objectJSON.put("idsolicitudpqrs", escTemp.getIdSolicitudPQRS());
+	        objectJSON.put("arearesponsable", escTemp.getAreaResponsable());
+	        objectJSON.put("fechaescalamiento", escTemp.getFechaEscalamiento());
+	        objectJSON.put("fecharesolucion", escTemp.getFechaResolucion());
+	        objectJSON.put("solucionado", escTemp.isSolucionado() ? "SI" : "NO");
+	        listJSON.add(objectJSON);
 	    }
-	   
-	   public String actualizarEstadoEncPqrs(int idpqrs, boolean estado) {
-		    return "{\"success\":" + SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idpqrs, estado) + "}";
+	    return listJSON.toJSONString();
+	}
+
+	public String consultarEscalamientoPQRS(int idSolicitudPQRS) {
+	    return consultarEscalamientoPQRS(new int[]{idSolicitudPQRS});
+	}
+
+	public static void main(String[] args) {
+
+		try {
+			String res = obtenerPendientesPqrs("2025-07-22");
+			System.out.println(res);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+	}
 
 }
-
-

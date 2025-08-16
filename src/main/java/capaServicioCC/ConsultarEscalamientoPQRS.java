@@ -22,45 +22,49 @@ import capaModeloCC.EscalamientoPQRS;;
  */
 @WebServlet("/ConsultarEscalamientoPQRS")
 public class ConsultarEscalamientoPQRS extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
+    private static final long serialVersionUID = 1L;
+
     public ConsultarEscalamientoPQRS() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Servicio que recibe los par�metros para llamar al m�todo insertarEspecialidad de la capa Parametros controlador,
-	 * e insertar la especialidad.
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
-		JSONObject resultadoJSON = new JSONObject();
-		int idSolicitudPQRS = 0;
-		try {
-			idSolicitudPQRS = Integer.parseInt(request.getParameter("idsolicitudpqrs"));
-		}catch(Exception e)
-		{
-			idSolicitudPQRS = 0;
-		}
-		SolicitudPQRSCtrl solicitudPQRSCtrl = new SolicitudPQRSCtrl();
-		String respuesta = solicitudPQRSCtrl.consultarEscalamientoPQRS(idSolicitudPQRS);
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
-		out.write(respuesta);
-	}
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
-	}
+        SolicitudPQRSCtrl solicitudPQRSCtrl = new SolicitudPQRSCtrl();
+        String respuestaJSON = "[]"; // Por defecto, JSON vacío
 
+        try {
+            String idsParam = request.getParameter("idsolicitudes"); // varios IDs
+            String idParam = request.getParameter("idsolicitudpqrs"); // un solo ID
+
+            if (idsParam != null && !idsParam.trim().isEmpty()) {
+                // IDs separados por coma → varios registros
+                String[] idsArray = idsParam.split(",");
+                int[] ids = new int[idsArray.length];
+                for (int i = 0; i < idsArray.length; i++) {
+                    ids[i] = Integer.parseInt(idsArray[i].trim());
+                }
+                // Llamamos al método nuevo que recibe int[]
+                respuestaJSON = solicitudPQRSCtrl.consultarEscalamientoPQRS(ids);
+            } else if (idParam != null && !idParam.trim().isEmpty()) {
+                // Solo un ID → llamamos al método original
+                int id = Integer.parseInt(idParam.trim());
+                respuestaJSON = solicitudPQRSCtrl.consultarEscalamientoPQRS(id);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            respuestaJSON = "[]";
+        }
+
+        out.write(respuestaJSON);
+        out.close();
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
 }

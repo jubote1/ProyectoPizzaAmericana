@@ -7,6 +7,14 @@ public class PrioridadPqrs {
 	private String descripcion;
 	private int t_resp_min;
 	private int t_resp_max;
+	private String color;
+	
+	public String getColor() {
+		return color;
+	}
+	public void setColor(String color) {
+		this.color = color;
+	}
 	public int getIdprioridad() {
 		return idprioridad;
 	}

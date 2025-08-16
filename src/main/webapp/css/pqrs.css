@@ -13,7 +13,11 @@ body {
   max-width: 95%;
   width: 100%;
 }
- 
+
+.content-ans{
+	
+	font-size: 12px;
+}
 .container-central{
   padding: 20px;
    width: 100%;

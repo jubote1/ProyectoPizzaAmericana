@@ -52,13 +52,20 @@
 						<div class="row">
 							<div class="col-md-12">
 								<div class="row">
-
-									<div class="col-sm-12 form-group">
-										<div class="button-conf text-right">
-											<button type="button" class="btn btn-info"
-												onclick="generarReporte()">Generar Reporte</button>
+									<div class="col-sm-6 form-group">
+										<div class="button-conf text-left">
+											<button type="button" class="btn btn-danger"
+												onclick="generarReporteANS()">Generar Reporte ANS</button>
 										</div>
 									</div>
+									<div class="col-sm-6 form-group">
+										<div class="button-conf text-right">
+											<button type="button" class="btn btn-info"
+												onclick="generarReporteDes()">Generar Reporte
+												Descuentos</button>
+										</div>
+									</div>
+
 									<div class="col-sm-6 form-group">
 										<label>Fecha Inicial</label><input type="text"
 											id="fechainicial" name="fechainicial" class="form-control"
@@ -124,30 +131,34 @@
 								<!-- ESCALAMIENTO DE LA PQRS -->
 								<div class="modal fade" id="modalescalarpqrs" tabindex="-1"
 									role="dialog" aria-labelledby="addLabel">
-									<div class="modal-dialog modal-xl" role="document">
+									<div class="modal-dialog modal-sm modal-dialog-centered"
+										role="document">
 										<div class="modal-content">
 											<div class="modal-header">
-												<h4 class="modal-title" id="addLabel">Área para Escalar</h4>
+												<h5 class="modal-title" id="titulo_escalamiento">Área
+													para Escalar</h5>
 												<button type="button" class="close" data-dismiss="modal"
 													aria-label="Close">
 													<span aria-hidden="true">&times;</span>
 												</button>
 											</div>
-											<select id="selectAreaResponsableEscalar"
-												name="selectAreaResponsableEscalar" class="form-control"
-												required>
-												<option value="" disabled selected hidden>Seleccione
-													una opción</option>
-												<option value="tienda">tienda</option>
-												<option value="contact">contact</option>
-												<option value="tecnologia">tecnologia</option>
-												<option value="calidad">calidad</option>
-											</select> <input type="button" id="btnEscalarPQRS"
-												name="btnEscalarPQRS" class="btn btn-primary btn-lg"
-												value="ESCALAR PQRS" onclick="realizarEscalamientoPQRS()">
+											<div class="modal-body">
+												<select id="selectAreaResponsableEscalar"
+													name="selectAreaResponsableEscalar" class="form-control"
+													required>
+												</select>
+											</div>
+											<div class="modal-footer">
+												<div class="form-group">
+													<button id="btnEscalarPQRS" type="button"
+														class="btn btn-primary"
+														onclick="realizarEscalamientoPQRS()">Escalar Pqrs</button>
+												</div>
+											</div>
 										</div>
 									</div>
 								</div>
+
 								<div class="button-conf text-right">
 									<button type="button" class="btn btn-success"
 										onclick="consultarPQRS()">Consultar PQRS</button>
@@ -182,13 +193,23 @@
 			</div>
 			<div class="col-md-6">
 				<div class="container-modPqrs">
-
 					<form id="cliente">
 						<h1>MODIFICACIÓN PQRS</h1>
 						<div class="row">
-
 							<div class="col-md-12">
 								<div class="row">
+									<div class="col-sm-6 form-group">
+										<div class="content-ans">
+											<span id="horas_transc"></span>
+										</div>
+
+									</div>
+									<div class="col-sm-6 form-group">
+										<div class="content-ans">
+											<span id="estado_ans"></span>
+										</div>
+
+									</div>
 									<div class="col-sm-6 form-group">
 										<label>Número de PQRS</label><input type="text"
 											id="idSolicitudPQRS" name="idSolicitudPQRS" placeholder="#"
@@ -287,12 +308,6 @@
 									<div class="col-sm-6 form-group">
 										<label>Área Responsable</label> <select
 											id="selectAreaResponsable" class="form-control" required>
-											<option value="" disabled selected hidden>Seleccione
-												una opción</option>
-											<option value="tienda">tienda</option>
-											<option value="contact">contact</option>
-											<option value="tecnologia">tecnologia</option>
-											<option value="calidad">calidad</option>
 										</select>
 									</div>
 									<div class="col-sm-6 form-group">
@@ -417,23 +432,23 @@
 						</div>
 						<input type="button" class="btn btn-success btn-lg"
 							value="Guardar Archivos" onclick="AdicionarImagenesPQRS()">
-							<div class="table-responsive-sm">
-								<table id="grid-escalamientoPQRS"
-									class="table table-condensed table-hover " cellspacing="0"
-									width="100%">
-									<thead>
-										<tr>
-											<th>idEscalamiento</th>
-											<th>idPQRS</th>
-											<th>Area</th>
-											<th>Fecha Escalamiento</th>
-											<th>Fecha Resolucion</th>
-											<th>Solucionado</th>
-										</tr>
-									</thead>
-									<tbody></tbody>
-								</table>
-							</div>
+						<div class="table-responsive-sm">
+							<table id="grid-escalamientoPQRS"
+								class="table table-condensed table-hover " cellspacing="0"
+								width="100%">
+								<thead>
+									<tr>
+										<th>idEscalamiento</th>
+										<th>idPQRS</th>
+										<th>Area</th>
+										<th>Fecha Escalamiento</th>
+										<th>Fecha Resolucion</th>
+										<th>Solucionado</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
 					</form>
 				</div>
 			</div>
