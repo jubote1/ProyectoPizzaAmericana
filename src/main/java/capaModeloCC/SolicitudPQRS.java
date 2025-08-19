@@ -1,5 +1,7 @@
 package capaModeloCC;
 
+import java.time.LocalDateTime;
+
 /**
  * Clase de la capa modelo que define los atributos de la clase SolicitudPQRS
  * @author JuanDavid
@@ -45,7 +47,28 @@ public class SolicitudPQRS {
 	private int idprioridad;
 	private int idmotivo;
 	private boolean ccVinculado;
+	private String fecha_hora_registro;
+	private String fecha_hora_cierre;
+	private boolean envio_encuesta;
 
+	public boolean isEnvio_encuesta() {
+		return envio_encuesta;
+	}
+	public void setEnvio_encuesta(boolean envio_encuesta) {
+		this.envio_encuesta = envio_encuesta;
+	}
+	public String getFecha_hora_registro() {
+		return fecha_hora_registro;
+	}
+	public void setFecha_hora_registro(String fecha_hora_registro) {
+		this.fecha_hora_registro = fecha_hora_registro;
+	}
+	public String getFecha_hora_cierre() {
+		return fecha_hora_cierre;
+	}
+	public void setFecha_hora_cierre(String fecha_hora_cierre) {
+		this.fecha_hora_cierre = fecha_hora_cierre;
+	}
 	private String correo;
 	
 	public String getCorreo() {

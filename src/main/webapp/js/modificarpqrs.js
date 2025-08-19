@@ -22,7 +22,13 @@ var datosReporte = [];
 var fecha_inicial = "";
 var fecha_final = "";
 var validarCorreo = true;
-var estadoTexto = "";
+var idestadoPqrs = 0;
+var fecha_hora_registro = "";
+var fecha_hora_cierre = "";
+var envioEncuestaPqrs = false;
+var AreasEscalamiento = [];
+let motivos = [];
+let prioridades = [];
 const historialContainer = document.getElementById("historialComentarios");
 // Validar usuario
 $.ajax({
@@ -103,16 +109,16 @@ $(document).ready(function() {
 	div = document.getElementById("img-gallery");
 
 
-	dtEscalamientoPQRS =  $('#grid-escalamientoPQRS').DataTable( {
-    		"aoColumns": [
-            { "mData": "idescalamiento" },
-            { "mData": "idsolicitudpqrs" },
-            { "mData": "arearesponsable" },
-            { "mData": "fechaescalamiento" },
-            { "mData": "fecharesolucion" },
-            { "mData": "solucionado" }
-        ]
-    	} );
+	dtEscalamientoPQRS = $('#grid-escalamientoPQRS').DataTable({
+		"aoColumns": [
+			{ "mData": "idescalamiento" },
+			{ "mData": "idsolicitudpqrs" },
+			{ "mData": "arearesponsable" },
+			{ "mData": "fechaescalamiento" },
+			{ "mData": "fecharesolucion" },
+			{ "mData": "solucionado" }
+		]
+	});
 
 	dtconsultasPQRS = $('#grid-consultaPQRS').DataTable({
 		"aoColumns": [
@@ -121,19 +127,19 @@ $(document).ready(function() {
 				"mData": null,
 				"sTitle": "Prioridad",
 				"render": function(data, type, row) {
-					const prioridades = {
-						1: { texto: "Urgente", color: "#dc3545" },   // rojo
-						2: { texto: "Alta", color: "#ffc107" },   // naranja
-						3: { texto: "Media", color: "#fd7e14" },   // amarillo
-						4: { texto: "Baja", color: "#28a745" },   // verde
-					};
-					const p = prioridades[row.idprioridad];
+					var p = null;
+					prioridades.forEach(item => {
+						if(item.idprioridad == row.idprioridad){
+						p =item;	
+						}
+						
+					});
 					if (!p) return "N/A";
 
 					return `
 				<span style="display: inline-flex; align-items: center; gap: 0.4em;">
 					<span style="width: 10px; height: 10px; background-color: ${p.color}; border-radius: 50%; display: inline-block;"></span>
-					${p.texto}
+					${p.descripcion}
 				</span>
 			`;
 				}
@@ -206,6 +212,7 @@ $(document).ready(function() {
 	getUsuariosActivos();
 	getEstadoPqrs();
 	getListaMotivoPrioridad();
+	getAreasEscaladas();
 	setInterval('validarVigenciaLogueo()', 600000);
 
 	//Colocamos acción al DataTable en caso de dar clic sobre el DATATABLE
@@ -238,19 +245,19 @@ $(document).ready(function() {
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
 
-		estadoTexto = $("#selectEstado option:selected").text().trim();
+		idestadoPqrs = datos.idestado;
 
 		$('#zona').val(datos.zona);
 		$('#selectPrioridad').val(datos.idprioridad === 0 ? "" : datos.idprioridad);
 		$('#selectMotivo').val(datos.idmotivo === 0 ? "" : datos.idmotivo);
 		$('#ccVinculado').prop('checked', datos.ccVinculado);
+		fecha_hora_registro = datos.fecha_hora_registro || "";
+		fecha_hora_cierre = datos.fecha_hora_cierre || "";
+		envioEncuestaPqrs = datos.envio_encuesta || false;
 
-
-		if(datos.idestado == 3)
-		{
+		if (datos.idestado == 3) {
 			$('#escalar').attr('disabled', false);
-		}else
-		{
+		} else {
 			$('#escalar').attr('disabled', true);
 		}
 
@@ -292,22 +299,36 @@ $(document).ready(function() {
 			//Una vez cargadas todas las imagenes realizamos la carga de las mismas
 			agregarImagen();
 		});
+		
+		var escalamientos = [];
 		//Hacemos consulta para llenar los escalamientos
 		$.getJSON(server + 'ConsultarEscalamientoPQRS?idsolicitudpqrs=' + datos.idconsultaPQRS, function(data2) {
-
-			var escalamientos = data2;
 			dtEscalamientoPQRS.clear().draw();
+			escalamientos = data2;
 			for (var i = 0; i < data2.length; i++) {
 				dtEscalamientoPQRS.row.add({
-				"idescalamiento": data2[i].idescalamiento,
-				"idsolicitudpqrs": data2[i].idsolicitudpqrs,
-				"arearesponsable": data2[i].arearesponsable,
-				"fechaescalamiento": data2[i].fechaescalamiento,
-				"fecharesolucion": data2[i].fecharesolucion,
-				"solucionado": data2[i].solucionado
-			}).draw();
+					"idescalamiento": data2[i].idescalamiento,
+					"idsolicitudpqrs": data2[i].idsolicitudpqrs,
+					"arearesponsable": data2[i].arearesponsable,
+					"fechaescalamiento": data2[i].fechaescalamiento,
+					"fecharesolucion": data2[i].fecharesolucion,
+					"solucionado": data2[i].solucionado
+				}).draw();
 			}
+			
+
+			const resultado = calcularANSConFallback(
+			  escalamientos,
+			  AreasEscalamiento,
+			  datos.idprioridad,
+			  fecha_hora_registro,
+			  fecha_hora_cierre
+			);
+		   $("#horas_transc").html("<strong>Horas hábiles transcurridas:</strong> "+resultado.horasRedondeadas); 
+           $("#estado_ans").html("<strong>Estado ANS:</strong> "+resultado.estadoANS);  
 		});
+
+
 	});
 
 	//Click en Grid de Escalamientos
@@ -420,28 +441,25 @@ function validarFechas(date1, date2) {
 
 
 
-function escalarPQRS()
-{
+function escalarPQRS() {
 	$('#modalescalarpqrs').modal('show');
+	$("#titulo_escalamiento").text("Área para Escalar - #" + idSolicitudPQRS);
 }
 
-function realizarEscalamientoPQRS()
-{
-	var areaResponsable = encodeURIComponent($("#selectAreaResponsableEscalar option:selected").val());
-	if(areaResponsable != "" && idSolicitudPQRS > 0)
-	{
-		$.getJSON(server + 'InsertarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudPQRS + "&arearesponsable=" + areaResponsable, function(data) {
-		if(data.resultado == 'OK')
-		{
-			mostrarAlerta('warning','Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
-			$('#modalescalarpqrs').modal('hide');
+function realizarEscalamientoPQRS() {
 
-		}else 
-		{
-			mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
-		}
-		
-	});
+	var areaResponsable = encodeURIComponent($("#selectAreaResponsableEscalar option:selected").val());
+	if (areaResponsable != "" && idSolicitudPQRS > 0) {
+		$.getJSON(server + 'InsertarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudPQRS + "&arearesponsable=" + areaResponsable, function(data) {
+			if (data.resultado == 'OK') {
+				mostrarAlerta('success', 'Se realizó el escalamiento de la PQRS al área ' + areaResponsable);
+				$('#modalescalarpqrs').modal('hide');
+
+			} else {
+				mostrarAlerta('error', 'No se pudo realizar el escalamiento validar con el área de tecnología');
+			}
+
+		});
 	}
 }
 
@@ -473,48 +491,64 @@ function consultarPQRS() {
 		dtEscalamientoPQRS = $('#grid-escalamientoPQRS').DataTable();
 
 	}
-	$.getJSON(server + 'ConsultaIntegradaSolicitudesPQRS?fechainicial=' + fechaini + "&fechafinal=" + fechafin + "&tienda=" + tienda + "&tiposolicitud=" + tipoSolicitud + "&descuentoredimido=" + filtrodescuentoRed, function(data1) {
+	$.getJSON(
+	  server + 'ConsultaIntegradaSolicitudesPQRS?fechainicial=' + fechaini +
+	  "&fechafinal=" + fechafin +
+	  "&tienda=" + tienda +
+	  "&tiposolicitud=" + tipoSolicitud +
+	  "&descuentoredimido=" + filtrodescuentoRed,
+	  function(data1) {
 
-		datosReporte = data1;
-		fecha_inicial = fechaini;
-		fecha_final = fechafin;
-		table.clear().draw();
-		for (var i = 0; i < data1.length; i++) {
-			table.row.add({
-				"idconsultaPQRS": data1[i].idconsultaPQRS,
-				"fechasolicitud": data1[i].fechasolicitud,
-				"tiposolicitud": data1[i].tiposolicitud,
-				"cliente": data1[i].cliente,
-				"direccion": data1[i].direccion,
-				"telefono": data1[i].telefono,
-				"municipio": data1[i].municipio,
-				"tienda": data1[i].tienda,
-				"nombreorigen": data1[i].nombreorigen,
-				"nombrefoco": data1[i].nombrefoco,
-				"tipo": data1[i].tipo,
-				"arearesponsable": data1[i].arearesponsable,
-				"imagenes": data1[i].imagenes,
-				"idpedidotienda": data1[i].idpedidotienda,
-				"idpedidoredencion": data1[i].idpedidoredencion,
-				"valorPedido": data1[i].valorPedido,
-				"valorDescuento": data1[i].valorDescuento,
-				"porcentajeDescuento": data1[i].porcentajeDescuento,
-				"nombres": data1[i].nombres,
-				"apellidos": data1[i].apellidos,
-				"descuentoRedimido": data1[i].descuentoRedimido,
-				"listaComentarios": data1[i].listaComentarios,
-				"idusuarioRegistro": data1[i].idusuarioRegistro,
-				"idusuarioRedencion": data1[i].idusuarioRedencion,
-				'idestado': data1[i].idestado,
-				'nombreEstado': data1[i].nombreEstado,
-				'idmotivo': data1[i].idmotivo,
-				'idprioridad': data1[i].idprioridad,
-				'zona': data1[i].zona,
-				'ccVinculado': data1[i].ccVinculado,
-				'correo': data1[i].correo
-			}).draw();
-		}
+	    datosReporte = data1;
+	    fecha_inicial = fechaini;
+	    fecha_final = fechafin;
+	    table.clear().draw();
+
+	    for (var i = 0; i < data1.length; i++) {
+	      table.row.add({
+	        "idconsultaPQRS": data1[i].idconsultaPQRS,
+	        "fechasolicitud": data1[i].fechasolicitud,
+	        "tiposolicitud": data1[i].tiposolicitud,
+	        "cliente": data1[i].cliente,
+	        "direccion": data1[i].direccion,
+	        "telefono": data1[i].telefono,
+	        "municipio": data1[i].municipio,
+	        "tienda": data1[i].tienda,
+	        "nombreorigen": data1[i].nombreorigen,
+	        "nombrefoco": data1[i].nombrefoco,
+	        "tipo": data1[i].tipo,
+	        "arearesponsable": data1[i].arearesponsable,
+	        "imagenes": data1[i].imagenes,
+	        "idpedidotienda": data1[i].idpedidotienda,
+	        "idpedidoredencion": data1[i].idpedidoredencion,
+	        "valorPedido": data1[i].valorPedido,
+	        "valorDescuento": data1[i].valorDescuento,
+	        "porcentajeDescuento": data1[i].porcentajeDescuento,
+	        "nombres": data1[i].nombres,
+	        "apellidos": data1[i].apellidos,
+	        "descuentoRedimido": data1[i].descuentoRedimido,
+	        "listaComentarios": data1[i].listaComentarios,
+	        "idusuarioRegistro": data1[i].idusuarioRegistro,
+	        "idusuarioRedencion": data1[i].idusuarioRedencion,
+	        "idestado": data1[i].idestado,
+	        "nombreEstado": data1[i].nombreEstado,
+	        "idmotivo": data1[i].idmotivo,
+	        "idprioridad": data1[i].idprioridad,
+	        "zona": data1[i].zona,
+	        "ccVinculado": data1[i].ccVinculado,
+	        "correo": data1[i].correo,
+	        "fecha_hora_registro": data1[i].fecha_hora_registro,
+	        "fecha_hora_cierre": data1[i].fecha_hora_cierre,
+	        "envio_encuesta": data1[i].envio_encuesta
+	      }).draw();
+	    }
+	  }
+	)
+	.fail(function(jqXHR, textStatus, errorThrown) {
+	  console.error("Error en la consulta:", textStatus, errorThrown);
+	  alert("Ocurrió un error al obtener las solicitudes PQRS. Intente de nuevo.");
 	});
+
 	limpiarPQRS();
 
 }
@@ -574,7 +608,7 @@ function ValidacionesDatos() {
 
 
 function mostrarAlerta(icono, mensaje) {
-	Swal.fire({ icon: icono, text: mensaje });
+	Swal.fire({ icon: icono, text: mensaje, customClass: { icon: 'swal-icon-small' } });
 	return; // Para cortar la ejecución del flujo
 }
 
@@ -808,8 +842,7 @@ function getListaFocos() {
 	});
 }
 
-let motivos = [];
-let prioridades = [];
+
 
 function getListaMotivoPrioridad() {
 	$.getJSON(server + 'MotivoPrioridadPqrs', function(data) {
@@ -986,204 +1019,141 @@ function refrescarImagenes() {
 }
 
 function EditarPQRS() {
+	if (ValidarDatosActualizados() != 1) return;
 
-	var valido = ValidarDatosActualizados();
-
-	if (valido != 1) {
-		return
-	}
 	if (idSolicitudPQRS == 0) {
-		Swal.fire({
-			icon: 'warning',
-			text: 'No se ha seleccionado ninguna PQRS para Modificar'
+		return Swal.fire({ icon: 'warning', text: 'No se ha seleccionado ninguna PQRS para Modificar' });
+	}
+
+	// 1️⃣ Recolectar datos del formulario
+	const datos = {
+		fechasolicitud: $("#fecha").val(),
+		tiposolicitud: $("#selectSolicitudpqrs").val(),
+		idcliente: idCliente,
+		idtienda: $("#selectTiendaspqrs option:selected").attr('id'),
+		nombres: $("#nombres").val(),
+		apellidos: $("#apellidos").val(),
+		telefono: $("#telefono").val(),
+		direccion: $("#direccion").val(),
+		zona: $("#zona").val(),
+		idmunicipio: $("#selectMunicipio option:selected").attr('id'),
+		idorigen: $("#selectOrigen option:selected").attr('id'),
+		idfoco: $("#selectFoco option:selected").attr('id'),
+		tipo: $("#selectTipo").val(),
+		arearesponsable: $("#selectAreaResponsable").val(),
+		idsolicitudpqrs: idSolicitudPQRS,
+		idpedidotienda: $("#idpedidotienda").val(),
+		idpedidoredencion: $("#idpedidoredencion").val(),
+		valorPedido: $("#valorPedido").val(),
+		valorDescuento: $("#valorDescuento").val(),
+		porcentajeDescuento: $("#selectPorcentajeDesc").val(),
+		descuentoRedimido: document.getElementById("descuentoRedimido").checked,
+		listaComentarios: JSON.stringify(obtenerListaComentarios()),
+		idusuarioRegistro: $("#selectUsuarioRegistro").val(),
+		idusuarioRedencion: $("#selectUsuarioRedencion").val(),
+		idestado: $("#selectEstado").val(),
+		idmotivo: $("#selectMotivo").val(),
+		idprioridad: $("#selectPrioridad").val(),
+		ccVinculado: document.getElementById("ccVinculado").checked,
+		correo: $("#correo").val(),
+		envio_encuesta: envioEncuestaPqrs
+	};
+
+	// 2️⃣ Confirmación
+	Swal.fire({
+		title: 'Confirmación Actualización',
+		text: '¿Desea confirmar la actualización de la Solicitud PQRS?',
+		icon: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Sí',
+		cancelButtonText: 'No',
+		confirmButtonColor: 'blue',
+		cancelButtonColor: 'gray'
+	}).then(result => {
+		if (!result.isConfirmed) return;
+		procesarActualizacion(datos);
+	});
+}
+
+// 📌 Función para obtener lista de comentarios
+function obtenerListaComentarios() {
+	const comentarios = historialContainer.querySelectorAll("textarea");
+	const lista = [];
+
+	comentarios.forEach(textarea => {
+		const id = parseInt(textarea.getAttribute("data-id") || "0");
+		const fecha = textarea.getAttribute("data-fecha");
+		const estado = textarea.getAttribute("data-estado");
+		const texto = textarea.value.trim();
+
+		if (texto && !(estado == "false" && id == 0)) {
+			lista.push({ id, comentario: texto, fecha, idSolicitud: idSolicitudPQRS, estado });
+		}
+	});
+
+	return lista;
+}
+
+// 📌 Función para procesar la actualización con AJAX
+async function procesarActualizacion(datos) {
+	Swal.fire({
+		title: 'Actualizando...',
+		text: 'Por favor espere un momento',
+		allowOutsideClick: false,
+		didOpen: () => Swal.showLoading()
+	});
+
+	let iconoFinal = 'success';
+	let mensajeFinal = '';
+
+	try {
+		const response = await $.ajax({
+			url: server + 'ActualizarSolicitudPQRS',
+			dataType: 'json',
+			type: 'POST',
+			data: datos
 		});
 
-	} else {
-		var fechaSolicitud = $("#fecha").val();
-		var tipoSolicitud = $("#selectSolicitudpqrs option:selected").val();
-		//idCliente
-		var tempTienda = $("#selectTiendaspqrs option:selected").attr('id');
-		var idOrigen = $("#selectOrigen option:selected").attr('id');
-		var idFoco = $("#selectFoco option:selected").attr('id');
-		var nombresEncode = $("#nombres").val();
-		var apellidosEncode = $("#apellidos").val();
-		var tel = $("#telefono").val();
-		var direccionEncode = $("#direccion").val();
-		var zonaEncode = $("#zona").val();
-		var tempMunicipio = $("#selectMunicipio option:selected").attr('id');
-		var tipo = $("#selectTipo option:selected").val();
-		var areaResponsable = $("#selectAreaResponsable option:selected").val();
-		var idpedidotienda = $("#idpedidotienda").val();
-		var idpedidoredencion = $("#idpedidoredencion").val();
-		var valorPedido = $("#valorPedido").val();
-		var valorDescuento = $("#valorDescuento").val();
-		var porcentajeDescuento = $("#selectPorcentajeDesc option:selected").val();
-		var descuentoRedimido = document.getElementById("descuentoRedimido").checked;
-		var idusuarioRegistro = $("#selectUsuarioRegistro option:selected").val();
-		var idusuarioRedencion = $("#selectUsuarioRedencion option:selected").val();
-		var idestado = $("#selectEstado option:selected").val();
-		var idmotivo = $("#selectMotivo option:selected").val();
-		var idprioridad = $("#selectPrioridad option:selected").val();
-		var ccVinculado = document.getElementById("ccVinculado").checked;
-		var correo = $("#correo").val();
+		const respuesta = response?.[0];
 
+		if (respuesta?.idSolicitudPQRS > 0) {
+			mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
 
-		const comentarios = historialContainer.querySelectorAll("textarea");
-
-
-		const listaComentarios = [];
-
-		comentarios.forEach(textarea => {
-			const id = parseInt(textarea.getAttribute("data-id") || "0");
-			const fecha = textarea.getAttribute("data-fecha");
-			const estado = textarea.getAttribute("data-estado");
-			const texto = textarea.value.trim();
-
-			if (!texto) return; // Saltar vacíos
-
-			if (estado == "false" && id == "0") {
-				return
-			}
-
-			listaComentarios.push({ id, comentario: texto, fecha, idSolicitud: idSolicitudPQRS, estado });
-		});
-
-		Swal.fire({
-			title: 'Confirmación Actualización',
-			text: '¿Desea confirmar la actualización de la Solicitud PQRS?',
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonText: 'Sí',
-			cancelButtonText: 'No',
-			confirmButtonColor: 'blue',
-			cancelButtonColor: 'gray'
-		}).then(async (result) => {
-			if (!result.isConfirmed) return;
-
-			// Muestra spinner
-			Swal.fire({
-				title: 'Actualizando...',
-				text: 'Por favor espere un momento',
-				allowOutsideClick: false,
-				didOpen: () => {
-					Swal.showLoading();
-				}
-			});
-
-			try {
-				// Enviar solicitud AJAX
-				const response = await $.ajax({
-					url: server + 'ActualizarSolicitudPQRS',
-					dataType: 'json',
-					type: 'POST',
-					data: {
-						fechasolicitud: fechaSolicitud,
-						tiposolicitud: tipoSolicitud,
-						idcliente: idCliente,
-						idtienda: tempTienda,
-						nombres: nombresEncode,
-						apellidos: apellidosEncode,
-						telefono: tel,
-						direccion: direccionEncode,
-						zona: zonaEncode,
-						idmunicipio: tempMunicipio,
-						idorigen: idOrigen,
-						idfoco: idFoco,
-						tipo: tipo,
-						arearesponsable: areaResponsable,
-						idsolicitudpqrs: idSolicitudPQRS,
-						idpedidotienda: idpedidotienda,
-						idpedidoredencion: idpedidoredencion,
-						valorPedido: valorPedido,
-						valorDescuento: valorDescuento,
-						porcentajeDescuento: porcentajeDescuento,
-						descuentoRedimido: descuentoRedimido,
-						listaComentarios: JSON.stringify(listaComentarios),
-						idusuarioRegistro: idusuarioRegistro,
-						idusuarioRedencion: idusuarioRedencion,
-						idestado: idestado,
-						idmotivo: idmotivo,
-						idprioridad: idprioridad,
-						ccVinculado: ccVinculado,
-						correo: correo
-					}
-				});
-
-				const respuesta = response?.[0];
-
-				if (respuesta?.idSolicitudPQRS > 0) {
-
-					estadoTexto = $("#selectEstado option:selected").text().trim();
-					let mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
-					let iconoFinal = 'success';
-
-					if (estadoTexto && estadoTexto.toLowerCase() === "cerrado") {
-						// Enviar encuesta automáticamente si está cerrada
-						const cliente = nombresEncode;
-						const idpqrs = respuesta.idSolicitudPQRS;
-						const telefonoLimpio = tel.replace(/\D/g, ''); // Elimina espacios, guiones, etc.
-						const regexCelularColombia = /^3\d{9}$/;
-						
-						if (telefonoLimpio && regexCelularColombia.test(telefonoLimpio)) {
-							const telefono = telefonoLimpio;
-							try {
-								const result = await fetch(server + "CorreoEncuestaPqrs", {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/x-www-form-urlencoded"
-									},
-									body: new URLSearchParams({ cliente, correo, idpqrs, telefono })
-								});
-
-								const data = await result.json();
-
-								if (data.success) {
-									mensajeFinal += "<br>✅ La encuesta de satisfacción fue enviada correctamente.";
-								} else {
-									mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción: " + data.message;
-									iconoFinal = 'warning';
-								}
-							} catch (error) {
-								console.error("Error al enviar encuesta:", error);
-								mensajeFinal += "<br>⚠️ Ocurrió un error al enviar la encuesta de satisfacción.";
-								iconoFinal = 'warning';
+			if (datos.idestado == 4) {
+				if (!envioEncuestaPqrs) {
+					if (respuesta.telefono_valido) {
+						if (respuesta.envioEncuesta) {
+							mensajeFinal += "<br>✅ La encuesta de satisfacción fue enviada correctamente.";
+							if (!respuesta.estadoEncuesta) {
+								mensajeFinal += "<br>⚠️ El estado del envío de la encuesta podría no haberse actualizado correctamente.";
 							}
-						}else{
-							mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción por que el teléfono registrado era invalido.: " + data.message;
+						} else {
+							mensajeFinal += "<br>⚠️ No se pudo enviar la encuesta de satisfacción.";
 							iconoFinal = 'warning';
 						}
-					}
-
-					Swal.fire({
-						icon: iconoFinal,
-						title: 'Resultado',
-						html: mensajeFinal,
-						customClass: { icon: 'swal-icon-small' }
-					});
-
-
-					limpiarPQRS();
-
-					// Recargar DataTable si existe
-					if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
-						$('#grid-consultaPQRS').DataTable().clear().draw();
+					} else {
+						mensajeFinal += "<br>⚠️ Teléfono inválido, no se envió la encuesta.";
+						iconoFinal = 'warning';
 					}
 				} else {
-					throw new Error('La respuesta no contiene un ID válido.');
+					mensajeFinal += "<br>✅ El envío de la encuesta ya había sido registrado anteriormente.";
 				}
-
-			} catch (error) {
-				console.error('Error al actualizar solicitud:', error);
-				Swal.fire({
-					icon: 'error',
-					title: 'Error',
-					text: 'Ocurrió un error al actualizar la solicitud. Intente nuevamente.'
-				});
 			}
-		});
+		} else {
+			mensajeFinal = "No se pudo actualizar la PQRS. La respuesta no contiene un ID válido.";
+			iconoFinal = 'error';
+		}
+	} catch (error) {
+		mensajeFinal = '❌ Ocurrió un error inesperado: ' + error.message;
+		iconoFinal = 'error';
+	} finally {
+		Swal.close();
+		Swal.fire({ icon: iconoFinal, title: 'Resultado', html: mensajeFinal, customClass: { icon: 'swal-icon-small' } });
 
-
-
+		limpiarPQRS();
+		if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
+			$('#grid-consultaPQRS').DataTable().clear().draw();
+		}
 	}
 }
 
@@ -1254,8 +1224,12 @@ function limpiarPQRS() {
 		}
 	});
 	idSolicitudPQRS = 0;
-	estadoTexto = "";
-
+	idestadoPqrs = 0;
+	fecha_hora_registro = "";
+	fecha_hora_cierre = "";
+	envioEncuestaPqrs = false;
+	$("#horas_transc").html(""); 
+	$("#estado_ans").html("");  
 	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
 	$('#img-gallery').html('');
 
@@ -1263,7 +1237,7 @@ function limpiarPQRS() {
 
 }
 
-async function generarReporte() {
+async function generarReporteDes() {
 	const filtrados = datosReporte.filter(d => d.valorDescuento > 0);
 	if (filtrados.length === 0) {
 		Swal.fire({
@@ -1666,6 +1640,62 @@ function getEstadoPqrs() {
 		});
 }
 
+
+function getAreasEscaladas() {
+	fetch(server + 'ObtenerAreasEscalamiento')
+		.then(res => res.json())
+		.then(areas => {
+			const selectAreaResponsableEscalar = document.getElementById("selectAreaResponsableEscalar");
+			const selectAreaResponsable = document.getElementById("selectAreaResponsable");
+
+			selectAreaResponsableEscalar.innerHTML = '';
+			selectAreaResponsable.innerHTML = '';
+
+			// Opción por defecto para el primer select
+			const optionDefault1 = document.createElement("option");
+			optionDefault1.value = "";
+			optionDefault1.textContent = "Seleccione una opción";
+			optionDefault1.disabled = true;
+			optionDefault1.selected = true;
+			optionDefault1.hidden = true;
+
+			// Opción por defecto para el segundo select
+			const optionDefault2 = document.createElement("option");
+			optionDefault2.value = "";
+			optionDefault2.textContent = "Seleccione una opción";
+			optionDefault2.disabled = true;
+			optionDefault2.selected = true;
+			optionDefault2.hidden = true;
+
+			selectAreaResponsableEscalar.appendChild(optionDefault1);
+			selectAreaResponsable.appendChild(optionDefault2);
+
+			if (areas && areas.length) {
+				AreasEscalamiento = areas;
+
+				areas.forEach(area => {
+					const option1 = new Option(area.area, area.area);
+					const option2 = new Option(area.area, area.area);
+					selectAreaResponsableEscalar.appendChild(option1);
+					selectAreaResponsable.appendChild(option2);
+				});
+			} else {
+				Swal.fire({
+					icon: 'error',
+					text: 'No se encontraron las áreas de PQRS'
+				});
+			}
+		})
+		.catch(err => {
+			console.error("Error al cargar las áreas de PQRS:", err);
+			Swal.fire({
+				icon: 'error',
+				text: 'No se pudieron cargar las áreas de PQRS.'
+			});
+		});
+}
+
+
 function abrirModalRespuesta() {
 	var idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
 
@@ -1742,7 +1772,7 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 		});
 		return;
 	}
-	
+
 	inputCorreoEnvio.dispatchEvent(new Event('input'));
 
 	if (!validarCorreoEnv) {
@@ -1771,7 +1801,7 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 	// 🔽 Luego sí convierte los saltos de línea reales a <br>
 	contenido = contenido.replace(/\n/g, "<br>");
 
-	console.log(contenido);
+
 
 
 	Swal.fire({
@@ -1839,7 +1869,6 @@ document.getElementById('btnEnviarCorreo').addEventListener('click', function() 
 
 
 document.getElementById('btnEnviarEncuestaS').addEventListener('click', function() {
-
 	const idSolicitudPQRS = document.getElementById("idSolicitudPQRS").value;
 
 	if (!idSolicitudPQRS || idSolicitudPQRS === "0") {
@@ -1851,86 +1880,106 @@ document.getElementById('btnEnviarEncuestaS').addEventListener('click', function
 		return;
 	}
 
-	/*if (!estadoTexto || estadoTexto.toLowerCase() !== "cerrado") {
+	let mensajesAdvertencia = [];
+
+	if (envioEncuestaPqrs) {
+		mensajesAdvertencia.push("⚠️ La encuesta ya fue enviada anteriormente.");
+	}
+
+	if (idestadoPqrs != 4) {
+		mensajesAdvertencia.push("⚠️ La solicitud no está cerrada.");
+	}
+
+	if (mensajesAdvertencia.length > 0) {
 		Swal.fire({
+			html: mensajesAdvertencia.join("<br>") + "<br><br>¿Desea enviar la encuesta igualmente?",
 			icon: 'warning',
-			text: 'La solicitud PQRS debe estar en estado "Cerrado" para enviar la encuesta.',
+			showCancelButton: true,
+			confirmButtonText: 'Sí, enviar',
+			cancelButtonText: 'Cancelar',
 			customClass: { icon: 'swal-icon-small' }
+		}).then((result) => {
+			if (result.isConfirmed) {
+				enviarEncuesta();
+			}
 		});
-		return;
-	}*/
+	} else {
+		enviarEncuesta();
+	}
 
-	const idpqrs = idSolicitudPQRS;
-	const cliente = document.getElementById("nombres").value;
-	const correo = document.getElementById("correo").value;
-	const telefonoInput = document.getElementById("telefono").value;
+	function enviarEncuesta() {
+		const idpqrs = idSolicitudPQRS;
+		const cliente = document.getElementById("nombres").value;
+		const correo = document.getElementById("correo").value;
+		const telefonoInput = document.getElementById("telefono").value;
 
-	Swal.fire({
-		title: 'Encuesta de satisfacción',
-		input: 'text',
-		inputLabel: 'Teléfono del cliente',
-		inputPlaceholder: 'Ingrese un número...',
-		inputValue: telefonoInput,
-		showCancelButton: true,
-		confirmButtonText: 'Enviar',
-		cancelButtonText: 'Cancelar',
-		inputValidator: (value) => {
-			if (!value) {
-				return '¡Debes ingresar un número de celular!';
+		Swal.fire({
+			title: 'Encuesta de satisfacción',
+			input: 'text',
+			inputLabel: 'Teléfono del cliente',
+			inputPlaceholder: 'Ingrese un número...',
+			inputValue: telefonoInput,
+			showCancelButton: true,
+			confirmButtonText: 'Enviar',
+			cancelButtonText: 'Cancelar',
+			inputValidator: (value) => {
+				if (!value) {
+					return '¡Debes ingresar un número de celular!';
+				}
+				const regexCelularColombia = /^3\d{9}$/;
+				if (!regexCelularColombia.test(value)) {
+					return '¡Número inválido! Debe empezar por 3 y tener 10 dígitos.';
+				}
+				return null;
 			}
-			const regexCelularColombia = /^3\d{9}$/;
-			if (!regexCelularColombia.test(value)) {
-				return '¡Número inválido! Debe empezar por 3 y tener 10 dígitos.';
-			}
-			return null;
-		}
-	}).then((result) => {
-		if (result.isConfirmed) {
-			const telefono = result.value;
+		}).then((result) => {
+			if (result.isConfirmed) {
+				const telefono = result.value;
+				Swal.showLoading();
 
-			Swal.showLoading();
-
-			fetch(server + "CorreoEncuestaPqrs", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded"
-				},
-				body: new URLSearchParams({
-					cliente,
-					correo,
-					idpqrs,
-					telefono
+				fetch(server + "CorreoEncuestaPqrs", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded"
+					},
+					body: new URLSearchParams({
+						cliente,
+						correo,
+						idpqrs,
+						telefono
+					})
 				})
-			})
-				.then(response => response.json())
-				.then(data => {
-					Swal.close();
-					if (data.success) {
-						Swal.fire({
-							icon: 'success',
-							text: '¡Encuesta enviada con éxito!',
-							customClass: { icon: 'swal-icon-small' }
-						});
-					} else {
+					.then(response => response.json())
+					.then(data => {
+						Swal.close();
+						if (data.success) {
+							Swal.fire({
+								icon: 'success',
+								text: '¡Encuesta enviada con éxito!',
+								customClass: { icon: 'swal-icon-small' }
+							});
+						} else {
+							Swal.fire({
+								icon: 'error',
+								text: "Error: " + data.message,
+								customClass: { icon: 'swal-icon-small' }
+							});
+						}
+					})
+					.catch(error => {
+						Swal.close();
+						console.error("Error en la solicitud:", error);
 						Swal.fire({
 							icon: 'error',
-							text: "Error: " + data.message,
+							text: "No se pudo enviar el correo. Verifica la consola.",
 							customClass: { icon: 'swal-icon-small' }
 						});
-					}
-				})
-				.catch(error => {
-					Swal.close();
-					console.error("Error en la solicitud:", error);
-					Swal.fire({
-						icon: 'error',
-						text: "No se pudo enviar el correo. Verifica la consola.",
-						customClass: { icon: 'swal-icon-small' }
 					});
-				});
-		}
-	});
+			}
+		});
+	}
 });
+
 
 
 function finalizarEscalar()
@@ -1965,3 +2014,255 @@ function consultarEscalamientoDataTable(idSolicitudCon)
 		}
 	});
 }
+
+
+// ======================
+// Configuración de festivos (YYYY-MM-DD)
+const festivos = ["2025-01-01", "2025-05-01", "2025-07-20"]; // ejemplo
+
+// ======================
+// Funciones auxiliares
+// ======================
+function parseFecha(fechaStr) {
+  if (!fechaStr) return null;
+  if (fechaStr instanceof Date) return fechaStr;
+  if (typeof fechaStr !== "string") return null;
+  return new Date(fechaStr.replace(" ", "T"));
+}
+
+function esNoHabil(fecha) {
+  if (!(fecha instanceof Date) || isNaN(fecha)) return false;
+  const dia = fecha.getDay();
+  const fechaStr = fecha.toISOString().split("T")[0];
+  return dia === 0 || dia === 6 || festivos.includes(fechaStr);
+}
+
+// ======================
+// Calcular horas hábiles entre fechas
+// ======================
+function calcularHorasHabiles(fechaInicio, fechaFin, inicioHorario, finHorario) {
+  let inicioActual = fechaInicio instanceof Date ? fechaInicio : parseFecha(fechaInicio);
+  const fin = fechaFin instanceof Date ? fechaFin : parseFecha(fechaFin);
+  let totalHoras = 0;
+
+  if (!inicioActual || !fin) return 0;
+
+  while (inicioActual < fin) {
+    if (!esNoHabil(inicioActual)) {
+      const fechaStr = inicioActual.toISOString().split("T")[0];
+      const inicioDia = parseFecha(`${fechaStr}T${inicioHorario}`);
+      const finDia = parseFecha(`${fechaStr}T${finHorario}`);
+
+      // En el último día, usar fin absoluto si es antes de fin de jornada
+      const tramoFinDia = (fin.toDateString() === inicioActual.toDateString()) ? fin : finDia;
+
+      const tramoInicio = inicioActual < inicioDia ? inicioDia : inicioActual;
+      const tramoFin = tramoFinDia < finDia ? tramoFinDia : finDia;
+
+      if (tramoFin > tramoInicio) {
+        totalHoras += (tramoFin - tramoInicio) / (1000 * 60 * 60);
+      }
+    }
+
+    // Pasar al siguiente día a las 00:00
+    inicioActual.setDate(inicioActual.getDate() + 1);
+    inicioActual.setHours(0, 0, 0, 0);
+  }
+
+  return totalHoras;
+}
+
+// ======================
+// Calcular ANS con fallback si no hay cierre
+// ======================
+function calcularANSConFallback(escalamientos, areas, idPrioridad, fechaRegistro, fechaCierre, idEstadoPQRS) {
+  const prioridad = prioridades.find(p => p.idprioridad === idPrioridad);
+  let horasTotales = 0;
+
+  // Si no hay fecha de cierre, usar la fecha actual
+  const fechaCierreReal = fechaCierre && fechaCierre.trim() !== ""
+      ? parseFecha(fechaCierre)
+      : new Date();
+
+  const fechaRegistroDate = parseFecha(fechaRegistro);
+  const fechaCierreDate = fechaCierreReal;
+
+  if (!fechaRegistroDate || isNaN(fechaRegistroDate)) {
+    return { horasTotales: 0, estadoANS: "Error: fecha de registro inválida" };
+  }
+  if (!fechaCierreDate || isNaN(fechaCierreDate)) {
+    return { horasTotales: 0, estadoANS: "Error: fecha de cierre inválida" };
+  }
+
+  // Validar fechas de escalamiento
+  for (let esc of escalamientos) {
+    const fechaEscalamientoDate = parseFecha(esc.fechaescalamiento);
+    if (!fechaEscalamientoDate || isNaN(fechaEscalamientoDate)) {
+      return { horasTotales: 0, estadoANS: `Error: fecha de escalamiento inválida (${esc.arearesponsable})` };
+    }
+    if (esc.fecharesolucion) {
+      const fechaResolucionDate = parseFecha(esc.fecharesolucion);
+      if (!fechaResolucionDate || isNaN(fechaResolucionDate)) {
+        return { horasTotales: 0, estadoANS: `Error: fecha de resolución inválida (${esc.arearesponsable})` };
+      }
+    }
+  }
+
+  if (escalamientos.length > 0) {
+    // Ordenar por fecha de escalamiento
+    const escOrdenados = [...escalamientos].sort(
+      (a, b) => parseFecha(a.fechaescalamiento) - parseFecha(b.fechaescalamiento)
+    );
+
+    // Calcular cada tramo
+    escOrdenados.forEach(esc => {
+      const area = areas.find(a => a.area === esc.arearesponsable) || areas.find(a => a.area === "contact");
+      const finEscalamientoDate = esc.fecharesolucion && esc.fecharesolucion.trim() !== ""
+        ? parseFecha(esc.fecharesolucion)
+        : fechaCierreDate;
+
+      horasTotales += calcularHorasHabiles(
+        parseFecha(esc.fechaescalamiento),
+        finEscalamientoDate,
+        area.inicio_horario,
+        area.final_horario
+      );
+    });
+
+    // Tramo pendiente en "contact" si último escalamiento no cubre cierre
+    const ultimaFechaResolucion = parseFecha(escOrdenados[escOrdenados.length - 1].fecharesolucion) || fechaRegistroDate;
+    if (fechaCierreDate > ultimaFechaResolucion) {
+      const areaContact = areas.find(a => a.area === "contact");
+      horasTotales += calcularHorasHabiles(
+        ultimaFechaResolucion,
+        fechaCierreDate,
+        areaContact.inicio_horario,
+        areaContact.final_horario
+      );
+    }
+
+  } else {
+    // No escalada → todo con contact
+    const area = areas.find(a => a.area === "contact");
+    horasTotales += calcularHorasHabiles(
+        fechaRegistroDate,
+        fechaCierreDate,
+        area.inicio_horario,
+        area.final_horario
+    );
+  }
+
+  // ======================
+  // Determinar estado ANS
+  // ======================
+  let estadoANS;
+  if (idEstadoPQRS !== 4) { // No cerrada
+    if (horasTotales < prioridad.t_resp_min) {
+      estadoANS = "Actualmente no se le ha dado cierre, y aún no ha alcanzado el tiempo mínimo de respuesta";
+    } else if (horasTotales > prioridad.t_resp_max) {
+      estadoANS = "Actualmente no se le ha dado cierre y ya se superó el tiempo máximo de respuesta";
+    } else {
+      estadoANS = "Actualmente no se le ha dado cierre, pero se encuentra dentro del tiempo de respuesta";
+    }
+  } else { // Cerrada
+    if (horasTotales < prioridad.t_resp_min) estadoANS = "Resuelta antes del tiempo";
+    else if (horasTotales > prioridad.t_resp_max) estadoANS = "Resuelta fuera del tiempo";
+    else estadoANS = "Resuelta dentro del tiempo";
+  }
+  
+  const horasRedondeadas = Math.round(horasTotales);
+
+  return { horasRedondeadas, estadoANS };
+}
+
+
+async function generarReporteANS() {
+    const todosDatos = dtconsultasPQRS.rows().data().toArray();
+
+    if (todosDatos.length === 0) {
+        Swal.fire({ icon: 'warning', text: "No hay datos para generar el reporte de la ANS." });
+        return;
+    }
+
+    // Obtener todos los IDs de las PQRS
+    const idsPQRS = todosDatos.map(d => d.idconsultaPQRS).join(',');
+
+    // Llamar al servicio que devuelve todos los escalamientos de estos IDs
+    let escalamientos = [];
+    try {
+        const response = await fetch(`${server}ConsultarEscalamientoPQRS?idsolicitudes=${idsPQRS}`);
+        escalamientos = await response.json(); // Array de todos los escalamientos
+    } catch (error) {
+        console.error("Error al obtener los escalamientos:", error);
+        Swal.fire({ icon: 'error', text: "No se pudieron obtener los escalamientos." });
+        return;
+    }
+
+    // Crear workbook y worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Reporte ANS");
+
+    worksheet.columns = [
+        { header: "ID PQRS", key: "id", width: 12 },
+        { header: "Fecha Inicio", key: "fechaInicio", width: 20 },
+        { header: "Fecha Cierre", key: "fechaCierre", width: 20 },
+        { header: "Horas Hábiles", key: "horas", width: 15 },
+        { header: "Estado ANS", key: "estadoANS", width: 50 },
+        { header: "Estado PQRS", key: "estadoPQRS", width: 12 }
+    ];
+
+	todosDatos.forEach(d => {
+	    const escParaEstaPQRS = escalamientos.filter(e => e.idsolicitudpqrs === d.idconsultaPQRS);
+
+	    const resultado = calcularANSConFallback(
+	        escParaEstaPQRS,
+	        AreasEscalamiento,
+	        d.idprioridad,
+	        d.fecha_hora_registro,
+	        d.fecha_hora_cierre,
+	        d.idestadoPQRS
+	    );
+
+	    // Estado PQRS
+	    const estadoPQRS = d.idestadoPQRS === 4 ? "Cerrada" : "Abierta";
+
+	    // Fecha de cierre
+	    let fechaCierreTexto = d.fecha_hora_cierre && d.fecha_hora_cierre.trim() !== ""
+	        ? d.fecha_hora_cierre
+	        : "Aún no hay fecha de cierre"; // más claro
+
+	    const row = worksheet.addRow({
+	        id: d.idconsultaPQRS,
+	        fechaInicio: d.fecha_hora_registro,
+	        fechaCierre: fechaCierreTexto,
+	        horas: resultado.horasRedondeadas,
+	        estadoANS: resultado.estadoANS,
+	        estadoPQRS: estadoPQRS
+	    });
+		
+		const prioridad = prioridades.find(p => p.idprioridad === d.idprioridad);
+
+	    // Colores según estado PQRS
+	    if (estadoPQRS === "Cerrada") {
+	        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFFFFF'} }; }); // blanco
+	    } else { // Abierta
+	        // Semaforizar según ANS
+	        if (resultado.horasRedondeadas < prioridad.t_resp_min) {
+	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'C6EFCE'} }; }); // verde
+	        } else if (resultado.horasRedondeadas > prioridad.t_resp_max) {
+	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFC7CE'} }; }); // rojo
+	        } else {
+	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFEB9C'} }; }); // amarillo
+	        }
+	    }
+	});
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    saveAs(blob, "Reporte_ANS.xlsx");
+
+    Swal.fire({ icon: 'success', text: "Reporte de ANS generado correctamente." });
+}
+
+
+

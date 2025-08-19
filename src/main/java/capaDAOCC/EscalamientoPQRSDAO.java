@@ -54,62 +54,59 @@ public class EscalamientoPQRSDAO {
 	 * @param idSolicitudPQRS
 	 * @return
 	 */
-	public static ArrayList<EscalamientoPQRS> consultarEscalamientoPQRS(int idSolicitudPQRS)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		ArrayList<EscalamientoPQRS> escalamientos = new ArrayList();
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		PreparedStatement ps = null;
-		try
-		{
-			Statement stm = con1.createStatement();
-			String select = "select * from  escalamiento_pqrs where idsolicitudPQRS = ?" ;
-			logger.info(select);
-			ps = con1.prepareStatement(select);
-	        ps.setInt(1, idSolicitudPQRS);
-	        ResultSet rs = ps.executeQuery();
-	        EscalamientoPQRS escTemp;
-	        int idEscalamiento;
-	        String areaResponsable;
-	        String fechaEscalamiento;
-	        String fechaResolucion;
-	        String solucionado;
-	        boolean boolSol = false;
-	        while(rs.next())
-	        {
-	        	idEscalamiento = rs.getInt("idescalamiento");
-	        	areaResponsable = rs.getString("area_responsable");
-	        	fechaEscalamiento = rs.getString("fecha_escalamiento");
-	        	fechaResolucion = rs.getString("fecha_resolucion");
-	        	if(fechaResolucion == null || fechaResolucion.equals(new String("")) ||fechaResolucion.equals(new String("null")))
-	        	{
-	        		fechaResolucion = "";
-	        	}
-	        	solucionado = rs.getString("solucionado");
-	        	if(solucionado.equals(new String("1")))
-	        	{
-	        		boolSol = true;
-	        	}else
-	        	{
-	        		boolSol = false;
-	        	}
-	        	escTemp = new EscalamientoPQRS(idEscalamiento, idSolicitudPQRS, areaResponsable, fechaEscalamiento,fechaResolucion, boolSol);
-	        	escalamientos.add(escTemp);
+	public static ArrayList<EscalamientoPQRS> consultarEscalamientoPQRS(int[] idsSolicitudPQRS) {
+	    Logger logger = Logger.getLogger("log_file");
+	    ArrayList<EscalamientoPQRS> escalamientos = new ArrayList<>();
+	    if (idsSolicitudPQRS == null || idsSolicitudPQRS.length == 0) return escalamientos;
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    PreparedStatement ps = null;
+
+	    try {
+	        // Construir placeholders (?, ?, ...) según cantidad de IDs
+	        StringBuilder sb = new StringBuilder();
+	        for (int i = 0; i < idsSolicitudPQRS.length; i++) {
+	            sb.append("?");
+	            if (i < idsSolicitudPQRS.length - 1) sb.append(",");
 	        }
-			ps.close();
-			con1.close();
-		}catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-		}
-		return(escalamientos);
+
+	        String sql = "SELECT * FROM escalamiento_pqrs WHERE idsolicitudPQRS IN (" + sb.toString() + ")";
+	        logger.info(sql);
+
+	        ps = con1.prepareStatement(sql);
+	        for (int i = 0; i < idsSolicitudPQRS.length; i++) {
+	            ps.setInt(i + 1, idsSolicitudPQRS[i]);
+	        }
+
+	        ResultSet rs = ps.executeQuery();
+	        while (rs.next()) {
+	            int idEscalamiento = rs.getInt("idescalamiento");
+	            int idSolicitud = rs.getInt("idsolicitudPQRS");
+	            String areaResponsable = rs.getString("area_responsable");
+	            String fechaEscalamiento = rs.getString("fecha_escalamiento");
+	            String fechaResolucion = rs.getString("fecha_resolucion");
+	            if (fechaResolucion == null || fechaResolucion.trim().isEmpty() || fechaResolucion.equals("null")) {
+	                fechaResolucion = "";
+	            }
+	            boolean solucionado = "1".equals(rs.getString("solucionado"));
+
+	            EscalamientoPQRS escTemp = new EscalamientoPQRS(
+	                idEscalamiento, idSolicitud, areaResponsable, fechaEscalamiento, fechaResolucion, solucionado
+	            );
+	            escalamientos.add(escTemp);
+	        }
+
+	        ps.close();
+	        con1.close();
+	    } catch (Exception e) {
+	        logger.error(e.toString());
+	        try { con1.close(); } catch (Exception ignored) {}
+	    }
+
+	    return escalamientos;
 	}
+
 	
 
 	public static void finalizarEscalamientoPQRS(int idEscalamiento)

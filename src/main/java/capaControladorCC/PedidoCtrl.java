@@ -6239,7 +6239,7 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-	    String txtdirecc = direccion + ", " +Municipio+", "+Barrio+", Antioquia, Colombia";
+		String txtdirecc = ubicaCtrl.limpiarDireccion(direccion,Municipio,Barrio);
 		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(txtdirecc,tipo_cliente,lead);
 		System.out.println("3. RESULTADO DEL PROCESO " +  resultado);
 		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);
@@ -8013,121 +8013,86 @@ public class PedidoCtrl {
 	}
 	
 	
-	public void actualizarCoberturaLeadCRMBOT(String lead, Resultado mensaje,String tipo_cliente) {
-		String datosLead = "";
-		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		String datos="";
-		String txtmensaje=mensaje.getResultado();
-		
-		if(tipo_cliente.toLowerCase().equals("programado")) {
-			String  idcampo_asesor = obtenerCampoSeleccionCRM("862155","PROGRAMADO BOT SAM");
-			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
-			
-			datos = "[\r\n"
-					+ "    {   \"id\":"+ lead +",\r\n"
-					+ "        \"custom_fields_values\": [\r\n"
-					+ "        {\r\n"
-					+ "            \"field_id\": 863191,\r\n"
-					+ "            \"values\": [\r\n"
-					+ "                {\r\n"
-					+ "                    \"value\":\""+ mensaje.getResultado() +"\"\r\n"
-					+ "                }\r\n"
-					+ "            ]\r\n"
-					+ "        },\r\n"
-					+ "        {\r\n"
-					+ "            \"field_id\": 862155,\r\n"
-					+ "            \"values\": [\r\n"
-					+ "                {\r\n"
-					+ "                    \"enum_id\":"+idcampo_asesor+"\r\n"
-					+ "                }\r\n"
-					+ "            ]\r\n"
-					+ "        },\r\n"
-					+ "             {\r\n"
-					+ "            \"field_id\": 862153,\r\n"
-					+ "            \"values\": [\r\n"
-					+ "                {\r\n"
-					+ "                    \"enum_id\":"+idcampo_tienda+"\r\n"
-					+ "                }\r\n"
-					+ "            ]\r\n"
+	public void actualizarCoberturaLeadCRMBOT(String lead, Resultado mensaje, String tipo_cliente) {
+	    IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 
-					+ "        }\r\n"
-					+ "        ]\r\n"
-					+ "    }\r\n"
-					+ "    \r\n"
-					+ "]";
-		}else {
-			//Para revisar
-			String  idcampo_tienda = obtenerCampoSeleccionCRM("862153",mensaje.getInfoAdicional());
-			 
-			 datos = "[{\"id\":"+ lead +",\n"
-			 		+ "  \"custom_fields_values\": [\n"
-			 		+ "    {\"field_id\": 863191,\n"
-			 		+ "      \"values\": [\n"
-			 		+ "        {\"value\":\""+ mensaje.getResultado() +"\"}\n"
-			 		+ "      ]\n"
-			 		+ "    },\n"
-			 		+ "    {\"field_id\": 862153,\n"
-			 		+ "      \"values\": [\n"
-			 		+ "        {\"enum_id\":"+idcampo_tienda+"}\n"
-			 		+ "      ]\n"
-					+ "        },\r\n"
-					+ "             {\r\n"
-					+ "            \"field_id\": 870325,\r\n"
-					+ "            \"values\": [\r\n"
-					+ "                {\r\n"
-					+ "                    \"value\":\""+mensaje.getEstadoTienda()+"\"\r\n"
-					+ "                }\r\n"
-					+ "            ]\r\n"
-					+ "        }\r\n"
-			 		+ "  ]\n"
-			 		+ "}]";
-			}
-			
-			
-		OkHttpClient client = new OkHttpClient();
-		System.out.println("4. LOS DATOS ENVIADOS PARA ACTUALIZACIÓN  " + datos);
-		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
-		//byte[] datosBytes = datos.getBytes(StandardCharsets.UTF_8);
-		RequestBody body = RequestBody.create(mediaType,datos);
-			System.out.println("5. Clave  " + intCRM.getAccessToken());
-			System.out.println("5.1. body  " + body);
+	    String tienda = mensaje.getInfoAdicional();
+	    if (!mensaje.isSuccess()) {
+	        tienda = "SIN VALIDAR";
+	    }
 
+	    // Constantes de IDs de campos
+	    final int FIELD_RESULTADO = 863191;
+	    final int FIELD_TIENDA = 862153;
+	    final int FIELD_ASESOR = 862155;
+	    final int FIELD_ESTADO_TIENDA = 870325;
 
+	    // Construcción segura del JSON usando Maps
+	    List<Map<String, Object>> customFields = new ArrayList<>();
 
-		System.out.println("Request Body: " + bodyToString(body));
-		Request request = new Request.Builder()
-		  .url("https://pizzaamericana.kommo.com/api/v4/leads")
-		  .patch(body)
-		  .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
-		  .build();
-		try
-		{
-				okhttp3.Response response = client.newCall(request).execute();
-				System.out.println("Response Code: " + response.code());
-				System.out.println("Response Headers: " + response.headers());
-				String respuestaJSON = response.body().string();
-				System.out.println("Response Body: " + respuestaJSON);
-				datosLead = respuestaJSON;
-		}catch (Exception e2) {
-            e2.printStackTrace();
-            System.out.println(e2.toString());
-        }
-			
-	}
-	
-	private static String bodyToString(final RequestBody request) {
-	    try {
-	        final Buffer buffer = new Buffer();
-	        if (request != null) {
-	            request.writeTo(buffer);
-	        } else {
-	            return "";
+	    // Campo Resultado
+	    customFields.add(Map.of(
+	        "field_id", FIELD_RESULTADO,
+	        "values", List.of(Map.of("value", mensaje.getResultado()))
+	    ));
+
+	    // Campo Tienda
+	    customFields.add(Map.of(
+	        "field_id", FIELD_TIENDA,
+	        "values", List.of(Map.of("enum_id", obtenerCampoSeleccionCRM(String.valueOf(FIELD_TIENDA), tienda)))
+	    ));
+
+	    // Si es cliente programado → agregar asesor
+	    if ("programado".equalsIgnoreCase(tipo_cliente)) {
+	        customFields.add(Map.of(
+	            "field_id", FIELD_ASESOR,
+	            "values", List.of(Map.of("enum_id", obtenerCampoSeleccionCRM(String.valueOf(FIELD_ASESOR), "PROGRAMADO BOT SAM")))
+	        ));
+	    } else {
+	        // Si no es programado → agregar estado tienda
+	        customFields.add(Map.of(
+	            "field_id", FIELD_ESTADO_TIENDA,
+	            "values", List.of(Map.of("value", mensaje.getEstadoTienda()))
+	        ));
+	    }
+
+	    // Armar objeto final
+	    Map<String, Object> leadData = Map.of(
+	        "id", lead,
+	        "custom_fields_values", customFields
+	    );
+
+	    // Convertir a JSON
+	    Gson gson = new Gson();
+	    String datos = gson.toJson(List.of(leadData));
+
+	    System.out.println("Datos enviados para actualización del lead: " + datos);
+
+	    // Envío HTTP
+	    OkHttpClient client = new OkHttpClient();
+	    okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
+	    RequestBody body = RequestBody.create(mediaType, datos);
+
+	    Request request = new Request.Builder()
+	        .url("https://pizzaamericana.kommo.com/api/v4/leads")
+	        .patch(body)
+	        .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
+	        .build();
+
+	    try (okhttp3.Response response = client.newCall(request).execute()) {
+	        String respuestaJSON = response.body() != null ? response.body().string() : "";
+	        System.out.println("Response Code: " + response.code());
+	        System.out.println("Response Headers: " + response.headers());
+	        System.out.println("Response Body: " + respuestaJSON);
+
+	        if (!response.isSuccessful()) {
+	        	System.out.println("Error en actualización de CRM. Código: " + response.code());
 	        }
-	        return buffer.readUtf8();
-	    } catch (final IOException e) {
-	        return "Couldn't convert request body to string";
+	    } catch (Exception e) {
+	    	System.out.println("Error en request a CRM: " + e.getMessage());
 	    }
 	}
+
 	
 	public String  obtenerCampoSeleccionCRM(String idcampo,String valorDeseado ){
 		String id = null;
