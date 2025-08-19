@@ -30,20 +30,25 @@ public class JwtAuthFilter implements Filter {
     private static final SecretKey KEY;
 
     static {
-        if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
-            throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
+		if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
+            System.out.println("WARNING: SECRET_KEY not set. JWT filter will be disabled.");
+          //  throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
+            KEY = null; // No se inicializa
+        } else {
+            KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
         }
-        KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        // Inicialización si es necesaria
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
+        // Si KEY es null, saltamos la validación JWT
+        if (KEY == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
@@ -51,38 +56,30 @@ public class JwtAuthFilter implements Filter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring("Bearer ".length());
-
             try {
-                // Validar el token JWT
                 Claims claims = Jwts.parser()
                         .verifyWith(KEY)
-                        .build() // <---
+                        .build()
                         .parseSignedClaims(token)
                         .getPayload();
-                // Verificar la fecha de expiración
+
                 String username = claims.getSubject();
-                String session= (String) claims.get("session");
-                Token dbAccessToken = Accesos.getValidAccessToken(username, token,session);
-                if (dbAccessToken == null ) {
-                	res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired refresh token");
+                String session = (String) claims.get("session");
+                Token dbAccessToken = Accesos.getValidAccessToken(username, token, session);
+
+                if (dbAccessToken == null) {
+                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired refresh token");
                     return;
                 }
 
-                // Token válido, continuar con la cadena de filtros
                 chain.doFilter(request, response);
 
             } catch (Exception e) {
-                // Token inválido
-                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token "+e);
+                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token " + e);
             }
         } else {
-            // No se proporcionó un token
             res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing token");
         }
     }
-
-    @Override
-    public void destroy() {
-        // Limpieza si es necesaria
-    }
 }
+

@@ -1437,88 +1437,98 @@ async function generarReporteDes() {
 
 
 function crearGrupoFecha(fecha) {
-	const grupo = document.createElement("div");
-	grupo.className = "grupo-fecha mb-3";
-	grupo.setAttribute("data-fecha", fecha);
-	grupo.innerHTML = `
+    const grupo = document.createElement("div");
+    grupo.className = "grupo-fecha mb-3";
+    grupo.setAttribute("data-fecha", fecha);
+    grupo.innerHTML = `
         <h6 class="mb-2">${fecha}</h6>
         <div class="comentarios"></div>
     `;
-	historialContainer.appendChild(grupo);
-	return grupo.querySelector('.comentarios');
+    historialContainer.appendChild(grupo);
+    return grupo; // devolver el div completo
 }
 
 function agregarComentarioVisual(fecha, id, texto) {
-	let grupo = document.querySelector(`.grupo-fecha[data-fecha='${fecha}'] .comentarios`);
-	if (!grupo) {
-		grupo = crearGrupoFecha(fecha);
-	}
+    // Obtener todos los grupos de la misma fecha
+    let grupos = Array.from(document.querySelectorAll(`.grupo-fecha[data-fecha='${fecha}']`));
 
-	// Crear contenedor
-	const wrapper = document.createElement("div");
-	wrapper.className = "position-relative mb-2 comentario-item";
+    // Filtrar grupos que tengan al menos un comentario activo
+    let grupoActivo = grupos.find(g => 
+        Array.from(g.querySelectorAll("textarea")).some(c => 
+            c.dataset.estado === "true" && c.dataset.fecha === fecha
+        )
+    );
+    // Si no hay grupo activo, crear uno nuevo
+    if (!grupoActivo) {
+        grupoActivo = crearGrupoFecha(fecha);
+    } else {
+        grupoActivo.style.display = "block";
+    }
+    const grupoComentarios = grupoActivo.querySelector(".comentarios");
 
-	// Crear textarea
-	const textarea = document.createElement("textarea");
-	textarea.className = "form-control";
-	textarea.rows = 2;
-	textarea.value = texto;
-	textarea.setAttribute("data-id", id);
-	textarea.setAttribute("data-fecha", fecha);
-	textarea.setAttribute("data-estado", "true"); // por defecto activo
+    // Crear contenedor del comentario
+    const wrapper = document.createElement("div");
+    wrapper.className = "position-relative mb-2 comentario-item";
 
-	// Crear icono eliminar
-	const iconoEliminar = document.createElement("span");
-	iconoEliminar.innerHTML = "🗑️";
-	iconoEliminar.className = "position-absolute";
-	iconoEliminar.style.top = "5px";
-	iconoEliminar.style.right = "5px";
-	iconoEliminar.style.cursor = "pointer";
-	iconoEliminar.style.fontSize = "0.8rem";
-	iconoEliminar.style.color = "red";
-	iconoEliminar.title = "Eliminar comentario";
-	iconoEliminar.addEventListener("click", () => {
-		const idComentario = parseInt(textarea.getAttribute("data-id") || "0");
+    // Crear textarea
+    const textarea = document.createElement("textarea");
+    textarea.className = "form-control";
+    textarea.rows = 2;
+    textarea.value = texto;
+    textarea.dataset.id = id;
+    textarea.dataset.fecha = fecha;
+    textarea.dataset.estado = "true";
 
-		if (idComentario === 0) {
-			// Si es nuevo (no guardado en BD), eliminar completamente
-			wrapper.remove();
-		} else {
-			// Si ya existe en BD, marcar como eliminado y ocultar visualmente
-			textarea.setAttribute("data-estado", "false");
-			textarea.classList.add("d-none");
-			iconoEliminar.remove();
-		}
+    // Crear icono eliminar
+    const iconoEliminar = document.createElement("span");
+    iconoEliminar.innerHTML = "🗑️";
+    iconoEliminar.className = "position-absolute";
+    iconoEliminar.style.top = "5px";
+    iconoEliminar.style.right = "5px";
+    iconoEliminar.style.cursor = "pointer";
+    iconoEliminar.style.fontSize = "0.8rem";
+    iconoEliminar.style.color = "red";
+    iconoEliminar.title = "Eliminar comentario";
 
-		const visibles = grupo.querySelectorAll("textarea:not(.d-none)");
-		if (visibles.length === 0) {
-			const contenedorGrupo = grupo.closest(".grupo-fecha");
-			if (idComentario === 0) {
-				// Si todos eran nuevos, eliminar completamente el grupo del DOM
-				if (contenedorGrupo) contenedorGrupo.remove();
-			} else {
-				// Si eran existentes, solo ocultar visualmente
-				if (contenedorGrupo) contenedorGrupo.style.display = "none";
-			}
-		}
-	});
+    iconoEliminar.addEventListener("click", () => {
+        textarea.dataset.estado = "false";
+        textarea.classList.add("d-none");
+        iconoEliminar.remove();
 
+        // Si no quedan comentarios activos en el grupo, ocultarlo
+        const activos = grupoComentarios.querySelectorAll("textarea[data-estado='true']");
+        if (activos.length === 0) {
+            grupoActivo.style.display = "none";
+        }
+    });
 
-	wrapper.appendChild(textarea);
-	wrapper.appendChild(iconoEliminar);
-	grupo.appendChild(wrapper);
+    wrapper.appendChild(textarea);
+    wrapper.appendChild(iconoEliminar);
+    grupoComentarios.appendChild(wrapper);
 }
+
 
 
 // Acción para nuevo comentario
 document.getElementById("btnAgregarComentario").addEventListener("click", () => {
-	const nuevoTexto = document.getElementById("nuevoComentario").value.trim();
-	if (!nuevoTexto) return;
+	try{
+		console.log()
+		const nuevoTexto = document.getElementById("nuevoComentario").value.trim();
+		if (!nuevoTexto) return;
 
-	const hoy = new Date().toISOString().split("T")[0]; // formato YYYY-MM-DD
-	agregarComentarioVisual(hoy, 0, nuevoTexto);
+		const hoy = new Date();
+		const hoyLocal = hoy.getFullYear() + "-" +
+		                 String(hoy.getMonth() + 1).padStart(2, "0") + "-" +
+		                 String(hoy.getDate()).padStart(2, "0");
 
-	document.getElementById("nuevoComentario").value = "";
+		agregarComentarioVisual(hoyLocal, 0, nuevoTexto);
+
+		document.getElementById("nuevoComentario").value = "";
+		
+	}catch(error){
+		console.log(error);
+	}
+
 });
 
 
@@ -1987,7 +1997,7 @@ function finalizarEscalar()
 	$.getJSON(server + 'FinalizarEscalamientoPQRS?idescalamiento=' + idEscalamientoCon, function(data) {
 		if(data.respuesta)
 		{
-			mostrarAlerta('warning','Se finalizó el escalamiento al área.');
+			mostrarAlerta('success','Se finalizó el escalamiento al área.');
 			//Hacemos consulta para llenar los escalamientos
 			consultarEscalamientoDataTable(idSolicitudPQRS);
 		}
