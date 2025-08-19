@@ -549,8 +549,6 @@ public class SolicitudPQRSCtrl {
 		return(objectJSON.toJSONString());
 	}
 	
-    
-	   public static void main(String[] args) {
 
 
 	public String consultarEscalamientoPQRS(int idSolicitudPQRS) {
