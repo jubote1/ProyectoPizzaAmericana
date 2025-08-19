@@ -13,6 +13,7 @@ var idCliente = 0;
 var dtconsultasPQRS;
 var dtEscalamientoPQRS;
 var idSolicitudPQRS;
+var idEscalamientoCon;
 var imgs;
 var fulImgBox;
 var fulImg;
@@ -307,6 +308,21 @@ $(document).ready(function() {
 			}).draw();
 			}
 		});
+	});
+
+	//Click en Grid de Escalamientos
+	$('#grid-escalamientoPQRS tbody').on('click', 'tr', function() {
+
+		datos = dtEscalamientoPQRS.row(this).data();
+		idEscalamientoCon = datos.idescalamiento;
+		if(datos.solucionado == 'NO')
+		{
+			$('#finalizarescalar').attr('disabled', false);
+		}
+		else
+		{
+			$('#finalizarescalar').attr('disabled', true);
+		}
 	});
 
 
@@ -1915,3 +1931,37 @@ document.getElementById('btnEnviarEncuestaS').addEventListener('click', function
 		}
 	});
 });
+
+
+function finalizarEscalar()
+{
+	$.getJSON(server + 'FinalizarEscalamientoPQRS?idescalamiento=' + idEscalamientoCon, function(data) {
+		if(data.respuesta)
+		{
+			mostrarAlerta('warning','Se finalizó el escalamiento al área.');
+			//Hacemos consulta para llenar los escalamientos
+			consultarEscalamientoDataTable(idSolicitudPQRS);
+		}
+	});
+
+}
+
+function consultarEscalamientoDataTable(idSolicitudCon)
+{
+	//Hacemos consulta para llenar los escalamientos
+	$.getJSON(server + 'ConsultarEscalamientoPQRS?idsolicitudpqrs=' + idSolicitudCon, function(data2) {
+
+		var escalamientos = data2;
+		dtEscalamientoPQRS.clear().draw();
+		for (var i = 0; i < data2.length; i++) {
+			dtEscalamientoPQRS.row.add({
+			"idescalamiento": data2[i].idescalamiento,
+			"idsolicitudpqrs": data2[i].idsolicitudpqrs,
+			"arearesponsable": data2[i].arearesponsable,
+			"fechaescalamiento": data2[i].fechaescalamiento,
+			"fecharesolucion": data2[i].fecharesolucion,
+			"solucionado": data2[i].solucionado
+		}).draw();
+		}
+	});
+}

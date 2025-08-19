@@ -112,4 +112,31 @@ public class EscalamientoPQRSDAO {
 	}
 	
 
+	public static void finalizarEscalamientoPQRS(int idEscalamiento)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		PreparedStatement ps = null;
+		try
+		{
+			Statement stm = con1.createStatement();
+			String insert = "update escalamiento_pqrs  set fecha_resolucion = NOW() ,solucionado = ? WHERE idescalamiento = ?";
+			logger.info(insert);
+			ps = con1.prepareStatement(insert);
+	        ps.setInt(1, 1);
+	        ps.setInt(2, idEscalamiento);
+	        ps.executeUpdate();
+			ps.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+	}
 }
