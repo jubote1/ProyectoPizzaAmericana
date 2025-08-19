@@ -540,6 +540,19 @@ public class SolicitudPQRSCtrl {
 	    return listJSON.toJSONString();
 	}
 
+	
+	public String finalizarEscalamientoPQRS(int idEscalamiento)
+	{
+		JSONObject objectJSON = new JSONObject();
+		EscalamientoPQRSDAO.finalizarEscalamientoPQRS(idEscalamiento);
+		objectJSON.put("respuesta", true);
+		return(objectJSON.toJSONString());
+	}
+	
+    
+	   public static void main(String[] args) {
+
+
 	public String consultarEscalamientoPQRS(int idSolicitudPQRS) {
 	    return consultarEscalamientoPQRS(new int[]{idSolicitudPQRS});
 	}
