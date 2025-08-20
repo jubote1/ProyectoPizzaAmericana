@@ -22,7 +22,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.MacAlgorithm;
+
 
 
 @WebServlet("/refreshToken")
@@ -47,11 +47,13 @@ public class RefreshTokenServlet extends HttpServlet {
 
         try {
             // Parse and validate the refresh token
-            Claims claims = Jwts.parser()
-                    .verifyWith(KEY)
-                    .build()
-                    .parseSignedClaims(refreshToken)
-                    .getPayload();
+ 
+        	Claims claims = Jwts.parserBuilder()
+        	        .setSigningKey(KEY)
+        	        .build()
+        	        .parseClaimsJws(refreshToken)
+        	        .getBody();
+        	
 
             String username = claims.getSubject();
             String session = (String) claims.get("session");

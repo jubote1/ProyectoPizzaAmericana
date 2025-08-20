@@ -1,8 +1,5 @@
 package capaSeguridad.filtro;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
 import javax.servlet.Filter;
@@ -17,6 +14,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaSeguridad.Accesos;
 import capaSeguridad.modelo.Token;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 import java.io.IOException;
 import java.util.Date;
@@ -26,59 +26,54 @@ import java.util.Date;
 public class JwtAuthFilter implements Filter {
 
     private static final String AUTH_HEADER = "Authorization";
-    private static final String SECRET_KEY = System.getenv("SECRET_KEY") != null ? System.getenv("SECRET_KEY") : "";
     private static final SecretKey KEY;
 
     static {
-		if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
-            System.out.println("WARNING: SECRET_KEY not set. JWT filter will be disabled.");
-          //  throw new IllegalStateException("SECRET_KEY must be set in the environment variables.");
-            KEY = null; // No se inicializa
-        } else {
-            KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        String secret = System.getenv("SECRET_KEY");
+        if (secret == null || secret.isEmpty()) {
+            // Si no hay clave, la aplicación no debería arrancar
+            throw new IllegalStateException("ERROR: SECRET_KEY no está definida en las variables de entorno.");
         }
+        KEY = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
-        // Si KEY es null, saltamos la validación JWT
-        if (KEY == null) {
-            chain.doFilter(request, response);
-            return;
-        }
-
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
         String authHeader = req.getHeader(AUTH_HEADER);
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring("Bearer ".length());
-            try {
-                Claims claims = Jwts.parser()
-                        .verifyWith(KEY)
-                        .build()
-                        .parseSignedClaims(token)
-                        .getPayload();
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
+            return;
+        }
 
-                String username = claims.getSubject();
-                String session = (String) claims.get("session");
-                Token dbAccessToken = Accesos.getValidAccessToken(username, token, session);
+        String token = authHeader.substring("Bearer ".length());
 
-                if (dbAccessToken == null) {
-                    res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired refresh token");
-                    return;
-                }
+        try {
+        	Claims claims = Jwts.parserBuilder()
+        	        .setSigningKey(KEY)
+        	        .build()
+        	        .parseClaimsJws(token)
+        	        .getBody();
 
-                chain.doFilter(request, response);
+            String username = claims.getSubject();
+            String session = (String) claims.get("session");
 
-            } catch (Exception e) {
-                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token " + e);
+            Token dbAccessToken = Accesos.getValidAccessToken(username, token, session);
+            if (dbAccessToken == null) {
+                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                return;
             }
-        } else {
-            res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing token");
+
+            // Token válido → continuar con la solicitud
+            chain.doFilter(request, response);
+
+        } catch (Exception e) {
+            res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token: " + e.getMessage());
         }
     }
 }
