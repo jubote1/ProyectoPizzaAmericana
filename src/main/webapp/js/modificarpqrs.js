@@ -322,12 +322,24 @@ $(document).ready(function() {
 			  AreasEscalamiento,
 			  datos.idprioridad,
 			  fecha_hora_registro,
-			  fecha_hora_cierre
+			  fecha_hora_cierre,
+			  idestadoPqrs
 			);
-		   $("#horas_transc").html("<strong>Horas hábiles transcurridas:</strong> "+resultado.horasRedondeadas); 
-           $("#estado_ans").html("<strong>Estado ANS:</strong> "+resultado.estadoANS);  
+			
+			 let colorANS = 'FFFFFFFF'; // blanco por defecto
+			if(resultado != null && resultado.colorANS){
+					colorANS = resultado.colorANS;
+							     
+		     }
+			 let colorCSS = colorANS.substring(2); // Esto elimina los dos primeros caracteres  
+			 $("#horas_transc").html("<strong>Horas hábiles transcurridas:</strong> "+resultado.horasRedondeadas); 
+			 $("#estado_ans").html("<strong>Estado ANS:</strong> " + resultado.estadoANS);
+			 $("#estado_ans").css({
+			   "background-color": `#${colorCSS}`, // Usa la variable con los 6 dígitos
+			   "border-radius": "10px",
+			   "padding": "10px"
+			 });
 		});
-
 
 	});
 
@@ -2028,7 +2040,7 @@ function consultarEscalamientoDataTable(idSolicitudCon)
 
 // ======================
 // Configuración de festivos (YYYY-MM-DD)
-const festivos = ["2025-01-01", "2025-05-01", "2025-07-20"]; // ejemplo
+const festivos = []; // ejemplo
 
 // ======================
 // Funciones auxiliares
@@ -2166,23 +2178,36 @@ function calcularANSConFallback(escalamientos, areas, idPrioridad, fechaRegistro
   // Determinar estado ANS
   // ======================
   let estadoANS;
-  if (idEstadoPQRS !== 4) { // No cerrada
-    if (horasTotales < prioridad.t_resp_min) {
-      estadoANS = "Actualmente no se le ha dado cierre, y aún no ha alcanzado el tiempo mínimo de respuesta";
-    } else if (horasTotales > prioridad.t_resp_max) {
-      estadoANS = "Actualmente no se le ha dado cierre y ya se superó el tiempo máximo de respuesta";
-    } else {
-      estadoANS = "Actualmente no se le ha dado cierre, pero se encuentra dentro del tiempo de respuesta";
-    }
-  } else { // Cerrada
-    if (horasTotales < prioridad.t_resp_min) estadoANS = "Resuelta antes del tiempo";
-    else if (horasTotales > prioridad.t_resp_max) estadoANS = "Resuelta fuera del tiempo";
-    else estadoANS = "Resuelta dentro del tiempo";
+  let colorANS;
+
+  // Lógica de asignación de color y estado basada en el tiempo
+  if (horasTotales < prioridad.t_resp_min) {
+      colorANS = 'FFC6EFCE'; // verde
+      if (idEstadoPQRS !== 4) {
+          estadoANS = "Actualmente no se le ha dado cierre, y aún no ha alcanzado el tiempo mínimo de respuesta";
+      } else {
+          estadoANS = "Resuelta antes del tiempo";
+      }
+  } else if (horasTotales > prioridad.t_resp_max) {
+      colorANS = 'FFFFC7CE'; // rojo
+      if (idEstadoPQRS !== 4) {
+          estadoANS = "Actualmente no se le ha dado cierre y ya se superó el tiempo máximo de respuesta";
+      } else {
+          estadoANS = "Resuelta fuera del tiempo";
+      }
+  } else {
+      colorANS = 'FFFFEB9C'; // amarillo
+      if (idEstadoPQRS !== 4) {
+          estadoANS = "Actualmente no se le ha dado cierre, pero se encuentra dentro del tiempo de respuesta";
+      } else {
+          estadoANS = "Resuelta dentro del tiempo";
+      }
   }
+
   
   const horasRedondeadas = Math.round(horasTotales);
 
-  return { horasRedondeadas, estadoANS };
+  return { horasRedondeadas, estadoANS , colorANS};
 }
 
 
@@ -2210,69 +2235,162 @@ async function generarReporteANS() {
 
     // Crear workbook y worksheet
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Reporte ANS");
+    const worksheet = workbook.addWorksheet(`Reporte ANS`);
 
-    worksheet.columns = [
-        { header: "ID PQRS", key: "id", width: 12 },
-        { header: "Fecha Inicio", key: "fechaInicio", width: 20 },
-        { header: "Fecha Cierre", key: "fechaCierre", width: 20 },
-        { header: "Horas Hábiles", key: "horas", width: 15 },
-        { header: "Estado ANS", key: "estadoANS", width: 50 },
-        { header: "Estado PQRS", key: "estadoPQRS", width: 12 }
-    ];
+    // =========================
+    // 🔹 Encabezado principal
+    // =========================
+    const hoyTexto = new Date().toLocaleString("es-CO", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
 
-	todosDatos.forEach(d => {
-	    const escParaEstaPQRS = escalamientos.filter(e => e.idsolicitudpqrs === d.idconsultaPQRS);
+	// 🔹 Fila 1 → título general
+	worksheet.mergeCells("A1:F1");
+	worksheet.getCell("A1").value = `Reporte ANS (${fecha_inicial} - ${fecha_final}) - Generado: ${hoyTexto}`;
+	worksheet.getCell("A1").alignment = { horizontal: "center" };
+	worksheet.getCell("A1").font = { size: 12, bold: true };
 
-	    const resultado = calcularANSConFallback(
-	        escParaEstaPQRS,
-	        AreasEscalamiento,
-	        d.idprioridad,
-	        d.fecha_hora_registro,
-	        d.fecha_hora_cierre,
-	        d.idestadoPQRS
-	    );
+	// 🔹 Fila 2 → encabezados de columnas
+	worksheet.addRow([
+	    "ID PQRS",
+	    "Fecha Inicio",
+	    "Fecha Cierre",
+	    "Horas Hábiles Transcurridas",
+	    "Estado ANS",
+	    "Estado PQRS"
+	]);
 
-	    // Estado PQRS
-	    const estadoPQRS = d.idestadoPQRS === 4 ? "Cerrada" : "Abierta";
+	// Dar formato a la fila 2
+	worksheet.getRow(2).eachCell(cell => {
+	    cell.fill = {
+	        type: 'pattern',
+	        pattern: 'solid',
+	        fgColor: { argb: 'FF4472C4' } // azul
+	    };
+	    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+	    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+	    cell.border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
+	});
+	
+	// 🔹 Definir keys y anchos para las columnas 
+	worksheet.columns = [ { key: "id"}, 
+	{ key: "fechaInicio"}, 
+	{ key: "fechaCierre" }, 
+	{ key: "horas" }, 
+	{ key: "estadoANS"},
+	 { key: "estadoPQRS" } ];
 
-	    // Fecha de cierre
-	    let fechaCierreTexto = d.fecha_hora_cierre && d.fecha_hora_cierre.trim() !== ""
-	        ? d.fecha_hora_cierre
-	        : "Aún no hay fecha de cierre"; // más claro
-
-	    const row = worksheet.addRow({
-	        id: d.idconsultaPQRS,
-	        fechaInicio: d.fecha_hora_registro,
-	        fechaCierre: fechaCierreTexto,
-	        horas: resultado.horasRedondeadas,
-	        estadoANS: resultado.estadoANS,
-	        estadoPQRS: estadoPQRS
-	    });
-		
-		const prioridad = prioridades.find(p => p.idprioridad === d.idprioridad);
-
-	    // Colores según estado PQRS
-	    if (estadoPQRS === "Cerrada") {
-	        row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFFFFF'} }; }); // blanco
-	    } else { // Abierta
-	        // Semaforizar según ANS
-	        if (resultado.horasRedondeadas < prioridad.t_resp_min) {
-	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'C6EFCE'} }; }); // verde
-	        } else if (resultado.horasRedondeadas > prioridad.t_resp_max) {
-	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFC7CE'} }; }); // rojo
-	        } else {
-	            row.eachCell(cell => { cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFEB9C'} }; }); // amarillo
-	        }
-	    }
+	// 🔹 Fila 2 → encabezados de columnas con fondo azul
+	worksheet.getRow(2).eachCell(cell => {
+	    cell.fill = {
+	        type: 'pattern',
+	        pattern: 'solid',
+	        fgColor: { argb: 'FF305496' } // azul más fuerte
+	    };
+	    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // texto blanco
+	    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+	    cell.border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
 	});
 
+
+    // =========================
+    // 🔹 Llenado de datos
+    // =========================
+    todosDatos.forEach(d => {
+        const escParaEstaPQRS = escalamientos.filter(e => e.idsolicitudpqrs === d.idconsultaPQRS);
+
+        const resultado = calcularANSConFallback(
+            escParaEstaPQRS,
+            AreasEscalamiento,
+            d.idprioridad,
+            d.fecha_hora_registro,
+            d.fecha_hora_cierre,
+            d.idestado
+        );
+       console.log(d.idestado);
+        const estadoPQRS = d.idestado == 4 ? "Cerrada" : "Abierta";
+
+        let fechaCierreTexto;
+        if (d.fecha_hora_cierre && d.fecha_hora_cierre.trim() !== "") {
+            fechaCierreTexto = d.fecha_hora_cierre;
+        } else {
+            fechaCierreTexto = "Aún no hay fecha de cierre";
+        }
+
+        const row = worksheet.addRow({
+            id: d.idconsultaPQRS,
+            fechaInicio: d.fecha_hora_registro,
+            fechaCierre: fechaCierreTexto,
+            horas: resultado.horasRedondeadas,
+            estadoANS: resultado.estadoANS,
+            estadoPQRS: estadoPQRS
+        });
+
+        // =========================
+        // 🔹 Colores según estado
+        // =========================
+        let colorANS = 'FFFFFFFF'; // blanco por defecto
+
+         if(resultado.colorANS){
+			colorANS = resultado.colorANS;
+			
+		 }  
+        row.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorANS } };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            cell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+        });
+    });
+
+    // =========================
+    // 🔹 Ajustar ancho de columnas
+    // =========================
+	// Ajustar ancho de columnas
+	worksheet.columns.forEach((column, index) => {
+	    let maxLength = 0;
+
+	    // Tomar en cuenta los datos
+	    column.eachCell({ includeEmpty: true }, cell => {
+	        if (cell.row <= 2) return; // ignorar fila título y encabezado
+	        const cellValue = cell.value ? cell.value.toString() : "";
+	        maxLength = Math.max(maxLength, cellValue.length);
+	    });
+
+	    // También considerar el encabezado de la columna
+	    const header = worksheet.getRow(2).getCell(index + 1).value;
+	    if (header) {
+	        maxLength = Math.max(maxLength, header.toString().length);
+	    }
+
+	    // Aplicar ancho
+	    column.width = Math.min(50, Math.floor(maxLength * 1.2) + 2);
+	});
+
+
+    // =========================
+    // 🔹 Generar y descargar archivo
+    // =========================
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(blob, "Reporte_ANS.xlsx");
+    saveAs(blob, `Reporte_ANS_${fecha_inicial}_al_${fecha_final}.xlsx`);
 
     Swal.fire({ icon: 'success', text: "Reporte de ANS generado correctamente." });
 }
-
 
 

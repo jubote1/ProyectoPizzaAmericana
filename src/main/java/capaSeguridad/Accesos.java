@@ -24,9 +24,8 @@ import capaSeguridad.modelo.UserWithRole;
 import conexionCC.ConexionBaseDatos;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
+import io.jsonwebtoken.security.MacAlgorithm;
 
 public class Accesos {
 
@@ -263,27 +262,29 @@ public class Accesos {
 	    }
 
 
-	    public static String generateToken(long expirationMillis, String username, String session) {
+	    public  static String generateToken(long expirationlog,String username,String session) {
 	        Date issuedAt = new Date(System.currentTimeMillis());
 	        UserWithRole usuario = getUserIdAndRoleByUsername(username); 
-	        Date expiration = new Date(System.currentTimeMillis() + expirationMillis);
-
+	        Date expiration = new Date(expirationlog);
 	        // Claims adicionales
 	        Map<String, Object> claims = new HashMap<>();
 	        claims.put("id", usuario.getId());
-	        claims.put("roles", usuario.getRol());
-	        claims.put("session", session);
-	        claims.put("jti", UUID.randomUUID().toString());
+	        claims.put("roles",usuario.getRol());
+	        claims.put("session", session); // Identificador único del token
+	        claims.put("jti", UUID.randomUUID().toString()); 
+	        MacAlgorithm signatureAlgorithm = Jwts.SIG.HS256;
 
-	        return Jwts.builder()
-	                .setHeaderParam("typ", "JWT")
-	                .setSubject(username)
-	                .setClaims(claims)
-	                .setIssuedAt(issuedAt)
-	                .setExpiration(expiration)
-	                .signWith(KEY, SignatureAlgorithm.HS256) 
+	        return Jwts
+	                .builder()
+	                .header()
+	                .type("JWT")
+	                .and()
+	                 .subject(username)
+	                .claims(claims)
+	                .issuedAt(issuedAt)
+	                .expiration(expiration)
+	                .signWith(KEY, signatureAlgorithm)
 	                .compact();
-
 	    }
 	    
 	    

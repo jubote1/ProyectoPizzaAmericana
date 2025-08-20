@@ -46,13 +46,11 @@ public class NewRefreshTokenServlet extends HttpServlet {
 
         try {
             // Validate the refresh token
-        	
-        	Claims claims = Jwts.parserBuilder()
-        	        .setSigningKey(KEY)
-        	        .build()
-        	        .parseClaimsJws(refreshToken)
-        	        .getBody();
-        	
+            Claims claims = Jwts.parser()
+                    .verifyWith(KEY)
+                    .build()
+                    .parseSignedClaims(refreshToken)
+                    .getPayload();
 
             String username = claims.getSubject();
             String session = (String) claims.get("session");
