@@ -50,7 +50,21 @@ public class SolicitudPQRS {
 	private String fecha_hora_registro;
 	private String fecha_hora_cierre;
 	private boolean envio_encuesta;
+	private String observacion_ans; 
+	private boolean cambio_fecha_cierre;
 
+	public boolean isCambio_fecha_cierre() {
+		return cambio_fecha_cierre;
+	}
+	public void setCambio_fecha_cierre(boolean cambio_fecha_cierre) {
+		this.cambio_fecha_cierre = cambio_fecha_cierre;
+	}
+	public String getObservacion_ans() {
+		return observacion_ans;
+	}
+	public void setObservacion_ans(String observacion_ans) {
+		this.observacion_ans = observacion_ans;
+	}
 	public boolean isEnvio_encuesta() {
 		return envio_encuesta;
 	}

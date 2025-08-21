@@ -261,9 +261,8 @@ public class UbicacionCtrl {
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 		String mensCorreo = "Se encontro un problema con la invocación de la API ARCGIS  " + error;
-		if (lead != null || !lead.isEmpty()) {
-			mensCorreo = mensCorreo + "<br> Numero de Lead: " + lead;
-		}
+		String leadInfo = (lead == null || lead.trim().isEmpty()) ? "SIN LEAD" : lead;
+		mensCorreo += "<br> Numero de Lead: " + leadInfo;
 		correo.setMensaje(mensCorreo);
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
@@ -329,7 +328,7 @@ public class UbicacionCtrl {
 	
 
 		Resultado resultado = ubicarDireccionEnTienda(lm, "informacion", null);
-		System.out.println(resultado.getResultado());
+		System.out.println(resultado.getInfoAdicional());
 		System.out.println(lm);
 	}
 	

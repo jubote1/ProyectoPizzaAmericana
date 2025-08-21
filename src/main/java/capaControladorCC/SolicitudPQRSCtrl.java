@@ -163,7 +163,7 @@ public class SolicitudPQRSCtrl {
 			String areaResponsable, int idpedidotienda, double valorPedido, double valorDescuento,
 			int porcentajeDescuento, boolean descuentoRedimido, int idpedidoredencion,
 			List<ComentarioPqrs> listaComentarios, int idusuarioRegistro, int idusuarioRedencion, int idestado,
-			int idprioridad, int idmotivo, boolean ccVinculado, String correo_cliente, boolean envio_encuesta) {
+			int idprioridad, int idmotivo, boolean ccVinculado, String correo_cliente, boolean envio_encuesta,String observacion_ans,boolean cambio_fecha_cierre) {
 
 		JSONArray listJSON = new JSONArray();
 		JSONObject ResultadoJSON = new JSONObject();
@@ -174,7 +174,8 @@ public class SolicitudPQRSCtrl {
 				areaResponsable, idpedidotienda, valorPedido, valorDescuento, porcentajeDescuento, descuentoRedimido,
 				idpedidoredencion, idusuarioRegistro, idusuarioRedencion, idestado, idprioridad, idmotivo, ccVinculado,
 				correo_cliente);
-
+		solicitud.setObservacion_ans(observacion_ans);
+		solicitud.setCambio_fecha_cierre(cambio_fecha_cierre);
 		String nombreTienda = TiendaDAO.retornarTienda(idtienda).getNombreTienda();
 		String focoNombre = FocoPqrsDAO.retornarFocoPqrs(idFoco).getNombreFoco();
 
@@ -297,6 +298,7 @@ public class SolicitudPQRSCtrl {
 			cadaSolicitudJSON.put("envio_encuesta", cadaSolicitud.isEnvio_encuesta());
 			cadaSolicitudJSON.put("fecha_hora_registro",cadaSolicitud.getFecha_hora_registro());
 			cadaSolicitudJSON.put("fecha_hora_cierre",cadaSolicitud.getFecha_hora_cierre());
+			cadaSolicitudJSON.put("observacion_ans",cadaSolicitud.getObservacion_ans());
 
 			try {
 				cadaSolicitudJSON.put("listaComentarios", obtenerComentariosPqrs(cadaSolicitud.getIdsolicitud()));

@@ -8036,29 +8036,52 @@ public class PedidoCtrl {
 	        "values", List.of(Map.of("value", mensaje.getResultado()))
 	    ));
 
-	    // Campo Tienda
-	    customFields.add(Map.of(
-	        "field_id", FIELD_TIENDA,
-	        "values", List.of(Map.of("enum_id", obtenerCampoSeleccionCRM(String.valueOf(FIELD_TIENDA), tienda)))
-	    ));
-
-	    // Si es cliente programado → agregar asesor
-	    if ("programado".equalsIgnoreCase(tipo_cliente)) {
+	    // Campo Tienda (manejo de enum_id o value)
+	    String tiendaId = obtenerCampoSeleccionCRM(String.valueOf(FIELD_TIENDA), tienda);
+	    if (tiendaId != null) {
 	        customFields.add(Map.of(
-	            "field_id", FIELD_ASESOR,
-	            "values", List.of(Map.of("enum_id", obtenerCampoSeleccionCRM(String.valueOf(FIELD_ASESOR), "PROGRAMADO BOT SAM")))
+	            "field_id", FIELD_TIENDA,
+	            "values", List.of(Map.of("enum_id", Integer.parseInt(tiendaId)))
 	        ));
 	    } else {
-	        // Si no es programado → agregar estado tienda
+	        customFields.add(Map.of(
+	            "field_id", FIELD_TIENDA,
+	            "values", List.of(Map.of("value", tienda))
+	        ));
+	    }
+
+	    // Campo Asesor o Estado Tienda
+	    if ("programado".equalsIgnoreCase(tipo_cliente)) {
+	        String asesorId = obtenerCampoSeleccionCRM(String.valueOf(FIELD_ASESOR), "PROGRAMADO BOT SAM");
+	        if (asesorId != null) {
+	            customFields.add(Map.of(
+	                "field_id", FIELD_ASESOR,
+	                "values", List.of(Map.of("enum_id", Integer.parseInt(asesorId)))
+	            ));
+	        } else {
+	            customFields.add(Map.of(
+	                "field_id", FIELD_ASESOR,
+	                "values", List.of(Map.of("value", "PROGRAMADO BOT SAM"))
+	            ));
+	        }
+	    } else {
 	        customFields.add(Map.of(
 	            "field_id", FIELD_ESTADO_TIENDA,
 	            "values", List.of(Map.of("value", mensaje.getEstadoTienda()))
 	        ));
 	    }
 
-	    // Armar objeto final
+	    // Validación del lead
+	    int leadId;
+	    try {
+	        leadId = Integer.parseInt(lead);
+	    } catch (NumberFormatException e) {
+	        System.out.println("Lead inválido, no es un número: " + lead);
+	        return;
+	    }
+
 	    Map<String, Object> leadData = Map.of(
-	        "id", lead,
+	        "id", leadId,
 	        "custom_fields_values", customFields
 	    );
 
@@ -8086,13 +8109,12 @@ public class PedidoCtrl {
 	        System.out.println("Response Body: " + respuestaJSON);
 
 	        if (!response.isSuccessful()) {
-	        	System.out.println("Error en actualización de CRM. Código: " + response.code());
+	            System.out.println("Error en actualización de CRM. Código: " + response.code());
 	        }
 	    } catch (Exception e) {
-	    	System.out.println("Error en request a CRM: " + e.getMessage());
+	        System.out.println("Error en request a CRM: " + e.getMessage());
 	    }
 	}
-
 	
 	public String  obtenerCampoSeleccionCRM(String idcampo,String valorDeseado ){
 		String id = null;

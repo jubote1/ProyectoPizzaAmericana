@@ -14,6 +14,11 @@ body {
   width: 100%;
 }
 
+#estado_ans{
+border-radius: 10px;
+padding: 10px;
+	
+}
 .content-ans{
 	
 	font-size: 12px;

@@ -29,6 +29,9 @@ var envioEncuestaPqrs = false;
 var AreasEscalamiento = [];
 let motivos = [];
 let prioridades = [];
+const inputCorreo = document.getElementById('correo');
+const errorDiv = document.getElementById('errorCorreo');
+
 const historialContainer = document.getElementById("historialComentarios");
 // Validar usuario
 $.ajax({
@@ -244,6 +247,7 @@ $(document).ready(function() {
 		$('#valorDescuento').val(datos.valorDescuento);
 		$('#descuentoRedimido').prop('checked', datos.descuentoRedimido);
 		$('#selectEstado').val(datos.idestado);
+		$('#observacionAns').val(datos.observacion_ans);
 
 		idestadoPqrs = datos.idestado;
 
@@ -264,7 +268,7 @@ $(document).ready(function() {
 		seleccionarOpcionSeguro('#selectUsuarioRegistro', datos.idusuarioRegistro);
 		seleccionarOpcionSeguro('#selectUsuarioRedencion', datos.idusuarioRedencion);
 
-		['#selectEstado', '#selectUsuarioRegistro', '#selectUsuarioRedencion'].forEach(id => {
+		['#selectEstado', '#selectUsuarioRegistro', '#selectUsuarioRedencion', "#selectPorcentajeDesc"].forEach(id => {
 			const $select = $(id);
 			$select.removeClass("placeholder");
 			if ($select.val() === "0") {
@@ -335,9 +339,7 @@ $(document).ready(function() {
 			 $("#horas_transc").html("<strong>Horas hábiles transcurridas:</strong> "+resultado.horasRedondeadas); 
 			 $("#estado_ans").html("<strong>Estado ANS:</strong> " + resultado.estadoANS);
 			 $("#estado_ans").css({
-			   "background-color": `#${colorCSS}`, // Usa la variable con los 6 dígitos
-			   "border-radius": "10px",
-			   "padding": "10px"
+			   "background-color": `#${colorCSS}`
 			 });
 		});
 
@@ -503,6 +505,7 @@ function consultarPQRS() {
 		dtEscalamientoPQRS = $('#grid-escalamientoPQRS').DataTable();
 
 	}
+	limpiarPQRS();
 	$.getJSON(
 	  server + 'ConsultaIntegradaSolicitudesPQRS?fechainicial=' + fechaini +
 	  "&fechafinal=" + fechafin +
@@ -551,7 +554,8 @@ function consultarPQRS() {
 	        "correo": data1[i].correo,
 	        "fecha_hora_registro": data1[i].fecha_hora_registro,
 	        "fecha_hora_cierre": data1[i].fecha_hora_cierre,
-	        "envio_encuesta": data1[i].envio_encuesta
+	        "envio_encuesta": data1[i].envio_encuesta,
+			"observacion_ans": data1[i].observacion_ans
 	      }).draw();
 	    }
 	  }
@@ -561,7 +565,7 @@ function consultarPQRS() {
 	  alert("Ocurrió un error al obtener las solicitudes PQRS. Intente de nuevo.");
 	});
 
-	limpiarPQRS();
+	
 
 }
 
@@ -692,8 +696,7 @@ function ValidarDatosActualizados() {
 	}
 }
 
-const inputCorreo = document.getElementById('correo');
-const errorDiv = document.getElementById('errorCorreo');
+
 
 inputCorreo.addEventListener('input', () => {
 	const valor = inputCorreo.value.trim();
@@ -1068,7 +1071,9 @@ function EditarPQRS() {
 		idprioridad: $("#selectPrioridad").val(),
 		ccVinculado: document.getElementById("ccVinculado").checked,
 		correo: $("#correo").val(),
-		envio_encuesta: envioEncuestaPqrs
+		envio_encuesta: envioEncuestaPqrs,
+		observacion_ans:  $("#observacionAns").val(),
+		cambio_fecha_cierre: false
 	};
 
 	// 2️⃣ Confirmación
@@ -1108,6 +1113,29 @@ function obtenerListaComentarios() {
 
 // 📌 Función para procesar la actualización con AJAX
 async function procesarActualizacion(datos) {
+	// Validar fecha de cierre antes de enviar
+	if (datos.idestado == 4) {
+		if (fecha_hora_cierre) {
+			// Ya existía fecha de cierre → preguntar
+			const decision = await Swal.fire({
+				html: `<b>La PQRS ya tiene una fecha de cierre</b><br>Actualmente está registrada con fecha <b>${fecha_hora_cierre}</b>.<br><br>
+					¿Desea reemplazarla con la fecha y hora actual?`,
+				icon: 'question',
+				customClass: { icon: 'swal-icon-small' },
+				showCancelButton: true,
+				confirmButtonText: 'Sí, reemplazar',
+				cancelButtonText: 'No, conservar',
+				allowOutsideClick: false, // 👈 impide cerrar clickeando afuera
+				allowEscapeKey: false     // 👈 impide cerrar con ESC
+			});
+
+			if (decision.isConfirmed) {
+				datos.cambio_fecha_cierre = true; // Había fecha previa y se reemplaza
+			} 
+		} 
+	}
+
+	// Aquí ya tienes decisión, ahora sí mostrar "Actualizando..."
 	Swal.fire({
 		title: 'Actualizando...',
 		text: 'Por favor espere un momento',
@@ -1160,7 +1188,12 @@ async function procesarActualizacion(datos) {
 		iconoFinal = 'error';
 	} finally {
 		Swal.close();
-		Swal.fire({ icon: iconoFinal, title: 'Resultado', html: mensajeFinal, customClass: { icon: 'swal-icon-small' } });
+		Swal.fire({
+			icon: iconoFinal,
+			title: 'Resultado',
+			html: mensajeFinal,
+			customClass: { icon: 'swal-icon-small' }
+		});
 
 		limpiarPQRS();
 		if ($.fn.dataTable.isDataTable('#grid-consultaPQRS')) {
@@ -1222,32 +1255,40 @@ function DescartarPQRS() {
 
 
 function limpiarPQRS() {
-	historialContainer.innerHTML = '';
-	$('#telefono, #nombres,#correo, #apellidos, #direccion, #zona, #valorPedido, #idpedidotienda,#idpedidoredencion, #valorDescuento , #idSolicitudPQRS,#fecha,#selectMotivo,#selectPrioridad,#selectSolicitudpqrs,#selectPorcentajeDesc,#selectTipo,#selectUsuarioRegistro,#selectEstado,#selectAreaResponsable').val("");
-	// Reiniciar selects a la primera opción
-	$('#selectTiendaspqrs, #selectOrigen , #selectFoco').val("");
-	$('select').each(function() {
-		// $(this).prop('selectedIndex', 0);
+	// Si todos los inputs/selects están dentro de un formulario, lo reseteamos:
+	const form = document.querySelector("#formPQRS"); // <-- pon el id real de tu <form>
+	if (form) form.reset();
 
+	// Limpiar campos específicos que no se limpian con reset
+	historialContainer.innerHTML = '';
+	$("#img-gallery").html('');
+	$("#horas_transc").html(""); 
+	$("#estado_ans").html("").css("background-color", "#FFFFFFFF");
+
+	// Resetear variables globales
+	idSolicitudPQRS = 0;
+	idestadoPqrs = 0;
+	fecha_hora_registro = "";
+	fecha_hora_cierre = "";
+	envioEncuestaPqrs = false;
+
+	// Quitar validaciones visuales de correo
+	inputCorreo.classList.remove('is-invalid', 'is-valid');
+
+	// Reiniciar checkboxes
+	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
+
+	// Asegurar que los selects con "placeholder" se marquen correctamente
+	$('select').each(function() {
 		if (this.value === "0") {
 			this.classList.add("placeholder");
 		} else {
 			this.classList.remove("placeholder");
 		}
 	});
-	idSolicitudPQRS = 0;
-	idestadoPqrs = 0;
-	fecha_hora_registro = "";
-	fecha_hora_cierre = "";
-	envioEncuestaPqrs = false;
-	$("#horas_transc").html(""); 
-	$("#estado_ans").html("");  
-	$('#descuentoRedimido, #ccVinculado').prop('checked', false);
-	$('#img-gallery').html('');
-
-
-
 }
+
+
 
 async function generarReporteDes() {
 	const filtrados = datosReporte.filter(d => d.valorDescuento > 0);
@@ -2087,8 +2128,8 @@ function calcularHorasHabiles(fechaInicio, fechaFin, inicioHorario, finHorario) 
     }
 
     // Pasar al siguiente día a las 00:00
-    inicioActual.setDate(inicioActual.getDate() + 1);
-    inicioActual.setHours(0, 0, 0, 0);
+	inicioActual.setDate(inicioActual.getDate() + 1);
+	inicioActual.setHours(parseInt(inicioHorario.split(":")[0]), parseInt(inicioHorario.split(":")[1]), 0, 0);
   }
 
   return totalHoras;
@@ -2131,37 +2172,52 @@ function calcularANSConFallback(escalamientos, areas, idPrioridad, fechaRegistro
   }
 
   if (escalamientos.length > 0) {
-    // Ordenar por fecha de escalamiento
-    const escOrdenados = [...escalamientos].sort(
-      (a, b) => parseFecha(a.fechaescalamiento) - parseFecha(b.fechaescalamiento)
-    );
+	  // Ordenar por fecha de escalamiento
+	  const escOrdenados = [...escalamientos].sort(
+	    (a, b) => parseFecha(a.fechaescalamiento) - parseFecha(b.fechaescalamiento)
+	  );
 
-    // Calcular cada tramo
-    escOrdenados.forEach(esc => {
-      const area = areas.find(a => a.area === esc.arearesponsable) || areas.find(a => a.area === "contact");
-      const finEscalamientoDate = esc.fecharesolucion && esc.fecharesolucion.trim() !== ""
-        ? parseFecha(esc.fecharesolucion)
-        : fechaCierreDate;
+	  // 👉 Tramo inicial: desde fechaRegistro hasta el primer escalamiento con "contact"
+	  const primeraFechaEscalamiento = parseFecha(escOrdenados[0].fechaescalamiento);
+	  if (escOrdenados[0].arearesponsable !== "contact" && primeraFechaEscalamiento > fechaRegistroDate) {
+	    const areaContact = areas.find(a => a.area === "contact");
+	    horasTotales += calcularHorasHabiles(
+	      fechaRegistroDate,
+	      primeraFechaEscalamiento,
+	      areaContact.inicio_horario,
+	      areaContact.final_horario
+	    );
+	  }
 
-      horasTotales += calcularHorasHabiles(
-        parseFecha(esc.fechaescalamiento),
-        finEscalamientoDate,
-        area.inicio_horario,
-        area.final_horario
-      );
-    });
+	  
+	// Calcular cada tramo de escalamiento normalmente
+	escOrdenados.forEach(esc => {
+	  const area = areas.find(a => a.area === esc.arearesponsable) || areas.find(a => a.area === "contact");
+	  const finEscalamientoDate = esc.fecharesolucion && esc.fecharesolucion.trim() !== ""
+	    ? parseFecha(esc.fecharesolucion)
+	    : fechaCierreDate;
 
-    // Tramo pendiente en "contact" si último escalamiento no cubre cierre
-    const ultimaFechaResolucion = parseFecha(escOrdenados[escOrdenados.length - 1].fecharesolucion) || fechaRegistroDate;
-    if (fechaCierreDate > ultimaFechaResolucion) {
-      const areaContact = areas.find(a => a.area === "contact");
-      horasTotales += calcularHorasHabiles(
-        ultimaFechaResolucion,
-        fechaCierreDate,
-        areaContact.inicio_horario,
-        areaContact.final_horario
-      );
-    }
+	  horasTotales += calcularHorasHabiles(
+	    parseFecha(esc.fechaescalamiento),
+	    finEscalamientoDate,
+	    area.inicio_horario,
+	    area.final_horario
+	  );
+	});
+
+
+	// 👉 Tramo pendiente en "contact" si último escalamiento no cubre cierre
+	const ultimaFechaResolucion = parseFecha(escOrdenados[escOrdenados.length - 1].fecharesolucion) || fechaRegistroDate;
+	if (fechaCierreDate > ultimaFechaResolucion) {
+	  const areaContact = areas.find(a => a.area === "contact");
+	  horasTotales += calcularHorasHabiles(
+	    ultimaFechaResolucion,
+	    fechaCierreDate,
+	    areaContact.inicio_horario,
+	    areaContact.final_horario
+	  );
+	}
+
 
   } else {
     // No escalada → todo con contact
@@ -2212,6 +2268,7 @@ function calcularANSConFallback(escalamientos, areas, idPrioridad, fechaRegistro
 
 
 async function generarReporteANS() {
+	console.log(prioridades);
     const todosDatos = dtconsultasPQRS.rows().data().toArray();
 
     if (todosDatos.length === 0) {
@@ -2224,6 +2281,7 @@ async function generarReporteANS() {
 
     // Llamar al servicio que devuelve todos los escalamientos de estos IDs
     let escalamientos = [];
+
     try {
         const response = await fetch(`${server}ConsultarEscalamientoPQRS?idsolicitudes=${idsPQRS}`);
         escalamientos = await response.json(); // Array de todos los escalamientos
@@ -2246,7 +2304,7 @@ async function generarReporteANS() {
     });
 
 	// 🔹 Fila 1 → título general
-	worksheet.mergeCells("A1:F1");
+	worksheet.mergeCells("A1:I1");
 	worksheet.getCell("A1").value = `Reporte ANS (${fecha_inicial} - ${fecha_final}) - Generado: ${hoyTexto}`;
 	worksheet.getCell("A1").alignment = { horizontal: "center" };
 	worksheet.getCell("A1").font = { size: 12, bold: true };
@@ -2258,10 +2316,53 @@ async function generarReporteANS() {
 	    "Fecha Cierre",
 	    "Horas Hábiles Transcurridas",
 	    "Estado ANS",
-	    "Estado PQRS"
+	    "Estado PQRS",
+		"Escalado"
 	]);
 
 	// Dar formato a la fila 2
+	worksheet.getRow(2).eachCell(cell => {
+	    cell.fill = {
+	        type: 'pattern',
+	        pattern: 'solid',
+	        fgColor: { argb: 'FF4472C4' } // azul
+	    };
+	    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+	    cell.alignment = { horizontal: 'left', vertical: 'middle' };
+	    cell.border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
+	});
+	// =========================
+	// 🔹 Definir columnas principales
+	// =========================
+	worksheet.columns = [
+	    { key: "id" },
+	    { key: "fechaInicio" },
+	    { key: "fechaCierre" },
+	    { key: "horas" },
+	    { key: "estadoANS" },
+	    { key: "estadoPQRS" },
+	    { key: "prioridad" },       
+	    { key: "estadoEscalado" },   
+	    { key: "observacionANS" }   // 👈 nueva columna
+	];
+
+	// 🔹 Encabezados de columnas
+	worksheet.getRow(2).values = [
+	    "ID PQRS",
+	    "Fecha Inicio",
+	    "Fecha Cierre",
+	    "Horas Hábiles Transcurridas",
+	    "Estado ANS",
+	    "Estado PQRS",
+	    "Prioridad",
+	    "Escalado",
+	    "Observación ANS"   // 👈 nuevo encabezado
+	];
 	worksheet.getRow(2).eachCell(cell => {
 	    cell.fill = {
 	        type: 'pattern',
@@ -2277,23 +2378,92 @@ async function generarReporteANS() {
 	        right: { style: 'thin' }
 	    };
 	});
-	
-	// 🔹 Definir keys y anchos para las columnas 
-	worksheet.columns = [ { key: "id"}, 
-	{ key: "fechaInicio"}, 
-	{ key: "fechaCierre" }, 
-	{ key: "horas" }, 
-	{ key: "estadoANS"},
-	 { key: "estadoPQRS" } ];
+	// =========================
+	// 🔹 Llenado de datos
+	// =========================
+	todosDatos.forEach(d => {
+	    const escParaEstaPQRS = escalamientos.filter(e => e.idsolicitudpqrs === d.idconsultaPQRS);
 
-	// 🔹 Fila 2 → encabezados de columnas con fondo azul
-	worksheet.getRow(2).eachCell(cell => {
+	    const resultado = calcularANSConFallback(
+	        escParaEstaPQRS,
+	        AreasEscalamiento,
+	        d.idprioridad,
+	        d.fecha_hora_registro,
+	        d.fecha_hora_cierre,
+	        d.idestado
+	    );
+
+	    const estadoPQRS = d.idestado == 4 ? "Cerrada" : "Abierta";
+
+	    let fechaCierreTexto;
+	    if (d.fecha_hora_cierre && d.fecha_hora_cierre.trim() !== "") {
+	        fechaCierreTexto = d.fecha_hora_cierre;
+	    } else {
+	        fechaCierreTexto = "Sin fecha de cierre (se cuenta desde la creación del reporte)";
+	    }
+
+	    // 👇 Prioridad
+	    const prioridadObj = prioridades.find(p => p.idprioridad === d.idprioridad);
+	    const prioridadDesc = prioridadObj ? prioridadObj.descripcion : "N/A";
+
+	    // 👇 Escalado
+	    let escaladoTexto = "NO";
+	    if (escParaEstaPQRS.length > 0) {
+	        escaladoTexto = escParaEstaPQRS.map(e => e.arearesponsable).join(", ");
+	    }
+
+		const row = worksheet.addRow({
+		    id: d.idconsultaPQRS,
+		    fechaInicio: d.fecha_hora_registro,
+		    fechaCierre: fechaCierreTexto,
+		    horas: resultado.horasRedondeadas,
+		    estadoANS: resultado.estadoANS,
+		    estadoPQRS: estadoPQRS,
+		    prioridad: prioridadDesc,
+		    estadoEscalado: escaladoTexto,
+		    observacionANS: d.observacion_ans ?? ""   // 👈 se agrega
+		});
+
+	    // =========================
+	    // 🔹 Colores según estado ANS
+	    // =========================
+	    let colorANS = 'FFFFFFFF'; // blanco por defecto
+	    if (resultado.colorANS) {
+	        colorANS = resultado.colorANS;
+	    }
+
+	    row.eachCell(cell => {
+	        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorANS } };
+	        cell.border = {
+	            top: { style: 'thin' },
+	            left: { style: 'thin' },
+	            bottom: { style: 'thin' },
+	            right: { style: 'thin' }
+	        };
+	        cell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
+	    });
+	});
+
+	// =========================
+	// 🔹 Tabla de Prioridades (con espacio)
+	// =========================
+	worksheet.mergeCells("K1:M1"); // 👈 ahora empieza en K
+	worksheet.getCell("K1").value = "Tipos de Prioridades";
+	worksheet.getCell("K1").alignment = { horizontal: "center" };
+	worksheet.getCell("K1").font = { size: 12, bold: true };
+
+	worksheet.getRow(2).getCell("K").value = "Prioridad";
+	worksheet.getRow(2).getCell("L").value = "Tiempo Mín (h)";
+	worksheet.getRow(2).getCell("M").value = "Tiempo Máx (h)";
+
+	["K", "L", "M"].forEach(col => {
+	    const cell = worksheet.getRow(2).getCell(col);
 	    cell.fill = {
 	        type: 'pattern',
 	        pattern: 'solid',
-	        fgColor: { argb: 'FF305496' } // azul más fuerte
+	        fgColor: { argb: 'FF305496' }
 	    };
-	    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // texto blanco
+	    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 	    cell.alignment = { horizontal: 'center', vertical: 'middle' };
 	    cell.border = {
 	        top: { style: 'thin' },
@@ -2304,62 +2474,80 @@ async function generarReporteANS() {
 	});
 
 
-    // =========================
-    // 🔹 Llenado de datos
-    // =========================
-    todosDatos.forEach(d => {
-        const escParaEstaPQRS = escalamientos.filter(e => e.idsolicitudpqrs === d.idconsultaPQRS);
+	let rowIndex = 3;
+	prioridades.forEach(p => {
+	    worksheet.getCell(`K${rowIndex}`).value = p.descripcion;
+	    worksheet.getCell(`L${rowIndex}`).value = p.t_resp_min;
+	    worksheet.getCell(`M${rowIndex}`).value = p.t_resp_max;
 
-        const resultado = calcularANSConFallback(
-            escParaEstaPQRS,
-            AreasEscalamiento,
-            d.idprioridad,
-            d.fecha_hora_registro,
-            d.fecha_hora_cierre,
-            d.idestado
-        );
-       console.log(d.idestado);
-        const estadoPQRS = d.idestado == 4 ? "Cerrada" : "Abierta";
+	    ["K", "L", "M"].forEach(col => {
+	        const cell = worksheet.getCell(`${col}${rowIndex}`);
+			cell.fill = { 
+			    type: 'pattern', 
+			    pattern: 'solid', 
+			    fgColor: { argb: 'FFFFFFFF' } // blanco
+			};
+	        cell.border = {
+	            top: { style: 'thin' },
+	            left: { style: 'thin' },
+	            bottom: { style: 'thin' },
+	            right: { style: 'thin' }
+	        };
+	        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+	    });
 
-        let fechaCierreTexto;
-        if (d.fecha_hora_cierre && d.fecha_hora_cierre.trim() !== "") {
-            fechaCierreTexto = d.fecha_hora_cierre;
-        } else {
-            fechaCierreTexto = "Aún no hay fecha de cierre";
-        }
+	    rowIndex++;
+	});
 
-        const row = worksheet.addRow({
-            id: d.idconsultaPQRS,
-            fechaInicio: d.fecha_hora_registro,
-            fechaCierre: fechaCierreTexto,
-            horas: resultado.horasRedondeadas,
-            estadoANS: resultado.estadoANS,
-            estadoPQRS: estadoPQRS
-        });
+	// =========================
+	// 🔹 Tabla Estados ANS (debajo de prioridades)
+	// =========================
+	rowIndex += 2;
+	worksheet.mergeCells(`K${rowIndex}:L${rowIndex}`);
+	worksheet.getCell(`K${rowIndex}`).value = "Estados ANS";
+	worksheet.getCell(`K${rowIndex}`).alignment = { horizontal: "center" };
+	worksheet.getCell(`K${rowIndex}`).font = { size: 12, bold: true };
 
-        // =========================
-        // 🔹 Colores según estado
-        // =========================
-        let colorANS = 'FFFFFFFF'; // blanco por defecto
+	rowIndex++;
+	worksheet.getCell(`K${rowIndex}`).value = "Antes de tiempo";
+	worksheet.getCell(`L${rowIndex}`).value = "Verde";
+	["K","L"].forEach(col => {
+	    worksheet.getCell(`${col}${rowIndex}`).border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
+	});
+	worksheet.getCell(`L${rowIndex}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC6EFCE' } };
 
-         if(resultado.colorANS){
-			colorANS = resultado.colorANS;
-			
-		 }  
-        row.eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colorANS } };
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-            cell.alignment = { wrapText: true, vertical: 'middle', horizontal: 'center' };
-        });
-    });
+	rowIndex++;
+	worksheet.getCell(`K${rowIndex}`).value = "En el tiempo";
+	worksheet.getCell(`L${rowIndex}`).value = "Amarillo";
+	["K","L"].forEach(col => {
+	    worksheet.getCell(`${col}${rowIndex}`).border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
+	});
+	worksheet.getCell(`L${rowIndex}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
 
-    // =========================
-    // 🔹 Ajustar ancho de columnas
+	rowIndex++;
+	worksheet.getCell(`K${rowIndex}`).value = "Fuera de tiempo";
+	worksheet.getCell(`L${rowIndex}`).value = "Rojo";
+	["K","L"].forEach(col => {
+	    worksheet.getCell(`${col}${rowIndex}`).border = {
+	        top: { style: 'thin' },
+	        left: { style: 'thin' },
+	        bottom: { style: 'thin' },
+	        right: { style: 'thin' }
+	    };
+	});
+	worksheet.getCell(`L${rowIndex}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+
+
     // =========================
 	// Ajustar ancho de columnas
 	worksheet.columns.forEach((column, index) => {
@@ -2382,7 +2570,7 @@ async function generarReporteANS() {
 	    column.width = Math.min(50, Math.floor(maxLength * 1.2) + 2);
 	});
 
-
+	worksheet.getColumn('J').width = 8;  // Escalado
     // =========================
     // 🔹 Generar y descargar archivo
     // =========================

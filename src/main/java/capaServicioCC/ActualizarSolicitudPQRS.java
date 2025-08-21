@@ -65,7 +65,9 @@ public class ActualizarSolicitudPQRS extends HttpServlet {
             parseInt(req, "idmotivo"),
             Boolean.parseBoolean(req.getParameter("ccVinculado")),
             req.getParameter("correo"),
-            Boolean.parseBoolean(req.getParameter("envio_encuesta"))
+            Boolean.parseBoolean(req.getParameter("envio_encuesta")),
+            req.getParameter("observacion_ans"),
+            Boolean.parseBoolean(req.getParameter("cambio_fecha_cierre"))
         );
 
         resp.getWriter().write(respuesta);

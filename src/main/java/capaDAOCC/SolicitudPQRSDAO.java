@@ -137,89 +137,122 @@ public class SolicitudPQRSDAO {
 	 * @return
 	 */
 	public static int actualizarSolicitudPQRS(SolicitudPQRS solicitud) {
-		Logger logger = Logger.getLogger("log_file");
-		int idSolicitudPQRSIns = solicitud.getIdsolicitud();
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		Date fechaTemporal;
-		DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
-		String fechaSolicitudFinal;
+	    Logger logger = Logger.getLogger("log_file");
+	    int idSolicitudPQRSIns = solicitud.getIdsolicitud();
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    Date fechaTemporal;
+	    DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
+	    String fechaSolicitudFinal;
 
-		int descuentoRedimido = solicitud.isDescuentoRedimido() ? 1 : 0;
-		int ccVinculado = solicitud.isCcVinculado() ? 1 : 0;
-		int envio_encuesta = solicitud.isEnvio_encuesta() ? 1 : 0;
-		String correo = solicitud.getCorreo().isEmpty() ? null : solicitud.getCorreo();
+	    int descuentoRedimido = solicitud.isDescuentoRedimido() ? 1 : 0;
+	    int ccVinculado = solicitud.isCcVinculado() ? 1 : 0;
+	    boolean cambio_fecha_cierre = solicitud.isCambio_fecha_cierre();
+	    String correo = solicitud.getCorreo().isEmpty() ? null : solicitud.getCorreo();
 
-		try {
-			fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(solicitud.getFechaSolicitud());
-			fechaSolicitudFinal = formatoFinal.format(fechaTemporal);
-		} catch (Exception e) {
-			logger.error(e.toString());
-			return 0;
-		}
+	    try {
+	        fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(solicitud.getFechaSolicitud());
+	        fechaSolicitudFinal = formatoFinal.format(fechaTemporal);
+	    } catch (Exception e) {
+	        logger.error(e.toString());
+	        return 0;
+	    }
 
-		String update = "UPDATE solicitudPQRS SET "
-				+ "fechasolicitud = ?, tiposolicitud = ?, idcliente = ?, idtienda = ?, nombres = ?, apellidos = ?, telefono = ?, direccion = ?, zona = ?, idmunicipio = ?, comentario = ?, "
-				+ "idorigen = ?, idfoco = ?, tipo = ?, area_responsable = ?, idpedidotienda = ?, valor_pedido = ?, valor_descuento = ?, porcentaje_descuento = ?, descuento_redimido = ?, "
-				+ "idpedidoredencion = ?, id_usuario_registro = ?, id_usuario_redencion = ?, idestado = ?, idprioridad = ?, idmotivo = ? ,cc_vinculado = ? , correo = ?, fecha_hora_cierre = ? "
-				+ "WHERE idsolicitudpqrs = ?";
+	    Timestamp fechaCierreFinal = null;
 
-		try (PreparedStatement pstmt = con1.prepareStatement(update)) {
-			pstmt.setString(1, fechaSolicitudFinal);
-			pstmt.setString(2, solicitud.getTipoSolicitud());
-			pstmt.setInt(3, solicitud.getIdcliente());
-			pstmt.setInt(4, solicitud.getIdtienda());
-			pstmt.setString(5, solicitud.getNombres());
-			pstmt.setString(6, solicitud.getApellidos());
-			pstmt.setString(7, solicitud.getTelefono());
-			pstmt.setString(8, solicitud.getDireccion());
-			pstmt.setString(9, solicitud.getZona());
-			pstmt.setInt(10, solicitud.getIdmunicipio());
-			pstmt.setString(11, solicitud.getComentario());
-			pstmt.setInt(12, solicitud.getIdOrigen());
-			pstmt.setInt(13, solicitud.getIdFoco());
-			pstmt.setString(14, solicitud.getTipo());
-			pstmt.setString(15, solicitud.getAreaResponsable());
-			pstmt.setInt(16, solicitud.getIdpedidotienda());
-			pstmt.setDouble(17, solicitud.getValorPedido());
-			pstmt.setDouble(18, solicitud.getValorDescuento());
-			pstmt.setDouble(19, solicitud.getPorcentajeDescuento());
-			pstmt.setInt(20, descuentoRedimido);
-			pstmt.setInt(21, solicitud.getIdpedidoredencion());
-			pstmt.setInt(22, solicitud.getIdusuarioRegistro());
-			pstmt.setInt(23, solicitud.getIdusuarioRedencion());
-			pstmt.setInt(24, solicitud.getIdestado());
-			pstmt.setInt(25, solicitud.getIdprioridad());
-			pstmt.setInt(26, solicitud.getIdmotivo());
-			pstmt.setInt(27, ccVinculado);
-			pstmt.setString(28, correo);
-			
-		    // Si el estado es 4, ponemos la fecha/hora actual, si no, null
-		    if (solicitud.getIdestado() == 4) {
-		        pstmt.setTimestamp(29, new Timestamp(System.currentTimeMillis()));
-		    } else {
-		        pstmt.setNull(29, java.sql.Types.TIMESTAMP);
-		    }
-			pstmt.setInt(30, idSolicitudPQRSIns);
+	    try {
+	        // 1️⃣ Consultar la fecha_hora_cierre actual en la BD
+	        String sqlFecha = "SELECT fecha_hora_cierre FROM solicitudPQRS WHERE idsolicitudpqrs = ?";
+	        try (PreparedStatement psFecha = con1.prepareStatement(sqlFecha)) {
+	            psFecha.setInt(1, idSolicitudPQRSIns);
+	            try (ResultSet rs = psFecha.executeQuery()) {
+	                if (rs.next()) {
+	                    fechaCierreFinal = rs.getTimestamp("fecha_hora_cierre");
+	                }
+	            }
+	        }
 
+	        // 2️⃣ Lógica de actualización de fecha_hora_cierre
+	        if (solicitud.getIdestado() == 4) {
+	            if (fechaCierreFinal == null) {
+	                // No había fecha → asignamos la actual
+	                fechaCierreFinal = new Timestamp(System.currentTimeMillis());
+	            } else {
+	                if (cambio_fecha_cierre) {
+	                    // Ya había fecha y el flag dice que se puede cambiar
+	                    fechaCierreFinal = new Timestamp(System.currentTimeMillis());
+	                }
+	               
+	            }
+	        } else {
+	            // Estado distinto de 4 → null
+	            fechaCierreFinal = null;
+	        }
 
-			logger.info("Ejecutando: " + pstmt.toString());
-			pstmt.executeUpdate();
-		} catch (Exception e) {
-			logger.error("Error al actualizar PQRS: " + e.toString());
-			return 0;
-		} finally {
-			try {
-				if (con1 != null && !con1.isClosed()) {
-					con1.close();
-				}
-			} catch (Exception e) {
-				logger.error("Error al cerrar la conexión: " + e.toString());
-			}
-		}
+	        // 3️⃣ Hacer el update normal
+	        String update = "UPDATE solicitudPQRS SET "
+	                + "fechasolicitud = ?, tiposolicitud = ?, idcliente = ?, idtienda = ?, nombres = ?, apellidos = ?, telefono = ?, direccion = ?, zona = ?, idmunicipio = ?, comentario = ?, "
+	                + "idorigen = ?, idfoco = ?, tipo = ?, area_responsable = ?, idpedidotienda = ?, valor_pedido = ?, valor_descuento = ?, porcentaje_descuento = ?, descuento_redimido = ?, "
+	                + "idpedidoredencion = ?, id_usuario_registro = ?, id_usuario_redencion = ?, idestado = ?, idprioridad = ?, idmotivo = ?, cc_vinculado = ?, correo = ?, fecha_hora_cierre = ? , observacion_ans = ? "
+	                + "WHERE idsolicitudpqrs = ?";
 
-		return idSolicitudPQRSIns;
+	        try (PreparedStatement pstmt = con1.prepareStatement(update)) {
+	            pstmt.setString(1, fechaSolicitudFinal);
+	            pstmt.setString(2, solicitud.getTipoSolicitud());
+	            pstmt.setInt(3, solicitud.getIdcliente());
+	            pstmt.setInt(4, solicitud.getIdtienda());
+	            pstmt.setString(5, solicitud.getNombres());
+	            pstmt.setString(6, solicitud.getApellidos());
+	            pstmt.setString(7, solicitud.getTelefono());
+	            pstmt.setString(8, solicitud.getDireccion());
+	            pstmt.setString(9, solicitud.getZona());
+	            pstmt.setInt(10, solicitud.getIdmunicipio());
+	            pstmt.setString(11, solicitud.getComentario());
+	            pstmt.setInt(12, solicitud.getIdOrigen());
+	            pstmt.setInt(13, solicitud.getIdFoco());
+	            pstmt.setString(14, solicitud.getTipo());
+	            pstmt.setString(15, solicitud.getAreaResponsable());
+	            pstmt.setInt(16, solicitud.getIdpedidotienda());
+	            pstmt.setDouble(17, solicitud.getValorPedido());
+	            pstmt.setDouble(18, solicitud.getValorDescuento());
+	            pstmt.setDouble(19, solicitud.getPorcentajeDescuento());
+	            pstmt.setInt(20, descuentoRedimido);
+	            pstmt.setInt(21, solicitud.getIdpedidoredencion());
+	            pstmt.setInt(22, solicitud.getIdusuarioRegistro());
+	            pstmt.setInt(23, solicitud.getIdusuarioRedencion());
+	            pstmt.setInt(24, solicitud.getIdestado());
+	            pstmt.setInt(25, solicitud.getIdprioridad());
+	            pstmt.setInt(26, solicitud.getIdmotivo());
+	            pstmt.setInt(27, ccVinculado);
+	            pstmt.setString(28, correo);
+
+	            if (fechaCierreFinal != null) {
+	                pstmt.setTimestamp(29, fechaCierreFinal);
+	            } else {
+	                pstmt.setNull(29, java.sql.Types.TIMESTAMP);
+	            }
+	            pstmt.setString(30, solicitud.getObservacion_ans());
+	            pstmt.setInt(31, idSolicitudPQRSIns);
+
+	            logger.info("Ejecutando: " + pstmt.toString());
+	            pstmt.executeUpdate();
+	        }
+	    } catch (Exception e) {
+	        logger.error("Error al actualizar PQRS: " + e.toString());
+	        return 0;
+	    } finally {
+	        try {
+	            if (con1 != null && !con1.isClosed()) {
+	                con1.close();
+	            }
+	        } catch (Exception e) {
+	            logger.error("Error al cerrar la conexión: " + e.toString());
+	        }
+	    }
+
+	    return idSolicitudPQRSIns;
 	}
+
 
 	/**
 	 * M�todo que se encarga desde la base de datos del descarte de la solicitu de
@@ -292,7 +325,7 @@ public class SolicitudPQRSDAO {
 		StringBuilder consulta = new StringBuilder(
 				"SELECT a.idsolicitudPQRS, a.fechasolicitud, a.tiposolicitud, a.nombres, a.apellidos, a.direccion,a.zona, a.idfoco, "
 						+ "a.telefono, a.comentario, a.idorigen, b.nombre_origen, a.idmunicipio, a.idtienda, c.nombre_foco, a.idcliente,a.cc_vinculado, a.correo, "
-						+ "a.tipo, a.area_responsable, a.fecha_hora_registro ,a.fecha_hora_cierre,a.envio_encuesta , "
+						+ "a.tipo, a.area_responsable, a.fecha_hora_registro ,a.fecha_hora_cierre,a.envio_encuesta ,a.observacion_ans , "
 						+ "(SELECT COUNT(*) FROM solicitudpqrs_imagenes d WHERE d.idsolicitudPQRS = a.idsolicitudPQRS) AS imagenes, "
 						+ "a.idpedidotienda, a.valor_pedido, a.valor_descuento, a.porcentaje_descuento, a.descuento_redimido, a.idpedidoredencion , a.id_usuario_registro , a.id_usuario_redencion ,a.idestado , a.idprioridad ,a.idmotivo, e.descripcion as nombreEstado "
 						+ "FROM solicitudPQRS a " + "JOIN origen_pqrs b ON a.idorigen = b.idorigen "
@@ -364,8 +397,16 @@ public class SolicitudPQRSDAO {
 					} else {
 					    cadaSolicitud.setFecha_hora_cierre("");
 					}
+					
+					String observacion_ans = rs.getString("observacion_ans") ;
+					if(observacion_ans != null){
+						cadaSolicitud.setObservacion_ans(observacion_ans);
+					}else {
+						cadaSolicitud.setObservacion_ans("");
+					}
 
 					cadaSolicitud.setEnvio_encuesta(rs.getBoolean("envio_encuesta"));
+					
 					consultaSolicitudes.add(cadaSolicitud);
 
 				}

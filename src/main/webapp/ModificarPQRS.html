@@ -193,7 +193,7 @@
 			</div>
 			<div class="col-md-6">
 				<div class="container-modPqrs">
-					<form id="cliente">
+					<form id="formPQRS">
 						<h1>MODIFICACIÓN PQRS</h1>
 						<div class="row">
 							<div class="col-md-12">
@@ -365,13 +365,19 @@
 										</label> <label for="descuentoRedimido" class="mb-0 ml-2">
 											Descuento redimido </label>
 									</div>
+								
+									<div class="col-sm-6 form-group">
+									<label>Observación ANS</label>
+													<textarea id="observacionAns" class="form-control"
+														rows="3"></textarea>
+									</div>			
 									<div class="col-sm-6 form-group">
 										<label> <input type="checkbox" id="ccVinculado"
 											name="ccVinculado" style="margin-right: 6px;">
 											Vinculado al Contact Center
 										</label>
 									</div>
-									<div class="col-sm-6 form-group">
+									<div class="col-sm-12 form-group">
 										<div class="content-btn">
 											<button type="button" class="btn btn-primary"
 												onclick="abrirModalRespuesta()">Correo de Respuesta</button>
