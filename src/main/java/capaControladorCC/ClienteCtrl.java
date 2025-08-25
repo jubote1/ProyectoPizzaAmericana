@@ -594,7 +594,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 		 * del cliente existente, en caso de que no exista, haremos la creaci�n.
 		 */
 		boolean esTelefonoFijo = false;
-		if(clienteVirtual.getTelefono().substring(0,3).equals(new String("034")))
+		if(clienteVirtual.getTelefono().substring(0,3).equals(new String("034")) || clienteVirtual.getTelefono().substring(0,3).equals(new String("604")))
 		{
 			esTelefonoFijo = true;
 		}

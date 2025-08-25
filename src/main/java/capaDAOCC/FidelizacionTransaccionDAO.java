@@ -52,7 +52,7 @@ public class FidelizacionTransaccionDAO {
 		return(respuesta);
 	}
 	
-	public static boolean insertarFidelizacionTransaccion(FidelizacionTransaccion transaccion)
+	public static boolean insertarFidelizacionTransaccion(FidelizacionTransaccion transaccion , int diasVigencia)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		boolean respuesta = false;
@@ -61,7 +61,7 @@ public class FidelizacionTransaccionDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String insert = "insert into fidelizacion_transaccion (correo,idtienda, idpedidotienda, valor_neto, puntos) values ('" + transaccion.getCorreo() +"' ," + transaccion.getIdTienda()+ " ," +  transaccion.getIdPedidoTienda()+ "," + transaccion.getValorNeto() + ", " + transaccion.getPuntos() +")";
+			String insert = "insert into fidelizacion_transaccion (correo,idtienda, idpedidotienda, valor_neto, puntos, fecha_vencimiento) values ('" + transaccion.getCorreo() +"' ," + transaccion.getIdTienda()+ " ," +  transaccion.getIdPedidoTienda()+ "," + transaccion.getValorNeto() + ", " + transaccion.getPuntos() + ", " + "DATE_ADD(CURDATE(), INTERVAL " + diasVigencia + " DAY)" +")";
 			logger.info(insert);
 			stm.executeUpdate(insert);
 			respuesta = true;
@@ -96,7 +96,7 @@ public class FidelizacionTransaccionDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String select = "SELECT a.*, b.nombre AS tienda FROM fidelizacion_transaccion a, tienda b WHERE a.idtienda = b.idtienda AND a.correo = '" + correo + "';";
+			String select = "SELECT a.*, b.nombre AS tienda FROM fidelizacion_transaccion a, tienda b WHERE a.idtienda = b.idtienda AND a.correo = '" + correo + "'";
 			logger.info(select);
 			ResultSet rs = stm.executeQuery(select);
 			while(rs.next())
@@ -123,6 +123,97 @@ public class FidelizacionTransaccionDAO {
 			}
 		}
 		return(transacciones);
+	}
+	
+	
+	/**
+	 * Método que obtiene la transacciones de fidelización vencidas dados los parámetros.
+	 * @return
+	 */
+	public static ArrayList<FidelizacionTransaccion> obtenerFidelizacionTransaccionesVencimiento()
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		ArrayList<FidelizacionTransaccion> transacciones = new ArrayList();
+		FidelizacionTransaccion tranTemp;
+		int idTienda;
+		String tienda;
+		int idPedidoTienda;
+		String fechaTransaccion;
+		double valorNeto;
+		double puntos;
+		double puntosRedimidos;
+		String correo;
+		try
+		{
+			Statement stm = con1.createStatement();
+			String select = "SELECT a.*, b.nombre AS tienda FROM fidelizacion_transaccion a, tienda b WHERE a.idtienda = b.idtienda AND a.fecha_vencimiento < CURDATE() AND vencidos = 'N' and puntos > puntos_redimidos";
+			logger.info(select);
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				correo = rs.getString("correo");
+				idTienda = rs.getInt("idtienda");
+				tienda = rs.getString("tienda");
+				idPedidoTienda = rs.getInt("idpedidotienda");
+				fechaTransaccion = rs.getString("fecha_transaccion");
+				valorNeto = rs.getDouble("valor_neto");
+				puntos = rs.getDouble("puntos");
+				puntosRedimidos = rs.getDouble("puntos_redimidos");
+				tranTemp = new FidelizacionTransaccion(correo,idTienda,tienda, idPedidoTienda, fechaTransaccion, valorNeto, puntos);
+				tranTemp.setPuntosRedimidos(puntosRedimidos);
+				transacciones.add(tranTemp);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(transacciones);
+	}
+	
+	/**
+	 *Marca como vencida una transacción de fidelización 
+	 * @param correo
+	 * @param idTienda
+	 * @param idPedidoTienda
+	 * @param puntosVencidos
+	 * @return
+	 */
+	public static boolean vencerFidelizacionTransaccion(String correo,int idTienda, int idPedidoTienda, double puntosVencidos)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String update = "UPDATE fidelizacion_transaccion SET vencidos = 'S' , puntos_vencidos = " + puntosVencidos + " WHERE correo = '" + correo + "' AND idtienda = " + idTienda +  " AND idpedidotienda =" + idPedidoTienda;
+			logger.info(update);
+			stm.executeUpdate(update);
+			respuesta = true;
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
 	}
 	
 }

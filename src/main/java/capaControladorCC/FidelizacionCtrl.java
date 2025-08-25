@@ -156,9 +156,10 @@ public class FidelizacionCtrl {
 		boolean existe = FidelizacionTransaccionDAO.existeFidelizacionTransaccion(correo, idTienda, idPedidoTienda);
 		if(!existe)
 		{
+			int diasVigencia = ParametrosDAO.retornarValorNumerico("DIASVIGENCIAPUNTOS");
 			acumula =  ClienteFidelizacionDAO.sumarPuntosClienteFidelizacion(correo, puntosSumar);
 			FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedidoTienda, valorNeto, puntosSumar);
-			creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
+			creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion, diasVigencia);
 			if(acumula > 0 && creaTransaccion)
 			{
 				respuesta.put("respuesta", true);
@@ -449,9 +450,9 @@ public class FidelizacionCtrl {
 		}
 		//Marcamos como validado el código
 		CodigoRedencionPuntosDAO.marcarValidadoRedencionPuntos(codigo);
-		//Crearemos transacción para que quede la información
-		FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedido, 0, puntosRedimir);
-		creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
+		//Crearemos transacción para que quede la información - ANALIZAR MEJOR ESTA PARTE
+		//FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedido, 0, puntosRedimir);
+		//creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
 		//Posteriormente hacemos la resta de los puntos
 		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir);
 		respuesta.put("respuesta", "OK");

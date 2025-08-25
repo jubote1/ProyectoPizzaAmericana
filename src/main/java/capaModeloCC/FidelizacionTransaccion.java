@@ -9,7 +9,37 @@ public class FidelizacionTransaccion {
 	private String fechaTransaccion;
 	private double valorNeto;
 	private double puntos;
+	private String fechaVencimiento;
+	private double puntosVencidos;
+	private double puntosRedimidos;
+	private String vencidos;
 	
+	
+	
+	public String getFechaVencimiento() {
+		return fechaVencimiento;
+	}
+	public void setFechaVencimiento(String fechaVencimiento) {
+		this.fechaVencimiento = fechaVencimiento;
+	}
+	public double getPuntosVencidos() {
+		return puntosVencidos;
+	}
+	public void setPuntosVencidos(double puntosVencidos) {
+		this.puntosVencidos = puntosVencidos;
+	}
+	public double getPuntosRedimidos() {
+		return puntosRedimidos;
+	}
+	public void setPuntosRedimidos(double puntosRedimidos) {
+		this.puntosRedimidos = puntosRedimidos;
+	}
+	public String getVencidos() {
+		return vencidos;
+	}
+	public void setVencidos(String vencidos) {
+		this.vencidos = vencidos;
+	}
 	public String getTienda() {
 		return tienda;
 	}
