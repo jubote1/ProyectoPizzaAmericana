@@ -352,7 +352,7 @@ public int InsertarClientePedidoEncabezado(int idCliente,String telefono, String
 		if(geolocaliza.equals(new String("S")))
 		{
 			UbicacionCtrl  ubicacion = new UbicacionCtrl();
-			Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + municipio);
+			Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion , municipio,null);
 			latitud = (float)ubicaResp.getLatitud();
 			longitud = (float)ubicaResp.getLongitud();
 		}
@@ -403,7 +403,7 @@ public String InsertarClientePedidoEncabezadoJSON(int idCliente,String telefono,
 		if(geolocaliza.equals(new String("S")))
 		{
 			UbicacionCtrl  ubicacion = new UbicacionCtrl();
-			Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + municipio);
+			Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion , municipio, null);
 			latitud = (float)ubicaResp.getLatitud();
 			longitud = (float)ubicaResp.getLongitud();
 		}

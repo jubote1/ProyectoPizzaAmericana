@@ -939,7 +939,7 @@ public class SolicitudPQRSDAO {
             
             Integer idpqrs = encuestapqrs.getIdpqrs();
             for (RespuestaEncuestaPqrs value : encuestapqrs.getRespuesta()) {
-                Integer idPregunta = obtenerIdPorTitulo(value.getDescripcion(), con1);
+                Integer idPregunta = obtenerIdPorTitulo_pq(value.getDescripcion(), con1);
                 
                 if (idPregunta == null) {
                     System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
@@ -956,7 +956,7 @@ public class SolicitudPQRSDAO {
                     
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    System.err.println("Error al insertar el registo en encuestapqrs: " + value.getDescripcion());
+                    System.err.println("Error al insertar el registro en encuestapqrs: " + value.getDescripcion());
                     // Aquí puedes decidir si detener el proceso o continuar con los demás registros
                 }
             }
@@ -976,8 +976,10 @@ public class SolicitudPQRSDAO {
         }
     }
     
+   
+    
     // Método para obtener el ID de una pregunta por su título
-    public static Integer obtenerIdPorTitulo(String titulo, Connection con1) throws SQLException {
+    public static Integer obtenerIdPorTitulo_pq(String titulo, Connection con1) throws SQLException {
         String sql = "SELECT idpregunta FROM pregunta_pqrs WHERE titulo = ?";
         Integer idPregunta = null;
 

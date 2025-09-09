@@ -46,13 +46,13 @@ public class ProbarConsultarDireccion extends HttpServlet {
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			UbicacionCtrl ubiCtrl = new UbicacionCtrl();
-			Resultado res = ubiCtrl.ubicarDireccionEnTienda(direccion,"",null);
+			Resultado res = ubiCtrl.ubicarDireccionEnTienda(direccion,null,null,"",null);
 			PrintWriter out = response.getWriter();
 			out.write(res.getResultado());
 			
 		}catch(Exception e){
 			System.out.println(e.getMessage());
-		}
+		}                  
 	}
 
 	/**

@@ -112,6 +112,8 @@ import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
 import capaModeloCC.DomiciliarioPedido;
+import capaModeloCC.EncuestaGenerica;
+import capaModeloCC.EncuestaGenerica.RespuestaEncuestaGen;
 import capaModeloCC.EncuestaPqrs;
 import capaModeloCC.EncuestaPqrs.RespuestaEncuestaPqrs;
 import capaModeloCC.Especialidad;
@@ -2274,7 +2276,7 @@ public class PedidoCtrl {
 						{
 							//Cambiamos para el llamado del método el resume
 							UbicacionCtrl  ubicacion = new UbicacionCtrl();
-							Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + ciudad);
+							Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion,ciudad, null);
 							latitud = ubicaResp.getLatitud();
 							longitud = ubicaResp.getLongitud();
 							
@@ -6239,8 +6241,7 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-		String txtdirecc = ubicaCtrl.limpiarDireccion(direccion,Municipio,Barrio);
-		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(txtdirecc,tipo_cliente,lead);
+		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(direccion,Municipio,Barrio,tipo_cliente,lead);
 		System.out.println("3. RESULTADO DEL PROCESO " +  resultado);
 		actualizarCoberturaLeadCRMBOT(lead, resultado,tipo_cliente);
 		System.out.println("6. TERMINO DEL PROCESO ");
@@ -6594,7 +6595,8 @@ public class PedidoCtrl {
 	        864379, 863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227,
 	        868045, 868051, 868231, 868233, 868055, 868057, 868059, 868061, 868063,
 	        868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
-	        872199, 872201, 862673, 862675, 872069
+	        872199, 872201, 862673, 862675, 872069, 872639, 872641, 872705, 872707, 
+	        872709, 872711, 872713 ,872717
 	    ));
 
 	    // Construimos la estructura JSON
@@ -7369,6 +7371,7 @@ public class PedidoCtrl {
 		String sabor2_2 = "";
 		String adicion_2 = "";
 		String bebida_2 = "";
+		double latitud = 0, longitud = 0;
 		//Para realizar el último parseo
 		JSONParser parserFinal = new JSONParser();
 		Object objParserFinal;
@@ -7543,6 +7546,25 @@ public class PedidoCtrl {
 						devuelta = 0;
 					}
 					
+				}else if(clave.equals(new String("latitud"))) {
+					try
+					{
+						latitud = Double.parseDouble(strValor);
+					}catch(Exception e)
+					{
+						latitud = 0;
+					}
+					
+				}else if(clave.equals(new String("longitud"))) {
+					try
+					{
+						longitud = Double.parseDouble(strValor);
+					}catch(Exception e)
+					{
+						longitud = 0;
+					}
+					
+					
 				}
 
 			}
@@ -7570,11 +7592,11 @@ public class PedidoCtrl {
 			{
 				telefonoCelular = telefono;
 			}
-			double latitud = 0, longitud = 0;
+		
 			if(latitud== 0 && longitud == 0)
 			{
 				UbicacionCtrl  ubicacion = new UbicacionCtrl();
-				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + barrio + " " + municipio);
+				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion , municipio , barrio);
 				latitud = ubicaResp.getLatitud();
 				longitud = ubicaResp.getLongitud();
 			}
@@ -8026,6 +8048,8 @@ public class PedidoCtrl {
 	    final int FIELD_TIENDA = 862153;
 	    final int FIELD_ASESOR = 862155;
 	    final int FIELD_ESTADO_TIENDA = 870325;
+	    final int FIELD_LATITUD = 872641;
+	    final int FIELD_LONGITUD = 872639;
 
 	    // Construcción segura del JSON usando Maps
 	    List<Map<String, Object>> customFields = new ArrayList<>();
@@ -8049,6 +8073,18 @@ public class PedidoCtrl {
 	            "values", List.of(Map.of("value", tienda))
 	        ));
 	    }
+	    
+	    // Campos coordenadas
+	    customFields.add(Map.of(
+	        "field_id", FIELD_LATITUD,
+	        "values", List.of(Map.of("value", String.valueOf(mensaje.getLatitud())))
+	        ));
+	    
+	    customFields.add(Map.of(
+		        "field_id", FIELD_LONGITUD,
+		        "values", List.of(Map.of("value", String.valueOf(mensaje.getLongitud())))
+		        
+	    		));
 
 	    // Campo Asesor o Estado Tienda
 	    if ("programado".equalsIgnoreCase(tipo_cliente)) {
@@ -9286,7 +9322,7 @@ public class PedidoCtrl {
 			if(latitud== 0 && longitud == 0)
 			{
 				UbicacionCtrl  ubicacion = new UbicacionCtrl();
-				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + ciudad);
+				Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion,null,null);
 				latitud = ubicaResp.getLatitud();
 				longitud = ubicaResp.getLongitud();
 			}
@@ -9877,16 +9913,16 @@ public class PedidoCtrl {
 					longitud = 0;
 				}
 				//Realizamos la intervención para tratar en el momentoen que la ubicación viene en cero
-				if(tipoDelivery != 1)
-				{
-					if(latitud== 0 && longitud == 0)
-					{
-						UbicacionCtrl  ubicacion = new UbicacionCtrl();
-						Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion + " " + ciudad);
-						latitud = ubicaResp.getLatitud();
-						longitud = ubicaResp.getLongitud();
-					}
-				}
+//				if(tipoDelivery != 1)
+//				{
+//					if(latitud== 0 && longitud == 0)
+//					{
+//						UbicacionCtrl  ubicacion = new UbicacionCtrl();
+//						Ubicacion ubicaResp = ubicacion.ubicarDireccionEnTiendaBatch(direccion , ciudad,null);
+//						latitud = ubicaResp.getLatitud();
+//						longitud = ubicaResp.getLongitud();
+//					}
+//				}
 				
 				//INCLUSIÓN Y PROCESAMIENTO DE LA INFORMACIÓN DEL CLIENTE
 				//REALIZAMOS PROCESAMIENTO DEL CLIENTE CON SU DIRECCIÓN
@@ -12145,6 +12181,70 @@ public class PedidoCtrl {
 	        encuestaPqrs.setIdpqrs(idpqrs);
 	        encuestaPqrs.setRespuesta(respuestaEncuestapqrs);
 	        SolicitudPQRSDAO.insertarEncuestaPqrs(encuestaPqrs);
+
+	    } catch (Exception e) {
+	        respuesta = "Error al procesar datos: " + e.getMessage();
+	    }
+
+	    return respuesta;
+	}
+
+	public String procesarEncuestaGenerica(String datos, String authHeader) {
+	    String respuesta = "";
+	    try {
+	        String parametrosDecode = URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+	        Map<String, String> parametros = separarURL(parametrosDecode);
+	        String lead = parametros.get("leads[status][0][id]");
+	        if (lead == null || lead.isEmpty()) {
+	            return "No se encontró información del LEAD.";
+	        }
+
+	        String infLead = obtenerInformacionLeadCRM(lead);
+
+	        EncuestaGenerica encuestagenerica = new EncuestaGenerica();
+	        List<RespuestaEncuestaGen> respuestaEncuestaGen = new ArrayList<>();
+	        int idpedido = 0;
+	        
+	        Set<String> camposEncuesta = Set.of(
+	            "sabor piña", 
+	            "combinacion de ingredientes", 
+	            "version de la pizza", 
+	            "textura de la piña", 
+	            "recomendarias esta pizza"
+	        );
+
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
+	        JSONArray customFieldsArray = (JSONArray) jsonGeneral.get("custom_fields_values");
+
+	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
+	            for (Object obj : customFieldsArray) {
+	                JSONObject campo = (JSONObject) obj;
+	                String rawClave = (String) campo.get("field_name");
+	                if (rawClave == null) continue;
+	                String clave = rawClave.toLowerCase();
+	                JSONArray valuesArray = (JSONArray) campo.get("values");
+
+	                if (valuesArray != null && !valuesArray.isEmpty()) {
+	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                    String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
+
+	                    if (camposEncuesta.contains(clave)) {
+	                        respuestaEncuestaGen.add(new RespuestaEncuestaGen(clave, valor));
+	                    } else if (clave.equalsIgnoreCase("# de pedido")) {
+	                        try {
+	                            idpedido = Integer.parseInt(valor);
+	                        } catch (NumberFormatException e) {
+	                        	idpedido = 0;
+	                        }
+	                    } 
+	                }
+	            }
+	        }
+
+	        encuestagenerica.setIdpedido(idpedido);
+	        encuestagenerica.setRespuesta(respuestaEncuestaGen);
+	        PedidoDAO.insertarEncuestaGenerica(encuestagenerica);
 
 	    } catch (Exception e) {
 	        respuesta = "Error al procesar datos: " + e.getMessage();
