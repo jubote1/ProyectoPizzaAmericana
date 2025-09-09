@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.math.BigInteger;
+import capaModeloCC.EncuestaGenerica.RespuestaEncuestaGen;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.text.DateFormat;
@@ -19,6 +20,7 @@ import capaModeloCC.DetallePedido;
 import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
+import capaModeloCC.EncuestaGenerica;
 import capaModeloCC.Especialidad;
 import capaModeloCC.Estadistica;
 import capaModeloCC.EstadisticaPromocion;
@@ -41,6 +43,7 @@ import capaModeloCC.ResumenVentaEmpresarial;
 import capaModeloCC.SaborLiquido;
 import capaModeloCC.Tienda;
 import capaModeloCC.TipoLiquido;
+import capaModeloCC.EncuestaPqrs.RespuestaEncuestaPqrs;
 import conexionCC.ConexionBaseDatos;
 import pixelposCC.Main;
 import utilidadesCC.ControladorEnvioCorreo;
@@ -5783,5 +5786,73 @@ public class PedidoDAO {
 		}
 		return productoExiste;
 	}
+	
+	 public static void insertarEncuestaGenerica(EncuestaGenerica encuestagenerica) {
+	        String sql = "INSERT INTO encuesta_generica (idpregunta, respuesta, idpedido) VALUES (?, ?, ?)";
+	        ConexionBaseDatos con = new ConexionBaseDatos();
+	        Connection con1 = null;
+
+	        try {
+	            con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
+	            
+	            Integer idpedido = encuestagenerica.getIdpedido();
+	            for (RespuestaEncuestaGen value : encuestagenerica.getRespuesta()) {
+	                Integer idPregunta = obtenerIdPorTitulo_pg(value.getDescripcion(), con1);
+	                
+	                if (idPregunta == null) {
+	                    System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
+	                    continue;  // Saltamos este registro y continuamos con los demás
+	                }
+
+	                // Usamos el PreparedStatement dentro del bloque try-with-resources
+	                try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+	                    pstmt.setInt(1, idPregunta);  
+	                    pstmt.setString(2, value.getRespuesta());
+	                    pstmt.setInt(3, idpedido);
+
+	                    pstmt.executeUpdate();
+	                    
+	                } catch (SQLException e) {
+	                    e.printStackTrace();
+	                    System.err.println("Error al insertar el registro en encuestagenerica: " + value.getDescripcion());
+	                    // Aquí puedes decidir si detener el proceso o continuar con los demás registros
+	                }
+	            }
+
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	            // Aquí manejas el error de conexión general si es necesario
+
+	        } finally {
+	            if (con1 != null) {
+	                try {
+	                    con1.close(); // Cerramos la conexión
+	                } catch (SQLException e) {
+	                    e.printStackTrace();
+	                }
+	            }
+	        }
+	    }
+	 
+	    // Método para obtener el ID de una pregunta por su título
+	    public static Integer obtenerIdPorTitulo_pg(String titulo, Connection con1) throws SQLException {
+	        String sql = "SELECT idpregunta FROM pregunta_enc_gen WHERE titulo = ?";
+	        Integer idPregunta = null;
+
+	        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+	            pstmt.setString(1, titulo);
+
+	            try (ResultSet rs = pstmt.executeQuery()) {
+	                if (rs.next()) {
+	                    idPregunta = rs.getInt("idpregunta");
+	                }
+	            }
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+	        }
+
+	        return idPregunta;
+	    }
 
 }
