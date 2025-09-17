@@ -109,6 +109,12 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 		}else if(operacion == 7)//Servicio para sumar puntos y guardar transaccion
 		{
 			respuesta = fideCtrl.obtenerFidelizacionTransacciones(correo);
+		}else if(operacion == 8)//InsertarClienteNoFidelizcion
+		{
+			respuesta = fideCtrl.insertarClienteNoFidelizacionn(correo);
+		}else if(operacion == 9)//Validar si existe ClienteNoFidelizcion
+		{
+			respuesta = fideCtrl.validarExistenciaClienteNoFidelizacion(correo);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

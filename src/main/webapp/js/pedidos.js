@@ -391,6 +391,23 @@ $("#fechapedido").change(function(){
                             }else
                             {
                                 $('#email').css("background-color","#FFFFFF");
+                                //Realizamos validación si el cliente esta marcado para no pertenecer al plan de fidelizacion
+                                $.ajax({ 
+                                        url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo='+ datos.email, 
+                                        dataType: 'json', 
+                                        async: false, 
+                                        success: function(dataResp2){
+                                            if(dataResp2.respuesta)
+                                            {
+                                                $.alert('CUIDADO! El cliente manifestó no querer pertenecer al plan de fidelización.');
+                                            }
+                                            else
+                                            {
+                                                $('#nodeseafidelizacion').attr('disabled', false);
+                                            }
+                                        } 
+                                });
+                                
                             }
                             
                         } 
@@ -3067,6 +3084,7 @@ function ReiniciarPedido()
 																    $('input:radio[name=liquido]').attr('checked',false);
 																    $('input:radio[name=requiereDevuelta]')[1].checked = true;
 																    $('#valorpago').attr('disabled', false);
+                                                                    $('#nodeseafidelizacion').attr('disabled', true);
 																    $("#selectExcepcion").val('vacio');
 																    $('#observacionDir').val('');
 																    $('#observacion').val('');
@@ -3498,6 +3516,7 @@ function ConfirmarPedido()
 								    $('input:radio[name=liquido]').attr('checked',false);
 								    $('input:radio[name=requiereDevuelta]')[1].checked = true;
 								    $('#valorpago').attr('disabled', false);
+                                    $('#nodeseafidelizacion').attr('disabled', true);
 								    $("#selectExcepcion").val('vacio');
 								    $('#observacionDir').val('');
 								    $('#observacion').val('');
@@ -6560,6 +6579,59 @@ function obtenerFechaFormatoBD()
     const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, so add 1
     const day = String(date.getDate()).padStart(2, '0');
     return(`${year}/${month}/${day}`);
+}
+
+function noDeseaFidelizacion()
+{
+    //Validamos que el cliente ya tiene que estar creado para poder ser incluido en el programado
+    if(idCliente == 0)
+    {
+        $.alert('Para marcar el cliente como que no desea pertenecer al plan de fidelizacion, el cliente debe existir en la base de datos, Si el cliente es NUEVO debes primero tomar los datos del cliente y agregar por lo menos un producto al pedido!');
+    }else
+    {
+        //Tomaremos validaremos los valores que requerimos para la creación en el Sales Manago e inclusión en programa de fidelización
+        if ((($("#email").val()=='') || ($("#apellidos").val()=='') || ($("#nombres").val()=='') || ($("#direccion").val()=='') || ($("#telcelular").val()=='')))
+        {
+            $.alert('Para ser marcado como que NO DESEA PERTENECER AL PLAN DE FIDELIZACIÓN debe tener: nombres, apellidos, dirección, telefono celular y correo.');
+        }else 
+        {
+            $.ajax({ 
+                        url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo='+ $("#email").val(), 
+                        dataType: 'json', 
+                        async: false, 
+                        success: function(data){ 
+                            if(data.respuesta)
+                            {
+                                $.alert('El cliente ya esta marcado PARA NO PERTENECER AL PLAN DE FIDELIZACION.');
+                                $('#nodeseafidelizacion').attr('disabled', true);
+                                return;
+                            }
+                            else 
+                            {
+                                $.ajax({ 
+                                            url: server + 'ServiciosClienteFidelizacion?idoperacion=8&correo='+ $("#email").val(), 
+                                            dataType: 'json', 
+                                            async: false, 
+                                            success: function(data){ 
+                                                if(data.respuesta)
+                                                {
+                                                    $.alert('El cliente FUE MARCADO como que no desea pertenecer al plan de fidelizacion');
+                                                    $('#nodeseafidelizacion').attr('disabled', true);
+                                                    return;
+                                                }
+                                                else 
+                                                {
+                                                    $.alert('HUBO UN ERROR y el cliente no fue marcado.');
+                                                }
+                                                
+                                            } 
+                                });
+                            }
+                            
+                        } 
+            });
+        }
+    }
 }
 
 $('#email').on('input', validate);

@@ -1,6 +1,8 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+
 import org.apache.log4j.Logger;
 
 import capaModeloCC.ClienteFidelizacion;
@@ -203,6 +205,88 @@ public class FidelizacionTransaccionDAO {
 			stm.executeUpdate(update);
 			respuesta = true;
 			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
+	}
+	
+	public static ArrayList<FidelizacionTransaccion> obtenerFidelizacionTransaccionesRedencion(String correo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		ArrayList<FidelizacionTransaccion> transacciones = new ArrayList();
+		FidelizacionTransaccion tranTemp;
+		int idTienda;
+		String tienda;
+		int idPedidoTienda;
+		String fechaTransaccion;
+		double valorNeto;
+		double puntos;
+		double puntosRedimidos;
+		double puntosVencidos;
+		try
+		{
+			Statement stm = con1.createStatement();
+			String select = "SELECT a.*, b.nombre AS tienda FROM fidelizacion_transaccion a, tienda b WHERE a.idtienda = b.idtienda AND vencidos = 'N' and puntos > puntos_redimidos and correo = '" + correo + "' ORDER BY fecha_transaccion desc";
+			logger.info(select);
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				correo = rs.getString("correo");
+				idTienda = rs.getInt("idtienda");
+				tienda = rs.getString("tienda");
+				idPedidoTienda = rs.getInt("idpedidotienda");
+				fechaTransaccion = rs.getString("fecha_transaccion");
+				valorNeto = rs.getDouble("valor_neto");
+				puntos = rs.getDouble("puntos");
+				puntosRedimidos = rs.getDouble("puntos_redimidos");
+				tranTemp = new FidelizacionTransaccion(correo,idTienda,tienda, idPedidoTienda, fechaTransaccion, valorNeto, puntos);
+				tranTemp.setPuntosRedimidos(puntosRedimidos);
+				transacciones.add(tranTemp);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(transacciones);
+	}
+	
+	public static boolean actualizarPuntosRedimidosFidelizacionTransaccion(String correo, int idTienda, int idPedidoTienda, double puntosRedimidos)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			PreparedStatement pstmt = con1.prepareStatement(
+		             "update fidelizacion_transaccion set puntos_redimidos = ? where correo = ? and idtienda = ? and idpedidotienda = ?");
+		    pstmt.setDouble(1, puntosRedimidos);
+		    pstmt.setString(2, correo);
+		    pstmt.setInt(3, idTienda);
+		    pstmt.setInt(4, idPedidoTienda);
+		    pstmt.executeUpdate();
+
+			respuesta = true;
+			pstmt.close();
 			con1.close();
 		}catch (Exception e){
 			logger.error(e.toString());

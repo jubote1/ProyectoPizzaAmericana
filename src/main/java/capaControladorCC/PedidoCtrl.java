@@ -7716,6 +7716,21 @@ public class PedidoCtrl {
 				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
 				//Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
+			}else if(idFormaPago == 1)
+			{
+				//Al final de la creación de todo el pedido vamos a verificar si hay envió automático
+				String automaticoCRM = ParametrosDAO.retornarValorAlfanumerico("AUTOMATICOCRM");
+				if(automaticoCRM.equals(new String("")))
+				{
+					automaticoCRM = "N";
+				}
+				if(automaticoCRM.equals(new String("S")))
+				{
+					if(idTienda == 1 || idTienda == 2)
+					{
+						boolean respuestaProceso =  enviarPedidoTiendaBatchPlataforma(idPedido,idFormaPago,valorTotalContact, valorTotalContact, idCliente, 0, tiempoPedido, 0, "DESCUENTOS-GENERALES-DIARIOS", horaProgramado, "S", idTienda);
+					}
+				}
 			}
 		}catch(Exception e)
 		{

@@ -453,10 +453,16 @@ document.addEventListener("DOMContentLoaded", function() {
 		const tiendas = Array.from(document.querySelectorAll("#selectTiendas option:checked")).map(option => option.value);
 		const medio = document.getElementById("selectMedio").value.trim();
 		const canal = document.getElementById("selectCanal").value.trim();
+		const tipoCliente = document.getElementById("selectTipoCliente").value.trim();
 
 		if(canal != "TODOS")
 		{
 			datos.canal = canal;
+		}
+
+		if(tipoCliente != "TODOS")
+		{
+			datos.tipocliente = tipoCliente;
 		}
 
 		let fechaInicio = "", fechaMaxima = "";

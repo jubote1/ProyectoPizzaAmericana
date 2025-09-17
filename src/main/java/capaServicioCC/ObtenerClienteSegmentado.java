@@ -34,6 +34,7 @@ public class ObtenerClienteSegmentado extends HttpServlet {
             Gson gson = new Gson();
             JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
 
+            String tipoCliente = jsonObject.has("tipocliente") ? jsonObject.get("tipocliente").getAsString().trim() : null;
             String canal = jsonObject.has("canal") ? jsonObject.get("canal").getAsString().trim() : null;
             String fechaInicio = jsonObject.has("fechaInicio") ? jsonObject.get("fechaInicio").getAsString().trim() : null;
             String fechaMaxima = jsonObject.has("fechaMaxima") ? jsonObject.get("fechaMaxima").getAsString().trim() : null;
@@ -50,6 +51,10 @@ public class ObtenerClienteSegmentado extends HttpServlet {
             	canal = "";
             }
 
+            if(tipoCliente == null)
+            {
+            	tipoCliente = "";
+            }
             // Validar que los valores no sean null ni vacíos, y que minPedidos sea mayor que 0
             if (fechaInicio == null || fechaInicio.isEmpty() ||
                 fechaMaxima == null || fechaMaxima.isEmpty() ||
@@ -77,7 +82,7 @@ public class ObtenerClienteSegmentado extends HttpServlet {
             }
 
             // Llamar al controlador
-            String respuesta = SegmentacionClienteCtrl.obtenerClientesFiltrados(fechaInicio, fechaMaxima, minPedidos, excepciones, tiendas,minDiasPublicidad, canal);
+            String respuesta = SegmentacionClienteCtrl.obtenerClientesFiltrados(fechaInicio, fechaMaxima, minPedidos, excepciones, tiendas,minDiasPublicidad, canal, tipoCliente);
             
  
 

@@ -57,7 +57,7 @@ public class SegmentacionClienteDAO {
 	}
 
 	public List<ClienteSegmento> obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal) {
+			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal, String tipoCliente) {
 
 		List<ClienteSegmento> clientes = new ArrayList<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
@@ -94,6 +94,19 @@ public class SegmentacionClienteDAO {
 		if(!canal.equals(new String("")))
 		{
 			sql += "AND a.origen = '" + canal + "' ";
+		}
+		
+		//Agregamos la parte de filtro de tipoCliente
+		
+		if(!tipoCliente.equals(new String("")))
+		{
+			if(tipoCliente.equals(new String("natural")))
+			{
+				sql += "AND b.idtipopersona = 2 ";
+			}else if(tipoCliente.equals(new String("juridica")))
+			{
+				sql += "AND b.idtipopersona = 1 ";
+			}
 		}
 
 		sql += "AND a.fechapedido >= ? " + "GROUP BY b.idcliente, b.nombre, b.telefono, c.nombre, b.email "

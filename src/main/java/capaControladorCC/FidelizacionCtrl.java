@@ -10,6 +10,7 @@ import org.json.simple.JSONObject;
 import capaModeloCC.Cliente;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.ClienteFidelizacionDAO;
+import capaDAOCC.ClienteNoFidelizacionDAO;
 import capaDAOCC.CodigoRedencionPuntosDAO;
 import capaDAOCC.FidelizacionTransaccionDAO;
 import capaDAOCC.GeneralDAO;
@@ -453,6 +454,8 @@ public class FidelizacionCtrl {
 		//Crearemos transacción para que quede la información - ANALIZAR MEJOR ESTA PARTE
 		//FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedido, 0, puntosRedimir);
 		//creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
+		//Hacemos el gasto de los puntos en la tabla de fidelizacion transaccion
+		realizarRedencionFidelizacionTransaccion(correo, puntosRedimir);
 		//Posteriormente hacemos la resta de los puntos
 		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir);
 		respuesta.put("respuesta", "OK");
@@ -460,6 +463,49 @@ public class FidelizacionCtrl {
 		return(respuesta.toJSONString());
 		
 	}
+	
+	public void realizarRedencionFidelizacionTransaccion(String correo, double puntosRedimir)
+	{
+		//Se obtienen las transacciones de las cuales se harán la redencion
+		ArrayList<FidelizacionTransaccion> transRedencion = FidelizacionTransaccionDAO.obtenerFidelizacionTransaccionesRedencion(correo);
+		double puntosAcumRed = puntosRedimir;
+		double puntosDisponibles = 0;
+		double puntosRedimidosTemp = 0;
+		boolean terminaRedencion = false;
+		for(FidelizacionTransaccion tranTemp: transRedencion)
+		{
+			//
+			puntosRedimidosTemp = tranTemp.getPuntosRedimidos();
+			puntosDisponibles = tranTemp.getPuntos() - tranTemp.getPuntosRedimidos();
+			if(puntosDisponibles > puntosAcumRed)
+			{
+				puntosRedimidosTemp = puntosRedimidosTemp + puntosAcumRed;
+				FidelizacionTransaccionDAO.actualizarPuntosRedimidosFidelizacionTransaccion(correo, tranTemp.getIdTienda(),tranTemp.getIdPedidoTienda(), puntosRedimidosTemp);
+				terminaRedencion = true;
+				break;
+			}else
+			{
+				puntosAcumRed  = puntosAcumRed - puntosDisponibles;
+				FidelizacionTransaccionDAO.actualizarPuntosRedimidosFidelizacionTransaccion(correo, tranTemp.getIdTienda(),tranTemp.getIdPedidoTienda(), tranTemp.getPuntos());
+			}
+		}
+	}
 
 
+	public String insertarClienteNoFidelizacionn(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean inserto = ClienteNoFidelizacionDAO.insertarClienteNoFidelizacion(correo);
+		respuesta.put("respuesta", inserto);
+		return(respuesta.toJSONString());
+	}
+	
+	public String validarExistenciaClienteNoFidelizacion(String correo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean existe = ClienteNoFidelizacionDAO.validarExistenciaClienteNoFidelizacion(correo);
+		respuesta.put("respuesta", existe);
+		return(respuesta.toJSONString());
+	}
+	
 }

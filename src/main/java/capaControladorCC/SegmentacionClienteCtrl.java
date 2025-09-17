@@ -50,10 +50,10 @@ public class SegmentacionClienteCtrl {
 	}
 
 	public static String obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal) {
+			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal, String tipoCliente) {
 		SegmentacionClienteDAO segmentacionClienteDAO = new SegmentacionClienteDAO();
 		List<ClienteSegmento> clientes = segmentacionClienteDAO.obtenerClientesFiltrados(fechaInicio, fechaMaxima,
-				minPedidos, excepciones, idTiendas, diasMinimosSinPublicidad, canal);
+				minPedidos, excepciones, idTiendas, diasMinimosSinPublicidad, canal, tipoCliente);
 
 		JSONArray jsonArray = new JSONArray();
 		for (ClienteSegmento cliente : clientes) {
