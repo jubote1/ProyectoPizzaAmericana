@@ -23,8 +23,17 @@ public class Producto {
 	private String habilitado;
 	private String controlaEspecialidades;
 	private double precioOferta;
+	private double precioPuntos;
 	
 	
+	
+	
+	public double getPrecioPuntos() {
+		return precioPuntos;
+	}
+	public void setPrecioPuntos(double precioPuntos) {
+		this.precioPuntos = precioPuntos;
+	}
 	public double getPrecioOferta() {
 		return precioOferta;
 	}

@@ -221,7 +221,7 @@ public class PedidoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad from producto p where p.habilitado = 'S' order by nombre asc ";
+			String consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad, p.precio_puntos from producto p where p.habilitado = 'S' order by nombre asc ";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idProducto;
@@ -232,6 +232,7 @@ public class PedidoDAO {
 			String tipo;
 			int productoasociaadicion;
 			double precio;
+			double precioPuntos;
 			String incluye_liquido;
 			int idtipo_liquido;
 			String manejacantidad;
@@ -247,7 +248,9 @@ public class PedidoDAO {
 				incluye_liquido = rs.getString("incluye_liquido");
 				idtipo_liquido = rs.getInt("idtipo_liquido");
 				manejacantidad = rs.getString("manejacantidad");
+				precioPuntos = rs.getDouble("precio_puntos");
 				Producto prod = new Producto(idProducto, idReceta, nombre, descripcion,impuesto, tipo,productoasociaadicion, precio, incluye_liquido, idtipo_liquido, manejacantidad, "S");
+				prod.setPrecioPuntos(precioPuntos);
 				todosProducto.add(prod);
 			}
 			rs.close();

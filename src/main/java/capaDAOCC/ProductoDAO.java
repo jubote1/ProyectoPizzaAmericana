@@ -193,10 +193,10 @@ public class ProductoDAO {
 			Statement stm = con1.createStatement();
 			if(plataforma.equals(new String("N")))
 			{
-				consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad, p.controla_especialidades from producto p where p.idproducto not in (select b.idproducto from producto_no_existente b where idtienda ="+ idtienda +" ) and p.habilitado = 'S' and p.producto_plataforma = 'N' order by nombre asc";
+				consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad, p.controla_especialidades, p.precio_puntos from producto p where p.idproducto not in (select b.idproducto from producto_no_existente b where idtienda ="+ idtienda +" ) and p.habilitado = 'S' and p.producto_plataforma = 'N' order by nombre asc";
 			}else if(plataforma.equals(new String("S")))
 			{
-				consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad, p.controla_especialidades from producto p where p.idproducto not in (select b.idproducto from producto_no_existente b where idtienda ="+ idtienda +" ) and p.habilitado = 'S' order by nombre asc";
+				consulta = "select p.idproducto, p.idreceta, p.nombre, p.descripcion, p.impuesto, p.tipo, p.producto_asocia_adicion, p.preciogeneral, p.incluye_liquido, p.idtipo_liquido, p.manejacantidad, p.controla_especialidades, p.precio_puntos from producto p where p.idproducto not in (select b.idproducto from producto_no_existente b where idtienda ="+ idtienda +" ) and p.habilitado = 'S' order by nombre asc";
 			}
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
@@ -208,6 +208,7 @@ public class ProductoDAO {
 			String tipo;
 			int productoasociaadicion;
 			double precio;
+			double precioPuntos;
 			String incluye_liquido;
 			int idtipo_liquido;
 			String manejacantidad;
@@ -221,12 +222,14 @@ public class ProductoDAO {
 				tipo = rs.getString("tipo");
 				productoasociaadicion = rs.getInt("producto_asocia_adicion");
 				precio = rs.getDouble("preciogeneral");
+				precioPuntos = rs.getDouble("precio_puntos");
 				incluye_liquido = rs.getString("incluye_liquido");
 				idtipo_liquido = rs.getInt("idtipo_liquido");
 				manejacantidad = rs.getString("manejacantidad");
 				controlaEspecialidades = rs.getString("controla_especialidades");
 				Producto prod = new Producto(idProducto, idReceta, nombre, descripcion,impuesto, tipo,productoasociaadicion, precio, incluye_liquido, idtipo_liquido, manejacantidad,"S");
 				prod.setControlaEspecialidades(controlaEspecialidades);
+				prod.setPrecioPuntos(precioPuntos);
 				todosProducto.add(prod);
 			}
 			rs.close();

@@ -2536,6 +2536,9 @@ function getOtrosGaseosa()
                     }else if(cadaGaseosa.nombre.includes("MIT"))
                     {
                         str +='<td style="background-color:lightblue" onclick="cambiaColorCelda(this);"> ';
+                    }else if(cadaGaseosa.nombre.includes("Puntos"))
+                    {
+                        str +='<td style="background-color:yellow" onclick="cambiaColorCelda(this);"> ';
                     }else
                     {
                         str +='<td onclick="cambiaColorCelda(this);"> ';
@@ -2553,6 +2556,9 @@ function getOtrosGaseosa()
                     }else if(cadaGaseosa.nombre.includes("MIT"))
                     {
                         str +='<td style="background-color:lightblue" onclick="cambiaColorCelda(this);"> ';
+                    }else if(cadaGaseosa.nombre.includes("Puntos"))
+                    {
+                        str +='<td style="background-color:yellow" onclick="cambiaColorCelda(this);"> ';
                     }else
                     {
                         str +='<td onclick="cambiaColorCelda(this);"> ';
@@ -2640,7 +2646,10 @@ function agregarGaseosa()
 				valorunitario = cadaProdu.preciogeneral;
 				valortotal= cadaProdu.preciogeneral * cantidad;
 				totalpedido = totalpedido + valortotal; 
-                totalpedidogeneral = totalpedidogeneral + valortotal; 
+                totalpedidogeneral = totalpedidogeneral + valortotal;
+                totalpuntospedido = totalpuntospedido + cadaProdu.preciopuntos;
+                //console.log("puntos del producto " + cadaProdu.preciopuntos + " total puntos acumulados " + totalpuntospedido);
+                //console.log("lo que tiene cadaproduc " +  cadaProdu);
 				otroProd = cadaProdu.idproducto+'-'+cadaProdu.nombre;
 				adicion = '';
 				adiciones = '';
@@ -2650,6 +2659,7 @@ function agregarGaseosa()
 	}
 	contadorItem = contadorItem + 1;
 	$('#totalpedido').val(totalpedido);
+    $('#totalpuntos').val(totalpuntospedido);
 	if ($("input:radio[name=requiereDevuelta]:checked").val() == "completo")
 	{
 		$("#valorpago").val(totalpedido);

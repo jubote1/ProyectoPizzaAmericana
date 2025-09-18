@@ -261,6 +261,7 @@ public class PedidoCtrl {
 			cadaProductoJSON.put("tipo", produ.getTipo());
 			cadaProductoJSON.put("productoasociaadicion", produ.getProductoasociaadicion());
 			cadaProductoJSON.put("preciogeneral", produ.getPreciogeneral());
+			cadaProductoJSON.put("preciopuntos", produ.getPrecioPuntos());
 			cadaProductoJSON.put("incluye_liquido", produ.getIncluye_liquido());
 			cadaProductoJSON.put("idtipo_liquido", produ.getIdtipo_liquido());
 			cadaProductoJSON.put("manejacantidad", produ.getManejacantidad());
@@ -312,6 +313,7 @@ public class PedidoCtrl {
 			cadaProductoJSON.put("tipo", produ.getTipo());
 			cadaProductoJSON.put("productoasociaadicion", produ.getProductoasociaadicion());
 			cadaProductoJSON.put("preciogeneral", produ.getPreciogeneral());
+			cadaProductoJSON.put("preciopuntos", produ.getPrecioPuntos());
 			cadaProductoJSON.put("incluye_liquido", produ.getIncluye_liquido());
 			cadaProductoJSON.put("idtipo_liquido", produ.getIdtipo_liquido());
 			cadaProductoJSON.put("manejacantidad", produ.getManejacantidad());
@@ -7684,6 +7686,7 @@ public class PedidoCtrl {
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
 			//Consultaremos el tiempo que la tienda está dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
+			long valorTotalPedido = valorTotalContact;
 			//Deberemos de desglosar si se toma el valor de devuelta
 			//Si el pedido es efectivo y se ingreso un valor de devuelta
 			if(idFormaPago == 1 && devuelta > 0)
@@ -7726,9 +7729,12 @@ public class PedidoCtrl {
 				}
 				if(automaticoCRM.equals(new String("S")))
 				{
-					if(idTienda == 1 || idTienda == 2)
+					if(devuelta >= valorTotalPedido)
 					{
-						boolean respuestaProceso =  enviarPedidoTiendaBatchPlataforma(idPedido,idFormaPago,valorTotalContact, valorTotalContact, idCliente, 0, tiempoPedido, 0, "DESCUENTOS-GENERALES-DIARIOS", horaProgramado, "S", idTienda);
+						enviarPedidoTiendaBatchPlataforma(idPedido,idFormaPago,valorTotalPedido, devuelta, idCliente, 0, tiempoPedido, 0, "DESCUENTOS-GENERALES-DIARIOS", horaProgramado, "S", idTienda);
+					}else
+					{
+						enviarPedidoTiendaBatchPlataforma(idPedido,idFormaPago,valorTotalPedido, valorTotalPedido, idCliente, 0, tiempoPedido, 0, "DESCUENTOS-GENERALES-DIARIOS", horaProgramado, "S", idTienda);
 					}
 				}
 			}
