@@ -34,15 +34,22 @@ public class EncuestaGenerica {
 	
 	
 	public static class RespuestaEncuestaGen{
-		private String descripcion;
+		private String titulo;
 		private String respuesta ;
+		private int idpregunta;
 		
 		
-		public String getDescripcion() {
-			return descripcion;
+		public int getIdpregunta() {
+			return idpregunta;
 		}
-		public void setDescripcion(String descripcion) {
-			this.descripcion = descripcion;
+		public void setIdpregunta(int idpregunta) {
+			this.idpregunta = idpregunta;
+		}
+		public String getTitulo() {
+			return titulo;
+		}
+		public void setTitulo(String titulo) {
+			this.titulo = titulo;
 		}
 
 		public String getRespuesta() {
@@ -51,9 +58,10 @@ public class EncuestaGenerica {
 		public void setRespuesta(String respuesta) {
 			this.respuesta = respuesta;
 		}
-		public RespuestaEncuestaGen(String descripcion ,String respuesta) {
-			this.descripcion = descripcion;
+		public RespuestaEncuestaGen(int idpregunta ,String respuesta,String titulo) {
+			this.idpregunta = idpregunta;
 			this.respuesta = respuesta;
+			this.titulo = titulo;
 
 
 		}

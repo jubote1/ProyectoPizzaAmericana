@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
@@ -51,6 +52,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.List;
 
 public class PedidoDAO {
 	
@@ -5793,22 +5795,21 @@ public class PedidoDAO {
 	 public static void insertarEncuestaGenerica(EncuestaGenerica encuestagenerica) {
 	        String sql = "INSERT INTO encuesta_generica (idpregunta, respuesta, idpedido) VALUES (?, ?, ?)";
 	        ConexionBaseDatos con = new ConexionBaseDatos();
-	        Connection con1 = null;
+	        Connection con1 = con.obtenerConexionBDPrincipal(); 
 
-	        try {
-	            con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
-	            
+	        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+           
 	            Integer idpedido = encuestagenerica.getIdpedido();
 	            for (RespuestaEncuestaGen value : encuestagenerica.getRespuesta()) {
-	                Integer idPregunta = obtenerIdPorTitulo_pg(value.getDescripcion(), con1);
+	                Integer idPregunta = value.getIdpregunta();
 	                
-	                if (idPregunta == null) {
-	                    System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
+	                if (idPregunta == null || idPregunta == 0) {
+	                    System.err.println("No se encontró la pregunta con el título: " + value.getTitulo());
 	                    continue;  // Saltamos este registro y continuamos con los demás
 	                }
 
 	                // Usamos el PreparedStatement dentro del bloque try-with-resources
-	                try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+	                try{
 	                    pstmt.setInt(1, idPregunta);  
 	                    pstmt.setString(2, value.getRespuesta());
 	                    pstmt.setInt(3, idpedido);
@@ -5817,12 +5818,13 @@ public class PedidoDAO {
 	                    
 	                } catch (SQLException e) {
 	                    e.printStackTrace();
-	                    System.err.println("Error al insertar el registro en encuestagenerica: " + value.getDescripcion());
+	                    System.err.println("Error al insertar el registro en encuestagenerica: " + value.getTitulo());
 	                    // Aquí puedes decidir si detener el proceso o continuar con los demás registros
 	                }
 	            }
 
-	        } catch (SQLException e) {
+	        } catch (Exception e) {
+	            System.err.println("Error al insertar el registro en encuestagenerica: " + e.getMessage());
 	            e.printStackTrace();
 	            // Aquí manejas el error de conexión general si es necesario
 
@@ -5856,6 +5858,34 @@ public class PedidoDAO {
 	        }
 
 	        return idPregunta;
+	    }
+	    
+	    // Método para obtener el ID de una pregunta por su título
+	    public static List<JSONObject> obtenerPreguntas_eg() throws SQLException {
+	        ConexionBaseDatos con = new ConexionBaseDatos();
+	        Connection con1 = con.obtenerConexionBDPrincipal(); 
+	        
+	    	List<JSONObject> listPreguntas = new ArrayList<>();
+	        String sql = "SELECT * FROM pregunta_enc_gen";
+
+	        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+
+	            try (ResultSet rs = pstmt.executeQuery()) {
+	            	while (rs.next()) {
+	                   	JSONObject obj = new JSONObject();
+	                   	obj.put("idpregunta", rs.getInt("idpregunta"));
+	                   	obj.put("titulo", rs.getString("titulo"));
+	                   	obj.put("descripcion", rs.getString("descripcion"));
+	                                        
+	                    listPreguntas.add(obj);
+	                }
+	            }
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+	        }
+
+	        return listPreguntas;
 	    }
 
 }
