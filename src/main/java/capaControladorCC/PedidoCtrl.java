@@ -8823,7 +8823,8 @@ public class PedidoCtrl {
 //		PedidoCtrl.insertarPedidoDIDI("{\"app_id\":5764607613466051220,\"app_shop_id\":\"11\",\"type\":\"orderNew\",\"timestamp\":1692580650,\"data\":{\"order_id\":"+ idOrdenDidi +",\"order_info\":{\"order_id\":"+ idOrdenDidi +",\"status\":100,\"order_index\":938010,\"remark\":\"\",\"country\":\"CO\",\"city_id\":57010100,\"timezone\":\"America/Bogota\",\"pay_type\":2,\"pay_method\":2,\"pay_channel\":153,\"delivery_type\":1,\"delivery_eta\":0,\"expected_cook_eta\":0,\"expected_arrived_eta\":1692583124,\"create_time\":1692580650,\"pay_time\":1692580650,\"complete_time\":0,\"cancel_time\":0,\"shop_confirm_time\":0,\"price\":{\"order_price\":1900000,\"items_discount\":0,\"delivery_discount\":0,\"shop_paid_money\":0,\"refund_price\":0},\"shop\":{\"shop_id\":5764607772705162938,\"app_shop_id\":\"11\",\"shop_addr\":\"Calle 68 # 43 u2013 05 medellin, Medellu00edn, Antioquia, Colombia\",\"shop_name\":\"Pizza Americana - Manrique Piloto\",\"shop_phone\":[{\"calling_code\":57,\"phone\":6044444553,\"type\":\"1\"}]},\"receive_address\":{\"uid\":0,\"name\":\"privacy protection\",\"first_name\":\"privacy protection\",\"last_name\":\"\",\"calling_code\":\"+57\",\"phone\":\"310***3910\",\"city\":\"Medellu00edn\",\"country_code\":\"CO\",\"poi_address\":\"privacy protection\",\"house_number\":\"privacy protection\",\"poi_lat\":6,\"poi_lng\":-76,\"coordinate_type\":\"wgs84\",\"poi_display_name\":\"privacy protection\"},\"order_items\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Pizzeta por Mitades\",\"total_price\":1900000,\"sku_price\":1900000,\"amount\":1,\"remark\":\"\",\"sub_item_list\":[{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Manzana 400ml\",\"total_price\":200000,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Americana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]},{\"app_item_id\":\"\",\"app_external_id\":\"\",\"name\":\"Hawaiana\",\"total_price\":0,\"sku_price\":0,\"amount\":1,\"app_content_id\":\"\",\"content_app_external_id\":\"\",\"sub_item_list\":[]}],\"promo_type\":0,\"real_price\":1900000,\"promotion_detail\":{\"promo_type\":0,\"promo_discount\":0,\"shop_subside_price\":0}}]}}}", "revisar");
 		
 		//OTROS TEMAS DE PRUEBAS
-		limpiarLeadCRM("27579239");
+		//limpiarLeadCRM("27579239");
+		//procesarEncuestaGenerica(null,null);
 		//PedidoCtrl.consultarCoberturaCRMBOT("leads%5Bstatus%5D%5B0%5D%5Bid%5D=20424793&leads%5Bstatus%5D%5B0%5D%5Bstatus_id%5D=58822804&leads%5Bstatus%5D%5B0%5D%5Bpipeline_id%5D=5421266&leads%5Bstatus%5D%5B0%5D%5Bold_status_id%5D=58812344&leads%5Bstatus%5D%5B0%5D%5Bold_pipeline_id%5D=5421266&account%5Bid%5D=29918165&account%5Bsubdomain%5D=pizzaamericana", "HTTP Authorization header: No authorization header");
 		//PedidoCtrl.obtenerMensajePedidoBOTCRM("3003861204");
 		//PedidoCtrl.capturarEventoPagoWompi("{\"event\":\"transaction.updated\",\"data\":{\"transaction\":{\"id\":\"17415-1690508372-39946\",\"created_at\":\"2023-07-28T01:39:32.482Z\",\"finalized_at\":\"2023-07-28T02:24:43.627Z\",\"amount_in_cents\":4100000,\"reference\":\"o7uauu_1690508299_xwdlTld0Y\",\"customer_email\":\"erikazapata7193@gmail.com\",\"currency\":\"COP\",\"payment_method_type\":\"NEQUI\",\"payment_method\":{\"type\":\"NEQUI\",\"extra\":{\"is_three_ds\":false,\"transaction_id\":\"350-123-200774-1690508373TD3e\",\"external_identifier\":\"1690508373TD3e\",\"nequi_transaction_id\":\"350-123-200774-1690508373TD3e\"},\"phone_number\":\"3012630615\"},\"status\":\"APPROVED\",\"status_message\":\"La transacción caducó\",\"shipping_address\":null,\"redirect_url\":\"https://pizzaamericana.co\",\"payment_source_id\":null,\"payment_link_id\":\"o7uauu\",\"customer_data\":{\"full_name\":\"Erika Zapata \",\"phone_number\":\"+573012630615\"},\"billing_data\":null}},\"sent_at\":\"2023-07-28T02:24:43.676Z\",\"timestamp\":1690511083,\"signature\":{\"checksum\":\"e9575a0dfbb7ded7b8bf30e028458fcf459e2426e4624259a1b7f700b2776527\",\"properties\":[\"transaction.id\",\"transaction.status\",\"transaction.amount_in_cents\"]},\"environment\":\"prod\"}");
@@ -12119,9 +12120,11 @@ public class PedidoCtrl {
 	}
 	
 
-	public String procesarEncuestaPqrs(String datos, String authHeader) {
+	public  String procesarEncuestaPqrs(String datos, String authHeader) {
 	    String respuesta = "";
 	    try {
+
+
 	        String parametrosDecode = URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 	        Map<String, String> parametros = separarURL(parametrosDecode);
 	        String lead = parametros.get("leads[status][0][id]");
@@ -12130,6 +12133,7 @@ public class PedidoCtrl {
 	        }
 
 	        String infLead = obtenerInformacionLeadCRM(lead);
+	        
 
 	        EncuestaPqrs encuestaPqrs = new EncuestaPqrs();
 	        List<RespuestaEncuestaPqrs> respuestaEncuestapqrs = new ArrayList<>();
@@ -12137,13 +12141,7 @@ public class PedidoCtrl {
 	        String nombre_cliente = "";
 	        String telefono_cliente = "";
 
-	        Set<String> camposEncuesta = Set.of(
-	            "@te sentiste escuchado?", 
-	            "@solucion clara?", 
-	            "@calificacion de atencion", 
-	            "@volverias a comprar", 
-	            "@comentarios del cliente"
-	        );
+	        List<org.json.JSONObject> preguntas = SolicitudPQRSDAO.obtenerPreguntas_epq(); 
 
 	        JSONParser parser = new JSONParser();
 	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
@@ -12152,18 +12150,28 @@ public class PedidoCtrl {
 	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
 	            for (Object obj : customFieldsArray) {
 	                JSONObject campo = (JSONObject) obj;
-	                String rawClave = (String) campo.get("field_name");
-	                if (rawClave == null) continue;
-	                String clave = rawClave.toLowerCase();
+	                String clave = (String) campo.get("field_name");
+	                if (clave == null) continue;
+	                
+	                clave = clave.toLowerCase().trim();
 	                JSONArray valuesArray = (JSONArray) campo.get("values");
+	                if (valuesArray == null || valuesArray.isEmpty()) continue;
 
-	                if (valuesArray != null && !valuesArray.isEmpty()) {
 	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
 	                    String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
 
-	                    if (camposEncuesta.contains(clave)) {
-	                        respuestaEncuestapqrs.add(new RespuestaEncuestaPqrs(clave, valor));
-	                    } else if (clave.equalsIgnoreCase("id pqrs")) {
+	                    // Buscar coincidencia con preguntas
+		                for (org.json.JSONObject preg : preguntas) {
+		                    int idPregunta = preg.getInt("idpregunta");
+		                    String titulo = preg.getString("titulo").toLowerCase().trim();
+
+		                    if (clave.equalsIgnoreCase(titulo)) {
+		                    	respuestaEncuestapqrs.add(new RespuestaEncuestaPqrs(idPregunta, valor ,titulo));
+		                        break; // si ya coincide con una, no hace falta seguir buscando
+		                    }
+		                }
+	                    
+	                    if (clave.equalsIgnoreCase("id pqrs")) {
 	                        try {
 	                            idpqrs = Integer.parseInt(valor);
 	                        } catch (NumberFormatException e) {
@@ -12174,7 +12182,7 @@ public class PedidoCtrl {
 	                    } else if (clave.equalsIgnoreCase("teléfono cliente pqrs")) {
 	                        telefono_cliente = valor;
 	                    }
-	                }
+	                
 	            }
 	        }
 
@@ -12190,68 +12198,75 @@ public class PedidoCtrl {
 	}
 
 	public String procesarEncuestaGenerica(String datos, String authHeader) {
-	    String respuesta = "";
 	    try {
 	        String parametrosDecode = URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 	        Map<String, String> parametros = separarURL(parametrosDecode);
+
 	        String lead = parametros.get("leads[status][0][id]");
 	        if (lead == null || lead.isEmpty()) {
 	            return "No se encontró información del LEAD.";
 	        }
 
 	        String infLead = obtenerInformacionLeadCRM(lead);
-
-	        EncuestaGenerica encuestagenerica = new EncuestaGenerica();
-	        List<RespuestaEncuestaGen> respuestaEncuestaGen = new ArrayList<>();
-	        int idpedido = 0;
 	        
-	        Set<String> camposEncuesta = Set.of(
-	            "sabor piña", 
-	            "combinacion de ingredientes", 
-	            "version de la pizza", 
-	            "textura de la piña", 
-	            "recomendarias esta pizza"
-	        );
+	        // Preparar objetos
+	        EncuestaGenerica encuestaGenerica = new EncuestaGenerica();
+	        List<RespuestaEncuestaGen> respuestas = new ArrayList<>();
+	        int idPedido = 0;
 
-	        JSONParser parser = new JSONParser();
-	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
+	        List<org.json.JSONObject> preguntas = PedidoDAO.obtenerPreguntas_eg();
+
+	        // Parseo del JSON del Lead
+	        JSONObject jsonGeneral = (JSONObject) new JSONParser().parse(infLead);
 	        JSONArray customFieldsArray = (JSONArray) jsonGeneral.get("custom_fields_values");
 
-	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
+	        if (customFieldsArray != null) {
 	            for (Object obj : customFieldsArray) {
 	                JSONObject campo = (JSONObject) obj;
-	                String rawClave = (String) campo.get("field_name");
-	                if (rawClave == null) continue;
-	                String clave = rawClave.toLowerCase();
+	                String clave = String.valueOf(campo.get("field_name"));
+	                if (clave == null || clave.isEmpty()) continue;
+
+	                clave = clave.toLowerCase().trim();
 	                JSONArray valuesArray = (JSONArray) campo.get("values");
+	                if (valuesArray == null || valuesArray.isEmpty()) continue;
 
-	                if (valuesArray != null && !valuesArray.isEmpty()) {
-	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
-	                    String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
+	                JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
 
-	                    if (camposEncuesta.contains(clave)) {
-	                        respuestaEncuestaGen.add(new RespuestaEncuestaGen(clave, valor));
-	                    } else if (clave.equalsIgnoreCase("# de pedido")) {
-	                        try {
-	                            idpedido = Integer.parseInt(valor);
-	                        } catch (NumberFormatException e) {
-	                        	idpedido = 0;
-	                        }
-	                    } 
+	                // Buscar coincidencia con preguntas
+	                for (org.json.JSONObject preg : preguntas) {
+	                    int idPregunta = preg.getInt("idpregunta");
+	                    String titulo = preg.getString("titulo").toLowerCase().trim();
+
+	                    if (clave.equalsIgnoreCase(titulo)) {
+	                        respuestas.add(new RespuestaEncuestaGen(idPregunta, valor ,titulo));
+	                        break; // si ya coincide con una, no hace falta seguir buscando
+	                    }
+	                }
+
+	                // Validar si es el número de pedido
+	                if (clave.equalsIgnoreCase("# de pedido")) {
+	                    try {
+	                        idPedido = Integer.parseInt(valor);
+	                    } catch (NumberFormatException ignored) {
+	                        idPedido = 0;
+	                    }
 	                }
 	            }
 	        }
 
-	        encuestagenerica.setIdpedido(idpedido);
-	        encuestagenerica.setRespuesta(respuestaEncuestaGen);
-	        PedidoDAO.insertarEncuestaGenerica(encuestagenerica);
+	        // Guardar datos
+	        encuestaGenerica.setIdpedido(idPedido);
+	        encuestaGenerica.setRespuesta(respuestas);
+	        PedidoDAO.insertarEncuestaGenerica(encuestaGenerica);
+
+	        return ""; // sin errores
 
 	    } catch (Exception e) {
-	        respuesta = "Error al procesar datos: " + e.getMessage();
+	        return "Error al procesar datos: " + e.getMessage();
 	    }
-
-	    return respuesta;
 	}
+
 
 
 	/**
@@ -12419,5 +12434,6 @@ public class PedidoCtrl {
 
 		return(respuesta.toJSONString());
 	}
+	
 	
 }

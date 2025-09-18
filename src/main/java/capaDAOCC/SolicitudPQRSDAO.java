@@ -999,6 +999,35 @@ public class SolicitudPQRSDAO {
         return idPregunta;
     }
     
+    
+    // Método para obtener el ID de una pregunta por su título
+    public static List<org.json.JSONObject> obtenerPreguntas_epq() throws SQLException {
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal(); 
+        
+    	List<org.json.JSONObject> listPreguntas = new ArrayList<>();
+        String sql = "SELECT * FROM pregunta_pqrs";
+
+        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+            	while (rs.next()) {
+            		org.json.JSONObject obj = new org.json.JSONObject();
+                   	obj.put("idpregunta", rs.getInt("idpregunta"));
+                   	obj.put("titulo", rs.getString("titulo"));
+                   	obj.put("descripcion", rs.getString("descripcion"));
+                                        
+                    listPreguntas.add(obj);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+        }
+
+        return listPreguntas;
+    }
+    
     public static boolean actualizarEnvioEncuestaPqrs(int idpqrs, boolean estado) {
         if (idpqrs <= 0) {
             System.out.println("ID inválido para actualizar PQRS.");
