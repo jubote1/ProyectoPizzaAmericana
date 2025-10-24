@@ -154,6 +154,7 @@ public class EncuestaCtrl {
 		JSONObject respuesta = new JSONObject();
 
 		if (success) {
+			
 			List<JSONObject> listaOpcionesPublica = new ArrayList<>();
 			List<JSONObject> listaOpcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
 			for (JSONObject opcion : listaOpcionesRuleta) {
@@ -163,7 +164,10 @@ public class EncuestaCtrl {
 			    listaOpcionesPublica.add(publica);
 			}
 
-			respuesta.put("roulette_options", listaOpcionesPublica);
+			respuesta.put("roulette_options", listaOpcionesPublica);	
+			
+			EmpleadoEncuestaDAO.insertarClienteServicio(encuesta);
+			
 		}
 
 		respuesta.put("success", success);
@@ -171,8 +175,8 @@ public class EncuestaCtrl {
 		return respuesta.toJSONString();
 	}
 
-	public String resultadoRuleta(EncuestaServicio encuesta) {
-		List<JSONObject> opcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
+	public static String resultadoRuleta(EncuestaServicio encuesta) {
+	    List<JSONObject> opcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
 	    JSONObject respuesta = new JSONObject();
 
 	    if (opcionesRuleta == null || opcionesRuleta.isEmpty()) {
@@ -186,11 +190,15 @@ public class EncuestaCtrl {
 	        int indiceSeleccionado = random.nextInt(opcionesRuleta.size());
 	        JSONObject opcionSeleccionada = opcionesRuleta.get(indiceSeleccionado);
 
-	        int idOpcion = ((Long) opcionSeleccionada.get("idopcion")).intValue();
-	        int indice = ((Long) opcionSeleccionada.get("indice")).intValue();
-	        int premio = ((Long) opcionSeleccionada.get("premio")).intValue();
-	        String titulo = opcionSeleccionada.get("titulo").toString();
-	        String descripcion = opcionSeleccionada.get("descripcion").toString();
+	        // Conversión segura
+	        int idOpcion = opcionSeleccionada.get("idopcion") != null ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString()) : 0;
+	        int indice = opcionSeleccionada.get("indice") != null ? Integer.parseInt(opcionSeleccionada.get("indice").toString()) : 0;
+	        int premio = opcionSeleccionada.get("premio") != null ? Integer.parseInt(opcionSeleccionada.get("premio").toString()) : 0;
+	        String titulo = String.valueOf(opcionSeleccionada.get("titulo"));
+	        String descripcion = String.valueOf(opcionSeleccionada.get("descripcion"));
+
+	        Logger.getLogger("Ruleta").info("Seleccionada opción ID: " + idOpcion + " (" + titulo + ")");
+
 	        int idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
 
 	        if (idregistro == 0) {
@@ -198,7 +206,7 @@ public class EncuestaCtrl {
 	            respuesta.put("message", "Error al registrar el resultado");
 	            return respuesta.toJSONString();
 	        }
-	        
+
 	        respuesta.put("roulette", true);
 	        respuesta.put("animation_index", indice);
 	        respuesta.put("description", descripcion);
@@ -207,16 +215,16 @@ public class EncuestaCtrl {
 	        respuesta.put("option_type", premio);
 	        respuesta.put("message", "Resultado registrado exitosamente");
 
-	        Logger.getLogger("Ruleta").info("🎯 Opción seleccionada: " + opcionSeleccionada.toJSONString());
 	        return respuesta.toJSONString();
 
 	    } catch (Exception e) {
-	        e.printStackTrace();
 	        respuesta.put("success", false);
-	        respuesta.put("message", "Error interno en el proceso de ruleta.");
-	        Logger.getLogger("Ruleta").info("Error interno en el proceso de ruleta: " + e.getMessage());
+	        respuesta.put("message", "Error interno en el proceso de ruleta: " + e.getMessage());
+	        System.out.println("Error: "+e.getMessage());
 	        return respuesta.toJSONString();
 	    }
 	}
+	
+
 
 }

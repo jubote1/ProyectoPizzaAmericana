@@ -34,7 +34,7 @@ public class RuletaDAO {
                     while (rs.next()) {
                         JSONObject obj = new JSONObject();
                         obj.put("idopcion", rs.getInt("idopcion"));
-                        obj.put("premio", rs.getBoolean("premio"));
+                        obj.put("premio", rs.getInt("premio"));
                         obj.put("titulo", rs.getString("titulo"));
                         obj.put("descripcion", rs.getString("descripcion"));
                         obj.put("valor", rs.getString("valor"));
