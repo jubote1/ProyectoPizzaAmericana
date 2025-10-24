@@ -159,7 +159,7 @@ public class EncuestaCtrl {
 			for (JSONObject opcion : listaOpcionesRuleta) {
 			    JSONObject publica = new JSONObject();
 			    publica.put("index", opcion.get("indice"));
-			    publica.put("description", opcion.get("descripcion"));
+			    publica.put("title", opcion.get("titulo"));
 			    listaOpcionesPublica.add(publica);
 			}
 
@@ -189,7 +189,8 @@ public class EncuestaCtrl {
 	        int idOpcion = ((Long) opcionSeleccionada.get("idopcion")).intValue();
 	        int indice = ((Long) opcionSeleccionada.get("indice")).intValue();
 	        int premio = ((Long) opcionSeleccionada.get("premio")).intValue();
-
+	        String titulo = opcionSeleccionada.get("titulo").toString();
+	        String descripcion = opcionSeleccionada.get("descripcion").toString();
 	        int idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
 
 	        if (idregistro == 0) {
@@ -200,6 +201,8 @@ public class EncuestaCtrl {
 	        
 	        respuesta.put("roulette", true);
 	        respuesta.put("animation_index", indice);
+	        respuesta.put("description", descripcion);
+	        respuesta.put("title", titulo);
 	        respuesta.put("success", true);
 	        respuesta.put("option_type", premio);
 	        respuesta.put("message", "Resultado registrado exitosamente");
