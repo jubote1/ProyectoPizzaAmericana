@@ -12038,10 +12038,9 @@ public class PedidoCtrl {
 
 	public String procesarEncuestaServicio(String datos, String authHeader) {
 	    String respuesta = "";
-	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"ES");
+	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "ES");
 
 	    try {
-	        // Decodificar datos y obtener parámetros
 	        String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 	        Map<String, String> parametros = separarURL(parametrosDecode);
 	        String lead = parametros.get("leads[status][0][id]");
@@ -12049,19 +12048,19 @@ public class PedidoCtrl {
 	            return "No se encontró información del LEAD.";
 	        }
 
-	        // Obtener información del lead y actualizar el log
 	        String infLead = obtenerInformacionLeadCRM(lead);
 	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "ES");
 
-	        // Procesar campos del LEAD
 	        EncuestaServicio encuestaServicio = new EncuestaServicio();
 	        List<RespuestaServicio> respuestaServicio = new ArrayList<>();
 	        int idpedido = 0;
 	        String tipo_atencion = "";
-	        String nombre_cliente="";
+	        String nombre_cliente = "";
 	        String telefono = "";
 	        int idtienda = 0;
-	        
+
+	        // 🔹 Nuevo: obtener preguntas de encuesta servicio desde BD
+	        List<org.json.JSONObject> preguntas = EmpleadoEncuestaDAO.obtenerPreguntas_es(); 
 
 	        JSONParser parser = new JSONParser();
 	        JSONObject jsonGeneral = (JSONObject) parser.parse(infLead);
@@ -12070,52 +12069,46 @@ public class PedidoCtrl {
 	        if (customFieldsArray != null && !customFieldsArray.isEmpty()) {
 	            for (Object obj : customFieldsArray) {
 	                JSONObject campo = (JSONObject) obj;
-	                String clave = ((String) campo.get("field_name")).toLowerCase();
+	                String clave = (String) campo.get("field_name");
+	                if (clave == null) continue;
+
+	                clave = clave.toLowerCase().trim();
 	                JSONArray valuesArray = (JSONArray) campo.get("values");
-	                
-	                if (valuesArray != null && !valuesArray.isEmpty()) {
-	                    JSONObject valorObj = (JSONObject) valuesArray.get(0);
-	                    String valor = valorObj.get("value").toString().replace("'", " ");
+	                if (valuesArray == null || valuesArray.isEmpty()) continue;
 
-	                    // Procesar campo # factura web
-	                    if ("# factura web".equals(clave)) {
-	                        try {
-	                            idpedido = Integer.parseInt(valor);
-	                        } catch (NumberFormatException e) {
-	                            idpedido = 0; // Si no es un número válido, poner 0
-	                        }
-	                    }
-	                    
-	                    if ("tipo de atencion ?".equals(clave)) {
-	                        tipo_atencion = valor;
-	                    }
+	                JSONObject valorObj = (JSONObject) valuesArray.get(0);
+	                String valor = String.valueOf(valorObj.get("value")).replace("'", " ");
 
-	                    // Procesar otros campos relevantes
-	                    if (clave.equals("calidad de atencion") || 
-	                        clave.equals("inconvenientes") || 
-	                        clave.equals("nos recomendarias") || 
-	                        clave.equals("satisfaccion producto") || 
-	                        clave.equals("limpieza y orga.") || 
-	                        clave.equals("para mejorar")) {
-	                        respuestaServicio.add(new RespuestaServicio(clave, valor));
+	                // 🔹 Buscar coincidencia con preguntas de servicio
+	                for (org.json.JSONObject preg : preguntas) {
+	                    int idPregunta = preg.getInt("idpregunta");
+	                    String titulo = preg.getString("titulo").toLowerCase().trim();
+
+	                    if (clave.equalsIgnoreCase(titulo)) {
+	                        respuestaServicio.add(new RespuestaServicio(idPregunta, valor, titulo));
+	                        break; 
 	                    }
-	                    
-	                    if("nombre cliente".equals(clave)){
-	                    	nombre_cliente = valor;
+	                }
+
+	                // 🔹 Manejo de campos especiales (no preguntas, sino datos del cliente)
+	                if ("# factura web".equalsIgnoreCase(clave)) {
+	                    try {
+	                        idpedido = Integer.parseInt(valor);
+	                    } catch (NumberFormatException e) {
+	                        idpedido = 0;
 	                    }
-	                    
-	                    if("numero de teléfono".equals(clave)){
-	                    	telefono = valor;
+	                } else if ("tipo de atencion ?".equalsIgnoreCase(clave)) {
+	                    tipo_atencion = valor;
+	                } else if ("nombre cliente".equalsIgnoreCase(clave)) {
+	                    nombre_cliente = valor;
+	                } else if ("numero de teléfono".equalsIgnoreCase(clave)) {
+	                    telefono = valor;
+	                } else if ("id tienda".equalsIgnoreCase(clave)) {
+	                    try {
+	                        idtienda = Integer.parseInt(valor);
+	                    } catch (NumberFormatException e) {
+	                        idtienda = 0;
 	                    }
-	                    
-	                    if("id tienda".equals(clave)){
-			                    	
-	                        try {
-	                        	idtienda = Integer.parseInt(valor);
-	                        } catch (NumberFormatException e) {
-	                        	idtienda = 0; // Si no es un número válido, poner 0
-	                        }
-			          }
 	                }
 	            }
 	        }
@@ -12127,9 +12120,8 @@ public class PedidoCtrl {
 	        encuestaServicio.setNombre_cliente(nombre_cliente);
 	        encuestaServicio.setTelefono(telefono);
 	        encuestaServicio.setIdtienda(idtienda);
-	        //Marcamos y actualizamos el log de que la encuesta fue diligenciada
+
 	        LogEncuestaServicioDAO.actualizarLlenadoLogEncuestaServicio(idtienda, idpedido);
-	        //Resto de acciones
 	        EmpleadoEncuestaDAO.insertarEncuestaServicio(encuestaServicio);
 	        EmpleadoEncuestaDAO.insertarClienteServicio(encuestaServicio);
 
@@ -12139,7 +12131,7 @@ public class PedidoCtrl {
 
 	    return respuesta;
 	}
-	
+
 
 	public  String procesarEncuestaPqrs(String datos, String authHeader) {
 	    String respuesta = "";

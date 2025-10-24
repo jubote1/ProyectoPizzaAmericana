@@ -939,13 +939,12 @@ public class SolicitudPQRSDAO {
             
             Integer idpqrs = encuestapqrs.getIdpqrs();
             for (RespuestaEncuestaPqrs value : encuestapqrs.getRespuesta()) {
-                Integer idPregunta = obtenerIdPorTitulo_pq(value.getDescripcion(), con1);
+                Integer idPregunta = value.getIdpregunta();
                 
-                if (idPregunta == null) {
-                    System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
+                if (idPregunta == null || idPregunta == 0) {
+                    System.err.println("No se encontró la pregunta con el título: " + value.getTitulo());
                     continue;  // Saltamos este registro y continuamos con los demás
                 }
-
                 // Usamos el PreparedStatement dentro del bloque try-with-resources
                 try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
                     pstmt.setInt(1, idPregunta);  
@@ -956,12 +955,13 @@ public class SolicitudPQRSDAO {
                     
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    System.err.println("Error al insertar el registro en encuestapqrs: " + value.getDescripcion());
+                    System.err.println("Error al insertar el registro en encuestapqrs: " + value.getTitulo());
                     // Aquí puedes decidir si detener el proceso o continuar con los demás registros
                 }
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
+        	  System.err.println("Error al insertar el registro en encuestapqrs: "+e.getMessage() );
             e.printStackTrace();
             // Aquí manejas el error de conexión general si es necesario
 

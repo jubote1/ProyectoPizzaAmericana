@@ -10,7 +10,14 @@ public class EncuestaServicio {
     private String nombre_cliente;
     private String telefono;
     private int idtienda;
-    public String getTipo_atencion() {
+    private String correo; 
+    public String getCorreo() {
+		return correo;
+	}
+	public void setCorreo(String correo) {
+		this.correo = correo;
+	}
+	public String getTipo_atencion() {
 		return tipo_atencion;
 	}
 	public void setTipo_atencion(String tipo_atencion) {
@@ -66,15 +73,24 @@ public class EncuestaServicio {
 	
 		
 		 public static class RespuestaServicio {
-				private String descripcion;
+				private String titulo;
 				private String respuesta ;
+				private int idpregunta;
 				
 				
-				public String getDescripcion() {
-					return descripcion;
+				public int getIdpregunta() {
+					return idpregunta;
 				}
-				public void setDescripcion(String descripcion) {
-					this.descripcion = descripcion;
+				public void setIdpregunta(int idpregunta) {
+					this.idpregunta = idpregunta;
+				}
+				
+				
+				public String getTitulo() {
+					return titulo;
+				}
+				public void setTitulo(String titulo) {
+					this.titulo = titulo;
 				}
 
 				public String getRespuesta() {
@@ -83,9 +99,10 @@ public class EncuestaServicio {
 				public void setRespuesta(String respuesta) {
 					this.respuesta = respuesta;
 				}
-				public RespuestaServicio(String descripcion ,String respuesta) {
-					this.descripcion = descripcion;
+				public RespuestaServicio(int idpregunta,String respuesta,String titulo ) {
+					this.titulo = titulo;
 					this.respuesta = respuesta;
+					this.idpregunta = idpregunta;
 
 
 				}

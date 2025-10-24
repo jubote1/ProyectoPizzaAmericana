@@ -2582,3 +2582,140 @@ async function generarReporteANS() {
 }
 
 
+
+async function GenerarExcelConsultaPqrs() {
+  $('#btnExportarExcel').on('click', async function () {
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('PQRS');
+
+    // --- Definir campos (claves) y encabezados visibles (nombres bonitos) ---
+    const campos = [
+      "idconsultaPQRS", "fechasolicitud", "tiposolicitud", "cliente", "direccion",
+      "telefono", "municipio", "tienda", "nombreorigen", "nombrefoco",
+      "tipo", "idpedidotienda", "nombres", "apellidos", "listaComentarios",
+      "nombreEstado", "idmotivo", "idprioridad", "zona", "correo"
+    ];
+	
+
+
+    const encabezados = [
+      "ID Consulta", "Fecha Solicitud", "Tipo Solicitud", "Cliente", "Dirección",
+      "Teléfono", "Municipio", "Tienda", "Origen", "Foco",
+      "Tipo", "ID Pedido Tienda", "Nombres", "Apellidos", "Comentarios",
+      "Estado", "Motivo", "Prioridad", "Zona", "Correo"
+    ];
+
+    // --- Agregar encabezados personalizados ---
+    worksheet.addRow(encabezados);
+
+	
+	const totalRows = dtconsultasPQRS.rows({ search: 'applied' }).count();
+	if (totalRows === 0) {
+		mostrarAlerta();    mostrarAlerta("warning", "No se encontraron datos para realizar la descarga.") 
+		 return;
+		}
+    // --- Recorrer los datos del DataTable ---
+    dtconsultasPQRS.rows({ search: 'applied' }).every(function () {
+      const data = this.data();
+      const fila = [];
+
+      campos.forEach(campo => {
+
+        let valor = data[campo];
+		
+		if (campo === "idprioridad") {
+		  const prioridadObj = prioridades.find(p => p.idprioridad === data.idprioridad);
+		  valor = prioridadObj ? prioridadObj.descripcion : "N/A";
+		}
+		
+		if(campo === "idmotivo"){
+			const motivoObj = motivos.find(p => p.idmotivo === data.idmotivo);
+			valor = motivoObj ? motivoObj.descripcion : "N/A";
+			
+		}
+
+        // Procesar comentarios (listaComentarios)
+        if (campo === "listaComentarios" && typeof valor === 'object' && valor !== null) {
+          try {
+            const partes = [];
+            for (const fecha in valor) {
+              const lista = valor[fecha];
+              if (Array.isArray(lista)) {
+                for (const item of lista) {
+                  const comentario = item?.comentario?.trim();
+                  if (comentario) partes.push(`(${fecha}) ${comentario}`);
+                }
+              }
+            }
+            valor = partes.join('\n');
+          } catch (error) {
+            console.error("Error procesando listaComentarios:", error);
+            valor = '';
+          }
+        }
+
+        // Eliminar HTML si hay
+        if (typeof valor === 'string') valor = valor.replace(/<[^>]*>?/gm, '').trim();
+
+        // Convertir undefined o null en vacío
+        if (valor === undefined || valor === null) valor = '';
+
+        fila.push(valor);
+      });
+
+      worksheet.addRow(fila);
+    });
+
+    // --- Estilos de columnas (autoancho + ajuste de texto) ---
+    worksheet.columns.forEach(col => {
+      let maxLength = 0;
+      col.eachCell({ includeEmpty: true }, cell => {
+        const cellValue = cell.value ? cell.value.toString() : '';
+        if (cellValue.length > maxLength) maxLength = cellValue.length;
+      });
+      col.width = Math.min(maxLength + 2, 150); // límite de ancho
+    });
+
+    // --- Estilos de filas ---
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell(cell => {
+        cell.alignment = {
+          vertical: 'top',
+          horizontal: 'left',
+          wrapText: true
+        };
+      });
+
+      // Encabezado con estilo especial
+      if (rowNumber === 1) {
+        row.eachCell(cell => {
+          cell.font = { bold: true, color: { argb: 'FF000000' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFCCE5FF' }
+          };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+            left: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+            bottom: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+            right: { style: 'thin', color: { argb: 'FFAAAAAA' } }
+          };
+        });
+      }
+    });
+
+    // --- Descargar archivo ---
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    saveAs(blob, `PQRS_${fecha_inicial}_al_${fecha_final}.xlsx`);
+  });
+}
+
+GenerarExcelConsultaPqrs();
+
+

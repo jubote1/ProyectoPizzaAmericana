@@ -310,55 +310,60 @@ public class EmpleadoEncuestaDAO {
 	}
 	
 	// Método para insertar registros en la tabla encuesta_servicio
-    public static void insertarEncuestaServicio(EncuestaServicio encuestaservicio) {
-        String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido,tipo_atencion,idtienda) VALUES (?, ?, ?,?,?)";
-        ConexionBaseDatos con = new ConexionBaseDatos();
-        Connection con1 = null;
+	public static boolean insertarEncuestaServicio(EncuestaServicio encuestaservicio) {
+	    String sql = "INSERT INTO encuesta_servicio (idpregunta, respuesta, idpedido, tipo_atencion, idtienda) VALUES (?, ?, ?, ?, ?)";
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = null;
+	    boolean exito = true;  // 👈 asumimos que todo va bien
 
-        try {
-            con1 = con.obtenerConexionBDPrincipal();  // Obtener la conexión una vez
-            
-            Integer idpedido = encuestaservicio.getIdpedido();
-            String  tipo_atencion = encuestaservicio.getTipo_atencion();
-            Integer idtienda =encuestaservicio.getIdtienda();
-            for (RespuestaServicio value : encuestaservicio.getRespuesta()) {
-                Integer idPregunta = obtenerIdPorTitulo(value.getDescripcion(), con1);
-                
-                if (idPregunta == null) {
-                    System.err.println("No se encontró la pregunta con el título: " + value.getDescripcion());
-                    continue;  // Saltamos este registro y continuamos con los demás
-                }
+	    try {
+	        con1 = con.obtenerConexionBDPrincipal();
 
-                // Usamos el PreparedStatement dentro del bloque try-with-resources
-                try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
-                    pstmt.setInt(1, idPregunta);   // idpregunta
-                    pstmt.setString(2, value.getRespuesta()); // respuesta
-                    pstmt.setInt(3, idpedido);     // idpedido
-                    pstmt.setString(4, tipo_atencion);     // tipo_antecion
-                    pstmt.setInt(5, idtienda);     // idtienda
-                    pstmt.executeUpdate();
-                    
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    System.err.println("Error al insertar el registro con la pregunta: " + value.getDescripcion());
-                    // Aquí puedes decidir si detener el proceso o continuar con los demás registros
-                }
-            }
+	        Integer idpedido = encuestaservicio.getIdpedido();
+	        String tipo_atencion = encuestaservicio.getTipo_atencion();
+	        Integer idtienda = encuestaservicio.getIdtienda();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // Aquí manejas el error de conexión general si es necesario
+	        for (RespuestaServicio value : encuestaservicio.getRespuesta()) {
+	            Integer idPregunta = value.getIdpregunta();
 
-        } finally {
-            if (con1 != null) {
-                try {
-                    con1.close(); // Cerramos la conexión
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+	            if (idPregunta == null || idPregunta == 0) {
+	                System.err.println("No se encontró la pregunta con el título: " + value.getTitulo());
+	                exito = false;  // hubo error en esta respuesta
+	                continue;
+	            }
+
+	            try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+	                pstmt.setInt(1, idPregunta);
+	                pstmt.setString(2, value.getRespuesta());
+	                pstmt.setInt(3, idpedido);
+	                pstmt.setString(4, tipo_atencion);
+	                pstmt.setInt(5, idtienda);
+
+	                pstmt.executeUpdate();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	                System.err.println("Error al insertar el registro con la pregunta: " + value.getTitulo());
+	                exito = false;  // 👈 marcamos que algo falló
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        System.err.println("Error al insertar encuesta: " + e.getMessage());
+	        e.printStackTrace();
+	        exito = false;  // fallo global
+	    } finally {
+	        if (con1 != null) {
+	            try {
+	                con1.close();
+	            } catch (SQLException e) {
+	                e.printStackTrace();
+	            }
+	        }
+	    }
+
+	    return exito; // 👈 devolvemos si todo salió bien o no
+	}
+
     
 	// Método para insertar registros en la tabla encuesta_servicio
     public static void insertarClienteServicio(EncuestaServicio encuestaservicio) {
@@ -377,10 +382,10 @@ public class EmpleadoEncuestaDAO {
             
                 // Usamos el PreparedStatement dentro del bloque try-with-resources
                 try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
-                    pstmt.setString(1, nombre_cliente);   // idpregunta
-                    pstmt.setString(2, telefono); // respuesta
-                    pstmt.setInt(3, idtienda);     // idpedido
-                    pstmt.setInt(4, idpedido);     // tipo_antecion
+                    pstmt.setString(1, nombre_cliente);  
+                    pstmt.setString(2, telefono); 
+                    pstmt.setInt(3, idtienda);     
+                    pstmt.setInt(4, idpedido);     
                     pstmt.executeUpdate();
                     
                 } catch (SQLException e) {
@@ -405,6 +410,34 @@ public class EmpleadoEncuestaDAO {
         }
     }
 
+
+    public static List<org.json.JSONObject> obtenerPreguntas_es() throws SQLException {
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal(); 
+        
+    	List<org.json.JSONObject> listPreguntas = new ArrayList<>();
+        String sql = "SELECT * FROM pregunta_servicio";
+
+        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+            	while (rs.next()) {
+            		org.json.JSONObject obj = new org.json.JSONObject();
+                   	obj.put("idpregunta", rs.getInt("idpregunta"));
+                   	obj.put("titulo", rs.getString("titulo"));
+                   	obj.put("descripcion", rs.getString("descripcion"));
+                	obj.put("tipo", rs.getString("tipo"));
+                                        
+                    listPreguntas.add(obj);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+        }
+
+        return listPreguntas;
+    }
     // Método para obtener el ID de una pregunta por su título
     public static Integer obtenerIdPorTitulo(String titulo, Connection con1) throws SQLException {
         String sql = "SELECT idpregunta FROM pregunta_servicio WHERE titulo = ?";
@@ -427,26 +460,7 @@ public class EmpleadoEncuestaDAO {
     }
     
     public static void main(String[] args) {
-        EncuestaServicio encuestaservicio = new EncuestaServicio();
-        encuestaservicio.setIdpedido(6651);
-        encuestaservicio.setTipo_atencion("domicilio");
-        
-       List<RespuestaServicio> lista = new ArrayList<>();
-       lista.add(new RespuestaServicio("calidad de atencion","respuesta"));
-       lista.add(new RespuestaServicio("inconvenientes","respuesta"));
-       lista.add(new RespuestaServicio("nos recomendarias","respuesta"));
-       lista.add(new RespuestaServicio("satisfaccion producto","respuesta"));
-       
-       encuestaservicio.setRespuesta(lista);
 
-        
-        try {
-            insertarEncuestaServicio(encuestaservicio);
-            System.out.println("Registros insertados exitosamente.");
-        } catch (Exception e) {
-            System.err.println("Error al insertar los registros:"+e);
-            		
-            		}
     }
 
 }

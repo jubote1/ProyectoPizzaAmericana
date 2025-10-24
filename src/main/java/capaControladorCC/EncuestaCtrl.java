@@ -2,6 +2,7 @@ package capaControladorCC;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -19,24 +20,22 @@ import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoEncuestaDetalleDAO;
 import capaDAOCC.EncuestaLaboralDAO;
 import capaDAOCC.EncuestaLaboralDetalleDAO;
+import capaDAOCC.RuletaDAO;
 import capaModeloCC.EmpleadoEncuesta;
 import capaModeloCC.EmpleadoEncuestaDetalle;
 import capaModeloCC.EncuestaLaboral;
 import capaModeloCC.EncuestaLaboralDetalle;
 import capaModeloCC.EncuestaServicio;
-
+import capaSeguridad.TokenRoulette;
 
 public class EncuestaCtrl {
-	
-	
-	public EncuestaCtrl()
-	{
+
+	public EncuestaCtrl() {
 	}
-	
-	public String obtenerEncuestaLaboral(int idEncuesta, String documento )
-	{
+
+	public String obtenerEncuestaLaboral(int idEncuesta, String documento) {
 		JSONObject respuesta = new JSONObject();
-		EncuestaLaboral encLaboral =EncuestaLaboralDAO.obtenerEncuestaLaboral(idEncuesta);
+		EncuestaLaboral encLaboral = EncuestaLaboralDAO.obtenerEncuestaLaboral(idEncuesta);
 		int idempleado = EncuestaLaboralDAO.obteneridEmpleado(documento);
 		respuesta.put("idencuesta", encLaboral.getIdEncuesta());
 		respuesta.put("codigo", encLaboral.getCodigo());
@@ -46,17 +45,15 @@ public class EncuestaCtrl {
 		respuesta.put("nombreencuesta", encLaboral.getNombreEncuesta());
 		respuesta.put("version", encLaboral.getVersion());
 		respuesta.put("idempleado", idempleado);
-		return(respuesta.toJSONString());
+		return (respuesta.toJSONString());
 	}
-	
-	
-	public String obtenerEncLaboralDetalle(int idEncuesta)
-	{
+
+	public String obtenerEncLaboralDetalle(int idEncuesta) {
 		JSONObject resTemp = new JSONObject();
 		JSONArray respuesta = new JSONArray();
-		ArrayList<EncuestaLaboralDetalle> encLaboralDetalle =  EncuestaLaboralDetalleDAO.obtenerEncLaboralDetalle(idEncuesta);
-		for(EncuestaLaboralDetalle detalle: encLaboralDetalle)
-		{
+		ArrayList<EncuestaLaboralDetalle> encLaboralDetalle = EncuestaLaboralDetalleDAO
+				.obtenerEncLaboralDetalle(idEncuesta);
+		for (EncuestaLaboralDetalle detalle : encLaboralDetalle) {
 			resTemp = new JSONObject();
 			resTemp.put("idencuesta", detalle.getIdEncuesta());
 			resTemp.put("alertar", detalle.getAlertar());
@@ -75,88 +72,148 @@ public class EncuestaCtrl {
 			resTemp.put("dependencia", detalle.getDependencia());
 			respuesta.add(resTemp);
 		}
-		return(respuesta.toJSONString());
+		return (respuesta.toJSONString());
 	}
-	
+
 	public String insertarEmpleadoEncuestaDetalle(List<org.json.JSONObject> empEncuestaDetalle) {
-	    float totalObtenido = 0;
-	    float totalEsperado = 0;
-	    float porcentajeTransferido = 0;
-	    int preguntasValidas = 0;
-	    org.json.JSONObject respuesta = new org.json.JSONObject();
-	    
-	    try {
-	        List<EmpleadoEncuestaDetalle> detallesEncuesta = new ArrayList<>();
-	        boolean esOperacional = "operacional".equals(empEncuestaDetalle.get(0).optString("dependencia"));
+		float totalObtenido = 0;
+		float totalEsperado = 0;
+		float porcentajeTransferido = 0;
+		int preguntasValidas = 0;
+		org.json.JSONObject respuesta = new org.json.JSONObject();
 
-	        // Primer recorrido: construir lista y (si aplica) calcular porcentajeTransferido
-	        for (org.json.JSONObject item : empEncuestaDetalle) {
-	            String valorStr = item.optString("valor", "");
-	            float valor = item.optFloat("valor", 0);
-	            float porcentaje = item.optFloat("porcentaje", 0);
+		try {
+			List<EmpleadoEncuestaDetalle> detallesEncuesta = new ArrayList<>();
+			boolean esOperacional = "operacional".equals(empEncuestaDetalle.get(0).optString("dependencia"));
 
-	            EmpleadoEncuestaDetalle det = new EmpleadoEncuestaDetalle(
-	                0,
-	                item.getInt("idempleadoencuesta"),
-	                item.getInt("idencuestadetalle"),
-	                "", "", valorStr
-	            );
-	            det.setObservacionAdicional(item.optString("observacionadi", ""));
-	            detallesEncuesta.add(det);
+			// Primer recorrido: construir lista y (si aplica) calcular
+			// porcentajeTransferido
+			for (org.json.JSONObject item : empEncuestaDetalle) {
+				String valorStr = item.optString("valor", "");
+				float valor = item.optFloat("valor", 0);
+				float porcentaje = item.optFloat("porcentaje", 0);
 
-	            if (esOperacional && Math.abs(valor) > 0.0001 && porcentaje != 0) {
-	                if (valor == -1) {
-	                    porcentajeTransferido += porcentaje;
-	                } else {
-	                    preguntasValidas++;
-	                }
-	            }
-	        }
+				EmpleadoEncuestaDetalle det = new EmpleadoEncuestaDetalle(0, item.getInt("idempleadoencuesta"),
+						item.getInt("idencuestadetalle"), "", "", valorStr);
+				det.setObservacionAdicional(item.optString("observacionadi", ""));
+				detallesEncuesta.add(det);
 
-	        // Segundo recorrido: solo si es operacional
-	        if (esOperacional) {
-	            for (org.json.JSONObject item : empEncuestaDetalle) {
-	                float valor = item.optFloat("valor", 0);
-	                if (Math.abs(valor) < 0.0001) continue;
+				if (esOperacional && Math.abs(valor) > 0.0001 && porcentaje != 0) {
+					if (valor == -1) {
+						porcentajeTransferido += porcentaje;
+					} else {
+						preguntasValidas++;
+					}
+				}
+			}
 
-	                float porcentaje = item.optFloat("porcentaje", 0);
-	                if (valor == -1) {
-	                    porcentaje = 0;
-	                } else if (porcentajeTransferido > 0 && preguntasValidas > 0 && porcentaje != 0) {
-	                    porcentaje += porcentajeTransferido / preguntasValidas;
-	                }
+			// Segundo recorrido: solo si es operacional
+			if (esOperacional) {
+				for (org.json.JSONObject item : empEncuestaDetalle) {
+					float valor = item.optFloat("valor", 0);
+					if (Math.abs(valor) < 0.0001)
+						continue;
 
-	                float valorFinal = item.optFloat("valorfinal", 0);
-	                totalEsperado += (porcentaje * valorFinal) / 100;
-	                totalObtenido += (porcentaje * valor) / 100;
-	            }
-	        }
+					float porcentaje = item.optFloat("porcentaje", 0);
+					if (valor == -1) {
+						porcentaje = 0;
+					} else if (porcentajeTransferido > 0 && preguntasValidas > 0 && porcentaje != 0) {
+						porcentaje += porcentajeTransferido / preguntasValidas;
+					}
 
-	        // Calcular porcentaje total
-	        float porcentajeTotal = 0;
-	        if (totalEsperado > 0) {
-	            porcentajeTotal = Math.round((totalObtenido / totalEsperado) * 10000f) / 100f;
-	        }
+					float valorFinal = item.optFloat("valorfinal", 0);
+					totalEsperado += (porcentaje * valorFinal) / 100;
+					totalObtenido += (porcentaje * valor) / 100;
+				}
+			}
 
-	        respuesta = EmpleadoEncuestaDetalleDAO.insertarEmpleadoEncuestaDetalle(detallesEncuesta, porcentajeTotal);
-	    } catch (Exception e) {
-	        System.out.println("Error: " + e);
-	        respuesta.put("success", false);
-	    }
+			// Calcular porcentaje total
+			float porcentajeTotal = 0;
+			if (totalEsperado > 0) {
+				porcentajeTotal = Math.round((totalObtenido / totalEsperado) * 10000f) / 100f;
+			}
 
-	    return respuesta.toString();
+			respuesta = EmpleadoEncuestaDetalleDAO.insertarEmpleadoEncuestaDetalle(detallesEncuesta, porcentajeTotal);
+		} catch (Exception e) {
+			System.out.println("Error: " + e);
+			respuesta.put("success", false);
+		}
+
+		return respuesta.toString();
 	}
 
-
-	
-	public String insertarEmpleadoEncuesta(EmpleadoEncuesta empEncuesta)
-	{
+	public String insertarEmpleadoEncuesta(EmpleadoEncuesta empEncuesta) {
 		int idEmpleadoEncuesta = EmpleadoEncuestaDAO.insertarEmpleadoEncuesta(empEncuesta);
 		JSONObject respuesta = new JSONObject();
 		respuesta.put("idempleadoencuesta", idEmpleadoEncuesta);
-		return(respuesta.toJSONString());
-	}	
-	
-	
+		return (respuesta.toJSONString());
+	}
+
+	public String insertarEncuestaServicioWb(EncuestaServicio encuesta) {
+		boolean success = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
+		JSONObject respuesta = new JSONObject();
+
+		if (success) {
+			List<JSONObject> listaOpcionesPublica = new ArrayList<>();
+			List<JSONObject> listaOpcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
+			for (JSONObject opcion : listaOpcionesRuleta) {
+			    JSONObject publica = new JSONObject();
+			    publica.put("index", opcion.get("indice"));
+			    publica.put("description", opcion.get("descripcion"));
+			    listaOpcionesPublica.add(publica);
+			}
+
+			respuesta.put("roulette_options", listaOpcionesPublica);
+		}
+
+		respuesta.put("success", success);
+		respuesta.put("message", success ? "Encuesta insertada correctamente" : "Error al insertar la encuesta");
+		return respuesta.toJSONString();
+	}
+
+	public String resultadoRuleta(EncuestaServicio encuesta) {
+		List<JSONObject> opcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
+	    JSONObject respuesta = new JSONObject();
+
+	    if (opcionesRuleta == null || opcionesRuleta.isEmpty()) {
+	        respuesta.put("success", false);
+	        respuesta.put("message", "No hay opciones disponibles para la ruleta");
+	        return respuesta.toJSONString();
+	    }
+
+	    try {
+	        SecureRandom random = new SecureRandom();
+	        int indiceSeleccionado = random.nextInt(opcionesRuleta.size());
+	        JSONObject opcionSeleccionada = opcionesRuleta.get(indiceSeleccionado);
+
+	        int idOpcion = ((Long) opcionSeleccionada.get("idopcion")).intValue();
+	        int indice = ((Long) opcionSeleccionada.get("indice")).intValue();
+	        int premio = ((Long) opcionSeleccionada.get("premio")).intValue();
+
+	        int idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
+
+	        if (idregistro == 0) {
+	            respuesta.put("success", false);
+	            respuesta.put("message", "Error al registrar el resultado");
+	            return respuesta.toJSONString();
+	        }
+	        
+	        respuesta.put("roulette", true);
+	        respuesta.put("animation_index", indice);
+	        respuesta.put("success", true);
+	        respuesta.put("option_type", premio);
+	        respuesta.put("message", "Resultado registrado exitosamente");
+
+	        Logger.getLogger("Ruleta").info("🎯 Opción seleccionada: " + opcionSeleccionada.toJSONString());
+	        return respuesta.toJSONString();
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        respuesta.put("success", false);
+	        respuesta.put("message", "Error interno en el proceso de ruleta.");
+	        Logger.getLogger("Ruleta").info("Error interno en el proceso de ruleta: " + e.getMessage());
+	        return respuesta.toJSONString();
+	    }
+	}
 
 }
