@@ -161,6 +161,8 @@ public class EncuestaCtrl {
 			    JSONObject publica = new JSONObject();
 			    publica.put("index", opcion.get("indice"));
 			    publica.put("title", opcion.get("titulo"));
+			    publica.put("iterations", opcion.get("repeticiones"));
+					    
 			    listaOpcionesPublica.add(publica);
 			}
 
@@ -193,7 +195,9 @@ public class EncuestaCtrl {
 	        // Conversión segura
 	        int idOpcion = opcionSeleccionada.get("idopcion") != null ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString()) : 0;
 	        int indice = opcionSeleccionada.get("indice") != null ? Integer.parseInt(opcionSeleccionada.get("indice").toString()) : 0;
-	        int premio = opcionSeleccionada.get("premio") != null ? Integer.parseInt(opcionSeleccionada.get("premio").toString()) : 0;
+	        int premio = opcionSeleccionada.get("premio") != null ? Integer.parseInt(opcionSeleccionada.get("premio").toString()) : 0; 
+	        int reintento = opcionSeleccionada.get("reintento") != null ? Integer.parseInt(opcionSeleccionada.get("reintento").toString()) : 0; 
+	 
 	        String titulo = String.valueOf(opcionSeleccionada.get("titulo"));
 	        String descripcion = String.valueOf(opcionSeleccionada.get("descripcion"));
 
@@ -209,6 +213,7 @@ public class EncuestaCtrl {
 
 	        respuesta.put("roulette", true);
 	        respuesta.put("animation_index", indice);
+	        respuesta.put("retry", reintento);
 	        respuesta.put("description", descripcion);
 	        respuesta.put("title", titulo);
 	        respuesta.put("success", true);

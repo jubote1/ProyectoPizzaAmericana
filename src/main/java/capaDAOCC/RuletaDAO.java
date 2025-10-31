@@ -38,8 +38,10 @@ public class RuletaDAO {
                         obj.put("titulo", rs.getString("titulo"));
                         obj.put("descripcion", rs.getString("descripcion"));
                         obj.put("valor", rs.getString("valor"));
-                        obj.put("tipo", rs.getString("tipo"));
+                        obj.put("idtipo", rs.getInt("idtipo"));
                         obj.put("indice", rs.getInt("indice"));
+                        obj.put("repeticiones", rs.getInt("repeticiones"));
+                        obj.put("reintento", rs.getInt("reintento"));
                                             
                         listaOpciones.add(obj);
                     }
