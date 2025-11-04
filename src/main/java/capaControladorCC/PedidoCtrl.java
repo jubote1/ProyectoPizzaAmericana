@@ -6593,7 +6593,7 @@ public class PedidoCtrl {
 	    // Lista única de field_ids a limpiar
 	    Set<Integer> fieldIds = new LinkedHashSet<>(Arrays.asList(
 	        861855, 862081, 857712, 861771, 861775, 862087, 858274, 858276, 862091,
-	        862089, 858272, 857714, 862847, 862901, 862155, 862153, 861773, 862083,
+	        862089, 873233, 857714, 862847, 862901, 862155, 862153, 861773, 862083,
 	        864379, 863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227,
 	        868045, 868051, 868231, 868233, 868055, 868057, 868059, 868061, 868063,
 	        868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
@@ -6609,7 +6609,7 @@ public class PedidoCtrl {
 
 	        Map<String, Object> valueMap = new HashMap<>();
 	        // Algunos campos usan enum_id null, puedes ajustar según necesidad
-	        if (id.equals(862153) || id.equals(862155)) {
+	        if (id.equals(862153) || id.equals(862155) || id.equals(873233)) {
 	            valueMap.put("enum_id", null);
 	        } else {
 	            valueMap.put("value", "");
