@@ -6249,6 +6249,85 @@ public class PedidoCtrl {
 		System.out.println("6. TERMINO DEL PROCESO ");
 	}
 	
+	public String  consultarClienteRecurrenteCRMBOT(String datos , String authHeader)
+	
+	{
+        String respuesta = "Exitoso";
+		try {
+			int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"CR");
+			String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+			Map parSep = separarURL(parametrosDecode);
+			String lead = (String)parSep.get("leads[status][0][id]");
+			String infLead = obtenerInformacionLeadCRM(lead);
+			//System.out.println("información " + infLead);
+			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "CR");
+
+			
+			String telefono = "";
+			String tipo_cliente = "";
+
+			//Para realizar el último parseo
+			JSONParser parserFinal = new JSONParser();
+			Object objParserFinal;
+			//Aqui estamos verificando la utilización del valor
+			JSONObject valor = new JSONObject();
+			JSONArray valorArreglo = new JSONArray();
+			String strValor = "";
+			try
+			{
+				JSONParser parser = new JSONParser();
+				Object objParser = parser.parse(infLead);
+				JSONObject jsonGeneral = (JSONObject) objParser;
+				JSONArray customFieldsArray = new JSONArray();
+				try
+				{
+					String customFieldsValues = (String)jsonGeneral.get("custom_fields_values").toString();
+					Object objcustomFieldsValues = parser.parse(customFieldsValues);
+					customFieldsArray = (JSONArray) objcustomFieldsValues;
+				}catch(Exception e1)
+				{
+					System.out.println("Error customFieldsArray: "+e1.getMessage());
+					respuesta = "Error";
+					//Tratar problema de no tener campos adicionales
+				}
+				//Continuamos con la recolección de la información para el pedido
+				for(int i = 0; i < customFieldsArray.size(); i++)
+				{
+					//Tomamos el elemento para procesar
+					JSONObject objTemp = (JSONObject) customFieldsArray.get(i);
+					String clave = objTemp.get("field_name").toString().toLowerCase();
+					String values = objTemp.get("values").toString();
+					Object objValues = parser.parse(values);
+					JSONArray valuesArray = (JSONArray) objValues;
+					objParserFinal = parserFinal.parse(valuesArray.get(0).toString());
+					valor = (JSONObject) objParserFinal;
+					strValor = valor.get("value").toString();
+					strValor = strValor.replaceAll("'", " ");
+					//Dependiendo del campos se tendrá la recuperación del mismo
+			        if(clave.equals(new String("numero de teléfono")))
+					{
+			        	telefono = strValor;
+					}else if(clave.equals(new String("tipo de cliente")))
+					{
+						tipo_cliente = strValor;
+					}
+
+				}
+			}catch(Exception e)
+			{   respuesta = "Error";
+				System.out.println("Error: "+e.getMessage());
+			}
+			ClienteCtrl clienteCtrl = new ClienteCtrl();
+			actualizarClienteRecurrenteCRMBOT(lead, clienteCtrl.ValidarExistenciaClienteCRM(telefono),tipo_cliente); 
+		}catch (Exception e){
+			System.out.println("Error: "+e.getMessage());
+			 respuesta = "Error";
+		}
+		
+		return respuesta;
+		
+	}
+	
 	
 	public String consultarLinkPagoVirtualCRM(String datos, String authHeader) throws IOException
 	{
@@ -6598,7 +6677,7 @@ public class PedidoCtrl {
 	        868045, 868051, 868231, 868233, 868055, 868057, 868059, 868061, 868063,
 	        868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
 	        872199, 872201, 862673, 862675, 872069, 872639, 872641, 872705, 872707, 
-	        872709, 872711, 872713 ,872717
+	        872709, 872711, 872713 ,872717, 873301, 873303
 	    ));
 
 	    // Construimos la estructura JSON
@@ -6609,7 +6688,7 @@ public class PedidoCtrl {
 
 	        Map<String, Object> valueMap = new HashMap<>();
 	        // Algunos campos usan enum_id null, puedes ajustar según necesidad
-	        if (id.equals(862153) || id.equals(862155) || id.equals(873233)) {
+	        if (id.equals(862153) || id.equals(862155) || id.equals(873233) || id.equals(873301)) {
 	            valueMap.put("enum_id", null);
 	        } else {
 	            valueMap.put("value", "");
@@ -8172,6 +8251,122 @@ public class PedidoCtrl {
 	        System.out.println("Error en request a CRM: " + e.getMessage());
 	    }
 	}
+	
+	public void actualizarClienteRecurrenteCRMBOT(String lead, org.json.JSONObject  resultado, String tipo_cliente) {
+
+	    IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+
+	    final int FIELD_CLIENTE_RECURRENTE = 873303;
+	    final int FIELD_TIENDA = 862153;
+	    final int FIELD_ASESOR = 862155;
+	    final int FIELD_ESTADO_TIENDA = 870325;
+	    final int FIELD_LATITUD = 872641;
+	    final int FIELD_LONGITUD = 872639;
+	    final int FIELD_DIRECCION = 858274;
+	    final int FIELD_BARRIO = 858276;
+	    final int FIELD_MUNICIPIO = 863427;
+	    final int FIELD_REFERENCIA = 866919;
+	    
+	    List<Map<String, Object>> customFields = new ArrayList<>();
+
+	    // Campo resultado principal
+	    String clienteRecurrente = resultado.optString("ClienteRecurrente", "NEGATIVO");
+	    customFields.add(Map.of(
+	        "field_id", FIELD_CLIENTE_RECURRENTE,
+	        "values", List.of(Map.of("value", clienteRecurrente))
+	    ));
+
+	    if (!"NEGATIVO".equalsIgnoreCase(clienteRecurrente)) {
+
+	        // Tienda
+	        String tienda = resultado.optString("tienda", "");
+	        String tiendaId = obtenerCampoSeleccionCRM(String.valueOf(FIELD_TIENDA), tienda);
+	        if (tiendaId != null) {
+	            customFields.add(Map.of("field_id", FIELD_TIENDA,
+	                "values", List.of(Map.of("enum_id", Integer.parseInt(tiendaId)))));
+	        } else {
+	            customFields.add(Map.of("field_id", FIELD_TIENDA,
+	                "values", List.of(Map.of("value", tienda))));
+	        }
+
+	        // Coordenadas
+	        customFields.add(Map.of("field_id", FIELD_LATITUD,
+	            "values", List.of(Map.of("value", resultado.optString("latitud", "")))));
+	        customFields.add(Map.of("field_id", FIELD_LONGITUD,
+	            "values", List.of(Map.of("value", resultado.optString("longitud", "")))));
+
+	        // Asesor / Estado tienda
+	        if ("programado".equalsIgnoreCase(tipo_cliente)) {
+	            String asesorId = obtenerCampoSeleccionCRM(String.valueOf(FIELD_ASESOR), "PROGRAMADO BOT SAM");
+	            if (asesorId != null) {
+	                customFields.add(Map.of("field_id", FIELD_ASESOR,
+	                    "values", List.of(Map.of("enum_id", Integer.parseInt(asesorId)))));
+	            } else {
+	                customFields.add(Map.of("field_id", FIELD_ASESOR,
+	                    "values", List.of(Map.of("value", "PROGRAMADO BOT SAM"))));
+	            }
+	        } else {
+	            customFields.add(Map.of("field_id", FIELD_ESTADO_TIENDA,
+	                "values", List.of(Map.of("value", resultado.optString("estadoTienda", "")))));
+	        }
+
+	        // Datos del cliente
+	        customFields.add(Map.of("field_id", FIELD_DIRECCION,
+	            "values", List.of(Map.of("value", resultado.optString("direccion", "")))));
+	        customFields.add(Map.of("field_id", FIELD_BARRIO,
+	            "values", List.of(Map.of("value", resultado.optString("barrio", "")))));
+	        customFields.add(Map.of("field_id", FIELD_MUNICIPIO,
+	            "values", List.of(Map.of("value", resultado.optString("municipio", "")))));
+	        customFields.add(Map.of(
+			        "field_id", FIELD_REFERENCIA,
+			        "values", List.of(Map.of("value",resultado.optString("referencia", "")))
+			        
+		    		));
+	    }
+
+	    // Validación de Lead
+	    int leadId;
+	    try {
+	        leadId = Integer.parseInt(lead);
+	    } catch (NumberFormatException e) {
+	    	 System.out.println("Lead inválido, no es numérico: " + lead);
+	        return;
+	    }
+
+	    Map<String, Object> leadData = Map.of(
+	        "id", leadId,
+	        "custom_fields_values", customFields
+	    );
+
+	    Gson gson = new Gson();
+	    String datos = gson.toJson(List.of(leadData));
+
+	    System.out.println("Datos enviados a CRM: " + datos);
+
+	    // HTTP PATCH
+	    OkHttpClient client = new OkHttpClient();
+	    okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
+	    RequestBody body = RequestBody.create(mediaType, datos);
+	    Request request = new Request.Builder()
+	        .url("https://pizzaamericana.kommo.com/api/v4/leads")
+	        .patch(body)
+	        .addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
+	        .build();
+
+	    try (okhttp3.Response response = client.newCall(request).execute()) {
+	        String respuestaJSON = response.body() != null ? response.body().string() : "";
+	        System.out.println("CRM Response: " + respuestaJSON);
+
+	        if (!response.isSuccessful()) {
+	        	 System.out.println("Error en actualización de CRM. Código: " + response.code());
+	        }
+
+	    } catch (Exception e) {
+	    	 System.out.println("Error en request a CRM: " + e.getMessage());
+	    }
+	}
+
+	
 	
 	public String  obtenerCampoSeleccionCRM(String idcampo,String valorDeseado ){
 		String id = null;

@@ -12,6 +12,7 @@ import capaDAOCC.NomenclaturaDireccionDAO;
 import capaDAOCC.ParametrosDAO;
 import capaDAOCC.PedidoDAO;
 import capaDAOCC.SolicitudPQRSDAO;
+import capaDAOCC.TiendaBloqueadaDAO;
 import capaDAOCC.TiendaDAO;
 import capaModeloCC.Cliente;
 import capaModeloCC.ClienteAlerta;
@@ -852,4 +853,31 @@ public String obtenerNotificacionesCliente(int idCliente)
 		return(respuesta.toJSONString());
 	}
 
+	
+	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono)
+	{   
+		org.json.JSONObject respuesta = new org.json.JSONObject();
+		Cliente cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
+		String ClienteRecurrente = "NEGATIVO";
+		if(cliente != null) {
+			boolean bloqueo =  TiendaBloqueadaDAO.validarTiendaBloqueada(cliente.getIdtienda());
+			if(bloqueo) {
+				ClienteRecurrente = "BLOQUEADO";
+			}else {
+				ClienteRecurrente = "AFIRMATIVO";
+			}
+			String estado_tienda = bloqueo ? "BLOQUEADO" : "DISPONIBLE";
+			respuesta.put("estadoTienda", estado_tienda);
+			respuesta.put("direccion", cliente.getDireccion());
+			respuesta.put("barrio", cliente.getZonaDireccion());
+			respuesta.put("municipio", cliente.getMunicipio());
+			respuesta.put("tienda", cliente.getTienda());
+			respuesta.put("latitud", cliente.getLatitud());
+			respuesta.put("longitud", cliente.getLontitud());
+			respuesta.put("referencia", cliente.getObservacion());
+		}
+
+		respuesta.put("clienteRecurrente", ClienteRecurrente);
+		return(respuesta);
+	}
 }
