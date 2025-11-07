@@ -41,6 +41,17 @@ public class Cliente {
 	private String identificacion;
 	
 	
+	@Override
+	public String toString() {
+	    return "Cliente{" +
+	           "idCliente=" + idcliente +
+	           ", direccion='" + Direccion + '\'' +
+	           ", zona='" + zonaDireccion + '\'' +
+	           ", municipio='" + Municipio + '\'' +
+	           ", tienda='" + tienda + '\'' +
+	           ", idTienda=" + idtienda +
+	           '}';
+	}
 
 	public Cliente(int id, String telefono, String nombres, String direccion, String zonaDireccion, String observacion,
 			String tienda, int idtienda) {

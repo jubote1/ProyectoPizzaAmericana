@@ -1507,64 +1507,65 @@ public class ClienteDAO {
 	    }
 
 	 public static Cliente obtenerUltimoClientePorTelefono(String tel) {
-		    Logger logger = Logger.getLogger("log_file");
 		    Cliente cliente = null;
 		    ConexionBaseDatos con = new ConexionBaseDatos();
 		    Connection con1 = con.obtenerConexionBDPrincipal();
 
-		    try {
-		        Statement stm = con1.createStatement();
-		        
-	
-		        String consulta = 
-		            "SELECT TOP 1 a.idcliente, a.direccion, a.zona, a.latitud , a.longitud, a.observacion , c.nombre AS nombremunicipio, " +
-		            "       d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, " +
+		    String consulta =
+		            "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, " +
+		            "       c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, " +
 		            "       b.idtienda, b.nombre AS nombreTienda " +
 		            "FROM cliente a " +
 		            "LEFT JOIN tienda b ON a.idtienda = b.idtienda " +
 		            "LEFT JOIN municipio c ON a.idmunicipio = c.idmunicipio " +
 		            "LEFT JOIN nomenclatura_direccion d ON a.idnomenclatura = d.idnomenclatura " +
-		            "WHERE a.telefono = '" + tel + "' AND a.activo = 1 " +
-		            "ORDER BY a.idcliente DESC"; 
-		        
-		        logger.info(consulta);
-		        ResultSet rs = stm.executeQuery(consulta);
+		            "WHERE a.telefono = ? AND a.activo = 1 " +
+		            "ORDER BY a.idcliente DESC " +
+		            "LIMIT 1";
+
+
+		    try (PreparedStatement ps = con1.prepareStatement(consulta)) {
+		        // 🔒 Seguridad: evita inyección SQL
+		        ps.setString(1, tel);
+		        ResultSet rs = ps.executeQuery();
 
 		        if (rs.next()) {
-		            int idCliente = rs.getInt("idcliente");
-		            String direccion = rs.getString("direccion");
-		            String zona = rs.getString("zona");
-		            String municipio = rs.getString("nombremunicipio");
-		            int idTienda = rs.getInt("idtienda");
-		            String nombreTienda = rs.getString("nombreTienda");
-		            float latitud = rs.getFloat("latitud");
-		            float longitud = rs.getFloat("longitud");
-		            String observacion =  rs.getString("observacion");
-
-		            
 		            cliente = new Cliente();
-		            cliente.setIdcliente(idCliente);;
-		            cliente.setDireccion(direccion);
-		            cliente.setZonaDireccion(zona);
-		            cliente.setMunicipio(municipio);
-		            cliente.setTienda(nombreTienda);;
-		            cliente.setIdtienda(idTienda);
-		            cliente.setLatitud(latitud);
-		            cliente.setLontitud(longitud);
-		            cliente.setObservacion(observacion);
+		            cliente.setIdcliente(rs.getInt("idcliente"));
+		            cliente.setDireccion(rs.getString("direccion"));
+		            cliente.setZonaDireccion(rs.getString("zona"));
+		            cliente.setMunicipio(rs.getString("nombremunicipio"));
+		            cliente.setTienda(rs.getString("nombreTienda"));
+		            cliente.setIdtienda(rs.getInt("idtienda"));
+		            cliente.setLatitud(rs.getFloat("latitud"));
+		            cliente.setLontitud(rs.getFloat("longitud"));
+		            cliente.setObservacion(rs.getString("observacion"));
 		        }
 
 		        rs.close();
-		        stm.close();
-		        con1.close();
-
 		    } catch (Exception e) {
-		        logger.error("Error al obtener último cliente por teléfono: " + e.toString());
-		        try { con1.close(); } catch (Exception e1) {}
+		        System.out.println("❌ Error al obtener último cliente por teléfono: " + e.getMessage());
+		        e.printStackTrace();
+		    } finally {
+		        try { if (con1 != null) con1.close(); } catch (Exception e) {}
 		    }
 
 		    return cliente;
 		}
 
+	
+	 public static void main(String[] args) {
+		    // 🔹 Prueba del método
+		    Cliente cliente = obtenerUltimoClientePorTelefono("3004577639");
+
+		    if (cliente != null) {
+		        System.out.println("Cliente encontrado:");
+		        System.out.println(cliente);
+		    } else {
+		        System.out.println("No se encontró cliente con ese teléfono.");
+		    }
+		}
+
+	 
 	
 }
