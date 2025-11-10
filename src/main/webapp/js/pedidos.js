@@ -4707,6 +4707,7 @@ function agregarProducto()
 			{
 				valorunitario = cadaProdu.preciogeneral + valorAdiGas;
 				valortotal = valorunitario * cantidad;
+                totalpuntospedido = totalpuntospedido + cadaProdu.preciopuntos;
 				//totalpedido  = totalpedido + valortotal; 
 			}
 		}

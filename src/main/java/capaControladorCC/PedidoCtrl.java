@@ -5915,7 +5915,28 @@ public class PedidoCtrl {
 						+  "<td>" + cantMinutos + "</td>"
 						+  "<td>" + (domInternos + domExternos)+ "</td>"
 						+  "</tr>";
-				respuesta = respuesta + "</table> <br/>";					
+				respuesta = respuesta + "</table> <br/>";
+				
+				//Agregar el tema de pedidos programados
+				respuesta = respuesta + "<table border='2'><tr><td colspan='4'>" + tien.getNombreTienda() + "</td></tr>";
+				respuesta = respuesta + "<tr>"
+						+  "<td><strong>PEDIDO</strong></td>"
+						+  "<td><strong>FACTURA TIENDA</strong></td>"
+						+  "<td><strong>VALOR PEDIDO</strong></td>"
+						+  "<td><strong>HORA PROGRAMADO</strong></td>"
+						+  "</tr>";
+				ArrayList pedidosProgramados = PedidoDAO.obtenerPedidosProgramadosTienda(tien.getIdTienda());
+				for(int i = 0; i < pedidosProgramados.size(); i++)
+				{
+					String[] pedTemp = (String[]) pedidosProgramados.get(i);
+					respuesta = respuesta + "<tr>"
+					+  "<td>" + pedTemp[0] + "</td>"
+					+  "<td>" + pedTemp[1] + "</td>"
+					+  "<td>" + formatea.format(Double.parseDouble(pedTemp[2]))  + "</td>"
+					+  "<td>" + pedTemp[3] + "</td>"
+					+  "</tr>";
+				}
+				respuesta = respuesta + "</table> <br/>";
 			}
 		}
 		return(respuesta);

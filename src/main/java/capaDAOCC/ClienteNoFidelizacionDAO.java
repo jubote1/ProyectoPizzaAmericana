@@ -92,5 +92,37 @@ public class ClienteNoFidelizacionDAO {
 		return(respuesta);
 	}
 	
+	/**
+	 * Método que se encarga de depurar las solicitudes de no plan de fidelización que tengas más de 60 días
+	 * @return
+	 */
+	public static boolean depurarExistenciaClienteNoFidelizacion()
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		PreparedStatement ps = null;
+		try
+		{
+			String delete = "DELETE  from cliente_no_fidelizacion WHERE fecha < DATE_SUB(NOW(), INTERVAL 60 DAY)";
+			ps = con1.prepareStatement(delete);
+			logger.info("Consulta: " + ps.toString());
+			ps.executeUpdate();
+			respuesta = true;
+	        ps.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
+	}
+	
 	
 }
