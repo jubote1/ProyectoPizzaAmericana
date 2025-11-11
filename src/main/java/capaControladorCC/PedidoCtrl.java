@@ -5615,6 +5615,23 @@ public class PedidoCtrl {
 	public String insertarSolicitudFactura(SolicitudFactura solFactura)
 	{
 		int idsolicitud = SolicitudFacturaDAO.insertarSolicitudFactura(solFactura);
+		if(idsolicitud > 0)
+		{
+			//Incluimos un envío de correo electrónico
+			//Recuperar la lista de distribución para este correo
+			ArrayList correos = GeneralDAO.obtenerCorreosParametro("SOLFACTURAELECTRONICA");
+			Date fecha = new Date();
+			Correo correo = new Correo();
+			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
+			correo.setAsunto("SOLICITUD FACTURA ELECTRONICA DESDE CONTACT CENTER  " + fecha.toString() +  " - " + idsolicitud);
+			correo.setContrasena(infoCorreo.getClaveCorreo());
+			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+			correo.setMensaje("Se realizó ingreso de solicitud de factura electrónica desde el Contact Center, favor revisar el id de la solicitud es " + idsolicitud);
+			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+			contro.enviarCorreo();
+		}
+		
+		
 		JSONObject respuestaJSON = new JSONObject();
 		respuestaJSON.put("idsolicitud", idsolicitud);
 		if(idsolicitud > 0)
