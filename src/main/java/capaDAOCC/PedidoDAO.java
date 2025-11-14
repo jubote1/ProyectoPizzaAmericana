@@ -5887,5 +5887,58 @@ public class PedidoDAO {
 
 	        return listPreguntas;
 	    }
+	    
+	    
+	    
+	    /**
+	     * Método que se encarga de retornar con un resumen de las ventas en una semana por un asesor
+	     * @param fechaInicial
+	     * @param fechaFinal
+	     * @param asesor
+	     * @return
+	     */
+	    public static ArrayList consultarVentasAsesor(String fechaInicial, String fechaFinal, String asesor)
+		{
+			ArrayList ventasAsesor = new ArrayList();
+			String consulta = "";
+			consulta = "SELECT SUM(CANTIDAD)/2 AS cantidad, nombre FROM ( "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad1 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre "
+					+ "UNION "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad2 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre) AS especialidad GROUP BY nombre "
+					+ "UNION "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, producto c   WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idproducto = c.idproducto AND c.idproducto IN (SELECT idproducto FROM producto_asesor) AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				ResultSetMetaData rsMd = (ResultSetMetaData) rs.getMetaData();
+				int numeroColumnas = rsMd.getColumnCount();
+				while(rs.next()){
+					String [] fila = new String[numeroColumnas];
+					for(int y = 0; y < numeroColumnas; y++)
+					{
+						fila[y] = rs.getString(y+1);
+					}
+					ventasAsesor.add(fila);
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				System.out.println(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(ventasAsesor);
+		}
 
 }

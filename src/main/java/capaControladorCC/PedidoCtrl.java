@@ -12682,4 +12682,21 @@ public class PedidoCtrl {
 	}
 	
 	
+	public String ConsultarVentasAsesor(String fechaInicial, String fechaFinal, String asesor)
+	{
+		ArrayList ventasAsesor = PedidoDAO.consultarVentasAsesor(fechaInicial, fechaFinal, asesor);
+		JSONObject cadaRespuestaJSON = new JSONObject();
+		JSONArray respuestaJSON = new JSONArray();
+		String [] filaTemp;
+		for(int i = 0; i < ventasAsesor.size(); i++)
+		{
+			filaTemp = (String []) ventasAsesor.get(i);
+			cadaRespuestaJSON = new JSONObject();
+			cadaRespuestaJSON.put("cantidad", Double.parseDouble(filaTemp[0]));
+			cadaRespuestaJSON.put("producto", filaTemp[1]);
+			respuestaJSON.add(cadaRespuestaJSON);
+		}
+		return(respuestaJSON.toString());
+	}
+	
 }
