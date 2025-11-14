@@ -1512,17 +1512,16 @@ public class ClienteDAO {
 		    Connection con1 = con.obtenerConexionBDPrincipal();
 
 		    String consulta =
-		            "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, " +
-		            "       c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, " +
-		            "       b.idtienda, b.nombre AS nombreTienda " +
-		            "FROM cliente a " +
-		            "LEFT JOIN tienda b ON a.idtienda = b.idtienda " +
-		            "LEFT JOIN municipio c ON a.idmunicipio = c.idmunicipio " +
-		            "LEFT JOIN nomenclatura_direccion d ON a.idnomenclatura = d.idnomenclatura " +
-		            "WHERE a.telefono = ? AND a.activo = 1 " +
-		            "ORDER BY a.idcliente DESC " +
-		            "LIMIT 1";
-
+		    		 "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, "
+		    				    + "       c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, "
+		    				    + "       b.idtienda, b.nombre AS nombreTienda "
+		    				    + "FROM cliente a "
+		    				    + "LEFT JOIN tienda b ON a.idtienda = b.idtienda "
+		    				    + "LEFT JOIN municipio c ON a.idmunicipio = c.idmunicipio "
+		    				    + "LEFT JOIN nomenclatura_direccion d ON a.idnomenclatura = d.idnomenclatura "
+		    				    + "WHERE a.telefono = ? AND a.activo = 1 "
+		    				    + "ORDER BY a.idcliente DESC "
+		    				    + "LIMIT 1";
 
 		    try (PreparedStatement ps = con1.prepareStatement(consulta)) {
 		        // 🔒 Seguridad: evita inyección SQL
@@ -1556,7 +1555,7 @@ public class ClienteDAO {
 	
 	 public static void main(String[] args) {
 		    // 🔹 Prueba del método
-		    Cliente cliente = obtenerUltimoClientePorTelefono("3004577639");
+		    Cliente cliente = obtenerUltimoClientePorTelefono("3148807773");
 
 		    if (cliente != null) {
 		        System.out.println("Cliente encontrado:");

@@ -202,9 +202,15 @@ public class EncuestaCtrl {
 	        String descripcion = String.valueOf(opcionSeleccionada.get("descripcion"));
 
 	        Logger.getLogger("Ruleta").info("Seleccionada opción ID: " + idOpcion + " (" + titulo + ")");
-
-	        int idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
-
+	        int idregistro =  0;
+	        
+	        if(reintento == 1) {
+	        	idregistro = -1;
+	        }else {
+	        	 idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
+	        }
+	       
+	        
 	        if (idregistro == 0) {
 	            respuesta.put("success", false);
 	            respuesta.put("message", "Error al registrar el resultado");
