@@ -6258,6 +6258,7 @@ public class PedidoCtrl {
 			String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 			Map parSep = separarURL(parametrosDecode);
 			String lead = (String)parSep.get("leads[status][0][id]");
+
 			String infLead = obtenerInformacionLeadCRM(lead);
 			//System.out.println("información " + infLead);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "CR");
@@ -6279,11 +6280,26 @@ public class PedidoCtrl {
 				Object objParser = parser.parse(infLead);
 				JSONObject jsonGeneral = (JSONObject) objParser;
 				JSONArray customFieldsArray = new JSONArray();
+				
+			    System.out.println("Custom fields: " + jsonGeneral);
 				try
-				{
-					String customFieldsValues = (String)jsonGeneral.get("custom_fields_values").toString();
-					Object objcustomFieldsValues = parser.parse(customFieldsValues);
-					customFieldsArray = (JSONArray) objcustomFieldsValues;
+				{		
+					Object cf = jsonGeneral.get("custom_fields_values");
+
+
+					if (cf == null) {
+					    System.out.println("No hay custom_fields_values");
+					}
+					else if (cf instanceof JSONArray) {
+					    customFieldsArray = (JSONArray) cf;
+					}
+					else if (cf instanceof String) {
+					    customFieldsArray = (JSONArray) parser.parse((String) cf);
+					}
+					else {
+					    System.out.println("Formato inesperado para custom_fields_values: " + cf);
+					}
+
 				}catch(Exception e1)
 				{
 					System.out.println("Error customFieldsArray: "+e1.getMessage());
@@ -6318,6 +6334,7 @@ public class PedidoCtrl {
 				System.out.println("Error: "+e.getMessage());
 			}
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
+		
 			actualizarClienteRecurrenteCRMBOT(lead, clienteCtrl.ValidarExistenciaClienteCRM(telefono),tipo_cliente); 
 		}catch (Exception e){
 			System.out.println("Error: "+e.getMessage());
@@ -8270,16 +8287,18 @@ public class PedidoCtrl {
 	    List<Map<String, Object>> customFields = new ArrayList<>();
 
 	    // Campo resultado principal
-	    String clienteRecurrente = resultado.optString("ClienteRecurrente", "NEGATIVO");
+	    String clienteRecurrente = resultado.optString("clienteRecurrente", "NEGATIVO");
+	    String tienda = resultado.optString("tienda", "");
+	    String direccion = resultado.optString("direccion", "");
 	    customFields.add(Map.of(
 	        "field_id", FIELD_CLIENTE_RECURRENTE,
 	        "values", List.of(Map.of("value", clienteRecurrente))
 	    ));
 
-	    if (!"NEGATIVO".equalsIgnoreCase(clienteRecurrente)) {
+	    if (!"NEGATIVO".equalsIgnoreCase(clienteRecurrente)){
 
 	        // Tienda
-	        String tienda = resultado.optString("tienda", "");
+	        
 	        String tiendaId = obtenerCampoSeleccionCRM(String.valueOf(FIELD_TIENDA), tienda);
 	        if (tiendaId != null) {
 	            customFields.add(Map.of("field_id", FIELD_TIENDA,
@@ -8312,7 +8331,7 @@ public class PedidoCtrl {
 
 	        // Datos del cliente
 	        customFields.add(Map.of("field_id", FIELD_DIRECCION,
-	            "values", List.of(Map.of("value", resultado.optString("direccion", "")))));
+	            "values", List.of(Map.of("value", direccion))));
 	        customFields.add(Map.of("field_id", FIELD_BARRIO,
 	            "values", List.of(Map.of("value", resultado.optString("barrio", "")))));
 	        customFields.add(Map.of("field_id", FIELD_MUNICIPIO,
@@ -9020,6 +9039,7 @@ public class PedidoCtrl {
 	public static void main(String args[]) throws IOException
 	{
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();
+		PedidoCtrl.consultarClienteRecurrenteCRMBOT("","");
 		
 		//PedidoCtrl.actualizarAccesoMatiasAPI("MATIAS");
 		//PedidoCtrl.verificacionExistenciaClienteSalesManago("jubote1@gmail.com");

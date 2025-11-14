@@ -852,32 +852,65 @@ public String obtenerNotificacionesCliente(int idCliente)
 		respuesta.put("mensaje", clienteAlerta.getMensaje());
 		return(respuesta.toJSONString());
 	}
+	
+	
+	private boolean direccionEsValida(String direccionRaw) {
+
+	    if (direccionRaw == null) return false;
+
+	    String dir = direccionRaw.trim().toLowerCase();
+
+	    if (dir.isEmpty()) return false;
+
+	    if (dir.contains("null")) return false;
+
+	    // quita caracteres no alfanuméricos
+	    String soloAlfanumerico = dir.replaceAll("[^a-z0-9]", "");
+
+	    // si queda vacío -> eran solo símbolos: "# - / . ,"
+	    if (soloAlfanumerico.isEmpty()) return false;
+
+	    return true;
+	}
 
 	
 	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono)
 	{   
-		org.json.JSONObject respuesta = new org.json.JSONObject();
-		Cliente cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
-		String ClienteRecurrente = "NEGATIVO";
-		if(cliente != null) {
-			boolean bloqueo =  TiendaBloqueadaDAO.validarTiendaBloqueada(cliente.getIdtienda());
-			if(bloqueo) {
-				ClienteRecurrente = "BLOQUEADO";
-			}else {
-				ClienteRecurrente = "AFIRMATIVO";
-			}
-			String estado_tienda = bloqueo ? "BLOQUEADO" : "DISPONIBLE";
-			respuesta.put("estadoTienda", estado_tienda);
-			respuesta.put("direccion", cliente.getDireccion());
-			respuesta.put("barrio", cliente.getZonaDireccion());
-			respuesta.put("municipio", cliente.getMunicipio());
-			respuesta.put("tienda", cliente.getTienda());
-			respuesta.put("latitud", cliente.getLatitud());
-			respuesta.put("longitud", cliente.getLontitud());
-			respuesta.put("referencia", cliente.getObservacion());
-		}
+	    org.json.JSONObject respuesta = new org.json.JSONObject();
+	    Cliente cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
+	    String ClienteRecurrente = "NEGATIVO";
 
-		respuesta.put("clienteRecurrente", ClienteRecurrente);
-		return(respuesta);
+	    if (cliente != null) {
+
+	        String direccion = cliente.getDireccion();
+	        String tienda = cliente.getTienda() == null ? "" : cliente.getTienda().trim();
+
+	        boolean validaCampos =
+	                !tienda.isEmpty() &&
+	                direccionEsValida(direccion);
+
+	        if (validaCampos) {
+
+	            boolean bloqueo = TiendaBloqueadaDAO.validarTiendaBloqueada(cliente.getIdtienda());
+	            ClienteRecurrente = bloqueo ? "BLOQUEADO" : "AFIRMATIVO";
+
+	            String estado_tienda = bloqueo ? "BLOQUEADO" : "DISPONIBLE";
+
+	            respuesta.put("estadoTienda", estado_tienda);
+	            respuesta.put("direccion", cliente.getDireccion());
+	            respuesta.put("barrio", cliente.getZonaDireccion());
+	            respuesta.put("municipio", cliente.getMunicipio());
+	            respuesta.put("tienda", cliente.getTienda());
+	            respuesta.put("idtienda", cliente.getIdtienda());
+	            respuesta.put("latitud", cliente.getLatitud());
+	            respuesta.put("longitud", cliente.getLontitud());
+	            respuesta.put("referencia", cliente.getObservacion());
+	        }
+	    }
+
+	    respuesta.put("clienteRecurrente", ClienteRecurrente);
+	    return respuesta;
 	}
+
+
 }
