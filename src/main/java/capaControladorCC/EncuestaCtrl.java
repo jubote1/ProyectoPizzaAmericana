@@ -189,8 +189,43 @@ public class EncuestaCtrl {
 
 	    try {
 	        SecureRandom random = new SecureRandom();
-	        int indiceSeleccionado = random.nextInt(opcionesRuleta.size());
+		     // ==== Selección Ponderada ====
+	
+		     // Ajusta aquí las probabilidades
+		     int pesoPremio0 = 3; // Alta probabilidad
+		     int pesoPremioOtro = 1; // Baja probabilidad
+	
+		     List<Integer> pesos = new ArrayList<>();
+		     int sumaPesos = 0;
+	
+		     // Calcular peso según premio
+		     for (JSONObject opcion : opcionesRuleta) {
+		         int premioVal = opcion.get("premio") != null
+		                 ? Integer.parseInt(opcion.get("premio").toString())
+		                 : 0;
+	
+		         int peso = (premioVal == 0) ? pesoPremio0 : pesoPremioOtro;
+	
+		         pesos.add(peso);
+		         sumaPesos += peso;
+		     }
+	
+		     // Selección aleatoria basada en pesos
+		     int numero = random.nextInt(sumaPesos);
+		     int acumulado = 0;
+		     int indiceSeleccionado = 0;
+	
+		     for (int i = 0; i < pesos.size(); i++) {
+		         acumulado += pesos.get(i);
+		         if (numero < acumulado) {
+		             indiceSeleccionado = i;
+		             break;
+		         }
+		     }
+
 	        JSONObject opcionSeleccionada = opcionesRuleta.get(indiceSeleccionado);
+	        
+	        //System.out.println("Seleccionada: " + opcionSeleccionada);
 
 	        // Conversión segura
 	        int idOpcion = opcionSeleccionada.get("idopcion") != null ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString()) : 0;
@@ -237,5 +272,6 @@ public class EncuestaCtrl {
 	}
 	
 
+	
 
 }
