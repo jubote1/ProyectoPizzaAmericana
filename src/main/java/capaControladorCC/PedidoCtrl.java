@@ -12728,6 +12728,13 @@ public class PedidoCtrl {
 	}
 	
 	
+	/**
+	 * Método de la capa controlador que entrega los productos vendidos de por asesor del Contact en un rango de fechas
+	 * @param fechaInicial
+	 * @param fechaFinal
+	 * @param asesor
+	 * @return
+	 */
 	public String ConsultarVentasAsesor(String fechaInicial, String fechaFinal, String asesor)
 	{
 		ArrayList ventasAsesor = PedidoDAO.consultarVentasAsesor(fechaInicial, fechaFinal, asesor);
@@ -12742,6 +12749,21 @@ public class PedidoCtrl {
 			cadaRespuestaJSON.put("producto", filaTemp[1]);
 			respuestaJSON.add(cadaRespuestaJSON);
 		}
+		return(respuestaJSON.toString());
+	}
+	
+	/**
+	 * Método que retornar el total de venta de un asesor del contact center en un rango de fechas
+	 * @param fechaInicial
+	 * @param fechaFinal
+	 * @param asesor
+	 * @return
+	 */
+	public String consultarVentasSemanaAsesor(String fechaInicial, String fechaFinal, String asesor)
+	{
+		double ventaTotal = PedidoDAO.consultarVentasSemanaAsesor(fechaInicial, fechaFinal, asesor);
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON.put("ventatotal", ventaTotal);
 		return(respuestaJSON.toString());
 	}
 	

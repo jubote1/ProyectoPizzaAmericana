@@ -155,7 +155,12 @@ function consultaVentas()
 							}
 							strGas += '</tbody> </table>';
                         	$('#frmresultados').html(strGas);
-							
+                        	//Posteriormente consultaremos el total de la venta de la semana
+							$.getJSON(server + 'ConsultarVentasSemanaAsesor?fechainicial='+fechaInicial+'&fechafinal=' + fechaFinal +'&asesor=' + asesor, function(data2){
+									var ventaTotalAsesor = data2.ventatotal;
+									var numeroFormato = ventaTotalAsesor.toLocaleString('es-ES');
+							        $('#ventatotal').val(numeroFormato);		
+							});
 	});
 }
 
