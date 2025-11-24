@@ -5025,46 +5025,72 @@ public class PedidoCtrl {
 	}
 	
 	//CambiarFormaPagoPedidoApp
-	public String cambiarFormaPagoPedidoApp(int idPedidoTienda, int idTienda, String claveUsuario, String observacion)
+	public String cambiarFormaPagoPedidoApp(int idPedidoTienda, int idTienda, String claveUsuario, String observacion, int idFormaPago)
 	{
-		String respuesta = "";
-		//Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
-		//Recuperamos la tienda que requerimos trabajar con el servicio
-		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
-		if (tienda != null)
-		{
-			//Realizar invocación de servicio en tienda
-			String rutaURL = tienda.getUrl() + "CambiarFormaPagoPedidoApp?idpedidotienda=" + idPedidoTienda + "&claveusuario=" + claveUsuario + "&idtienda=" + idTienda + "&observacion=" + observacion;
-			HttpGet request = new HttpGet(rutaURL);
-			try
-			{
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
-				//Se realiza la ejecución del servicio de finalizar pedido
-				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader
-					    (new InputStreamReader(
-					    		responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					    retorno.append(line);
-					}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
-			}catch(Exception e)
-			{
-				System.out.println(e.toString());
-			}
-		}
-		if(respuesta.equals(new String("")))
-		{
-			JSONObject resultado = new JSONObject();
-			resultado.put("resultado", "error");
-			resultado.put("tipo_error", "error servicio tienda");
-		}
-		return(respuesta);
+	    JSONObject resultado = new JSONObject();
+
+	    // ⛔ Validar forma de pago
+	    if (idFormaPago == 0) {
+	        resultado.put("resultado", "error");
+	        resultado.put("tipo_error", "idformapago_invalido");
+	        return resultado.toString();
+	    }
+
+	    HttpClient client = HttpClientBuilder.create().build();
+	    Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
+
+	    if (tienda == null) {
+	        resultado.put("resultado", "error");
+	        resultado.put("tipo_error", "tienda_no_encontrada");
+	        return resultado.toString();
+	    }
+
+	    try {
+	        // Codificar observación para URL
+	        String obsEncoded = URLEncoder.encode(observacion, "UTF-8");
+
+	        // Construir URL del servicio
+	        String rutaURL = tienda.getUrl()
+	                + "CambiarFormaPagoPedidoApp?idpedidotienda=" + idPedidoTienda
+	                + "&claveusuario=" + claveUsuario
+	                + "&idtienda=" + idTienda
+	                + "&observacion=" + obsEncoded
+	                + "&idformapago=" + idFormaPago;
+
+	        HttpGet request = new HttpGet(rutaURL);
+
+	        HttpResponse responseFinPed = client.execute(request);
+
+	        BufferedReader rd = new BufferedReader(
+	                new InputStreamReader(responseFinPed.getEntity().getContent())
+	        );
+
+	        StringBuilder retorno = new StringBuilder();
+	        String line;
+	        while ((line = rd.readLine()) != null) {
+	            retorno.append(line);
+	        }
+
+	        String respuesta = retorno.toString();
+
+	        // Si servicio de tienda respondió vacío → error
+	        if (respuesta.trim().isEmpty()) {
+	            resultado.put("resultado", "error");
+	            resultado.put("tipo_error", "sin_respuesta_tienda");
+	            return resultado.toString();
+	        }
+
+	        return respuesta;
+
+	    } catch (Exception e) {
+
+	        resultado.put("resultado", "error");
+	        resultado.put("tipo_error", "excepcion_llamando_tienda");
+	        resultado.put("detalle", e.toString());
+	        return resultado.toString();
+	    }
 	}
+
 	
 	//CambiarFormaPagoPedidoApp
 		public String obtenerResumenDomiciliarioApp(int idTienda, String claveUsuario)
