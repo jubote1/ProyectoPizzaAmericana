@@ -5940,5 +5940,40 @@ public class PedidoDAO {
 			}
 			return(ventasAsesor);
 		}
+	    
+	    
+	    public static double consultarVentasSemanaAsesor(String fechaInicial, String fechaFinal, String asesor)
+		{
+			double totalVenta = 0;
+			String consulta = ""; 
+			consulta = "select sum(a.total_neto) as ventatotal  from pedido a where  a.usuariopedido = '" + asesor + "' and a.fechapedido >= '"+ fechaInicial +"' and a.fechapedido <= '" + fechaFinal + "' AND a.numposheader > 0";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next())
+				{
+					totalVenta = rs.getDouble(1);
+					break;
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				System.out.println(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(totalVenta);
+		}
 
 }
