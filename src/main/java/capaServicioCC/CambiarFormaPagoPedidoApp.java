@@ -32,7 +32,7 @@ public class CambiarFormaPagoPedidoApp extends HttpServlet {
         int idTienda = parseIntSafe(request.getParameter("idtienda"));
         String claveUsuario = getParam(request, "claveusuario", "");
         String observacion = getParam(request, "observacion_dom", "");
-        String idFormaPagoStr = getParam(request, "idformapago", "0");
+        String idFormaPagoStr = getParam(request, "idformapago", "1");
         int idFormaPago = parseIntSafe(idFormaPagoStr);
 
         // Decodificar observación

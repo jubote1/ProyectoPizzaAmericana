@@ -328,12 +328,13 @@ public class UbicacionCtrl {
 	}
 
 	public static void main(String[] args) {
-		String direccion = "Calle 41Dsur # 58-19 apartamento 101";
-		String Barrio = "Unidad abierta Vegas de Alcalá, Pradito, detrás de la estación de bomberos, bajando las escalas frente al parque infantil";
-		String Municipio = " San antonio de prado";
+		String direccion = "Carrera 55 número 24a- 33";
+		String Barrio = "Cabañitas";
+		String Municipio = "Medellín";
 		String txt = direccion + ", " + Municipio + ", " + Barrio;
 		Resultado resultado = ubicarDireccionEnTienda(direccion, Municipio, Barrio, "informacion", null);
 		System.out.println(resultado.getResultado());
+		System.out.println(resultado.getEstadoTienda());
 
 	}
 

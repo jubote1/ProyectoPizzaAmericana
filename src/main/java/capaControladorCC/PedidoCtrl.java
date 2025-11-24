@@ -9064,8 +9064,8 @@ public class PedidoCtrl {
 	 */
 	public static void main(String args[]) throws IOException
 	{
-		PedidoCtrl PedidoCtrl = new PedidoCtrl();
-		PedidoCtrl.consultarClienteRecurrenteCRMBOT("","");
+		ClienteCtrl clienteCtrl = new ClienteCtrl();
+		 System.out.println(clienteCtrl.ValidarExistenciaClienteCRM("3136024423"));
 		
 		//PedidoCtrl.actualizarAccesoMatiasAPI("MATIAS");
 		//PedidoCtrl.verificacionExistenciaClienteSalesManago("jubote1@gmail.com");
