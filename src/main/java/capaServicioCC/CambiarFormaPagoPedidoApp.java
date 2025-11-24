@@ -2,6 +2,8 @@ package capaServicioCC;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -12,54 +14,76 @@ import javax.servlet.http.HttpSession;
 
 import capaControladorCC.PedidoCtrl;
 
-/**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
- */
 @WebServlet("/CambiarFormaPagoPedidoApp")
 public class CambiarFormaPagoPedidoApp extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
+    private static final long serialVersionUID = 1L;
+
     public CambiarFormaPagoPedidoApp() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como parámetro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
-	 * indica si el cliente fue insertado o por el contrario actualizado, valor de la forma pago del cliente, con los datos
-	 * anteriores se invocará el método de la capa controlador pedido FinalizarPedido.
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
-		int idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
-		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
-		String claveUsuario = request.getParameter("claveusuario");
-		String observacion = request.getParameter("observacion_dom");
-		if(observacion == null)
-		{
-			observacion = "";
-		}
-		PedidoCtrl PedidoCtrl = new PedidoCtrl();
-        String respuesta = PedidoCtrl.cambiarFormaPagoPedidoApp(idPedidoTienda, idTienda, claveUsuario, observacion);
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+
+        int idPedidoTienda = parseIntSafe(request.getParameter("idpedidotienda"));
+        int idTienda = parseIntSafe(request.getParameter("idtienda"));
+        String claveUsuario = getParam(request, "claveusuario", "");
+        String observacion = getParam(request, "observacion_dom", "");
+        String idFormaPagoStr = getParam(request, "idformapago", "0");
+        int idFormaPago = parseIntSafe(idFormaPagoStr);
+
+        // Decodificar observaciÃ³n
+        try {
+            observacion = URLDecoder.decode(observacion, StandardCharsets.UTF_8.name());
+        } catch (Exception ignored) {}
+
+        // â›” Si forma de pago viene en 0 â†’ devolver error directo
+        if (idFormaPago == 0) {
+            writeJson(response, "error:idformapago_invalido");
+            return;
+        }
+
+        PedidoCtrl pedidoCtrl = new PedidoCtrl();
+
+        String respuesta = pedidoCtrl.cambiarFormaPagoPedidoApp(
+                idPedidoTienda,
+                idTienda,
+                claveUsuario,
+                observacion,
+                idFormaPago
+        );
+
+        writeJson(response, respuesta);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        doGet(request, response);
+    }
+
+    // ----------------- Utils -----------------
+
+    private String getParam(HttpServletRequest req, String name, String defecto) {
+        String val = req.getParameter(name);
+        return (val != null) ? val : defecto;
+    }
+
+    private int parseIntSafe(String val) {
+        try {
+            return Integer.parseInt(val);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void writeJson(HttpServletResponse response, String text) throws IOException {
+        response.setContentType("text/plain;charset=UTF-8");
         PrintWriter out = response.getWriter();
-		out.write(respuesta);
-	}
-
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
-	}
-	
-
+        out.write(text);
+        out.flush();
+    }
 }
