@@ -1,7 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
-
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -590,6 +590,33 @@ public class TiendaDAO {
 		}
 		return(idTienda);
 	}
+	
+	public static boolean validarTiendaFuncional(int idTienda) {
+	    boolean respuesta = false;
+
+	    String sql = "SELECT funcional FROM tienda WHERE idtienda = ?";
+
+	    try (Connection con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con.prepareStatement(sql)) {
+
+	        ps.setInt(1, idTienda);
+
+	        try (ResultSet rs = ps.executeQuery()) {
+	            if (rs.next()) {
+	                String funcional = rs.getString("funcional");
+	                respuesta = "S".equalsIgnoreCase(funcional);
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        Logger.getLogger("log_file").info(e.toString());
+	    }
+
+	    return respuesta;
+	}
+
+	
+	
 
 	
 }

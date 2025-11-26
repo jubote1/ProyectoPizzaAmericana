@@ -873,30 +873,46 @@ public String obtenerNotificacionesCliente(int idCliente)
 	    return true;
 	}
 
-	
-	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono)
-	{   
-	    org.json.JSONObject respuesta = new org.json.JSONObject();
+	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono) {
+
+		org.json.JSONObject respuesta = new org.json.JSONObject();
 	    Cliente cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
-	    String ClienteRecurrente = "NEGATIVO";
+
+	    String clienteRecurrente = "NEGATIVO";
+	    String estadoTienda = "DISPONIBLE";
 
 	    if (cliente != null) {
 
 	        String direccion = cliente.getDireccion();
 	        String tienda = cliente.getTienda() == null ? "" : cliente.getTienda().trim();
 
-	        boolean validaCampos =
+	        boolean camposValidos =
 	                !tienda.isEmpty() &&
 	                direccionEsValida(direccion);
 
-	        if (validaCampos) {
+	        if (camposValidos) {
 
-	            boolean bloqueo = TiendaBloqueadaDAO.validarTiendaBloqueada(cliente.getIdtienda());
-	            ClienteRecurrente = bloqueo ? "BLOQUEADO" : "AFIRMATIVO";
+	            int idTienda = cliente.getIdtienda();
 
-	            String estado_tienda = bloqueo ? "BLOQUEADO" : "DISPONIBLE";
+	            // 1️⃣ Validar si la tienda está funcional
+	            if (TiendaDAO.validarTiendaFuncional(idTienda)) {
 
-	            respuesta.put("estadoTienda", estado_tienda);
+	                // 2️⃣ Validar si está bloqueada
+	                boolean bloqueada = TiendaBloqueadaDAO.validarTiendaBloqueada(idTienda);
+
+	                if (bloqueada) {
+	                    clienteRecurrente = "BLOQUEADO";
+	                    estadoTienda = "BLOQUEADO";
+	                } else {
+	                    clienteRecurrente = "AFIRMATIVO";
+	                }
+
+	            } else {
+	                clienteRecurrente = "INACTIVO";
+	            }
+
+	            // 3️⃣ Respuesta con los datos del cliente
+	            respuesta.put("estadoTienda", estadoTienda);
 	            respuesta.put("direccion", cliente.getDireccion());
 	            respuesta.put("barrio", cliente.getZonaDireccion());
 	            respuesta.put("municipio", cliente.getMunicipio());
@@ -908,9 +924,13 @@ public String obtenerNotificacionesCliente(int idCliente)
 	        }
 	    }
 
-	    respuesta.put("clienteRecurrente", ClienteRecurrente);
+	    respuesta.put("clienteRecurrente", clienteRecurrente);
+
 	    return respuesta;
 	}
+
+	
+
 
 
 }
