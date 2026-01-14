@@ -32,8 +32,8 @@ public class CorreoEncuestaPqrs extends HttpServlet {
 	    String correo = request.getParameter("correo");
 	    String telefono = request.getParameter("telefono");
 	    int idpqrs = parseIntSafe(request, "idpqrs");
-
-	    String respuesta = respuestaPqrs.enviarParsing(correo, cliente,telefono,idpqrs).toString() ;
+	    
+	    String respuesta = respuestaPqrs.correoEncuestaPqrs(correo, cliente,telefono,idpqrs).toString() ;
 	    response.getWriter().write(respuesta);
 	}
 
