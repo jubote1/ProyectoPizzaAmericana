@@ -4,17 +4,26 @@ public class AlertaEntregaDom {
 
     private int idPedido;
     private String clave_dom;
-    private String descripcion;
+    public boolean isCon_novedad() {
+		return con_novedad;
+	}
+
+	public void setCon_novedad(boolean con_novedad) {
+		this.con_novedad = con_novedad;
+	}
+
+	private String descripcion;
     private boolean error;
     private double latDom;
     private double longDom;
     private double latCli;
     private double longCli;
     private int idTienda;
+    private boolean con_novedad;
 
     // Constructor
     public AlertaEntregaDom(int idPedido, String clave_dom, String descripcion, boolean error,
-                            double latDom, double longDom, double latCli, double longCli, int idTienda) {
+                            double latDom, double longDom, double latCli, double longCli, int idTienda, boolean con_novedad) {
         this.idPedido = idPedido;
         this.clave_dom = clave_dom;
         this.descripcion = descripcion;
@@ -24,6 +33,7 @@ public class AlertaEntregaDom {
         this.latCli = latCli;
         this.longCli = longCli;
         this.idTienda = idTienda;
+        this.con_novedad =con_novedad;
     }
 
     public int getIdTienda() {

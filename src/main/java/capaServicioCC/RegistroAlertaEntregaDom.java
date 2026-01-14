@@ -35,9 +35,21 @@ public class RegistroAlertaEntregaDom extends HttpServlet {
         Double lat_cli = Double.parseDouble(request.getParameter("latitud_cli"));
         Double long_cli = Double.parseDouble(request.getParameter("longitud_cli"));
 
+
+        String param_novedad = request.getParameter("con_novedad");
+
+        boolean con_novedad;
+
+        if (param_novedad == null) {
+            // No enviaron el parámetro
+            con_novedad = true;
+        } else {
+            con_novedad = Boolean.parseBoolean(param_novedad);
+        }
+
         // Lógica de guardado
         PedidoCtrl PedidoCtrl = new PedidoCtrl();
-        AlertaEntregaDom alertaEntregaDom = new AlertaEntregaDom(idPedido, clave_dom, descripcion, error, lat_dom, long_dom, lat_cli, long_cli, idTienda);
+        AlertaEntregaDom alertaEntregaDom = new AlertaEntregaDom(idPedido, clave_dom, descripcion, error, lat_dom, long_dom, lat_cli, long_cli, idTienda,con_novedad);
         String respuesta = PedidoCtrl.registrarAlertaEntregaDom(alertaEntregaDom);
 
         // Enviar respuesta
