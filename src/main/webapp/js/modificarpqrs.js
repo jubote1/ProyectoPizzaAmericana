@@ -1159,7 +1159,7 @@ async function procesarActualizacion(datos) {
 		if (respuesta?.idSolicitudPQRS > 0) {
 			mensajeFinal = `✅ Se ha actualizado correctamente la solicitud PQRS número ${respuesta.idSolicitudPQRS}.`;
 
-			if (datos.idestado == 4) {
+			/*if (datos.idestado == 4) {
 				if (!envioEncuestaPqrs) {
 					if (respuesta.telefono_valido) {
 						if (respuesta.envioEncuesta) {
@@ -1178,7 +1178,7 @@ async function procesarActualizacion(datos) {
 				} else {
 					mensajeFinal += "<br>✅ El envío de la encuesta ya había sido registrado anteriormente.";
 				}
-			}
+			}*/
 		} else {
 			mensajeFinal = "No se pudo actualizar la PQRS. La respuesta no contiene un ID válido.";
 			iconoFinal = 'error';

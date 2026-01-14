@@ -5690,7 +5690,7 @@ public class PedidoDAO {
     	ConexionBaseDatos con = new ConexionBaseDatos();
 		
 
-        String sql = "INSERT INTO alerta_entrega_domiciliario (idpedido ,clave_dom, descripcion, error , latitud_domiciliario ,longitud_domiciliario,latitud_cliente, longitud_cliente ,idtienda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO alerta_entrega_domiciliario (idpedido ,clave_dom, descripcion, error , latitud_domiciliario ,longitud_domiciliario,latitud_cliente, longitud_cliente ,idtienda ,con_novedad) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con1 = con.obtenerConexionBDPrincipal();  // tu clase de conexión aquí
              PreparedStatement ps = con1.prepareStatement(sql)) {
@@ -5704,6 +5704,7 @@ public class PedidoDAO {
             ps.setDouble(7, alertaEntregaDom.getLatCli());
             ps.setDouble(8, alertaEntregaDom.getLongCli());
             ps.setInt(9, alertaEntregaDom.getIdTienda());
+            ps.setBoolean(10, alertaEntregaDom.isCon_novedad());
 
             int filas = ps.executeUpdate();
             resultado = (filas > 0);
