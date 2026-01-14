@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import com.google.gson.JsonObject;
 
 import capaDAOCC.GeneralDAO;
+import capaDAOCC.SolicitudPQRSDAO;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
 import utilidadesCC.ControladorEnvioCorreo;
@@ -164,4 +165,15 @@ public class CorreoPQRS {
 
         return json;
     }
+    
+	public String correoEncuestaPqrs(String correo_cliente,String nombres, String telefonoLimpio,int idSolPQRSIns) {
+		org.json.JSONObject respuesta = new CorreoPQRS().enviarParsing(correo_cliente, nombres,telefonoLimpio, idSolPQRSIns);
+		boolean nuevo_envio = respuesta.getBoolean("success");
+	
+		if (nuevo_envio) {
+			SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idSolPQRSIns, true);
+		}
+		return respuesta.toString();
+	}
+	
 }

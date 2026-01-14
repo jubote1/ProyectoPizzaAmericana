@@ -200,26 +200,26 @@ public class SolicitudPQRSCtrl {
 		boolean estado_encuesta = false;
 		boolean telefono_valido = true;
 
-		// Validar envío encuesta
-		if (idSolPQRSIns > 0 && idestado == 4 && !envio_encuesta) {
-			String telefonoLimpio = (telefono != null) ? telefono.replaceAll("\\D", "") : "";
-			telefono_valido = telefonoLimpio.matches("^3\\d{9}$");
-
-			if (telefono_valido) {
-				try {
-					org.json.JSONObject respuesta = new CorreoPQRS().enviarParsing(correo_cliente, nombres,
-							telefonoLimpio, idSolPQRSIns);
-					nuevo_envio = respuesta.getBoolean("success");
-
-					if (nuevo_envio) {
-						estado_encuesta = SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idSolPQRSIns, true);
-					}
-				} catch (Exception e) {
-					System.out.println("Error envío encuesta PQRS: " + e.getMessage());
-					e.printStackTrace();
-				}
-			}
-		}
+//		// Validar envío encuesta
+//		if (idSolPQRSIns > 0 && idestado == 4 && !envio_encuesta) {
+//			String telefonoLimpio = (telefono != null) ? telefono.replaceAll("\\D", "") : "";
+//			telefono_valido = telefonoLimpio.matches("^3\\d{9}$");
+//
+//			if (telefono_valido) {
+//				try {
+//					org.json.JSONObject respuesta = new CorreoPQRS().enviarParsing(correo_cliente, nombres,
+//							telefonoLimpio, idSolPQRSIns);
+//					nuevo_envio = respuesta.getBoolean("success");
+//
+//					if (nuevo_envio) {
+//						estado_encuesta = SolicitudPQRSDAO.actualizarEnvioEncuestaPqrs(idSolPQRSIns, true);
+//					}
+//				} catch (Exception e) {
+//					System.out.println("Error envío encuesta PQRS: " + e.getMessage());
+//					e.printStackTrace();
+//				}
+//			}
+//		}
 
 		// Construir respuesta
 		ResultadoJSON.put("envioEncuesta", nuevo_envio);
@@ -556,6 +556,8 @@ public class SolicitudPQRSCtrl {
 	public String consultarEscalamientoPQRS(int idSolicitudPQRS) {
 	    return consultarEscalamientoPQRS(new int[]{idSolicitudPQRS});
 	}
+	
+
 
 	public static void main(String[] args) {
 
