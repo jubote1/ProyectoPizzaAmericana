@@ -9,7 +9,7 @@ import capaModeloCC.Cliente;
 import capaModeloCC.Especialidad;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que se encarga de implementar todos aquellos métodos que tienen una interacción directa con la base de datos
+ * Clase que se encarga de implementar todos aquellos mï¿½todos que tienen una interacciï¿½n directa con la base de datos
  * @author JuanDavid
  *
  */
@@ -17,8 +17,8 @@ public class EspecialidadDAO {
 	
 	
 /**
- * Método que se encarga de insertar en base de datos la información de la entidad Especialidad
- * @param Espe recibe como parámetro un objeto Modelo Especialidad con base en el cual se realiza la inserción de la
+ * Mï¿½todo que se encarga de insertar en base de datos la informaciï¿½n de la entidad Especialidad
+ * @param Espe recibe como parï¿½metro un objeto Modelo Especialidad con base en el cual se realiza la inserciï¿½n de la
  * especialidad.
  * @return Se retonra valor entero con el id de la especiliadad insertada.
  */
@@ -56,8 +56,8 @@ public static int insertarEspecialidad(Especialidad Espe)
 }
 
 /**
- * Método que se encarga de eliminar una especialidad en la base de datos.
- * @param idespecialidad Se recibe como parámetro el id especialidad qeu se desea eliminar.
+ * Mï¿½todo que se encarga de eliminar una especialidad en la base de datos.
+ * @param idespecialidad Se recibe como parï¿½metro el id especialidad qeu se desea eliminar.
  */
 public static void eliminarEspecialidad(int idespecialidad)
 {
@@ -86,10 +86,10 @@ public static void eliminarEspecialidad(int idespecialidad)
 }
 
 /**
- * Método que se encarga de retornar una especialidad dado un idespecialidad
- * @param idespecialidad recibe como parámetro un intero id especialidad y con base en esto, realiza la consulta
- * en base de datos y retorna la información.
- * @return Se retorna la información de la especialidad en un objeto Modelo Especialidad.
+ * Mï¿½todo que se encarga de retornar una especialidad dado un idespecialidad
+ * @param idespecialidad recibe como parï¿½metro un intero id especialidad y con base en esto, realiza la consulta
+ * en base de datos y retorna la informaciï¿½n.
+ * @return Se retorna la informaciï¿½n de la especialidad en un objeto Modelo Especialidad.
  */
 public static Especialidad retornarEspecialidad(int idespecialidad)
 {
@@ -97,23 +97,25 @@ public static Especialidad retornarEspecialidad(int idespecialidad)
 	int idEspecialidadEli = 0;
 	ConexionBaseDatos con = new ConexionBaseDatos();
 	Connection con1 = con.obtenerConexionBDPrincipal();
-	Especialidad Espe = new Especialidad(0,"", "");
+	Especialidad Espe = new Especialidad(0,"", "","");
 	try
 	{
 		Statement stm = con1.createStatement();
-		String consulta = "select idespecialidad,nombre, abreviatura from  especialidad  where idespecialidad = " + idespecialidad; 
+		String consulta = "select idespecialidad,nombre, abreviatura,estado from  especialidad  where idespecialidad = " + idespecialidad; 
 		logger.info(consulta);
 		ResultSet rs = stm.executeQuery(consulta);
 		int idesp = 0;
 		String nombr = "";
 		String abre = "";
+		String estado = "";
 		while(rs.next()){
 			idesp = rs.getInt("idespecialidad");
 			nombr = rs.getString("nombre");
 			abre = rs.getString("abreviatura");
+			estado = rs.getString("estado");
 			break;
 		}
-		Espe = new Especialidad(idesp, nombr, abre);
+		Espe = new Especialidad(idesp, nombr, abre,estado);
 		stm.close();
 		con1.close();
 	}
@@ -130,8 +132,8 @@ public static Especialidad retornarEspecialidad(int idespecialidad)
 }
 
 /**
- * Método que tiene como objetivo modificar una especialidad.
- * @param Espe Recibe como parámetro un objeto Modelo Especiliadad con base en la cual se hará la modificación.
+ * Mï¿½todo que tiene como objetivo modificar una especialidad.
+ * @param Espe Recibe como parï¿½metro un objeto Modelo Especiliadad con base en la cual se harï¿½ la modificaciï¿½n.
  * @return Se retorna un string indicadno si el proceso fue exitoso o no.
  */
 public static String editarEspecialidad(Especialidad Espe)
@@ -164,11 +166,11 @@ public static String editarEspecialidad(Especialidad Espe)
 }
 
 /**
- * Método que se encarga de retornar el precio en base de datos de un producto y especialidad determinada
- * que tengan una excepción de precio.
- * @param idespecialidad El idespecialidad que esta asociado a la excepción especialidad
- * @param idproducto El idproducto asociado a la excepción de especialidad.
- * @return Se retornará un valor double con el precio asociado a los parámetros de idespecialidad e idproducto enviados.
+ * Mï¿½todo que se encarga de retornar el precio en base de datos de un producto y especialidad determinada
+ * que tengan una excepciï¿½n de precio.
+ * @param idespecialidad El idespecialidad que esta asociado a la excepciï¿½n especialidad
+ * @param idproducto El idproducto asociado a la excepciï¿½n de especialidad.
+ * @return Se retornarï¿½ un valor double con el precio asociado a los parï¿½metros de idespecialidad e idproducto enviados.
  */
 public static double obtenerPrecioExcepcionEspecialidad(int idespecialidad, int idproducto)
 {
@@ -203,7 +205,7 @@ public static double obtenerPrecioExcepcionEspecialidad(int idespecialidad, int 
 }
 
 /**
- * Método que encarga de la homologación del código de especialidad con base en el SKU descompuesto.
+ * Mï¿½todo que encarga de la homologaciï¿½n del cï¿½digo de especialidad con base en el SKU descompuesto.
  * @param sku
  * @return
  */
@@ -239,7 +241,7 @@ public static int homologarEspecialidadTiendaVirtual(String sku)
 }
 
 /**
- * Método que se encarga de retornar un booleano indicando si la promoción existe y corresponde a una promoción.
+ * Mï¿½todo que se encarga de retornar un booleano indicando si la promociï¿½n existe y corresponde a una promociï¿½n.
  * @param sku
  * @return
  */

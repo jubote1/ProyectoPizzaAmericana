@@ -72,13 +72,13 @@ public class PedidoDAO {
 			String consulta = "";
 			if(idExcepcion == 0 && idProducto == 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e where e.estado = 'A' order by nombre asc";
 			}else if(idExcepcion > 0 && idProducto == 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.idespecialidad = c.idespecialidad and c.idexcepcion = " + idExcepcion +" order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.estado = 'A' and e.idespecialidad = c.idespecialidad and c.idexcepcion = " + idExcepcion +" order by nombre asc";
 			}else if(idExcepcion == 0 && idProducto > 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.idespecialidad = c.idespecialidad and c.idproducto = " + idProducto +" order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.estado = 'A' and e.idespecialidad = c.idespecialidad and c.idproducto = " + idProducto +" order by nombre asc";
 			}
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
@@ -89,7 +89,7 @@ public class PedidoDAO {
 				idespecialidad = rs.getInt("idespecialidad");
 				nombre = rs.getString("nombre");
 				abreviatura = rs.getString("abreviatura");
-				Especialidad espec = new Especialidad( idespecialidad, nombre, abreviatura);
+				Especialidad espec = new Especialidad( idespecialidad, nombre, abreviatura,"");
 				especialidades.add(espec);
 			}
 			rs.close();
