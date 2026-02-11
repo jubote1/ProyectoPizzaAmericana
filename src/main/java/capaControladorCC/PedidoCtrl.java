@@ -7879,7 +7879,7 @@ public class PedidoCtrl {
 				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
 				//Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
-			}else if(idFormaPago == 1)
+			}else if((idFormaPago == 1) || (idFormaPago == 2))
 			{
 				//Al final de la creación de todo el pedido vamos a verificar si hay envió automático
 				String automaticoCRM = ParametrosDAO.retornarValorAlfanumerico("AUTOMATICOCRM");
