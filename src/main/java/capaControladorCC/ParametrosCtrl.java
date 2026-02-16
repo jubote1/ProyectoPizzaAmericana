@@ -161,7 +161,7 @@ public class ParametrosCtrl {
 	public String editarEspecialidad(int idespecialidad , String nombre, String abreviatura)
 	{
 		JSONArray listJSON = new JSONArray();
-		Especialidad Espe = new Especialidad(idespecialidad, nombre, abreviatura);
+		Especialidad Espe = new Especialidad(idespecialidad, nombre, abreviatura,"");
 		String resultado = EspecialidadDAO.editarEspecialidad(Espe);
 		JSONObject ResultadoJSON = new JSONObject();
 		ResultadoJSON.put("resultado", resultado);

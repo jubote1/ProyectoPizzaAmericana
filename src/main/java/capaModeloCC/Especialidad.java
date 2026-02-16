@@ -10,7 +10,16 @@ public class Especialidad {
 	private int idespecialidad;
 	private String nombre;
 	private String abreviatura;
+	private String estado;
 	
+	
+	
+	public String getEstado() {
+		return estado;
+	}
+	public void setEstado(String estado) {
+		this.estado = estado;
+	}
 	public int getIdespecialidad() {
 		return idespecialidad;
 	}
@@ -29,11 +38,12 @@ public class Especialidad {
 	public void setAbreviatura(String abreviatura) {
 		this.abreviatura = abreviatura;
 	}
-	public Especialidad(int idespecialidad, String nombre, String abreviatura) {
+	public Especialidad(int idespecialidad, String nombre, String abreviatura, String estado) {
 		super();
 		this.idespecialidad = idespecialidad;
 		this.nombre = nombre;
 		this.abreviatura = abreviatura;
+		this.estado = estado;
 	}
 	public Especialidad(String nombre, String abreviatura) {
 		super();

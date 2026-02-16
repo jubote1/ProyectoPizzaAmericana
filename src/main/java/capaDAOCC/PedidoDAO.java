@@ -72,13 +72,13 @@ public class PedidoDAO {
 			String consulta = "";
 			if(idExcepcion == 0 && idProducto == 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e where e.estado = 'A' order by nombre asc";
 			}else if(idExcepcion > 0 && idProducto == 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.idespecialidad = c.idespecialidad and c.idexcepcion = " + idExcepcion +" order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.estado = 'A' and e.idespecialidad = c.idespecialidad and c.idexcepcion = " + idExcepcion +" order by nombre asc";
 			}else if(idExcepcion == 0 && idProducto > 0)
 			{
-				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.idespecialidad = c.idespecialidad and c.idproducto = " + idProducto +" order by nombre asc";
+				consulta = "select e.idespecialidad, e.nombre, e.abreviatura from especialidad e, controla_especialidades c where e.estado = 'A' and e.idespecialidad = c.idespecialidad and c.idproducto = " + idProducto +" order by nombre asc";
 			}
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
@@ -89,7 +89,7 @@ public class PedidoDAO {
 				idespecialidad = rs.getInt("idespecialidad");
 				nombre = rs.getString("nombre");
 				abreviatura = rs.getString("abreviatura");
-				Especialidad espec = new Especialidad( idespecialidad, nombre, abreviatura);
+				Especialidad espec = new Especialidad( idespecialidad, nombre, abreviatura,"");
 				especialidades.add(espec);
 			}
 			rs.close();
@@ -5888,5 +5888,93 @@ public class PedidoDAO {
 
 	        return listPreguntas;
 	    }
+	    
+	    
+	    
+	    /**
+	     * Método que se encarga de retornar con un resumen de las ventas en una semana por un asesor
+	     * @param fechaInicial
+	     * @param fechaFinal
+	     * @param asesor
+	     * @return
+	     */
+	    public static ArrayList consultarVentasAsesor(String fechaInicial, String fechaFinal, String asesor)
+		{
+			ArrayList ventasAsesor = new ArrayList();
+			String consulta = "";
+			consulta = "SELECT SUM(CANTIDAD)/2 AS cantidad, nombre FROM ( "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad1 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre "
+					+ "UNION "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad2 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre) AS especialidad GROUP BY nombre "
+					+ "UNION "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, producto c   WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idproducto = c.idproducto AND c.idproducto IN (SELECT idproducto FROM producto_asesor) AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				ResultSetMetaData rsMd = (ResultSetMetaData) rs.getMetaData();
+				int numeroColumnas = rsMd.getColumnCount();
+				while(rs.next()){
+					String [] fila = new String[numeroColumnas];
+					for(int y = 0; y < numeroColumnas; y++)
+					{
+						fila[y] = rs.getString(y+1);
+					}
+					ventasAsesor.add(fila);
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				System.out.println(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(ventasAsesor);
+		}
+	    
+	    
+	    public static double consultarVentasSemanaAsesor(String fechaInicial, String fechaFinal, String asesor)
+		{
+			double totalVenta = 0;
+			String consulta = ""; 
+			consulta = "select sum(a.total_neto) as ventatotal  from pedido a where  a.usuariopedido = '" + asesor + "' and a.fechapedido >= '"+ fechaInicial +"' and a.fechapedido <= '" + fechaFinal + "' AND a.numposheader > 0";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			//Llamamos metodo de conexi�n asumiendo que corremos en el servidor de aplicaciones de manera local
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next())
+				{
+					totalVenta = rs.getDouble(1);
+					break;
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				System.out.println(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(totalVenta);
+		}
 
 }

@@ -1,6 +1,7 @@
 package capaControladorCC;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -39,6 +40,11 @@ import capaModeloCC.MensajeTexto;
 import capaModeloCC.Oferta;
 import capaModeloCC.OfertaCliente;
 import conexionCC.ConexionBaseDatos;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import utilidadesCC.ControladorEnvioCorreo;
 
 public class PromocionesCtrl {
@@ -607,6 +613,134 @@ public class PromocionesCtrl {
 	}
 	
 	
+	/**
+	 * Método creado exclusivamente para Brevo
+	 * @param idOferta
+	 * @return
+	 */
+	public String enviarMensajesOfertaBrevo(int idOferta)
+	{
+		//Con el siguiente m�todo obtenemos las ofertas que tienen que enviar mensaje de texto y no lo han enviado
+		//todav�a, por lo tanto se crear� un arreglo para enviarlo.
+		ArrayList<MensajeTexto> mensajesTexto = OfertaClienteDAO.obtenerMensajesTextoEnviar(idOferta);
+		//Posteriormente se realizar� un procesamiento del arreglo para el env�o del mensaje de texto
+		String telTemp = "";
+		String telCelTemp = "";
+		int totalMensajesEnviados = mensajesTexto.size();
+		//Tendremos una variable que nos indicar� que si se puede enviar mensaje de texto
+		boolean enviarMensaje = false;
+		//Varialbles Definitivas para el env�o del mensaje
+		//Definimos variable con el telefono sobre el que enviaremos mensaje.
+		String telEnviarMensaje = "";
+		String mensaje1 = "";
+		String mensaje2 = "";
+		//Variable donde se almacenar� el resultado del env�o del mensaje
+		String resultado = "";
+		for(MensajeTexto mensaje : mensajesTexto)
+		{
+			telTemp = mensaje.getTelefono();
+			if(telTemp == null)
+			{
+				telTemp = " ";
+			}
+			telCelTemp = mensaje.getNumeroCelular();
+			if(telCelTemp == null)
+			{
+				telCelTemp = " ";
+			}
+			//Verificamos si el n�mero celular esta bien en cuanto a que el n�mero
+			if(telCelTemp.length() > 1)
+			{
+				if ((telCelTemp.substring(0, 1).equals(new String("3"))) && (telCelTemp.length() == 10))
+				{
+					enviarMensaje = true;
+					telEnviarMensaje = telCelTemp;
+				}else if ((telTemp.substring(0, 1).equals(new String("3"))) && (telTemp.length() == 10))
+				{
+					enviarMensaje = true;
+					telEnviarMensaje = telTemp;
+				}//Sino se cumplio ninguna de las condiciones no se enviar� mensaje
+			}//Sino se cumplen estas condiciones se evalua el telefono principal
+			else if(telTemp.length() > 1)
+			{
+				if ((telTemp.substring(0, 1).equals(new String("3"))) && (telTemp.length() == 10))
+				{
+					enviarMensaje = true;
+					telEnviarMensaje = telTemp;
+				}//Sino se cumplio ninguna de las condiciones no se enviar� mensaje
+			}
+			
+			
+			if(enviarMensaje)
+			{
+				// Retornamos el mensaje para hacerle tratamiento mensaje 1
+				mensaje1 = mensaje.getMensaje1();
+				//Validamos el mensaje 1 que no sea nulo y que tenga longitud
+				if((!mensaje1.equals(null)) && (mensaje1.trim().length() > 0))
+				{
+					//Buscamos dentro del caracter los comodines para reemplazarlos
+					//#NOMBRECLIENTE  #APELLIDOCLIENTE #CODIGODESCUENTO
+					mensaje1 = mensaje1.replace("#NOMBRECLIENTE", mensaje.getNombreCliente());
+					mensaje1 = mensaje1.replace("#APELLIDOCLIENTE", mensaje.getApellidoCliente());
+					mensaje1 = mensaje1.replace("#CODIGODESCUENTO", mensaje.getCodigoPromocion());
+					//Validamos la longitud del mensaje y si cumple lo enviaremos
+					if(mensaje1.length() <= 160)
+					{
+						//Realizar�amos el llamado al programa PHP
+						ejecutarMensajeTextoBrevo(telEnviarMensaje, mensaje1);
+					}
+				}
+				//Realizamos la marcaci�n de que ya se realizo el env�o del mensaje
+				OfertaClienteDAO.actualizarMensajeOferta(mensaje.getIdOfertaCliente());
+			}
+		}
+		//Si todo logro llegar  a este punto sin error, generaremos una respuesta de exitoso en un JSON
+		JSONObject respuestaJSON = new JSONObject();
+		respuestaJSON.put("respuesta", "exitoso");
+		respuestaJSON.put("mensajes", totalMensajesEnviados);
+		return(respuestaJSON.toJSONString());
+	}
+	
+	public void ejecutarMensajeTextoBrevo( String telefono, String mensaje) {
+		{
+			String API_URL = "https://api.brevo.com/v3/transactionalSMS/send";
+			String API_KEY = ParametrosDAO.retornarValorAlfanumerico("APIKEYBREVO");
+			if(API_KEY.equals(new String("")))
+			{
+				API_KEY = "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";
+			}
+		    
+			// Crear el JSON con los datos del mensaje
+	        JSONObject jsonPayload = new JSONObject();
+	        jsonPayload.put("sender", "Americana");
+	        jsonPayload.put("recipient", "+57"+telefono);
+	        jsonPayload.put("content", mensaje);
+	        jsonPayload.put("type", "marketing");
+	        jsonPayload.put("unicodeEnabled", true);
+	        jsonPayload.put("organisationPrefix", "!Pizza Americana!");
+	        // Crear el cliente OkHttp
+	        OkHttpClient client = new OkHttpClient();
+
+	        Request request = new Request.Builder()
+	                .url(API_URL)
+	                .addHeader("accept", "application/json")
+	                .addHeader("content-type", "application/json")
+	                .addHeader("api-key", API_KEY)
+	                .post(RequestBody.create(MediaType.get("application/json; charset=utf-8"), jsonPayload.toString()))
+	                .build();
+	        // Ejecutar la solicitud
+	        try (Response response = client.newCall(request).execute()) {
+	            if (!response.isSuccessful()) {
+	                System.out.println("Error en la solicitud: " + response.code() + " - " + response.message());
+	            } else {
+	                System.out.println("Mensaje enviado con éxito: " + response.body().string());
+	            }
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+		}
+
+	  }
 	
 	public String ejecutarPHPEnvioMensaje( String telefono, String mensaje) {
 		StringBuilder output = new StringBuilder();

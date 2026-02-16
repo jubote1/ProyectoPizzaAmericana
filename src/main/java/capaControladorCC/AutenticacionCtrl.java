@@ -97,6 +97,7 @@ public class AutenticacionCtrl {
 		}
 		Respuesta.put("nombreusuario", usu.getNombreLargo());
 		Respuesta.put("plataforma", usu.getPlataforma());
+		Respuesta.put("usu", usu.getNombreUsuario());
 		listJSON.add(Respuesta);
 		return(listJSON.toJSONString());
 	}

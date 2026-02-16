@@ -131,7 +131,8 @@ public class UbicacionCtrl {
 		resultado.setLongitud(lng);
 		resultado.setDireccion(address);
 
-		
+
+		//resultado.setSuccess(true);
 		return resultado;
 	}
 
