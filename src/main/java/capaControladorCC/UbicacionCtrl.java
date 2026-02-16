@@ -131,7 +131,7 @@ public class UbicacionCtrl {
 		resultado.setLongitud(lng);
 		resultado.setDireccion(address);
 
-		resultado.setSuccess(true);
+		
 		return resultado;
 	}
 
@@ -241,6 +241,7 @@ public class UbicacionCtrl {
 				for (Feature feature : result) {
 					Map<String, Object> attributes = feature.getAttributes();
 					String nombre = attributes.get("nombre").toString();
+					System.out.println("nombre: " + nombre);
 
 					String mensaje = switch (tipo_cliente.toLowerCase()) {
 					case "informacion" -> "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
@@ -328,13 +329,15 @@ public class UbicacionCtrl {
 	}
 
 	public static void main(String[] args) {
-		String direccion = "Carrera 55 número 24a- 33";
-		String Barrio = "Cabañitas";
-		String Municipio = "Medellín";
+		String direccion = "Calle 11b # 36b-65 apto 1504";
+		String Barrio = "Poblado lalinde";
+		String Municipio = "Medellin";
 		String txt = direccion + ", " + Municipio + ", " + Barrio;
-		Resultado resultado = ubicarDireccionEnTienda(direccion, Municipio, Barrio, "informacion", null);
+		Resultado resultado = ubicarDireccionEnTienda(direccion, Municipio, Barrio, "programado", null);
 		System.out.println(resultado.getResultado());
 		System.out.println(resultado.getEstadoTienda());
+		System.out.println(resultado.getInfoAdicional());
+		System.out.println(resultado.isSuccess());
 
 	}
 

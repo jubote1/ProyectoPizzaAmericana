@@ -3917,6 +3917,10 @@ public class PedidoCtrl {
 	{
 		String respuesta;
 		String idLink = "";
+		String token = ParametrosDAO.retornarValorAlfanumerico("WOMPIPRODUCCIONPRI");
+		String wompiUrl= ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+		String wompiEndPoint= ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
+		
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		//Se debe hacer la creación del link y la inserción en la tabla
 		//Obtenemos la tienda
@@ -3954,12 +3958,14 @@ public class PedidoCtrl {
               "}";
 		//Realizamos la invocación mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
-		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
+		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try
 		{
 			//Fijamos el header con el token
-			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
+	
+			
+			request.setHeader("Authorization", "Bearer " + token);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
 			//Fijamos los parámetros
@@ -3990,12 +3996,12 @@ public class PedidoCtrl {
 			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
 			
 			//reutilización de la lógica del resto para el envío de la notificación
-			realizarNotificacionWompi(idLink, clienteVirtual.getIdcliente(), "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda);
+			realizarNotificacionWompi(idLink, clienteVirtual.getIdcliente(), wompiUrl + idLink, 4, idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
         }
-		return("https://checkout.wompi.co/l/"+idLink);
+		return(wompiUrl + idLink);
 	}
 	
 	
@@ -4007,94 +4013,165 @@ public class PedidoCtrl {
 	 * @param idTienda
 	 * @return
 	 */
-	public String verificarEnvioLinkPagosParametrico(int idPedidoTienda, Cliente clienteVirtual, double totalPedido, int idTienda, String mensajeWhatsapp)
-	{
-		String respuesta;
-		String idLink = "";
-		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Se debe hacer la creación del link y la inserción en la tabla
-		//Obtenemos la tienda
-		Tienda tienda = TiendaDAO.retornarTienda(idTienda);
-		//Creamos la fecha Actual
-		Date dateFecha = new Date();
-		Calendar calendarioActual = Calendar.getInstance();
-		try
-		{
-			calendarioActual.add(Calendar.DAY_OF_YEAR, 1);
-		}catch(Exception e)
-		{
-			
-		}
-		dateFecha = calendarioActual.getTime();
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		String strFechaExt = dateFormat.format(dateFecha);
-		//Creamos el JSON para consumir el servicio
-		String jsonLinkPago = '{' +
-                "\"amount_in_cents\":"  + (int)totalPedido*100 +","+
-                "\"currency\": \"COP\"," + 
-                "\"taxes\": [" +
-                 "      {" +
-                            "\"type\": \"CONSUMPTION\", "+
-                            "\"amount_in_cents\":" + (int)((totalPedido*100)*0.08/1.08) + 
-                          "}" +
-                        "]," +
-                "\"name\": \"Pizza Americana"  + " " + tienda.getNombreTienda() + "\" ," +
-                "\"description\": \"Pedido #" + idPedidoTienda + "\","+
-                "\"expires_at\": \"" + strFechaExt  + "T23:00:00.000Z\","+
-                "\"redirect_url\": \"https://pizzaamericana.co\","+
-                "\"single_use\": false,"+
-                "\"sku\": \"" + idPedidoTienda + "\","+
-                "\"collect_shipping\": false"+
-              "}";
-		//Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
-		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
-		HttpPost request = new HttpPost(rutaURLWOMPI);
-		try
-		{
-			//Fijamos el header con el token
-			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
-			request.setHeader("Accept", "application/json");
-			request.setHeader("Content-type", "application/json");
-			//Fijamos los parámetros
-			//pass the json string request in the entity
-		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
-		    request.setEntity(entity);
-			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
-			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader
-				    (new InputStreamReader(
-				    		responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				    retorno.append(line);
-				}
-			//Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
-			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gráfica
-			JSONParser parser = new JSONParser();
-			Object objParser = parser.parse(datosJSON);
-			JSONObject jsonGeneral = (JSONObject) objParser;
-			String dataJSON = (String)jsonGeneral.get("data").toString();
-			Object objParserData = parser.parse(dataJSON);
-			JSONObject jsonData = (JSONObject) objParserData;
-			idLink = (String)jsonData.get("id");
-			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
-			
-			//reutilización de la lógica del resto para el envío de la notificación
-			realizarNotificacionWompiParametrico(idLink, clienteVirtual.getIdcliente(), "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda, mensajeWhatsapp);
-		}catch (Exception e2) {
-            e2.printStackTrace();
-            System.out.println(e2.toString());
-        }
-		return("https://checkout.wompi.co/l/"+idLink);
+	public JSONObject  verificarEnvioLinkPagosParametrico(int idPedidoTienda,Cliente clienteVirtual,double totalPedido,int idTienda,String mensajeWhatsapp) {
+
+	    String idLink = "";
+	    JSONObject resp  = new JSONObject();
+
+	    try {
+
+	        // 🔹 1. Obtener tienda
+	        Tienda tienda = TiendaDAO.retornarTienda(idTienda);
+	        if (tienda == null) {
+	        	
+	        	resp.put("success", false);
+	        	resp.put("urlPago", null);
+	        	resp.put("mensaje", "Tienda no encontrada");
+	        	
+	        	return resp;
+	        }
+
+	        // 🔹 2. Fecha expiración (mañana 23:00 UTC)
+	        Calendar calendarioActual = Calendar.getInstance();
+	        calendarioActual.add(Calendar.DAY_OF_YEAR, 1);
+	        Date dateFecha = calendarioActual.getTime();
+
+	        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	        String strFechaExt = dateFormat.format(dateFecha);
+
+	        int amountInCents = (int) Math.round(totalPedido * 100);
+	        int taxInCents = (int) Math.round((amountInCents * 0.08) / 1.08);
+
+	        // 🔹 3. Construir JSON correctamente
+	        JSONObject json = new JSONObject();
+	        json.put("amount_in_cents", amountInCents);
+	        json.put("currency", "COP");
+
+	        JSONArray taxes = new JSONArray();
+	        JSONObject tax = new JSONObject();
+	        tax.put("type", "CONSUMPTION");
+	        tax.put("amount_in_cents", taxInCents);
+	        taxes.add(tax);
+
+	        json.put("taxes", taxes);
+	        json.put("name", "Pizza Americana " + tienda.getNombreTienda());
+	        json.put("description", "Pedido #" + idPedidoTienda);
+	        json.put("expires_at", strFechaExt + "T23:00:00.000Z");
+	        json.put("redirect_url", "https://pizzaamericana.co");
+	        json.put("single_use", false);
+	        json.put("sku", String.valueOf(idPedidoTienda));
+	        json.put("collect_shipping", false);
+
+	        // 🔹 4. Preparar request HTTP
+	        String token = ParametrosDAO.retornarValorAlfanumerico("WOMPIPRODUCCIONPRI");
+	        if (token == null || token.isEmpty()) {
+	        		        	
+	        	resp.put("success", false);
+	        	resp.put("urlPago", null);
+	        	resp.put("mensaje", "Token Wompi no configurado");
+	            return resp;
+	        }
+
+	        HttpClient client = HttpClientBuilder.create().build();
+	        String wompiEndpoint = ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
+	        HttpPost request = new HttpPost(wompiEndpoint + "payment_links");
+
+	        request.setHeader("Authorization", "Bearer " + token);
+	        request.setHeader("Accept", "application/json");
+	        request.setHeader("Content-Type", "application/json");
+
+	        request.setEntity(
+	                new ByteArrayEntity(json.toJSONString().getBytes("UTF-8"))
+	        );
+
+	        // 🔹 5. Ejecutar
+	        HttpResponse response = client.execute(request);
+
+	        int statusCode = response.getStatusLine().getStatusCode();
+	        if (statusCode != 200 && statusCode != 201) {
+	        	
+	        	
+					resp.put("success", false);
+					resp.put("urlPago", null);
+					resp.put("mensaje", "Wompi respondió con código HTTP: " + statusCode);
+					return resp;
+	        }
+
+	        // 🔹 6. Leer respuesta
+	        BufferedReader rd = new BufferedReader(
+	                new InputStreamReader(response.getEntity().getContent())
+	        );
+
+	        StringBuilder retorno = new StringBuilder();
+	        String line;
+
+	        while ((line = rd.readLine()) != null) {
+	            retorno.append(line);
+	        }
+
+	        rd.close();
+
+	        // 🔹 7. Parsear JSON
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonGeneral = (JSONObject) parser.parse(retorno.toString());
+	        JSONObject jsonData = (JSONObject) jsonGeneral.get("data");
+
+	        if (jsonData == null) {
+				resp.put("success", false);
+				resp.put("urlPago", null);
+				resp.put("mensaje",  "Respuesta inválida de Wompi");
+				return resp;
+
+	        }
+
+	        idLink = (String) jsonData.get("id");
+
+	        if (idLink == null || idLink.isEmpty()) {
+	        	resp.put("success", false);
+				resp.put("urlPago", null);
+				resp.put("mensaje", "No se recibió ID de link");
+				return resp;
+
+	        }
+	        
+	        String wompiUrl= ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+
+	        String urlPago = wompiUrl + idLink;
+
+	        // 🔹 8. Notificación (igual que tu código original)
+	        realizarNotificacionWompiParametrico(
+	                idLink,
+	                clienteVirtual.getIdcliente(),
+	                urlPago,
+	                4,
+	                idPedidoTienda,
+	                mensajeWhatsapp
+	        );
+	       	resp.put("success", true);
+			resp.put("urlPago", urlPago);
+			resp.put("mensaje", "Link generado correctamente");
+			return resp;
+
+
+	    } catch (Exception e) {
+
+	        e.printStackTrace();
+        	resp.put("success", false);
+			resp.put("urlPago", null);
+			resp.put("mensaje",  "Error generando link: " + e.getMessage());
+			return resp;
+	    }
 	}
+
 	
 	
 	public void verificarEnvioLinkPagosProcesoWompi(int idPedidoTienda, int idCliente, double totalPedido, int idTienda)
-	{
+	{   
+		
+		String token = ParametrosDAO.retornarValorAlfanumerico("WOMPIPRODUCCIONPRI");
+		String wompiUrl= ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+		String wompiEndPoint= ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
+		
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		//Se debe hacer la creación del link y la inserción en la tabla
 		//Obtenemos la tienda
@@ -4133,12 +4210,12 @@ public class PedidoCtrl {
               "}";
 		//Realizamos la invocación mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
-		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
+		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try
 		{
 			//Fijamos el header con el token
-			request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
+			request.setHeader("Authorization", "Bearer " + token);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
 			//Fijamos los parámetros
@@ -4169,7 +4246,7 @@ public class PedidoCtrl {
 			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
 			
 			//reutilización de la lógica del resto para el envío de la notificación
-			realizarNotificacionWompi(idLink, idCliente, "https://checkout.wompi.co/l/"+idLink, 4, idPedidoTienda);
+			realizarNotificacionWompi(idLink, idCliente, wompiUrl + idLink, 4, idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
@@ -5317,7 +5394,7 @@ public class PedidoCtrl {
 					{
 						//Fijamos el header con el token
 						//NO HAY SEGURIDAD TODAVÍA
-						//request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
+
 						request.setHeader("Accept", "application/json");
 						request.setHeader("Content-type", "application/json");
 						//Fijamos los parámetros
@@ -6461,10 +6538,17 @@ public class PedidoCtrl {
 				}
 				Pedido infoPedido= PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 				if(infoPedido.getIdcliente() > 0)
-				{  
-					String linkpago  = "https://checkout.wompi.co/l/"+infoPedido.getIdLink();
-					actualizarLinkPagoLeadCRMBOT(lead,linkpago,"pedidoweb");
-									
+				{    
+					
+					String wompiUrl= ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+					String id_link = infoPedido.getIdLink();
+					String linkpago = "ERROR";
+					
+					if(id_link !=  null && !id_link.isEmpty()) {
+						linkpago  = wompiUrl + id_link;
+					}
+		
+					actualizarLinkPagoLeadCRMBOT(lead,linkpago,"pedidoweb");			
 				}
 				
 				
@@ -7838,9 +7922,16 @@ public class PedidoCtrl {
 				{
 					mensajeExterno = "S";
 				}
-				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				JSONObject js_link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				
+				boolean existe_link = (boolean) js_link.get("success");
+				String mensaje = "ERROR";
+				
+				if(existe_link) {
+					mensaje = (String)  js_link.get("urlPago");
+				}
 				//Se actualiza lead con el link de pago
-				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
+				actualizarLinkPagoLeadCRMBOT(lead,mensaje,"pedidobot");
 			}else if(idFormaPago == 1)
 			{
 				//Al final de la creación de todo el pedido vamos a verificar si hay envió automático
@@ -8134,9 +8225,9 @@ public class PedidoCtrl {
 	}
 	
 	
-	public void actualizarLinkPagoLeadCRMBOT(String lead,String link,String tipo_pedido)
+	public void actualizarLinkPagoLeadCRMBOT(String lead,String mensaje,String tipo_pedido)
 	{
-
+ 	
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 		int idcampo = 868227;
 		if(tipo_pedido.toLowerCase().equals("pedidoweb")) {					
@@ -8150,7 +8241,7 @@ public class PedidoCtrl {
 				+ "             \"field_id\": "+ idcampo +",\r\n"
 				+ "            \"values\": [\r\n"
 				+ "                {\r\n"
-				+ "                    \"value\": \" " + link + "\"\n"
+				+ "                    \"value\": \" " + mensaje + "\"\n"
 				+ "                }\r\n"
 				+ "            ]\r\n"
 				+ "        }\r\n"
@@ -8751,9 +8842,17 @@ public class PedidoCtrl {
 				{
 					mensajeExterno = "S";
 				}
-				String link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				JSONObject js_link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact, idTienda, mensajeExterno);
+				
+				boolean existe_link = (boolean) js_link.get("success");
+				String mensaje = "ERROR";
+				
+				if(existe_link) {
+					mensaje = (String)  js_link.get("urlPago");
+				}
+			
 				//Se actualiza lead con el link de pago
-				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
+				actualizarLinkPagoLeadCRMBOT(lead,mensaje,"pedidobot");
 			}
 			try
 			{
@@ -12688,6 +12787,12 @@ public class PedidoCtrl {
 
 		return(respuesta.toJSONString());
 	}
+	 
+
+
+
+
+
 	
 	
 }
