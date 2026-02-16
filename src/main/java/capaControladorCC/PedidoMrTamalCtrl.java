@@ -82,17 +82,17 @@ public class PedidoMrTamalCtrl {
 	public String tratarPedidoMrTamalKuno(String stringJSON, String authHeader)
 	{
 		//Varibles para el procesamiento del pedido
-		//Variable donde quedará almacenada el idPedido creado
+		//Variable donde quedarï¿½ almacenada el idPedido creado
 		String idOrdenComercio = "";
 		String tipoPedido = "";
 		int idTipoPedido = 1;
 		long valorTotal = 0;
-		//Formamos la fecha del pedido que podrá cambiar si el pedido es posfechado
+		//Formamos la fecha del pedido que podrï¿½ cambiar si el pedido es posfechado
 		Date fechaPedido = new Date();
 		DateFormat formatoFinal = new SimpleDateFormat("dd/MM/yyyy");
 		String strFechaFinal = formatoFinal.format(fechaPedido);
 		
-		//Realizamos la inserción de log con el JSON recibido
+		//Realizamos la inserciï¿½n de log con el JSON recibido
 		LogPedidoVirtualKunoDAO.insertarLogPedidoVirtualKuno(stringJSON, authHeader);
 
 		//Comenzaremos a parsear el JSON que nos llego
@@ -102,7 +102,7 @@ public class PedidoMrTamalCtrl {
 			//Realizamos el parseo del primer nivel del JSON
 			Object objParser = parser.parse(stringJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
-			//Descomponemos la información de orders que es donde está agrupado toda la info del pedido
+			//Descomponemos la informaciï¿½n de orders que es donde estï¿½ agrupado toda la info del pedido
 			String ordersJSON = (String)jsonGeneral.get("orders").toString();
 			Object objParserOrders = parser.parse(ordersJSON);
 			JSONArray jsonOrdersArray = (JSONArray) objParserOrders;
@@ -111,22 +111,22 @@ public class PedidoMrTamalCtrl {
 			{
 				//Tomamos el elemento para procesar
 				JSONObject objTemp = (JSONObject) jsonOrdersArray.get(i);
-				//Comenzamos capturando la información del cliente del pedido
-				//Capturamos el número de orden en el ecommerce
+				//Comenzamos capturando la informaciï¿½n del cliente del pedido
+				//Capturamos el nï¿½mero de orden en el ecommerce
 				idOrdenComercio = String.valueOf((long)objTemp.get("id"));
 				valorTotal = (long)objTemp.get("total_price");
 				//Continuamos con el procesamiento del pedido
 				String telefono = (String)objTemp.get("client_phone");
 				String telefonoCelular = "";
-				//El telefono le quitaremos el indicativo del país
+				//El telefono le quitaremos el indicativo del paï¿½s
 				if(telefono.substring(0, 3).equals(new String("+57")))
 				{
 					telefono = telefono.substring(3);
 				}
-				//Para el caso del teléfono validaremos si es un fijo
+				//Para el caso del telï¿½fono validaremos si es un fijo
 				if(telefono.trim().length() == 7)
 				{
-					//En este caso al ser un número fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
+					//En este caso al ser un nï¿½mero fijo, le agregaremos el 604 que es como es almacenado en el sistema de 
 					//contact center.
 					telefono = "604" + telefono;
 				}else
@@ -135,11 +135,11 @@ public class PedidoMrTamalCtrl {
 				}
 				String nombres = (String)objTemp.get("client_first_name");
 				String apellidos = (String)objTemp.get("client_last_name");
-				//Tendremos un trato diferencial para la dirección
+				//Tendremos un trato diferencial para la direcciï¿½n
 				String dirRes = "";
 				String ciudad = "";
 				String dirAdicional = "";
-				//Trabajamos sobre la dirección resumida
+				//Trabajamos sobre la direcciï¿½n resumida
 				//Debemos de crear otro objeto JSON
 				JSONObject infoAdiDir = (JSONObject)objTemp.get("client_address_parts");
 				try
@@ -196,7 +196,7 @@ public class PedidoMrTamalCtrl {
 				//Pendiente revisar como incorporaremos estas informaciones
 				String zonaBarrio = "";
 				String obsDireccion = "";
-				//Tendremos unas reglas para conformar la dirección
+				//Tendremos unas reglas para conformar la direcciï¿½n
 				if(dirAdicional.equals(new String("")))
 				{
 					
@@ -209,7 +209,7 @@ public class PedidoMrTamalCtrl {
 				
 				String email  = (String)objTemp.get("client_email");
 				//En ocasiones cuando no es definida la latitud ni la longitud esta llega como un String por lo
-				//tanto es necesario incluirlas dentro de un try y si hay excepción llenar con cero los valores
+				//tanto es necesario incluirlas dentro de un try y si hay excepciï¿½n llenar con cero los valores
 				double latitud = 0, longitud = 0;
 				try
 				{
@@ -242,10 +242,10 @@ public class PedidoMrTamalCtrl {
 				
 				//El servicio de Kuno permite identificar el restaurante con el campo restaurante token
 				String restaurante = (String) objTemp.get("restaurant_token");
-				//Vamos por la forma de pago en su homologación
-				//Realizamos la captura del método de pago
+				//Vamos por la forma de pago en su homologaciï¿½n
+				//Realizamos la captura del mï¿½todo de pago
 				String formPagVirtual = (String)objTemp.get("payment");
-				//Con la forma de pago transferencia es que haremos la opción de WOMPI - CARD_PHONE - Transferencia Bancaria
+				//Con la forma de pago transferencia es que haremos la opciï¿½n de WOMPI - CARD_PHONE - Transferencia Bancaria
 				if(formPagVirtual.equals(new String("CARD_PHONE")) || formPagVirtual.equals(new String("Transferencia Bancaria")))
 				{
 					Cliente clienteVirtual = new Cliente(0, telefono, nombres, direccion, zonaBarrio, obsDireccion,"", 0);
@@ -255,9 +255,9 @@ public class PedidoMrTamalCtrl {
 					clienteVirtual.setLontitud((float)longitud);
 					clienteVirtual.setTelefonoCelular(telefonoCelular);
 					clienteVirtual.setPoliticaDatos("S");
-					//Realizamos el envío del mensaje de texto 
+					//Realizamos el envï¿½o del mensaje de texto 
 					String idLink = verificarEnvioLinkPagosMrTamal(idOrdenComercio, clienteVirtual, (valorTotal), tokenPrivado, nombreTienda);
-					//Adicionamos la información en la tabla para buscar despues
+					//Adicionamos la informaciï¿½n en la tabla para buscar despues
 					PedidoLinkWompi pedidoLink = new PedidoLinkWompi(nombreTienda, idTienda, idOrdenComercio,idLink);
 					PedidoLinkWompiDAO.insertarPedidoLinkWompi(pedidoLink);
 				}
@@ -272,7 +272,11 @@ public class PedidoMrTamalCtrl {
 	
 	
 	public String verificarEnvioLinkPagosMrTamal(String idPedidoTienda, Cliente clienteVirtual, double totalPedido, String tokenPrivado, String nombreTienda)
-	{
+	{   
+
+		String wompiUrl= ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+		String wompiEndPoint= ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
+		
 		String idLink = "";
 		//Creamos la fecha Actual
 		Date dateFecha = new Date();
@@ -299,9 +303,9 @@ public class PedidoMrTamalCtrl {
                 "\"sku\": \"" + idPedidoTienda + "\","+
                 "\"collect_shipping\": false"+
               "}";
-		//Realizamos la invocación mediante el uso de HTTPCLIENT
+		//Realizamos la invocaciï¿½n mediante el uso de HTTPCLIENT
 		HttpClient client = HttpClientBuilder.create().build();
-		String rutaURLWOMPI = "https://production.wompi.co/v1/payment_links";
+		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try
 		{
@@ -309,7 +313,7 @@ public class PedidoMrTamalCtrl {
 			request.setHeader("Authorization", "Bearer " + tokenPrivado);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			//Fijamos los parámetros
+			//Fijamos los parï¿½metros
 			//pass the json string request in the entity
 		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 		    request.setEntity(entity);
@@ -326,7 +330,7 @@ public class PedidoMrTamalCtrl {
 			//Traemos el valor del JSON con toda la info del pedido
 			String datosJSON = retorno.toString();
 			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gráfica
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte grï¿½fica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
@@ -334,10 +338,10 @@ public class PedidoMrTamalCtrl {
 			Object objParserData = parser.parse(dataJSON);
 			JSONObject jsonData = (JSONObject) objParserData;
 			idLink = (String)jsonData.get("id");
-			//En la parte de arriba ya tenemos la generación del link la idea en este punto es realizar
+			//En la parte de arriba ya tenemos la generaciï¿½n del link la idea en este punto es realizar
 			
-			//reutilización de la lógica del resto para el envío de la notificación
-			realizarNotificacionWompi(idLink, clienteVirtual, "https://checkout.wompi.co/l/"+idLink,  idPedidoTienda);
+			//reutilizaciï¿½n de la lï¿½gica del resto para el envï¿½o de la notificaciï¿½n
+			realizarNotificacionWompi(idLink, clienteVirtual, wompiUrl + idLink,  idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();
             System.out.println(e2.toString());
@@ -351,14 +355,14 @@ public class PedidoMrTamalCtrl {
 		String observacionLog = "";
 		String emailEnvio = "";
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		//Procesamos los mensajes de texto y correo electrónico
+		//Procesamos los mensajes de texto y correo electrï¿½nico
 		String mensajeTexto = "Querido Cliente de MR TAMAL por favor realiza el pago de tu pedido en el siguiente link #VINCULO";
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
 		mensajeTexto = mensajeTexto.replace("#VINCULO", linkPago);
-		//Envío del mensaje de Texto
+		//Envï¿½o del mensaje de Texto
 		promoCtrl.ejecutarPHPEnvioMensaje( "57"+ telefonoCelular, mensajeTexto);
 		observacionLog = "Se envio mensaje de texto.";
-		//Vamos a verificar si el cliente tiene correo electrónico para enviarlo si es el caso
+		//Vamos a verificar si el cliente tiene correo electrï¿½nico para enviarlo si es el caso
 		if(clienteNoti.getEmail() != null)
 		{
 			if(clienteNoti.getEmail().length()> 0)
@@ -383,7 +387,7 @@ public class PedidoMrTamalCtrl {
 							+ "\n" + "<body><a href=\"" + linkPago + "\"><img align=\" center \" src=\""+ imagenWompi +"\"></a></body>";
 					correo.setMensaje(mensajeCuerpoCorreo);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					//Agregamos control para que verifique con que método debe hacer el envío
+					//Agregamos control para que verifique con que mï¿½todo debe hacer el envï¿½o
 					if(cuentaCorreo.contains("@gmail.com"))
 					{
 						contro.enviarCorreo();
@@ -406,7 +410,7 @@ public class PedidoMrTamalCtrl {
 		// Debemos de procesar todo datos para extraer todo los datos requeridos
 		JSONParser parser = new JSONParser();
 		try {
-			 //De acuerdo a la definición de como se envian los eventos, extraremos
+			 //De acuerdo a la definiciï¿½n de como se envian los eventos, extraremos
 			 Object objParser = parser.parse(stringJSON);
 			 JSONObject jsonPedido = (JSONObject) objParser;
 			 String evento = (String)jsonPedido.get("event");
@@ -422,13 +426,13 @@ public class PedidoMrTamalCtrl {
 			 String idLink = (String)jsonTransaccion.get("payment_link_id");
 			 String estado = (String)jsonTransaccion.get("status");
 			 String tipoPago = (String)jsonTransaccion.get("payment_method_type");
-			 //Posteriormente de capturada la información realizaremos un guardado de log de eventos WOMPI
+			 //Posteriormente de capturada la informaciï¿½n realizaremos un guardado de log de eventos WOMPI
 			 LogEventoWompi logEvento = new LogEventoWompi(idLink, evento, estado, stringJSON );
 			 int idLogEvento = LogEventoWompiDAO.insertarLogEventoWompi(logEvento);
-			 //Posteriormente verificaremos si es un transacción de aprobado, y verificaremos el estado del idlink
+			 //Posteriormente verificaremos si es un transacciï¿½n de aprobado, y verificaremos el estado del idlink
 			 if(evento.equals(new String("transaction.updated")))
 			 {
-				 //En este punto es porque hubo el pago de una transacción
+				 //En este punto es porque hubo el pago de una transacciï¿½n
 				 if(estado.equals(new String("APPROVED")))
 				 {
 					PedidoLinkWompi pedidoLink = PedidoLinkWompiDAO.obtenerPedidoLinkWompi(idLink);
@@ -446,7 +450,7 @@ public class PedidoMrTamalCtrl {
 					correo.setUsuarioCorreo(cuentaCorreo);
 					correo.setMensaje(mensajeCorreo);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					//Agregamos control para que verifique con que método debe hacer el envío
+					//Agregamos control para que verifique con que mï¿½todo debe hacer el envï¿½o
 					if(cuentaCorreo.contains("@gmail.com"))
 					{
 						contro.enviarCorreo();

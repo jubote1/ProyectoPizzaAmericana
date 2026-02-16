@@ -856,7 +856,7 @@ public class PromocionesCtrl {
 			{
 				//Fijamos el header con el token
 				//NO HAY SEGURIDAD TODAV�A
-				//request.setHeader("Authorization", "Bearer " + "prv_prod_Qdb2HcV6AkbkvCKr9UWbhFs6L73IFCkT");
+		
 				request.setHeader("Accept", "application/json");
 				request.setHeader("Content-type", "application/json");
 				//Fijamos los par�metros
