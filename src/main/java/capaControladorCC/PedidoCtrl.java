@@ -9,6 +9,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -7968,8 +7969,12 @@ public class PedidoCtrl {
 				if(existe_link) {
 					mensaje = (String)  js_link.get("urlPago");
 				}
+				if(mensaje.equals("ERROR"))
+				{
+					PedidoDAO.cancelarPedido(idPedido);
+				}
 				//Se actualiza lead con el link de pago
-				actualizarLinkPagoLeadCRMBOT(lead,link,"pedidobot");
+				actualizarLinkPagoLeadCRMBOT(lead,mensaje,"pedidobot");
 			}else if((idFormaPago == 1) || (idFormaPago == 2))
         
 			{
@@ -12880,6 +12885,43 @@ public class PedidoCtrl {
 		JSONObject respuestaJSON = new JSONObject();
 		respuestaJSON.put("ventatotal", ventaTotal);
 		return(respuestaJSON.toString());
+	}
+	
+	/**
+	 * Método en capa controladora que nos retornará un JSON indicando si el número de pedido determinado con la tienda, está en el rango razonable de 7 días para calificar
+	 * o para saber si se permite la calificación de la encuesta
+	 * @param idPedido
+	 * @param idTienda
+	 * @return
+	 * @throws SQLException 
+	 */
+	public String validarPedidoEncuesta(int idPedido, int idTienda) throws Exception 
+	{
+		JSONObject respuestaJSON = new JSONObject();
+		boolean estaEnRango = false;
+		var rangos = PedidoDAO.obtenerRangoPedidosTienda(idTienda);
+		long inicio = rangos.getKey();
+		long numFinal = rangos.getValue();
+		//boolean yaExisteEncuesta = EmpleadoEncuestaDAO.validarExisteEncuestaPedido(idPedido, idTienda);
+		//if(idPedido >= inicio & idPedido <= numFinal & !yaExisteEncuesta)
+		if(idPedido >= inicio & idPedido <= numFinal)
+		{
+			estaEnRango = true;
+		}
+		respuestaJSON.put("resultado", estaEnRango);
+		return(respuestaJSON.toJSONString());
+	}
+	
+	/**
+	 * Método en capa controladora que se encargada dado un pedido de tienda y un idtienda, retornar el idcliente asociado al pedido
+	 * @param numposheader
+	 * @param idTienda
+	 * @return
+	 */
+	public  int obtenerIdClientePedido(int numposheader, int idTienda)
+	{
+		int idCliente = PedidoDAO.obtenerIdClientePedido(numposheader, idTienda);
+		return(idCliente);
 	}
 	
 }

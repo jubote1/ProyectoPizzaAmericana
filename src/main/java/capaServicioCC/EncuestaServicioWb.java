@@ -19,14 +19,18 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import capaControladorCC.CandidatoCtrl;
+import capaControladorCC.ClienteCtrl;
 import capaControladorCC.EncuestaCtrl;
+import capaControladorCC.PedidoCtrl;
 import capaControladorCC.VacanteCtrl;
 import capaModeloCC.Candidato;
+import capaModeloCC.Cliente;
 import capaModeloCC.EncuestaServicio;
 import capaModeloCC.ExperienciaCandidato;
 import capaModeloCC.FormacionCandidato;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 
@@ -34,11 +38,15 @@ import java.util.ArrayList;
 public class EncuestaServicioWb extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private EncuestaCtrl encuestaCtrl;
+    private PedidoCtrl pedidoCtrl;
+    private ClienteCtrl clienteCtrl;
     private static final Logger logger = Logger.getLogger(EncuestaServicioWb.class.getName());
 
     @Override
     public void init() throws ServletException {
         encuestaCtrl = new EncuestaCtrl();
+        pedidoCtrl = new PedidoCtrl();
+        clienteCtrl = new ClienteCtrl();
     }
 
     @Override
@@ -76,7 +84,26 @@ public class EncuestaServicioWb extends HttpServlet {
                     respuesta = encuestaCtrl.resultadoRuleta(encuesta);
                     break;
                 default:
-                    respuesta = encuestaCtrl.insertarEncuestaServicioWb(encuesta);
+                {
+                	//Revisamos si el pedido fue tomado dentro de los pedidos en línea con el objetivo de recuperar los datos del cliente
+                	if(Objects.isNull(encuesta.getNombre_cliente()))
+                	{
+                		int idCliente = pedidoCtrl.obtenerIdClientePedido(encuesta.getIdpedido(), encuesta.getIdtienda());
+                		if(idCliente > 0 )
+                		{
+                			Cliente cliente = clienteCtrl.obtenerClienteporIDObj(idCliente);
+                			encuesta.setNombre_cliente(cliente.getNombres());
+                			encuesta.setTelefono(cliente.getTelefono());
+                			encuesta.setCorreo(cliente.getEmail());
+                		}else
+                		{
+                			encuesta.setNombre_cliente("CLI-TIENDA");
+                			encuesta.setTelefono("CLI-TIENDA");
+                		}
+                	}
+                	respuesta = encuestaCtrl.insertarEncuestaServicioWb(encuesta);
+                }
+                    
             }
 
             response.setContentType("application/json");

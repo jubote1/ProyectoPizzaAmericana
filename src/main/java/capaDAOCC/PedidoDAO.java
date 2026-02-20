@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
@@ -53,6 +54,7 @@ import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class PedidoDAO {
 	
@@ -5976,5 +5978,85 @@ public class PedidoDAO {
 			}
 			return(totalVenta);
 		}
+	    
+	    
+	    /**
+	     * Método que dada una tienda nos devuelve el rango en que se están moviendo las numeraciones en los últimos 7 días, para hacer una validación
+	     * con la temporalidad de la encuesta
+	     * @param idTienda
+	     * @return
+	     */
+		public static Map.Entry<Long, Long> obtenerRangoPedidosTienda(int idTienda)
+		{
+			Logger logger = Logger.getLogger("log_file");
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			long minimo = 0;
+			long maximo = 0;
+			try
+			{
+				Statement stm = con1.createStatement();
+				String consulta = "SELECT MIN(a.numposheader) AS minimo, MAX(a.numposheader) AS maximo FROM pedido a WHERE a.idtienda = " + idTienda +" AND a.fechapedido  BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()" ; 
+				logger.info(consulta);
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next()){
+					minimo = rs.getLong(1);
+					maximo = rs.getLong(2);
+				}
+		        rs.close();
+				stm.close();
+				con1.close();
+			}
+			catch (Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+			}
+			return(new AbstractMap.SimpleEntry<>(minimo, maximo));
+		}
 
+		
+		/**
+		 * Método que retorna un idcliente dada la información del numposheader y la tienda
+		 * @param numposheader
+		 * @param idTienda
+		 * @return
+		 */
+		public static int obtenerIdClientePedido(int numposheader, int idTienda)
+		{
+		
+			Logger logger = Logger.getLogger("log_file");
+			int idCliente = 0;
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				String consulta = "SELECT idcliente FROM pedido WHERE numposheader = " + numposheader +" AND idtienda = " + idTienda ; 
+				logger.info(consulta);
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next()){
+					idCliente = rs.getInt(1);
+					break;
+				}
+		        rs.close();
+				stm.close();
+				con1.close();
+			}
+			catch (Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				return(0);
+			}
+			return(idCliente);
+		}
 }

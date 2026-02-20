@@ -462,5 +462,36 @@ public class EmpleadoEncuestaDAO {
     public static void main(String[] args) {
 
     }
+    
+    /**
+     * Método que se encargara de devolver un valor booleano en caso de que ya se tenga una encuesta insertada para el pedido y tienda pasados
+     * como parámetro
+     * @param idPedido
+     * @param idTienda
+     * @return
+     * @throws SQLException
+     */
+    public static boolean validarExisteEncuestaPedido(int idPedido, int idTienda) throws SQLException
+    {
+    	boolean respuesta = false;
+    	ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal(); 
+    	String sql = "SELECT * FROM cliente_servicio WHERE idpedido = ? AND idtienda = ?;";
+        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+            pstmt.setInt(1, idPedido);
+            pstmt.setInt(2, idTienda);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                	respuesta = true;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+        }
+
+        return respuesta;
+    }
 
 }

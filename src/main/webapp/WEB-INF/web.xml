@@ -25,6 +25,7 @@
 	      <url-pattern>/Fidelizacion</url-pattern>
 	        <url-pattern>/InsertarPqrsWeb</url-pattern>
 	           <url-pattern>/EncuestaServicioWb</url-pattern>
+	           <url-pattern>/VdclienteWb</url-pattern>
     </filter-mapping>
     
     
@@ -42,6 +43,7 @@
 	         	      <url-pattern>/Fidelizacion</url-pattern>
 	         	      	        <url-pattern>/InsertarPqrsWeb</url-pattern>
 	         	      	             <url-pattern>/EncuestaServicioWb</url-pattern>
+	         	      	             <url-pattern>/VdclienteWb</url-pattern>
 	</filter-mapping>
 
 </web-app>
