@@ -43,7 +43,11 @@ public class RuletaDAO {
                         obj.put("repeticiones", rs.getInt("repeticiones"));
                         obj.put("reintento", rs.getInt("reintento"));
                                             
-                        listaOpciones.add(obj);
+                        int repeticiones = rs.getInt("repeticiones");
+
+                        for(int i = 0; i < repeticiones; i++){
+                            listaOpciones.add(obj);
+                        }
                     }
                 }
             } catch (SQLException e) {

@@ -20,6 +20,7 @@ import capaDAOCC.EmpleadoEncuestaDAO;
 import capaDAOCC.EmpleadoEncuestaDetalleDAO;
 import capaDAOCC.EncuestaLaboralDAO;
 import capaDAOCC.EncuestaLaboralDetalleDAO;
+import capaDAOCC.ParametrosDAO;
 import capaDAOCC.RuletaDAO;
 import capaModeloCC.EmpleadoEncuesta;
 import capaModeloCC.EmpleadoEncuestaDetalle;
@@ -29,6 +30,7 @@ import capaModeloCC.EncuestaServicio;
 import capaSeguridad.TokenRoulette;
 
 public class EncuestaCtrl {
+	private static final SecureRandom random = new SecureRandom();
 
 	public EncuestaCtrl() {
 	}
@@ -178,6 +180,7 @@ public class EncuestaCtrl {
 	}
 
 	public static String resultadoRuleta(EncuestaServicio encuesta) {
+
 	    List<JSONObject> opcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
 	    JSONObject respuesta = new JSONObject();
 
@@ -188,64 +191,71 @@ public class EncuestaCtrl {
 	    }
 
 	    try {
-	        SecureRandom random = new SecureRandom();
-		     // ==== Selección Ponderada ====
-	
-		     // Ajusta aquí las probabilidades
-		     int pesoPremio0 = 3; // Alta probabilidad
-		     int pesoPremioOtro = 1; // Baja probabilidad
-	
-		     List<Integer> pesos = new ArrayList<>();
-		     int sumaPesos = 0;
-	
-		     // Calcular peso según premio
-		     for (JSONObject opcion : opcionesRuleta) {
-		         int premioVal = opcion.get("premio") != null
-		                 ? Integer.parseInt(opcion.get("premio").toString())
-		                 : 0;
-	
-		         int peso = (premioVal == 0) ? pesoPremio0 : pesoPremioOtro;
-	
-		         pesos.add(peso);
-		         sumaPesos += peso;
-		     }
-	
-		     // Selección aleatoria basada en pesos
-		     int numero = random.nextInt(sumaPesos);
-		     int acumulado = 0;
-		     int indiceSeleccionado = 0;
-	
-		     for (int i = 0; i < pesos.size(); i++) {
-		         acumulado += pesos.get(i);
-		         if (numero < acumulado) {
-		             indiceSeleccionado = i;
-		             break;
-		         }
-		     }
 
-	        JSONObject opcionSeleccionada = opcionesRuleta.get(indiceSeleccionado);
-	        
-	        //System.out.println("Seleccionada: " + opcionSeleccionada);
+	        // ===== PROBABILIDAD DE GANAR =====
+	        int probabilidadGanar = ParametrosDAO.retornarValorNumerico("PROBABILIDADGANAR");// 3% ≈ 1 ganador cada 33
 
-	        // Conversión segura
-	        int idOpcion = opcionSeleccionada.get("idopcion") != null ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString()) : 0;
-	        int indice = opcionSeleccionada.get("indice") != null ? Integer.parseInt(opcionSeleccionada.get("indice").toString()) : 0;
-	        int premio = opcionSeleccionada.get("premio") != null ? Integer.parseInt(opcionSeleccionada.get("premio").toString()) : 0; 
-	        int reintento = opcionSeleccionada.get("reintento") != null ? Integer.parseInt(opcionSeleccionada.get("reintento").toString()) : 0; 
-	 
+	        boolean gana = random.nextInt(100) < probabilidadGanar;
+
+	        List<JSONObject> opcionesFiltradas = new ArrayList<>();
+
+	        // ===== FILTRAR OPCIONES SEGÚN RESULTADO =====
+	        for (JSONObject opcion : opcionesRuleta) {
+
+	            int premioVal = opcion.get("premio") != null
+	                    ? Integer.parseInt(opcion.get("premio").toString())
+	                    : 0;
+
+	            if (gana && premioVal != 0) {
+	                opcionesFiltradas.add(opcion);
+	            } 
+	            else if (!gana && premioVal == 0) {
+	                opcionesFiltradas.add(opcion);
+	            }
+	        }
+
+	        // Seguridad
+	        if (opcionesFiltradas.isEmpty()) {
+	            throw new RuntimeException("No hay opciones válidas para el resultado de la ruleta");
+	        }
+
+	        // ===== SELECCIÓN ALEATORIA =====
+	        int indiceSeleccionado = random.nextInt(opcionesFiltradas.size());
+	        JSONObject opcionSeleccionada = opcionesFiltradas.get(indiceSeleccionado);
+
+	        int idOpcion = opcionSeleccionada.get("idopcion") != null
+	                ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString())
+	                : 0;
+
+	        int indice = opcionSeleccionada.get("indice") != null
+	                ? Integer.parseInt(opcionSeleccionada.get("indice").toString())
+	                : 0;
+
+	        int premio = opcionSeleccionada.get("premio") != null
+	                ? Integer.parseInt(opcionSeleccionada.get("premio").toString())
+	                : 0;
+
+	        int reintento = opcionSeleccionada.get("reintento") != null
+	                ? Integer.parseInt(opcionSeleccionada.get("reintento").toString())
+	                : 0;
+
 	        String titulo = String.valueOf(opcionSeleccionada.get("titulo"));
 	        String descripcion = String.valueOf(opcionSeleccionada.get("descripcion"));
 
-	        Logger.getLogger("Ruleta").info("Seleccionada opción ID: " + idOpcion + " (" + titulo + ")");
-	        int idregistro =  0;
-	        
-	        if(reintento == 1) {
-	        	idregistro = -1;
-	        }else {
-	        	 idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
+	        Logger.getLogger("Ruleta").info(
+	                "Resultado ruleta | opcion=" + idOpcion +
+	                " | premio=" + premio +
+	                " | titulo=" + titulo
+	        );
+
+	        int idregistro;
+
+	        if (reintento == 1) {
+	            idregistro = -1;
+	        } else {
+	            idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
 	        }
-	       
-	        
+
 	        if (idregistro == 0) {
 	            respuesta.put("success", false);
 	            respuesta.put("message", "Error al registrar el resultado");
@@ -264,12 +274,15 @@ public class EncuestaCtrl {
 	        return respuesta.toJSONString();
 
 	    } catch (Exception e) {
+
 	        respuesta.put("success", false);
 	        respuesta.put("message", "Error interno en el proceso de ruleta: " + e.getMessage());
-	        System.out.println("Error: "+e.getMessage());
+	        System.out.println("Error: " + e.getMessage());
+
 	        return respuesta.toJSONString();
 	    }
 	}
+
 	
 
 	
