@@ -1,4 +1,5 @@
 package capaControladorCC;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
@@ -854,7 +855,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 	}
 	
 	
-	private boolean direccionEsValida(String direccionRaw) {
+	private static boolean direccionEsValida(String direccionRaw) {
 
 	    if (direccionRaw == null) return false;
 
@@ -864,14 +865,21 @@ public String obtenerNotificacionesCliente(int idCliente)
 
 	    if (dir.contains("null")) return false;
 
-	    // quita caracteres no alfanuméricos
+	    // quitar caracteres no alfanuméricos
 	    String soloAlfanumerico = dir.replaceAll("[^a-z0-9]", "");
 
-	    // si queda vacío -> eran solo símbolos: "# - / . ,"
+	    // si queda vacío -> solo símbolos
 	    if (soloAlfanumerico.isEmpty()) return false;
+
+	    // ❌ evitar direcciones sin números
+	    if (!dir.matches(".*\\d.*")) return false;
+
+	    // ❌ evitar direcciones donde todos los números sean 0
+	    if (!dir.matches(".*[1-9].*")) return false;
 
 	    return true;
 	}
+
 
 	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono) {
 
@@ -928,6 +936,8 @@ public String obtenerNotificacionesCliente(int idCliente)
 
 	    return respuesta;
 	}
+	
+
 
 	
 
