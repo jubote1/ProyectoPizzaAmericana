@@ -7276,7 +7276,7 @@ public class PedidoCtrl {
 	/**
 	 * Método que se encarga pizzas o productos adicionales dentro de un pedido del CRMBOT
 	 */
-	public String insertarProductoBOTCRMMultiple(int idPedido, String nombreDelCombo, String sabor1, String sabor2, String adicion, String bebida, String detalle)
+	public String insertarProductoBOTCRMMultiple(int idPedido, String nombreDelCombo, String sabor1, String sabor2, String adicion, String bebida, String detalle, String acompanamiento2)
 	{
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		//Información del domicilio
@@ -7568,6 +7568,27 @@ public class PedidoCtrl {
 				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
 			}
 		}
+		//Verificamos el estado del acompañante si se pidió
+		if(acompanamiento2.equals(new String("")))
+		{
+			
+		}else
+		{
+			//No necesariamente si solo es promoción también se debe validar si es combo para todos
+			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA")) || nombreDelCombo.equals(new String("COMBO FUTBOLERO")) ))
+			{
+				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento2);
+			}else
+			{
+				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual(acompanamiento2);
+			}
+			if(idProductoAcompa != 0)
+			{
+				double valorUnitarioAco = ProductoDAO.retornarProducto(idProductoAcompa).getPreciogeneral();
+				DetallePedido detPedidoAcom = new DetallePedido(idProductoAcompa,idPedido,1,0,0,valorUnitarioAco,valorUnitarioAco, "" , "" /*observacion*/, 0 /*idSaborTipoLiquido2*/, 0, "", "");
+				idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedidoAcom);
+			}
+		}
 		return(log);
 	}
 	
@@ -7592,6 +7613,7 @@ public class PedidoCtrl {
 		String adicion = "";
 		String bebida = "";
 		String acompanamiento = "";
+		String acompanamiento2 = "";
 		String bebida2 = "";
 		String formaPago ="";
 		String direccion ="";
@@ -7721,6 +7743,9 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("acompañamiento")))
 				{
 					acompanamiento = strValor;
+				}else if(clave.equals(new String("acompañante #2")))
+				{
+					acompanamiento2 = strValor;
 				}else if(clave.equals(new String("bebida 2")))
 				{
 					bebida2 = strValor;
@@ -7924,7 +7949,7 @@ public class PedidoCtrl {
 			//Agregamos el procesamiento del segundo producto si lo hay
 			if(!nombreDelCombo_2.equals(new String("")))
 			{
-				insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2);
+				insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
 			}
 			//Luego de insertar el pedido haremos las últimas validaciones
 			//Posteriormente realizamos los pasos para la finalización del pedido
@@ -8613,6 +8638,7 @@ public class PedidoCtrl {
 		String adicion = "";
 		String bebida = "";
 		String acompanamiento = "";
+		String acompanamiento2 = "";
 		String bebida2 = "";
 		String formaPago ="";
 		String direccion ="";
@@ -8703,6 +8729,9 @@ public class PedidoCtrl {
 				}else if(clave.equals(new String("acompañamiento")))
 				{
 					acompanamiento = strValor;
+				}else if(clave.equals(new String("acompañante #2")))
+				{
+					acompanamiento2 = strValor;
 				}else if(clave.equals(new String("bebida 2")))
 				{
 					bebida2 = strValor;
