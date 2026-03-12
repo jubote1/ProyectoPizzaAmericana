@@ -1507,28 +1507,39 @@ public class ClienteDAO {
 	    }
 
 	 public static Cliente obtenerUltimoClientePorTelefono(String tel) {
+
 		    Cliente cliente = null;
 		    ConexionBaseDatos con = new ConexionBaseDatos();
 		    Connection con1 = con.obtenerConexionBDPrincipal();
 
 		    String consulta =
-		    		 "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, "
-		    				    + "       c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, "
-		    				    + "       b.idtienda, b.nombre AS nombreTienda "
-		    				    + "FROM cliente a "
-		    				    + "LEFT JOIN tienda b ON a.idtienda = b.idtienda "
-		    				    + "LEFT JOIN municipio c ON a.idmunicipio = c.idmunicipio "
-		    				    + "LEFT JOIN nomenclatura_direccion d ON a.idnomenclatura = d.idnomenclatura "
-		    				    + "WHERE a.telefono = ? AND a.activo = 1 "
-		    				    + "ORDER BY a.idcliente DESC "
-		    				    + "LIMIT 1";
+		            "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, "
+		          + "c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, "
+		          + "b.idtienda, b.nombre AS nombreTienda "
+		          + "FROM cliente a "
+		          + "LEFT JOIN tienda b ON a.idtienda = b.idtienda "
+		          + "LEFT JOIN municipio c ON a.idmunicipio = c.idmunicipio "
+		          + "LEFT JOIN nomenclatura_direccion d ON a.idnomenclatura = d.idnomenclatura "
+		          + "WHERE a.telefono = ? "
+		          + "AND a.activo = 1 "
+		          + "AND NOT EXISTS ( "
+		          + "    SELECT 1 "
+		          + "    FROM pedido p "
+		          + "    JOIN pedido_anulado pa ON pa.idpediotienda = p.numposheader "
+		          + "    WHERE p.idcliente = a.idcliente "
+		          + "    ORDER BY p.idpedido DESC "
+		          + "    LIMIT 1 "
+		          + ") "
+		          + "ORDER BY a.idcliente DESC "
+		          + "LIMIT 1";
 
 		    try (PreparedStatement ps = con1.prepareStatement(consulta)) {
-		        // 🔒 Seguridad: evita inyección SQL
+
 		        ps.setString(1, tel);
 		        ResultSet rs = ps.executeQuery();
 
 		        if (rs.next()) {
+
 		            cliente = new Cliente();
 		            cliente.setIdcliente(rs.getInt("idcliente"));
 		            cliente.setDireccion(rs.getString("direccion"));
@@ -1542,8 +1553,9 @@ public class ClienteDAO {
 		        }
 
 		        rs.close();
+
 		    } catch (Exception e) {
-		        System.out.println("❌ Error al obtener último cliente por teléfono: " + e.getMessage());
+		        System.out.println("❌ Error al obtener cliente por teléfono: " + e.getMessage());
 		        e.printStackTrace();
 		    } finally {
 		        try { if (con1 != null) con1.close(); } catch (Exception e) {}
@@ -1551,6 +1563,7 @@ public class ClienteDAO {
 
 		    return cliente;
 		}
+
 
 	
 	 public static void main(String[] args) {
