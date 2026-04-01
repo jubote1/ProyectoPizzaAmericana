@@ -49,13 +49,14 @@ public class LogPedidoVirtualKunoDAO {
 	public static int insertarLogCRMBOT(String datosJSON, String authHeader, String operacion) {
 	    Logger logger = Logger.getLogger("log_file");  
 	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    
 
 	    int idEventoIns = 0;
 
 	    String sql = "INSERT INTO log_pedido_crmbot (datos_json, header, tipo) VALUES (?, ?, ?)";
 
-	    try (Connection con1 = con.obtenerConexionBDPrincipal();
-	         PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+	    try (PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
 	        ps.setString(1, datosJSON);
 	        ps.setString(2, authHeader);
@@ -75,7 +76,13 @@ public class LogPedidoVirtualKunoDAO {
 	    } catch (Exception e) {
 	        logger.error("Error insertando log CRMBOT: " + e.toString());
 	        return 0;
-	    }
+	    }finally {
+        try {
+            if (con1 != null) con1.close();
+        } catch (Exception e) {
+            logger.error("Error cerrando conexión: " + e.toString());
+        }
+    }
 
 	    return idEventoIns;
 	}
@@ -150,30 +157,45 @@ public class LogPedidoVirtualKunoDAO {
 	public static void actualizarLogCRMBOT(int idLog, String JSON, String lead, String tipo) {
 	    Logger logger = Logger.getLogger("log_file");  
 	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = null;
 
-	    int lead_num = 0;
 	    try {
-	        lead_num = Integer.parseInt(lead);
-	    } catch (Exception e) {
-	        lead_num = 0;
-	    }
+	        con1 = con.obtenerConexionBDPrincipal();
 
-	    String sql = "UPDATE log_pedido_crmbot SET info_lead = ?, tipo = ?, lead = ? WHERE idlog = ?";
+	        // Convertir lead a entero, con fallback a 0
+	        int lead_num = 0;
+	        try {
+	            lead_num = Integer.parseInt(lead);
+	        } catch (Exception e) {
+	            lead_num = 0;
+	        }
 
-	    try (Connection con1 = con.obtenerConexionBDPrincipal();
-	         PreparedStatement ps = con1.prepareStatement(sql)) {
+	        System.out.println("idLog: " + idLog);
 
-	        ps.setString(1, JSON);
-	        ps.setString(2, tipo);
-	        ps.setInt(3, lead_num);
-	        ps.setInt(4, idLog);
+	        // UPDATE que siempre cuenta como actualizado (usando un truco: SET con mismo valor + condición WHERE idlog)
+	        String sql = "UPDATE log_pedido_crmbot SET info_lead = ?, tipo = ?, lead_id = ? WHERE idlog = ?";
+	        try (PreparedStatement ps = con1.prepareStatement(sql)) {
+	            ps.setString(1, JSON);
+	            ps.setString(2, tipo);
+	            ps.setInt(3, lead_num);
+	            ps.setInt(4, idLog);
 
-	        logger.info("Ejecutando update seguro para idlog: " + idLog);
-
-	        ps.executeUpdate();
+	            logger.info("Ejecutando update seguro para idlog: " + idLog);
+	            int filas = ps.executeUpdate();
+	            System.out.println("FILAS ACTUALIZADAS: " + filas);
+	        }
 
 	    } catch (Exception e) {
 	        logger.error("Error actualizando log: " + e.toString());
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	            if (con1 != null && !con1.isClosed()) {
+	                con1.close();
+	            }
+	        } catch (Exception e) {
+	            logger.error("Error cerrando conexión: " + e.toString());
+	        }
 	    }
 	}
 
@@ -206,6 +228,7 @@ public class LogPedidoVirtualKunoDAO {
 	public static boolean existePedidoRecienteCRMBOT(String lead, String tipo, int minutosVentana) {
 	    Logger logger = Logger.getLogger("log_file");  
 	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
 	    int lead_num = 0;
 	    try {
 	        lead_num = Integer.parseInt(lead);
@@ -214,13 +237,11 @@ public class LogPedidoVirtualKunoDAO {
 	    }
 
 	    String sql = "SELECT 1 FROM log_pedido_crmbot " +
-	                 "WHERE lead = ? " +
+	                 "WHERE lead_id = ? " +
 	                 "AND tipo = ? " +
 	                 "AND fecha_real >= NOW() - INTERVAL ? MINUTE " +
 	                 "LIMIT 1";
-
-	    try (Connection con1 = con.obtenerConexionBDPrincipal();
-	         PreparedStatement ps = con1.prepareStatement(sql)) {
+    try (PreparedStatement ps = con1.prepareStatement(sql)) {
 
 	        ps.setInt(1, lead_num);
 	        ps.setString(2, tipo);
@@ -231,6 +252,12 @@ public class LogPedidoVirtualKunoDAO {
 
 	    } catch (Exception e) {
 	        logger.error("Error validando duplicado: " + e.toString());
+	    } finally {
+	        try {
+	            if (con1 != null) con1.close();
+	        } catch (Exception e) {
+	            logger.error("Error cerrando conexión: " + e.toString());
+	        }
 	    }
 
 	    return false;
