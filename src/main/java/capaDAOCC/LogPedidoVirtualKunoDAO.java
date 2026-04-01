@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
@@ -45,38 +46,40 @@ public class LogPedidoVirtualKunoDAO {
 	}
 	
 	
-	public static int insertarLogCRMBOT(String datosJSON, String authHeader, String operacion)
-	{
-		Logger logger = Logger.getLogger("log_file");  
-		int idEventoIns = 0;
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into log_pedido_crmbot (datos_json, header, tipo) values ('" + datosJSON + "' , '" + authHeader + "' , '" + operacion + "')"; 
-			logger.info(insert);
-			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs = stm.getGeneratedKeys();
-			if (rs.next()){
-				idEventoIns =rs.getInt(1);
-				logger.info("Id log pedido crmbot en bd " + idEventoIns);
+	public static int insertarLogCRMBOT(String datosJSON, String authHeader, String operacion) {
+	    Logger logger = Logger.getLogger("log_file");  
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+
+	    int idEventoIns = 0;
+
+	    String sql = "INSERT INTO log_pedido_crmbot (datos_json, header, tipo) VALUES (?, ?, ?)";
+
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+	        ps.setString(1, datosJSON);
+	        ps.setString(2, authHeader);
+	        ps.setString(3, operacion);
+
+	        logger.info("Insertando log CRMBOT");
+
+	        ps.executeUpdate();
+
+	        try (ResultSet rs = ps.getGeneratedKeys()) {
+	            if (rs.next()) {
+	                idEventoIns = rs.getInt(1);
+	                logger.info("Id log pedido crmbot en bd: " + idEventoIns);
+	            }
 	        }
-			stm.close();
-			con1.close();
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-			return(0);
-		}
-		return(idEventoIns);
+
+	    } catch (Exception e) {
+	        logger.error("Error insertando log CRMBOT: " + e.toString());
+	        return 0;
+	    }
+
+	    return idEventoIns;
 	}
+
 	
 	public static int insertarLogRAPPI(String datosJSON, String authHeader)
 	{
@@ -144,30 +147,36 @@ public class LogPedidoVirtualKunoDAO {
 		return(idEventoIns);
 	}
 	
-	public static void actualizarLogCRMBOT(int idLog, String JSON, String tipo)
-	{
-		Logger logger = Logger.getLogger("log_file");  
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			Statement stm = con1.createStatement();
-			String update = "update log_pedido_crmbot set info_lead = '" + JSON + "' , tipo = '" + tipo + "' where idlog =" + idLog; 
-			logger.info(update);
-			stm.executeUpdate(update);
-			stm.close();
-			con1.close();
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-		}
+	public static void actualizarLogCRMBOT(int idLog, String JSON, String lead, String tipo) {
+	    Logger logger = Logger.getLogger("log_file");  
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+
+	    int lead_num = 0;
+	    try {
+	        lead_num = Integer.parseInt(lead);
+	    } catch (Exception e) {
+	        lead_num = 0;
+	    }
+
+	    String sql = "UPDATE log_pedido_crmbot SET info_lead = ?, tipo = ?, lead = ? WHERE idlog = ?";
+
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql)) {
+
+	        ps.setString(1, JSON);
+	        ps.setString(2, tipo);
+	        ps.setInt(3, lead_num);
+	        ps.setInt(4, idLog);
+
+	        logger.info("Ejecutando update seguro para idlog: " + idLog);
+
+	        ps.executeUpdate();
+
+	    } catch (Exception e) {
+	        logger.error("Error actualizando log: " + e.toString());
+	    }
 	}
+
 	
 	public static void actualizarLogCRMBOTInfLog(int idLog, String log)
 	{
@@ -193,5 +202,40 @@ public class LogPedidoVirtualKunoDAO {
 			}
 		}
 	}
+	
+	public static boolean existePedidoRecienteCRMBOT(String lead, String tipo, int minutosVentana) {
+	    Logger logger = Logger.getLogger("log_file");  
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    int lead_num = 0;
+	    try {
+	        lead_num = Integer.parseInt(lead);
+	    } catch (Exception e) {
+	        return false;
+	    }
+
+	    String sql = "SELECT 1 FROM log_pedido_crmbot " +
+	                 "WHERE lead = ? " +
+	                 "AND tipo = ? " +
+	                 "AND fecha_real >= NOW() - INTERVAL ? MINUTE " +
+	                 "LIMIT 1";
+
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql)) {
+
+	        ps.setInt(1, lead_num);
+	        ps.setString(2, tipo);
+	        ps.setInt(3, minutosVentana);
+
+	        ResultSet rs = ps.executeQuery();
+	        return rs.next();
+
+	    } catch (Exception e) {
+	        logger.error("Error validando duplicado: " + e.toString());
+	    }
+
+	    return false;
+	}
+
+
 	
 }

@@ -6214,30 +6214,37 @@ public class PedidoCtrl {
 	    return valores;
 	}
 	
-	public String insertarPedidoCRMBOT(String datos, String authHeader) throws IOException
-	{
-		String respuesta = "";
-		//El primer paso a validar es la autorización para la utilización del servicio
-		if(authHeader.equals(new String("PRUEBA")))
-		{
-			//Si viene el valor de prueba omitimos la validación
-		}else
-		{
-			
-		}
-		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"I");
-		//Vamos a realizar la extracción del parámetro
-		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
-		Map parSep = separarURL(parametrosDecode);
-		String lead = (String)parSep.get("leads[status][0][id]");
-		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
-		String infLead = obtenerInformacionLeadCRM(lead);
-		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,"I");
-		procesarPedidoBOTCRM(infLead,lead, idLog);
-		return(respuesta);
+	public String insertarPedidoCRMBOT(String datos, String authHeader) throws IOException {
+	    String respuesta = "";
+
+	    // Decode
+	    String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+	    Map parSep = separarURL(parametrosDecode);
+	    String lead = (String) parSep.get("leads[status][0][id]");
+
+	    // VALIDAR ANTES DE INSERTAR
+	    boolean existeDuplicado = LogPedidoVirtualKunoDAO.existePedidoRecienteCRMBOT(lead, "I", 60);
+
+	    if (existeDuplicado) {
+	        System.out.println("Se detecta posible duplicado para lead: " + lead);
+	        return respuesta;
+	    }
+
+	    // insertamos log
+	    int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
+
+	    // Obtenemos info del lead
+	    String infLead = obtenerInformacionLeadCRM(lead);
+
+	    // Actualizamos log
+	    LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "I");
+
+	    // Procesar
+	    procesarPedidoBOTCRM(infLead, lead, idLog);
+
+	    return respuesta;
 	}
+
 	
 	/**
 	 * Método para atender desde el Servlet la consulta del estado de un pedido en el BOT CRM
@@ -6266,7 +6273,7 @@ public class PedidoCtrl {
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
 		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "C");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "C");
 		consultarPedidoCRMBOT(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6301,7 +6308,7 @@ public class PedidoCtrl {
 		String infLead = obtenerInformacionLeadCRM(lead);
 		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
 		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "T");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "T");
 		consultarCoberturaCRMBOT(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6403,7 +6410,7 @@ public class PedidoCtrl {
 
 			String infLead = obtenerInformacionLeadCRM(lead);
 			//System.out.println("información " + infLead);
-			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "CR");
+			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "CR");
 
 			
 			String telefono = "";
@@ -6511,7 +6518,7 @@ public class PedidoCtrl {
 		String infLead = obtenerInformacionLeadCRM(lead);
 		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
 		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "LP");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "LP");
 		consultarLink(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6621,7 +6628,7 @@ public class PedidoCtrl {
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
 		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "I");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "I");
 		procesarPedidoBOTCRMPoblado(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6670,7 +6677,7 @@ public class PedidoCtrl {
 		String lead = (String)parSep.get("leads[status][0][id]");
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "P");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "P");
 		procesarPQRSBOTCRM(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -6694,7 +6701,7 @@ public class PedidoCtrl {
 		String lead = (String)parSep.get("leads[status][0][id]");
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "SF");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "SF");
 		procesarFACBOTCRM(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -12263,7 +12270,7 @@ public class PedidoCtrl {
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 		String infLead = obtenerInformacionLeadCRM(lead);
 		//System.out.println("información " + infLead);
-		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,"F");
+		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead,"F");
 		procesarSolFacturaPedidoWebBOTNiv2(infLead,lead, idLog);
 		return(respuesta);
 	}
@@ -12442,7 +12449,7 @@ public class PedidoCtrl {
 	        }
 
 	        String infLead = obtenerInformacionLeadCRM(lead);
-	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, "ES");
+	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead,lead, "ES");
 
 	        EncuestaServicio encuestaServicio = new EncuestaServicio();
 	        List<RespuestaServicio> respuestaServicio = new ArrayList<>();
