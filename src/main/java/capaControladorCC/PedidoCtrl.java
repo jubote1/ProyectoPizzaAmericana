@@ -9611,6 +9611,7 @@ public class PedidoCtrl {
 		double rappiCreditos = 0;
 		double rappiPay = 0;
 		double tarifaServicio = 0;
+		String marketPlace = "S";
 		ArrayList<ProductoIncluido> productosIncluidos = PedidoDAO.obtenerProductosIncluidos();
 		//Comenzaremos a parsear el JSON que nos llego
 		JSONParser parser = new JSONParser();
@@ -9658,9 +9659,15 @@ public class PedidoCtrl {
 			if(tipoPedido.equals(new String("marketplace")))
 			{
 				idTipoPedido = 1;
-			}else if(tipoPedido.equals(new String("pickup")) || tipoPedido.equals(new String("delivery")))
+				marketPlace = "S";
+			}else if(tipoPedido.equals(new String("delivery")))
+			{
+				idTipoPedido = 1;
+				marketPlace = "N";
+			}else if(tipoPedido.equals(new String("pickup")))
 			{
 				idTipoPedido = 2;
+				marketPlace = "N";
 				log = log + " " + "El pedido de RAPPI no llego para ser llevado por nosotros, por favor revisar.";
 			}
 			
@@ -10075,7 +10082,6 @@ public class PedidoCtrl {
 			double descuentoPropio = 0;
 			double descuentoPlataforma = 0;
 			String descuentoAsumido = "N";
-			String marketPlace = "S";
 			String motivoDescuento = "";
 			JSONArray descuentosArray = (JSONArray)jsonOrder.get("discounts");
 			//Realizamos modificación
