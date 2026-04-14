@@ -5,14 +5,17 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -1567,24 +1570,41 @@ public class PedidoCtrl {
 		}else
 		{
 			//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
-			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-			String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
-			Correo correo = new Correo();
-			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
-			ArrayList correos = new ArrayList();
-			correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
-			correo.setContrasena(claveCorreo);
-			correo.setUsuarioCorreo(cuentaCorreo);
-			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
-					+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
-					+ "Link de pago:" + linkPago + " \n <br>"
-					+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
-					+ "email:" + clienteNoti.getEmail()+ " \n <br>";
-			correo.setMensaje(mensajeCuerpoCorreo);
-			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-			correoCorrecto = contro.enviarCorreo();
-
+			//Validaremos si está activada la contingencia en cuyo caso se usará o BREVO o el envío del correo
+			String contingenciaLinkPago = ParametrosDAO.retornarValorAlfanumerico("CONTINGENCIALINKPAGO");
+			if(contingenciaLinkPago.equals(new String("N")))
+			{
+				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+				Correo correo = new Correo();
+				correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+				ArrayList correos = new ArrayList();
+				correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
+				correo.setContrasena(claveCorreo);
+				correo.setUsuarioCorreo(cuentaCorreo);
+				String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
+						+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
+						+ "Link de pago:" + linkPago + " \n <br>"
+						+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
+						+ "email:" + clienteNoti.getEmail()+ " \n <br>";
+				correo.setMensaje(mensajeCuerpoCorreo);
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				correoCorrecto = contro.enviarCorreo();
+			}else //En caso de que el valor sea S significa que deberemos enviar el link por intermedio de BREVO
+			{
+				try
+				{
+					Map<String, Object> params;
+					params = Map.of(
+			                "link", linkPago
+			        );
+					enviarMensajeWhatsAppBrevo(38, clienteNoti.getTelefonoCelular(), params);
+				}catch(Exception exception)
+				{
+					
+				}
+			}
 		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
 		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
@@ -13017,5 +13037,66 @@ public class PedidoCtrl {
 		int idCliente = PedidoDAO.obtenerIdClientePedido(numposheader, idTienda);
 		return(idCliente);
 	}
+	
+	/**
+     * Método que se encargará de enviar mensaje de Brevo en el ProyectoPizzaAmericana
+     * @param idplantilla
+     * @param telefono
+     * @param params
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public String enviarMensajeWhatsAppBrevo(
+    		
+            int idplantilla,
+            String telefono,
+            Map<String, Object> params
+    ) throws IOException, InterruptedException {
+    	
+    	IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
+    	String BREVO_URL = "https://api.brevo.com/v3/whatsapp/sendMessage";
+
+        String NUMEROWHATSAPPBREVO =
+        		ParametrosDAO.retornarValorAlfanumerico("NUMEROWHATSAPPBREVO");
+        
+        java.net.http.HttpClient CLIENT =
+        		java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(15))
+                        .build();
+
+        ObjectMapper MAPPER = new ObjectMapper();
+        Map<String, Object> body = Map.of(
+                "templateId", idplantilla,
+                "senderNumber", NUMEROWHATSAPPBREVO,
+                "params", params,
+                "contactNumbers", List.of("+57" + telefono)
+        );
+
+        String jsonBody = MAPPER.writeValueAsString(body);
+
+        String API_KEY = brevo.getAccessToken();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BREVO_URL))
+                .timeout(Duration.ofSeconds(30))
+                .header("accept", "application/json")
+                .header("content-type", "application/json")
+                .header("api-key", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        java.net.http.HttpResponse<String> response =
+                CLIENT.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() / 100 == 2) {
+            return response.body();
+        }
+
+        throw new RuntimeException(
+                "Error Brevo WhatsApp HTTP="
+                        + response.statusCode()
+                        + " -> " + response.body());
+    }
 	
 }
