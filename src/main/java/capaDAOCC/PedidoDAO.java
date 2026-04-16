@@ -5998,7 +5998,7 @@ public class PedidoDAO {
 			try
 			{
 				Statement stm = con1.createStatement();
-				String consulta = "SELECT MIN(a.numposheader) AS minimo, MAX(a.numposheader) AS maximo FROM pedido a WHERE a.idtienda = " + idTienda +" AND a.fechapedido  BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE()" ; 
+				String consulta = "SELECT MIN(a.numposheader) AS minimo, MAX(a.numposheader) AS maximo FROM pedido a WHERE a.idtienda = " + idTienda +" AND a.fechapedido  BETWEEN DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND CURDATE() AND a.numposheader > 0" ; 
 				logger.info(consulta);
 				ResultSet rs = stm.executeQuery(consulta);
 				while(rs.next()){
