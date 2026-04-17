@@ -6273,7 +6273,10 @@ public class PedidoCtrl {
 	                .existePedidoRecienteCRMBOT(lead, "I", minutos);
 
 	        System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
-
+	        // INSERTAR LOG
+	        int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
+	        System.out.println("ID LOG GENERADO: " + idLog);
+	        
 	        if (existeDuplicado) {
 	            System.out.println("🚫 Se detecta duplicado, se detiene flujo");
 	            return respuesta;
@@ -6281,9 +6284,7 @@ public class PedidoCtrl {
 
 	        System.out.println("✅ Pasa validación de duplicado");
 
-	        // INSERTAR LOG
-	        int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
-	        System.out.println("ID LOG GENERADO: " + idLog);
+	        
 
 	        // Validar que insertó bien
 	        if (idLog == 0) {
