@@ -167,6 +167,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import utilidadesCC.ControladorEnvioCorreo;
 import com.google.gson.JsonArray;
+
+
 public class PedidoCtrl {
 
 	boolean cobroVariosDomicilios = false;
@@ -6840,6 +6842,66 @@ public class PedidoCtrl {
 		return(respuesta);
 	}
 	
+	public void procesarEventoRappi(String json) {
+
+	    try {
+	    	
+	    	org.json.JSONObject obj = new org.json.JSONObject(json);
+
+	        // 🔹 Validaciones básicas
+	        if (!obj.has("event") || !obj.has("order_id")) {
+	            System.out.println("JSON inválido: falta event u order_id");
+	            return;
+	        }
+
+	        String event = obj.getString("event");
+	        String orderId = obj.getString("order_id");
+	        String storeId = obj.optString("store_id", "");
+	        String eventTime = obj.optString("event_time", "");
+
+	        System.out.println("Evento recibido: " + event + " | Orden: " + orderId);
+
+	        // CONTROL CENTRAL DE EVENTOS
+	        switch (event) {
+
+	            case "taken_visible_order":
+	               // manejarPedidoTomado(orderId, storeId, obj);
+	                break;
+
+	            case "ready_for_pick_up":
+	                //manejarListoParaRecoger(orderId);
+	                break;
+
+	            case "domiciliary_in_store":
+	                //manejarDomiciliarioEnTienda(orderId);
+	                break;
+
+	            case "hand_to_domiciliary":
+	               // manejarEntregadoADomiciliario(orderId);
+	                break;
+
+	            case "arrive":
+	                //manejarPedidoEnDestino(orderId);
+	                break;
+
+	            case "close_order":
+	                //manejarPedidoCerrado(orderId);
+	                break;
+
+	            case "replace_storekeeper":
+	                //manejarCambioDomiciliario(orderId, obj);
+	                break;
+
+	            default:
+	                System.out.println("Evento no manejado: " + event);
+	                break;
+	        }
+
+	    } catch (Exception e) {
+	        System.out.println("Error procesando JSON Rappi: " + e.getMessage());
+	    }
+	}
+	
 	public String insertarPedidoDIDI(String datos, String authHeader) throws IOException
 	{
 		String respuesta = "";
@@ -9364,8 +9426,14 @@ public class PedidoCtrl {
 		//PedidoCtrl.procesarFACBOTCRM("{\"id\":20617795,\"name\":\"Pizza Americana Manrique Piloto - Order #744528864 confirmed\",\"price\":34,\"responsible_user_id\":7785881,\"group_id\":0,\"status_id\":59471960,\"pipeline_id\":5421266,\"loss_reason_id\":null,\"created_by\":0,\"updated_by\":0,\"created_at\":1692742678,\"updated_at\":1694608827,\"closed_at\":null,\"closest_task_at\":null,\"is_deleted\":false,\"custom_fields_values\":[{\"field_id\":491608,\"field_name\":\"Tienda web:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana Manrique Piloto\"}]},{\"field_id\":491706,\"field_name\":\"Tipo:\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"DELIVERY\"}]},{\"field_id\":492800,\"field_name\":\"Metodo de Pago\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"CASH\"}]},{\"field_id\":849448,\"field_name\":\"Llego\",\"field_code\":null,\"field_type\":\"multiselect\",\"values\":[{\"value\":\"Si\",\"enum_id\":537026,\"enum_code\":null}]},{\"field_id\":849440,\"field_name\":\"Conforme con producto\",\"field_code\":null,\"field_type\":\"numeric\",\"values\":[{\"value\":\"0\"}]},{\"field_id\":863599,\"field_name\":\"# Factura de venta\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"192993\"}]},{\"field_id\":863607,\"field_name\":\"# Tipo de cliente FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Empresa\"}]},{\"field_id\":863601,\"field_name\":\"# NIT o CC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"901290745\"}]},{\"field_id\":863603,\"field_name\":\"# Nombre empresa o cliente\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"Pizza Americana SAS\"}]},{\"field_id\":863609,\"field_name\":\"# Correo electrónico FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"jubote1@gmail.com\"}]},{\"field_id\":863605,\"field_name\":\"# Teléfono FAC\",\"field_code\":null,\"field_type\":\"text\",\"values\":[{\"value\":\"3148807773\"}]},{\"field_id\":863701,\"field_name\":\"# Documento FAC\",\"field_code\":null,\"field_type\":\"file\",\"values\":[{\"value\":{\"file_uuid\":\"044ffe1f-dd92-46d0-b866-f0c52b51d804\",\"version_uuid\":\"9afb3f07-7eb7-4510-aab3-aecbb1dc5c6e\",\"file_name\":\"_SOLICITUD PIEZAS GRÁFICAS junio 2023.pdf\",\"file_size\":529070,\"is_deleted\":false}}]}],\"score\":null,\"account_id\":29918165,\"labor_cost\":null,\"_links\":{\"self\":{\"href\":\"https://pizzaamericana.kommo.com/api/v4/leads/20617795?page=1&limit=250\"}},\"_embedded\":{\"tags\":[{\"id\":6000,\"name\":\"VENTA ONLINE\",\"color\":null}],\"companies\":[]}}", "20617795", 0);
 		//int idOrdenRappi = (int)(Math.random()*10000 + 1);
 		PedidoCtrl pedidoCtrl = new PedidoCtrl();
-		
-		pedidoCtrl.insertarPedidoCRMBOT("","");
+		try {
+			
+			System.out.print(pedidoCtrl.validarPedidoEncuesta(23,1));
+		   
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		//pedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":0.0,\"description\":\"T - 20% OFF SF PRIME - Rests ($9900 MOV)\",\"title\":\"T - 20% OFF SF PRIME - Rests ($9900 MOV)\",\"product_id\":null,\"type\":\"service_fee\",\"raw_value\":20,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"amount_by_rappi\":0.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+ idOrdenRappi +"\",\"cooking_time\":15,\"delivery_operation_type\":\"regular\",\"min_cooking_time\":15,\"max_cooking_time\":15,\"created_at\":\"2026-02-04 19:42:45\",\"delivery_method\":\"pickup\",\"payment_method\":\"cc\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"80 \",\"complete_main_street_number\":\"48 \",\"main_street_number_letter\":\"\",\"complementary_street_quadrant\":null,\"city\":\"Medellín\",\"meter\":\"68\",\"complete_address\":\"Calle 48 # 80 68 Detalles adicionales opcional Apto 302 Nombre de edificio o lugar opcional Edificio Calima\",\"complementary_street_prefix\":null,\"complete_main_street\":\"Calle 48 \",\"main_street_type\":\"Calle\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"80 68 \",\"complementary_street_number\":\"80\",\"complementary_street_prefix_letter\":null,\"neighborhood\":null,\"complement\":\"Detalles adicionales opcional Apto 302 Nombre de edificio o lugar opcional Edificio Calima\",\"postal_code\":\"050035\",\"main_street_quadrant\":null},\"totals\":{\"total_products\":31000.0,\"total_discounts\":0.0,\"total_products_with_discount\":31000,\"total_products_without_discount\":31000,\"total_other_discounts\":0,\"total_order\":31000,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":0},\"other_totals\":{\"total_rappi_credits\":10470,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":31000,\"toppingId\":null,\"categoryDescription\":null,\"sku\":\"2135092189\",\"id\":\"2097865173\",\"name\":\"Pizza Pepperoni Y Queso Pequeña\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":31000,\"unit_price_without_discount\":31000,\"percentage_discount\":0,\"quantity\":1,\"toppingCategoryId\":null,\"subitems\":[{\"price\":0,\"toppingId\":\"15148553\",\"categoryDescription\":\"Elige tu bebida\",\"sku\":\"1000000007\",\"id\":\"36092333\",\"name\":\"Sin bebida\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"toppingCategoryId\":\"15148553\",\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":null,\"store\":{\"internal_id\":\"900171989\",\"external_id\":\"900171989\",\"name\":\"Pizza Americana Calasanz\"}}", "");
 //		idOrdenRappi = (int)(Math.random()*10000 + 1);
 //		PedidoCtrl.insertarPedidoRAPPI("{\"order_detail\":{\"discounts\":[{\"value\":4500.0,\"description\":\"Aprovecha envío GRATIS cerca a ti\",\"title\":\"DESCUENTOS CERCANOS\",\"product_id\":null,\"type\":\"free_shipping\",\"raw_value\":100,\"value_type\":\"percentage\",\"max_value\":171000.0,\"includes_toppings\":false,\"percentage_by_rappi\":100.0,\"percentage_by_partners\":0.0,\"\":4500.0,\"amount_by_partner\":0.0,\"discount_product_units\":0,\"discount_product_unit_value\":null,\"sku\":null}],\"order_id\":\""+idOrdenRappi+"\",\"cooking_time\":20,\"min_cooking_time\":14,\"max_cooking_time\":26,\"created_at\":\"2023-08-22 16:18:11\",\"delivery_method\":\"marketplace\",\"payment_method\":\"nequi\",\"billing_information\":null,\"delivery_information\":{\"complementary_street_without_meter\":\"43 A \",\"complete_main_street_number\":\"48 C SUR\",\"main_street_number_letter\":\"C\",\"complementary_street_quadrant\":null,\"city\":\"Envigado\",\"meter\":\"50\",\"complete_address\":\"CL 48 C SUR # 43 A 50\",\"complementary_street_prefix\":null,\"complete_main_street\":\"CL 48 C SUR\",\"main_street_type\":\"CL\",\"main_street_number_or_name\":\"48\",\"complementary_street_letter\":\"A\",\"main_street_prefix_letter\":null,\"main_street_prefix\":null,\"complete_complementary_street\":\"43 A 50\",\"complementary_street_number\":\"43\",\"complementary_street_prefix_letter\":null,\"neighborhood\":\"Primavera\",\"complement\":\"casa 170 cuidadela real\",\"postal_code\":\"055422\",\"main_street_quadrant\":\"SUR\"},\"totals\":{\"total_products\":46000.0,\"total_discounts\":4500.0,\"total_products_with_discount\":46000,\"total_products_without_discount\":46000,\"total_other_discounts\":0,\"total_order\":50500,\"total_to_pay\":0,\"discount_by_support\":0.0,\"total_discount_by_partner\":0.0,\"charges\":{\"shipping\":4500},\"other_totals\":{\"total_rappi_credits\":0,\"total_rappi_pay\":0,\"tip\":0}},\"items\":[{\"price\":46000,\"sku\":\"2135092234\",\"id\":\"2095543663\",\"name\":\"Pizza Hawaiana Extra Grande\",\"type\":\"product\",\"comments\":null,\"unit_price_with_discount\":46000,\"unit_price_without_discount\":46000,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[{\"price\":3500,\"sku\":\"2135092232\",\"id\":\"21584967\",\"name\":\"Colombiana 1.5 l\",\"type\":\"topping\",\"comments\":null,\"unit_price_with_discount\":0,\"unit_price_without_discount\":0,\"percentage_discount\":0,\"quantity\":1,\"subitems\":[]}]}],\"delivery_discount\":{\"total_percentage_discount\":0.0,\"total_value_discount\":0.0}},\"customer\":{\"first_name\":\"Pablo\",\"last_name\":\"Hernández \",\"phone_number\":\"3238060575\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"1020404113\"},\"store\":{\"internal_id\":\"900171988\",\"external_id\":\"900171988\",\"name\":\"Pizza Americana Envigado  (Solo maleta grande)\"}}", "");
