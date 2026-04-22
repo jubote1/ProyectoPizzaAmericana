@@ -13213,5 +13213,48 @@ public class PedidoCtrl {
                         + response.statusCode()
                         + " -> " + response.body());
     }
+    
+    
+    /**
+     * Método que se encarga de enviar la notificación a RAPPI de que el pedido ya está listo para ser recogido por el RAPPITENDERO
+     * @param idOrdenComercio
+     * @return
+     * @throws IOException
+     */
+    public String marcarListoPedidoIntegracionRAPPI(long idOrdenComercio) throws IOException
+	{
+		JSONObject respJSON = new JSONObject();
+		boolean respuesta = false;
+		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
+		String strBody = "";
+		OkHttpClient client = new OkHttpClient();
+		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
+		RequestBody body = RequestBody.create(mediaType, strBody );
+		Request request = new Request.Builder()
+		  .url("https://services.rappi.com/api/v2/restaurants-integrations-public-api/orders/"+ idOrdenComercio +"/ready-for-pickup")
+		  .post(body)
+		  .addHeader("x-authorization", "bearer " + intCRM.getAccessToken())
+		  .build();
+		try
+		{
+			okhttp3.Response response = client.newCall(request).execute();
+			String respuestaJSON = response.body().string();
+			System.out.println("1 " + response.toString());
+			//Realizamos el procesamiento del JSON
+			if(response.code() == 200)
+			{
+				//A futuro podremos agregar una lógica aqui
+				respJSON.put("respuesta", "OK");
+			}else
+			{
+				respJSON.put("respuesta", "NOK");
+			}
+		}catch(Exception e)
+		{
+			System.out.println(e.toString());
+			respJSON.put("respuesta", "NOK");
+		}
+		return(respJSON.toJSONString());
+	}
 	
 }
