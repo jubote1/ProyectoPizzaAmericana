@@ -9858,7 +9858,16 @@ public class PedidoCtrl {
 			String formPago = (String)jsonOrder.get("payment_method");
 			//Realizamos la homologación de la formad de pago
 			ParametrosCtrl parCtrl = new ParametrosCtrl();
-			int idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPago);
+			//Colocamos control de la forma de pago cuando el pedido es full service se tiene una lógica diferente
+			int idFormaPago;
+			if(marketPlace.equals(new String("S")))
+			{
+				idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPago);
+			}else
+			{
+				idFormaPago = 3;
+			}
+			
 			if(idFormaPago == 0)
 			{
 				idFormaPago = 3;
