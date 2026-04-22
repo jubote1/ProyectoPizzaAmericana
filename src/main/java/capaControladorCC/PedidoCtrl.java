@@ -6784,13 +6784,13 @@ public class PedidoCtrl {
 		return(respuesta);
 	}
 	
+
 	public void procesarEventoRappi(String json) {
 
 	    try {
-	    	
-	    	org.json.JSONObject obj = new org.json.JSONObject(json);
 
-	        // 🔹 Validaciones básicas
+	        org.json.JSONObject obj = new org.json.JSONObject(json);
+
 	        if (!obj.has("event") || !obj.has("order_id")) {
 	            System.out.println("JSON inválido: falta event u order_id");
 	            return;
@@ -6798,44 +6798,117 @@ public class PedidoCtrl {
 
 	        String event = obj.getString("event");
 	        String orderId = obj.getString("order_id");
-	        String storeId = obj.optString("store_id", "");
-	        String eventTime = obj.optString("event_time", "");
+
+	        BigInteger idOrdenComercio = new BigInteger(orderId);
 
 	        System.out.println("Evento recibido: " + event + " | Orden: " + orderId);
 
-	        // CONTROL CENTRAL DE EVENTOS
 	        switch (event) {
 
-	            case "taken_visible_order":
-	               // manejarPedidoTomado(orderId, storeId, obj);
-	                break;
-
-	            case "ready_for_pick_up":
-	                //manejarListoParaRecoger(orderId);
-	                break;
-
-	            case "domiciliary_in_store":
-	                //manejarDomiciliarioEnTienda(orderId);
-	                break;
-
 	            case "hand_to_domiciliary":
-	               // manejarEntregadoADomiciliario(orderId);
-	                break;
 
-	            case "arrive":
-	                //manejarPedidoEnDestino(orderId);
+	                Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
+
+	                if (pedEvento != null) {
+
+	                    String respuesta = "";
+	                    HttpClient client = HttpClientBuilder.create().build();
+
+	                    Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
+
+	                    if (tienda != null) {
+
+	                        String rutaURL = tienda.getUrl() 
+	                            + "DarSalidaDomicilioPlataforma?idpedido=" 
+	                            + pedEvento.getNumposheader() 
+	                            + "&idusuario=180&usuario=Caja";
+
+	                        HttpGet request = new HttpGet(rutaURL);
+
+	                        try {
+	                            StringBuilder retorno = new StringBuilder();
+
+	                            HttpResponse response = client.execute(request);
+	                            BufferedReader rd = new BufferedReader(
+	                                new InputStreamReader(response.getEntity().getContent())
+	                            );
+
+	                            String line;
+	                            while ((line = rd.readLine()) != null) {
+	                                retorno.append(line);
+	                            }
+
+	                            respuesta = retorno.toString();
+
+	                            // 🔹 Marcar entregado al domiciliario
+	                            PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
+
+	                        } catch (Exception e) {
+	                            System.out.println(e.toString());
+	                        }
+	                    }
+
+	                    if (respuesta.equals("")) {
+	                        System.out.println("Error servicio tienda (hand_to_domiciliary)");
+	                    }
+	                }
+
 	                break;
 
 	            case "close_order":
-	                //manejarPedidoCerrado(orderId);
-	                break;
 
-	            case "replace_storekeeper":
-	                //manejarCambioDomiciliario(orderId, obj);
+	                Pedido pedEvento2 = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
+
+	                if (pedEvento2 != null) {
+
+	                    String respuesta = "";
+	                    HttpClient client = HttpClientBuilder.create().build();
+
+	                    Tienda tienda = TiendaDAO.obtenerTienda(pedEvento2.getTienda().getIdTienda());
+
+	                    if (tienda != null) {
+
+	                        String rutaURL = tienda.getUrl() 
+	                            + "DarEntregaDomicilio?idpedidotienda=" 
+	                            + pedEvento2.getNumposheader() 
+	                            + "&claveusuario=2&idtienda=" 
+	                            + tienda.getIdTienda() 
+	                            + "&observacion=PedidoEntregadoPorRappi";
+
+	                        HttpGet request = new HttpGet(rutaURL);
+
+	                        try {
+	                            StringBuilder retorno = new StringBuilder();
+
+	                            HttpResponse response = client.execute(request);
+	                            BufferedReader rd = new BufferedReader(
+	                                new InputStreamReader(response.getEntity().getContent())
+	                            );
+
+	                            String line;
+	                            while ((line = rd.readLine()) != null) {
+	                                retorno.append(line);
+	                            }
+
+	                            respuesta = retorno.toString();
+
+	                            // 🔹 Marcar entregado en sistema
+	                            PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
+
+	                        } catch (Exception e) {
+	                            System.out.println(e.toString());
+	                        }
+	                    }
+
+	                    if (respuesta.equals("")) {
+	                        System.out.println("Error servicio tienda (close_order)");
+	                    }
+	                }
+
 	                break;
 
 	            default:
-	                System.out.println("Evento no manejado: " + event);
+	                System.out.println("Evento: " + event + " - No se maneja");
 	                break;
 	        }
 
