@@ -33,6 +33,7 @@ public class EncuestaCtrl {
 	private static final SecureRandom random = new SecureRandom();
 
 	public EncuestaCtrl() {
+		
 	}
 
 	public String obtenerEncuestaLaboral(int idEncuesta, String documento) {
@@ -193,35 +194,41 @@ public class EncuestaCtrl {
 	    try {
 
 	        // ===== PROBABILIDAD DE GANAR =====
-	        int probabilidadGanar = ParametrosDAO.retornarValorNumerico("PROBABILIDADGANAR");// 3% ≈ 1 ganador cada 33
+	        int probabilidadGanar = ParametrosDAO.retornarValorNumerico("PROBABILIDADGANAR");// %
 
 	        boolean gana = random.nextInt(100) < probabilidadGanar;
 
-	        List<JSONObject> opcionesFiltradas = new ArrayList<>();
+	        List<JSONObject> premios = new ArrayList<>();
+	        List<JSONObject> sinPremio = new ArrayList<>();
 
-	        // ===== FILTRAR OPCIONES SEGÚN RESULTADO =====
 	        for (JSONObject opcion : opcionesRuleta) {
 
 	            int premioVal = opcion.get("premio") != null
 	                    ? Integer.parseInt(opcion.get("premio").toString())
 	                    : 0;
 
-	            if (gana && premioVal != 0) {
-	                opcionesFiltradas.add(opcion);
-	            } 
-	            else if (!gana && premioVal == 0) {
-	                opcionesFiltradas.add(opcion);
+	            if (premioVal != 0) {
+	                premios.add(opcion);
+	            } else {
+	                sinPremio.add(opcion);
 	            }
 	        }
+	        
+	        List<JSONObject> poolFinal;
 
-	        // Seguridad
-	        if (opcionesFiltradas.isEmpty()) {
+	        if (gana && !premios.isEmpty()) {
+	            poolFinal = premios;
+	        } else {
+	            poolFinal = sinPremio;
+	        }
+	        
+	        if (poolFinal == null || poolFinal.isEmpty()) {
 	            throw new RuntimeException("No hay opciones válidas para el resultado de la ruleta");
 	        }
 
-	        // ===== SELECCIÓN ALEATORIA =====
-	        int indiceSeleccionado = random.nextInt(opcionesFiltradas.size());
-	        JSONObject opcionSeleccionada = opcionesFiltradas.get(indiceSeleccionado);
+	        int indiceSeleccionado = random.nextInt(poolFinal.size());
+	        JSONObject opcionSeleccionada = poolFinal.get(indiceSeleccionado);
+
 
 	        int idOpcion = opcionSeleccionada.get("idopcion") != null
 	                ? Integer.parseInt(opcionSeleccionada.get("idopcion").toString())
@@ -282,6 +289,13 @@ public class EncuestaCtrl {
 	        return respuesta.toJSONString();
 	    }
 	}
+	
+	
+	public static void main(String args[])
+	{
+		System.out.println(resultadoRuleta(null));
+	}
+	
 
 	
 
