@@ -9828,13 +9828,18 @@ public class PedidoCtrl {
 				customerJSON = (String)jsonGeneral.get("customer").toString();
 			}catch(Exception e)
 			{
-				customerJSON ="{\"first_name\":\"SIN NOMBRE\",\"last_name\":\"SIN APELLIDO\",\"phone_number\":\"3225556677\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"999999\"}";
+				customerJSON ="{\"first_name\":\"CLIENTE RAPPI\",\"last_name\":\"-\",\"phone_number\":\"3225556677\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"999999\"}";
 			}
 			String storeJSON = (String)jsonGeneral.get("store").toString();
 			Object objParserOrderDetail = parser.parse(orderDetailJSON);
 			JSONObject jsonOrder = (JSONObject) objParserOrderDetail;
 			//Comenzamos a extraer la informacion que allí viene
 			idOrdenComercio = Long.parseLong((String)jsonOrder.get("order_id"));
+			String identificadorPedido = Long.toString(idOrdenComercio);
+			if(identificadorPedido.length() >= 4)
+			{
+				identificadorPedido = identificadorPedido.substring(identificadorPedido.length()-4);
+			}
 			//Incluiremos validación para que no cree pedidos dobles
 			boolean yaExisteOrden = PedidoDAO.consultarExistenciaOrdenRappi(idOrdenComercio);
 			if(yaExisteOrden)
@@ -9969,6 +9974,10 @@ public class PedidoCtrl {
 			{
 				dirRes = "";
 			}
+			if(dirRes.equals(new String("")))
+			{
+				dirRes = identificadorPedido;
+			}
 			//Trabajamos sobre la ciudad
 			try
 			{
@@ -10080,7 +10089,7 @@ public class PedidoCtrl {
 			String apellidos;
 			try {
 				String filtroEmoticones = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]";
-				apellidos = (String)jsonCustomer.get("last_name");
+				apellidos = (String)jsonCustomer.get("last_name")+identificadorPedido;
 				apellidos = apellidos.replaceAll("'", " ");
 				apellidos = apellidos.replaceAll(filtroEmoticones,"");
 			}catch(Exception enombre)
@@ -10143,10 +10152,13 @@ public class PedidoCtrl {
 			int idExcepcion = 0;
 			//Insertamos el encabezado del pedido
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal, "RAPPI",idOrdenComercio, 1, "RAP", "RAPPI");
-			int idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio plataforma");
-			double valorDomicilio = ProductoDAO.retornarProducto(idProductoDomicilio).getPreciogeneral();
-			DetallePedido detPedidoDomi = new DetallePedido(idProductoDomicilio,idPedido,1,0,0,valorDomicilio,valorDomicilio*1, "" , "" /*observacion*/, 0, 0, "", "");
-			PedidoDAO.InsertarDetallePedido(detPedidoDomi);
+			if(marketPlace.equals(new String("S")))
+			{
+				int idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio plataforma");
+				double valorDomicilio = ProductoDAO.retornarProducto(idProductoDomicilio).getPreciogeneral();
+				DetallePedido detPedidoDomi = new DetallePedido(idProductoDomicilio,idPedido,1,0,0,valorDomicilio,valorDomicilio*1, "" , "" /*observacion*/, 0, 0, "", "");
+				PedidoDAO.InsertarDetallePedido(detPedidoDomi);
+			}
 			//Ingresamos los valores de propina y tarifa de servicio
 			int idProductoTarifaServicio = 0;
 			if(tarifaServicio > 0)
@@ -13203,7 +13215,7 @@ public class PedidoCtrl {
 		boolean estaEnRango = false;
 		var rangos = PedidoDAO.obtenerRangoPedidosTienda(idTienda);
 		long inicio = rangos.getKey();
-		long numFinal = rangos.getValue();
+		long numFinal = rangos.getValue() + 100;
 		//boolean yaExisteEncuesta = EmpleadoEncuestaDAO.validarExisteEncuestaPedido(idPedido, idTienda);
 		//if(idPedido >= inicio & idPedido <= numFinal & !yaExisteEncuesta)
 		if(idPedido >= inicio & idPedido <= numFinal)
