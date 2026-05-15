@@ -3395,7 +3395,7 @@ public class PedidoCtrl {
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes MD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes GD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes XL", "Elige hasta 3 ingredientes");
-				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Elige uno o dos sabor de tu pizza")  || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2"))
+				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Elige uno o dos sabor de tu pizza")  || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2") || keyDetPedido.contains("Quieres el balon edicion limitada?"))
 				{
 
 					keyDetPedido = keyDetPedido + " " + valueDetPedido;
@@ -3479,7 +3479,7 @@ public class PedidoCtrl {
 						{
 							idSaborTipoLiquido = parCtrl.homologarLiquidoTiendaVirtual(keyDetPedido + " " + tamanoPizza);
 						}
-					}else if(keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Producto Adicional"))
+					}else if(keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Quieres el balon edicion limitada?"))
 					{
 						idProductoCond = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						/*
