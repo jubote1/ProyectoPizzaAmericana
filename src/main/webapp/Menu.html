@@ -1,5 +1,6 @@
 
 <link rel="stylesheet" href="css/nav.css" crossorigin="anonymous">
+<link href="css/all.min.css" rel="stylesheet" type="text/css" />
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="menuprincipal">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" href="Pedidos.html" style="gap: 10px;">
@@ -81,4 +82,25 @@
 </div>
   </div>
 </nav>
+
+<script>
+  if (!window.notificacionesCentralCssCargado) {
+      window.notificacionesCentralCssCargado = true;
+
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'css/notificaciones.css?v=7';
+      document.head.appendChild(link);
+  }
+
+  if (!window.notificacionesCentralScriptCargado) {
+      window.notificacionesCentralScriptCargado = true;
+
+      var script = document.createElement('script');
+      script.src = 'js/notificaciones.js?v=7';
+      document.body.appendChild(script);
+  }
+</script>
+
+
 		

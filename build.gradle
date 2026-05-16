@@ -85,6 +85,7 @@ dependencies {
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 	implementation 'io.jsonwebtoken:jjwt:0.12.6'
 	implementation 'org.springframework.security:spring-security-core:5.8.1'
+    providedCompile 'javax.websocket:javax.websocket-api:1.1'
 	
 
 
@@ -97,7 +98,8 @@ dependencies {
     def tomcatVersion = '9.0.1'
     tomcat "org.apache.tomcat.embed:tomcat-embed-core:${tomcatVersion}",
            "org.apache.tomcat.embed:tomcat-embed-logging-juli:9.0.0.M6",
-           "org.apache.tomcat.embed:tomcat-embed-jasper:${tomcatVersion}"
+           "org.apache.tomcat.embed:tomcat-embed-jasper:${tomcatVersion}",
+             "org.apache.tomcat.embed:tomcat-embed-websocket:${tomcatVersion}"
 }
 
 tomcat {
