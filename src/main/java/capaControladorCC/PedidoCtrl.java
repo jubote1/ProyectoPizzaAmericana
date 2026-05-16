@@ -9885,7 +9885,14 @@ public class PedidoCtrl {
 			{
 				try
 				{
-					tarifaServicio = ((Long)jsonCharges.get("service_fee")).doubleValue();
+					if(marketPlace.equals("S"))
+					{
+						tarifaServicio = ((Long)jsonCharges.get("service_fee")).doubleValue();
+					}else
+					{
+						tarifaServicio = 0;
+					}
+					
 				}catch(Exception e1)
 				{
 					tarifaServicio = 0;
@@ -9899,7 +9906,14 @@ public class PedidoCtrl {
 			{
 				try
 				{
-					propina = ((Long)jsonOtherTotals.get("tip")).doubleValue();
+					if(marketPlace.equals("S"))
+					{
+						propina = ((Long)jsonOtherTotals.get("tip")).doubleValue();
+					}else
+					{
+						propina = 0;
+					}
+					
 				}catch(Exception e1)
 				{
 					propina = 0;
@@ -10370,16 +10384,27 @@ public class PedidoCtrl {
 					
 				}else
 				{
-					descuentoPedido = descuentoPedido + desTemp;
-					descuentoPropio = descuentoPropio  +  (desTemp*porcentajePropio)/100;
-					descuentoPlataforma = descuentoPlataforma  +  (desTemp*porcentajeRappi)/100;
+					if(marketPlace.equals(new String("S")))
+					{
+						descuentoPedido = descuentoPedido + desTemp;
+						descuentoPropio = descuentoPropio  +  (desTemp*porcentajePropio)/100;
+						descuentoPlataforma = descuentoPlataforma  +  (desTemp*porcentajeRappi)/100;
+					}
+					else
+					{
+						descuentoPedido = descuentoPedido + (desTemp*porcentajePropio)/100;
+						descuentoPropio = descuentoPropio  +  (desTemp*porcentajePropio)/100;
+					}
 				}
 			}
 			//Hacemos validación de rappiCreditos con los descuentos
 			if(rappiCreditos > 0)
 			{
-				descuentoPlataforma = descuentoPlataforma + rappiCreditos;
-				descuentoPedido = descuentoPedido + rappiCreditos;
+				if(marketPlace.equals(new String("S")))
+				{
+					descuentoPlataforma = descuentoPlataforma + rappiCreditos;
+					descuentoPedido = descuentoPedido + rappiCreditos;
+				}	
 			}
 			//Debemos insertar la marcación del pedido RAPPI
 			MarcacionPedido marPedido = new MarcacionPedido(idPedido, 2, Long.toString(idOrdenComercio), descuentoPropio, motivoDescuento, marketPlace, descuentoAsumido, descuentoPlataforma,tarifaServicio,propina,log);
