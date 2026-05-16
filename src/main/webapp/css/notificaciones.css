@@ -1,0 +1,149 @@
+.notificaciones-boton {
+    color: #ffffff;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    text-decoration: none;
+}
+
+.notificaciones-boton:hover {
+    color: #ffffff;
+    background: rgba(255,255,255,0.14);
+    text-decoration: none;
+}
+
+.notificaciones-boton i {
+    font-size: 20px;
+}
+
+.notificaciones-contador {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px #343a40;
+}
+
+.notificaciones-panel {
+    width: 390px;
+    max-height: 460px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.28);
+    padding: 0;
+}
+
+.notificaciones-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    font-weight: 700;
+    color: #2f343a;
+}
+
+.notificaciones-header small {
+    color: #868e96;
+    font-weight: 600;
+}
+
+.notificaciones-lista {
+    max-height: 405px;
+    overflow-y: auto;
+    background: #ffffff;
+}
+
+.notificacion-item {
+    display: block;
+    padding: 12px 14px;
+    white-space: normal;
+    text-decoration: none;
+    border-bottom: 2px solid #f1f3f5;
+}
+
+.notificacion-item:hover {
+    text-decoration: none;
+    background: #f3f6f8;
+}
+
+.notificacion-nueva.notificacion-origen-didi {
+    background: #ffffff;
+    border-left: 5px solid #d9a600;
+    color: #2f2f2f;
+}
+
+.notificacion-leida.notificacion-origen-didi {
+    background: #f6f7f8;
+    border-left: 5px solid #d8c66b;
+    color: #6c6752;
+}
+
+.notificacion-nueva.notificacion-origen-rappi {
+    background: #ffffff;
+    border-left: 5px solid #dc6a32;
+    color: #2f2f2f;
+}
+
+.notificacion-leida.notificacion-origen-rappi {
+    background: #f6f7f8;
+    border-left: 5px solid #d79a64;
+    color: #6f5c4d;
+}
+
+.notificacion-nueva.notificacion-origen-default {
+    background: #ffffff;
+    border-left: 5px solid #202875;
+    color: #2f2f2f;
+}
+
+.notificacion-leida.notificacion-origen-default {
+    background: #f6f7f8;
+    border-left: 5px solid #98a0c9;
+    color: #6c757d;
+}
+
+.notificacion-titulo {
+    font-weight: 800;
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+.notificacion-mensaje {
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.notificaciones-vacio {
+    padding: 18px;
+    color: #868e96;
+    text-align: center;
+}
+
+.notificacion-linea-superior {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.notificacion-hora {
+    font-size: 12px;
+    color: #8a8f98;
+    flex-shrink: 0;
+}
+

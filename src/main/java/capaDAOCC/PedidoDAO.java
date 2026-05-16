@@ -33,6 +33,7 @@ import capaModeloCC.InsertarPedidoPixel;
 import capaModeloCC.MarcacionPedido;
 import capaModeloCC.ModificadorDetallePedido;
 import capaModeloCC.NomenclaturaDireccion;
+import capaModeloCC.Notificaciones;
 import capaModeloCC.Pedido;
 import capaModeloCC.PedidoCanceladoPlataforma;
 import capaModeloCC.PedidoInfoAdicional;
@@ -6059,4 +6060,130 @@ public class PedidoDAO {
 			}
 			return(idCliente);
 		}
+		
+		
+		public static int insertarNotificacion(Notificaciones notificacion) {
+
+		    Logger logger = Logger.getLogger("log_file");  
+		    int idInsertado = 0;
+
+		    ConexionBaseDatos con = new ConexionBaseDatos();
+		    Connection con1 = con.obtenerConexionBDPrincipal();
+
+		    try {
+
+		        String sql = "INSERT INTO notificaciones (mensaje, origen, idpedido, notificado) VALUES (?, ?, ?, 'N')";
+
+		        PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+
+		        ps.setString(1, notificacion.getMensaje());
+		        ps.setString(2, notificacion.getOrigen()); 
+		        ps.setInt(3, notificacion.getIdpedido());
+
+		        logger.info("Insertando notificación: " + notificacion.getMensaje() + " | " + notificacion.getOrigen());
+
+		        ps.executeUpdate();
+
+		        ResultSet rs = ps.getGeneratedKeys();
+		        if (rs.next()) {
+		            idInsertado = rs.getInt(1);
+		            logger.info("ID notificación insertada: " + idInsertado);
+		        }
+
+		        ps.close();
+		        con1.close();
+
+		    } catch (Exception e) {
+
+		        logger.error("Error insertando notificación: " + e.toString());
+
+		        try {
+		            con1.close();
+		        } catch (Exception e1) {}
+
+		        return 0;
+		    }
+
+		    return idInsertado;
+		}
+		
+		public static List<Notificaciones> listarNotificaciones() {
+
+		    Logger logger = Logger.getLogger("log_file");
+		    List<Notificaciones> lista = new ArrayList<>();
+
+		    ConexionBaseDatos con = new ConexionBaseDatos();
+		    Connection con1 = con.obtenerConexionBDPrincipal();
+
+		    try {
+
+		        String sql = "SELECT id, mensaje, origen, idpedido, notificado, fecha_hora "
+		                + "FROM notificaciones "
+		                + "WHERE fecha_hora >= CURDATE() "
+		                + "AND fecha_hora < DATE_ADD(CURDATE(), INTERVAL 1 DAY) "
+		                + "ORDER BY fecha_hora DESC";
+
+		        PreparedStatement ps = con1.prepareStatement(sql);
+		        ResultSet rs = ps.executeQuery();
+
+		        while (rs.next()) {
+		            Notificaciones n = new Notificaciones(rs.getString("mensaje"));
+		            n.setId(rs.getInt("id"));
+		            n.setOrigen(rs.getString("origen"));
+		            n.setIdpedido(rs.getInt("idpedido"));
+		            n.setNotificado(rs.getString("notificado"));
+		            n.setFechaHora(rs.getString("fecha_hora"));
+
+		            lista.add(n);
+		        }
+
+		        rs.close();
+		        ps.close();
+		        con1.close();
+
+		    } catch (Exception e) {
+		        logger.error("Error listando notificaciones: " + e.toString());
+
+		        try {
+		            con1.close();
+		        } catch (Exception e1) {}
+		    }
+
+		    return lista;
+		}
+
+		public static boolean marcarNotificacionesVistas() {
+
+		    Logger logger = Logger.getLogger("log_file");
+
+		    ConexionBaseDatos con = new ConexionBaseDatos();
+		    Connection con1 = con.obtenerConexionBDPrincipal();
+
+		    try {
+		        String sql = "UPDATE notificaciones "
+		                + "SET notificado = 'S' "
+		                + "WHERE notificado = 'N' "
+		                + "AND fecha_hora >= CURDATE() "
+		                + "AND fecha_hora < DATE_ADD(CURDATE(), INTERVAL 1 DAY)";
+
+		        PreparedStatement ps = con1.prepareStatement(sql);
+		        ps.executeUpdate();
+
+		        ps.close();
+		        con1.close();
+
+		        return true;
+
+		    } catch (Exception e) {
+		        logger.error("Error marcando notificaciones vistas: " + e.toString());
+
+		        try {
+		            con1.close();
+		        } catch (Exception e1) {}
+
+		        return false;
+		    }
+		}
+
+
 }
