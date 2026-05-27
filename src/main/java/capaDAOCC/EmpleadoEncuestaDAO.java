@@ -494,5 +494,44 @@ public class EmpleadoEncuestaDAO {
 
         return respuesta;
     }
+    
+	public static boolean existeEncuestaPedido(int idPedido) {
+
+	    Logger logger = Logger.getLogger("log_file");
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    try {
+
+	        String sql = "SELECT 1 "
+	                   + "FROM encuesta_servicio "
+	                   + "WHERE idpedido = ? "
+	                   + "LIMIT 1";
+
+	        PreparedStatement ps = con1.prepareStatement(sql);
+	        ps.setInt(1, idPedido);
+
+	        ResultSet rs = ps.executeQuery();
+
+	        boolean existe = rs.next();
+
+	        rs.close();
+	        ps.close();
+	        con1.close();
+
+	        return existe;
+
+	    } catch (Exception e) {
+
+	        logger.error("Error validando encuesta existente: " + e.toString());
+
+	        try {
+	            con1.close();
+	        } catch (Exception e1) {}
+
+	        return false;
+	    }
+	}
 
 }

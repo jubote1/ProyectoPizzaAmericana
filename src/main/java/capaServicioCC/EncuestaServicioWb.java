@@ -66,7 +66,7 @@ public class EncuestaServicioWb extends HttpServlet {
 
             if (json == null || json.trim().isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("{\"success\": false, \"message\": \"JSON vacío o inválido.\"}");
+                response.getWriter().write("{\"success\": false, \"message\": \"Respuesta inválida.\"}");
                 return;
             }
 

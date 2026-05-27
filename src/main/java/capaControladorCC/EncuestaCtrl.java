@@ -153,31 +153,53 @@ public class EncuestaCtrl {
 	}
 
 	public String insertarEncuestaServicioWb(EncuestaServicio encuesta) {
-		boolean success = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
-		JSONObject respuesta = new JSONObject();
 
-		if (success) {
-			
-			List<JSONObject> listaOpcionesPublica = new ArrayList<>();
-			List<JSONObject> listaOpcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
-			for (JSONObject opcion : listaOpcionesRuleta) {
-			    JSONObject publica = new JSONObject();
-			    publica.put("index", opcion.get("indice"));
-			    publica.put("title", opcion.get("titulo"));
-			    publica.put("iterations", opcion.get("repeticiones"));
-					    
-			    listaOpcionesPublica.add(publica);
-			}
+	    boolean success = EmpleadoEncuestaDAO.existeEncuestaPedido(encuesta.getIdpedido());
 
-			respuesta.put("roulette_options", listaOpcionesPublica);	
-			
-			EmpleadoEncuestaDAO.insertarClienteServicio(encuesta);
-			
-		}
+	    JSONObject respuesta = new JSONObject();
 
-		respuesta.put("success", success);
-		respuesta.put("message", success ? "Encuesta insertada correctamente" : "Error al insertar la encuesta");
-		return respuesta.toJSONString();
+	    if (success) {
+
+	        respuesta.put("success", false);
+	        respuesta.put("message", "Ya no es posible realizar esta acción nuevamente.");
+
+	        return respuesta.toJSONString();
+	    }
+
+	    success = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
+
+	    if (success) {
+
+	        List<JSONObject> listaOpcionesPublica = new ArrayList<>();
+
+	        List<JSONObject> listaOpcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
+
+	        for (JSONObject opcion : listaOpcionesRuleta) {
+
+	            JSONObject publica = new JSONObject();
+
+	            publica.put("index", opcion.get("indice"));
+	            publica.put("title", opcion.get("titulo"));
+	            publica.put("iterations", opcion.get("repeticiones"));
+
+	            listaOpcionesPublica.add(publica);
+	        }
+
+	        respuesta.put("roulette_options", listaOpcionesPublica);
+
+	        EmpleadoEncuestaDAO.insertarClienteServicio(encuesta);
+	    }
+
+	    respuesta.put("success", success);
+
+	    respuesta.put(
+	        "message",
+	        success
+	            ? "Encuesta insertada correctamente"
+	            : "Error al insertar la encuesta"
+	    );
+
+	    return respuesta.toJSONString();
 	}
 
 	public static String resultadoRuleta(EncuestaServicio encuesta) {
@@ -260,12 +282,12 @@ public class EncuestaCtrl {
 	        if (reintento == 1) {
 	            idregistro = -1;
 	        } else {
-	            idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
+	           idregistro = RuletaDAO.registrarResultadoRuletaConToken(encuesta, idOpcion, null);
 	        }
 
 	        if (idregistro == 0) {
 	            respuesta.put("success", false);
-	            respuesta.put("message", "Error al registrar el resultado");
+	            respuesta.put("message", "La solicitud ya no puede ser procesada.");
 	            return respuesta.toJSONString();
 	        }
 
