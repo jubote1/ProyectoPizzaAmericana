@@ -112,6 +112,7 @@ import capaDAOPOS.EmpleadoTemporalDiaDAO;
 import capaModeloCC.AdicionTiendaVirtual;
 import capaModeloCC.AlertaEntregaDom;
 import capaModeloCC.Cliente;
+import capaModeloCC.CoberturaRequest;
 import capaModeloCC.ComentarioPqrs;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
@@ -174,6 +175,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import utilidadesCC.ControladorEnvioCorreo;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class PedidoCtrl {
 
@@ -6051,7 +6054,15 @@ public class PedidoCtrl {
 		}
 		//
 		UbicacionCtrl ubicaCtrl = new UbicacionCtrl();
-		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(direccion, Municipio, Barrio, tipo_cliente, lead);
+		
+		CoberturaRequest coberturaRequest = new CoberturaRequest();
+		coberturaRequest.setDireccion(direccion);
+		coberturaRequest.setBarrio(Barrio);
+		coberturaRequest.setMunicipio(Municipio);
+		coberturaRequest.setLead(lead);
+		coberturaRequest.setTipoCliente(tipo_cliente);
+		
+		Resultado resultado = ubicaCtrl.ubicarDireccionEnTienda(coberturaRequest);
 		System.out.println("3. RESULTADO DEL PROCESO " + resultado);
 		actualizarCoberturaLeadCRMBOT(lead, resultado, tipo_cliente);
 		System.out.println("6. TERMINO DEL PROCESO ");
@@ -12583,6 +12594,31 @@ public class PedidoCtrl {
 	            System.out.println("No se pudo registrar notificacion en tienda " + idtienda);
 	        }
 	    });
+	}
+	
+	public String validarCobertura(CoberturaRequest request) {
+	    Gson gson = new Gson();
+
+	    try {
+	        if (request == null || request.getDireccion().isBlank()) {
+	            Resultado resultado = new Resultado();
+	            resultado.setSuccess(false);
+	            return gson.toJson(resultado);
+	        }
+
+	        Resultado resultado = UbicacionCtrl.ubicarDireccionEnTienda(request);
+
+	        return gson.toJson(resultado);
+
+	    } catch (Exception e) {
+	        System.out.println("Error al validar cobertura: " + e.getMessage());
+
+	        Resultado resultado = new Resultado();
+	        resultado.setSuccess(false);
+	        resultado.setResultado("Error interno al validar cobertura.");
+
+	        return gson.toJson(resultado);
+	    }
 	}
 
 	
