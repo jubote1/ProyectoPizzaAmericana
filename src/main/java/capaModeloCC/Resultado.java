@@ -8,7 +8,61 @@ public class Resultado {
 	private String direccion;
 	private double latitud;
 	private double longitud;
+	private String proveedorGeocodificacion;
+	private String correccionAplicada;
+	private String municipioOriginal;
+	private String municipioCorregido;
+	private String direccionCorregida;
+	private String direccionOriginalNormalizada;
 	
+	public String getProveedorGeocodificacion() {
+		return proveedorGeocodificacion;
+	}
+
+	public void setProveedorGeocodificacion(String proveedorGeocodificacion) {
+		this.proveedorGeocodificacion = proveedorGeocodificacion;
+	}
+
+	public String getCorreccionAplicada() {
+		return correccionAplicada;
+	}
+
+	public void setCorreccionAplicada(String correccionAplicada) {
+		this.correccionAplicada = correccionAplicada;
+	}
+
+	public String getMunicipioOriginal() {
+		return municipioOriginal;
+	}
+
+	public void setMunicipioOriginal(String municipioOriginal) {
+		this.municipioOriginal = municipioOriginal;
+	}
+
+	public String getMunicipioCorregido() {
+		return municipioCorregido;
+	}
+
+	public void setMunicipioCorregido(String municipioCorregido) {
+		this.municipioCorregido = municipioCorregido;
+	}
+
+	public String getDireccionCorregida() {
+		return direccionCorregida;
+	}
+
+	public void setDireccionCorregida(String direccionCorregida) {
+		this.direccionCorregida = direccionCorregida;
+	}
+
+	public String getDireccionOriginalNormalizada() {
+		return direccionOriginalNormalizada;
+	}
+
+	public void setDireccionOriginalNormalizada(String direccionOriginalNormalizada) {
+		this.direccionOriginalNormalizada = direccionOriginalNormalizada;
+	}
+
 	public double getLatitud() {
 		return latitud;
 	}
