@@ -5896,12 +5896,6 @@ public class PedidoCtrl {
 	            System.out.println("🚫 Se detecta duplicado, se detiene flujo");
 	            return respuesta;
 	        }
-
-
-			// INSERTAR LOG
-			int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
-			System.out.println("ID LOG GENERADO: " + idLog);
-
 	       
 
 			// Obtener info del lead
@@ -6733,7 +6727,7 @@ public class PedidoCtrl {
 	 */
 	public String insertarProductoBOTCRM(int idPedido, String nombreDelCombo, String sabor1, String sabor2,
 			String adicion, String bebida, String acompanamiento, String bebida2, String detalle, int idTipoPedido,
-			String condimentos) {
+			String condimentos, String balon) {
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		// Información del domicilio
 		int idProductoDomicilio = 0;
@@ -6743,6 +6737,8 @@ public class PedidoCtrl {
 		int idSaborTipoLiquido = 0;
 		int idSaborTipoLiquido2 = 0;
 		int idProductoCondimentos = 0;
+		int idProductoBalon = 0;
+		double valorBalon = 0;
 		// Realizamos la inserción del domicilio en caso de que el tipo pedido sea
 		// domicilio
 		if (idTipoPedido == 1) {
@@ -6760,6 +6756,16 @@ public class PedidoCtrl {
 				DetallePedido detPedidoCondi = new DetallePedido(idProductoCondimentos, idPedido, 1, 0, 0, 0, 0 * 1, "",
 						"" /* observacion */, 0, 0, "", "");
 				PedidoDAO.InsertarDetallePedido(detPedidoCondi);
+			}
+		}
+		//Se realiza validacion del balon
+		if (!balon.equals(new String(""))) {
+			idProductoBalon = parCtrl.homologarProductoTiendaVirtual(balon);
+			if (idProductoBalon > 0) {
+				valorBalon = ProductoDAO.retornarProducto(idProductoBalon).getPreciogeneral();
+				DetallePedido detPedidoBalon = new DetallePedido(idProductoBalon, idPedido, 1, 0, 0, valorBalon,
+						valorBalon * 1, "", "" /* observacion */, 0, 0, "", "");
+				PedidoDAO.InsertarDetallePedido(detPedidoBalon);
 			}
 		}
 		// Tendremos un arreglo con las adiciones para este line_items
@@ -7399,6 +7405,7 @@ public class PedidoCtrl {
 		int idTienda = 0;
 		String horaPedido = "";
 		String fechaProgramado = "";
+		String balon = "";
 		// Agregamos otros campos para el tema de factura electrónica
 		int tipoClienteFAC = 2;
 		String identificacion = "";
@@ -7570,6 +7577,13 @@ public class PedidoCtrl {
 						longitud = 0;
 					}
 
+				} else if (clave.equals(new String("balon mundial"))) {
+					try {
+						balon = strValor;
+					} catch (Exception e) {
+						balon = "";
+					}
+
 				}
 
 			}
@@ -7680,7 +7694,7 @@ public class PedidoCtrl {
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
 			// Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
-					acompanamiento, bebida2, detalles, idTipoPedido, condimentos);
+					acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
 
 			//Agregamos el procesamiento del segundo producto si lo hay
@@ -8509,7 +8523,7 @@ public class PedidoCtrl {
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
 			// Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
-					acompanamiento, bebida2, detalles, idTipoPedido, "");
+					acompanamiento, bebida2, detalles, idTipoPedido, "", "");
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
