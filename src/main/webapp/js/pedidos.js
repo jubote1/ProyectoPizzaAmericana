@@ -344,6 +344,19 @@ $("#fechapedido").change(function(){
     // A continuación definimos el evento para cuando se de clic en el datatable de pedidos, se deberán desplegar los valores en los campos
     // de cliente y adicionalmente la variale glogal de idcliente se capturara, adicionalmente se consumirá la API de google para buscar la
     //dirección. 
+	function limpiarValorFormulario(valor) {
+		if (
+			valor === null ||
+			valor === undefined ||
+			valor === "null" ||
+			valor === "undefined"
+		) {
+			return "";
+		}
+
+		return String(valor).replace(/\s+/g, " ").trim();
+	}
+	
     $('#grid-clientes tbody').on('click', 'tr', function () {
         //cerramos la notificacion en caso de que esté abierta
         datos = table.row( this ).data();
@@ -371,11 +384,11 @@ $("#fechapedido").change(function(){
         $('#zona').val(datos.zona);
         $('#observacionDir').val(datos.observacion);
         // Para evitar que modifiquen la tienda
-        $("#selectNomenclaturas").val(datos.nomenclatura);
-        $("#selectMunicipio").val(datos.municipio);
-        $('#numNomen').val(datos.numnomenclatura1);
-        $('#numNomen2').val(datos.numnomenclatura2);
-        $('#num3').val(datos.num3);
+		$("#selectNomenclaturas").val(limpiarValorFormulario(datos.nomenclatura));
+		$("#selectMunicipio").val(limpiarValorFormulario(datos.municipio));
+		$('#numNomen').val(limpiarValorFormulario(datos.numnomenclatura1));
+		$('#numNomen2').val(limpiarValorFormulario(datos.numnomenclatura2));
+		$('#num3').val(limpiarValorFormulario(datos.num3));
         $('#telcelular').val(datos.telefonocelular);
         $('#email').val(datos.email);
         //En esta parte del email validaremos si está en un plan de fidelizacion
@@ -453,7 +466,8 @@ $("#fechapedido").change(function(){
         {
         	selMunicipio = '';
         }
-        $('#descDireccion').val($("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val() + " " + selMunicipio);
+		
+        $('#descDireccion').val(formarDireccionEstructurada(true));
         getProductosTienda(idtien);
         //Traemos las gaseosas homologadas y disponibles para la tienda
         obtenerHomologacionProductoGaseosa(idtien);
@@ -567,10 +581,7 @@ $("#fechapedido").change(function(){
             }
         }
         */
-
-        //MÉTODO PARA UBICAR LAS COORDENADAS DEL CLIENTE
-        var coord = {latitude:datos.latitud,longitude:datos.longitud, type:"point"};
-        showAddress(datos.direccion, coord);
+		findAddress(idCliente);
         //ubicarClienteExistente(datos.latitud, datos.longitud);
 
 
@@ -840,17 +851,68 @@ function validarVigenciaLogueo()
 }
 
 
+function limpiarTextoDireccion(valor) {
+	if (
+		valor === null ||
+		valor === undefined ||
+		valor === "null" ||
+		valor === "undefined"
+	) {
+		return "";
+	}
 
-function descripcionDireccion()
-{
-	var selMunicipio = $("#selectMunicipio").val();
-    if (selMunicipio == '' || selMunicipio == null || selMunicipio == 'null')
-    {
-        selMunicipio = '';
-    }
-	$('#descDireccion').val($("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val() + " " + selMunicipio);	
+	return String(valor).replace(/\s+/g, " ").trim();
 }
 
+function formarDireccionEstructurada(incluirMunicipio) {
+	var nomenclatura = limpiarTextoDireccion($("#selectNomenclaturas").val());
+	var num1 = limpiarTextoDireccion($("#numNomen").val());
+	var num2 = limpiarTextoDireccion($("#numNomen2").val());
+	var num3Valor = limpiarTextoDireccion($("#num3").val());
+	var municipio = limpiarTextoDireccion($("#selectMunicipio").val());
+
+	if (!nomenclatura || !num1 || !num2 || !num3Valor) {
+		return "";
+	}
+
+	var direccion = nomenclatura + " " + num1 + " # " + num2 + " - " + num3Valor;
+
+	if (incluirMunicipio && municipio) {
+		direccion += " " + municipio;
+	}
+
+	return limpiarTextoDireccion(direccion);
+}
+
+function direccionEstructuradaCompleta() {
+	return Boolean(
+		limpiarTextoDireccion($("#selectNomenclaturas").val()) &&
+		limpiarTextoDireccion($("#numNomen").val()) &&
+		limpiarTextoDireccion($("#numNomen2").val()) &&
+		limpiarTextoDireccion($("#num3").val()) &&
+		limpiarTextoDireccion($("#selectMunicipio").val())
+	);
+}
+
+function marcarDireccionEstructuradaIncompleta() {
+	if ($('#validaDir').is(':checked') && !direccionEstructuradaCompleta()) {
+		$('#descDireccion')
+			.val('')
+			.attr('placeholder', 'Dirección estructurada incompleta')
+			.addClass('is-invalid');
+
+		return;
+	}
+
+	$('#descDireccion')
+		.attr('placeholder', 'Descripción Dirección')
+		.removeClass('is-invalid');
+}
+
+function descripcionDireccion() {
+	$('#descDireccion').val(formarDireccionEstructurada(true));
+	marcarDireccionEstructuradaIncompleta();
+}
 // Método que se encarga luego de introducido un teléfono en el campo de teléfono del cliente llamar al servicio
 function validarTelefono(){
 
@@ -3319,7 +3381,7 @@ function ConfirmarPedido()
 			tiempopedido = 'No hay tiempo definido para la tienda';
 		}
 		var selMunicipio = $("#selectMunicipio").val();
-		var dir = $("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val() + " " + selMunicipio;
+		var dir = formarDireccionEstructurada(true);
 		var programado = $("#selectHoraPedido option:selected").val();
         $.confirm({
 				'title'		: 'Confirmacion de Creación de Pedido',
@@ -3350,7 +3412,7 @@ function ConfirmarPedido()
 							var validaDir = 'S';
 							if($('#validaDir').is(':checked'))
 							{
-								direccionEncode = encodeURIComponent($("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val());
+								direccionEncode = encodeURIComponent(formarDireccionEstructurada(false));
 							}else
 							{
 								validaDir = 'N';
@@ -3358,10 +3420,10 @@ function ConfirmarPedido()
 							}
 							var zonaEncode = encodeURIComponent(zona.value); 
 							var observacionDirEncode = encodeURIComponent(observacionDir.value);
-							var nomenclatura = $("#selectNomenclaturas option:selected").attr('id');
-							var numNomenclatura1 = encodeURIComponent($("#numNomen").val());
-							var numNomenclatura2 = encodeURIComponent($("#numNomen2").val());
-							var num3 = encodeURIComponent($("#num3").val());
+							var nomenclatura = limpiarValorFormulario($("#selectNomenclaturas option:selected").attr('id'));
+							var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
+							var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
+							var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
                             var telCelular = $("#telcelular").val();
                             var email = $("#email").val();
                             var politicaDatos = "N";
@@ -3689,10 +3751,10 @@ function ValidacionesDatosNoPizzas()
         //  alert ('Debe ingresar la dirección del cliente');
         //  return;
         //}
-        var nomenclatura = $("#selectNomenclaturas option:selected").val();
-        var numNomen1 =  $("#numNomen").val();
-        var numNomen2 =  $("#numNomen2").val();
-        var num3 = $("#num3").val();
+		var nomenclatura = limpiarTextoDireccion($("#selectNomenclaturas option:selected").val());
+		var numNomen1 = limpiarTextoDireccion($("#numNomen").val());
+		var numNomen2 = limpiarTextoDireccion($("#numNomen2").val());
+		var num3 = limpiarTextoDireccion($("#num3").val());
         if($('#validaDir').is(':checked'))
         {
             if (nomenclatura == '' || nomenclatura == null || numNomen1== '' || numNomen1 == null || numNomen1 == 'null' || numNomen2== '' || numNomen2 == null || numNomen2  == 'null' || num3== '' || num3 == null || num3 == 'null')
@@ -3802,10 +3864,10 @@ function ValidacionesDatos()
         //  alert ('Debe ingresar la dirección del cliente');
         //  return;
         //}
-        var nomenclatura = $("#selectNomenclaturas option:selected").val();
-        var numNomen1 =  $("#numNomen").val();
-        var numNomen2 =  $("#numNomen2").val();
-        var num3 = $("#num3").val();
+		var nomenclatura = limpiarTextoDireccion($("#selectNomenclaturas option:selected").val());
+		var numNomen1 = limpiarTextoDireccion($("#numNomen").val());
+		var numNomen2 = limpiarTextoDireccion($("#numNomen2").val());
+		var num3 = limpiarTextoDireccion($("#num3").val());
         if($('#validaDir').is(':checked'))
         {
             if (nomenclatura == '' || nomenclatura == null || numNomen1== '' || numNomen1 == null || numNomen1 == 'null' || numNomen2== '' || numNomen2 == null || numNomen2  == 'null' || num3== '' || num3 == null || num3 == 'null')
@@ -4047,17 +4109,17 @@ function agregarEncabezadoPedido()
 		var nombreCompaniaEncode = encodeURIComponent(nombreCompania.value);
 		if($('#validaDir').is(':checked'))
 		{
-			direccionEncode = encodeURIComponent($("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val());
+			direccionEncode = encodeURIComponent(formarDireccionEstructurada(false));
 		}else
 		{
 			direccionEncode = encodeURIComponent(direccion.value);
 		}
         var zonaEncode = encodeURIComponent(zona.value); 
 		var observacionDirEncode = encodeURIComponent(observacionDir.value);
-		var nomenclatura =  $("#selectNomenclaturas option:selected").attr('id');
-		var numNomenclatura1 = encodeURIComponent($("#numNomen").val());
-		var numNomenclatura2 = encodeURIComponent($("#numNomen2").val());
-		var num3 = encodeURIComponent($("#num3").val());
+		var nomenclatura = limpiarValorFormulario($("#selectNomenclaturas option:selected").attr('id'));
+		var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
+		var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
+		var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
         var telCelular = $("#telcelular").val();
         var email = $("#email").val();
         var politicaDatos = "N";
@@ -5558,10 +5620,10 @@ function transferirCliente()
     var nombreCompaniaEncode = encodeURIComponent(nombreCompania.value);
     var direccionEncode;
     var validaDir = 'S';
-    var dirTemp = $("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val();
+    var dirTemp = formarDireccionEstructurada(false);
     if($('#validaDir').is(':checked'))
     {
-        direccionEncode = encodeURIComponent($("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() + " - " + $("#num3").val());
+        direccionEncode = encodeURIComponent(formarDireccionEstructurada(false));
     }else
     {
         validaDir = 'N';
@@ -5569,10 +5631,10 @@ function transferirCliente()
     }
     var zonaEncode = encodeURIComponent(zona.value); 
     var observacionDirEncode = encodeURIComponent(observacionDir.value);
-    var nomenclatura = $("#selectNomenclaturas option:selected").attr('id');
-    var numNomenclatura1 = encodeURIComponent($("#numNomen").val());
-    var numNomenclatura2 = encodeURIComponent($("#numNomen2").val());
-    var num3 = encodeURIComponent($("#num3").val());
+    var nomenclatura = limpiarValorFormulario($("#selectNomenclaturas option:selected").attr('id'));
+	var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
+	var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
+	var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
     var telCelular = $("#telcelular").val();
     var email = $("#email").val();
     var politicaDatos = "N";

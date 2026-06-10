@@ -5,7 +5,8 @@ import com.google.gson.annotations.SerializedName;
 public class CoberturaRequest {
     private String direccion;
     private String municipio;
-    private String barrio;
+
+	private String barrio;
 
     @SerializedName("tipo_cliente")
     private String tipoCliente;
@@ -14,8 +15,27 @@ public class CoberturaRequest {
     private Double latitud;
     private Double longitud;
     private Integer idTienda;
+    private Integer idcliente;
+    private String  telefono;
     
-    private String direccionProveedor;
+    public String getTelefono() {
+		return telefono;
+	}
+
+	public void setTelefono(String telefono) {
+		this.telefono = telefono;
+	}
+
+	private String direccionProveedor;
+
+    
+    public Integer getIdcliente() {
+		return idcliente;
+	}
+
+	public void setIdcliente(Integer idcliente) {
+		this.idcliente = idcliente;
+	}
 
     public String getDireccionProveedor() {
         return direccionProveedor == null ? "" : direccionProveedor.trim();

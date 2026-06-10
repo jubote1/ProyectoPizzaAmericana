@@ -33,18 +33,31 @@ public class ValidacionCobertura extends HttpServlet {
         	String data = leerBody(request);
 
         	if (data == null || data.trim().isEmpty()) {
-        	    responderError(response, 400, "Debe enviar la direccion.");
+        	    responderError(response, 400, "Debe enviar datos en la solicitud.");
         	    return;
         	}
 
         	Gson gson = new Gson();
         	CoberturaRequest coberturaRequest = gson.fromJson(data, CoberturaRequest.class);
-
-        	if (coberturaRequest == null || coberturaRequest.getDireccion().isBlank()) {
-        	    responderError(response, 400, "La direccion es obligatoria.");
+        
+        	if (coberturaRequest == null) {
+        	    responderError(response, 400, "Solicitud invalida.");
         	    return;
         	}
+        	
+        	if (coberturaRequest.getIdcliente() == null
+        	        || coberturaRequest.getIdcliente() <= 0) {
 
+        	    if (coberturaRequest.getDireccion() == null
+        	            || coberturaRequest.getDireccion().trim().isEmpty()) {
+
+        	        responderError(response, 400,
+        	                "La direccion es obligatoria cuando no se envía idcliente.");
+        	        return;
+        	    }
+        	}
+        	
+        	
         	PedidoCtrl pedidoCtrl = new PedidoCtrl();
 
         	String respuesta = pedidoCtrl.validarCobertura(coberturaRequest);

@@ -5912,7 +5912,12 @@ public class PedidoCtrl {
 
 			// Procesar
 			System.out.println("⚙️ Procesando pedido...");
-			procesarPedidoBOTCRM(infLead, lead, idLog);
+			boolean ok = procesarPedidoBOTCRM(infLead, lead, idLog);
+			actualizarPedidoInsertadoLeadCRMBOT(lead, ok);
+			
+			if(ok) {
+				
+			}
 
 		} catch (Exception e) {
 			System.out.println("❌ Error en insertarPedidoCRMBOT: " + e.toString());
@@ -6144,6 +6149,8 @@ public class PedidoCtrl {
 			ClienteCtrl clienteCtrl = new ClienteCtrl();
 
 			actualizarClienteRecurrenteCRMBOT(lead, clienteCtrl.ValidarExistenciaClienteCRM(telefono), tipo_cliente);
+			
+			
 		} catch (Exception e) {
 			System.out.println("Error: " + e.getMessage());
 			respuesta = "Error";
@@ -6673,7 +6680,7 @@ public class PedidoCtrl {
 				863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227, 868045, 868051, 868231, 868233, 868055,
 				868057, 868059, 868061, 868063, 868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
 				872199, 872201, 862673, 862675, 872069, 872639, 872641, 872705, 872707, 872709, 872711, 872713, 872717,
-				873301, 873303));
+				873301, 873303, 875939, 875631));
 
 		// Construimos la estructura JSON
 		List<Map<String, Object>> customFields = new ArrayList<>();
@@ -7391,7 +7398,7 @@ public class PedidoCtrl {
 	 * @param lead
 	 * @param idLog
 	 */
-	public void procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
+	public boolean procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
 		String resultadoProceso = "";
 		String obserProceso = "";
 		String asesor = "";
@@ -7533,7 +7540,7 @@ public class PedidoCtrl {
 				} else if (clave.equals(new String("barrio"))) {
 					barrio = strValor;
 				} else if (clave.equals(new String("municipio"))) {
-					municipio = municipio;
+					municipio = strValor;
 				} else if (clave.equals(new String("tienda"))) {
 					tienda = strValor;
 					TiendaCtrl tiendaCtrl = new TiendaCtrl();
@@ -7697,23 +7704,34 @@ public class PedidoCtrl {
 							+ " sabemos que tienes la intención de pedir nuestros productos, sin embargo nuestros puntos de venta ya están cerrados, te esperamos a partir de mañana!");
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correoError, correos);
 					contro.enviarCorreo();
-					return;
+					return false;
 				}
 			}
 			int idTipoPedido = 1;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
-			// Realizamos la inserción del producto ordenado
-			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
-					acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
-			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
-
-			//Agregamos el procesamiento del segundo producto si lo hay
-			if(!nombreDelCombo_2.equals(new String("")))
-			{
-				insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
-
+			
+			if (idPedido <= 0) {
+				resultadoProceso = resultadoProceso + " No se logro insertar el pedido correctamente.";
+				return false;
 			}
+
+
+       // Realizamos la inserción del producto ordenado
+			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
+			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
+			
+			// Agregamos el procesamiento del segundo producto si lo hay
+			if (!nombreDelCombo_2.equals(new String(""))) {
+				String log2 = 	insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
+
+
+				if (log2 != null && log2.trim().length() > 0) {
+					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
+				}
+        
+      }
+			
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
@@ -7762,6 +7780,10 @@ public class PedidoCtrl {
 				}
 				// Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead, mensaje, "pedidobot");
+				
+				if (mensaje.equals("ERROR")) {
+					return false;
+				}
 			} else if ((idFormaPago == 1) || (idFormaPago == 2))
 
 			{
@@ -7782,11 +7804,11 @@ public class PedidoCtrl {
 					}
 				}
 			}
+			return true;
 		} catch (Exception e) {
-			// Trabajar excepción de que no se pudo obtener información del LEAD y no se
-			// pudo crear
 			resultadoProceso = resultadoProceso
-					+ " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no están llenos los campos.";
+					+ " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no estan llenos los campos.";
+			return false;
 		}
 	}
 
@@ -8138,8 +8160,11 @@ public class PedidoCtrl {
 			System.out.println("Error en request a CRM: " + e.getMessage());
 		}
 	}
+	
+	
+	
 
-	public void actualizarClienteRecurrenteCRMBOT(String lead, org.json.JSONObject resultado, String tipo_cliente) {
+	public void actualizarClienteRecurrenteCRMBOT(String lead, Resultado resultado, String tipo_cliente) {
 
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
 
@@ -8157,9 +8182,11 @@ public class PedidoCtrl {
 		List<Map<String, Object>> customFields = new ArrayList<>();
 
 		// Campo resultado principal
-		String clienteRecurrente = resultado.optString("clienteRecurrente", "NEGATIVO");
-		String tienda = resultado.optString("tienda", "");
-		String direccion = resultado.optString("direccion", "");
+		String clienteRecurrente = resultado.getClienteRecurrente();
+		String tienda = resultado.getInfoAdicional();
+		String direccion = resultado.getDireccion();
+
+		
 		customFields.add(
 				Map.of("field_id", FIELD_CLIENTE_RECURRENTE, "values", List.of(Map.of("value", clienteRecurrente))));
 
@@ -8177,9 +8204,9 @@ public class PedidoCtrl {
 
 			// Coordenadas
 			customFields.add(Map.of("field_id", FIELD_LATITUD, "values",
-					List.of(Map.of("value", resultado.optString("latitud", "")))));
+					List.of(Map.of("value", resultado.getLatitud()))));
 			customFields.add(Map.of("field_id", FIELD_LONGITUD, "values",
-					List.of(Map.of("value", resultado.optString("longitud", "")))));
+					List.of(Map.of("value", resultado.getLongitud()))));
 
 			// Asesor / Estado tienda
 			if ("programado".equalsIgnoreCase(tipo_cliente)) {
@@ -8193,19 +8220,23 @@ public class PedidoCtrl {
 				}
 			} else {
 				customFields.add(Map.of("field_id", FIELD_ESTADO_TIENDA, "values",
-						List.of(Map.of("value", resultado.optString("estadoTienda", "")))));
+						List.of(Map.of("value", resultado.getEstadoTienda()))));
 			}
 
 			// Datos del cliente
 			customFields.add(Map.of("field_id", FIELD_DIRECCION, "values", List.of(Map.of("value", direccion))));
 			customFields.add(Map.of("field_id", FIELD_BARRIO, "values",
-					List.of(Map.of("value", resultado.optString("barrio", "")))));
+					List.of(Map.of("value", resultado.getBarrio()))));
 			customFields.add(Map.of("field_id", FIELD_MUNICIPIO, "values",
-					List.of(Map.of("value", resultado.optString("municipio", "")))));
-			customFields.add(Map.of("field_id", FIELD_REFERENCIA, "values",
-					List.of(Map.of("value", resultado.optString("referencia", "")))
+					List.of(Map.of("value", resultado.getMunicipioOriginal()))));
+			
+			if(resultado.getReferencia() != null && !resultado.getReferencia().isEmpty()) {			
+				customFields.add(Map.of("field_id", FIELD_REFERENCIA, "values",
+						List.of(Map.of("value", resultado.getReferencia()))
 
-			));
+				));
+			}
+			
 		}
 
 		// Validación de Lead
@@ -8532,6 +8563,7 @@ public class PedidoCtrl {
 			int idTipoPedido = 4;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
+			
 			// Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
 					acompanamiento, bebida2, detalles, idTipoPedido, "", "");
@@ -12600,11 +12632,6 @@ public class PedidoCtrl {
 	    Gson gson = new Gson();
 
 	    try {
-	        if (request == null || request.getDireccion().isBlank()) {
-	            Resultado resultado = new Resultado();
-	            resultado.setSuccess(false);
-	            return gson.toJson(resultado);
-	        }
 
 	        Resultado resultado = UbicacionCtrl.ubicarDireccionEnTienda(request);
 
@@ -12619,6 +12646,64 @@ public class PedidoCtrl {
 
 	        return gson.toJson(resultado);
 	    }
+	}
+	
+	public void actualizarPedidoInsertadoLeadCRMBOT(String lead, boolean registrado) {
+		// Si no se registró, no actualizamos nada en Kommo
+		if (!registrado) {
+			return;
+		}
+
+		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
+
+		final int FIELD_PEDIDO_INSERTADO = 875939;
+
+		int leadId;
+		try {
+			leadId = Integer.parseInt(lead);
+		} catch (NumberFormatException e) {
+			System.out.println("Lead inválido, no es un número: " + lead);
+			return;
+		}
+
+		List<Map<String, Object>> customFields = new ArrayList<>();
+
+		customFields.add(Map.of(
+				"field_id", FIELD_PEDIDO_INSERTADO,
+				"values", List.of(Map.of("value", "REGISTRADO"))
+		));
+
+		Map<String, Object> leadData = Map.of(
+				"id", leadId,
+				"custom_fields_values", customFields
+		);
+
+		Gson gson = new Gson();
+		String datos = gson.toJson(List.of(leadData));
+
+		System.out.println("Datos enviados para actualizar pedido insertado: " + datos);
+
+		OkHttpClient client = new OkHttpClient();
+		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
+		RequestBody body = RequestBody.create(mediaType, datos);
+
+		Request request = new Request.Builder()
+				.url("https://pizzaamericana.kommo.com/api/v4/leads")
+				.patch(body)
+				.addHeader("Authorization", "Bearer " + intCRM.getAccessToken())
+				.build();
+
+		try (okhttp3.Response response = client.newCall(request).execute()) {
+			String respuestaJSON = response.body() != null ? response.body().string() : "";
+			System.out.println("Response Code: " + response.code());
+			System.out.println("Response Body: " + respuestaJSON);
+
+			if (!response.isSuccessful()) {
+				System.out.println("Error actualizando campo PEDIDO INSERTADO en CRM. Código: " + response.code());
+			}
+		} catch (Exception e) {
+			System.out.println("Error en request a CRM: " + e.getMessage());
+		}
 	}
 
 	

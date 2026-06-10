@@ -39,8 +39,17 @@ public class Cliente {
 	private String emailFacturacion;
 	private int idTipoPersona;
 	private String identificacion;
+	private String direccionProveedor;
 	
 	
+	public String getDireccionProveedor() {
+		return direccionProveedor;
+	}
+
+	public void setDireccionProveedor(String direccionProveedor) {
+		this.direccionProveedor = direccionProveedor;
+	}
+
 	@Override
 	public String toString() {
 	    return "Cliente{" +
