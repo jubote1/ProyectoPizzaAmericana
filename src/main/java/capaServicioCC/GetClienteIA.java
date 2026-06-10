@@ -10,23 +10,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import capaControladorCC.ClienteCtrl;
-import capaControladorCC.UbicacionCtrl;
-import capaModeloCC.Resultado;;
+import capaControladorCC.ClienteCtrl;;
 
 /**
  * Servlet implementation class GetCliente
  * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
  * como par�metro un tel�fono determinado.
  */
-@WebServlet("/ProbarConsultarDireccion")
-public class ProbarConsultarDireccion extends HttpServlet {
+@WebServlet("/GetClienteIA")
+public class GetClienteIA extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public ProbarConsultarDireccion() {
+    public GetClienteIA() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -42,17 +40,18 @@ public class ProbarConsultarDireccion extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
 			HttpSession sesion = request.getSession();
-			String direccion = request.getParameter("direccion");
+			String tel = request.getParameter("telefono");
+			System.out.println(tel);
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
-			UbicacionCtrl ubiCtrl = new UbicacionCtrl();
-			Resultado res = ubiCtrl.ubicarDireccionEnTienda(direccion,null,null,"",null);
+			ClienteCtrl ClienCtrl = new ClienteCtrl();
+			String respuesta = ClienCtrl.obtenerClienteIA(tel);
 			PrintWriter out = response.getWriter();
-			out.write(res.getResultado());
+			out.write(respuesta);
 			
 		}catch(Exception e){
 			System.out.println(e.getMessage());
-		}                  
+		}
 	}
 
 	/**
