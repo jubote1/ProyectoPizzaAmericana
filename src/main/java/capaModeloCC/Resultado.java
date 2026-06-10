@@ -14,7 +14,35 @@ public class Resultado {
 	private String municipioCorregido;
 	private String direccionCorregida;
 	private String direccionOriginalNormalizada;
+	private String referencia;
+	private String clienteRecurrente;
+	private Integer idtienda;
+	private String barrio; 
 	
+	public String getBarrio() {
+		return barrio;
+	}
+
+	public void setBarrio(String barrio) {
+		this.barrio = barrio;
+	}
+
+	public String getClienteRecurrente() {
+		return clienteRecurrente;
+	}
+
+	public void setClienteRecurrente(String clienteRecurrente) {
+		this.clienteRecurrente = clienteRecurrente;
+	}
+
+	public String getReferencia() {
+		return referencia;
+	}
+
+	public void setReferencia(String referencia) {
+		this.referencia = referencia;
+	}
+
 	public String getProveedorGeocodificacion() {
 		return proveedorGeocodificacion;
 	}
@@ -29,6 +57,14 @@ public class Resultado {
 
 	public void setCorreccionAplicada(String correccionAplicada) {
 		this.correccionAplicada = correccionAplicada;
+	}
+
+	public Integer getIdtienda() {
+		return idtienda;
+	}
+
+	public void setIdtienda(Integer idtienda) {
+		this.idtienda = idtienda;
 	}
 
 	public String getMunicipioOriginal() {

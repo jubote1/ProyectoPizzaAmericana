@@ -1,22 +1,13 @@
 package capaControladorCC;
 
-import com.esri.arcgisruntime.ArcGISRuntimeEnvironment;
-import com.esri.arcgisruntime.concurrent.ListenableFuture;
-import com.esri.arcgisruntime.data.Feature;
-import com.esri.arcgisruntime.data.FeatureQueryResult;
-import com.esri.arcgisruntime.data.QueryParameters;
-import com.esri.arcgisruntime.data.ServiceFeatureTable;
-import com.esri.arcgisruntime.geometry.Point;
-import com.esri.arcgisruntime.geometry.SpatialReferences;
-import com.esri.arcgisruntime.tasks.geocode.GeocodeParameters;
-import com.esri.arcgisruntime.tasks.geocode.GeocodeResult;
-import com.esri.arcgisruntime.tasks.geocode.LocatorTask;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import capaDAOCC.ParametrosDAO;
 import capaDAOCC.TiendaBloqueadaDAO;
+import capaModeloCC.Cliente;
 import capaModeloCC.CoberturaRequest;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
@@ -24,18 +15,19 @@ import capaModeloCC.Parametro;
 import capaModeloCC.Resultado;
 import capaModeloCC.Ubicacion;
 import utilidadesCC.ControladorEnvioCorreo;
-
+import capaDAOCC.ClienteDAO;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,7 +35,9 @@ import java.util.regex.Pattern;
 public class UbicacionCtrl {
 
 	private static String API_KEY_HERE = "";
-	private static String serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+	private static String API_KEY_ARCGIS = "";
+	private static String API_KEY_GOOGLE = "";
+	private static String serviceUrl = "https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 	private static String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
 
 	private static final String DEPARTAMENTO = "Antioquia";
@@ -72,8 +66,11 @@ public class UbicacionCtrl {
 	                + "(" + TOKEN_NUMERO_DIRECCION + ")\\s*(?:-|\\s+)\\s*"
 	                + "(" + TOKEN_NUMERO_DIRECCION + ")\\b");
 	
-	
-	private static String API_KEY_GOOGLE = "";
+	private static final String[] MUNICIPIOS_SOPORTADOS = {
+	        "medellin", "bello", "itagui", "envigado", "sabaneta", "la estrella", "caldas",
+	        "copacabana", "girardota", "barbosa", "rionegro", "marinilla", "la ceja",
+	        "guarne", "el retiro", "carmen de viboral", "santuario", "apartado"
+	};
 	
 	/**
 	 * Valida la cobertura de una direccion.
@@ -93,6 +90,15 @@ public class UbicacionCtrl {
 	    String barrio = coberturaRequest.getBarrio();
 	    String tipo_cliente = coberturaRequest.getTipoCliente();
 	    String lead = coberturaRequest.getLead();
+	    Integer idcliente = coberturaRequest.getIdcliente();
+	    String telefono = coberturaRequest.getTelefono();
+	    String referencia  = "";
+	    
+	    System.out.println("===== INICIO =====");
+	    System.out.println("idcliente=" + idcliente);
+	    System.out.println("direccion=" + direccion);
+	    System.out.println("telefono=" + telefono);
+	  
 
 	    Resultado resultado = new Resultado();
 	    resultado.setLongitud(0);
@@ -103,55 +109,128 @@ public class UbicacionCtrl {
 	        
 	     // Camino rapido: si las coordenadas vienen respaldadas por una direccionProveedor
 	     // que coincide con la direccion del cliente, se consulta cobertura sin geocodificar.
-	        if (puedeValidarPorCoordenadas(coberturaRequest)) {
-	            Point punto = new Point(
-	                    coberturaRequest.getLongitud(),
-	                    coberturaRequest.getLatitud(),
-	                    SpatialReferences.getWgs84()
-	            );
+	        
+	        Cliente cliente = null;
+	        String barrioBD   = "";
+		    String municipioBD  = "";
+		    
+	        if (idcliente != null && idcliente > 0) {
+
+	        	Cliente clienteTmp = ClienteDAO.obtenerClienteporID(idcliente);
+
+	        	if (clienteTmp != null && clienteTmp.getIdcliente() > 0) {
+	        	    cliente = clienteTmp;
+	        	}
+
+	        } else if (telefono != null && !telefono.isEmpty()) {
+
+	            cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
+	        }
+	        System.out.println("cliente encontrado=" + (cliente != null));
+	        if (cliente != null) {
+	        	
+	            System.out.println("direccion cliente=" + cliente.getDireccion());
+	            System.out.println("latitud cliente=" + cliente.getLatitud());
+	            System.out.println("longitud cliente=" + cliente.getLontitud());
+	            System.out.println("idtienda cliente=" + cliente.getIdtienda());
+	            
+	            idcliente = cliente.getIdcliente();
+
+	            coberturaRequest.setDireccionProveedor(cliente.getDireccionProveedor());
+	            coberturaRequest.setLatitud((double) cliente.getLatitud());
+	            coberturaRequest.setLongitud((double) cliente.getLontitud());
+	            coberturaRequest.setIdTienda(cliente.getIdtienda());
+	            direccion = cliente.getDireccion();
+	            coberturaRequest.setDireccion(direccion);
+	            referencia = cliente.getObservacion();
+	            barrioBD = cliente.getZonaDireccion();
+	            municipioBD = cliente.getMunicipio();
+	     
+	        }
+	        
+	        System.out.println("puedeValidarPorCoordenadas="
+	                + puedeValidarPorCoordenadas(coberturaRequest));
+	        if (idcliente != null && idcliente > 0
+	                && puedeValidarPorCoordenadas(coberturaRequest)) { 
 
 	            Resultado resultadoCoordenadas = consultarZonas(
-	                    punto,
+	                    coberturaRequest.getLongitud(),
+	                    coberturaRequest.getLatitud(),
 	                    tipo_cliente,
 	                    lead,
 	                    direccion,
 	                    queryUrl,
 	                    coberturaRequest.getIdTienda()
 	            );
+	            
+	            System.out.println("consultarZonas success="
+	                    + resultadoCoordenadas.isSuccess());
+
+	            System.out.println("consultarZonas resultado="
+	                    + resultadoCoordenadas.getResultado());
 
 	            resultadoCoordenadas.setLatitud(coberturaRequest.getLatitud());
 	            resultadoCoordenadas.setLongitud(coberturaRequest.getLongitud());
 	            resultadoCoordenadas.setDireccion(direccion);
+	            resultadoCoordenadas.setReferencia(referencia);
+	            resultadoCoordenadas.setBarrio(barrioBD);
+	            resultadoCoordenadas.setMunicipioOriginal(municipioBD);
 
 	            if (resultadoCoordenadas.isSuccess()) {
 	                return resultadoCoordenadas;
 	            }
-
-	            // Si las coordenadas son reales pero no coinciden con la tienda,
-	            // se continua con el flujo normal por direccion.
 	        }
+
 
 	        
 	     // Flujo normal: se usa cuando no hay coordenadas confiables o cuando la
 	     // validacion por coordenadas no confirma cobertura para la tienda esperada.
 	        
-	        
-	        DireccionNormalizada direccionNormalizada = normalizarDireccionEntrega(direccion, municipio, barrio);
+	        if (direccion != null && !direccion.trim().isEmpty()) {
+	        	
+	            DireccionNormalizada direccionNormalizada = normalizarDireccionEntrega(direccion, municipio, barrio);
 
-	        JsonObject coords = geocodificarConCandidatos(direccionNormalizada, direccion, municipio, barrio);
-	        if (esCoordenadaValida(coords)) {
-	            return crearResultadoConCoordenadas(coords, tipo_cliente, lead, direccion);
+		        JsonObject coords = geocodificarConCandidatos(direccionNormalizada, direccion, municipio, barrio);
+		        if (esCoordenadaValida(coords)) {
+
+		            Resultado resultadoCoordenadas = crearResultadoConCoordenadas(
+		                    coords,
+		                    tipo_cliente,
+		                    lead,
+		                    direccion
+		            );
+
+		            if (idcliente != null
+		                    && idcliente > 0
+		                    && resultadoCoordenadas.isSuccess()) {
+
+		                new ClienteCtrl().actualizarClienteCoordenadas(
+		                        idcliente,
+		                        (float) resultadoCoordenadas.getLatitud(),
+		                        (float) resultadoCoordenadas.getLongitud(),
+		                        resultadoCoordenadas.getDireccion()
+		                );
+		            }
+
+		            return resultadoCoordenadas;
+		        }
+		        
+		        if (!direccionNormalizada.esPuntual) {
+		            resultado.setResultado(
+		                    "No pudimos validar la direccion exacta. Por favor confirma la nomenclatura, numero de placa o comparte una referencia mas precisa.");
+		        } else {
+		            resultado.setResultado(
+		                    "No se pudo validar la direccion exacta con los proveedores disponibles. Verifica la nomenclatura, municipio o barrio.");
+		        }
+
+	        }else {
+	        	
+	        	resultado.setResultado("No se proporciono una dirección valida.");
 	        }
-
+	        	
 	        resultado.setSuccess(false);
 
-	        if (!direccionNormalizada.esPuntual) {
-	            resultado.setResultado(
-	                    "No pudimos validar la direccion exacta. Por favor confirma la nomenclatura, numero de placa o comparte una referencia mas precisa.");
-	        } else {
-	            resultado.setResultado(
-	                    "No se pudo validar la direccion exacta con los proveedores disponibles. Verifica la nomenclatura, municipio o barrio.");
-	        }
+	      
 
 	    } catch (Exception e) {
 	        System.err.println("Error al geocodificar: " + e.getMessage());
@@ -261,15 +340,24 @@ public class UbicacionCtrl {
 	private static JsonObject geocodificarConCandidatos(DireccionNormalizada direccionNormalizada, String direccion,
 	        String municipio, String barrio) throws Exception {
 
+		
+		String municipioValidacion = direccionNormalizada.municipio == null || direccionNormalizada.municipio.isBlank()
+		            ? municipio
+		            : direccionNormalizada.municipio;
+		
+		String barrioValidacion = direccionNormalizada.barrio == null || direccionNormalizada.barrio.isBlank()
+	            ? barrio
+	            : direccionNormalizada.barrio;
+		
 	    JsonObject coords = geocodificarConCandidatosSinSugerencias(direccionNormalizada, direccion, municipio, barrio);
-
+	    coords.addProperty("MunicipioOriginal", municipioValidacion);
+	    coords.addProperty("barrio", barrioValidacion);
+	    
 	    if (esCoordenadaValida(coords)) {
 	        return coords;
 	    }
 
-	    String municipioValidacion = direccionNormalizada.municipio == null || direccionNormalizada.municipio.isBlank()
-	            ? municipio
-	            : direccionNormalizada.municipio;
+	 
 
 	    if (coords.has("MunicipioSugerido")) {
 	        String municipioSugerido = coords.get("MunicipioSugerido").getAsString();
@@ -290,7 +378,8 @@ public class UbicacionCtrl {
 
 	            if (esCoordenadaValida(coordsReintento)) {
 	            	coordsReintento.addProperty("MunicipioOriginal",
-	            	        municipioValidacion == null || municipioValidacion.isBlank() ? "SIN MUNICIPIO" : municipioValidacion);
+	            	        municipioValidacion == null || municipioValidacion.isBlank() ? "" : municipioValidacion);
+	            	coordsReintento.addProperty("barrio", barrioValidacion == null || barrioValidacion.isBlank() ? "" : barrioValidacion);
 	                coordsReintento.addProperty("MunicipioCorregido", municipioSugerido);
 	                return coordsReintento;
 	            }
@@ -298,6 +387,7 @@ public class UbicacionCtrl {
 	            JsonObject coordsVarianteMunicipio = geocodificarVariantesLetrasDobles(reintentada, municipioSugerido);
 	            if (esCoordenadaValida(coordsVarianteMunicipio)) {
 	                coordsVarianteMunicipio.addProperty("MunicipioOriginal", municipioValidacion);
+	                coordsVarianteMunicipio.addProperty("barrio", barrioValidacion);
 	                coordsVarianteMunicipio.addProperty("MunicipioCorregido", municipioSugerido);
 	                coordsVarianteMunicipio.addProperty("DireccionOriginalNormalizada", direccionNormalizada.direccionGeocoder);
 	                return coordsVarianteMunicipio;
@@ -306,8 +396,54 @@ public class UbicacionCtrl {
 	    }
 
 	    JsonObject coordsVariante = geocodificarVariantesLetrasDobles(direccionNormalizada, municipioValidacion);
+	    coordsVariante.addProperty("MunicipioOriginal", municipioValidacion);
+	    coordsVariante.addProperty("barrio", barrioValidacion);
+	    
 	    if (esCoordenadaValida(coordsVariante)) {
 	        return coordsVariante;
+	    }
+	    
+	    
+	 // AQUI VA EL NUEVO BLOQUE
+	    JsonObject pistaSinMunicipio = buscarMunicipioSugeridoSinMunicipio(
+	            direccion,
+	            municipioValidacion,
+	            barrio
+	    );
+
+	    if (pistaSinMunicipio.has("MunicipioSugerido")) {
+	        String municipioSugerido = pistaSinMunicipio.get("MunicipioSugerido").getAsString();
+
+	        if (!municipioSugerido.isBlank()
+	                && !normalizarTexto(municipioSugerido).equals(normalizarTexto(municipioValidacion))) {
+
+	            System.out.println("Reintentando con municipio sugerido sin municipio: " + municipioSugerido);
+
+	            String direccionSinMunicipio = quitarMunicipiosSoportados(direccion);
+
+	            DireccionNormalizada reintentada = normalizarDireccionEntrega(
+	                    direccionSinMunicipio,
+	                    municipioSugerido,
+	                    barrio
+	            );
+
+	            JsonObject coordsReintento = geocodificarConCandidatosSinSugerencias(
+	                    reintentada,
+	                    direccionSinMunicipio,
+	                    municipioSugerido,
+	                    barrio
+	            );
+
+	            if (esCoordenadaValida(coordsReintento)) {
+	                coordsReintento.addProperty("MunicipioOriginal",
+	                        municipioValidacion == null || municipioValidacion.isBlank()
+	                                ? "SIN MUNICIPIO"
+	                                : municipioValidacion);
+	                coordsReintento.addProperty("MunicipioCorregido", municipioSugerido);
+	                coordsReintento.addProperty("CorreccionAplicada", "MUNICIPIO_SUGERIDO_SIN_MUNICIPIO");
+	                return coordsReintento;
+	            }
+	        }
 	    }
 
 	    return crearCoordsVacias();
@@ -324,8 +460,10 @@ public class UbicacionCtrl {
 		double lat = coords.get("Latitud").getAsDouble();
 		double lng = coords.get("Longitud").getAsDouble();
 		String address = coords.get("Direccion").getAsString();
+		
+	
 
-		Resultado resultado = consultarZonas(crearPunto(coords), tipo_cliente, lead,direccion, queryUrl);
+		Resultado resultado = consultarZonas(lng, lat, tipo_cliente, lead, direccion, queryUrl);
 
 		resultado.setLatitud(lat);
 		resultado.setLongitud(lng);
@@ -353,6 +491,11 @@ public class UbicacionCtrl {
 
 		if (coords.has("DireccionOriginalNormalizada")) {
 		    resultado.setDireccionOriginalNormalizada(coords.get("DireccionOriginalNormalizada").getAsString());
+		}
+		
+
+		if (coords.has("barrio")) {
+		    resultado.setBarrio(coords.get("barrio").getAsString());
 		}
 
 		return resultado;
@@ -382,79 +525,85 @@ public class UbicacionCtrl {
 		return !(lat == 0 && lng == 0);
 	}
 
-	private static Point crearPunto(JsonObject coords) {
-		double lat = coords.get("Latitud").getAsDouble();
-		double lng = coords.get("Longitud").getAsDouble();
-		return new Point(lng, lat, SpatialReferences.getWgs84());
-	}
-
+	
 	private static void inicializarApiKey() throws Exception {
-		Parametro parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
-		ArcGISRuntimeEnvironment.setApiKey(parametro.getValorTexto());
+	    Parametro parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
+	    API_KEY_ARCGIS = parametro.getValorTexto();
 
-		parametro = ParametrosDAO.obtenerParametro("APIHEREMAPS");
-		API_KEY_HERE = parametro.getValorTexto();
-		
-		
-		parametro  = ParametrosDAO.obtenerParametro("APIGOOGLE");
-		API_KEY_GOOGLE = parametro.getValorTexto();
+	    parametro = ParametrosDAO.obtenerParametro("APIHEREMAPS");
+	    API_KEY_HERE = parametro.getValorTexto();
+
+	    parametro = ParametrosDAO.obtenerParametro("APIGOOGLE");
+	    API_KEY_GOOGLE = parametro.getValorTexto();
 	}
 
 	private static JsonObject obtenerCoordenadasDesdeArcGIS(String direccion, String municipioPedido) throws Exception {
-		JsonObject coords = crearCoordsVacias();
+	    JsonObject coords = crearCoordsVacias();
+	    
+	    String url = serviceUrl + "/findAddressCandidates"
+	            + "?f=json"
+	            + "&singleLine=" + urlEncode(direccion)
+	            + "&countryCode=COL"
+	            + "&sourceCountry=COL"
+	            + "&outFields=*"
+	            + "&maxLocations=5"
+	            + "&outSR=4326"
+	            + "&forStorage=false"
+	            + "&token=" + urlEncode(API_KEY_ARCGIS);
+	    
 
-		LocatorTask locatorTask = new LocatorTask(serviceUrl);
-		GeocodeParameters geocodeParameters = new GeocodeParameters();
-		geocodeParameters.setMaxResults(5);
-		geocodeParameters.setCountryCode("COL");
-		geocodeParameters.getResultAttributeNames().add("*");
+	    
+	    JsonObject json = ejecutarGetJson(url);
 
-		ListenableFuture<List<GeocodeResult>> future = locatorTask.geocodeAsync(direccion, geocodeParameters);
-		List<GeocodeResult> geocodeResults = future.get();
+	    if (json.has("error")) {
+	        coords.addProperty("error", json.getAsJsonObject("error").toString());
+	        return coords;
+	    }
 
-		if (geocodeResults != null && !geocodeResults.isEmpty()) {
-			for (GeocodeResult geocodeResult : geocodeResults) {
-				String address = geocodeResult.getLabel();
-				Map<String, Object> atributos = geocodeResult.getAttributes();
+	    if (!json.has("candidates") || json.getAsJsonArray("candidates").isEmpty()) {
+	        coords.addProperty("error", "No se encontraron resultados");
+	        return coords;
+	    }
 
-				String municipioArcgis = obtenerAtributo(atributos, "City");
-				String districtArcgis = obtenerAtributo(atributos, "District");
-				String addrType = obtenerAtributo(atributos, "Addr_type");
+	    for (JsonElement elem : json.getAsJsonArray("candidates")) {
+	        JsonObject candidate = elem.getAsJsonObject();
 
-				JsonObject attExtra = new JsonObject();
-				attExtra.addProperty("municipioPedido", normalizarTexto(municipioPedido));
-				attExtra.addProperty("municipioApi", normalizarTexto(municipioArcgis));
-				attExtra.addProperty("districtApi", normalizarTexto(districtArcgis));
-				attExtra.addProperty("tipoResultado", normalizarTexto(addrType));
+	        String address = candidate.has("address") ? candidate.get("address").getAsString() : "";
+	        JsonObject atributos = candidate.has("attributes")
+	                ? candidate.getAsJsonObject("attributes")
+	                : new JsonObject();
 
-				Point displayLocation = geocodeResult.getDisplayLocation();
-				String direccionParaValidar = quitarSufijoPais(direccion);
+	        String municipioArcgis = obtenerAtributo(atributos, "City");
+	        String districtArcgis = obtenerAtributo(atributos, "District");
+	        String addrType = obtenerAtributo(atributos, "Addr_type");
 
-				if (esCoincidencia(direccionParaValidar, address, attExtra)) {
-					JsonObject mejor = new JsonObject();
-					mejor.addProperty("Longitud", displayLocation.getX());
-					mejor.addProperty("Latitud", displayLocation.getY());
-					mejor.addProperty("Direccion", address);
-					mejor.addProperty("Proveedor", "ARCGIS");
-					mejor.addProperty("TipoResultado", addrType);
-					return mejor;
-				}
-			}
+	        JsonObject attExtra = new JsonObject();
+	        attExtra.addProperty("municipioPedido", normalizarTexto(municipioPedido));
+	        attExtra.addProperty("municipioApi", normalizarTexto(municipioArcgis));
+	        attExtra.addProperty("districtApi", normalizarTexto(districtArcgis));
+	        attExtra.addProperty("tipoResultado", normalizarTexto(addrType));
 
-			coords.addProperty("error", "No se encontraron resultados exactos");
-			return coords;
-		}
+	        String direccionParaValidar = quitarSufijoPais(direccion);
 
-		coords.addProperty("error", "No se encontraron resultados");
-		return coords;
+	        if (esCoincidencia(direccionParaValidar, address, attExtra)
+	                && candidate.has("location")) {
+
+	            JsonObject location = candidate.getAsJsonObject("location");
+
+	            JsonObject mejor = new JsonObject();
+	            mejor.addProperty("Longitud", location.get("x").getAsDouble());
+	            mejor.addProperty("Latitud", location.get("y").getAsDouble());
+	            mejor.addProperty("Direccion", address);
+	            mejor.addProperty("Proveedor", "ARCGIS");
+	            mejor.addProperty("TipoResultado", addrType);
+	            return mejor;
+	        }
+	    }
+
+	    coords.addProperty("error", "No se encontraron resultados exactos");
+	    return coords;
 	}
 
-	private static String obtenerAtributo(Map<String, Object> atributos, String nombre) {
-		if (atributos == null || !atributos.containsKey(nombre) || atributos.get(nombre) == null) {
-			return "";
-		}
-		return atributos.get(nombre).toString();
-	}
 
 	/**
 	 * Consulta si un punto cae dentro de alguna zona de cobertura.
@@ -462,9 +611,11 @@ public class UbicacionCtrl {
 	 * Esta sobrecarga mantiene el comportamiento historico: valida el punto contra
 	 * cualquier zona encontrada, sin exigir una tienda especifica.
 	 */
-	public static Resultado consultarZonas(Point punto, String tipo_cliente, String lead, String direccion, String queryUrl) {
-	    return consultarZonas(punto, tipo_cliente, lead, direccion, queryUrl, null);
+	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
+	        String lead, String direccion, String queryUrl) {
+	    return consultarZonas(longitud, latitud, tipo_cliente, lead, direccion, queryUrl, null);
 	}
+
 	
 	/**
 	 * Consulta si un punto cae dentro de una zona de cobertura.
@@ -474,33 +625,63 @@ public class UbicacionCtrl {
 	 *
 	 * Cuando idTiendaEsperada es null, funciona igual que el flujo anterior.
 	 */
-	public static Resultado consultarZonas(Point punto, String tipo_cliente, String lead, String direccion,
-	        String queryUrl, Integer idTiendaEsperada) {
+
+	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
+	        String lead, String direccion, String queryUrl, Integer idTiendaEsperada) {
 
 	    Resultado resultado = new Resultado();
-	    ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable(queryUrl);
-
-	    QueryParameters query = new QueryParameters();
-	    query.setGeometry(punto);
-	    query.setSpatialRelationship(QueryParameters.SpatialRelationship.INTERSECTS);
-
 	    String tipoCliente = tipo_cliente == null ? "" : tipo_cliente.toLowerCase().trim();
 
 	    try {
-	        FeatureQueryResult result = serviceFeatureTable
-	                .queryFeaturesAsync(query, ServiceFeatureTable.QueryFeatureFields.LOAD_ALL)
-	                .get();
+	        JsonObject geometry = new JsonObject();
+	        geometry.addProperty("x", longitud);
+	        geometry.addProperty("y", latitud);
 
-	        if (result != null) {
-	            for (Feature feature : result) {
-	                Map<String, Object> attributes = feature.getAttributes();
+	        JsonObject spatialReference = new JsonObject();
+	        spatialReference.addProperty("wkid", 4326);
+	        geometry.add("spatialReference", spatialReference);
 
-	                Object nombreObj = attributes.get("nombre");
-	                if (nombreObj == null) {
+	        String endpoint = queryUrl.endsWith("/query") ? queryUrl : queryUrl + "/query";
+
+	        String url = endpoint
+	                + "?f=json"
+	                + "&where=1%3D1"
+	                + "&geometry=" + urlEncode(geometry.toString())
+	                + "&geometryType=esriGeometryPoint"
+	                + "&inSR=4326"
+	                + "&spatialRel=esriSpatialRelIntersects"
+	                + "&outFields=*"
+	                + "&returnGeometry=false"
+	                + "&token=" + urlEncode(API_KEY_ARCGIS);
+
+		    System.out.println("endpoint = " + endpoint);
+		    System.out.println("longitud = " + longitud);
+		    System.out.println("latitud = " + latitud);
+		    System.out.println("geometry = " + geometry.toString());
+		    System.out.println("url query zonas = " + url);
+		    
+	        JsonObject json = ejecutarGetJson(url);
+
+	        if (json.has("error")) {
+	            throw new Exception(json.getAsJsonObject("error").toString());
+	        }
+
+	        if (json.has("features")) {
+	            for (JsonElement elem : json.getAsJsonArray("features")) {
+	                JsonObject feature = elem.getAsJsonObject();
+
+	                if (!feature.has("attributes")) {
 	                    continue;
 	                }
 
-	                String nombre = nombreObj.toString();
+	                JsonObject attributes = feature.getAsJsonObject("attributes");
+	                String nombre = obtenerAtributo(attributes, "nombre");
+	                
+
+	                if (nombre.isBlank()) {
+	                    continue;
+	                }
+
 	                int idTiendaZona = capaDAOCC.TiendaDAO.obteneridTienda(nombre);
 
 	                if (idTiendaEsperada != null && idTiendaEsperada > 0 && idTiendaZona != idTiendaEsperada) {
@@ -509,15 +690,15 @@ public class UbicacionCtrl {
 
 	                String mensaje = switch (tipoCliente) {
 	                    case "informacion" ->
-	                        "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
-	                        + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
+	                            "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
+	                                    + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
 
 	                    case "programado" ->
-	                        "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
-	                        + nombre;
+	                            "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
+	                                    + nombre;
 
 	                    default ->
-	                        "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
+	                            "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
 	                };
 
 	                resultado.setResultado(mensaje);
@@ -527,7 +708,10 @@ public class UbicacionCtrl {
 	                                ? "BLOQUEADO"
 	                                : "DISPONIBLE"
 	                );
+	                
+	                resultado.setIdtienda(idTiendaZona);
 	                resultado.setSuccess(true);
+	               
 
 	                return resultado;
 	            }
@@ -535,13 +719,13 @@ public class UbicacionCtrl {
 
 	        String mensajeSinCobertura = switch (tipoCliente) {
 	            case "informacion" ->
-	                "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
+	                    "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
 
 	            case "programado" ->
-	                "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
+	                    "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
 
 	            default ->
-	                "La direccion no se encuentra dentro de cobertura.";
+	                    "La direccion no se encuentra dentro de cobertura.";
 	        };
 
 	        resultado.setResultado(mensajeSinCobertura);
@@ -581,7 +765,7 @@ public class UbicacionCtrl {
 		
 		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-		ArrayList correos = new ArrayList();
+		ArrayList<String> correos = new ArrayList<String>();
 
 		correo.setAsunto("TENEMOS PROBLEMA CON LA CONSULTA DE LA COBERTURA");
 
@@ -610,13 +794,8 @@ public class UbicacionCtrl {
 	public static void main(String[] args) {
 
 		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setDireccion("Cra.100a # 47e-49 San Javier");
-		coberturaRequest.setBarrio("");
-		coberturaRequest.setMunicipio("Medellin");
-		coberturaRequest.setLatitud(6.309667576281085);
-		coberturaRequest.setLongitud(-75.57256232285255);
-		coberturaRequest.setIdTienda(2);
-		coberturaRequest.setDireccionProveedor("Carrera 100A");
+		coberturaRequest.setIdcliente(480034);
+
 
 		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
 		System.out.println(resultado.getResultado());
@@ -632,6 +811,7 @@ public class UbicacionCtrl {
 		System.out.println("Direccion original normalizada: " + resultado.getDireccionOriginalNormalizada());
 		System.out.println("Direccion corregida: " + resultado.getDireccionCorregida());
 		System.out.println("Direccion proveedor: " + resultado.getDireccion());
+		System.out.println("Barrio: " + resultado.getBarrio());
 	}
 
 
@@ -813,7 +993,7 @@ public class UbicacionCtrl {
 	            "copacabana", "girardota", "barbosa", "rionegro", "marinilla", "la ceja", "guarne", "el retiro",
 	            "carmen de viboral", "santuario", "apartado" };
 
-	    for (String m : municipios) {
+	    for (String m : MUNICIPIOS_SOPORTADOS) {
 	        if (texto.matches(".*\\b" + Pattern.quote(m) + "\\b.*")) {
 	            return capitalizarPalabras(m);
 	        }
@@ -1675,6 +1855,16 @@ public class UbicacionCtrl {
 	 */
 	
 	private static boolean puedeValidarPorCoordenadas(CoberturaRequest request) {
+		
+		
+		System.out.println("---** ----"+direccionesCoinciden(request.getDireccion(), request.getDireccionProveedor()));
+		System.out.println(request.tieneCoordenadasValidas());
+		System.out.println(request.tieneCoordenadasValidas());
+		System.out.println(request.tieneIdTiendaValido());
+		System.out.println(request.tieneDireccionProveedor());   
+		
+		
+		
 	    return request.tieneCoordenadasValidas()
 	            && request.tieneIdTiendaValido()
 	            && request.tieneDireccionProveedor()
@@ -1704,6 +1894,98 @@ public class UbicacionCtrl {
 	            && cliente.placaInicial.equals(proveedor.placaInicial)
 	            && cliente.placaFinal.equals(proveedor.placaFinal);
 	}
+	
+	private static JsonObject ejecutarGetJson(String url) throws Exception {
+	    HttpRequest request = HttpRequest.newBuilder()
+	            .uri(URI.create(url))
+	            .GET()
+	            .build();
 
+	    HttpResponse<String> response = HttpClient.newHttpClient()
+	            .send(request, HttpResponse.BodyHandlers.ofString());
+
+	    if (response.statusCode() != 200) {
+	        throw new Exception("Error HTTP ArcGIS: " + response.statusCode() + " - " + response.body());
+	    }
+
+	    return JsonParser.parseString(response.body()).getAsJsonObject();
+	}
+
+	private static String urlEncode(String valor) {
+	    return URLEncoder.encode(valor == null ? "" : valor, StandardCharsets.UTF_8);
+	}
+
+	private static String obtenerAtributo(JsonObject atributos, String nombre) {
+	    if (atributos == null || !atributos.has(nombre) || atributos.get(nombre).isJsonNull()) {
+	        return "";
+	    }
+
+	    return atributos.get(nombre).getAsString();
+	}
+
+	
+	private static JsonObject buscarMunicipioSugeridoSinMunicipio(String direccion,
+	        String municipioOriginal, String barrio) throws Exception {
+
+	    JsonObject pista = crearCoordsVacias();
+
+	    String direccionSinMunicipio = quitarMunicipiosSoportados(direccion);
+	    DireccionNormalizada normalizadaSinMunicipio = normalizarDireccionEntrega(
+	            direccionSinMunicipio,
+	            "",
+	            barrio
+	    );
+
+	    if (normalizadaSinMunicipio.direccionGeocoder == null
+	            || normalizadaSinMunicipio.direccionGeocoder.isBlank()) {
+	        return pista;
+	    }
+
+	    System.out.println("Buscando municipio sugerido sin municipio: "
+	            + normalizadaSinMunicipio.direccionGeocoder);
+
+	    JsonObject coords = GoogleGeocode(normalizadaSinMunicipio.direccionGeocoder, "");
+
+	    return convertirResultadoEnPistaMunicipio(coords, municipioOriginal);
+	}
+
+	private static JsonObject convertirResultadoEnPistaMunicipio(JsonObject coords, String municipioOriginal) {
+	    JsonObject pista = crearCoordsVacias();
+
+	    if (!esCoordenadaValida(coords) || !coords.has("Direccion")) {
+	        return pista;
+	    }
+
+	    String direccionEncontrada = coords.get("Direccion").getAsString();
+	    String municipioSugerido = obtenerMunicipioDesdeTexto(direccionEncontrada);
+
+	    if (municipioSugerido.isBlank()) {
+	        return pista;
+	    }
+
+	    if (!normalizarTexto(municipioOriginal).isBlank()
+	            && normalizarTexto(municipioSugerido).equals(normalizarTexto(municipioOriginal))) {
+	        return pista;
+	    }
+
+	    pista.addProperty("MunicipioSugerido", municipioSugerido);
+	    pista.addProperty("LabelPista", direccionEncontrada);
+
+	    if (coords.has("Proveedor")) {
+	        pista.addProperty("ProveedorPista", coords.get("Proveedor").getAsString());
+	    }
+
+	    return pista;
+	}
+
+	private static String quitarMunicipiosSoportados(String direccion) {
+	    String texto = normalizarTextoBase(direccion);
+
+	    for (String municipio : MUNICIPIOS_SOPORTADOS) {
+	        texto = texto.replaceAll("\\b" + Pattern.quote(municipio) + "\\b", " ");
+	    }
+
+	    return texto.replaceAll("\\s+", " ").trim();
+	}
 	
 }

@@ -22,56 +22,65 @@ import capaModeloCC.Usuario;
 @WebServlet("/ActualizarClienteCoordenadas")
 public class ActualizarClienteCoordenadas extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
-    public ActualizarClienteCoordenadas() {
-        super();
-        // TODO Auto-generated constructor stub
-    }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 */
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	public ActualizarClienteCoordenadas() {
+		super();
+	}
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+
 		response.addHeader("Access-Control-Allow-Origin", "*");
+
 		Logger logger = Logger.getLogger("log_file");
 		HttpSession sesion = request.getSession();
-        float latitud;
-        float longitud;
-        int idCliente;
-        try{
-        	latitud = Float.parseFloat(request.getParameter("latitud"));
-        }catch(Exception e)
-        {
-        	latitud = 0;
-        }
-        try{
-        	longitud = Float.parseFloat(request.getParameter("longitud"));
-        }catch(Exception e)
-        {
-        	longitud = 0;
-        }
-        try{
-        	idCliente = Integer.parseInt(request.getParameter("idcliente"));
-        }catch(Exception e)
-        {
-        	idCliente = 0;
-        }
-        ClienteCtrl ClienCtrl = new ClienteCtrl();
-        ClienCtrl.actualizarClienteCoordenadas(idCliente, latitud, longitud);
-        PrintWriter out = response.getWriter();
-        out.write("");
+
+		float latitud;
+		float longitud;
+		int idCliente;
+
+		try {
+			latitud = Float.parseFloat(request.getParameter("latitud"));
+		} catch (Exception e) {
+			latitud = 0;
+		}
+
+		try {
+			longitud = Float.parseFloat(request.getParameter("longitud"));
+		} catch (Exception e) {
+			longitud = 0;
+		}
+
+		try {
+			idCliente = Integer.parseInt(request.getParameter("idcliente"));
+		} catch (Exception e) {
+			idCliente = 0;
+		}
+
+		String direccionProveedor = request.getParameter("direccion_proveedor");
+
+		if (direccionProveedor != null) {
+			direccionProveedor = direccionProveedor.trim();
+
+			if (direccionProveedor.isEmpty()) {
+				direccionProveedor = null;
+			}
+		}
+
+		ClienteCtrl ClienCtrl = new ClienteCtrl();
+		ClienCtrl.actualizarClienteCoordenadas(
+			idCliente,
+			latitud,
+			longitud,
+			direccionProveedor
+		);
+
+		PrintWriter out = response.getWriter();
+		out.write("");
 	}
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		doGet(request, response);
 	}
-
 }

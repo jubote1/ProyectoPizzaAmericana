@@ -1,308 +1,474 @@
 var marker = null;
 var view = null;
 
+const URL_VALIDACION_COBERTURA = obtenerUrlValidacionCobertura();
+
 require([
   "esri/config",
-  "esri/Map", 
+  "esri/Map",
   "esri/views/MapView",
   "esri/layers/GraphicsLayer",
   "esri/Graphic",
   "esri/symbols/PictureMarkerSymbol",
-  "esri/rest/locator",
-  "esri/widgets/Search",                // 8
-  "esri/layers/FeatureLayer"            // 9
-], function(
+  "esri/layers/FeatureLayer"
+], function (
   esriConfig,
   Map,
   MapView,
   GraphicsLayer,
   Graphic,
   PictureMarkerSymbol,
-  locator,
-  Search,                               // 8 = Search
-  FeatureLayer                          // 9 = FeatureLayer ✅
+  FeatureLayer
 ) {
+  "use strict";
+
+  esriConfig.apiKey = "AAPK211b4727a21c467cab976021a4014485adqFPyZ19VbYqn4_ZnjeAgaKts7YkcKdGxdFqB_ZcyEJasSP102byhIk3tVtW_IO";
+
+  const CENTRO_MAPA = {
+    longitude: -75.56359,
+    latitude: 6.25184,
+    type: "point"
+  };
 
 
-    esriConfig.apiKey = "AAPK211b4727a21c467cab976021a4014485adqFPyZ19VbYqn4_ZnjeAgaKts7YkcKdGxdFqB_ZcyEJasSP102byhIk3tVtW_IO";
-    const serviceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
-    const map = new Map({
-  basemap: "gray-vector",
+  const map = new Map({
+    basemap: "gray-vector",
     ground: "world-elevation"
+  });
+
+  view = new MapView({
+    map: map,
+    center: [CENTRO_MAPA.longitude, CENTRO_MAPA.latitude],
+    zoom: 13,
+    container: "map"
+  });
+
+  const graphicsLayer = new GraphicsLayer();
+
+  const markerSymbol = new PictureMarkerSymbol({
+    url: "pz.png",
+    width: 20,
+    height: 20
+  });
+
+  const markerClient = new PictureMarkerSymbol({
+    url: "markerClient.png",
+    width: 24,
+    height: 24,
+    xoffset: 0,
+    yoffset: 12
+  });
+
+  const textTienda = {
+    type: "text",
+    color: "white",
+    haloColor: "black",
+    haloSize: "1px",
+    text: "",
+    xoffset: 3,
+    yoffset: 3,
+    font: {
+      size: 8,
+      family: "Orbitron",
+      weight: "bold"
+    }
+  };
+
+  marker = new Graphic({
+    geometry: CENTRO_MAPA,
+    symbol: markerClient
+  });
+
+  view.graphics.add(marker);
+  map.add(graphicsLayer);
+
+  cargarZonas(map, FeatureLayer);
+  cargarTiendas(graphicsLayer, Graphic, markerSymbol, textTienda);
+  configurarPopup();
+  configurarEventosMapa();
+  configurarEventosFormulario();
+
+
+  function cargarZonas(map, FeatureLayer) {
+    const palette = [
+      [255, 99, 71, 0.1],
+      [60, 179, 113, 0.1],
+      [65, 105, 225, 0.1],
+      [238, 130, 238, 0.1],
+      [255, 165, 0, 0.1],
+      [100, 149, 237, 0.1],
+      [154, 205, 50, 0.1],
+      [220, 20, 60, 0.1],
+      [30, 144, 255, 0.1],
+      [127, 255, 212, 0.1],
+      [218, 112, 214, 0.1]
+    ];
+
+    const zonasLayer = new FeatureLayer({
+      url: "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0",
+      outFields: ["nombre"],
+      popupTemplate: {
+        title: "{nombre}",
+        content: "Zona: {nombre}"
+      }
     });
 
-    view = new MapView({
-        map: map,
-        center: [-75.56359, 6.25184], // Longitude, latitude
-        zoom: 13, // Zoom level
-        container: "map" // Div element
+    zonasLayer.queryFeatures({
+      where: "1=1",
+      outFields: ["nombre"],
+      returnGeometry: false
+    }).then(function (result) {
+      const nombres = result.features
+        .map(function (feature) {
+          return feature.attributes.nombre;
+        })
+        .filter(Boolean);
+
+      const nombresUnicos = Array.from(new Set(nombres));
+
+      const uniqueValueInfos = nombresUnicos.map(function (nombre, index) {
+        return {
+          value: nombre,
+          label: nombre,
+          symbol: {
+            type: "simple-fill",
+            color: palette[index % palette.length],
+            outline: {
+              color: [194, 194, 194],
+              width: 1
+            }
+          }
+        };
       });
 
-      
-      const graphicsLayer = new GraphicsLayer();
-     
-
-      const markerSymbol = new PictureMarkerSymbol({
-        url: 'pz.png',
-        width: 20,  // Ancho de la imagen en píxeles
-        height: 20, // Altura de la imagen en píxeles
-
-      });
-
-	  const palette = [
-	    [255, 99, 71, 0.1],     // rojo
-	    [60, 179, 113, 0.1],    // verde
-	    [65, 105, 225, 0.1],    // azul
-	    [238, 130, 238, 0.1],   // violeta
-	    [255, 165, 0, 0.1],     // naranja
-	    [100, 149, 237, 0.1],   // azul claro
-	    [154, 205, 50, 0.1],    // verde lima
-	    [220, 20, 60, 0.1],     // rojo oscuro
-	    [30, 144, 255,0.1],    // azul intenso
-	    [127, 255, 212, 0.1],   // aguamarina
-	    [218, 112, 214, 0.1]    // orquídea
-	  ];
-
-	  // ⚠️ Este bloque ahora no usa .when()
-	  const zonasLayer = new FeatureLayer({
-	    url: "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0",
-	    outFields: ["nombre"],
-	    popupTemplate: {
-	      title: "{nombre}",
-	      content: "Zona: {nombre}"
-	    }
-	  });
-
-	  // Consulta los nombres únicos
-	  zonasLayer.queryFeatures({
-	    where: "1=1",
-	    outFields: ["nombre"],
-	    returnGeometry: false
-	  }).then((result) => {
-	    const uniqueNames = [...new Set(result.features.map(f => f.attributes.nombre))];
-
-	    const uniqueValueInfos = uniqueNames.map((name, idx) => ({
-	      value: name,
-	      label: name,
-	      symbol: {
-	        type: "simple-fill",
-	        color: palette[idx % palette.length],
-	        outline: { color: [194, 194, 194], width: 1 }
-	      }
-	    }));
-
-	    // Asigna renderer único
-	    zonasLayer.renderer = {
-	      type: "unique-value",
-	      field: "nombre",
-	      uniqueValueInfos: uniqueValueInfos
-	    };
-
-	    map.add(zonasLayer);
-	  });
-      
-      const text_tienda = {
-        type: "text",  // autocasts as new TextSymbol()
-        color: "white",
-        haloColor: "black",
-        haloSize: "1px",
-        text: "Wish you were here",
-        xoffset: 3,
-        yoffset: 3,
-        font: {  // autocasts as new Font()
-          size: 8,
-          family: "Orbitron",
-          weight: "bold"
-        }
+      zonasLayer.renderer = {
+        type: "unique-value",
+        field: "nombre",
+        uniqueValueInfos: uniqueValueInfos
       };
 
-      //agregamos los marcadores de las tiendas
-      readTextFile("tiendas.json", function(text){
-        var data = JSON.parse(text);
-        for(var i= 0;i< data.length;i++){
-        var points=data[i]["coordinates"]
-        var points2=data[i]["lugar_cercano"]
+      map.add(zonasLayer);
+    }).catch(function (error) {
+      console.error("Error cargando zonas:", error);
+    });
+  }
 
-        markerGeometry = {
-          type: 'point',
-          longitude: points["lng"], // Longitud del marcador
-          latitude: points["lat"] // Latitud del marcador
-        };
+  function cargarTiendas(graphicsLayer, Graphic, markerSymbol, textTienda) {
+    readTextFile("tiendas.json", function (text) {
+      const tiendas = JSON.parse(text);
 
-        const template = {
-          title:data[i]["title"]
+      tiendas.forEach(function (tienda) {
+        const coordenadasTienda = tienda.coordinates;
+        const coordenadasTexto = tienda.lugar_cercano;
+
+        if (!coordenadasTienda || !coordenadasTexto) {
+          return;
         }
 
-        markerGraphic = new Graphic({
+        const markerGeometry = {
+          type: "point",
+          longitude: coordenadasTienda.lng,
+          latitude: coordenadasTienda.lat
+        };
+
+        const markerGraphic = new Graphic({
           geometry: markerGeometry,
           symbol: markerSymbol,
-          popupTemplate: template
-      });
-
+          popupTemplate: {
+            title: tienda.title
+          }
+        });
 
         graphicsLayer.add(markerGraphic);
-         
-        const point_tienda = {
-          type: "point",  // autocasts as new Point()
-          longitude: points2["lng"],
-          latitude: points2["lat"]
+
+        const textoGeometry = {
+          type: "point",
+          longitude: coordenadasTexto.lng,
+          latitude: coordenadasTexto.lat
         };
-        
-        text_tienda.text = data[i]["zona"]
 
-        const Graphic_tienda = new Graphic({
-          geometry: point_tienda,
-          symbol: text_tienda
+        const textoSymbol = Object.assign({}, textTienda, {
+          text: tienda.zona || ""
         });
 
-        view.graphics.add(Graphic_tienda)
-        }
-
-       
-      });
-
-      point_client = {
-        type: "point",  // autocasts as new Point()
-        longitude: -75.56359,
-        latitude: 6.25184
-      };
-      
-      // Create a symbol for drawing the point
-      const marker_client = new PictureMarkerSymbol({
-        url: 'markerClient.png',
-        width: 24,
-        height: 24,
-        xoffset: 0,
-        yoffset: 12
-      });
-
-      
-     marker =  new Graphic({
-        geometry:point_client,
-        symbol: marker_client
- 
-      });
-
-    view.graphics.add(marker);
-    map.add(graphicsLayer);
-
-    view.on("click", (event) => {
-      // Realizar una prueba de selección espacial con el clic del usuario
-      view.hitTest(event).then(function(response) {
-        // Obtener las gráficas que se han intersectado con el clic
-        const graphics = response.results.map(function(result) {
-          return result.graphic;
+        const textoGraphic = new Graphic({
+          geometry: textoGeometry,
+          symbol: textoSymbol
         });
-        
-        // Verificar si se hizo clic en un marcador
-        const isMarkerClicked = graphics.some(function(graphic) {
-          // Verificar si la gráfica tiene un símbolo de marcador
-          return graphic.symbol && graphic.symbol.type === "picture-marker";
-        });
-        
-        // Hacer algo si se hizo clic en un marcador
-        if (!isMarkerClicked) {
-          const params = {
-            location: event.mapPoint,
-            outFields: "*"
-          };
-          fijarCoordenadasManualmente(event.mapPoint.latitude,event.mapPoint.longitude);
-          locator.locationToAddress(serviceUrl, params).then(
-              function (response) {
-                // Show the address found
-                showAddress(response.address, event.mapPoint)
-                // Show no address found
-            
-            }
-            );
-        }
 
+        view.graphics.add(textoGraphic);
       });
-
     });
+  }
 
-
-   //configuramos la cuadro donde se muestra la direccion del marcador.
+  function configurarPopup() {
     view.popup = {
       dockEnabled: true,
       dockOptions: {
         position: "top-left",
         breakpoint: false
       }
-     };
-     
+    };
+  }
 
+  function configurarEventosMapa() {
+    view.on("click", function (event) {
+      view.hitTest(event).then(function (response) {
+        const graphics = response.results.map(function (result) {
+          return result.graphic;
+        });
 
-      //se busca la direccion escrita en el input y se se actualizan las coordenadas el marcador.
-      function findAddress(){
+        const markerTiendaSeleccionado = graphics.some(function (graphic) {
+          return graphic.symbol && graphic.symbol.type === "picture-marker";
+        });
 
-        var address = $("#descDireccion").val();  //"Diagonal 55 #43-90, Niquia, Bello, Antioquia";
-        // Definir los parámetros de la solicitud
-        var params = {
-          address:{"address":address},
-        };          
+        if (markerTiendaSeleccionado) {
+          return;
+        }
 
-          if(address != ""){
-            locator.addressToLocations(serviceUrl,params).then(function(response){
-              if(response[0] != null)
-              {
-                  marker.geometry =response[0].location
-                  showAddress(address, marker.geometry)
-                  fijarCoordenadasManualmente(response[0].location.latitude,response[0].location.longitude);
-              }
-            });
-    
-          }
-  
-      }
-    
-      $("#buscarmapa").on("click",function(){
-    
-        findAddress()
+        const punto = {
+          type: "point",
+          latitude: event.mapPoint.latitude,
+          longitude: event.mapPoint.longitude
+        };
+
+        fijarCoordenadasManualmente(punto.latitude, punto.longitude);
+        showAddress("Ubicacion seleccionada manualmente", punto);
       });
+    });
+  }
 
-      
+  function configurarEventosFormulario() {
+    $("#buscarmapa").on("click", function () {
+      findAddress();
+    });
 
-});
-
-// funcion para leer el archivo json.
- function readTextFile(file, callback) {
-    var rawFile = new XMLHttpRequest();
-    rawFile.overrideMimeType("application/json");
-    rawFile.open("GET", file, true);
-    rawFile.onreadystatechange = function() {
-    if (rawFile.readyState === 4 && rawFile.status == "200") {
-        callback(rawFile.responseText);
-    }
-    }
-    rawFile.send(null);
+    $("#descDireccion").on("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        findAddress();
+      }
+    });
   }
 
 
- //se abre un  widget emergente que permite ver la direccion que se ha seleccionado con el marcador.
-   function showAddress(address, location) {
-      marker.geometry = location
-      view.openPopup({
-          title:Math.round(location.latitude * 100000) / 100000 +", " + Math.round(location.longitude * 100000) / 100000,
-          content: address
-     
-        });
 
-        view.goTo({
-          center: [location.longitude,location.latitude]
-        });
+});
+
+function obtenerValor(selector) {
+  const elemento = $(selector);
+
+  if (!elemento.length) {
+    return "";
+  }
+
+  return String(elemento.val() || "").trim();
+}
+
+function escaparHtml(valor) {
+  return String(valor || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function obtenerDireccionCobertura() {
+  if ($("#validaDir").is(":checked")) {
+    return obtenerValor("#descDireccion");
+  }
+
+  return obtenerValor("#direccion");
+}
+
+
+
+function construirContenidoPopup(data, direccionMostrar) {
+  const partes = [];
+
+  partes.push("<strong>Direccion:</strong> " + escaparHtml(direccionMostrar));
+
+if (data.proveedorGeocodificacion) {
+  partes.push("<strong>Proveedor:</strong> " + escaparHtml(data.proveedorGeocodificacion));
+}
+
+  return partes.join("<br>");
+}
+
+
+function bloquearBusqueda(bloquear) {
+  $("#buscarmapa").prop("disabled", bloquear);
+  $("#loaderCobertura").toggle(bloquear);
+  $("#buscarmapa").text(bloquear ? "Buscando..." : "Buscar");
+
+  if (bloquear) {
+    $("#buscarmapa").addClass("disabled");
+  } else {
+    $("#buscarmapa").removeClass("disabled");
+  }
+}
+
+
+
+function coordenadasValidas(latitud, longitud) {
+  const lat = Number(latitud);
+  const lng = Number(longitud);
+
+  return !Number.isNaN(lat) &&
+    !Number.isNaN(lng) &&
+    lat !== 0 &&
+    lng !== 0 &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180;
+}
+
+function readTextFile(file, callback) {
+  const rawFile = new XMLHttpRequest();
+
+  rawFile.overrideMimeType("application/json");
+  rawFile.open("GET", file, true);
+
+  rawFile.onreadystatechange = function () {
+    if (rawFile.readyState === 4 && rawFile.status === 200) {
+      callback(rawFile.responseText);
+    }
+  };
+
+  rawFile.send(null);
+}
+
+function obtenerUrlValidacionCobertura() {
+  if (window.APP_CONTEXT_PATH) {
+    return window.APP_CONTEXT_PATH + "/ValidacionCobertura";
+  }
+
+  return "ValidacionCobertura";
+}
+
+function mostrarMensaje(mensaje) {
+  alert(mensaje);
+}
+
+async function findAddress(idcliente = null) {
+
+      let coberturaRequest;
+
+      if (idcliente) {
+          coberturaRequest = { idcliente };
+      } else {
+
+          const direccion = obtenerDireccionCobertura();
+
+          if (!direccion) {
+              mostrarMensaje("Debe ingresar una dirección.");
+              return;
+          }
+
+          coberturaRequest = {
+              direccion,
+              municipio: obtenerValor("#selectMunicipio"),
+              barrio: obtenerValor("#barrio")
+          };
+
+          bloquearBusqueda(true);
       }
 
+      try {
 
-  function clarearMapa()
-{
-    
-    const params={
-      longitude :-75.56359,latitude:6.25184,type:"point"
-    }
-    marker.geometry =params
-    view.goTo({
-          center:  [-75.56359, 6.25184]
-        });
+          const response = await fetch(URL_VALIDACION_COBERTURA, {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json;charset=UTF-8"
+              },
+              body: JSON.stringify(coberturaRequest)
+          });
+
+          const data = await response.json();
+         
+          if (!response.ok || !data.success) {
+              mostrarMensaje(data.resultado || "No fue posible validar la cobertura.");
+              return;
+          }
+
+          if (!coordenadasValidas(data.latitud, data.longitud)) {
+              mostrarMensaje("El servicio no devolvió coordenadas válidas.");
+              return;
+          }
+
+          const punto = {
+              type: "point",
+              latitude: Number(data.latitud),
+              longitude: Number(data.longitud)
+          };
+
+          const direccionMostrar =
+              data.direccion ??
+              data.direccionCorregida ??
+              data.direccionOriginalNormalizada;
+
+          showAddress(
+              construirContenidoPopup(data, direccionMostrar),
+              punto
+          );
+
+          fijarCoordenadasManualmente(
+              punto.latitude,
+              punto.longitude
+          );
+
+      } catch (error) {
+          console.error("Error validando cobertura:", error);
+          mostrarMensaje("Error consultando el servicio de cobertura.");
+      } finally {
+          if (!idcliente) {
+              bloquearBusqueda(false);
+          }
+      }
+  }
+
+  
+function showAddress(address, location) {
+  marker.geometry = location;
+
+  view.goTo({
+    center: [location.longitude, location.latitude],
+    zoom: 17
+  }, {
+    duration: 800
+  }).then(function () {
+    view.openPopup({
+      title: redondear(location.latitude) + ", " + redondear(location.longitude),
+      content: address,
+      location: location
+    });
+  });
+
+  var mapa = document.getElementById("map");
+  if (mapa) {
+    mapa.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+}
+
+function redondear(numero) {
+  return Math.round(Number(numero) * 100000) / 100000;
+}
+
+function clarearMapa() {
+  const puntoInicial = {
+    longitude: -75.56359,
+    latitude: 6.25184,
+    type: "point"
+  };
+
+  marker.geometry = puntoInicial;
+
+  view.goTo({
+    center: [puntoInicial.longitude, puntoInicial.latitude]
+  });
 }

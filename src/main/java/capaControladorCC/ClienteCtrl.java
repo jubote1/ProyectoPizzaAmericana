@@ -17,8 +17,10 @@ import capaDAOCC.TiendaBloqueadaDAO;
 import capaDAOCC.TiendaDAO;
 import capaModeloCC.Cliente;
 import capaModeloCC.ClienteAlerta;
+import capaModeloCC.CoberturaRequest;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
+import capaModeloCC.Resultado;
 import capaModeloCC.Tienda;
 import capaModeloCC.Ubicacion;
 import utilidadesCC.ControladorEnvioCorreo;
@@ -830,9 +832,9 @@ public String obtenerNotificacionesCliente(int idCliente)
 			
 	}
 	
-	public void actualizarClienteCoordenadas(int idCliente, float latitud, float longitud)
+	public void actualizarClienteCoordenadas(int idCliente, float latitud, float longitud,String direccionProveedor)
 	{
-		ClienteDAO.actualizarClienteCoordenas(idCliente, latitud, longitud);
+		ClienteDAO.actualizarClienteCoordenas(idCliente, latitud, longitud ,direccionProveedor);
 	}
 
 	public String actualizarClienteDireccion(int idCliente, String direccion, String municipio, float latitud, float longitud, String zona,  String observacion, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3 )
@@ -881,60 +883,44 @@ public String obtenerNotificacionesCliente(int idCliente)
 	}
 
 
-	public org.json.JSONObject ValidarExistenciaClienteCRM(String telefono) {
+	public Resultado ValidarExistenciaClienteCRM(String telefono) {
 
-		org.json.JSONObject respuesta = new org.json.JSONObject();
-	    Cliente cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
 
-	    String clienteRecurrente = "NEGATIVO";
-	    String estadoTienda = "DISPONIBLE";
+        String clienteRecurrente  ="NEGATIVO";
+        CoberturaRequest coberturaRequest = new  CoberturaRequest(); 
+        coberturaRequest.setTelefono(telefono);
 
-	    if (cliente != null) {
+	    Resultado result  = UbicacionCtrl.ubicarDireccionEnTienda(coberturaRequest);
+	        
+	        
+	        if (result.isSuccess()) {
 
-	        String direccion = cliente.getDireccion();
-	        String tienda = cliente.getTienda() == null ? "" : cliente.getTienda().trim();
-
-	        boolean camposValidos =
-	                !tienda.isEmpty() &&
-	                direccionEsValida(direccion);
-
-	        if (camposValidos) {
-
-	            int idTienda = cliente.getIdtienda();
+	            String estadoTienda = result.getEstadoTienda();
+	            int idtienda = result.getIdtienda();
 
 	            // 1️⃣ Validar si la tienda está funcional
-	            if (TiendaDAO.validarTiendaFuncional(idTienda)) {
-
-	                // 2️⃣ Validar si está bloqueada
-	                boolean bloqueada = TiendaBloqueadaDAO.validarTiendaBloqueada(idTienda);
-
-	                if (bloqueada) {
-	                    clienteRecurrente = "BLOQUEADO";
-	                    estadoTienda = "BLOQUEADO";
-	                } else {
-	                    clienteRecurrente = "AFIRMATIVO";
-	                }
+	            if (TiendaDAO.validarTiendaFuncional(idtienda)) {
+	            	
+	            	if(estadoTienda.toUpperCase().equals("BLOQUEADO")){
+	            	    clienteRecurrente = "BLOQUEADO";
+	            	}else {
+	            		clienteRecurrente = "AFIRMATIVO";
+	            	}
 
 	            } else {
 	                clienteRecurrente = "INACTIVO";
 	            }
 
-	            // 3️⃣ Respuesta con los datos del cliente
-	            respuesta.put("estadoTienda", estadoTienda);
-	            respuesta.put("direccion", cliente.getDireccion());
-	            respuesta.put("barrio", cliente.getZonaDireccion());
-	            respuesta.put("municipio", cliente.getMunicipio());
-	            respuesta.put("tienda", cliente.getTienda());
-	            respuesta.put("idtienda", cliente.getIdtienda());
-	            respuesta.put("latitud", cliente.getLatitud());
-	            respuesta.put("longitud", cliente.getLontitud());
-	            respuesta.put("referencia", cliente.getObservacion());
+	        }else {
+	        	
+	    		
+	    		
+
 	        }
-	    }
+	  
+	     result.setClienteRecurrente(clienteRecurrente);
 
-	    respuesta.put("clienteRecurrente", clienteRecurrente);
-
-	    return respuesta;
+	    return result;
 	}
 	
 

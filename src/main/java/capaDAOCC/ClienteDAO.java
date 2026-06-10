@@ -430,7 +430,7 @@ public class ClienteDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.idcliente, b.nombre nombreTienda, a.idtienda, a.nombre, a.apellido, a.nombrecompania, a.direccion, a.zona, a.observacion, a.telefono, c.nombre nombremunicipio, c.idmunicipio, a.latitud, a.longitud, a.memcode, a.idnomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, d.nomenclatura, a.distancia_tienda, a.telefono_celular, a.email, a.politica_datos, a.observacion_virtual, a.email_facturacion, a.facturar_sin, a.idtipopersona, a.identificacion from cliente a JOIN tienda b ON a.idtienda = b.idtienda JOIN municipio c ON a.idmunicipio = c.idmunicipio left join nomenclatura_direccion d on a.idnomenclatura = d.idnomenclatura  where a.idcliente = " + id +"";
+			String consulta = "select a.idcliente, b.nombre nombreTienda, a.idtienda, a.nombre, a.apellido, a.nombrecompania, a.direccion, a.zona, a.observacion, a.telefono, c.nombre nombremunicipio, c.idmunicipio, a.latitud, a.longitud, a.memcode, a.idnomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, d.nomenclatura, a.distancia_tienda, a.telefono_celular, a.email, a.politica_datos, a.observacion_virtual, a.email_facturacion, a.facturar_sin, a.idtipopersona, a.identificacion , a.direccion_proveedor from cliente a JOIN tienda b ON a.idtienda = b.idtienda JOIN municipio c ON a.idmunicipio = c.idmunicipio left join nomenclatura_direccion d on a.idnomenclatura = d.idnomenclatura  where a.idcliente = " + id +"";
 			logger.info(consulta);
 
 			ResultSet rs = stm.executeQuery(consulta);
@@ -463,6 +463,7 @@ public class ClienteDAO {
 			String clienteSinIden;
 			int idTipoPersona;
 			String identificacion;
+			String direccion_proveedor;
 			while(rs.next()){
 				idcliente = rs.getInt("idcliente");
 				nombreTienda = rs.getString("nombreTienda");
@@ -493,6 +494,7 @@ public class ClienteDAO {
 				clienteSinIden = rs.getString("facturar_sin");
 				idTipoPersona = rs.getInt("idtipopersona");
 				identificacion = rs.getString("identificacion");
+				direccion_proveedor= rs.getString("direccion_proveedor");
 				clienteConsultado = new Cliente( idcliente, telefono, nombreCliente, apellido, nombreCompania, direccion,municipio, latitud, longitud, distanciaTienda, zona, observacion, nombreTienda, idTienda,memcode,idnomenclatura, numNomenclatura1, numNomenclatura2, num3, nomenclatura);
 				clienteConsultado.setIdMunicipio(idMunicipio);
 				clienteConsultado.setEmail(email);
@@ -503,6 +505,7 @@ public class ClienteDAO {
 				clienteConsultado.setClienteSinIden(clienteSinIden);
 				clienteConsultado.setIdTipoPersona(idTipoPersona);
 				clienteConsultado.setIdentificacion(identificacion);
+				clienteConsultado.setDireccionProveedor(direccion_proveedor);
 			}
 			rs.close();
 			stm.close();
@@ -1236,37 +1239,56 @@ public class ClienteDAO {
 		
 	}
 	
-	public static void actualizarClienteCoordenas(int idCliente, float latitud, float longitud)
+	public static void actualizarClienteCoordenas(int idCliente, float latitud, float longitud, String direccionProveedor)
 	{
-		Logger logger = Logger.getLogger("log_file");
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
-			Statement stm = con1.createStatement();
-			if(idCliente > 0)
-			{
-				String update = "update cliente set latitud  = " + latitud +" , longitud = " + longitud + " where idcliente = " + idCliente; 
-				logger.info(update);
-				stm.executeUpdate(update);
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
 
-			}else
-			{
-				logger.info("No se pudo hacer actualizaci�n dado que el idCliente venia en ceros o vac�o");
-			}
-			stm.close();
-			con1.close();
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-		}
+	    try
+	    {
+	        Statement stm = con1.createStatement();
+
+	        if(idCliente > 0)
+	        {
+	            String update = "UPDATE cliente SET latitud = " + latitud +
+	                            ", longitud = " + longitud;
+
+	            if(direccionProveedor != null && !direccionProveedor.trim().isEmpty())
+	            {
+	                update += ", direccion_proveedor = '" +
+	                          direccionProveedor.replace("'", "''") + "'";
+	            }
+
+	            update += " WHERE idcliente = " + idCliente;
+
+	            logger.info(update);
+	            stm.executeUpdate(update);
+	        }
+	        else
+	        {
+	            logger.info("No se pudo hacer actualización dado que el idCliente venía en ceros o vacío");
+	        }
+
+	        stm.close();
+	        con1.close();
+	    }
+	    catch (Exception e)
+	    {
+	        logger.error(e.toString());
+
+	        try
+	        {
+	            if(con1 != null)
+	            {
+	                con1.close();
+	            }
+	        }
+	        catch(Exception e1)
+	        {
+	            logger.error(e1.toString());
+	        }
+	    }
 	}
 	
 	public static boolean actualizarClienteDireccion(int idCliente, String direccion, int idMunicipio, float latitud, float longitud, String zona,  String observacion, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3)
@@ -1513,7 +1535,7 @@ public class ClienteDAO {
 		    Connection con1 = con.obtenerConexionBDPrincipal();
 
 		    String consulta =
-		            "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, "
+		            "SELECT a.idcliente, a.direccion, a.zona, a.latitud, a.longitud, a.observacion, a.direccion_proveedor, "
 		          + "c.nombre AS nombremunicipio, d.nomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, "
 		          + "b.idtienda, b.nombre AS nombreTienda "
 		          + "FROM cliente a "
@@ -1550,6 +1572,7 @@ public class ClienteDAO {
 		            cliente.setLatitud(rs.getFloat("latitud"));
 		            cliente.setLontitud(rs.getFloat("longitud"));
 		            cliente.setObservacion(rs.getString("observacion"));
+		            cliente.setDireccionProveedor(rs.getString("direccion_proveedor"));
 		        }
 
 		        rs.close();
