@@ -148,6 +148,124 @@ public class ClienteDAO {
 		
 	}
 	
+	
+	/**
+	 * 
+	 * @param tel Dado el telef�no de un cliente se encarga de retornar en un array list de objetos tipo liente
+	 * la informaci�n de los registros que coincidente con dicho tel�fono.
+	 * @return ArrayList de tipo cliente con la informaci�n de clientes que coinciden con el tel�fono dado.
+	 */
+	public static ArrayList<Cliente> obtenerClienteIA(String tel)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList<Cliente> clientes = new ArrayList();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			String consulta = "select a.idcliente, b.nombre nombreTienda, a.idtienda, a.nombre, a.apellido, a.nombrecompania, a.direccion, a.zona, a.observacion, a.telefono, c.nombre nombremunicipio, a.latitud, a.longitud, a.distancia_tienda, a.memcode, a.idnomenclatura, a.num_nomencla1, a.num_nomencla2, a.num3, d.nomenclatura, a.activo, a.zona_tienda, a.telefono_celular, a.email, a.politica_datos, a.fecha_nacimiento, a.facturar_sin, a.email_facturacion, a.idtipopersona, a.identificacion from cliente a left outer join tienda b on a.idtienda = b.idtienda left outer join municipio c on a.idmunicipio = c.idmunicipio left outer join nomenclatura_direccion d on a.idnomenclatura = d.idnomenclatura where a.telefono = '"+ tel +"' and activo = 1 AND a.idcliente IN (SELECT z.idcliente  FROM pedido z, cliente y WHERE z.idcliente = y.idcliente AND z.fechapedido >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) AND y.telefono = '"+ tel +"' GROUP BY z.idcliente) LIMIT 2";
+			logger.info(consulta);
+			ResultSet rs = stm.executeQuery(consulta);
+			int idcliente;
+			String nombreTienda;
+			String nombreCliente;
+			String apellido;
+			String nombreCompania;
+			String direccion;
+			String zona;
+			String observacion;
+			String telefono;
+			String municipio;
+			float latitud;
+			float longitud;
+			double distanciaTienda;
+			int idTienda;
+			int memcode;
+			int idnomenclatura;
+			String numNomenclatura1;
+			String numNomenclatura2;
+			String num3;
+			String nomenclatura;
+			String zonaTienda;
+			String telefonoCelular;
+			String email;
+			String politicaDatos;
+			String fechaNacimiento;
+			String clienteSinIden;
+			String emailFact;
+			int idTipoPersona;
+			String identificacion;
+			while(rs.next()){
+				idcliente = rs.getInt("idcliente");
+				nombreTienda = rs.getString("nombreTienda");
+				nombreCliente = rs.getString("nombre");
+				apellido = rs.getString("apellido");
+				nombreCompania = rs.getString("nombrecompania");
+				direccion = rs.getString("direccion");
+				zona = rs.getString("zona");
+				observacion = rs.getString("observacion");
+				telefono = rs.getString("telefono");
+				municipio = rs.getString("nombremunicipio");
+				latitud = rs.getFloat("latitud");
+				longitud = rs.getFloat("longitud");
+				idTienda = rs.getInt("idtienda");
+				distanciaTienda = rs.getDouble("distancia_tienda");
+				memcode = rs.getInt("memcode");
+				idnomenclatura = rs.getInt("idnomenclatura");
+				numNomenclatura1 = rs.getString("num_nomencla1");
+				numNomenclatura2 = rs.getString("num_nomencla2");
+				num3 = rs.getString("num3");
+				nomenclatura = rs.getString("nomenclatura");
+				zonaTienda = rs.getString("zona_tienda");
+				telefonoCelular = rs.getString("telefono_celular");
+				email = rs.getString("email");
+				politicaDatos = rs.getString("politica_datos");
+				fechaNacimiento = rs.getString("fecha_nacimiento");
+				Cliente clien = new Cliente( idcliente, telefono, nombreCliente,apellido, nombreCompania, direccion,municipio,latitud, longitud, distanciaTienda, zona, observacion, nombreTienda, idTienda, memcode,idnomenclatura, numNomenclatura1, numNomenclatura2, num3, nomenclatura);
+				clien.setZonaTienda(zonaTienda);
+				clien.setTelefonoCelular(telefonoCelular);
+				clien.setEmail(email);
+				clien.setPoliticaDatos(politicaDatos);
+				if(fechaNacimiento == null)
+				{
+					fechaNacimiento = "";
+				}
+				clienteSinIden = rs.getString("facturar_sin");
+				emailFact = rs.getString("email_facturacion");
+				if(emailFact == null)
+				{
+					emailFact = "";
+				}
+				idTipoPersona = rs.getInt("idtipopersona");
+				identificacion = rs.getString("identificacion");
+				if(identificacion == null)
+				{
+					identificacion = "";
+				}
+				clien.setFechaNacimiento(fechaNacimiento);
+				clien.setClienteSinIden(clienteSinIden);
+				clien.setEmailFacturacion(emailFact);
+				clien.setIdTipoPersona(idTipoPersona);
+				clien.setIdentificacion(identificacion);
+				clientes.add(clien);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(clientes);
+		
+	}
+	
 	/**
 	 * M�todo que retorna el �ltimo cliente asociado a  un pedido por parte de este cliente
 	 * con el fin de dar la informaci�n m�s actualizada posible
@@ -1547,7 +1665,7 @@ public class ClienteDAO {
 		          + "AND NOT EXISTS ( "
 		          + "    SELECT 1 "
 		          + "    FROM pedido p "
-		          + "    JOIN pedido_anulado pa ON pa.idpediotienda = p.numposheader "
+		          + "    JOIN pedido_anulado pa ON pa.idpedidotienda = p.numposheader "
 		          + "    WHERE p.idcliente = a.idcliente "
 		          + "    ORDER BY p.idpedido DESC "
 		          + "    LIMIT 1 "

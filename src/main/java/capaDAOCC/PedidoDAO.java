@@ -5906,7 +5906,9 @@ public class PedidoDAO {
 			ArrayList ventasAsesor = new ArrayList();
 			String consulta = "";
 			consulta = "SELECT SUM(CANTIDAD)/2 AS cantidad, nombre FROM ( "
-					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad1 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre "
+					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad1 = c.idespecialidad AND b.idespecialidad2 > 0 AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre "
+					+ "UNION "
+					+ "SELECT (COUNT(*))*2 AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad1 = c.idespecialidad AND b.idespecialidad2 = 0 AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre "
 					+ "UNION "
 					+ "SELECT COUNT(*) AS cantidad, c.nombre FROM pedido a, detalle_pedido b, especialidad c  WHERE a.fechapedido >= '"+ fechaInicial +"' AND a.fechapedido <= '"+ fechaFinal +"' AND a.idpedido = b.idpedido AND a.origen = 'C' AND b.idespecialidad2 = c.idespecialidad AND a.usuariopedido = '" + asesor + "' GROUP BY c.nombre) AS especialidad GROUP BY nombre "
 					+ "UNION "

@@ -378,7 +378,8 @@ public class EmpleadoEncuestaDAO {
             Integer idtienda =encuestaservicio.getIdtienda();
             String  nombre_cliente=encuestaservicio.getNombre_cliente();
             String  telefono =encuestaservicio.getTelefono();
-            
+            //Intentamos marcar que la encuesta fue diligenciada
+            LogEncuestaServicioDAO.actualizarLlenadoLogEncuestaServicio(idtienda, idpedido);
             
                 // Usamos el PreparedStatement dentro del bloque try-with-resources
                 try (PreparedStatement pstmt = con1.prepareStatement(sql)) {

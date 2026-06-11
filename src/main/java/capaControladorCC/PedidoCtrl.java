@@ -7730,6 +7730,7 @@ public class PedidoCtrl {
 						}
 		        
 		      }
+
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
