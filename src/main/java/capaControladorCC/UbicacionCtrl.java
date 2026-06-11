@@ -794,8 +794,7 @@ public class UbicacionCtrl {
 	public static void main(String[] args) {
 
 		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setIdcliente(480034);
-
+		coberturaRequest.setTelefono("3185020068");
 
 		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
 		System.out.println(resultado.getResultado());
