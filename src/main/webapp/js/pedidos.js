@@ -117,6 +117,20 @@ switch (respuesta) {
 		break;
 }
 
+function limpiarValorFormulario(valor) {
+	if (
+		valor === null ||
+		valor === undefined ||
+		valor === "null" ||
+		valor === "undefined"
+	) {
+		return "";
+	}
+
+	return String(valor).replace(/\s+/g, " ").trim();
+}
+
+
 // A continuación  la ejecucion luego de cargada la pagina
 $(document).ready(function() {
 
@@ -344,19 +358,7 @@ $("#fechapedido").change(function(){
     // A continuación definimos el evento para cuando se de clic en el datatable de pedidos, se deberán desplegar los valores en los campos
     // de cliente y adicionalmente la variale glogal de idcliente se capturara, adicionalmente se consumirá la API de google para buscar la
     //dirección. 
-	function limpiarValorFormulario(valor) {
-		if (
-			valor === null ||
-			valor === undefined ||
-			valor === "null" ||
-			valor === "undefined"
-		) {
-			return "";
-		}
 
-		return String(valor).replace(/\s+/g, " ").trim();
-	}
-	
     $('#grid-clientes tbody').on('click', 'tr', function () {
         //cerramos la notificacion en caso de que esté abierta
         datos = table.row( this ).data();

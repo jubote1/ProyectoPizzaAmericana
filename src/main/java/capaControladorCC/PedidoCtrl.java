@@ -7399,6 +7399,7 @@ public class PedidoCtrl {
 	 * @param idLog
 	 */
 	public boolean procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
+		boolean pedidoInsertado = false; 
 		String resultadoProceso = "";
 		String obserProceso = "";
 		String asesor = "";
@@ -7711,27 +7712,25 @@ public class PedidoCtrl {
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
 			
-			if (idPedido <= 0) {
-				resultadoProceso = resultadoProceso + " No se logro insertar el pedido correctamente.";
-				return false;
-			}
+			 if (idPedido > 0) {
+			        pedidoInsertado = true; // aquí sí sabemos que se insertó
+			   }
+
+		       // Realizamos la inserción del producto ordenado
+					String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
+					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
+					
+					// Agregamos el procesamiento del segundo producto si lo hay
+					if (!nombreDelCombo_2.equals(new String(""))) {
+						String log2 = 	insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
 
 
-       // Realizamos la inserción del producto ordenado
-			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
-			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
-			
-			// Agregamos el procesamiento del segundo producto si lo hay
-			if (!nombreDelCombo_2.equals(new String(""))) {
-				String log2 = 	insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
+						if (log2 != null && log2.trim().length() > 0) {
+							LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
+						}
+		        
+		      }
 
-
-				if (log2 != null && log2.trim().length() > 0) {
-					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
-				}
-        
-      }
-			
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
@@ -7777,13 +7776,11 @@ public class PedidoCtrl {
 				}
 				if (mensaje.equals("ERROR")) {
 					PedidoDAO.cancelarPedido(idPedido);
+					 pedidoInsertado = false;
 				}
 				// Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead, mensaje, "pedidobot");
-				
-				if (mensaje.equals("ERROR")) {
-					return false;
-				}
+			
 			} else if ((idFormaPago == 1) || (idFormaPago == 2))
 
 			{
@@ -7804,7 +7801,7 @@ public class PedidoCtrl {
 					}
 				}
 			}
-			return true;
+			return pedidoInsertado;
 		} catch (Exception e) {
 			resultadoProceso = resultadoProceso
 					+ " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no estan llenos los campos.";
