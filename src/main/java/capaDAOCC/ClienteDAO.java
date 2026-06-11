@@ -1547,7 +1547,7 @@ public class ClienteDAO {
 		          + "AND NOT EXISTS ( "
 		          + "    SELECT 1 "
 		          + "    FROM pedido p "
-		          + "    JOIN pedido_anulado pa ON pa.idpediotienda = p.numposheader "
+		          + "    JOIN pedido_anulado pa ON pa.idpedidotienda = p.numposheader "
 		          + "    WHERE p.idcliente = a.idcliente "
 		          + "    ORDER BY p.idpedido DESC "
 		          + "    LIMIT 1 "
