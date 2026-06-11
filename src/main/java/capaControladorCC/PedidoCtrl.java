@@ -6,14 +6,17 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -1540,28 +1543,48 @@ public class PedidoCtrl {
 		if (mensajeExterno.equals(new String(""))) {
 			mensajeExterno = "S";
 		}
-		if (mensajeExterno.equals(new String("S"))) {
-			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente,
-					linkPago);
-		} else {
-			// En este punto deberemos de enviar el correo electrónico para lider contact
-			// center con los datos para la creación del mensaje
-			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-			String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
-			Correo correo = new Correo();
-			correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
-			ArrayList correos = new ArrayList();
-			correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
-			correo.setContrasena(claveCorreo);
-			correo.setUsuarioCorreo(cuentaCorreo);
-			String mensajeCuerpoCorreo = "Cordial Saludo \n <br>" + "Nombre Cliente:" + clienteNoti.getNombres() + " "
-					+ clienteNoti.getApellidos() + " \n <br>" + "Link de pago:" + linkPago + " \n <br>"
-					+ "Numero Telefono:" + clienteNoti.getTelefonoCelular() + " \n <br>" + "email:"
-					+ clienteNoti.getEmail() + " \n <br>";
-			correo.setMensaje(mensajeCuerpoCorreo);
-			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-			correoCorrecto = contro.enviarCorreo();
+
+		if(mensajeExterno.equals(new String("S")))
+		{
+			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
+		}else
+		{
+			//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
+			//Validaremos si está activada la contingencia en cuyo caso se usará o BREVO o el envío del correo
+			String contingenciaLinkPago = ParametrosDAO.retornarValorAlfanumerico("CONTINGENCIALINKPAGO");
+			if(contingenciaLinkPago.equals(new String("N")))
+			{
+				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+				Correo correo = new Correo();
+				correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+				ArrayList correos = new ArrayList();
+				correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
+				correo.setContrasena(claveCorreo);
+				correo.setUsuarioCorreo(cuentaCorreo);
+				String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
+						+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
+						+ "Link de pago:" + linkPago + " \n <br>"
+						+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
+						+ "email:" + clienteNoti.getEmail()+ " \n <br>";
+				correo.setMensaje(mensajeCuerpoCorreo);
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+				correoCorrecto = contro.enviarCorreo();
+			}else //En caso de que el valor sea S significa que deberemos enviar el link por intermedio de BREVO
+			{
+				try
+				{
+					Map<String, Object> params;
+					params = Map.of(
+			                "link", linkPago
+			        );
+					enviarMensajeWhatsAppBrevo(38, clienteNoti.getTelefonoCelular(), params);
+				}catch(Exception exception)
+				{
+					
+				}
+			}
 
 		}
 		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
@@ -3320,15 +3343,10 @@ public class PedidoCtrl {
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes MD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes GD", "Elige hasta 3 ingredientes");
 				keyDetPedido = keyDetPedido.replace("Elige hasta 3 ingredientes XL", "Elige hasta 3 ingredientes");
-				if (keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida")
-						|| keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad")
-						|| keyDetPedido.contains("Elige hasta 3 ingredientes")
-						|| keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional")
-						|| keyDetPedido.contains("Elige uno o dos sabores para tu promoción")
-						|| keyDetPedido.contains("Elige uno o dos sabor de tu pizza")
-						|| keyDetPedido.contains("Envío (obligatorio)")
-						|| keyDetPedido.contains("Selecciona la especialidad 1")
-						|| keyDetPedido.contains("Selecciona la especialidad 2")) {
+
+				if(keyDetPedido.contains("Adicionar") || keyDetPedido.contains("bebida") || keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Mitad y Mitad") || keyDetPedido.contains("Elige hasta 3 ingredientes") || keyDetPedido.contains("Elige la especialidad") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Elige uno o dos sabores para tu promoción") || keyDetPedido.contains("Elige uno o dos sabor de tu pizza")  || keyDetPedido.contains("Envío (obligatorio)") || keyDetPedido.contains("Selecciona la especialidad 1") || keyDetPedido.contains("Selecciona la especialidad 2") || keyDetPedido.contains("Quieres el balon edicion limitada?"))
+				{
+
 
 					keyDetPedido = keyDetPedido + " " + valueDetPedido;
 					// Con el Key formado validamos el tipo de key que tenemos
@@ -3410,7 +3428,10 @@ public class PedidoCtrl {
 							idSaborTipoLiquido = parCtrl
 									.homologarLiquidoTiendaVirtual(keyDetPedido + " " + tamanoPizza);
 						}
-					} else if (keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Producto Adicional")) {
+
+					}else if(keyDetPedido.contains("Condimentos") || keyDetPedido.contains("Producto Adicional") || keyDetPedido.contains("Quieres el balon edicion limitada?"))
+					{
+
 						idProductoCond = parCtrl.homologarProductoTiendaVirtual(keyDetPedido);
 						/*
 						 * Realizamos la inserción de los condimentos
@@ -5868,22 +5889,17 @@ public class PedidoCtrl {
 
 			System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
 
-			if (existeDuplicado) {
-				System.out.println("🚫 Se detecta duplicado, se detiene flujo");
-				return respuesta;
-			}
 
-			System.out.println("✅ Pasa validación de duplicado");
-
-			// INSERTAR LOG
-			int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
-			System.out.println("ID LOG GENERADO: " + idLog);
-
-			// Validar que insertó bien
-			if (idLog == 0) {
-				System.out.println("❌ Error insertando log");
-				return respuesta;
-			}
+	        System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
+	        // INSERTAR LOG
+	        int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
+	        System.out.println("ID LOG GENERADO: " + idLog);
+	        
+	        if (existeDuplicado) {
+	            System.out.println("🚫 Se detecta duplicado, se detiene flujo");
+	            return respuesta;
+	        }
+	       
 
 			// Obtener info del lead
 			System.out.println("🔎 Consultando info del lead...");
@@ -6289,20 +6305,60 @@ public class PedidoCtrl {
 
 	public String insertarPQRSCRMBOT(String datos, String authHeader) throws IOException {
 		String respuesta = "";
-		// El primer paso a validar es la autorización para la utilización del servicio
-		if (authHeader.equals(new String("PRUEBA"))) {
-			// Si viene el valor de prueba omitimos la validación
-		} else {
 
+		//El primer paso a validar es la autorización para la utilización del servicio
+		if(authHeader.equals(new String("PRUEBA")))
+		{
+			//Si viene el valor de prueba omitimos la validación
+		}else
+		{
+			
 		}
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "P");
-		// Vamos a realizar la extracción del parámetro
-		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
-		Map parSep = separarURL(parametrosDecode);
-		String lead = (String) parSep.get("leads[status][0][id]");
-		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
-		// la información
+		// Decode
+        String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
+        System.out.println("PARAMETROS DECODE: " + parametrosDecode);
+
+        Map parSep = separarURL(parametrosDecode);
+        System.out.println("MAP: " + parSep);
+
+        String lead = (String) parSep.get("leads[status][0][id]");
+        System.out.println("LEAD RAW: " + lead);
+
+        // Validacion basica
+        if (lead == null || lead.trim().isEmpty()) {
+            System.out.println("❌ Lead inválido");
+            return respuesta;
+        }
+
+        lead = lead.trim();
+        System.out.println("LEAD LIMPIO: " + lead);
+
+        // Parametro configurable con fallback
+        int minutos = ParametrosDAO.retornarValorNumerico("VENTANA_MINUTOS_CRMBOT");
+        System.out.println("MINUTOS DESDE BD: " + minutos);
+
+        if (minutos <= 0 || minutos > 1440) {
+            minutos = 60;
+            System.out.println("⚠️ MINUTOS AJUSTADO A DEFAULT: " + minutos);
+        }
+
+        // VALIDAR DUPLICADO
+        boolean existeDuplicado = LogPedidoVirtualKunoDAO
+                .existePedidoRecienteCRMBOT(lead, "P", minutos);
+		
+        System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
+
+        if (existeDuplicado) {
+            System.out.println("🚫 Se detecta duplicado, se detiene flujo");
+            return respuesta;
+        }
+
+        System.out.println("✅ Pasa validación de duplicado");
+        
+		//Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"P");
+		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
+
 		String infLead = obtenerInformacionLeadCRM(lead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "P");
 		procesarPQRSBOTCRM(infLead, lead, idLog);
@@ -6689,7 +6745,7 @@ public class PedidoCtrl {
 	 */
 	public String insertarProductoBOTCRM(int idPedido, String nombreDelCombo, String sabor1, String sabor2,
 			String adicion, String bebida, String acompanamiento, String bebida2, String detalle, int idTipoPedido,
-			String condimentos) {
+			String condimentos, String balon) {
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		// Información del domicilio
 		int idProductoDomicilio = 0;
@@ -6699,6 +6755,8 @@ public class PedidoCtrl {
 		int idSaborTipoLiquido = 0;
 		int idSaborTipoLiquido2 = 0;
 		int idProductoCondimentos = 0;
+		int idProductoBalon = 0;
+		double valorBalon = 0;
 		// Realizamos la inserción del domicilio en caso de que el tipo pedido sea
 		// domicilio
 		if (idTipoPedido == 1) {
@@ -6716,6 +6774,16 @@ public class PedidoCtrl {
 				DetallePedido detPedidoCondi = new DetallePedido(idProductoCondimentos, idPedido, 1, 0, 0, 0, 0 * 1, "",
 						"" /* observacion */, 0, 0, "", "");
 				PedidoDAO.InsertarDetallePedido(detPedidoCondi);
+			}
+		}
+		//Se realiza validacion del balon
+		if (!balon.equals(new String(""))) {
+			idProductoBalon = parCtrl.homologarProductoTiendaVirtual(balon);
+			if (idProductoBalon > 0) {
+				valorBalon = ProductoDAO.retornarProducto(idProductoBalon).getPreciogeneral();
+				DetallePedido detPedidoBalon = new DetallePedido(idProductoBalon, idPedido, 1, 0, 0, valorBalon,
+						valorBalon * 1, "", "" /* observacion */, 0, 0, "", "");
+				PedidoDAO.InsertarDetallePedido(detPedidoBalon);
 			}
 		}
 		// Tendremos un arreglo con las adiciones para este line_items
@@ -7030,8 +7098,10 @@ public class PedidoCtrl {
 	 * Método que se encarga pizzas o productos adicionales dentro de un pedido del
 	 * CRMBOT
 	 */
-	public String insertarProductoBOTCRMMultiple(int idPedido, String nombreDelCombo, String sabor1, String sabor2,
-			String adicion, String bebida, String detalle) {
+
+	public String insertarProductoBOTCRMMultiple(int idPedido, String nombreDelCombo, String sabor1, String sabor2, String adicion, String bebida, String detalle, String acompanamiento2)
+	{
+
 		ParametrosCtrl parCtrl = new ParametrosCtrl();
 		// Información del domicilio
 		int idProductoDomicilio = 0;
@@ -7295,7 +7365,30 @@ public class PedidoCtrl {
 				PedidoDAO.InsertarDetalleAdicion(detPedidoAdiTemp);
 			}
 		}
-		return (log);
+
+		//Verificamos el estado del acompañante si se pidió
+		if(acompanamiento2.equals(new String("")))
+		{
+			
+		}else
+		{
+			//No necesariamente si solo es promoción también se debe validar si es combo para todos
+			if(esPromocion && (nombreDelCombo.equals(new String("COMBO PARA TODOS")) || nombreDelCombo.equals(new String("INSUPERABLE EXTRA GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE GRANDE")) || nombreDelCombo.equals(new String("INSUPERABLE MEDIANA")) || nombreDelCombo.equals(new String("COMBO FUTBOLERO")) ))
+			{
+				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual("Producto Adicional " + acompanamiento2);
+			}else
+			{
+				idProductoAcompa = parCtrl.homologarProductoTiendaVirtual(acompanamiento2);
+			}
+			if(idProductoAcompa != 0)
+			{
+				double valorUnitarioAco = ProductoDAO.retornarProducto(idProductoAcompa).getPreciogeneral();
+				DetallePedido detPedidoAcom = new DetallePedido(idProductoAcompa,idPedido,1,0,0,valorUnitarioAco,valorUnitarioAco, "" , "" /*observacion*/, 0 /*idSaborTipoLiquido2*/, 0, "", "");
+				idDetallePedido = PedidoDAO.InsertarDetallePedido(detPedidoAcom);
+			}
+		}
+		return(log);
+
 	}
 
 	/**
@@ -7306,6 +7399,7 @@ public class PedidoCtrl {
 	 * @param idLog
 	 */
 	public boolean procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
+		boolean pedidoInsertado = false; 
 		String resultadoProceso = "";
 		String obserProceso = "";
 		String asesor = "";
@@ -7319,6 +7413,7 @@ public class PedidoCtrl {
 		String adicion = "";
 		String bebida = "";
 		String acompanamiento = "";
+		String acompanamiento2 = "";
 		String bebida2 = "";
 		String formaPago = "";
 		String direccion = "";
@@ -7329,6 +7424,7 @@ public class PedidoCtrl {
 		int idTienda = 0;
 		String horaPedido = "";
 		String fechaProgramado = "";
+		String balon = "";
 		// Agregamos otros campos para el tema de factura electrónica
 		int tipoClienteFAC = 2;
 		String identificacion = "";
@@ -7428,7 +7524,13 @@ public class PedidoCtrl {
 					bebida_2 = strValor;
 				} else if (clave.equals(new String("acompañamiento"))) {
 					acompanamiento = strValor;
-				} else if (clave.equals(new String("bebida 2"))) {
+
+				}else if(clave.equals(new String("acompañante #2")))
+				{
+					acompanamiento2 = strValor;
+				}else if(clave.equals(new String("bebida 2")))
+				{
+
 					bebida2 = strValor;
 				} else if (clave.equals(new String("forma de pago"))) {
 					formaPago = strValor;
@@ -7492,6 +7594,13 @@ public class PedidoCtrl {
 						longitud = Double.parseDouble(strValor);
 					} catch (Exception e) {
 						longitud = 0;
+					}
+
+				} else if (clave.equals(new String("balon mundial"))) {
+					try {
+						balon = strValor;
+					} catch (Exception e) {
+						balon = "";
 					}
 
 				}
@@ -7603,25 +7712,24 @@ public class PedidoCtrl {
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
 			
-			if (idPedido <= 0) {
-				resultadoProceso = resultadoProceso + " No se logro insertar el pedido correctamente.";
-				return false;
-			}
-			// Realizamos la inserción del producto ordenado
-			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
-					acompanamiento, bebida2, detalles, idTipoPedido, condimentos);
-			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
-			
-			// Agregamos el procesamiento del segundo producto si lo hay
-			if (!nombreDelCombo_2.equals(new String(""))) {
-				String log2 = insertarProductoBOTCRMMultiple(idPedido, nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2,
-						detalles_2);
+			 if (idPedido > 0) {
+			        pedidoInsertado = true; // aquí sí sabemos que se insertó
+			   }
 
-				if (log2 != null && log2.trim().length() > 0) {
-					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
-				}
-			}
-			
+		       // Realizamos la inserción del producto ordenado
+					String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
+					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
+					
+					// Agregamos el procesamiento del segundo producto si lo hay
+					if (!nombreDelCombo_2.equals(new String(""))) {
+						String log2 = 	insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
+
+
+						if (log2 != null && log2.trim().length() > 0) {
+							LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
+						}
+		        
+		      }
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
 			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
@@ -7667,13 +7775,11 @@ public class PedidoCtrl {
 				}
 				if (mensaje.equals("ERROR")) {
 					PedidoDAO.cancelarPedido(idPedido);
+					 pedidoInsertado = false;
 				}
 				// Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead, mensaje, "pedidobot");
-				
-				if (mensaje.equals("ERROR")) {
-					return false;
-				}
+			
 			} else if ((idFormaPago == 1) || (idFormaPago == 2))
 
 			{
@@ -7694,7 +7800,7 @@ public class PedidoCtrl {
 					}
 				}
 			}
-			return true;
+			return pedidoInsertado;
 		} catch (Exception e) {
 			resultadoProceso = resultadoProceso
 					+ " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no estan llenos los campos.";
@@ -8226,6 +8332,7 @@ public class PedidoCtrl {
 		String adicion = "";
 		String bebida = "";
 		String acompanamiento = "";
+		String acompanamiento2 = "";
 		String bebida2 = "";
 		String formaPago = "";
 		String direccion = "";
@@ -8303,7 +8410,13 @@ public class PedidoCtrl {
 					bebida = strValor;
 				} else if (clave.equals(new String("acompañamiento"))) {
 					acompanamiento = strValor;
-				} else if (clave.equals(new String("bebida 2"))) {
+
+				}else if(clave.equals(new String("acompañante #2")))
+				{
+					acompanamiento2 = strValor;
+				}else if(clave.equals(new String("bebida 2")))
+				{
+
 					bebida2 = strValor;
 				} else if (clave.equals(new String("forma de pago"))) {
 					formaPago = strValor;
@@ -8449,7 +8562,7 @@ public class PedidoCtrl {
 			
 			// Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,
-					acompanamiento, bebida2, detalles, idTipoPedido, "");
+					acompanamiento, bebida2, detalles, idTipoPedido, "", "");
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
@@ -9213,6 +9326,7 @@ public class PedidoCtrl {
 		double rappiCreditos = 0;
 		double rappiPay = 0;
 		double tarifaServicio = 0;
+		String marketPlace = "S";
 		ArrayList<ProductoIncluido> productosIncluidos = PedidoDAO.obtenerProductosIncluidos();
 		// Comenzaremos a parsear el JSON que nos llego
 		JSONParser parser = new JSONParser();
@@ -9224,17 +9338,28 @@ public class PedidoCtrl {
 			String orderDetailJSON = (String) jsonGeneral.get("order_detail").toString();
 			// Vemos error de cliente que viene vacío
 			String customerJSON = "";
-			try {
-				customerJSON = (String) jsonGeneral.get("customer").toString();
-			} catch (Exception e) {
-				customerJSON = "{\"first_name\":\"SIN NOMBRE\",\"last_name\":\"SIN APELLIDO\",\"phone_number\":\"3225556677\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"999999\"}";
+
+			try
+			{
+				customerJSON = (String)jsonGeneral.get("customer").toString();
+			}catch(Exception e)
+			{
+				customerJSON ="{\"first_name\":\"CLIENTE RAPPI\",\"last_name\":\"-\",\"phone_number\":\"3225556677\",\"email\":\"integration@rappi.com\",\"document_type\":\"1\",\"document_number\":\"999999\"}";
+
 			}
 			String storeJSON = (String) jsonGeneral.get("store").toString();
 			Object objParserOrderDetail = parser.parse(orderDetailJSON);
 			JSONObject jsonOrder = (JSONObject) objParserOrderDetail;
-			// Comenzamos a extraer la informacion que allí viene
-			idOrdenComercio = Long.parseLong((String) jsonOrder.get("order_id"));
-			// Incluiremos validación para que no cree pedidos dobles
+
+			//Comenzamos a extraer la informacion que allí viene
+			idOrdenComercio = Long.parseLong((String)jsonOrder.get("order_id"));
+			String identificadorPedido = Long.toString(idOrdenComercio);
+			if(identificadorPedido.length() >= 4)
+			{
+				identificadorPedido = identificadorPedido.substring(identificadorPedido.length()-4);
+			}
+			//Incluiremos validación para que no cree pedidos dobles
+
 			boolean yaExisteOrden = PedidoDAO.consultarExistenciaOrdenRappi(idOrdenComercio);
 			if (yaExisteOrden) {
 				Correo correo = new Correo();
@@ -9257,30 +9382,63 @@ public class PedidoCtrl {
 			tipoPedido = (String) jsonOrder.get("delivery_method");
 			if (tipoPedido.equals(new String("marketplace"))) {
 				idTipoPedido = 1;
-			} else if (tipoPedido.equals(new String("pickup")) || tipoPedido.equals(new String("delivery"))) {
+
+				marketPlace = "S";
+			}else if(tipoPedido.equals(new String("delivery")))
+			{
+				idTipoPedido = 1;
+				marketPlace = "N";
+			}else if(tipoPedido.equals(new String("pickup")))
+			{
+
 				idTipoPedido = 2;
+				marketPlace = "N";
 				log = log + " " + "El pedido de RAPPI no llego para ser llevado por nosotros, por favor revisar.";
 			}
 
-			// Obtenemos el valor de la propina y la tarifa de servicio
-			JSONObject jsonTotals = (JSONObject) jsonOrder.get("totals");
-			JSONObject jsonCharges = (JSONObject) jsonTotals.get("charges");
-			try {
-				tarifaServicio = (double) jsonCharges.get("service_fee");
-			} catch (Exception e) {
-				try {
-					tarifaServicio = ((Long) jsonCharges.get("service_fee")).doubleValue();
-				} catch (Exception e1) {
+			
+			//Obtenemos el valor de la propina y la tarifa de servicio
+			JSONObject jsonTotals  = (JSONObject)jsonOrder.get("totals");
+			JSONObject jsonCharges  = (JSONObject)jsonTotals.get("charges");
+			try
+			{
+				tarifaServicio = (double)jsonCharges.get("service_fee");
+			}catch(Exception e)
+			{
+				try
+				{
+					if(marketPlace.equals("S"))
+					{
+						tarifaServicio = ((Long)jsonCharges.get("service_fee")).doubleValue();
+					}else
+					{
+						tarifaServicio = 0;
+					}
+					
+				}catch(Exception e1)
+				{
 					tarifaServicio = 0;
 				}
 			}
-			JSONObject jsonOtherTotals = (JSONObject) jsonTotals.get("other_totals");
-			try {
-				propina = (double) jsonOtherTotals.get("tip");
-			} catch (Exception e) {
-				try {
-					propina = ((Long) jsonOtherTotals.get("tip")).doubleValue();
-				} catch (Exception e1) {
+			JSONObject jsonOtherTotals  = (JSONObject)jsonTotals.get("other_totals");
+			try
+			{
+				propina = (double)jsonOtherTotals.get("tip");
+			}catch(Exception e)
+			{
+				try
+				{
+					if(marketPlace.equals("S"))
+					{
+						propina = ((Long)jsonOtherTotals.get("tip")).doubleValue();
+					}else
+					{
+						propina = 0;
+					}
+					
+				}catch(Exception e1)
+				{
+
 					propina = 0;
 				}
 			}
@@ -9307,8 +9465,20 @@ public class PedidoCtrl {
 			String formPago = (String) jsonOrder.get("payment_method");
 			// Realizamos la homologación de la formad de pago
 			ParametrosCtrl parCtrl = new ParametrosCtrl();
-			int idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPago);
-			if (idFormaPago == 0) {
+
+			//Colocamos control de la forma de pago cuando el pedido es full service se tiene una lógica diferente
+			int idFormaPago;
+			if(marketPlace.equals(new String("S")))
+			{
+				idFormaPago = parCtrl.realizarHomologacionFormaPagoTiendaVirtual(formPago);
+			}else
+			{
+				idFormaPago = 3;
+			}
+			
+			if(idFormaPago == 0)
+			{
+
 				idFormaPago = 3;
 				log = log + " " + "No se pudo homologar la forma de pago fue puesto en PAGO-ONLINE, por favor revisar.";
 			}
@@ -9333,9 +9503,16 @@ public class PedidoCtrl {
 			} catch (Exception e) {
 				dirRes = "";
 			}
-			// Trabajamos sobre la ciudad
-			try {
-				ciudad = (String) jsonDelivInf.get("city");
+
+			if(dirRes.equals(new String("")))
+			{
+				dirRes = identificadorPedido;
+			}
+			//Trabajamos sobre la ciudad
+			try
+			{
+				ciudad = (String)jsonDelivInf.get("city");
+
 				ciudad = ciudad.replaceAll("'", " ");
 				String filtroEmoticones = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]";
 				ciudad = ciudad.replaceAll(filtroEmoticones, "");
@@ -9427,7 +9604,9 @@ public class PedidoCtrl {
 			String apellidos;
 			try {
 				String filtroEmoticones = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]";
-				apellidos = (String) jsonCustomer.get("last_name");
+
+				apellidos = (String)jsonCustomer.get("last_name")+identificadorPedido;
+
 				apellidos = apellidos.replaceAll("'", " ");
 				apellidos = apellidos.replaceAll(filtroEmoticones, "");
 			} catch (Exception enombre) {
@@ -9487,15 +9666,18 @@ public class PedidoCtrl {
 			int idProducto;
 			int idEspecialidad;
 			int idExcepcion = 0;
-			// Insertamos el encabezado del pedido
-			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
-					"RAPPI", idOrdenComercio, 1, "RAP", "RAPPI");
-			int idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio plataforma");
-			double valorDomicilio = ProductoDAO.retornarProducto(idProductoDomicilio).getPreciogeneral();
-			DetallePedido detPedidoDomi = new DetallePedido(idProductoDomicilio, idPedido, 1, 0, 0, valorDomicilio,
-					valorDomicilio * 1, "", "" /* observacion */, 0, 0, "", "");
-			PedidoDAO.InsertarDetallePedido(detPedidoDomi);
-			// Ingresamos los valores de propina y tarifa de servicio
+
+			//Insertamos el encabezado del pedido
+			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal, "RAPPI",idOrdenComercio, 1, "RAP", "RAPPI");
+			if(marketPlace.equals(new String("S")))
+			{
+				int idProductoDomicilio = parCtrl.homologarProductoTiendaVirtual("Valor del domicilio plataforma");
+				double valorDomicilio = ProductoDAO.retornarProducto(idProductoDomicilio).getPreciogeneral();
+				DetallePedido detPedidoDomi = new DetallePedido(idProductoDomicilio,idPedido,1,0,0,valorDomicilio,valorDomicilio*1, "" , "" /*observacion*/, 0, 0, "", "");
+				PedidoDAO.InsertarDetallePedido(detPedidoDomi);
+			}
+			//Ingresamos los valores de propina y tarifa de servicio
+
 			int idProductoTarifaServicio = 0;
 			if (tarifaServicio > 0) {
 				idProductoTarifaServicio = parCtrl.homologarProductoTiendaVirtual("Tarifa Servicio");
@@ -9639,7 +9821,6 @@ public class PedidoCtrl {
 			double descuentoPropio = 0;
 			double descuentoPlataforma = 0;
 			String descuentoAsumido = "N";
-			String marketPlace = "S";
 			String motivoDescuento = "";
 			JSONArray descuentosArray = (JSONArray) jsonOrder.get("discounts");
 			// Realizamos modificación
@@ -9693,20 +9874,35 @@ public class PedidoCtrl {
 					}
 
 				}
-				// Realizamos validación para que si el descuento viene del service fee y es
-				// PAGO-ONLINE no lo tenga en cuenta
-				if (descripcion.equals(new String("30%OFF Service Fee")) && idFormaPago == 3) {
 
-				} else {
-					descuentoPedido = descuentoPedido + desTemp;
-					descuentoPropio = descuentoPropio + (desTemp * porcentajePropio) / 100;
-					descuentoPlataforma = descuentoPlataforma + (desTemp * porcentajeRappi) / 100;
+				//Realizamos validación para que si el descuento viene del service fee y es PAGO-ONLINE no lo tenga en cuenta
+				if(descripcion.equals(new String("30%OFF Service Fee")) && idFormaPago == 3)
+				{
+					
+				}else
+				{
+					if(marketPlace.equals(new String("S")))
+					{
+						descuentoPedido = descuentoPedido + desTemp;
+						descuentoPropio = descuentoPropio  +  (desTemp*porcentajePropio)/100;
+						descuentoPlataforma = descuentoPlataforma  +  (desTemp*porcentajeRappi)/100;
+					}
+					else
+					{
+						descuentoPedido = descuentoPedido + (desTemp*porcentajePropio)/100;
+						descuentoPropio = descuentoPropio  +  (desTemp*porcentajePropio)/100;
+					}
 				}
 			}
-			// Hacemos validación de rappiCreditos con los descuentos
-			if (rappiCreditos > 0) {
-				descuentoPlataforma = descuentoPlataforma + rappiCreditos;
-				descuentoPedido = descuentoPedido + rappiCreditos;
+			//Hacemos validación de rappiCreditos con los descuentos
+			if(rappiCreditos > 0)
+			{
+				if(marketPlace.equals(new String("S")))
+				{
+					descuentoPlataforma = descuentoPlataforma + rappiCreditos;
+					descuentoPedido = descuentoPedido + rappiCreditos;
+				}	
+
 			}
 			// Debemos insertar la marcación del pedido RAPPI
 			MarcacionPedido marPedido = new MarcacionPedido(idPedido, 2, Long.toString(idOrdenComercio),
@@ -12327,11 +12523,13 @@ public class PedidoCtrl {
 		boolean estaEnRango = false;
 		var rangos = PedidoDAO.obtenerRangoPedidosTienda(idTienda);
 		long inicio = rangos.getKey();
-		long numFinal = rangos.getValue();
-		// boolean yaExisteEncuesta =
-		// EmpleadoEncuestaDAO.validarExisteEncuestaPedido(idPedido, idTienda);
-		// if(idPedido >= inicio & idPedido <= numFinal & !yaExisteEncuesta)
-		if (idPedido >= inicio & idPedido <= numFinal) {
+
+		long numFinal = rangos.getValue() + 100;
+		//boolean yaExisteEncuesta = EmpleadoEncuestaDAO.validarExisteEncuestaPedido(idPedido, idTienda);
+		//if(idPedido >= inicio & idPedido <= numFinal & !yaExisteEncuesta)
+		if(idPedido >= inicio & idPedido <= numFinal)
+		{
+
 			estaEnRango = true;
 		}
 		respuestaJSON.put("resultado", estaEnRango);
@@ -12502,6 +12700,111 @@ public class PedidoCtrl {
 		} catch (Exception e) {
 			System.out.println("Error en request a CRM: " + e.getMessage());
 		}
+	}
+
+	
+	/**
+     * Método que se encargará de enviar mensaje de Brevo en el ProyectoPizzaAmericana
+     * @param idplantilla
+     * @param telefono
+     * @param params
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public String enviarMensajeWhatsAppBrevo(
+    		
+            int idplantilla,
+            String telefono,
+            Map<String, Object> params
+    ) throws IOException, InterruptedException {
+    	
+    	IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
+    	String BREVO_URL = "https://api.brevo.com/v3/whatsapp/sendMessage";
+
+        String NUMEROWHATSAPPBREVO =
+        		ParametrosDAO.retornarValorAlfanumerico("NUMEROWHATSAPPBREVO");
+        
+        java.net.http.HttpClient CLIENT =
+        		java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(15))
+                        .build();
+
+        ObjectMapper MAPPER = new ObjectMapper();
+        Map<String, Object> body = Map.of(
+                "templateId", idplantilla,
+                "senderNumber", NUMEROWHATSAPPBREVO,
+                "params", params,
+                "contactNumbers", List.of("+57" + telefono)
+        );
+
+        String jsonBody = MAPPER.writeValueAsString(body);
+
+        String API_KEY = brevo.getAccessToken();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BREVO_URL))
+                .timeout(Duration.ofSeconds(30))
+                .header("accept", "application/json")
+                .header("content-type", "application/json")
+                .header("api-key", API_KEY)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        java.net.http.HttpResponse<String> response =
+                CLIENT.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() / 100 == 2) {
+            return response.body();
+        }
+
+        throw new RuntimeException(
+                "Error Brevo WhatsApp HTTP="
+                        + response.statusCode()
+                        + " -> " + response.body());
+    }
+    
+    
+    /**
+     * Método que se encarga de enviar la notificación a RAPPI de que el pedido ya está listo para ser recogido por el RAPPITENDERO
+     * @param idOrdenComercio
+     * @return
+     * @throws IOException
+     */
+    public String marcarListoPedidoIntegracionRAPPI(long idOrdenComercio) throws IOException
+	{
+		JSONObject respJSON = new JSONObject();
+		boolean respuesta = false;
+		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
+		String strBody = "";
+		OkHttpClient client = new OkHttpClient();
+		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
+		RequestBody body = RequestBody.create(mediaType, strBody );
+		Request request = new Request.Builder()
+		  .url("https://services.rappi.com/api/v2/restaurants-integrations-public-api/orders/"+ idOrdenComercio +"/ready-for-pickup")
+		  .post(body)
+		  .addHeader("x-authorization", "bearer " + intCRM.getAccessToken())
+		  .build();
+		try
+		{
+			okhttp3.Response response = client.newCall(request).execute();
+			String respuestaJSON = response.body().string();
+			System.out.println("1 " + response.toString());
+			//Realizamos el procesamiento del JSON
+			if(response.code() == 200)
+			{
+				//A futuro podremos agregar una lógica aqui
+				respJSON.put("respuesta", "OK");
+			}else
+			{
+				respJSON.put("respuesta", "NOK");
+			}
+		}catch(Exception e)
+		{
+			System.out.println(e.toString());
+			respJSON.put("respuesta", "NOK");
+		}
+		return(respJSON.toJSONString());
 	}
 
 }
