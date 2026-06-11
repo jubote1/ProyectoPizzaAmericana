@@ -961,11 +961,6 @@ public String obtenerNotificacionesCliente(int idCliente)
 	                clienteRecurrente = "INACTIVO";
 	            }
 
-	        }else {
-	        	
-	    		
-	    		
-
 	        }
 	  
 	     result.setClienteRecurrente(clienteRecurrente);

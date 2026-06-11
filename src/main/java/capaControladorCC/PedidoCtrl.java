@@ -8184,6 +8184,7 @@ public class PedidoCtrl {
 		String direccion = resultado.getDireccion();
 
 		
+		
 		customFields.add(
 				Map.of("field_id", FIELD_CLIENTE_RECURRENTE, "values", List.of(Map.of("value", clienteRecurrente))));
 
@@ -8201,9 +8202,9 @@ public class PedidoCtrl {
 
 			// Coordenadas
 			customFields.add(Map.of("field_id", FIELD_LATITUD, "values",
-					List.of(Map.of("value", resultado.getLatitud()))));
-			customFields.add(Map.of("field_id", FIELD_LONGITUD, "values",
-					List.of(Map.of("value", resultado.getLongitud()))));
+				    List.of(Map.of("value", String.valueOf(resultado.getLatitud())))));
+				customFields.add(Map.of("field_id", FIELD_LONGITUD, "values",
+				    List.of(Map.of("value", String.valueOf(resultado.getLongitud())))));
 
 			// Asesor / Estado tienda
 			if ("programado".equalsIgnoreCase(tipo_cliente)) {

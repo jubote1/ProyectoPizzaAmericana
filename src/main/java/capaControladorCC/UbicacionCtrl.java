@@ -94,12 +94,7 @@ public class UbicacionCtrl {
 	    String telefono = coberturaRequest.getTelefono();
 	    String referencia  = "";
 	    
-	    System.out.println("===== INICIO =====");
-	    System.out.println("idcliente=" + idcliente);
-	    System.out.println("direccion=" + direccion);
-	    System.out.println("telefono=" + telefono);
-	  
-
+	
 	    Resultado resultado = new Resultado();
 	    resultado.setLongitud(0);
 	    resultado.setLatitud(0);
@@ -126,13 +121,8 @@ public class UbicacionCtrl {
 
 	            cliente = ClienteDAO.obtenerUltimoClientePorTelefono(telefono);
 	        }
-	        System.out.println("cliente encontrado=" + (cliente != null));
+	       
 	        if (cliente != null) {
-	        	
-	            System.out.println("direccion cliente=" + cliente.getDireccion());
-	            System.out.println("latitud cliente=" + cliente.getLatitud());
-	            System.out.println("longitud cliente=" + cliente.getLontitud());
-	            System.out.println("idtienda cliente=" + cliente.getIdtienda());
 	            
 	            idcliente = cliente.getIdcliente();
 
@@ -148,8 +138,7 @@ public class UbicacionCtrl {
 	     
 	        }
 	        
-	        System.out.println("puedeValidarPorCoordenadas="
-	                + puedeValidarPorCoordenadas(coberturaRequest));
+
 	        if (idcliente != null && idcliente > 0
 	                && puedeValidarPorCoordenadas(coberturaRequest)) { 
 
@@ -163,11 +152,6 @@ public class UbicacionCtrl {
 	                    coberturaRequest.getIdTienda()
 	            );
 	            
-	            System.out.println("consultarZonas success="
-	                    + resultadoCoordenadas.isSuccess());
-
-	            System.out.println("consultarZonas resultado="
-	                    + resultadoCoordenadas.getResultado());
 
 	            resultadoCoordenadas.setLatitud(coberturaRequest.getLatitud());
 	            resultadoCoordenadas.setLongitud(coberturaRequest.getLongitud());
@@ -654,11 +638,6 @@ public class UbicacionCtrl {
 	                + "&returnGeometry=false"
 	                + "&token=" + urlEncode(API_KEY_ARCGIS);
 
-		    System.out.println("endpoint = " + endpoint);
-		    System.out.println("longitud = " + longitud);
-		    System.out.println("latitud = " + latitud);
-		    System.out.println("geometry = " + geometry.toString());
-		    System.out.println("url query zonas = " + url);
 		    
 	        JsonObject json = ejecutarGetJson(url);
 
@@ -794,7 +773,11 @@ public class UbicacionCtrl {
 	public static void main(String[] args) {
 
 		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setTelefono("3185020068");
+		coberturaRequest.setIdcliente(480034);
+		/*ClienteCtrl clienteCtrl = new ClienteCtrl();
+		PedidoCtrl pedd =  new PedidoCtrl();
+		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3185020068").getClienteRecurrente());
+		pedd.actualizarClienteRecurrenteCRMBOT("29739849", clienteCtrl.ValidarExistenciaClienteCRM("3185020068"), "informacion");*/
 
 		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
 		System.out.println(resultado.getResultado());
@@ -1854,16 +1837,7 @@ public class UbicacionCtrl {
 	 */
 	
 	private static boolean puedeValidarPorCoordenadas(CoberturaRequest request) {
-		
-		
-		System.out.println("---** ----"+direccionesCoinciden(request.getDireccion(), request.getDireccionProveedor()));
-		System.out.println(request.tieneCoordenadasValidas());
-		System.out.println(request.tieneCoordenadasValidas());
-		System.out.println(request.tieneIdTiendaValido());
-		System.out.println(request.tieneDireccionProveedor());   
-		
-		
-		
+				
 	    return request.tieneCoordenadasValidas()
 	            && request.tieneIdTiendaValido()
 	            && request.tieneDireccionProveedor()
