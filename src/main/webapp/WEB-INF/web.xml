@@ -1,49 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
-  <display-name>ProyectoPizzaAmericana</display-name>
-  <welcome-file-list>
-    <welcome-file>index.html</welcome-file>
-    <welcome-file>index.htm</welcome-file>
-    <welcome-file>index.jsp</welcome-file>
-    <welcome-file>default.html</welcome-file>
-    <welcome-file>default.htm</welcome-file>
-    <welcome-file>default.jsp</welcome-file>
-  </welcome-file-list>
-  
-  
-     <filter>
-        <filter-name>CorsFilter</filter-name>
-        <filter-class>capaSeguridad.filtro.CorsFilter</filter-class>
-    </filter>
-    
-    <filter-mapping>
-        <filter-name>CorsFilter</filter-name>
-        <url-pattern>/ObtenerVacantes</url-pattern>
-	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
-	    <url-pattern>/ObtenerVacanteID</url-pattern>
-	     <url-pattern>/InsertarCandidato</url-pattern>
-	      <url-pattern>/Fidelizacion</url-pattern>
-	        <url-pattern>/InsertarPqrsWeb</url-pattern>
-	           <url-pattern>/EncuestaServicioWb</url-pattern>
-	           <url-pattern>/VdclienteWb</url-pattern>
-    </filter-mapping>
-    
-    
-        <filter>
-        <filter-name>JwtAuthFilter</filter-name>
-        <filter-class>capaSeguridad.filtro.JwtAuthFilter</filter-class>
-    </filter>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	version="3.0">
+	<display-name>ProyectoPizzaAmericana</display-name>
+	<welcome-file-list>
+		<welcome-file>index.html</welcome-file>
+		<welcome-file>index.htm</welcome-file>
+		<welcome-file>index.jsp</welcome-file>
+		<welcome-file>default.html</welcome-file>
+		<welcome-file>default.htm</welcome-file>
+		<welcome-file>default.jsp</welcome-file>
+	</welcome-file-list>
+
+
+	<filter>
+		<filter-name>CorsFilter</filter-name>
+		<filter-class>capaSeguridad.filtro.CorsFilter</filter-class>
+	</filter>
 
 	<filter-mapping>
-	    <filter-name>JwtAuthFilter</filter-name>
-	    <url-pattern>/ObtenerVacantes</url-pattern>
-	    <url-pattern>/ObtenerVacanteDetalle</url-pattern>
-	    <url-pattern>/ObtenerVacanteID</url-pattern>
-	         <url-pattern>/InsertarCandidato</url-pattern>
-	         	      <url-pattern>/Fidelizacion</url-pattern>
-	         	      	        <url-pattern>/InsertarPqrsWeb</url-pattern>
-	         	      	             <url-pattern>/EncuestaServicioWb</url-pattern>
-	         	      	             <url-pattern>/VdclienteWb</url-pattern>
+		<filter-name>CorsFilter</filter-name>
+		<url-pattern>/ObtenerVacantes</url-pattern>
+		<url-pattern>/ObtenerVacanteDetalle</url-pattern>
+		<url-pattern>/ObtenerVacanteID</url-pattern>
+		<url-pattern>/InsertarCandidato</url-pattern>
+		<url-pattern>/Fidelizacion</url-pattern>
+		<url-pattern>/InsertarPqrsWeb</url-pattern>
+		<url-pattern>/EncuestaServicioWb</url-pattern>
+		<url-pattern>/VdclienteWb</url-pattern>
+		<url-pattern>/PartidoWb</url-pattern>
+		<url-pattern>/PronosticoWb</url-pattern>
+	</filter-mapping>
+
+
+	<filter>
+		<filter-name>JwtAuthFilter</filter-name>
+		<filter-class>capaSeguridad.filtro.JwtAuthFilter</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>JwtAuthFilter</filter-name>
+		<url-pattern>/ObtenerVacantes</url-pattern>
+		<url-pattern>/ObtenerVacanteDetalle</url-pattern>
+		<url-pattern>/ObtenerVacanteID</url-pattern>
+		<url-pattern>/InsertarCandidato</url-pattern>
+		<url-pattern>/Fidelizacion</url-pattern>
+		<url-pattern>/InsertarPqrsWeb</url-pattern>
+		<url-pattern>/EncuestaServicioWb</url-pattern>
+		<url-pattern>/VdclienteWb</url-pattern>
+		<url-pattern>/PartidoWb</url-pattern>
+		<url-pattern>/PronosticoWb</url-pattern>
 	</filter-mapping>
 
 </web-app>
