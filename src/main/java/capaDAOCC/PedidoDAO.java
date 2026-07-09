@@ -1612,7 +1612,7 @@ public class PedidoDAO {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ANTIFRAUDE  " + idpedido);
+				correo.setAsunto("Antifraude  " + idpedido);
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -4225,7 +4225,7 @@ public class PedidoDAO {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOWOMPI", "CLAVECORREOWOMPI");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ATENCI�N SE REGISTRO PAGO WOMPI DE PEDIDO CANCELADO");
+				correo.setAsunto("Atencion se registro pago wompi de pedido cancelado");
 				correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());

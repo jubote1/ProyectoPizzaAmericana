@@ -139,7 +139,7 @@ public class CorreoPQRS {
 					CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
 					correo.setContrasena(infoCorreo.getClaveCorreo());
 					correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-					correo.setAsunto("ENCUESTA SATISFACCION PQRS # " + idpqrs);
+					correo.setAsunto("Encuesta satisfacción Pqrs # " + idpqrs);
 					String mensajeCuerpoCorreo = 
 						    "ID PQRS: " + idpqrs + "<br>" +
 						    "Nombre cliente: " + nombreCliente + "<br>" +

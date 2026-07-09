@@ -1509,7 +1509,7 @@ public class PedidoCtrl {
 					String mensajeCorreo = formaPagoNoti.getMensajeCorreo();
 					mensajeCorreo = mensajeCorreo.replace("#VINCULO", linkPago);
 					Correo correo = new Correo();
-					correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+					correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
 					ArrayList correos = new ArrayList();
 					String correoEle = clienteNoti.getEmail();
 					emailEnvio = correoEle;
@@ -1558,7 +1558,7 @@ public class PedidoCtrl {
 				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
 				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
 				Correo correo = new Correo();
-				correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+				correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
 				ArrayList correos = new ArrayList();
 				correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
 				correo.setContrasena(claveCorreo);
@@ -1645,7 +1645,7 @@ public class PedidoCtrl {
 					String mensajeCorreo = formaPagoNoti.getMensajeCorreo();
 					mensajeCorreo = mensajeCorreo.replace("#VINCULO", linkPago);
 					Correo correo = new Correo();
-					correo.setAsunto("PIZZA AMERICANA LINK DE PAGO PEDIDO # " + idPedido);
+					correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
 					ArrayList correos = new ArrayList();
 					String correoEle = clienteNoti.getEmail();
 					emailEnvio = correoEle;
@@ -1731,7 +1731,7 @@ public class PedidoCtrl {
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 					"CLAVECORREOREPORTE");
-			correo.setAsunto("OJO ERROR EN SERVICIO DE WHATSAPP  " + fecha.toString());
+			correo.setAsunto("Ojo error en servicio de Whatsapp  " + fecha.toString());
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			correo.setMensaje("Se presenta error en servicio de API de WhatsApp. " + e.toString() + mensajeEvidencia);
@@ -1914,7 +1914,7 @@ public class PedidoCtrl {
 							}
 						}
 						// Enviaremos un correo en la etapa de piloto
-						correo.setAsunto("PAGO IDLINK  " + idLink);
+						correo.setAsunto("Pago idlink  " + idLink);
 						String correoEle = "jubote1@gmail.com";
 						correos.add(correoEle);
 						correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -1931,7 +1931,7 @@ public class PedidoCtrl {
 							// Controlamos el caso de que no encontró un idLink para actualizar debería de
 							// notificarlo
 							// Enviaremos un correo en la etapa de piloto
-							correo.setAsunto("ATENCIÓN PAGO IDLINK  " + idLink + " dicho link no aparece en un pedido");
+							correo.setAsunto("Atencion pago idlink  " + idLink + " dicho link no aparece en un pedido");
 							correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 							correo.setContrasena(infoCorreo.getClaveCorreo());
 							correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -1997,7 +1997,7 @@ public class PedidoCtrl {
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 						"CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ATENCIÓN POSIBLE ATAQUE A SERVICIO DE KUNO  " + authHeader);
+				correo.setAsunto("Atencion posible ataque a servicio kuno " + authHeader);
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -2072,7 +2072,7 @@ public class PedidoCtrl {
 						CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 								"CLAVECORREOERROR");
 						ArrayList correos = new ArrayList();
-						correo.setAsunto("TIENDA VIRTUAL KUNO INTENTO PEDIDO DUPLICADO   " + idOrdenComercio);
+						correo.setAsunto("Tienda virtual kuno intento pedido duplicado   " + idOrdenComercio);
 						String correoEle = "jubote1@gmail.com";
 						correos.add(correoEle);
 						correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -2360,7 +2360,7 @@ public class PedidoCtrl {
 							CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 									"CLAVECORREOERROR");
 							ArrayList correos = new ArrayList();
-							correo.setAsunto("ERROR GRAVE CLIENTE NO CREADO ACTUALIZADO  " + idOrdenComercio);
+							correo.setAsunto("Error grave cliente no creado actualizado  " + idOrdenComercio);
 							String correoEle = "jubote1@gmail.com";
 							correos.add(correoEle);
 							correos.add("lidercontactcenter@pizzaamericana.com.co");
@@ -2419,7 +2419,7 @@ public class PedidoCtrl {
 								CorreoElectronico infoCorreo = ControladorEnvioCorreo
 										.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 								ArrayList correos = new ArrayList();
-								correo.setAsunto("OJO TOTAL PEDIDO TIENDA VIRTUAL TIENE ERRORES EN LOS TOTALES  "
+								correo.setAsunto("Ojo total pedido tienda virtual tiene errores en los totales  "
 										+ idOrdenComercio + " PEDIDO " + idPedidoCreado);
 								String correoEle = "jubote1@gmail.com";
 								correos.add(correoEle);
@@ -2457,7 +2457,7 @@ public class PedidoCtrl {
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 					"CLAVECORREOERROR");
 			ArrayList correos = new ArrayList();
-			correo.setAsunto("TIENDA VIRTUAL ERROR CREANDO ORDEN   " + idOrdenComercio);
+			correo.setAsunto("Tienda virtual error creando orden   " + idOrdenComercio);
 			String correoEle = "jubote1@gmail.com";
 			correos.add(correoEle);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -2664,7 +2664,7 @@ public class PedidoCtrl {
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 					"CLAVECORREOERROR");
 			ArrayList correos = new ArrayList();
-			correo.setAsunto("TIENDA VIRTUAL ERROR CREANDO ORDEN   " + idOrdenComercio);
+			correo.setAsunto("Tienda virtual error creando orden   " + idOrdenComercio);
 			String correoEle = "jubote1@gmail.com";
 			correos.add(correoEle);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -4219,7 +4219,7 @@ public class PedidoCtrl {
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOVIRTUAL",
 				"CLAVECORREOVIRTUAL");
 		ArrayList correos = new ArrayList();
-		correo.setAsunto("HEMOS RECIBIDO TU PEDIDO #   " + idOrdenComercio);
+		correo.setAsunto("Hemos recibido tu pedido #   " + idOrdenComercio);
 		correos.add(email);
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -5033,7 +5033,7 @@ public class PedidoCtrl {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 						"CLAVECORREOREPORTE");
-				correo.setAsunto("OJO ERROR EN SERVICIO DE WHATSAPP  " + fecha.toString());
+				correo.setAsunto("Ojo error en servicio de Whatsapp  " + fecha.toString());
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 				correo.setMensaje(
@@ -5117,7 +5117,7 @@ public class PedidoCtrl {
 					Correo correo = new Correo();
 					CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 							"CLAVECORREOREPORTE");
-					correo.setAsunto("OJO ERROR EN SERVICIO DE WHATSAPP CON BOTTA OJO DESUSO " + fecha.toString());
+					correo.setAsunto("Ojo error en servicio de Whatsapp CON BOTTA OJO DESUSO " + fecha.toString());
 					correo.setContrasena(infoCorreo.getClaveCorreo());
 					correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 					correo.setMensaje("Se presenta error en servicio de API de WhatsApp.");
@@ -5158,7 +5158,7 @@ public class PedidoCtrl {
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 						"CLAVECORREOREPORTE");
-				correo.setAsunto("OJO ERROR EN SERVICIO DE WHATSAPP  " + fecha.toString() + mensajeEvidencia);
+				correo.setAsunto("Ojo error en servicio de Whatsapp  " + fecha.toString() + mensajeEvidencia);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 				correo.setMensaje("Se presenta error en servicio de API de WhatsApp." + e.toString());
@@ -5506,7 +5506,7 @@ public class PedidoCtrl {
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 					"CLAVECORREOREPORTE");
-			correo.setAsunto("OJO ERROR EN SERVICIO DE WHATSAPP  " + fecha.toString() + mensajeEvidencia);
+			correo.setAsunto("Ojo error en servicio de Whatsapp  " + fecha.toString() + mensajeEvidencia);
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			correo.setMensaje("Se presenta error en servicio de API de WhatsApp." + e.toString());
@@ -7399,7 +7399,7 @@ public class PedidoCtrl {
 	 * @param idLog
 	 */
 	public boolean procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
-		boolean pedidoInsertado = false; 
+		boolean pedidoInsertado = false; 	
 		String resultadoProceso = "";
 		String obserProceso = "";
 		String asesor = "";
@@ -9368,7 +9368,7 @@ public class PedidoCtrl {
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 						"CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("RAPPI ERROR CREANDO PEDIDO DUPLICADO RAPPI  " + idOrdenComercio);
+				correo.setAsunto("Rappi error creando pedido duplicado rappi  " + idOrdenComercio);
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correos.add("lidercontactcenter@pizzaamericana.com.co");
@@ -9651,7 +9651,7 @@ public class PedidoCtrl {
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 						"CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("ERROR GRAVE CLIENTE NO CREADO ACTUALIZADO  " + idOrdenComercio);
+				correo.setAsunto("Error grave cliente no creado actualizado  " + idOrdenComercio);
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correos.add("lidercontactcenter@pizzaamericana.com.co");

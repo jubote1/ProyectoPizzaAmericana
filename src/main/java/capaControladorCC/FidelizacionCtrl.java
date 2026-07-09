@@ -270,7 +270,7 @@ public class FidelizacionCtrl {
 		String correoPqrs = ParametrosDAO.retornarValorAlfanumerico("CORREOPQRSCONTACT");
 		Date fecha = new Date();
 		Correo correo = new Correo();
-		correo.setAsunto("ENVIO CODIGO VALIDACIÓN REDENCIÓN PUNTOS PIZZA AMERICANA" + fecha.toString());
+		correo.setAsunto("Envio código validación redención puntos Pizza Americana" + fecha.toString());
 		ArrayList correos = new ArrayList();
 		correos.add(codRed.getCorreo());
 		correos.add(correoLider);

@@ -779,7 +779,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("TIENDA VIRTUAL ERROR EN LA DIRECCI�N NOMENCLATURA VAC�A   " + clienteVirtual.getDireccion());
+				correo.setAsunto("Tienda virtual error en la dirección nomenclatura vacia   " + clienteVirtual.getDireccion());
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -840,7 +840,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			//Fin de llenado por error
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-			correo.setAsunto("ERROR NORMALIZANDO CLIENTE VIRTUAL  " + clienteVirtual.getTelefono());
+			correo.setAsunto("Error normalizando cliente virtual  " + clienteVirtual.getTelefono());
 			ArrayList correos = new ArrayList();
 			String correoEle = "jubote1@gmail.com";
 			correos.add(correoEle);

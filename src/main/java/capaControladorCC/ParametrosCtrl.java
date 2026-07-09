@@ -826,7 +826,7 @@ public class ParametrosCtrl {
 				Correo correo = new Correo();
 				Date fecha =  new Date();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-				correo.setAsunto("ALERTA BLOQUEO PRODUCTO " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
+				correo.setAsunto("Alerta bloqueo producto " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
 				ArrayList correos = GeneralDAO.obtenerCorreosParametro("BLOQUEOPRODUCTO");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -898,7 +898,7 @@ public class ParametrosCtrl {
 				Correo correo = new Correo();
 				Date fecha =  new Date();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-				correo.setAsunto("ALERTA DESBLOQUEO PRODUCTO " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
+				correo.setAsunto("Alerta desbloqueo producto " + producto.getDescripcion() + " EN   " + tienda.getNombreTienda() + " " + fecha.toString());
 				ArrayList correos = GeneralDAO.obtenerCorreosParametro("BLOQUEOPRODUCTO");
 				correo.setContrasena(infoCorreo.getClaveCorreo());
 				correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -954,7 +954,7 @@ public class ParametrosCtrl {
 						Date fechaActual = new Date();
 						Correo correo = new Correo();
 						CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOPUBLICA", "CLAVECORREOPUBLICA");
-						correo.setAsunto("ALERTA TIEMPOS PEDIDO " + fechaActual);
+						correo.setAsunto("Alerta tiempos pedido " + fechaActual);
 						ArrayList correos = GeneralDAO.obtenerCorreosParametro("TIEMPOPEDIDO");
 						correo.setContrasena(infoCorreo.getClaveCorreo());
 						correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -969,7 +969,7 @@ public class ParametrosCtrl {
 				{
 					Correo correo = new Correo();
 					CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOPUBLICA", "CLAVECORREOPUBLICA");
-					correo.setAsunto("ERROR ACTUALIZACION TIEMPO PEDIDO");
+					correo.setAsunto("Error actualizacion tiempos pedido");
 					ArrayList correos = GeneralDAO.obtenerCorreosParametro("TIEMPOPEDIDOERROR");
 					correo.setContrasena(infoCorreo.getClaveCorreo());
 					correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
