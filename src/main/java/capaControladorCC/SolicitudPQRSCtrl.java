@@ -184,7 +184,7 @@ public class SolicitudPQRSCtrl {
 
 		// Datos correo (no se envía ahora)
 		Correo correo = new Correo();
-		correo.setAsunto("SE ACTUALIZÓ REGISTRO PQRS # " + idSolPQRSIns);
+		correo.setAsunto("Se actualizo registro PQRS # " + idSolPQRSIns);
 		correo.setUsuarioCorreo(ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI"));
 		correo.setContrasena(ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI"));
 		correo.setMensaje("Se registró PQRS para el cliente " + nombres + " " + apellidos + " para la tienda "
@@ -240,7 +240,7 @@ public class SolicitudPQRSCtrl {
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		correo.setAsunto("SE DESCART� REGISTRO PQRS # " + idSolPQRSIns);
+		correo.setAsunto("Se descarto registro PQRS # " + idSolPQRSIns);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
@@ -339,7 +339,7 @@ public class SolicitudPQRSCtrl {
 		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOPUBLICA",
 				"CLAVECORREOPUBLICA");
-		correo.setAsunto("SE ACTUALIZO REGISTRO PQRS # " + idSolicitudPQRS);
+		correo.setAsunto("SE actualizo registro PQRS # " + idSolicitudPQRS);
 		ArrayList correos = GeneralDAO.obtenerCorreosParametro("REGISTROPQRS");
 		correo.setContrasena(infoCorreo.getClaveCorreo());
 		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
@@ -509,7 +509,7 @@ public class SolicitudPQRSCtrl {
 		Correo correo = new Correo();
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-		correo.setAsunto("SE LE HA ESCALADO LA PQRS # " + escalamiento.getIdSolicitudPQRS());
+		correo.setAsunto("Se le ha escalado la PQRS # " + escalamiento.getIdSolicitudPQRS());
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
 		correo.setMensaje("Se le ha escalado la PQRS # " + escalamiento.getIdSolicitudPQRS()

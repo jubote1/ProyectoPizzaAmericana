@@ -564,7 +564,7 @@ public class PromocionesCtrl {
 					String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 					String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
 					Correo correo = new Correo();
-					correo.setAsunto("BONO REGALO PIZZA AMERICANA");
+					correo.setAsunto("Bono regalo Pizza Americana");
 					ArrayList correos = new ArrayList();
 					correos.add(email);
 					correo.setContrasena(claveCorreo);

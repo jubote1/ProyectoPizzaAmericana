@@ -83,6 +83,57 @@ public class ClienteCtrl {
 		return listJSON.toJSONString();
 	}
 	
+	/**
+	 * 
+	 * @param tel recibe el valor del tel�fono para buscar al cliente en la base de datos y devolver en una estructura json
+	 * las incripciones del cliente que corresponden al n�mero telef�nico entregado como par�metro.
+	 * @return un valor String en formato json con el arreglo de inscripciones en la tabla cliente que responden al tel�fono
+	 * enviado como par�metro
+	 * NOTA: En la capa DAO validamos el estado del  cliente.
+	 */
+	public String obtenerClienteIA(String tel){
+		JSONArray listJSON = new JSONArray();
+		ArrayList<Cliente> clientes = ClienteDAO.obtenerClienteIA(tel);
+		for (Cliente cliente : clientes) {
+			JSONObject cadaViajeJSON = new JSONObject();
+			cadaViajeJSON.put("idCliente", cliente.getIdcliente());
+			cadaViajeJSON.put("tienda", cliente.getTienda());
+			cadaViajeJSON.put("nombre", cliente.getNombres());
+			cadaViajeJSON.put("apellido", cliente.getApellidos());
+			cadaViajeJSON.put("nombrecompania", cliente.getNombreCompania());
+			cadaViajeJSON.put("direccion", cliente.getDireccion());
+			cadaViajeJSON.put("zona", cliente.getZonaDireccion());
+			cadaViajeJSON.put("observacion", cliente.getObservacion());
+			cadaViajeJSON.put("telefono", cliente.getTelefono());
+			cadaViajeJSON.put("municipio", cliente.getMunicipio());
+			cadaViajeJSON.put("longitud", cliente.getLontitud());
+			cadaViajeJSON.put("latitud", cliente.getLatitud());
+			cadaViajeJSON.put("distanciatienda", cliente.getDistanciaTienda());
+			cadaViajeJSON.put("memcode", cliente.getMemcode());
+			cadaViajeJSON.put("idnomenclatura", cliente.getIdnomenclatura());
+			cadaViajeJSON.put("numnomenclatura1", cliente.getNumNomenclatura());
+			cadaViajeJSON.put("numnomenclatura2", cliente.getNumNomenclatura2());
+			cadaViajeJSON.put("num3", cliente.getNum3());
+			cadaViajeJSON.put("nomenclatura", cliente.getNomenclatura());
+			cadaViajeJSON.put("zonatienda", cliente.getZonaTienda());
+			cadaViajeJSON.put("telefonocelular", cliente.getTelefonoCelular());
+			cadaViajeJSON.put("email", cliente.getEmail());
+			cadaViajeJSON.put("politicadatos", cliente.getPoliticaDatos());
+			cadaViajeJSON.put("fechanacimiento", cliente.getFechaNacimiento());
+			cadaViajeJSON.put("clientesiniden", cliente.getClienteSinIden());
+			cadaViajeJSON.put("emailfact", cliente.getEmailFacturacion());
+			cadaViajeJSON.put("idtipopersona", cliente.getIdTipoPersona());
+			cadaViajeJSON.put("identificacion", cliente.getIdentificacion());
+			cadaViajeJSON.put("correo", cliente.getEmail());
+			listJSON.add(cadaViajeJSON);
+		}
+		//String temp = listJSON.toJSONString();
+		//temp = temp.substring(0,1) + "\"cliente\":[" + temp.substring(1, temp.length()-1) + "]]";
+		//System.out.println(temp);
+		//System.out.println(listJSON.toJSONString());
+		return listJSON.toJSONString();
+	}
+	
 	
 	/**
 	 * Metodo que se encargará de obtener la información de mercadeo de los clientes con base en el teléfono de los clientes que nos
@@ -130,7 +181,6 @@ public class ClienteCtrl {
 		respuesta.put("cantidad", cantidadPed);
 		return (respuesta.toJSONString());
 	}
-	
 	
 	public String validarTelefonoPedRadicado(String tel){
 		JSONObject respuesta = new JSONObject();
@@ -729,7 +779,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 				Correo correo = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 				ArrayList correos = new ArrayList();
-				correo.setAsunto("TIENDA VIRTUAL ERROR EN LA DIRECCI�N NOMENCLATURA VAC�A   " + clienteVirtual.getDireccion());
+				correo.setAsunto("Tienda virtual error en la dirección nomenclatura vacia   " + clienteVirtual.getDireccion());
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
 				correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -790,7 +840,7 @@ public String obtenerNotificacionesCliente(int idCliente)
 			//Fin de llenado por error
 			Correo correo = new Correo();
 			CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-			correo.setAsunto("ERROR NORMALIZANDO CLIENTE VIRTUAL  " + clienteVirtual.getTelefono());
+			correo.setAsunto("Error normalizando cliente virtual  " + clienteVirtual.getTelefono());
 			ArrayList correos = new ArrayList();
 			String correoEle = "jubote1@gmail.com";
 			correos.add(correoEle);

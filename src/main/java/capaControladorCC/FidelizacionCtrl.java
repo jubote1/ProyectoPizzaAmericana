@@ -266,11 +266,17 @@ public class FidelizacionCtrl {
 		//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
 		String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 		String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+		String correoLider = ParametrosDAO.retornarValorAlfanumerico("CORREOLIDERCONTACT");
+		String correoPqrs = ParametrosDAO.retornarValorAlfanumerico("CORREOPQRSCONTACT");
 		Date fecha = new Date();
 		Correo correo = new Correo();
-		correo.setAsunto("ENVIO CODIGO VALIDACIÓN REDENCIÓN PUNTOS PIZZA AMERICANA" + fecha.toString());
+		correo.setAsunto("Envio código validación redención puntos Pizza Americana" + fecha.toString());
 		ArrayList correos = new ArrayList();
 		correos.add(codRed.getCorreo());
+		correos.add(correoLider);
+		correos.add(correoPqrs);
+		//Agregaremos los correos para lider y pqrs del contact center
+		
 		correo.setContrasena(claveCorreo);
 		correo.setUsuarioCorreo(cuentaCorreo);
 		String mensajeCuerpoCorreo = "Por favor debes facilitar tu código de redención de tus puntos en la tienda " + codigoRedencionGen ;

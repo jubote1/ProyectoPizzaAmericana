@@ -48,7 +48,7 @@ public boolean enviarCorreo()
 		m.addBodyPart(texto);
 		MimeMessage mensaje = new MimeMessage(s);
 		mensaje.setFrom(new InternetAddress(c.getUsuarioCorreo()));
-		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envío
+		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envï¿½o
 		if(correos.size() == 0)
 		{
 			return(false);
@@ -70,12 +70,12 @@ public boolean enviarCorreo()
 	{
 		Date fecha = new Date();
 		System.out.println(e.toString());
-		//Desde este punto enviaremos un correo para notificar problemas en envío correo
+		//Desde este punto enviaremos un correo para notificar problemas en envï¿½o correo
 		//Aqui daremos alcance a aquellas situaciones de problemas puntuales con la cuenta
 		Correo correo = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
 		ArrayList correos = new ArrayList();
-		correo.setAsunto(" OJO PROBLEMAS CON ENVIO CORREOS " + fecha.toString());
+		correo.setAsunto(" Ojo problemas con envio de correos " + fecha.toString());
 		String correoEle = "jubote1@gmail.com";
 		correos.add(correoEle);
 		correo.setContrasena(infoCorreo.getClaveCorreo());
@@ -108,7 +108,7 @@ public boolean enviarCorreoContingencia()
 		m.addBodyPart(texto);
 		MimeMessage mensaje = new MimeMessage(s);
 		mensaje.setFrom(new InternetAddress(c.getUsuarioCorreo()));
-		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envío
+		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envï¿½o
 		if(correos.size() == 0)
 		{
 			return(false);
@@ -154,7 +154,7 @@ public boolean enviarCorreoInstitucional()
 		m.addBodyPart(texto);
 		MimeMessage mensaje = new MimeMessage(s);
 		mensaje.setFrom(new InternetAddress(c.getUsuarioCorreo()));
-		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envío
+		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el envï¿½o
 		if(correos.size() == 0)
 		{
 			return(false);
