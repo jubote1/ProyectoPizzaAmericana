@@ -3,7 +3,8 @@ package capaServicioCC;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -13,64 +14,83 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
 
-
 @WebServlet("/ConsultarClienteRecurrenteCRM")
 public class ConsultarClienteRecurrenteCRM extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
+    private static final long serialVersionUID = 1L;
+
+    private static final ExecutorService executor = Executors.newFixedThreadPool(5);
+
     public ConsultarClienteRecurrenteCRM() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe par�metros dado que no filtra la informaci�n, simplemente retorna en formato JSON 
-	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el m�todo obtenerTiendas de la capa Tienda Controlador.
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		try{
-			response.addHeader("Access-Control-Allow-Origin", "*");
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-			response.setContentType("application/json");
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
 
-			BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(), "UTF-8"));
-			String line = null;
-			StringBuilder sb = new StringBuilder();
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-			}
-			String data = sb.toString();
-			PedidoCtrl pedidoCtrl = new PedidoCtrl();
-			//Tomaremos el Authorization
-			String authHeader = request.getHeader("authorization");          
-			String auth = "HTTP Authorization header:";
-			if (authHeader == null) {            
-			        authHeader = auth +" No authorization header";      
-			} else {            
-			
-			}
+            BufferedReader br = new BufferedReader(
+                    new InputStreamReader(request.getInputStream(), "UTF-8")
+            );
 
-			String respuesta = pedidoCtrl.consultarClienteRecurrenteCRMBOT(data, authHeader); 
-			PrintWriter out = response.getWriter();
-			response.setStatus(200);
-			out.write(respuesta);
-		}catch(Exception e){
-			System.out.println(e.getMessage());
-		}
-	
-	}
+            String line;
+            StringBuilder sb = new StringBuilder();
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
-	}
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
 
+            final String data = sb.toString();
+
+            String authHeader = request.getHeader("authorization");
+            if (authHeader == null) {
+                authHeader = "HTTP Authorization header: No authorization header";
+            }
+
+            final String authHeaderFinal = authHeader;
+
+            // Respuesta inmediata para que Kommo no reintente por timeout.
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write("OK");
+            response.getWriter().flush();
+
+            // Procesamiento en segundo plano.
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        PedidoCtrl pedidoCtrl = new PedidoCtrl();
+                        pedidoCtrl.consultarClienteRecurrenteCRMBOT(data, authHeaderFinal);
+                    } catch (Exception e) {
+                        System.out.println("Error procesando ConsultarClienteRecurrenteCRM: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+        } catch (Exception e) {
+            System.out.println("Error recibiendo webhook ConsultarClienteRecurrenteCRM: " + e.getMessage());
+            e.printStackTrace();
+
+            if (!response.isCommitted()) {
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType("text/plain;charset=UTF-8");
+                response.getWriter().write("OK");
+                response.getWriter().flush();
+            }
+        }
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        doGet(request, response);
+    }
+
+    @Override
+    public void destroy() {
+        executor.shutdown();
+        super.destroy();
+    }
 }
