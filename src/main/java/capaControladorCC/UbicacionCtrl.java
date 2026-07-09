@@ -43,7 +43,7 @@ public class UbicacionCtrl {
 	private static final String DEPARTAMENTO = "Antioquia";
 	private static final String PAIS = "Colombia";
 	private static final String TOKEN_NUMERO_DIRECCION =
-	        "\\d+\\s*[a-z]{0,2}(?:\\s*(?:sur|norte|este|oeste))?";
+	        "\\d+(?:\\s*(?!(?:la|el|lo|de|al)\\b)[a-z]{1,2})?(?:\\s*(?:sur|norte|este|oeste))?";
 
 	private static final Pattern PATRON_TIPO_VIA = Pattern
 			.compile("\\b(calle|carrera|avenida|diagonal|transversal|circular|autopista)\\b");
@@ -244,29 +244,36 @@ public class UbicacionCtrl {
 				? municipio
 				: direccionNormalizada.municipio;
 
+		
+		JsonObject mejorPistaGoogle = crearCoordsVacias();
+
 		for (String candidato : candidatos) {
 		    JsonObject coords = obtenerCoordenadasDesdeArcGIS(candidato, municipioValidacion);
+		    copiarCandidatoCercano(mejorPistaGoogle, coords);
 		    if (esCoordenadaValida(coords)) return coords;
 
 		    coords = HereGeocode(candidato, municipioValidacion);
+		    copiarCandidatoCercano(mejorPistaGoogle, coords);
 		    if (esCoordenadaValida(coords)) return coords;
 		}
-
-		JsonObject mejorPistaGoogle = crearCoordsVacias();
 
 		for (String candidato : candidatos) {
 		    System.out.println("Probando GOOGLE: " + candidato);
 
 		    JsonObject coords = GoogleGeocode(candidato, municipioValidacion);
+		    copiarCandidatoCercano(mejorPistaGoogle, coords);
 
 		    if (esCoordenadaValida(coords)) {
 		        return coords;
 		    }
 
 		    if (!mejorPistaGoogle.has("MunicipioSugerido") && coords.has("MunicipioSugerido")) {
-		        mejorPistaGoogle = coords;
-		    }
+		        mejorPistaGoogle.addProperty("MunicipioSugerido", coords.get("MunicipioSugerido").getAsString());
 
+		        if (coords.has("LabelPista")) {
+		            mejorPistaGoogle.addProperty("LabelPista", coords.get("LabelPista").getAsString());
+		        }
+		    }
 		    if (coords.has("error")) {
 		        System.out.println("Google fallo: " + coords.get("error").getAsString());
 		    }
@@ -299,17 +306,22 @@ public class UbicacionCtrl {
 		    }
 
 		    JsonObject coords = GooglePlacesTextSearch(candidatoPlaces, municipioPlaces);
+		    copiarCandidatoCercano(mejorPistaGoogle, coords);
 
 		    if (esCoordenadaValida(coords)) {
 		        return coords;
 		    }
-
 		    if (!mejorPistaGoogle.has("MunicipioSugerido") && coords.has("MunicipioSugerido")) {
-		        mejorPistaGoogle = coords;
+		        mejorPistaGoogle.addProperty("MunicipioSugerido", coords.get("MunicipioSugerido").getAsString());
+
+		        if (coords.has("LabelPista")) {
+		            mejorPistaGoogle.addProperty("LabelPista", coords.get("LabelPista").getAsString());
+		        }
+
 		        System.out.println("Google Places sugirio municipio: "
 		                + coords.get("MunicipioSugerido").getAsString()
 		                + " por label: "
-		                + coords.get("LabelPista").getAsString());
+		                + (coords.has("LabelPista") ? coords.get("LabelPista").getAsString() : ""));
 		    }
 
 		    if (coords.has("error")) {
@@ -319,6 +331,46 @@ public class UbicacionCtrl {
 
 		return mejorPistaGoogle;
 
+	}
+	
+	private static void copiarCandidatoCercano(JsonObject destino, JsonObject origen) {
+	    if (destino == null || origen == null || destino.has("CandidatoCercanoMunicipioOriginal")) {
+	        return;
+	    }
+
+	    if (origen.has("CandidatoCercanoMunicipioOriginal")) {
+	        destino.addProperty("CandidatoCercanoMunicipioOriginal", true);
+
+	        if (origen.has("LabelCandidatoCercano")) {
+	            destino.addProperty("LabelCandidatoCercano",
+	                    origen.get("LabelCandidatoCercano").getAsString());
+	        }
+	    }
+	}
+	
+	
+	private static boolean esCandidatoCercanoMismoMunicipio(String query, String label, String municipioPedido) {
+	    NomenclaturaEsperada esperada = extraerNomenclaturaEsperada(query);
+	    NomenclaturaEsperada encontrada = extraerNomenclaturaEsperada(label);
+
+	    if (!esperada.completa || !encontrada.completa) {
+	        return false;
+	    }
+
+	    String labelNormalizado = normalizarTexto(label);
+	    String municipioNormalizado = normalizarTexto(municipioPedido);
+
+	    boolean mismoMunicipio = municipioNormalizado.isBlank()
+	            || labelNormalizado.contains(municipioNormalizado);
+
+	    if (!mismoMunicipio) {
+	        return false;
+	    }
+
+	    return esperada.tipoVia.equals(encontrada.tipoVia)
+	            && esperada.numeroVia.equals(encontrada.numeroVia)
+	            && esperada.placaFinal.equals(encontrada.placaFinal)
+	            && !esperada.placaInicial.equals(encontrada.placaInicial);
 	}
 	
 	private static JsonObject geocodificarConCandidatos(DireccionNormalizada direccionNormalizada, String direccion,
@@ -340,14 +392,19 @@ public class UbicacionCtrl {
 	    if (esCoordenadaValida(coords)) {
 	        return coords;
 	    }
+	    
+	    if (coords.has("CandidatoCercanoMunicipioOriginal")) {
+	        System.out.println("No se aplica municipio sugerido porque hubo candidato cercano en municipio original: "
+	                + coords.get("LabelCandidatoCercano").getAsString());
+	        return crearCoordsVacias();
+	    }
 
 	 
 
 	    if (coords.has("MunicipioSugerido")) {
 	        String municipioSugerido = coords.get("MunicipioSugerido").getAsString();
 
-	        if (!municipioSugerido.isBlank()
-	                && !normalizarTexto(municipioSugerido).equals(normalizarTexto(municipioValidacion))) {
+	        if (cambioMunicipioPermitido(municipioValidacion, municipioSugerido, barrioValidacion, coords)) {
 
 	            System.out.println("Reintentando con municipio sugerido por Google: " + municipioSugerido);
 
@@ -398,8 +455,7 @@ public class UbicacionCtrl {
 	    if (pistaSinMunicipio.has("MunicipioSugerido")) {
 	        String municipioSugerido = pistaSinMunicipio.get("MunicipioSugerido").getAsString();
 
-	        if (!municipioSugerido.isBlank()
-	                && !normalizarTexto(municipioSugerido).equals(normalizarTexto(municipioValidacion))) {
+	        if (cambioMunicipioPermitido(municipioValidacion, municipioSugerido, barrioValidacion, pistaSinMunicipio)) {
 
 	            System.out.println("Reintentando con municipio sugerido sin municipio: " + municipioSugerido);
 
@@ -486,11 +542,11 @@ public class UbicacionCtrl {
 	}
 
 	private static JsonObject crearCoordsVacias() {
-		JsonObject coords = new JsonObject();
-		coords.addProperty("Longitud", 0);
-		coords.addProperty("Latitud", 0);
-		coords.addProperty("Direccion", "");
-		return coords;
+	    JsonObject coords = new JsonObject();
+	    coords.addProperty("Longitud", 0);
+	    coords.addProperty("Latitud", 0);
+	    coords.addProperty("Direccion", "");
+	    return coords;
 	}
 
 	/**
@@ -569,6 +625,12 @@ public class UbicacionCtrl {
 
 	        String direccionParaValidar = quitarSufijoPais(direccion);
 
+	        if (esCandidatoCercanoMismoMunicipio(direccionParaValidar, address, municipioPedido)) {
+	            coords.addProperty("CandidatoCercanoMunicipioOriginal", true);
+	            coords.addProperty("LabelCandidatoCercano", address);
+	            System.out.println("Candidato cercano en municipio original: " + address);
+	        }
+	        
 	        if (esCoincidencia(direccionParaValidar, address, attExtra)
 	                && candidate.has("location")) {
 
@@ -773,7 +835,10 @@ public class UbicacionCtrl {
 	public static void main(String[] args) {
 
 		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setIdcliente(480034);
+		coberturaRequest.setBarrio("Hueco");
+		coberturaRequest.setMunicipio("Medellin");
+		coberturaRequest.setDireccion("Carrera 54 #46-40 local 220a  Centro comercial metroplaza");
+		
 		/*ClienteCtrl clienteCtrl = new ClienteCtrl();
 		PedidoCtrl pedd =  new PedidoCtrl();
 		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3185020068").getClienteRecurrente());
@@ -808,7 +873,7 @@ public class UbicacionCtrl {
 
 		if (matcherCruce.find()) {
 		    d.tipoVia = matcherCruce.group(1);
-		    d.numeroVia = limpiarNumeroVia(matcherCruce.group(2)).replaceAll("\\s+", "");
+		    d.numeroVia = normalizarNumeroViaParaGeocoder(matcherCruce.group(2));
 		    d.placa = normalizarTokenDireccion(matcherCruce.group(3)).toUpperCase(Locale.ROOT)
 		            + "-"
 		            + normalizarTokenDireccion(matcherCruce.group(4)).toUpperCase(Locale.ROOT);
@@ -818,7 +883,7 @@ public class UbicacionCtrl {
 		    d.esPuntual = true;
 		} else if (matcher.find()) {
 		    d.tipoVia = matcher.group(1);
-		    d.numeroVia = limpiarNumeroVia(matcher.group(2)).replaceAll("\\s+", "");
+		    d.numeroVia = normalizarNumeroViaParaGeocoder(matcher.group(2));
 		    d.placa = normalizarTokenDireccion(matcher.group(3)).toUpperCase(Locale.ROOT)
 		            + "-"
 		            + normalizarTokenDireccion(matcher.group(4)).toUpperCase(Locale.ROOT);
@@ -864,6 +929,7 @@ public class UbicacionCtrl {
 
 		txt = txt.replaceAll("[,\\.]", " ");
 		txt = txt.replaceAll("#\\s*", "# ");
+		txt = txt.replaceAll("(#\\s*)(\\d+[a-z]{1,2})(\\d{1,3}[a-z]?)\\b", "$1$2-$3");
 		txt = txt.replaceAll("\\s*-\\s*", "-");
 
 		txt = txt.replaceAll("\\b(cl|cll|calle)\\b", "calle");
@@ -1151,6 +1217,12 @@ public class UbicacionCtrl {
 						attExtra.addProperty("tipoResultado", normalizarTexto(resultType));
 
 						String direccionParaValidar = quitarSufijoPais(direccion);
+						
+						if (esCandidatoCercanoMismoMunicipio(direccionParaValidar, label, municipioPedido)) {
+						    coords.addProperty("CandidatoCercanoMunicipioOriginal", true);
+						    coords.addProperty("LabelCandidatoCercano", label);
+						    System.out.println("Candidato cercano en municipio original: " + label);
+						}
 
 						if (esCoincidencia(direccionParaValidar, label, attExtra)) {
 							JsonObject pos = item.getAsJsonObject("position");
@@ -1273,7 +1345,7 @@ public class UbicacionCtrl {
 	    List<String> numeros = new ArrayList<>();
 
 	    Matcher matcher = Pattern
-	            .compile("\\b\\d+\\s*(?:este|oeste|norte|sur|[a-z]{1,2})?\\b")
+	            .compile("\\b" + TOKEN_NUMERO_DIRECCION + "\\b")
 	            .matcher(texto);
 
 	    while (matcher.find()) {
@@ -1343,7 +1415,10 @@ public class UbicacionCtrl {
 		txt = txt.replaceAll("\\b(\\d+)\\s+o\\b", "$1 oeste");
 		txt = txt.replaceAll("\\b(\\d+)\\s+n\\b", "$1 norte");
 		txt = txt.replaceAll("\\b(\\d+)\\s+s\\b", "$1 sur");
-		txt = txt.replaceAll("\\b(\\d+)\\s+([a-df-mp-zA-DF-MP-Z]{1,2})\\b", "$1$2");
+		txt = txt.replaceAll(
+		        "\\b(\\d+)\\s+(?!(?:la|el|lo|de|al)\\b)([a-df-mp-zA-DF-MP-Z]{1,2})\\b",
+		        "$1$2"
+		);
 
 		txt = txt.replaceAll("\\s+", " ").trim();
 
@@ -1397,25 +1472,103 @@ public class UbicacionCtrl {
 
 	    String token = normalizarTexto(valor);
 
+	    // Solo quitamos orientacion si hay letra antes:
+	    // 20 f norte -> 20f
+	    // 20fnorte -> 20f
+	    token = token.replaceAll(
+	            "\\b(\\d+)\\s+([a-z]{1,2})\\s+(norte|sur|este|oeste)\\b",
+	            "$1$2"
+	    );
+
+	    token = token.replaceAll(
+	            "\\b(\\d+)\\s+([a-z]{1,2}?)(norte|sur|este|oeste)\\b",
+	            "$1$2"
+	    );
+
+	    token = token.replaceAll(
+	            "\\b(\\d+)([a-z]{1,2}?)(norte|sur|este|oeste)\\b",
+	            "$1$2"
+	    );
+
+	    // Si NO hay letra, conserva orientacion:
+	    // 10 norte -> 10n
 	    token = token.replaceAll("\\b(\\d+)\\s*este\\b", "$1e");
 	    token = token.replaceAll("\\b(\\d+)\\s*oeste\\b", "$1o");
 	    token = token.replaceAll("\\b(\\d+)\\s*norte\\b", "$1n");
 	    token = token.replaceAll("\\b(\\d+)\\s*sur\\b", "$1s");
 
-	    return token.replaceAll("\\s+", "");
+	    token = token.replaceAll("\\s+", "");
+	    token = token.replaceAll("^0+(?=\\d)", "");
+
+	    return token;
 	}
+	
+	private static String normalizarNumeroViaParaGeocoder(String valor) {
+	    if (valor == null) {
+	        return "";
+	    }
 
+	    String token = Normalizer.normalize(valor, Normalizer.Form.NFD);
+	    token = token.replaceAll("\\p{M}", "");
+	    token = token.toLowerCase(Locale.ROOT).trim();
+
+	    // 20fnorte -> 20f
+	    // 20fsur -> 20f
+	    // 20aanorte -> 20aa
+	    token = token.replaceAll(
+	            "\\b(\\d+)([a-z]{1,2}?)(norte|sur|este|oeste)\\b",
+	            "$1$2"
+	    );
+
+	    // 20 f norte -> 20f
+	    token = token.replaceAll(
+	            "\\b(\\d+)\\s+([a-z]{1,2})\\s+(norte|sur|este|oeste)\\b",
+	            "$1$2"
+	    );
+
+	    // Normaliza espacios entre numero y letra: 20 f -> 20f
+	    token = token.replaceAll(
+	            "\\b(\\d+)\\s+([a-z]{1,2})\\b",
+	            "$1$2"
+	    );
+
+	    token = token.replaceAll("\\s+", "");
+	    token = token.replaceAll("^0+(?=\\d)", "");
+
+	    return token.toUpperCase(Locale.ROOT);
+	}
+	
 	private static boolean labelContieneNomenclaturaCompleta(String label, NomenclaturaEsperada n) {
-		if (label == null || !n.completa) {
-			return false;
-		}
+	    if (label == null || !n.completa) {
+	        return false;
+	    }
 
-		String labelNormalizado = normalizarTexto(label);
-		List<String> tokensLabel = extraerTokensNumero(labelNormalizado);
+	    NomenclaturaEsperada labelNomenclatura = extraerNomenclaturaEsperada(label);
 
-		return tokensLabel.contains(n.numeroVia)
-				&& tokensLabel.contains(n.placaInicial)
-				&& tokensLabel.contains(n.placaFinal);
+	    if (labelNomenclatura.completa) {
+	        return n.tipoVia.equals(labelNomenclatura.tipoVia)
+	                && n.numeroVia.equals(labelNomenclatura.numeroVia)
+	                && n.placaInicial.equals(labelNomenclatura.placaInicial)
+	                && n.placaFinal.equals(labelNomenclatura.placaFinal);
+	    }
+
+	    String labelNormalizado = normalizarTexto(label);
+	    List<String> tokensLabel = extraerTokensNumero(labelNormalizado);
+
+	    return contieneTipoViaExacto(labelNormalizado, n.tipoVia)
+	            && tokensLabel.contains(n.numeroVia)
+	            && tokensLabel.contains(n.placaInicial)
+	            && tokensLabel.contains(n.placaFinal);
+	}
+	
+	private static boolean contieneTipoViaExacto(String texto, String tipoVia) {
+	    if (texto == null || tipoVia == null || tipoVia.isBlank()) {
+	        return false;
+	    }
+
+	    return Pattern.compile("\\b" + Pattern.quote(tipoVia) + "\\b")
+	            .matcher(texto)
+	            .find();
 	}
 	
 	private static class DireccionNormalizada {
@@ -1483,6 +1636,12 @@ public class UbicacionCtrl {
 	            extra.addProperty("tipoResultado", normalizarTexto(resultType));
 
 	            String direccionParaValidar = quitarSufijoPais(direccion);
+	            
+	            if (esCandidatoCercanoMismoMunicipio(direccionParaValidar, label, municipioPedido)) {
+	                coords.addProperty("CandidatoCercanoMunicipioOriginal", true);
+	                coords.addProperty("LabelCandidatoCercano", label);
+	                System.out.println("Candidato cercano en municipio original: " + label);
+	            }
 
 	            if (esCoincidencia(direccionParaValidar, label, extra) && esTipoGoogleAceptable(item)) {
 	                JsonObject location = item.getAsJsonObject("geometry").getAsJsonObject("location");
@@ -1518,12 +1677,7 @@ public class UbicacionCtrl {
 	        return;
 	    }
 
-	    String labelNormalizado = normalizarTexto(label);
-
-	    boolean mismaViaPrincipal = labelNormalizado.contains(esperada.numeroVia);
-	    boolean mismaViaGeneradora = labelNormalizado.contains(esperada.placaInicial);
-
-	    if (!mismaViaPrincipal || !mismaViaGeneradora) {
+	    if (!labelContieneNomenclaturaCompleta(label, esperada)) {
 	        return;
 	    }
 
@@ -1535,6 +1689,8 @@ public class UbicacionCtrl {
 	    coords.addProperty("MunicipioSugerido", municipioSugerido);
 	    coords.addProperty("LabelPista", label);
 	}
+	
+	
 	private static String obtenerTiposGoogle(JsonObject item) {
 	    if (!item.has("types")) {
 	        return "";
@@ -1760,13 +1916,19 @@ public class UbicacionCtrl {
 	                nombre = displayName.has("text") ? displayName.get("text").getAsString() : "";
 	            }
 
-	            JsonObject extra = new JsonObject();
+	            JsonObject extra = new JsonObject();                                                            
 	            extra.addProperty("municipioPedido", normalizarTexto(municipioPedido));
 	            extra.addProperty("municipioApi", normalizarTexto(obtenerMunicipioDesdeTexto(label)));
 	            extra.addProperty("districtApi", "");
 	            extra.addProperty("tipoResultado", "streetaddress pointaddress premise");
 
 	            String direccionParaValidar = quitarSufijoPais(direccion);
+	            
+	            if (esCandidatoCercanoMismoMunicipio(direccionParaValidar, label, municipioPedido)) {
+	                coords.addProperty("CandidatoCercanoMunicipioOriginal", true);
+	                coords.addProperty("LabelCandidatoCercano", label);
+	                System.out.println("Candidato cercano en municipio original: " + label);
+	            }
 
 	            if (esCoincidencia(direccionParaValidar, label, extra) && place.has("location")) {
 	                JsonObject location = place.getAsJsonObject("location");
@@ -1810,12 +1972,7 @@ public class UbicacionCtrl {
 	        return;
 	    }
 
-	    String labelNormalizado = normalizarTexto(label);
-
-	    boolean mismaViaPrincipal = labelNormalizado.contains(esperada.numeroVia);
-	    boolean mismaViaGeneradora = labelNormalizado.contains(esperada.placaInicial);
-
-	    if (!mismaViaPrincipal || !mismaViaGeneradora) {
+	    if (!labelContieneNomenclaturaCompleta(label, esperada)) {
 	        return;
 	    }
 
@@ -1919,10 +2076,10 @@ public class UbicacionCtrl {
 
 	    JsonObject coords = GoogleGeocode(normalizadaSinMunicipio.direccionGeocoder, "");
 
-	    return convertirResultadoEnPistaMunicipio(coords, municipioOriginal);
+	    return convertirResultadoEnPistaMunicipio(coords, municipioOriginal, normalizadaSinMunicipio.direccionGeocoder);
 	}
 
-	private static JsonObject convertirResultadoEnPistaMunicipio(JsonObject coords, String municipioOriginal) {
+	private static JsonObject convertirResultadoEnPistaMunicipio(JsonObject coords, String municipioOriginal, String direccionEsperada) {
 	    JsonObject pista = crearCoordsVacias();
 
 	    if (!esCoordenadaValida(coords) || !coords.has("Direccion")) {
@@ -1930,6 +2087,12 @@ public class UbicacionCtrl {
 	    }
 
 	    String direccionEncontrada = coords.get("Direccion").getAsString();
+
+	    NomenclaturaEsperada esperada = extraerNomenclaturaEsperada(direccionEsperada);
+	    if (esperada.completa && !labelContieneNomenclaturaCompleta(direccionEncontrada, esperada)) {
+	        return pista;
+	    }
+
 	    String municipioSugerido = obtenerMunicipioDesdeTexto(direccionEncontrada);
 
 	    if (municipioSugerido.isBlank()) {
@@ -1951,6 +2114,81 @@ public class UbicacionCtrl {
 	    return pista;
 	}
 
+	
+	private static boolean cambioMunicipioPermitido(String municipioOriginal, String municipioSugerido,
+	        String barrio, JsonObject pista) {
+
+	    if (municipioSugerido == null || municipioSugerido.isBlank()) {
+	        return false;
+	    }
+
+	    if (normalizarTexto(municipioSugerido).equals(normalizarTexto(municipioOriginal))) {
+	        return false;
+	    }
+
+	    if (municipioOriginal != null && !municipioOriginal.isBlank()
+	            && esMunicipioSoportado(municipioOriginal)
+	            && barrio != null && !barrio.isBlank()) {
+
+	        String labelPista = pista != null && pista.has("LabelPista")
+	                ? pista.get("LabelPista").getAsString()
+	                : "";
+
+	        if (!barrioCoincide(labelPista, barrio)) {
+	            System.out.println("Rechazado cambio de municipio porque el barrio no coincide. Municipio original: "
+	                    + municipioOriginal + " | sugerido: " + municipioSugerido
+	                    + " | barrio: " + barrio + " | label: " + labelPista);
+	            return false;
+	        }
+	    }
+
+	    return true;
+	}
+
+	private static boolean barrioCoincide(String label, String barrio) {
+	    String l = normalizarTextoBase(label);
+	    String b = normalizarTextoBase(barrio);
+
+	    if (l.isBlank() || b.isBlank()) {
+	        return false;
+	    }
+
+	    if (l.contains(b)) {
+	        return true;
+	    }
+
+	    String[] palabras = b.split("\\s+");
+	    int relevantes = 0;
+	    int coincidentes = 0;
+
+	    for (String palabra : palabras) {
+	        if (palabra.isBlank() || esPalabraBarrioRuido(palabra)) {
+	            continue;
+	        }
+
+	        relevantes++;
+
+	        if (Pattern.compile("\\b" + Pattern.quote(palabra) + "\\b").matcher(l).find()) {
+	            coincidentes++;
+	        }
+	    }
+
+	    return relevantes > 0 && coincidentes >= Math.min(2, relevantes);
+	}
+
+	private static boolean esPalabraBarrioRuido(String palabra) {
+	    return palabra.equals("de")
+	            || palabra.equals("del")
+	            || palabra.equals("la")
+	            || palabra.equals("las")
+	            || palabra.equals("el")
+	            || palabra.equals("los")
+	            || palabra.equals("y")
+	            || palabra.equals("barrio")
+	            || palabra.equals("sector")
+	            || palabra.equals("urbanizacion")
+	            || palabra.equals("urb");
+	}
 	private static String quitarMunicipiosSoportados(String direccion) {
 	    String texto = normalizarTextoBase(direccion);
 
@@ -1960,5 +2198,7 @@ public class UbicacionCtrl {
 
 	    return texto.replaceAll("\\s+", " ").trim();
 	}
+	
+	
 	
 }

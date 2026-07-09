@@ -161,7 +161,7 @@ public class EncuestaCtrl {
 	    if (success) {
 
 	        respuesta.put("success", false);
-	        respuesta.put("message", "Ya no es posible realizar esta acción nuevamente.");
+	        respuesta.put("message", "Ya no es posible realizar esta acción nuevamente: "+encuesta.getIdpedido()+" - "+encuesta.getIdtienda());
 
 	        return respuesta.toJSONString();
 	    }

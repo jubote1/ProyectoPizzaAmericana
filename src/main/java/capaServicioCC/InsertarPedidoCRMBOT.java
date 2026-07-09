@@ -14,18 +14,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
 
-@WebServlet("/ConsultarClienteRecurrenteCRM")
-public class ConsultarClienteRecurrenteCRM extends HttpServlet {
+@WebServlet("/InsertarPedidoCRMBOT")
+public class InsertarPedidoCRMBOT extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(5);
 
-    public ConsultarClienteRecurrenteCRM() {
+    public InsertarPedidoCRMBOT() {
         super();
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        String data = "";
+        String authHeader = "";
 
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
@@ -41,13 +44,15 @@ public class ConsultarClienteRecurrenteCRM extends HttpServlet {
                 sb.append(line);
             }
 
-            final String data = sb.toString();
+            data = sb.toString();
 
-            String authHeader = request.getHeader("authorization");
+            authHeader = request.getHeader("authorization");
+
             if (authHeader == null) {
                 authHeader = "HTTP Authorization header: No authorization header";
             }
 
+            final String dataFinal = data;
             final String authHeaderFinal = authHeader;
 
             // Respuesta inmediata para que Kommo no reintente por timeout.
@@ -62,16 +67,16 @@ public class ConsultarClienteRecurrenteCRM extends HttpServlet {
                 public void run() {
                     try {
                         PedidoCtrl pedidoCtrl = new PedidoCtrl();
-                        pedidoCtrl.consultarClienteRecurrenteCRMBOT(data, authHeaderFinal);
+                        pedidoCtrl.insertarPedidoCRMBOT(dataFinal, authHeaderFinal);
                     } catch (Exception e) {
-                        System.out.println("Error procesando ConsultarClienteRecurrenteCRM: " + e.getMessage());
+                        System.out.println("Error procesando InsertarPedidoCRMBOT: " + e.getMessage());
                         e.printStackTrace();
                     }
                 }
             });
 
         } catch (Exception e) {
-            System.out.println("Error recibiendo webhook ConsultarClienteRecurrenteCRM: " + e.getMessage());
+            System.out.println("Error recibiendo webhook InsertarPedidoCRMBOT: " + e.getMessage());
             e.printStackTrace();
 
             if (!response.isCommitted()) {
