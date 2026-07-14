@@ -472,66 +472,54 @@ public class EmpleadoEncuestaDAO {
      * @return
      * @throws SQLException
      */
-    public static boolean validarExisteEncuestaPedido(int idPedido, int idTienda) throws SQLException
-    {
-    	boolean respuesta = false;
-    	ConexionBaseDatos con = new ConexionBaseDatos();
-        Connection con1 = con.obtenerConexionBDPrincipal(); 
-    	String sql = "SELECT * FROM cliente_servicio WHERE idpedido = ? AND idtienda = ?;";
-        try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
+    public static boolean validarExisteEncuestaPedido(int idPedido, int idTienda) {
+
+        String sql = "SELECT 1 FROM cliente_servicio WHERE idpedido = ? AND idtienda = ? LIMIT 1";
+
+        try (
+            Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+            PreparedStatement pstmt = con1.prepareStatement(sql)
+        ) {
             pstmt.setInt(1, idPedido);
             pstmt.setInt(2, idTienda);
 
             try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                	respuesta = true;
-                }
+                return rs.next();
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
-            throw e; // Relanzamos la excepción para que sea manejada adecuadamente
+            return false;
         }
-
-        return respuesta;
     }
     
-	public static boolean existeEncuestaPedido(int idPedido) {
+    public static boolean existeEncuestaPedido(int idPedido, int idTienda) {
 
-	    Logger logger = Logger.getLogger("log_file");
+        Logger logger = Logger.getLogger("log_file");
 
-	    ConexionBaseDatos con = new ConexionBaseDatos();
-	    Connection con1 = con.obtenerConexionBDPrincipal();
+        String sql = "SELECT 1 "
+                   + "FROM encuesta_servicio "
+                   + "WHERE idpedido = ? "
+                   + "AND idtienda = ? "
+                   + "LIMIT 1";
 
-	    try {
+        try (
+            Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+            PreparedStatement ps = con1.prepareStatement(sql)
+        ) {
+            ps.setInt(1, idPedido);
+            ps.setInt(2, idTienda);
 
-	        String sql = "SELECT 1 "
-	                   + "FROM encuesta_servicio "
-	                   + "WHERE idpedido = ? "
-	                   + "LIMIT 1";
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
 
-	        PreparedStatement ps = con1.prepareStatement(sql);
-	        ps.setInt(1, idPedido);
+        } catch (Exception e) {
+            logger.error("Error validando encuesta existente: " + e.toString());
+            return false;
+        }
+    }
+	
 
-	        ResultSet rs = ps.executeQuery();
-
-	        boolean existe = rs.next();
-
-	        rs.close();
-	        ps.close();
-	        con1.close();
-
-	        return existe;
-
-	    } catch (Exception e) {
-
-	        logger.error("Error validando encuesta existente: " + e.toString());
-
-	        try {
-	            con1.close();
-	        } catch (Exception e1) {}
-
-	        return false;
-	    }
-	}
 
 }

@@ -154,21 +154,29 @@ public class EncuestaCtrl {
 
 	public String insertarEncuestaServicioWb(EncuestaServicio encuesta) {
 
-	    boolean success = EmpleadoEncuestaDAO.existeEncuestaPedido(encuesta.getIdpedido());
-
 	    JSONObject respuesta = new JSONObject();
 
-	    if (success) {
+	    boolean existe = EmpleadoEncuestaDAO.existeEncuestaPedido(
+	    	    encuesta.getIdpedido(),
+	    	    encuesta.getIdtienda()
+	    	);
 
-	        respuesta.put("success", false);
-	        respuesta.put("message", "Ya no es posible realizar esta acción nuevamente: "+encuesta.getIdpedido()+" - "+encuesta.getIdtienda());
+	    	if (existe) {
+	    	    respuesta.put("success", false);
+	    	    respuesta.put(
+	    	        "message",
+	    	        "Ya no es posible realizar esta acción nuevamente: "
+	    	            + encuesta.getIdpedido()
+	    	            + " - "
+	    	            + encuesta.getIdtienda()
+	    	    );
 
-	        return respuesta.toJSONString();
-	    }
+	    	    return respuesta.toJSONString();
+	    	}
 
-	    success = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
+	    	existe = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
 
-	    if (success) {
+	    if (existe) {
 
 	        List<JSONObject> listaOpcionesPublica = new ArrayList<>();
 
@@ -190,11 +198,11 @@ public class EncuestaCtrl {
 	        EmpleadoEncuestaDAO.insertarClienteServicio(encuesta);
 	    }
 
-	    respuesta.put("success", success);
+	    respuesta.put("success", existe);
 
 	    respuesta.put(
 	        "message",
-	        success
+	        existe
 	            ? "Encuesta insertada correctamente"
 	            : "Error al insertar la encuesta"
 	    );
@@ -315,7 +323,8 @@ public class EncuestaCtrl {
 	
 	public static void main(String args[])
 	{
-		System.out.println(resultadoRuleta(null));
+
+
 	}
 	
 

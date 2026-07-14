@@ -835,30 +835,31 @@ public class UbicacionCtrl {
 	public static void main(String[] args) {
 
 		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setBarrio("Hueco");
-		coberturaRequest.setMunicipio("Medellin");
-		coberturaRequest.setDireccion("Carrera 54 #46-40 local 220a  Centro comercial metroplaza");
+		coberturaRequest.setTelefono("3004577639");
+		ClienteCtrl clienteCtrl = new ClienteCtrl();
+		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3004577639").getClienteRecurrente());
+
 		
 		/*ClienteCtrl clienteCtrl = new ClienteCtrl();
 		PedidoCtrl pedd =  new PedidoCtrl();
 		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3185020068").getClienteRecurrente());
 		pedd.actualizarClienteRecurrenteCRMBOT("29739849", clienteCtrl.ValidarExistenciaClienteCRM("3185020068"), "informacion");*/
 
-		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
-		System.out.println(resultado.getResultado());
-		System.out.println(resultado.getEstadoTienda());
-		System.out.println(resultado.getInfoAdicional());
-		System.out.println(resultado.isSuccess());
-		System.out.println("Latitud: " + resultado.getLatitud());
-		System.out.println("Longitud: " + resultado.getLongitud());
-		System.out.println("Proveedor: " + resultado.getProveedorGeocodificacion());
-		System.out.println("Correccion aplicada: " + resultado.getCorreccionAplicada());
-		System.out.println("Municipio original: " + resultado.getMunicipioOriginal());
-		System.out.println("Municipio corregido: " + resultado.getMunicipioCorregido());
-		System.out.println("Direccion original normalizada: " + resultado.getDireccionOriginalNormalizada());
-		System.out.println("Direccion corregida: " + resultado.getDireccionCorregida());
-		System.out.println("Direccion proveedor: " + resultado.getDireccion());
-		System.out.println("Barrio: " + resultado.getBarrio());
+//		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
+//		System.out.println(resultado.getResultado());
+//		System.out.println(resultado.getEstadoTienda());
+//		System.out.println(resultado.getInfoAdicional());
+//		System.out.println(resultado.isSuccess());
+//		System.out.println("Latitud: " + resultado.getLatitud());
+//		System.out.println("Longitud: " + resultado.getLongitud());
+//		System.out.println("Proveedor: " + resultado.getProveedorGeocodificacion());
+//		System.out.println("Correccion aplicada: " + resultado.getCorreccionAplicada());
+//		System.out.println("Municipio original: " + resultado.getMunicipioOriginal());
+//		System.out.println("Municipio corregido: " + resultado.getMunicipioCorregido());
+//		System.out.println("Direccion original normalizada: " + resultado.getDireccionOriginalNormalizada());
+//		System.out.println("Direccion corregida: " + resultado.getDireccionCorregida());
+//		System.out.println("Direccion proveedor: " + resultado.getDireccion());
+//		System.out.println("Barrio: " + resultado.getBarrio());
 	}
 
 
