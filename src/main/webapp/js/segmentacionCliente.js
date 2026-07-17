@@ -824,39 +824,81 @@ document.addEventListener("DOMContentLoaded", function() {
 					const resultadoEnvio = await EnvioDatos(data, "EnvioBrevo", "Error en el envío de correos.");
 
 					if (!resultadoEnvio.success) {
-						mensajeFinal += "❌ " + resultadoEnvio.message + "\n";
-						huboError = true;
+					    mensajeFinal += "❌ " + resultadoEnvio.message + "\n";
+
+					    if (resultadoEnvio.errores && resultadoEnvio.errores.length > 0) {
+					        resultadoEnvio.errores.forEach((err, index) => {
+					            mensajeFinal += `\nError ${index + 1}:\n`;
+
+					            if (err.httpCode) {
+					                mensajeFinal += `HTTP: ${err.httpCode}\n`;
+					            }
+
+					            if (err.respuestaBrevo) {
+					                mensajeFinal += `Brevo: ${err.respuestaBrevo}\n`;
+					            }
+
+					            if (err.message) {
+					                mensajeFinal += `Detalle: ${err.message}\n`;
+					            }
+					        });
+					    }
+
+					    huboError = true;
 					} else {
 						mensajeFinal += "✅ " + resultadoEnvio.message + "\n";
 
 						// Si hay clientes y la primera fue exitosa
 						if (idsClientes.length > 0) {
-							const data_idcliente = { idsClientes };
-							const resultadoFecha = await EnvioDatos(data_idcliente, "ClienteUltimaFechaEnvio", "Error al actualizar fecha.");
+						    try {
+						        const data_idcliente = { idsClientes };
 
-							if (!resultadoFecha.success) {
-								mensajeFinal += "❌ " + resultadoFecha.message + "\n";
-								huboError = true;
-							} else {
-								mensajeFinal += "✅ " + resultadoFecha.message + "\n";
-							}
+						        const resultadoFecha = await EnvioDatos(
+						            data_idcliente,
+						            "ClienteUltimaFechaEnvio",
+						            "Error al actualizar fecha."
+						        );
+
+						        if (!resultadoFecha.success) {
+						            mensajeFinal += "⚠️ Los mensajes se enviaron, pero no se pudo actualizar la fecha.\n";
+						            mensajeFinal += resultadoFecha.message + "\n";
+						            huboError = true;
+						        } else {
+						            mensajeFinal += "✅ " + resultadoFecha.message + "\n";
+						        }
+
+						    } catch (errorFecha) {
+						        console.error("Error real al actualizar fecha:", errorFecha);
+
+						        mensajeFinal += "⚠️ Los mensajes se enviaron, pero falló la actualización de fecha.\n";
+						        mensajeFinal += "Detalle: " + (errorFecha.message || errorFecha) + "\n";
+
+						        huboError = true;
+						    }
 						}
 					}
 
 					await Swal.fire({
-						icon: huboError ? "warning" : "success",
-						title: huboError ? "Proceso incompleto" : "Todo correcto",
-						text: mensajeFinal,
-						confirmButtonText: "Aceptar"
+					    icon: huboError ? "warning" : "success",
+					    title: huboError ? "Proceso incompleto" : "Todo correcto",
+					    html: `<div style="text-align:left; white-space:pre-wrap;">${mensajeFinal}</div>`,
+					    confirmButtonText: "Aceptar"
 					});
 
 				} catch (error) {
-					await Swal.fire({
-						icon: "error",
-						title: "Error",
-						text: "Ocurrió un error inesperado en uno de los procesos.",
-						confirmButtonText: "Aceptar"
-					});
+				    console.error("Error real del proceso:", error);
+
+				    await Swal.fire({
+				        icon: "error",
+				        title: "Error inesperado",
+				        html: `
+				            <div>
+				                <b>Mensaje:</b><br>
+				                ${error.message || error}
+				            </div>
+				        `,
+				        confirmButtonText: "Aceptar"
+				    });
 				}
 
 			}
@@ -1036,17 +1078,25 @@ document.addEventListener("DOMContentLoaded", function() {
 					error += `\n\n📋 Detalles:\n${erroresDetallados}`;
 				}
 
-
-				return Promise.reject({ success: false, message: mgs + " " + error });
+				return {
+				    success: false,
+				    message: mgs + " " + error
+				};
 			}
 
 			console.log("✅ Respuesta recibida:", responseData);
-			return Promise.resolve({ success: true, message: responseData.message });
+			return {
+			    success: true,
+			    message: responseData.message
+			};
 
 		} catch (error) {
 			console.error("⚠️ Error:", error.message);
 			// Devuelvo una promesa rechazada con el mensaje de error
-			return Promise.reject({ success: false, message: error.message });
+			return {
+			    success: false,
+			    message: error.message || "Error de comunicación"
+			};
 		} finally {
 			// Este bloque se ejecutará al final de todo, independientemente de lo que pase en la promesa
 			btnConfirmarEnvio.disabled = false;

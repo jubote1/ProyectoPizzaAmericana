@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
@@ -21,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
 import capaControladorCC.SegmentacionClienteCtrl;
+import capaDAOCC.SegmentacionClienteDAO;
 
 @WebServlet("/ClienteUltimaFechaEnvio")
 public class ClienteUltimaFechaEnvio extends HttpServlet {
@@ -35,10 +37,10 @@ public class ClienteUltimaFechaEnvio extends HttpServlet {
             Gson gson = new Gson();
             JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
 
-            // Obtener los parámetros desde el JSON
+            // Obtener los parï¿½metros desde el JSON
             JsonArray idsClientesArray = jsonObject.has("idsClientes") ? jsonObject.getAsJsonArray("idsClientes") : null;
 
-            // Validar que los IDs no sean null ni vacíos
+            // Validar que los IDs no sean null ni vacï¿½os
             if (idsClientesArray == null || idsClientesArray.size() == 0) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.getWriter().print("{\"error\": \"Faltan parametros obligatorios o valores invalidos\"}");
@@ -51,16 +53,24 @@ public class ClienteUltimaFechaEnvio extends HttpServlet {
                 idsClientes.add(idElement.getAsInt());
             }
 
-            // Llamar al controlador para actualizar la fecha de la última publicidad
-            boolean resultado = SegmentacionClienteCtrl.actualizarFechaUltimaPublicidad(idsClientes);
+            Map<String, Object> resultado = SegmentacionClienteDAO.actualizarFechaUltimaPublicidad(idsClientes);
+
+            boolean success = (boolean) resultado.get("success");
+            String mensaje = (String) resultado.get("message");
 
             // Devolver la respuesta
-            if (resultado) {
+            if (success) {
                 response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().print("{\"success\": true, \"message\": \"Fecha de ultima publicidad actualizada\"}");
+                response.getWriter().print("{\"success\": true, \"message\": \"" + mensaje + "\"}");
             } else {
+
+                List<Integer> clientesFallidos = (List<Integer>) resultado.get("clientesFallidos");
+
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.getWriter().print("{\"error\": \"Hubo un error al actualizar la fecha de ultima publicidad\"}");
+                response.getWriter().print(
+                    "{\"success\": false, \"message\": \"" + mensaje +
+                    "\", \"clientesFallidos\": \"" + clientesFallidos + "\"}"
+                );
             }
 
         } catch (JsonSyntaxException e) {
@@ -68,9 +78,9 @@ public class ClienteUltimaFechaEnvio extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().print("{\"error\": \"Formato JSON invalido\"}");
         } catch (Exception e) {
-            System.err.println("Error interno: " + e.getMessage());
+            e.printStackTrace(); // <-- MUY IMPORTANTE
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().print("{\"error\": \"Error interno del servidor\"}");
+            response.getWriter().print("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
     }
 
