@@ -183,11 +183,7 @@ public class SegmentacionClienteCtrl {
 		return jsonResponse;
 	}
 
-	public static boolean actualizarFechaUltimaPublicidad(List<Integer> idsclientes) {
-		SegmentacionClienteDAO segmentacionClienteDAO = new SegmentacionClienteDAO();
-		boolean respuesta = segmentacionClienteDAO.actualizarFechaUltimaPublicidad(idsclientes);
-		return respuesta;
-	}
+
 
 	public JsonObject envioWhatsappBrevo(List<JsonObject> telefonos, String mensaje, int idplantilla, List<JsonObject> paramsDefault) throws IOException {
 	    JsonObject jsonResponse = new JsonObject();
@@ -251,6 +247,13 @@ public class SegmentacionClienteCtrl {
 	    } catch (Exception e) {
 	        jsonResponse.addProperty("success", false);
 	        jsonResponse.addProperty("message", "Error interno: " + e.getMessage());
+
+	        JsonObject error = new JsonObject();
+	        error.addProperty("exception", e.getClass().getSimpleName());
+	        error.addProperty("message", e.getMessage());
+	        errores.add(error);
+
+	        jsonResponse.add("errores", errores);
 	    }
 
 	    return jsonResponse;
@@ -323,25 +326,52 @@ public class SegmentacionClienteCtrl {
 	    return requestBody;
 	}
 	
-	private void ejecutarEnvio(OkHttpClient client, JsonObject requestBody, String apiKey, String telefono, JsonArray errores) throws IOException {
+	private void ejecutarEnvio(OkHttpClient client, JsonObject requestBody, String apiKey, String telefono, JsonArray errores) {
 	    Request request = new Request.Builder()
 	            .url("https://api.brevo.com/v3/whatsapp/sendMessage")
 	            .addHeader("accept", "application/json")
 	            .addHeader("api-key", apiKey)
 	            .addHeader("content-type", "application/json")
-	            .post(RequestBody.create(MediaType.parse("application/json"), requestBody.toString()))
+	            .post(RequestBody.create(
+	                    MediaType.parse("application/json; charset=utf-8"),
+	                    requestBody.toString()
+	            ))
 	            .build();
 
 	    try (Response response = client.newCall(request).execute()) {
+	        String respuestaBrevo = response.body() != null ? response.body().string() : "";
+
 	        if (!response.isSuccessful()) {
 	            JsonObject error = new JsonObject();
-	            if (telefono != null) error.addProperty("telefono", telefono);
-	            error.addProperty("error", response.body().string());
+
+	            if (telefono != null) {
+	                error.addProperty("telefono", telefono);
+	            }
+
+	            if (requestBody.has("contactNumbers")) {
+	                error.addProperty("cantidadContactos", requestBody.getAsJsonArray("contactNumbers").size());
+	            }
+
+	            error.addProperty("httpCode", response.code());
+	            error.addProperty("httpMessage", response.message());
+	            error.addProperty("respuestaBrevo", respuestaBrevo);
+
 	            errores.add(error);
 	        }
+
+	    } catch (Exception e) {
+	        JsonObject error = new JsonObject();
+
+	        if (telefono != null) {
+	            error.addProperty("telefono", telefono);
+	        }
+
+	        error.addProperty("exception", e.getClass().getSimpleName());
+	        error.addProperty("message", e.getMessage());
+
+	        errores.add(error);
 	    }
 	}
-
 
 
 

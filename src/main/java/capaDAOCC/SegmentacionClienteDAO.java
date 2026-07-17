@@ -8,7 +8,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import capaModeloCC.ClienteClub;
 import capaModeloCC.ClienteSegmento;
@@ -291,60 +293,77 @@ public class SegmentacionClienteDAO {
 	}
 
 
-	public boolean actualizarFechaUltimaPublicidad(List<Integer> idsClientes) {
-		// Definir la sentencia SQL para actualizar la fecha
-		String sql = "UPDATE cliente SET ultima_fecha_publicidad = ? WHERE idcliente = ?";
+	public static Map<String, Object> actualizarFechaUltimaPublicidad(List<Integer> idsClientes) {
 
-		// Declaraci�n de objetos para la conexi�n, el PreparedStatement y el manejo de
-		// excepciones
-		Connection con1 = null;
-		PreparedStatement ps = null;
+	    Map<String, Object> resultado = new HashMap<>();
+	    List<Integer> clientesFallidos = new ArrayList<>();
 
-		try {
-			// Crear una nueva instancia de la clase ConexionBaseDatos (conectar a la BD)
-			ConexionBaseDatos con = new ConexionBaseDatos();
-			con1 = con.obtenerConexionBDPrincipal(); // Obtener la conexi�n a la base de datos
+	    String sql = "UPDATE cliente SET ultima_fecha_publicidad = ? WHERE idcliente = ?";
 
-			// Obtener la fecha actual
-			Date fechaActual = new Date(); // Fecha actual
-			java.sql.Date sqlDate = new java.sql.Date(fechaActual.getTime()); // Convertir a java.sql.Date para la base
-																				// de datos
+	    Connection con1 = null;
+	    PreparedStatement ps = null;
 
-			// Preparar la sentencia SQL
-			ps = con1.prepareStatement(sql);
+	    try {
 
-			// Iterar sobre la lista de IDs de clientes y actualizar la fecha para cada uno
-			for (Integer idCliente : idsClientes) {
-				// Establecer los par�metros de la consulta
-				ps.setDate(1, sqlDate); // Establecer la fecha actual
-				ps.setInt(2, idCliente); // Establecer el ID del cliente
+	        ConexionBaseDatos con = new ConexionBaseDatos();
+	        con1 = con.obtenerConexionBDPrincipal();
 
-				// Ejecutar la actualizaci�n para el cliente actual
-				int filasAfectadas = ps.executeUpdate();
+	        java.sql.Date sqlDate = new java.sql.Date(System.currentTimeMillis());
 
-				// Si alguna actualizaci�n no tuvo �xito, retornar false
-				if (filasAfectadas == 0) {
-					return false;
-				}
-			}
+	        ps = con1.prepareStatement(sql);
 
-			// Si todas las actualizaciones fueron exitosas, retornar true
-			return true;
+	        for (Integer idCliente : idsClientes) {
 
-		} catch (SQLException e) {
-			e.printStackTrace(); // Manejo de errores en caso de excepciones SQL
-			return false; // Si ocurre un error, retornar false
-		} finally {
-			try {
-				// Cerrar los recursos en el bloque finally
-				if (ps != null)
-					ps.close();
-				if (con1 != null)
-					con1.close();
-			} catch (SQLException e) {
-				e.printStackTrace(); // Manejo de errores en el cierre de recursos
-			}
-		}
+	            try {
+
+	                ps.setDate(1, sqlDate);
+	                ps.setInt(2, idCliente);
+
+	                int filasAfectadas = ps.executeUpdate();
+
+	                if (filasAfectadas == 0) {
+	                    clientesFallidos.add(idCliente);
+	                }
+
+	            } catch (SQLException e) {
+	                clientesFallidos.add(idCliente);
+	                e.printStackTrace();
+	            }
+
+	        }
+
+	        if (clientesFallidos.isEmpty()) {
+	            resultado.put("success", true);
+	            resultado.put("message", "La fecha de publicacion de todos los clientes seleccionados fueron actualizados correctamente.");
+	        } else {
+	            resultado.put("success", false);
+	            resultado.put("message", "Algunos clientes no pudieron actualizarse.");
+	            resultado.put("clientesFallidos", clientesFallidos);
+	        }
+
+	    } catch (SQLException e) {
+
+	        e.printStackTrace();
+
+	        resultado.put("success", false);
+	        resultado.put("message", "Ocurrió un error general al conectar o ejecutar la actualización.");
+	        resultado.put("clientesFallidos", clientesFallidos);
+
+	    } finally {
+
+	        try {
+	            if (ps != null)
+	                ps.close();
+
+	            if (con1 != null)
+	                con1.close();
+
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
+
+	    return resultado;
 	}
 
 }
