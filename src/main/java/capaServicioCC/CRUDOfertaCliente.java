@@ -1,4 +1,4 @@
-package capaServicioCC;
+	package capaServicioCC;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,11 +34,11 @@ public class CRUDOfertaCliente extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se implementa el CRUD para la entidad Excepción Precio, se recibe como parámetro principal el idoperacion
-	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en el idoperacion se pediran el resto de parámetros.
+	 * Se implementa el CRUD para la entidad Excepciï¿½n Precio, se recibe como parï¿½metro principal el idoperacion
+	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en el idoperacion se pediran el resto de parï¿½metros.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operación idoperacion 1 insertar 2 Actualizar uso promoción 3 Eliminar  4 Consultar promociones cliente 6 Consultar promociones cliente vigentes
+		//Operaciï¿½n idoperacion 1 insertar 2 Actualizar uso promociï¿½n 3 Eliminar  4 Consultar promociones cliente 6 Consultar promociones cliente vigentes
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		HttpSession sesion = request.getSession();
 		response.addHeader("Access-Control-Allow-Origin", "*");
@@ -74,7 +74,7 @@ public class CRUDOfertaCliente extends HttpServlet {
 				PQRS = 0;
 			}
 			String observacion = request.getParameter("observacion");
-			//Capturamos la información de la sesion del usuario que está ejecutando la inserción
+			//Capturamos la informaciï¿½n de la sesion del usuario que estï¿½ ejecutando la inserciï¿½n
 			Usuario usuario = (Usuario) sesion.getAttribute("usuario");
 			String usuarioIngreso = usuario.getNombreUsuario();
 			OfertaCliente ofer = new OfertaCliente(0,idOferta, idCliente, "", PQRS, "", "", observacion, usuarioIngreso);
@@ -82,7 +82,7 @@ public class CRUDOfertaCliente extends HttpServlet {
 		}else if (operacion ==2)
 		{
 			int idOfertaCliente = Integer.parseInt(request.getParameter("idofertacliente"));
-			//Capturamos la información de la sesion del usuario que está ejecutando la inserción
+			//Capturamos la informaciï¿½n de la sesion del usuario que estï¿½ ejecutando la inserciï¿½n
 			Usuario usuario = (Usuario) sesion.getAttribute("usuario");
 			String usuarioUso = usuario.getNombreUsuario();
 			respuesta = PromoCtrl.actualizarUsoOferta(idOfertaCliente, usuarioUso, 0, 0);
@@ -112,6 +112,39 @@ public class CRUDOfertaCliente extends HttpServlet {
 				idCliente = 0;
 			}
 			respuesta = PromoCtrl.obtenerOfertasVigenteCliente(idCliente);
+		}//Insertar una oferta posterior, es decir que se generÃ¡ un cÃ³digo para una futura compra
+		else if(operacion == 7)
+		{
+			int idOferta = 0;
+			try{
+				idOferta = Integer.parseInt(request.getParameter("idoferta"));
+			}catch(Exception e){
+				idOferta = 0;
+			}
+			int idCliente = 0;
+			try{
+				idCliente = Integer.parseInt(request.getParameter("idcliente"));
+			}catch(Exception e){
+				idCliente = 0;
+			}
+			double baseDescuento = 0;
+			try{
+				baseDescuento = Double.parseDouble(request.getParameter("basedescuento"));
+			}catch(Exception e){
+				baseDescuento = 0;
+			}
+			String observacion = request.getParameter("observacion");
+			String telefono = request.getParameter("telefono");
+			//Capturamos la informaciï¿½n de la sesion del usuario que estï¿½ ejecutando la inserciï¿½n
+			String usuarioIngreso = request.getParameter("usuario");
+			if(usuarioIngreso == null)
+			{
+				usuarioIngreso = "";
+			}
+			OfertaCliente ofer = new OfertaCliente(0,idOferta, idCliente, "", 0, "", "", observacion, usuarioIngreso);
+			ofer.setTelefono(telefono);
+			ofer.setBaseDescuento(baseDescuento);
+			respuesta = PromoCtrl.insertarOfertaClienteFuturo(ofer);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

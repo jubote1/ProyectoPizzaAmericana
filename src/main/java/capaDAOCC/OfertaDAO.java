@@ -239,7 +239,7 @@ public class OfertaDAO {
 			int idExcepcion = 0;
 			int diasCaducidad = 0;
 			String tipoCaducidad = "";
-			double descuentoFijoPorcentaje = 0, descuentoFijoValor = 0;
+			double descuentoFijoPorcentaje = 0, descuentoFijoValor = 0, descuentoPorcentajeFuturo = 0; 
 			String codigoPromocional = "";
 			String redParcial = "";
 			while(rs.next()){
@@ -247,6 +247,7 @@ public class OfertaDAO {
 				idExcepcion = rs.getInt("idexcepcion");
 				descuentoFijoPorcentaje = rs.getDouble("descuento_fijo_porcentaje");
 				descuentoFijoValor = rs.getDouble("descuento_fijo_valor");
+				descuentoPorcentajeFuturo = rs.getDouble("descuento_porcentaje_futuro");
 				try {
 					diasCaducidad = rs.getInt("dias_caducidad");
 					
@@ -266,6 +267,7 @@ public class OfertaDAO {
 			ofertaTemp.setDescuentoFijoValor(descuentoFijoValor);
 			ofertaTemp.setCodigoPromocional(codigoPromocional);
 			ofertaTemp.setRedParcial(redParcial);
+			ofertaTemp.setDescuentoPorcentajeFuturo(descuentoPorcentajeFuturo);
 			rs.close();
 			stm.close();
 			con1.close();

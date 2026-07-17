@@ -159,6 +159,86 @@ public class PromocionesCtrl {
 		System.out.println(listJSON.toJSONString());
 		return listJSON.toJSONString();
 	}
+	
+	
+	/**
+	 * Método que inserta la oferta cliente futura para el cliente, luego de una compra
+	 * @param ofer
+	 * @return
+	 */
+	public String insertarOfertaClienteFuturo(OfertaCliente ofer)
+	{
+		//Validamos si la oferta maneja c�digo promocional
+		Oferta condicionesOferta = OfertaDAO.retornarOferta(ofer.getIdOferta());
+		//Hacemos validación si la oferta si está bien configurada y tiene los parámetros correctos
+		if(condicionesOferta.getDescuentoPorcentajeFuturo() == 0 && ofer.getBaseDescuento() == 0)
+		{
+			//Se termina porque no hay manera hacer el proceso
+			JSONArray listJSON = new JSONArray();
+			JSONObject ResultadoJSON = new JSONObject();
+			ResultadoJSON.put("idofertacliente", 0);
+			listJSON.add(ResultadoJSON);
+			return listJSON.toJSONString();
+		}
+		boolean manejaCodigo;
+		if(condicionesOferta.getCodigoPromocional().equals(new String("S")))
+		{
+			manejaCodigo = true;
+		}else
+		{
+			manejaCodigo = false;
+		}
+		//boolean manejaCodigo = OfertaDAO.manejaCodigoOferta(ofer.getIdOferta());
+		
+		//Incluimos l�gica para verificar si el campo de saldo en la oferta debe ser llenadod
+		if(condicionesOferta.getRedParcial().equals(new String("S")))
+		{
+			if(condicionesOferta.getDescuentoFijoValor() > 0 )
+			{
+				ofer.setSaldo(condicionesOferta.getDescuentoFijoValor());
+			}
+		}else if(condicionesOferta.getDescuentoPorcentajeFuturo() > 0 && ofer.getBaseDescuento() > 0)
+		{
+			ofer.setSaldo(ofer.getBaseDescuento()*condicionesOferta.getDescuentoPorcentajeFuturo());
+		}else
+		{
+			ofer.setSaldo(0);
+		}
+		
+		String codigoPromocional = "";
+		if(manejaCodigo)
+		{
+			codigoPromocional = generarCodigoPromocional();
+		}
+		//Fijamos el valor de codigo promocional que puede ser vac�o o contener valor
+		ofer.setCodigoPromocion(codigoPromocional);
+		//Validamos si la oferta maneja caducidad y como la maneja
+		
+		//Validamos si la oferta tiene caducidad en caso afirmativo
+		if(condicionesOferta.getDiasCaducidad() > 0)
+		{
+			//Validamos el tipo de caducidad de la oferta si es general o particular (por el momento la general no est� implementada)
+			if(condicionesOferta.getTipoCaducidad().equals(new String("P")))
+			{
+				//Creamos el calendario y le sumamos a la fecha actual los d�as de caducidad
+				Calendar calendarioActual = Calendar.getInstance();
+				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+				calendarioActual.add(Calendar.DAY_OF_YEAR, condicionesOferta.getDiasCaducidad());
+				//Extraemos la fecha caducidad
+				Date datFechaCaducidad = calendarioActual.getTime();
+				String fechaCaducidad = dateFormat.format(datFechaCaducidad);
+				ofer.setFechaCaducidad(fechaCaducidad);
+			}
+		}
+		JSONArray listJSON = new JSONArray();
+		JSONObject ResultadoJSON = new JSONObject();
+		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
+		ResultadoJSON.put("idofertacliente", respuesta);
+		//En este punto una vez hagamos la asignaci�n de la oferta realizaremos la notificaci�n de las ofertas
+		//enviarMensajesOferta(ofer.getIdOferta());
+		listJSON.add(ResultadoJSON);
+		return listJSON.toJSONString();
+	}
 
 	public String eliminarOfertaCliente(int idOfertaCliente)
 	{

@@ -20,9 +20,22 @@ public class OfertaCliente {
 	private int idClienteRedimio;
 	private double saldo;
 	private String redParcial;
+	private String telefono;
+	private double baseDescuento;
 	
 	
-
+	public double getBaseDescuento() {
+		return baseDescuento;
+	}
+	public void setBaseDescuento(double baseDescuento) {
+		this.baseDescuento = baseDescuento;
+	}
+	public String getTelefono() {
+		return telefono;
+	}
+	public void setTelefono(String telefono) {
+		this.telefono = telefono;
+	}
 	public String getRedParcial() {
 		return redParcial;
 	}

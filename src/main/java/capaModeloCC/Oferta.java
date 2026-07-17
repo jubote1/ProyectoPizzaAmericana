@@ -8,6 +8,7 @@ private String nombreExcepcion;
 private String codigoPromocional;
 private double descuentoFijoPorcentaje;
 private double descuentoFijoValor;
+private double descuentoPorcentajeFuturo;
 private String mensaje1;
 private String mensaje2;
 private int diasCaducidad;
@@ -22,6 +23,13 @@ private String codigoGeneral;
 private String redParcial;
 private String reintegro;
 
+
+public double getDescuentoPorcentajeFuturo() {
+	return descuentoPorcentajeFuturo;
+}
+public void setDescuentoPorcentajeFuturo(double descuentoPorcentajeFuturo) {
+	this.descuentoPorcentajeFuturo = descuentoPorcentajeFuturo;
+}
 public String getTipoOferta() {
 	return tipoOferta;
 }
