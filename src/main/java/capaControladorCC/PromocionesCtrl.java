@@ -168,6 +168,7 @@ public class PromocionesCtrl {
 	 */
 	public String insertarOfertaClienteFuturo(OfertaCliente ofer)
 	{
+		String codigoPromocional = "";
 		//Validamos si la oferta maneja c�digo promocional
 		Oferta condicionesOferta = OfertaDAO.retornarOferta(ofer.getIdOferta());
 		//Hacemos validación si la oferta si está bien configurada y tiene los parámetros correctos
@@ -191,21 +192,19 @@ public class PromocionesCtrl {
 		//boolean manejaCodigo = OfertaDAO.manejaCodigoOferta(ofer.getIdOferta());
 		
 		//Incluimos l�gica para verificar si el campo de saldo en la oferta debe ser llenadod
-		if(condicionesOferta.getRedParcial().equals(new String("S")))
+		if(condicionesOferta.getRedParcial().equals(new String("S")) && condicionesOferta.getDescuentoPorcentajeFuturo() == 0 && ofer.getBaseDescuento() == 0)
 		{
 			if(condicionesOferta.getDescuentoFijoValor() > 0 )
 			{
 				ofer.setSaldo(condicionesOferta.getDescuentoFijoValor());
 			}
-		}else if(condicionesOferta.getDescuentoPorcentajeFuturo() > 0 && ofer.getBaseDescuento() > 0)
+		}else if(condicionesOferta.getRedParcial().equals(new String("S")) && condicionesOferta.getDescuentoPorcentajeFuturo() > 0 && ofer.getBaseDescuento() > 0)
 		{
-			ofer.setSaldo(ofer.getBaseDescuento()*condicionesOferta.getDescuentoPorcentajeFuturo());
+			ofer.setSaldo((ofer.getBaseDescuento()*condicionesOferta.getDescuentoPorcentajeFuturo())/100);
 		}else
 		{
 			ofer.setSaldo(0);
 		}
-		
-		String codigoPromocional = "";
 		if(manejaCodigo)
 		{
 			codigoPromocional = generarCodigoPromocional();
@@ -234,6 +233,7 @@ public class PromocionesCtrl {
 		JSONObject ResultadoJSON = new JSONObject();
 		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
 		ResultadoJSON.put("idofertacliente", respuesta);
+		ResultadoJSON.put("codigopromocional", codigoPromocional);
 		//En este punto una vez hagamos la asignaci�n de la oferta realizaremos la notificaci�n de las ofertas
 		//enviarMensajesOferta(ofer.getIdOferta());
 		listJSON.add(ResultadoJSON);

@@ -157,17 +157,23 @@ public class OfertaClienteDAO {
 		{
 			fechaCaducidad = "";
 		}
+		String telefono = "";
+		telefono = ofer.getTelefono();
+		if(telefono == null)
+		{
+			telefono = "";
+		}
 		try
 		{ 
 			Statement stm = con1.createStatement();
 			String insert = "";
 			if(fechaCaducidad.equals(new String("")))
 			{
-				insert = "insert into oferta_cliente (idoferta,idcliente, observacion, PQRS, codigo_promocion, usuario_ingreso, saldo) values (" + ofer.getIdOferta() + " ," + ofer.getIdCliente() + " , '" + ofer.getObservacion() + "' ," + ofer.getPQRS() + " , '" + ofer.getCodigoPromocion() + "' , '" + ofer.getUsuarioIngreso() + "' , " + ofer.getSaldo()  +")"; 
+				insert = "insert into oferta_cliente (idoferta,idcliente, observacion, PQRS, codigo_promocion, usuario_ingreso, saldo, cliente) values (" + ofer.getIdOferta() + " ," + ofer.getIdCliente() + " , '" + ofer.getObservacion() + "' ," + ofer.getPQRS() + " , '" + ofer.getCodigoPromocion() + "' , '" + ofer.getUsuarioIngreso() + "' , " + ofer.getSaldo() + " ,'" + telefono  +"')"; 
 				logger.info(insert);
 			}else
 			{
-				insert = "insert into oferta_cliente (idoferta,idcliente, observacion, PQRS, codigo_promocion, usuario_ingreso, fecha_caducidad, saldo) values (" + ofer.getIdOferta() + " ," + ofer.getIdCliente() + " , '" + ofer.getObservacion() + "' ," + ofer.getPQRS() + " , '" + ofer.getCodigoPromocion() + "' , '" + ofer.getUsuarioIngreso() + "' , '" + fechaCaducidad + "' , " + ofer.getSaldo()  +")"; 
+				insert = "insert into oferta_cliente (idoferta,idcliente, observacion, PQRS, codigo_promocion, usuario_ingreso, fecha_caducidad, saldo, cliente) values (" + ofer.getIdOferta() + " ," + ofer.getIdCliente() + " , '" + ofer.getObservacion() + "' ," + ofer.getPQRS() + " , '" + ofer.getCodigoPromocion() + "' , '" + ofer.getUsuarioIngreso() + "' , '" + fechaCaducidad + "' , " + ofer.getSaldo() + " ,'" + telefono  +"')"; 
 				logger.info(insert);
 			}
 			logger.info(insert);
