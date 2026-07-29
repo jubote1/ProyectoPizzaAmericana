@@ -2562,6 +2562,137 @@ public class PedidoDAO {
 		return(consultaPedidos);
 	}
 	
+	
+	/**
+	 * Método que retornará los pedidos que han sido marcados para ser enviados por RAPPI CARGO
+	 * @param fechainicial
+	 * @param fechafinal
+	 * @param tienda
+	 * @param idEstadoPedido
+	 * @param enviadoPixel
+	 * @return
+	 */
+	public static ArrayList<PedidoPlat> ConsultaIntegradaPedidosRAPPICARGO(String fechainicial, String fechafinal, String tienda, int idEstadoPedido, int enviadoPixel)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList <PedidoPlat> consultaPedidos = new ArrayList();
+		int idtienda = 0;
+		String consulta = "";
+		String fechaini = fechainicial.substring(6, 10)+"-"+fechainicial.substring(3, 5)+"-"+fechainicial.substring(0, 2);	
+		String fechafin = fechafinal.substring(6, 10)+"-"+fechafinal.substring(3, 5)+"-"+fechafinal.substring(0, 2);	
+		consulta = "select a.idpedido, a.idordencomercio, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion, a.aceptado_rappi from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.domicilio_tercerizado = 'S' and a.fechapedido >=  '" + fechaini +"' and a.fechapedido <= '"+ fechafin + "'";
+		if((tienda.length()> 0) && !(tienda.equals("TODAS")))
+		{
+			idtienda = TiendaDAO.obteneridTienda(tienda);
+			consulta = consulta + " and a.idtienda =" + idtienda;
+		}
+
+		//Validamos si se incluye filtro por estado pedido
+		if(idEstadoPedido != 0)
+		{
+			consulta = consulta +  " and a.idestadopedido = " + idEstadoPedido;
+		}
+		//Validamos el estado de envio a la tienda en los filtros
+		if(enviadoPixel != -1)
+		{
+			consulta = consulta + " and enviadopixel = " + enviadoPixel;
+		}
+		logger.info(consulta);
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			Statement stm = con1.createStatement();
+			ResultSet rs = stm.executeQuery(consulta);
+			int idpedido;
+			String nombreTienda;
+			double totalBruto;
+			double impuesto;
+			double totalNeto;
+			String nombreCliente;
+			String estadoPedido;
+			String fechaPedido;
+			int idcliente;
+			int enviadopixel;
+			int numposheader;
+			String url;
+			String stringpixel;
+			String fechainsercion;
+			String usuariopedido;
+			String telefono;
+			String direccion;
+			String formapago;
+			int idformapago;
+			double tiempopedido;
+			String idLink;
+			String fechaPagoVirtual;
+			String fechaFinalizacion;
+			BigInteger idOrdenComercio;
+			int aceptadoRappi;
+			while(rs.next())
+			{
+				idpedido = rs.getInt("idpedido");
+				nombreTienda = rs.getString("nombre");
+				totalBruto = rs.getDouble("total_bruto");
+				impuesto = rs.getDouble("impuesto");
+				totalNeto = rs.getDouble("total_neto");
+				nombreCliente = rs.getString("nombrecliente");
+				estadoPedido = rs.getString("descripcion");
+				fechaPedido = rs.getString("fechapedido");
+				idcliente = rs.getInt("idcliente");
+				enviadopixel = rs.getInt("enviadopixel");
+				numposheader = rs.getInt("numposheader");
+				stringpixel = rs.getString("stringpixel");
+				fechainsercion = rs.getString("fechainsercion");
+				usuariopedido = rs.getString("usuariopedido");
+				direccion = rs.getString("direccion");
+				telefono = rs.getString("telefono");
+				url = rs.getString("url");
+				formapago = rs.getString("formapago");
+				idformapago = rs.getInt("idforma_pago");
+				tiempopedido = rs.getDouble("tiempopedido");
+				idLink = rs.getString("idlink");
+				if(idLink == null)
+				{
+					idLink = "";
+				}
+				fechaPagoVirtual = rs.getString("fechapagovirtual");
+				if(fechaPagoVirtual == null)
+				{
+					fechaPagoVirtual = "";
+				}
+				fechaFinalizacion = rs.getString("fechafinalizacion");
+				if(fechaFinalizacion == null)
+				{
+					fechaFinalizacion = "";
+				}
+				String strIdOrdenComercio = rs.getString("idordencomercio");
+				idOrdenComercio = new BigInteger(strIdOrdenComercio);
+				Tienda tiendapedido = new Tienda(idtienda, nombreTienda, "", url, 0, "", "", "");
+				PedidoPlat cadaPedido = new PedidoPlat(idpedido,  nombreTienda,totalBruto, impuesto, totalNeto,
+						estadoPedido, fechaPedido, nombreCliente, idcliente, enviadopixel,numposheader, tiendapedido, stringpixel, fechainsercion, usuariopedido, direccion, telefono, formapago, idformapago, tiempopedido, idLink, fechaPagoVirtual, fechaFinalizacion);
+				cadaPedido.setIdOrdenComercio(idOrdenComercio);
+				aceptadoRappi = rs.getInt("aceptado_rappi");
+				cadaPedido.setAceptadoRappi(aceptadoRappi);
+				consultaPedidos.add(cadaPedido);
+			}
+			rs.close();
+			stm.close();
+			con1.close();
+
+		}catch(Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+			
+		}
+		return(consultaPedidos);
+	}
+	
 	public static ArrayList<Pedido> ConsultaIntegradaPedidosEnCurso(String fechainicial, String fechafinal, String tienda, int numeropedido, int idEstadoPedido, int enviadoPixel)
 	{
 		Logger logger = Logger.getLogger("log_file");
