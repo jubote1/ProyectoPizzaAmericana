@@ -6389,7 +6389,7 @@ public class PedidoDAO {
 			Logger logger = Logger.getLogger("log_file");
 			ArrayList <Pedido> consultaPedidos = new ArrayList();
 			//Agregamos la consulta base
-			String consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and a.idestadopedido = 1 and enviadopixel = 0 and a.idpedido IN (SELECT a.idpedido "
+			String consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and a.idestadopedido = 1 and enviadopixel = 0 and a.fechapedido = CURDATE() and a.idpedido IN (SELECT a.idpedido "
 					+ " FROM pedido a "
 					+ " JOIN pedido_forma_pago c ON a.idpedido = c.idpedido "
 					+ " WHERE a.fechapedido = CURDATE() "
