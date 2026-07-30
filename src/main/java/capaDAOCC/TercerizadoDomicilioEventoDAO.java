@@ -39,9 +39,8 @@ public class TercerizadoDomicilioEventoDAO {
                   + "fecha_entrega,"
                   + "fecha_cancelacion,"
                   + "json_evento,"
-                  + "procesado,"
-                  + "error_proceso"
-                  + ") VALUES (?,?,?,?,?,?,?,?,?,0,NULL)";
+                  + "resultado_proceso"
+                  + ") VALUES (?,?,?,?,?,?,?,?,?,NULL)";
 
             ps = con1.prepareStatement(sql);
 
@@ -136,6 +135,50 @@ public class TercerizadoDomicilioEventoDAO {
         System.err.println("Formato de fecha no soportado recibido de Rappi: " + fecha);
 
         return null;
+    }
+    
+    
+    public static boolean actualizarMensajeProcesoPorPedido(long idPedido, String errorProceso) {
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal();
+        PreparedStatement ps = null;
+
+        try {
+
+            String sql =
+                    "UPDATE tercerizado_domicilio_evento "
+                  + "SET resultado_proceso = ? "
+                  + "WHERE id_pedido = ?";
+
+            ps = con1.prepareStatement(sql);
+
+            ps.setString(1, errorProceso);
+            ps.setLong(2, idPedido);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return false;
+
+        } finally {
+
+            try {
+                if (ps != null) {
+                    ps.close();
+                }
+            } catch (Exception ignored) {
+            }
+
+            try {
+                if (con1 != null) {
+                    con1.close();
+                }
+            } catch (Exception ignored) {
+            }
+        }
     }
 
 }
