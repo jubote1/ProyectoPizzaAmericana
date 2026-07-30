@@ -4,8 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.util.Enumeration;
-import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -14,71 +15,94 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
-import capaControladorCC.TiendaCtrl;
-/**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
- */
+
 @WebServlet("/LimpiarLeadCRMBOT")
 public class LimpiarLeadCRMBOT extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-       
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
+
+    private static final long serialVersionUID = 1L;
+
+    // Pool de hilos para procesar las solicitudes en segundo plano
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+
     public LimpiarLeadCRMBOT() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
-	/**
-	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe parámetros dado que no filtra la información, simplemente retorna en formato JSON 
-	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el método obtenerTiendas de la capa Tienda Controlador.
-	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		try{
-			response.addHeader("Access-Control-Allow-Origin", "*");
-			//Devolveremos según documentación de WOMPI un JSON vacío
-			response.setContentType("application/json");
-			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maración
-			BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(), "UTF-8"));
-			String line = null;
-			StringBuilder sb = new StringBuilder();
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-			}
-			String data = sb.toString();
-			PedidoCtrl pedidoCtrl = new PedidoCtrl();
-			//Tomaremos el Authorization
-			String authHeader = request.getHeader("authorization");          
-			String auth = "HTTP Authorization header:";
-			if (authHeader == null) {            
-			        authHeader = auth +" No authorization header";      
-			} else {            
-			        //Se deja el authHeader solito
-			}
-			
-			String respuesta = pedidoCtrl.limpiarLeadCRMBOT(data, authHeader); 
-			//String respuesta = TienCtrl.obtenerTiendas();
-			PrintWriter out = response.getWriter();
-			//out.write(respuesta);
-			response.setStatus(200);
-			out.write(respuesta);
-		}catch(Exception e){
-			System.out.println(e.getMessage());
-		}
-	
-	}
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
 
-	/**
-	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-	 */
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doGet(request, response);
-	}
+        try {
 
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setContentType("application/json;charset=UTF-8");
+
+            // Leer el body
+            StringBuilder sb = new StringBuilder();
+
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(request.getInputStream(), StandardCharsets.UTF_8))) {
+
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+            }
+
+            final String data = sb.toString();
+
+            // Obtener Authorization
+            String authHeader = request.getHeader("authorization");
+            if (authHeader == null) {
+                authHeader = "";
+            }
+
+            final String auth = authHeader;
+
+            // Responder inmediatamente
+            response.setStatus(HttpServletResponse.SC_OK);
+
+            PrintWriter out = response.getWriter();
+            out.write("{}");
+            out.flush();
+
+            // Procesar en segundo plano
+            executor.submit(() -> {
+                try {
+                    PedidoCtrl pedidoCtrl = new PedidoCtrl();
+                    String respuesta = pedidoCtrl.limpiarLeadCRMBOT(data, auth);
+
+                    System.out.println("Proceso terminado: " + respuesta);
+
+                } catch (Exception e) {
+                    System.err.println("Error procesando limpiarLeadCRMBOT:");
+                    e.printStackTrace();
+                }
+            });
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            if (!response.isCommitted()) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{}");
+                response.getWriter().flush();
+            }
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        doGet(request, response);
+    }
+
+    @Override
+    public void destroy() {
+        executor.shutdown();
+        super.destroy();
+    }
 }
