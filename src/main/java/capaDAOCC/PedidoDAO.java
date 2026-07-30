@@ -6319,7 +6319,187 @@ public class PedidoDAO {
 		}
 		
 		
+		/**
+		 * Método que dado un pedido, valida si al mismo le aplica o no las condiciones para ser un pedido de RAPPI CARGO
+		 * @param idPedido
+		 * @return
+		 */
+		public static boolean consultarAplicabilidadPedidoRAPPICARGO(int idPedido)
+		{
+			Logger logger = Logger.getLogger("log_file");
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			boolean respuesta = false;
+			try
+			{
+				Statement stm = con1.createStatement();
+				// Actualizamos la tabla pedido con el numero pedido pixel y le ponemos estado al pedido = 1, indicando que ya fue enviado a la tienda.
+				String select = " SELECT a.*, c.*, e.* "
+						+ " FROM pedido a "
+						+ " JOIN pedido_forma_pago c ON a.idpedido = c.idpedido "
+						+ " JOIN detalle_pedido e ON a.idpedido = e.idpedido "
+						+ " WHERE a.idpedido = " +  idPedido + " "
+						+ "  AND a.idtienda IN ("
+						+ "      SELECT b.idtienda "
+						+ "      FROM tienda b "
+						+ "      WHERE b.domicilio_tercerizado = 'S'"
+						+ "  )"
+						+ "  AND c.idforma_pago IN ("
+						+ "      SELECT d.idforma_pago "
+						+ "      FROM forma_pago d "
+						+ "      WHERE d.domicilio_tercerizado = 'S'"
+						+ "  )"
+						+ "  AND NOT EXISTS ("
+						+ "      SELECT 1 "
+						+ "      FROM detalle_pedido e2"
+						+ "      JOIN producto f ON e2.idproducto = f.idproducto"
+						+ "      WHERE e2.idpedido = a.idpedido"
+						+ "        AND (f.domicilio_tercerizado <> 'S' OR f.domicilio_tercerizado IS NULL)"
+						+ "  )";
+				logger.info(select);
+				ResultSet rs =stm.executeQuery(select);
+				while(rs.next())
+				{
+					respuesta = true;
+					break;
+				}
+				stm.close();
+				con1.close();
+			}
+			catch (Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+			}
+			return(respuesta);
+		}
 	
+	
+		/**
+		 * Método que retornara los pedidos que al momento aplican para ser llevados por RAPPI CARGO, devuelve un arrayList <Pedidos> con los 
+		 * pedidos que cumplen esta condición
+		 * @return
+		 */
+		public static ArrayList<Pedido> consultarAplicabilidadPedidoRAPPICARGO()
+		{
+			Logger logger = Logger.getLogger("log_file");
+			ArrayList <Pedido> consultaPedidos = new ArrayList();
+			//Agregamos la consulta base
+			String consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and a.idestadopedido = 1 and enviadopixel = 0 and a.idpedido IN (SELECT a.idpedido "
+					+ " FROM pedido a "
+					+ " JOIN pedido_forma_pago c ON a.idpedido = c.idpedido "
+					+ " WHERE a.fechapedido = CURDATE() "
+					+ "  AND a.idtienda IN ("
+					+ "      SELECT b.idtienda "
+					+ "      FROM tienda b "
+					+ "      WHERE b.domicilio_tercerizado = 'S'"
+					+ "  )"
+					+ "  AND c.idforma_pago IN ("
+					+ "      SELECT d.idforma_pago "
+					+ "      FROM forma_pago d "
+					+ "      WHERE d.domicilio_tercerizado = 'S'"
+					+ "  )"
+					+ "  AND NOT EXISTS ("
+					+ "      SELECT 1 "
+					+ "      FROM detalle_pedido e2"
+					+ "      JOIN producto f ON e2.idproducto = f.idproducto"
+					+ "      WHERE e2.idpedido = a.idpedido"
+					+ "        AND (f.domicilio_tercerizado <> 'S' OR f.domicilio_tercerizado IS NULL)"
+					+ "  ))";
+			logger.info(consulta);
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta);
+				int idpedido;
+				int idTienda;
+				String nombreTienda;
+				double totalBruto;
+				double impuesto;
+				double totalNeto;
+				String nombreCliente;
+				String estadoPedido;
+				String fechaPedido;
+				int idcliente;
+				int enviadopixel;
+				int numposheader;
+				String url;
+				String stringpixel;
+				String fechainsercion;
+				String usuariopedido;
+				String telefono;
+				String direccion;
+				String formapago;
+				int idformapago;
+				double tiempopedido;
+				String idLink;
+				String fechaPagoVirtual;
+				String fechaFinalizacion;
+				while(rs.next())
+				{
+					idpedido = rs.getInt("idpedido");
+					idTienda = rs.getInt("idtienda");
+					nombreTienda = rs.getString("nombre");
+					totalBruto = rs.getDouble("total_bruto");
+					impuesto = rs.getDouble("impuesto");
+					totalNeto = rs.getDouble("total_neto");
+					nombreCliente = rs.getString("nombrecliente");
+					estadoPedido = rs.getString("descripcion");
+					fechaPedido = rs.getString("fechapedido");
+					idcliente = rs.getInt("idcliente");
+					enviadopixel = rs.getInt("enviadopixel");
+					numposheader = rs.getInt("numposheader");
+					stringpixel = rs.getString("stringpixel");
+					fechainsercion = rs.getString("fechainsercion");
+					usuariopedido = rs.getString("usuariopedido");
+					direccion = rs.getString("direccion");
+					telefono = rs.getString("telefono");
+					url = rs.getString("url");
+					formapago = "";
+					idformapago = 0;
+					tiempopedido = rs.getDouble("tiempopedido");
+					idLink = rs.getString("idlink");
+					if(idLink == null)
+					{
+						idLink = "";
+					}
+					fechaPagoVirtual = rs.getString("fechapagovirtual");
+					if(fechaPagoVirtual == null)
+					{
+						fechaPagoVirtual = "";
+					}
+					fechaFinalizacion = rs.getString("fechafinalizacion");
+					if(fechaFinalizacion == null)
+					{
+						fechaFinalizacion = "";
+					}
+					Tienda tiendapedido = new Tienda(idTienda, nombreTienda, "", url, 0, "", "", "");
+					Pedido cadaPedido = new Pedido(idpedido,  nombreTienda,totalBruto, impuesto, totalNeto,
+							estadoPedido, fechaPedido, nombreCliente, idcliente, enviadopixel,numposheader, tiendapedido, stringpixel, fechainsercion, usuariopedido, direccion, telefono, formapago, idformapago, tiempopedido, idLink, fechaPagoVirtual, fechaFinalizacion);
+					consultaPedidos.add(cadaPedido);
+				}
+				rs.close();
+				stm.close();
+				con1.close();
+
+			}catch(Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+				
+			}
+			return(consultaPedidos);
+		}
 
 
 }

@@ -352,10 +352,47 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Tarjeta Nueva: Aplicabilidad Pedido Rappi Cargo -->
+			<div class="card">
+				<div class="card-header bg-info">
+					<i class="fas fa-clipboard-check mr-2"></i> Listado de Aplicabilidad Pedidos RAPPICARGO
+				</div>
+				<div class="card-body">
+					<div class="table-responsive">
+						<table id="grid-aplicabilidad-rappicargo" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+							<thead>
+								<tr>
+									<th data-column-id="idpedido">Id Pedido</th>
+									<th data-column-id="tienda">Tienda</th>
+									<th data-column-id="totalneto">Total Neto</th>
+									<th data-column-id="idcliente">Id Cliente</th>
+									<th data-column-id="cliente">Cliente</th>
+									<th data-column-id="estadopedido">Estado Pedido</th>
+									<th data-column-id="estadoenviotienda">Estado Envío Tienda</th>
+									<th data-column-id="numposheader">#Pedido Tienda</th>
+									<th data-column-id="fechapedido">Fecha Pedido</th>
+									<th data-column-id="fechainsercion">Fecha Inserción</th>
+									<th data-column-id="usuariopedido">Usuario</th>
+									<th data-column-id="direccion">Dirección</th>
+									<th data-column-id="telefono">Teléfono</th>
+									<th data-column-id="formapago">Forma Pago</th>
+									<th data-column-id="tiempopedido">Tiempo Pedido</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="mt-3">
+						<button type="button" class="btn btn-secondary btn-lg" onclick="consultarAplicabilidadRappiCargo()"><i class="fas fa-sync-alt mr-2"></i> Actualizar Aplicabilidad RAPPICARGO</button>
+					</div>
+				</div>
+			</div>
+
 		</div>
 		
 	</body>
-	<script src="js/consultapedidosdomicom.js" type="text/javascript"></script>
+	<script src="js/consultacargo.js" type="text/javascript"></script>
 	<script src="js/jquery-confirm.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="js/datepicker.js"></script>

@@ -1,9 +1,8 @@
-	
-
 var server;
 var tiendas;
 var table;
 var tabledetalle;
+var tableAplicabilidadRappi; // Variable para el nuevo DataTable
 var dtpedido;
 var productos;
 var excepciones;
@@ -108,6 +107,30 @@ $(document).ready(function() {
         		}
     		}
     	} );
+
+    // Inicialización del nuevo DataTable para ConsultarAplicabilidadPedidoRAPPICARGO
+    tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable({
+        "aoColumns": [
+            { "mData": "idpedido" },
+            { "mData": "tienda" },
+            { "mData": "totalneto" },
+            { "mData": "idcliente" },
+            { "mData": "cliente" },
+            { "mData": "estadopedido" },
+            { "mData": "estadoenviotienda" },
+            { "mData": "numposheader" },
+            { "mData": "fechapedido" },
+            { "mData": "fechainsercion" },
+            { "mData": "usuariopedido" },
+            { "mData": "direccion" },
+            { "mData": "telefono" },
+            { "mData": "formapago" },
+            { "mData": "tiempopedido" }
+        ]
+    });
+
+    // Llamada inicial al servicio del nuevo datatable al cargar la página
+    consultarAplicabilidadRappiCargo();
 
      
     $('#grid-encabezadopedido').on('click', 'tr', function () {
@@ -280,6 +303,25 @@ $(function(){
 	setInterval('obtenerPedidosPendientesRAPPI()',120000);
 	obtenerPedidosPendientesRAPPI();
 });
+
+// Función para invocar el nuevo servicio y cargar el DataTable de Aplicabilidad
+function consultarAplicabilidadRappiCargo() {
+	if ($.fn.dataTable.isDataTable('#grid-aplicabilidad-rappicargo')) {
+		tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable();
+	}
+	
+	$.getJSON(server + 'ConsultarAplicabilidadPedidoRAPPICARGO', function(data) {
+		tableAplicabilidadRappi.clear().draw();
+		if (!data || data.length === 0) {
+			return;
+		}
+		for (var i = 0; i < data.length; i++) {
+			tableAplicabilidadRappi.row.add(data[i]).draw();
+		}
+	}).fail(function() {
+		console.log("Error al consultar el servicio ConsultarAplicabilidadPedidoRAPPICARGO");
+	});
+}
 
 function obtenerPedidosPendientesRAPPI(){
 	$.getJSON(server + 'ConsultarPedidosPendientesRAPPI', function(data1){
