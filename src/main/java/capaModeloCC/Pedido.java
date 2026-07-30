@@ -306,6 +306,45 @@ public class Pedido {
 		this.fechaFinalizacion = fechaFinalizacion;
 	}
 	
+	@Override
+	public String toString() {
+	    return "Pedido{" +
+	            "idpedido=" + idpedido +
+	            ", idtienda=" + idtienda +
+	            ", nombretienda='" + nombretienda + '\'' +
+	            ", totalbruto=" + totalbruto +
+	            ", impuesto=" + impuesto +
+	            ", total_neto=" + total_neto +
+	            ", idestadopedido=" + idestadopedido +
+	            ", estadopedido='" + estadopedido + '\'' +
+	            ", fechapedido='" + fechapedido + '\'' +
+	            ", idcliente=" + idcliente +
+	            ", nombrecliente='" + nombrecliente + '\'' +
+	            ", enviadoPixel=" + enviadoPixel +
+	            ", numposheader=" + numposheader +
+	            ", tienda=" + tienda +
+	            ", stringpixel='" + stringpixel + '\'' +
+	            ", fechainsercion='" + fechainsercion + '\'' +
+	            ", usuariopedido='" + usuariopedido + '\'' +
+	            ", direccion='" + direccion + '\'' +
+	            ", telefono='" + telefono + '\'' +
+	            ", formapago='" + formapago + '\'' +
+	            ", idformapago=" + idformapago +
+	            ", tiempopedido=" + tiempopedido +
+	            ", idLink='" + idLink + '\'' +
+	            ", fechaPagoVirtual='" + fechaPagoVirtual + '\'' +
+	            ", fechaFinalizacion='" + fechaFinalizacion + '\'' +
+	            ", idOrdenComercio=" + idOrdenComercio +
+	            ", programado='" + programado + '\'' +
+	            ", horaProgramado='" + horaProgramado + '\'' +
+	            ", idTipoPedido=" + idTipoPedido +
+	            ", usuarioReenvio='" + usuarioReenvio + '\'' +
+	            ", grupoVirtual=" + grupoVirtual +
+	            ", aceptadoRappi=" + aceptadoRappi +
+	            ", nombreCompania='" + nombreCompania + '\'' +
+	            '}';
+	}
+	
 	
 	
 

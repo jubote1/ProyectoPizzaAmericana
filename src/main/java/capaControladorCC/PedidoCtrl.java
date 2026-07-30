@@ -6485,7 +6485,7 @@ public class PedidoCtrl {
 
 				Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 
-				if (pedEvento != null) {
+				if (pedEvento != null  && pedEvento.getIdpedido() != 0) {
 
 					String respuesta = "";
 					HttpClient client = HttpClientBuilder.create().build();
@@ -6532,7 +6532,7 @@ public class PedidoCtrl {
 
 				Pedido pedEvento2 = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 
-				if (pedEvento2 != null) {
+				if (pedEvento2 != null && pedEvento2.getIdpedido() != 0) {
 
 					String respuesta = "";
 					HttpClient client = HttpClientBuilder.create().build();
