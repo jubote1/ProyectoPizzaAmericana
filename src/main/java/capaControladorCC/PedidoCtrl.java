@@ -12901,5 +12901,18 @@ public class PedidoCtrl {
 		}
 		return listJSON.toJSONString();
 	}
+    
+    /**
+     * Método que retornará un JSON indicando con booleano si al pedido pasado como parámetro cumple las condiciones para RAPPICARGO
+     * @param idPedido
+     * @return
+     */
+    public String consultarAplicabilidadPedidoRAPPICARGO(int idPedido)
+	{
+    	boolean respuesta = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido);
+    	JSONObject respuestaJSON = new JSONObject();
+    	respuestaJSON.put("resultado", respuesta);
+    	return(respuestaJSON.toJSONString());
+	}
 
 }

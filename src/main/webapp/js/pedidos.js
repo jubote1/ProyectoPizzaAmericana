@@ -3465,6 +3465,7 @@ function ConfirmarPedido()
                             var pagoEsVirtual = false;
                             //Incluimos validación de procesar marcaciones solo si se es administrador, sino no aplicaría
                             procesarMarcaciones(idPedido);
+							var aplicaDomiTerce = false;
 							$.ajax({ 
 		    				url: server + 'FinalizarPedido?idpedido=' + idPedido + "&idformapago=" + idformapago + "&valortotal=" + totalpedido + "&valorformapago=" + valorformapago + "&idcliente=" + idCliente + "&insertado=" + insertado + "&tiempopedido=" + tiempopedido +"&validadir=" + validaDir + "&descuento=" + descuentoPedido + "&motivodescuento=" + motivoDescuento + "&programado=" + programado, 
 		    				dataType: 'json', 
@@ -3474,6 +3475,32 @@ function ConfirmarPedido()
                                     resultado = data[0];
 									var resJSON = JSON.stringify(resultado);
 									var urlTienda = resultado.url;
+									//Se realiza modificación para hacer validación de DOMICILIOS TERCERIZADO
+									$.ajax({ 
+							    				url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido , 
+							    				dataType: 'json', 
+							    				async: false, 
+							    				success: function(dataTerce){
+													if(dataTerce.resultado)
+														{
+															$.alert({
+															    title: '<span style="color: #d9534f;"><i class="fas fa-exclamation-triangle"></i> ¡Atención y Cuidado!</span>',
+															    content: '<div style="font-size: 16px; background-color: #fcf8e3; padding: 15px; border-left: 5px solid #f0ad4e; border-radius: 4px;">' +
+															             '<strong>El pedido es susceptible para ser enviado por Domicilios Tercerizados.</strong><br><br>' +
+															             '<span style="color: #8a6d3b;">⚠️ Por favor, ten en cuenta que <strong>no se enviará inmediatamente</strong>. Verifica las condiciones con el cliente antes de continuar.</span>' +
+															             '</div>',
+															    confirmButton: 'Entendido',
+															    confirmButtonClass: 'btn-warning'
+															});
+															aplicaDomiTerce = true;
+														}
+												},
+                                                error: function(dataErrorTerce){
+                                                    alert('SE PRODUJO UN ERROR');
+                                                    console.log(dataErrorTerce);
+                                                    //process the JSON data etc
+                                                }
+									});
                                     //En este punto realizaremos la verficación para consumir el servicio de creación de link de pagos
                                     //Se realizaría una vez se insertó el pedido en el contact center
                                     for(var i = 0; i < formas.length;i++)
@@ -3538,7 +3565,7 @@ function ConfirmarPedido()
 
 									//OJO CAMBIOS PARA EL SERVICIO CON LOS PARÁMETROS Y NO SERÁ AJAX SINO JSON ES DECIR ASINCRONO
                                     //Si el pago no es virtual, el pedido se envia inmediatamente
-                                    if(!pagoEsVirtual)
+                                    if(!pagoEsVirtual && !aplicaDomiTerce)
                                     {
     									$.ajax({ 
     							    				url: urlTienda + 'FinalizarPedidoPixel' , 
