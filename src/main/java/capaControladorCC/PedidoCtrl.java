@@ -122,6 +122,7 @@ import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
 import capaModeloCC.DomiciliarioPedido;
+import capaModeloCC.DomicilioTercerizado;
 import capaModeloCC.EncuestaGenerica;
 import capaModeloCC.EncuestaGenerica.RespuestaEncuestaGen;
 import capaModeloCC.EncuestaPqrs;
@@ -614,6 +615,10 @@ public class PedidoCtrl {
 		respuesta.put("programado", pedidoPixel.getProgramado());
 		respuesta.put("horaprogramado", pedidoPixel.getHoraProgramado());
 		respuesta.put("idtipopedido", pedidoPixel.getIdTipoPedido());
+		// Tomamos la información de Domicilio Tercerizado
+		DomicilioTercerizado infoDomTerce = PedidoDAO.obtenerInfoDomTercerizadoPedido(idpedido);
+		respuesta.put("domiciliotercerizado", infoDomTerce.getDomicilioTercerizado());
+		respuesta.put("empresatercerizada", infoDomTerce.getEmpresaTercerizada());
 		// Tomamos la información de la marcación del pedido
 		MarcacionPedido marPedido = MarcacionPedidoDAO.obtenerMarcacionPedido(idpedido);
 		if (marPedido.getMarketplace().equals(new String(""))) {
@@ -789,6 +794,10 @@ public class PedidoCtrl {
 		respuesta.put("programado", pedidoPixel.getProgramado());
 		respuesta.put("horaprogramado", pedidoPixel.getHoraProgramado());
 		respuesta.put("idtipopedido", pedidoPixel.getIdTipoPedido());
+		// Tomamos la información de Domicilio Tercerizado
+		DomicilioTercerizado infoDomTerce = PedidoDAO.obtenerInfoDomTercerizadoPedido(idpedido);
+		respuesta.put("domiciliotercerizado", infoDomTerce.getDomicilioTercerizado());
+		respuesta.put("empresatercerizada", infoDomTerce.getEmpresaTercerizada());
 		// Tomamos la información de la marcación del pedido
 		MarcacionPedido marPedido = MarcacionPedidoDAO.obtenerMarcacionPedido(idpedido);
 		if (marPedido.getMarketplace().equals(new String(""))) {

@@ -22,6 +22,7 @@ import capaModeloCC.DetallePedido;
 import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
+import capaModeloCC.DomicilioTercerizado;
 import capaModeloCC.EncuestaGenerica;
 import capaModeloCC.Especialidad;
 import capaModeloCC.Estadistica;
@@ -6501,5 +6502,45 @@ public class PedidoDAO {
 			return(consultaPedidos);
 		}
 
+		
+		/**
+		 * Método que permite traer la información de domicilio tercerizado de un pedido
+		 * @param idPedido
+		 * @return
+		 */
+		public static DomicilioTercerizado obtenerInfoDomTercerizadoPedido(int idPedido)
+		{
+			DomicilioTercerizado info = new DomicilioTercerizado();
+			Logger logger = Logger.getLogger("log_file");
+			String domicilioTercerizado = "";
+			String empresaTercerizada = "";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				String consulta = "SELECT domicilio_tercerizado, empresa_tercerizada FROM pedido WHERE idpedido= " + idPedido ; 
+				logger.info(consulta);
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next()){
+					domicilioTercerizado = rs.getString("domicilio_tercerizado") != null ? rs.getString("domicilio_tercerizado") : "";
+				    empresaTercerizada = rs.getString("empresa_tercerizada") != null ? rs.getString("empresa_tercerizada") : "";
+				    info  = new DomicilioTercerizado(domicilioTercerizado, empresaTercerizada);
+				}
+		        rs.close();
+				stm.close();
+				con1.close();
+			}
+			catch (Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+			}
+			return(info);
+		}
 
 }
