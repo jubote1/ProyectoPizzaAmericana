@@ -12869,48 +12869,68 @@ public class PedidoCtrl {
 	}
     
     public String consultarAplicabilidadPedidoRAPPICARGO() {
-		JSONArray listJSON = new JSONArray();
-		ArrayList<Pedido> consultaPedidos = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO();
-		for (Pedido cadaPedido : consultaPedidos) {
-			JSONObject cadaPedidoJSON = new JSONObject();
-			cadaPedidoJSON.put("idpedido", cadaPedido.getIdpedido());
-			cadaPedidoJSON.put("tienda", cadaPedido.getNombretienda());
-			cadaPedidoJSON.put("totalneto", cadaPedido.getTotal_neto());
-			cadaPedidoJSON.put("idcliente", cadaPedido.getIdcliente());
-			cadaPedidoJSON.put("cliente", cadaPedido.getNombrecliente());
-			cadaPedidoJSON.put("estadopedido", cadaPedido.getEstadopedido());
-			cadaPedidoJSON.put("enviadopixel", cadaPedido.getEnviadoPixel());
-			if (cadaPedido.getEnviadoPixel() == 1) {
-				cadaPedidoJSON.put("estadoenviotienda", "ENVIADO A TIENDA");
-			} else if (cadaPedido.getEnviadoPixel() == 0) {
-				cadaPedidoJSON.put("estadoenviotienda", "PENDIENTE TIENDA");
-			} else if (cadaPedido.getEnviadoPixel() == 2) {
-				cadaPedidoJSON.put("estadoenviotienda", "PENDIENTE PAGO VIRTUAL");
-			}
-			cadaPedidoJSON.put("numposheader", cadaPedido.getNumposheader());
-			cadaPedidoJSON.put("idtienda", cadaPedido.getTienda().getIdTienda());
-			cadaPedidoJSON.put("urltienda", cadaPedido.getTienda().getUrl());
-			cadaPedidoJSON.put("stringpixel", cadaPedido.getStringpixel());
-			cadaPedidoJSON.put("fechainsercion", cadaPedido.getFechainsercion());
-			cadaPedidoJSON.put("fechapedido", cadaPedido.getFechapedido());
-			cadaPedidoJSON.put("usuariopedido", cadaPedido.getUsuariopedido());
-			cadaPedidoJSON.put("direccion", cadaPedido.getDireccion());
-			cadaPedidoJSON.put("telefono", cadaPedido.getTelefono());
-			cadaPedidoJSON.put("formapago", cadaPedido.getFormapago());
-			cadaPedidoJSON.put("idformapago", cadaPedido.getIdformapago());
-			cadaPedidoJSON.put("tiempopedido", cadaPedido.getTiempopedido());
-			cadaPedidoJSON.put("idlink", cadaPedido.getIdLink());
-			cadaPedidoJSON.put("fechapagovirtual", cadaPedido.getFechaPagoVirtual());
-			cadaPedidoJSON.put("fechafinalizacion", cadaPedido.getFechaFinalizacion());
-			cadaPedidoJSON.put("programado", cadaPedido.getProgramado());
-			cadaPedidoJSON.put("horaprogramado", cadaPedido.getHoraProgramado());
-			cadaPedidoJSON.put("idtipopedido", cadaPedido.getIdTipoPedido());
-			cadaPedidoJSON.put("usuarioreenvio", cadaPedido.getUsuarioReenvio());
-			listJSON.add(cadaPedidoJSON);
-		}
-		return listJSON.toJSONString();
-	}
-    
+
+
+        JSONArray listJSON = new JSONArray();
+        ArrayList<Pedido> consultaPedidos = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO();
+
+        JSONObject resp = new JSONObject();
+        resp.put("error", false);
+        resp.put("datos", listJSON);
+
+        if (consultaPedidos == null) {
+            resp.put("error", true);
+            resp.put("mensaje", "Hubo un error al realizar la consulta");
+            return resp.toJSONString();
+        }
+
+        for (Pedido cadaPedido : consultaPedidos) {
+
+            JSONObject cadaPedidoJSON = new JSONObject();
+
+            cadaPedidoJSON.put("idpedido", cadaPedido.getIdpedido());
+            cadaPedidoJSON.put("tienda", cadaPedido.getNombretienda());
+            cadaPedidoJSON.put("totalneto", cadaPedido.getTotal_neto());
+            cadaPedidoJSON.put("idcliente", cadaPedido.getIdcliente());
+            cadaPedidoJSON.put("cliente", cadaPedido.getNombrecliente());
+            cadaPedidoJSON.put("estadopedido", cadaPedido.getEstadopedido());
+            cadaPedidoJSON.put("enviadopixel", cadaPedido.getEnviadoPixel());
+
+            if (cadaPedido.getEnviadoPixel() == 1) {
+                cadaPedidoJSON.put("estadoenviotienda", "ENVIADO A TIENDA");
+            } else if (cadaPedido.getEnviadoPixel() == 0) {
+                cadaPedidoJSON.put("estadoenviotienda", "PENDIENTE TIENDA");
+            } else if (cadaPedido.getEnviadoPixel() == 2) {
+                cadaPedidoJSON.put("estadoenviotienda", "PENDIENTE PAGO VIRTUAL");
+            }
+
+            cadaPedidoJSON.put("numposheader", cadaPedido.getNumposheader());
+            cadaPedidoJSON.put("idtienda", cadaPedido.getTienda().getIdTienda());
+            cadaPedidoJSON.put("urltienda", cadaPedido.getTienda().getUrl());
+            cadaPedidoJSON.put("stringpixel", cadaPedido.getStringpixel());
+            cadaPedidoJSON.put("fechainsercion", cadaPedido.getFechainsercion());
+            cadaPedidoJSON.put("fechapedido", cadaPedido.getFechapedido());
+            cadaPedidoJSON.put("usuariopedido", cadaPedido.getUsuariopedido());
+            cadaPedidoJSON.put("direccion", cadaPedido.getDireccion());
+            cadaPedidoJSON.put("telefono", cadaPedido.getTelefono());
+            cadaPedidoJSON.put("formapago", cadaPedido.getFormapago());
+            cadaPedidoJSON.put("idformapago", cadaPedido.getIdformapago());
+            cadaPedidoJSON.put("tiempopedido", cadaPedido.getTiempopedido());
+            cadaPedidoJSON.put("idlink", cadaPedido.getIdLink());
+            cadaPedidoJSON.put("fechapagovirtual", cadaPedido.getFechaPagoVirtual());
+            cadaPedidoJSON.put("fechafinalizacion", cadaPedido.getFechaFinalizacion());
+            cadaPedidoJSON.put("programado", cadaPedido.getProgramado());
+            cadaPedidoJSON.put("horaprogramado", cadaPedido.getHoraProgramado());
+            cadaPedidoJSON.put("idtipopedido", cadaPedido.getIdTipoPedido());
+            cadaPedidoJSON.put("usuarioreenvio", cadaPedido.getUsuarioReenvio());
+
+            listJSON.add(cadaPedidoJSON);
+        }
+
+        return resp.toJSONString();
+    }
+
+
     /**
      * Método que retornará un JSON indicando con booleano si al pedido pasado como parámetro cumple las condiciones para RAPPICARGO
      * @param idPedido
@@ -12923,5 +12943,6 @@ public class PedidoCtrl {
     	respuestaJSON.put("resultado", respuesta);
     	return(respuestaJSON.toJSONString());
 	}
+
 
 }

@@ -31,19 +31,67 @@ var idMarcacionSel = 0;
 
 $(document).ready(function() {
 
-	//Obtenemos el valor de la variable server
-	var loc = window.location;
-	var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-	server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-	
-	//Marcamos si es administrador para tomar ciertas acciones
-	if(respuesta == 'OKA')
-    {
-        administrador = 'S';
-    }else if(respuesta == 'OK')
-    {
-        administrador = 'N';
-    }
+	// Obtener la URL base de tu proyecto "ProyectoPizzaAmericana"
+	const loc = window.location;
+	const pathParts = loc.pathname.split('/');
+	const baseFolder = "ProyectoPizzaAmericana";
+	const index = pathParts.indexOf(baseFolder);
+
+	// Reconstruir la URL base completa del proyecto
+	server = `${loc.origin}/${pathParts.slice(1, index + 1).join("/")}/`;
+
+	// Variable para almacenar la respuesta del servidor
+	let respuesta = '';
+	let usuario = '';
+
+	// Validar el usuario mediante una petición AJAX síncrona
+	$.ajax({
+	    url: server + 'ValidarUsuarioAplicacion',
+	    dataType: 'json',
+	    type: 'POST',
+	    async: false, // ⚠️ Sincrónico: se recomienda cambiar si puedes usar async/await
+	    success: function (data) {
+	        respuesta = data[0]?.respuesta || '';
+	        usuario = data[0]?.nombreusuario || '';
+	    },
+	    error: function () {
+	        console.error("Error al validar el usuario.");
+	        location.href = server + "Index.html";
+	    }
+	});
+
+	// Cargar el menú o redirigir según el tipo de usuario
+	switch (respuesta) {
+	    case 'OK': // Usuario común
+	        $('#cargarMenu').load(server +"Menu.html", function () {
+					    $('#usuariologin').text(usuario);
+					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+					});
+		    administrador = 'N';
+			$('#usuariologin').html(usuario);
+	        break;
+
+	    case 'OKA': // Usuario administrador		
+			$('#cargarMenu').load(server + "MenuAdm.html", function () {
+			    $('#usuariologin').text(usuario);
+			    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+			});
+			administrador = 'S';
+			$('#usuariologin').html(usuario);
+	        break;
+
+	    case 'OKP': // Usuario PQRS
+	        $('#cargarMenu').load(server +"MenuPQRS.html", function () {
+					    $('#usuariologin').text(usuario);
+					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
+					});
+			$('#usuariologin').html(usuario);
+	        break;
+
+	    default: // No válido o sin sesión
+	        location.href = server + "Index.html";
+	        break;
+	}
 
 	//Lo primero que realizaremos es validar si está logueado
 
@@ -310,16 +358,41 @@ function consultarAplicabilidadRappiCargo() {
 		tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable();
 	}
 	
-	$.getJSON(server + 'ConsultarAplicabilidadPedidoRAPPICARGO', function(data) {
-		tableAplicabilidadRappi.clear().draw();
-		if (!data || data.length === 0) {
-			return;
-		}
-		for (var i = 0; i < data.length; i++) {
-			tableAplicabilidadRappi.row.add(data[i]).draw();
-		}
+	$.getJSON(server + 'ConsultarAplicabilidadPedidoRAPPICARGO', function(response) {
+
+	    tableAplicabilidadRappi.clear().draw();
+
+	    if (response.error) {
+			Swal.fire({
+			    icon: 'error',
+			    title: 'Error',
+			    text: response.mensaje ,
+			    customClass: {
+			        popup: 'mi-swal',
+			        title: 'mi-swal-title',
+			        icon: 'mi-swal-icon'
+			    }
+			});
+	        return;
+	    }
+
+	    if (!response.datos || response.datos.length === 0) {
+	        return;
+	    }
+
+	    tableAplicabilidadRappi.rows.add(response.datos).draw();
+
 	}).fail(function() {
-		console.log("Error al consultar el servicio ConsultarAplicabilidadPedidoRAPPICARGO");
+		Swal.fire({
+		    icon: 'error',
+		    title: 'Error',
+		    text: 'Error al consumir el servicio.',
+		    customClass: {
+		        popup: 'mi-swal',
+		        title: 'mi-swal-title',
+		        icon: 'mi-swal-icon'
+		    }
+		});
 	});
 }
 
@@ -1114,4 +1187,174 @@ function validarFechaPedido()
 	{
 		return(false);
 	}
+}
+
+
+// Agregar despues de inicializar tableAplicabilidadRappi en consultacargo.js.
+
+$('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
+    var datospedido = tableAplicabilidadRappi.row(this).data();
+    if (!datospedido) {
+        return;
+    }
+
+	Swal.fire({
+	    icon: 'question',
+	    title: '¿Crear orden en Rappi Cargo?',
+		html: `
+		<div class="rappi-info">
+		    <div><b>Pedido:</b> ${datospedido.idpedido}</div>
+		    <div><b>Cliente:</b> ${datospedido.cliente}</div>
+		    <div><b>Tienda:</b> ${datospedido.tienda}</div>
+		    <div><b>Dirección:</b> ${datospedido.direccion}</div>
+		    <div><b>Total:</b> $${Number(datospedido.totalneto).toLocaleString('es-CO')}</div>
+		    <div><b>Forma pago:</b> ${datospedido.formapago}</div>
+		</div>
+		`,
+	    showCancelButton: true,
+	    confirmButtonText: 'Crear orden',
+	    cancelButtonText: 'Cancelar',
+	    confirmButtonColor: '#2563eb',
+	    cancelButtonColor: '#6b7280',
+	    reverseButtons: true,
+	    customClass: {
+	        popup: 'rappi-popup',
+	        icon: 'rappi-icon',
+	        title: 'rappi-title',
+	        actions: 'rappi-actions'
+	    }
+	}).then((result) => {
+	    if (result.isConfirmed) {
+	        crearOrdenRappiCargo(datospedido.idpedido);
+	    }
+	});
+});
+
+function crearOrdenRappiCargo(idpedido) {
+
+    $.ajax({
+
+        url: server + 'CrearOrdenRappiCargo',
+        type: 'POST',
+        dataType: 'json',
+
+        data: {
+            idpedido: idpedido
+        },
+
+
+        success: function (data) {
+
+            console.log("Respuesta servidor:", data);
+
+
+            var respuesta = Array.isArray(data)
+                    ? data[0]
+                    : data;
+
+
+
+            if (!respuesta) {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El servidor no devolvió información.'
+                });
+
+                return;
+            }
+
+
+
+            if (respuesta.resultado === true) {
+
+
+                Swal.fire({
+
+                    icon: 'success',
+
+                    title: 'Orden creada',
+
+                    text: respuesta.mensaje,
+
+                    timer: 2500,
+
+                    showConfirmButton: false,
+
+                    customClass: {
+                        popup: 'mi-swal',
+                        title: 'mi-swal-title',
+                        icon: 'mi-swal-icon'
+                    }
+
+                });
+
+
+
+                console.log(
+                    "Cargo Order ID:",
+                    respuesta.cargo_order_id
+                );
+
+
+                consultarPedido();
+
+                consultarAplicabilidadRappiCargo();
+
+
+
+            } else {
+
+
+                Swal.fire({
+
+                    icon: 'warning',
+
+                    title: 'No fue posible crear la orden',
+
+                    text: respuesta.mensaje,
+
+                    customClass: {
+                        popup: 'mi-swal',
+                        title: 'mi-swal-title',
+                        icon: 'mi-swal-icon'
+                    }
+
+                });
+
+            }
+
+        },
+
+
+        error: function (xhr) {
+
+
+            console.error(
+                "Error AJAX:",
+                xhr.responseText
+            );
+
+
+            Swal.fire({
+
+                icon: 'error',
+
+                title: 'Error de comunicación',
+
+                text: 'Error HTTP ' + xhr.status,
+
+                customClass: {
+                    popup: 'mi-swal',
+                    title: 'mi-swal-title',
+                    icon: 'mi-swal-icon'
+                }
+
+            });
+
+        }
+
+    });
+
 }

@@ -551,7 +551,7 @@ if (!window.notificacionesCentralInicializado) {
 		    '</div>';
 
 
-	    $('#usuariologin').before(htmlNotificaciones);
+	    $('#notf').before(htmlNotificaciones);
 	}
 
 	$(document).ajaxComplete(function (event, xhr, settings) {

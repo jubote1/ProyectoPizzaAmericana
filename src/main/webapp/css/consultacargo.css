@@ -1,0 +1,75 @@
+.mi-swal {
+    width: 350px;
+}
+
+.mi-swal-title {
+    font-size: 20px !important;
+}
+
+.mi-swal-icon {
+    transform: scale(0.7);
+}
+
+/* Ventana */
+.swal-rappi {
+    border-radius: 12px;
+    padding: 1.6rem;
+    width: 460px;
+}
+
+/* Título */
+.swal-rappi-title {
+    font-size: 24px !important;
+    font-weight: 600;
+}
+
+/* Contenido */
+.swal-rappi-body {
+    text-align: left !important;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Cada fila */
+.rappi-confirm .fila {
+    margin-bottom: 6px;
+}
+
+.rappi-confirm .fila span {
+    font-weight: 700;
+    display: inline-block;
+    width: 85px;
+}
+
+
+.rappi-info{
+    text-align:left;
+    font-size:15px;
+    line-height:1.9;
+    margin:15px 30px;
+}
+
+.rappi-info b{
+    display:inline-block;
+    width:90px;
+    color:#444;
+}
+
+/* Botones */
+.swal2-confirm,
+.swal2-cancel {
+    border-radius: 8px !important;
+    padding: 10px 22px !important;
+    font-weight: 600 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Quita el borde negro cuando reciben foco */
+.swal2-confirm:focus,
+.swal2-cancel:focus,
+.swal2-confirm:focus-visible,
+.swal2-cancel:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
