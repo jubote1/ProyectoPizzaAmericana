@@ -100,10 +100,10 @@ public class RappiCargoWebhook extends HttpServlet {
 
             e.printStackTrace();
 
-            TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
-                idPedido,
-                "Error procesando webhook: " + e.getMessage()
-            );
+            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+            		idPedido,
+                    false,
+                    "Error procesando webhook: " + e.getMessage());
         }
 
         response.setStatus(HttpServletResponse.SC_OK);
@@ -149,37 +149,59 @@ public class RappiCargoWebhook extends HttpServlet {
     private void actualizarPedidoSegunEstado(long externalOrderId, String state, String cargoOrderId) {
 
         if (state == null) {
+            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                    externalOrderId,
+                    false,
+                    "El webhook llegó sin estado.");
             return;
         }
 
         BigInteger idOrdenComercio = new BigInteger(cargoOrderId);
 
         Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
-        
-        
+
+        System.out.println(pedEvento);
         if (pedEvento == null || pedEvento.getIdpedido() == 0) {
-        	String mensaje = "No existe un pedido asociado al cargo_order_id: " + cargoOrderId;
-        	System.out.println(mensaje); 
-        	TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(externalOrderId , mensaje);
+
+            String mensaje = "No existe un pedido asociado al cargo_order_id: " + idOrdenComercio;
+
+            System.out.println(mensaje);
+
+            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                    externalOrderId,
+                    false,
+                    mensaje);
+
             return;
         }
-        
-        if(externalOrderId != pedEvento.getIdpedido() ) {
-        	String mensaje ="Inconsistencia entre external_order_id (" + externalOrderId +
-        			") e id_pedido encontrado (" + pedEvento.getIdpedido() + ")";
-        	System.out.println(mensaje); 
-        	TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(externalOrderId , mensaje);
+
+        if (externalOrderId != pedEvento.getIdpedido()) {
+
+            String mensaje =
+                    "Inconsistencia entre external_order_id (" +
+                    externalOrderId +
+                    ") e id_pedido encontrado (" +
+                    pedEvento.getIdpedido() +
+                    ")";
+
+            System.out.println(mensaje);
+
+            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                    externalOrderId,
+                    false,
+                    mensaje);
+
             return;
         }
- 
-         
+
         Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 
         if (tienda == null) {
-            TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
+
+            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                     externalOrderId,
-                    "No se encontró la tienda asociada al pedido."
-                );
+                    false,
+                    "No se encontró la tienda asociada al pedido.");
 
             return;
         }
@@ -191,181 +213,239 @@ public class RappiCargoWebhook extends HttpServlet {
 
         switch (state) {
 
-        case "created":
-        case "scheduled":
-        case "finding_courier":
-        case "in_progress":
-        case "in_store":
-        case "arrive":
-        case "pending_review":
-        case "return_in_store":
-            // Solo registrar el evento
-            break;
-        
-        case "on_the_route":
+            case "created":
 
-            rutaURL = tienda.getUrl()
-                    + "DarSalidaDomicilioPlataforma?idpedido="
-                    + pedEvento.getNumposheader()
-                    + "&idusuario=180&usuario=Caja";
+                Pedido pedido = PedidoDAO.ConsultaPedido((int) externalOrderId);
 
-            try {
+                if (pedido == null || pedido.getIdpedido() == 0) {
 
-                HttpGet request = new HttpGet(rutaURL);
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "No existe el pedido interno.");
 
-                HttpResponse response = client.execute(request);
-
-                BufferedReader rd = new BufferedReader(
-                        new InputStreamReader(response.getEntity().getContent()));
-
-                StringBuilder retorno = new StringBuilder();
-
-                String line;
-
-                while ((line = rd.readLine()) != null) {
-                    retorno.append(line);
+                    break;
                 }
 
-                respuesta = retorno.toString();
+                long idActual = pedido.getIdOrdenComercio();
+                long idCargo = idOrdenComercio.longValue();
 
-                PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
+                if (idActual == 0L) {
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                    TercerizadoDomicilioEventoDAO.actualizarPedidoRappiCargo(
+                            pedido.getIdpedido(),
+                            idOrdenComercio);
 
-                TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
-                    externalOrderId,
-                    "Error consumiendo servicio DarSalidaDomicilioPlataforma: "
-                    + e.getMessage()
-                );
-            }
+                } else if (idActual != idCargo) {
 
-            if (respuesta.isEmpty()) {
-                System.out.println("El servicio DarSalidaDomicilioPlataforma respondió vacío. (on_the_route)");
-                TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "El pedido ya tiene asociado otro idOrdenComercio. Actual: "
+                                    + idActual + ", recibido: " + idCargo);
+
+                    break;
+                }
+
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
-                        "El servicio DarSalidaDomicilioPlataforma respondió vacío."
-                    );
-            }
+                        true,
+                        "OK");
 
-            break;
+                break;
 
-        case "delivered_to_user":
+            case "scheduled":
+            case "finding_courier":
+            case "in_progress":
+            case "in_store":
+            case "arrive":
+            case "pending_review":
+            case "return_in_store":
 
-            rutaURL = tienda.getUrl()
-                    + "DarEntregaDomicilio?idpedidotienda="
-                    + pedEvento.getNumposheader()
-                    + "&claveusuario=2&idtienda="
-                    + tienda.getIdTienda()
-                    + "&observacion=PedidoEntregadoPorRappi";
-
-            try {
-
-                HttpGet request = new HttpGet(rutaURL);
-
-                HttpResponse response = client.execute(request);
-
-                BufferedReader rd = new BufferedReader(
-                        new InputStreamReader(response.getEntity().getContent()));
-
-                StringBuilder retorno = new StringBuilder();
-
-                String line;
-
-                while ((line = rd.readLine()) != null) {
-                    retorno.append(line);
-                }
-
-                respuesta = retorno.toString();
-
-                PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                
-
-                TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
-                    externalOrderId,
-                    "Error consumiendo servicio DarEntregaDomicilio: "
-                    + e.getMessage()
-                );
-            }
-
-            if (respuesta.isEmpty()) {
-                System.out.println("El servicio DarEntregaDomicilio respondió vacío. (delivered_to_user)");
-                
-                TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
-                        "El servicio DarEntregaDomicilio respondió vacío."
-                    );
-            }
+                        true,
+                        "OK");
 
-            break;
+                break;
 
-        case "canceled":
+            case "on_the_route":
 
-            boolean ordenCancelada = PedidoDAO.validarCancelacionPlataforma(idOrdenComercio);
+                rutaURL = tienda.getUrl()
+                        + "DarSalidaDomicilioPlataforma?idpedido="
+                        + pedEvento.getNumposheader()
+                        + "&idusuario=180&usuario=Caja";
 
-            if (!ordenCancelada) {
+                try {
 
-                PedidoDAO.marcarCancelacionPlataforma(idOrdenComercio);
+                    HttpGet request = new HttpGet(rutaURL);
 
-                System.out.println("Pedido Rappi Cargo cancelado: " + cargoOrderId);
+                    HttpResponse response = client.execute(request);
 
-                String mensaje = ParametrosDAO.retornarValorAlfanumerico("MSG_CANCELACION");
+                    BufferedReader rd = new BufferedReader(
+                            new InputStreamReader(response.getEntity().getContent()));
 
-                String nombreOrigen = "TERCERO";
+                    StringBuilder retorno = new StringBuilder();
 
-                mensaje = mensaje.replace("{nombreOrigen}", nombreOrigen);
-                mensaje = mensaje.replace("{orderComercio}", cargoOrderId);
-                mensaje = mensaje.replace("{orderInterno}", String.valueOf(pedEvento.getIdpedido()));
+                    String line;
 
-                Notificaciones notificacion = new Notificaciones(mensaje);
+                    while ((line = rd.readLine()) != null) {
+                        retorno.append(line);
+                    }
 
-                notificacion.setOrigen(nombreOrigen);
-                notificacion.setIdpedido(pedEvento.getIdpedido());
+                    respuesta = retorno.toString();
 
-                int idNotificacion = PedidoDAO.insertarNotificacion(notificacion);
+                    PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
 
-                if (idNotificacion > 0) {
+                } catch (Exception e) {
 
-                    notificacion.setId(idNotificacion);
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "Error consumiendo DarSalidaDomicilioPlataforma: " + e.getMessage());
 
-                    notificacion.setFechaHora(
-                            new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                                    .format(new java.util.Date()));
-
-                    NotificacionSocket.enviarATodos(notificacion);
+                    break;
                 }
 
-                notificacion.setIdpedido(pedEvento.getNumposheader());
+                if (respuesta.isEmpty()) {
 
-                PedidoCtrl.registrarNotificacionATiendaAsync(
-                        pedEvento.getIdtienda(),
-                        notificacion);
-            }
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "El servicio DarSalidaDomicilioPlataforma respondió vacío.");
 
-            break;
+                    break;
+                }
 
-        case "failed_delivery":
-            System.out.println("Entrega fallida del pedido: " + cargoOrderId);
-            break;
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        externalOrderId,
+                        true,
+                        "OK");
 
-        case "returned":
-            System.out.println("Pedido devuelto a la tienda: " + cargoOrderId);
-            break;
+                break;
 
-        case "failed_return":
-            System.out.println("No fue posible devolver el pedido: " + cargoOrderId);
-            break;
+            case "delivered_to_user":
 
-        default:
-            System.out.println("Estado RappCargo no soportado: " + state);
-            TercerizadoDomicilioEventoDAO.actualizarMensajeProcesoPorPedido(
-            	    externalOrderId,
-            	    "Estado no soportado recibido desde RappCargo: " + state
-            	);
-            break;
+                rutaURL = tienda.getUrl()
+                        + "DarEntregaDomicilio?idpedidotienda="
+                        + pedEvento.getNumposheader()
+                        + "&claveusuario=2&idtienda="
+                        + tienda.getIdTienda()
+                        + "&observacion=PedidoEntregadoPorRappi";
+
+                try {
+
+                    HttpGet request = new HttpGet(rutaURL);
+
+                    HttpResponse response = client.execute(request);
+
+                    BufferedReader rd = new BufferedReader(
+                            new InputStreamReader(response.getEntity().getContent()));
+
+                    StringBuilder retorno = new StringBuilder();
+
+                    String line;
+
+                    while ((line = rd.readLine()) != null) {
+                        retorno.append(line);
+                    }
+
+                    respuesta = retorno.toString();
+
+                    PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
+
+                } catch (Exception e) {
+
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "Error consumiendo DarEntregaDomicilio: " + e.getMessage());
+
+                    break;
+                }
+
+                if (respuesta.isEmpty()) {
+
+                    TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                            externalOrderId,
+                            false,
+                            "El servicio DarEntregaDomicilio respondió vacío.");
+
+                    break;
+                }
+
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        externalOrderId,
+                        true,
+                        "OK");
+
+                break;
+
+            case "canceled":
+
+                boolean ordenCancelada = PedidoDAO.validarCancelacionPlataforma(idOrdenComercio);
+
+                if (!ordenCancelada) {
+
+                    PedidoDAO.marcarCancelacionPlataforma(idOrdenComercio);
+
+                    String mensaje = ParametrosDAO.retornarValorAlfanumerico("MSG_CANCELACION");
+
+                    mensaje = mensaje.replace("{nombreOrigen}", "TERCERO");
+                    mensaje = mensaje.replace("{orderComercio}", cargoOrderId);
+                    mensaje = mensaje.replace("{orderInterno}", String.valueOf(pedEvento.getIdpedido()));
+
+                    Notificaciones notificacion = new Notificaciones(mensaje);
+
+                    notificacion.setOrigen("TERCERO");
+                    notificacion.setIdpedido(pedEvento.getIdpedido());
+
+                    int idNotificacion = PedidoDAO.insertarNotificacion(notificacion);
+
+                    if (idNotificacion > 0) {
+
+                        notificacion.setId(idNotificacion);
+
+                        notificacion.setFechaHora(
+                                new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                                        .format(new java.util.Date()));
+
+                        NotificacionSocket.enviarATodos(notificacion);
+                    }
+
+                    notificacion.setIdpedido(pedEvento.getNumposheader());
+
+                    PedidoCtrl.registrarNotificacionATiendaAsync(
+                            pedEvento.getIdtienda(),
+                            notificacion);
+                }
+
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        externalOrderId,
+                        true,
+                        "OK");
+
+                break;
+
+            case "failed_delivery":
+            case "returned":
+            case "failed_return":
+
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        externalOrderId,
+                        true,
+                        "Webhook procesado correctamente. El pedido finalizó con un estado excepcional: " + state);
+
+                break;
+
+            default:
+
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        externalOrderId,
+                        false,
+                        "Estado no soportado recibido desde RappiCargo: " + state);
+
+                break;
         }
     }
 }

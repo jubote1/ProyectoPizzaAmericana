@@ -1,5 +1,7 @@
 package capaModeloCC;
 
+import java.util.ArrayList;
+
 public class RappiCargoOrden {
 
     private String orderId;
@@ -14,13 +16,6 @@ public class RappiCargoOrden {
     // Picking Point
     private String externalPickingPointId;
     private String instructions;
-
-    // Producto
-    private String productId;
-    private String productName;
-    private String productDescription;
-    private int units;
-    private int unitPrice;
 
     // Cliente
     private String email;
@@ -84,35 +79,14 @@ public class RappiCargoOrden {
 	public void setInstructions(String instructions) {
 		this.instructions = instructions;
 	}
-	public String getProductId() {
-		return productId;
+	private ArrayList<RappiCargoProducto> products = new ArrayList<>();
+
+	public ArrayList<RappiCargoProducto> getProducts() {
+	    return products;
 	}
-	public void setProductId(String productId) {
-		this.productId = productId;
-	}
-	public String getProductName() {
-		return productName;
-	}
-	public void setProductName(String productName) {
-		this.productName = productName;
-	}
-	public String getProductDescription() {
-		return productDescription;
-	}
-	public void setProductDescription(String productDescription) {
-		this.productDescription = productDescription;
-	}
-	public int getUnits() {
-		return units;
-	}
-	public void setUnits(int units) {
-		this.units = units;
-	}
-	public int getUnitPrice() {
-		return unitPrice;
-	}
-	public void setUnitPrice(int unitPrice) {
-		this.unitPrice = unitPrice;
+
+	public void setProducts(ArrayList<RappiCargoProducto> products) {
+	    this.products = products;
 	}
 	public String getEmail() {
 		return email;
@@ -179,5 +153,56 @@ public class RappiCargoOrden {
 	}
 	public void setComments(String comments) {
 		this.comments = comments;
+	}
+	
+
+	public static class RappiCargoProducto  {
+
+	    private String productId;
+	    private String productName;
+	    private String productDescription;
+	    private int units;
+	    private int unitPrice;
+	    
+	    public String getProductId() {
+	        return productId;
+	    }
+
+	    public void setProductId(String productId) {
+	        this.productId = productId;
+	    }
+
+	    public String getProductName() {
+	        return productName;
+	    }
+
+	    public void setProductName(String productName) {
+	        this.productName = productName;
+	    }
+
+	    public String getProductDescription() {
+	        return productDescription;
+	    }
+
+	    public void setProductDescription(String productDescription) {
+	        this.productDescription = productDescription;
+	    }
+
+	    public int getUnits() {
+	        return units;
+	    }
+
+	    public void setUnits(int units) {
+	        this.units = units;
+	    }
+
+	    public int getUnitPrice() {
+	        return unitPrice;
+	    }
+
+	    public void setUnitPrice(int unitPrice) {
+	        this.unitPrice = unitPrice;
+	    }
+
 	}
 }
