@@ -12924,6 +12924,10 @@ public class PedidoCtrl {
             cadaPedidoJSON.put("idtipopedido", cadaPedido.getIdTipoPedido());
             cadaPedidoJSON.put("usuarioreenvio", cadaPedido.getUsuarioReenvio());
 
+            cadaPedidoJSON.put("aplicaRappiCargoDist", cadaPedido.isAplicaRappiCargoDist());
+            cadaPedidoJSON.put("motivoNoAplicaRappiCargo", cadaPedido.getMotivoNoAplicaRappiCargo());
+
+
             listJSON.add(cadaPedidoJSON);
         }
 
@@ -12936,11 +12940,10 @@ public class PedidoCtrl {
      * @param idPedido
      * @return
      */
+
     public String consultarAplicabilidadPedidoRAPPICARGO(int idPedido)
 	{
-    	boolean respuesta = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido);
-    	JSONObject respuestaJSON = new JSONObject();
-    	respuestaJSON.put("resultado", respuesta);
+    	JSONObject respuestaJSON = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido);
     	return(respuestaJSON.toJSONString());
 	}
 

@@ -157,25 +157,52 @@ $(document).ready(function() {
     	} );
 
     // Inicialización del nuevo DataTable para ConsultarAplicabilidadPedidoRAPPICARGO
-    tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable({
-        "aoColumns": [
-            { "mData": "idpedido" },
-            { "mData": "tienda" },
-            { "mData": "totalneto" },
-            { "mData": "idcliente" },
-            { "mData": "cliente" },
-            { "mData": "estadopedido" },
-            { "mData": "estadoenviotienda" },
-            { "mData": "numposheader" },
-            { "mData": "fechapedido" },
-            { "mData": "fechainsercion" },
-            { "mData": "usuariopedido" },
-            { "mData": "direccion" },
-            { "mData": "telefono" },
-            { "mData": "formapago" },
-            { "mData": "tiempopedido" }
-        ]
-    });
+	tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable({
+
+	    "aoColumns": [
+
+	        {
+	            "mData": null,
+	            "className": "text-center",
+	            "orderable": false,
+	            "render": function(data, type, row){
+
+	                if(row.aplicaRappiCargoDist){
+	                    return "";
+	                }
+
+	                return '<i class="fa fa-info-circle text-primary informacion-rappi" ' +
+	                       'title="' + row.motivoNoAplicaRappiCargo + '" ' +
+	                       'style="cursor:pointer;font-size:18px;"></i>';
+	            }
+	        },
+
+	        { "mData": "idpedido" },
+	        { "mData": "tienda" },
+	        { "mData": "totalneto" },
+	        { "mData": "idcliente" },
+	        { "mData": "cliente" },
+	        { "mData": "estadopedido" },
+	        { "mData": "estadoenviotienda" },
+	        { "mData": "numposheader" },
+	        { "mData": "fechapedido" },
+	        { "mData": "fechainsercion" },
+	        { "mData": "usuariopedido" },
+	        { "mData": "direccion" },
+	        { "mData": "telefono" },
+	        { "mData": "formapago" },
+	        { "mData": "tiempopedido" }
+	    ],
+
+	    createdRow: function(row, data){
+
+	        if(!data.aplicaRappiCargoDist){
+	            $(row).addClass("pedido-no-aplica");
+	        }
+
+	    }
+
+	});
 
     // Llamada inicial al servicio del nuevo datatable al cargar la página
     consultarAplicabilidadRappiCargo();
@@ -183,6 +210,12 @@ $(document).ready(function() {
      
     $('#grid-encabezadopedido').on('click', 'tr', function () {
         datospedido = table.row( this ).data();
+		
+		// Si no hay datos (por ejemplo, se dio clic en la fila "No hay datos" o en el header),
+		// no continuamos para evitar el error.
+		if (!datospedido) {
+		    return;
+		}
         //alert( 'Diste clic en  '+datos.nombre+'\'s row' );
         //$('#nombres').val(datos.nombre);
         idPedido = datospedido.idpedido;
@@ -381,6 +414,10 @@ function consultarAplicabilidadRappiCargo() {
 	    }
 
 	    tableAplicabilidadRappi.rows.add(response.datos).draw();
+<
+		
+		$('.informacion-rappi').tooltip();
+
 
 	}).fail(function() {
 		Swal.fire({
@@ -398,7 +435,7 @@ function consultarAplicabilidadRappiCargo() {
 
 function obtenerPedidosPendientesRAPPI(){
 	$.getJSON(server + 'ConsultarPedidosPendientesRAPPI', function(data1){
-			console.log("RESULTADO " + data1.resultado);
+			//console.log("RESULTADO " + data1.resultado);
 			if(data1.resultado)
 			{
 				console.log("LA RESPUESTA FUE POSITIVA");
@@ -1198,9 +1235,37 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
         return;
     }
 
+	
+	var advertencia = "";
+	
+	var titulo = datospedido.aplicaRappiCargoDist
+	    ? '¿Crear orden en Rappi Cargo?'
+	    : 'Pedido con advertencia';
+		
+	if (!datospedido.aplicaRappiCargoDist) {
+
+	    advertencia = `
+	        <div class="advertencia" >
+
+	            <i class="fa fa-exclamation-triangle"></i>
+	            <b> Advertencia</b>
+
+	            <br><br>
+
+	            ${datospedido.motivoNoAplicaRappiCargo}
+
+	            <br><br>
+
+	            <b>Si decide continuar, el sistema intentará crear la orden en Rappi Cargo aun cuando el pedido no cumple con la validación de distancia.</b>
+
+	        </div>
+	    `;
+	}
+
 	Swal.fire({
-	    icon: 'question',
-	    title: '¿Crear orden en Rappi Cargo?',
+	    icon: datospedido.aplicaRappiCargoDist ? 'question' : 'warning',
+	    title: titulo,
+
 		html: `
 		<div class="rappi-info">
 		    <div><b>Pedido:</b> ${datospedido.idpedido}</div>
@@ -1210,9 +1275,13 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 		    <div><b>Total:</b> $${Number(datospedido.totalneto).toLocaleString('es-CO')}</div>
 		    <div><b>Forma pago:</b> ${datospedido.formapago}</div>
 		</div>
+
+		${advertencia}
 		`,
 	    showCancelButton: true,
-	    confirmButtonText: 'Crear orden',
+		confirmButtonText: datospedido.aplicaRappiCargoDist
+		    ? 'Crear orden'
+		    : 'Crear de todas formas',
 	    cancelButtonText: 'Cancelar',
 	    confirmButtonColor: '#2563eb',
 	    cancelButtonColor: '#6b7280',
@@ -1223,6 +1292,7 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 	        title: 'rappi-title',
 	        actions: 'rappi-actions'
 	    }
+
 	}).then((result) => {
 	    if (result.isConfirmed) {
 	        crearOrdenRappiCargo(datospedido.idpedido);

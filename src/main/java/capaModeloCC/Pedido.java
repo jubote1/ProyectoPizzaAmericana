@@ -43,9 +43,23 @@ public class Pedido {
 	private int grupoVirtual;
 	private int aceptadoRappi;
 	private String nombreCompania;
+    private boolean aplicaRappiCargoDist = true;
+    private String motivoNoAplicaRappiCargo = "";
 	
 	
 	
+	public boolean isAplicaRappiCargoDist() {
+		return aplicaRappiCargoDist;
+	}
+	public void setAplicaRappiCargoDist(boolean aplicaRappiCargoDist) {
+		this.aplicaRappiCargoDist = aplicaRappiCargoDist;
+	}
+	public String getMotivoNoAplicaRappiCargo() {
+		return motivoNoAplicaRappiCargo;
+	}
+	public void setMotivoNoAplicaRappiCargo(String motivoNoAplicaRappiCargo) {
+		this.motivoNoAplicaRappiCargo = motivoNoAplicaRappiCargo;
+	}
 	public String getNombreCompania() {
 		return nombreCompania;
 	}

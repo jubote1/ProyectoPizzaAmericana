@@ -24,11 +24,21 @@ import capaDAOCC.ParametrosDAO;
 import capaDAOCC.PedidoDAO;
 import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaModeloCC.DetallePedido;
+
+import capaModeloCC.Parametro;
 import capaModeloCC.RappiCargoOrden;
 import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
 import capaModeloCC.RespuestaRappiCargo;
 public class TercerizadoDomicilioCtrl {
 	
+	// Numero fijo usado para calcular distancias con latitud y longitud.
+	// No se cambia.
+	private static final double RADIO_TIERRA_KM = 6371.0088;
+
+	private static final double KM_MIN_RAPPI_CARGO = 1.5;
+	private static final double KM_MAX_RAPPI_CARGO = 3.0;
+
+	private static final double FACTOR_ESTIMACION_RUTA = 1.25;
 
 	public static RespuestaRappiCargo crearOrden(RappiCargoOrden orden) {
 
@@ -555,4 +565,135 @@ public class TercerizadoDomicilioCtrl {
 
 	    return null;
 	}
+	
+
+
+	public static boolean debeUsarRappiCargo(
+	        double latitudTienda,
+	        double longitudTienda,
+	        double latitudCliente,
+	        double longitudCliente) {
+
+	    JSONObject validacion = validarDistanciaRappiCargo(
+	            latitudTienda,
+	            longitudTienda,
+	            latitudCliente,
+	            longitudCliente
+	    );
+
+	    return Boolean.TRUE.equals(validacion.get("respuesta"));
+	}
+	
+	public static JSONObject validarDistanciaRappiCargo(
+	        double latitudTienda,
+	        double longitudTienda,
+	        double latitudCliente,
+	        double longitudCliente) {
+
+	    JSONObject respuesta = new JSONObject();
+
+	    if (!coordenadaValida(latitudTienda, longitudTienda)
+	            || !coordenadaValida(latitudCliente, longitudCliente)) {
+
+	        respuesta.put("respuesta", false);
+	        respuesta.put("mensaje", "No se pudo validar Rappi Cargo porque la tienda o el cliente no tienen coordenadas validas.");
+	        respuesta.put("distanciaKm", 0);
+
+	        return respuesta;
+	    }
+
+	    double distanciaLinealKm = calcularDistanciaKm(
+	            latitudTienda,
+	            longitudTienda,
+	            latitudCliente,
+	            longitudCliente
+	    );
+
+	    double kmMinRappiCargo = obtenerParametroNumerico(
+	            "KM_MIN_RAPPI_CARGO",
+	            KM_MIN_RAPPI_CARGO
+	    );
+
+	    double kmMaxRappiCargo = obtenerParametroNumerico(
+	            "KM_MAX_RAPPI_CARGO",
+	            KM_MAX_RAPPI_CARGO
+	    );
+
+	    double factorEstimacionRuta = obtenerParametroNumerico(
+	            "FACTOR_ESTIMACION_RUTA",
+	            FACTOR_ESTIMACION_RUTA
+	    );
+
+	    double distanciaEstimadaRutaKm = distanciaLinealKm * factorEstimacionRuta;
+	    double distanciaRedondeada = Math.round(distanciaEstimadaRutaKm * 100.0) / 100.0;
+
+	    respuesta.put("distanciaKm", distanciaRedondeada);
+
+	    if (distanciaEstimadaRutaKm < kmMinRappiCargo) {
+	        respuesta.put("respuesta", false);
+	        respuesta.put("mensaje", "El pedido esta muy cerca para Rappi Cargo. Distancia estimada: "
+	                + distanciaRedondeada + " km.");
+	        return respuesta;
+	    }
+
+	    if (distanciaEstimadaRutaKm > kmMaxRappiCargo) {
+	        respuesta.put("respuesta", false);
+	        respuesta.put("mensaje", "El pedido esta muy lejos para Rappi Cargo. Distancia estimada: "
+	                + distanciaRedondeada + " km.");
+	        return respuesta;
+	    }
+
+	    respuesta.put("respuesta", true);
+	    respuesta.put("mensaje", "El pedido aplica para Rappi Cargo. Distancia estimada: "
+	            + distanciaRedondeada + " km.");
+
+	    return respuesta;
+	}
+	
+	private static double obtenerParametroNumerico(String nombreParametro, double valorPorDefecto) {
+	    try {
+	        Parametro parametro = ParametrosDAO.obtenerParametro(nombreParametro);
+
+	        if (parametro == null || parametro.getValorNumerico() <= 0) {
+	            return valorPorDefecto;
+	        }
+
+	        return parametro.getValorNumerico();
+
+	    } catch (Exception e) {
+	        return valorPorDefecto;
+	    }
+	}
+
+	public static double calcularDistanciaKm(
+	        double latitudOrigen,
+	        double longitudOrigen,
+	        double latitudDestino,
+	        double longitudDestino) {
+
+	    if (!coordenadaValida(latitudOrigen, longitudOrigen)
+	            || !coordenadaValida(latitudDestino, longitudDestino)) {
+	        return -1.0;
+	    }
+
+	    double lat1Rad = Math.toRadians(latitudOrigen);
+	    double lat2Rad = Math.toRadians(latitudDestino);
+	    double deltaLatRad = Math.toRadians(latitudDestino - latitudOrigen);
+	    double deltaLngRad = Math.toRadians(longitudDestino - longitudOrigen);
+
+	    double a = Math.sin(deltaLatRad / 2) * Math.sin(deltaLatRad / 2)
+	            + Math.cos(lat1Rad) * Math.cos(lat2Rad)
+	            * Math.sin(deltaLngRad / 2) * Math.sin(deltaLngRad / 2);
+
+	    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+	    return RADIO_TIERRA_KM * c;
+	}
+
+	private static boolean coordenadaValida(double latitud, double longitud) {
+	    return latitud >= -90 && latitud <= 90
+	            && longitud >= -180 && longitud <= 180
+	            && !(latitud == 0 && longitud == 0);
+	}
+
 }

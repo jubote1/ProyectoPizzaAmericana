@@ -3476,30 +3476,89 @@ function ConfirmarPedido()
 									var resJSON = JSON.stringify(resultado);
 									var urlTienda = resultado.url;
 									//Se realiza modificación para hacer validación de DOMICILIOS TERCERIZADO
-									$.ajax({ 
-							    				url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido , 
-							    				dataType: 'json', 
-							    				async: false, 
-							    				success: function(dataTerce){
-													if(dataTerce.resultado)
-														{
-															$.alert({
-															    title: '<span style="color: #d9534f;"><i class="fas fa-exclamation-triangle"></i> ¡Atención y Cuidado!</span>',
-															    content: '<div style="font-size: 16px; background-color: #fcf8e3; padding: 15px; border-left: 5px solid #f0ad4e; border-radius: 4px;">' +
-															             '<strong>El pedido es susceptible para ser enviado por Domicilios Tercerizados.</strong><br><br>' +
-															             '<span style="color: #8a6d3b;">⚠️ Por favor, ten en cuenta que <strong>no se enviará inmediatamente</strong>. Verifica las condiciones con el cliente antes de continuar.</span>' +
-															             '</div>',
-															    confirmButton: 'Entendido',
-															    confirmButtonClass: 'btn-warning'
-															});
-															aplicaDomiTerce = true;
-														}
-												},
-                                                error: function(dataErrorTerce){
-                                                    alert('SE PRODUJO UN ERROR');
-                                                    console.log(dataErrorTerce);
-                                                    //process the JSON data etc
-                                                }
+									$.ajax({
+									    url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido,
+									    dataType: 'json',
+									    async: false,
+									    success: function(dataTerce) {
+
+											if (dataTerce.resultado) {
+
+											    var esAdvertencia = !dataTerce.validacionDistancia;
+
+											    var icono = esAdvertencia ? "warning" : "info";
+											    var colorBoton = esAdvertencia ? "#f59e0b" : "#2563eb";
+
+											    var htmlMensaje = "";
+
+											    if (esAdvertencia) {
+
+											        htmlMensaje = `
+											            <div style="
+											                margin-top:10px;
+											                padding:12px;
+											                border-left:5px solid #f59e0b;
+											                background:#fff8e1;
+											                color:#8a5700;
+											                border-radius:4px;
+											                text-align:left;
+											                font-size:15px;">
+
+											                <i class="fa fa-exclamation-triangle"></i>
+											                <b> Advertencia</b>
+
+											                <br><br>
+
+											                ${dataTerce.mensaje}
+
+											                <br><br>
+
+											                <b>Antes de continuar, verifica esta condición con el cliente.</b>
+
+											            </div>
+											        `;
+
+											    } else {
+
+											        htmlMensaje = `
+											            <div style="
+											                margin-top:10px;
+											                text-align:left;
+											                font-size:15px;">
+
+											                ${dataTerce.mensaje}
+
+											            </div>
+											        `;
+
+											    }
+
+											    Swal.fire({
+											        icon: icono,
+											        title: 'Pedido apto para Domicilio Tercerizado',
+											        html: htmlMensaje,
+											        confirmButtonText: 'Entendido',
+											        confirmButtonColor: colorBoton
+											    });
+
+											    aplicaDomiTerce = true;
+											} else {
+
+									            console.log(dataTerce.mensaje || 'El pedido no aplica para Rappi Cargo por filtros base.');
+
+									        }
+									    },
+									    error: function(dataErrorTerce) {
+
+									        Swal.fire({
+									            icon: 'error',
+									            title: 'Error',
+									            text: 'Se produjo un error validando Domicilios Tercerizados.',
+									            confirmButtonText: 'Entendido'
+									        });
+
+									        console.log(dataErrorTerce);
+									    }
 									});
                                     //En este punto realizaremos la verficación para consumir el servicio de creación de link de pagos
                                     //Se realizaría una vez se insertó el pedido en el contact center
