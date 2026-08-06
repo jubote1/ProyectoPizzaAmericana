@@ -12923,8 +12923,10 @@ public class PedidoCtrl {
             cadaPedidoJSON.put("horaprogramado", cadaPedido.getHoraProgramado());
             cadaPedidoJSON.put("idtipopedido", cadaPedido.getIdTipoPedido());
             cadaPedidoJSON.put("usuarioreenvio", cadaPedido.getUsuarioReenvio());
+
             cadaPedidoJSON.put("aplicaRappiCargoDist", cadaPedido.isAplicaRappiCargoDist());
             cadaPedidoJSON.put("motivoNoAplicaRappiCargo", cadaPedido.getMotivoNoAplicaRappiCargo());
+
 
             listJSON.add(cadaPedidoJSON);
         }
@@ -12933,7 +12935,6 @@ public class PedidoCtrl {
     }
 
 
-    
     /**
      * Método que retornará un JSON indicando con booleano si al pedido pasado como parámetro cumple las condiciones para RAPPICARGO
      * @param idPedido

@@ -6520,6 +6520,7 @@ public class PedidoDAO {
 					String formapago =  rs.getString("forma_pago");
 					int idformapago = rs.getInt("idforma_pago");
 					double tiempopedido = rs.getDouble("tiempopedido");
+
 					
 					double latitudTienda = rs.getDouble("latitud_tienda");
 					double longitudTienda = rs.getDouble("longitud_tienda");
@@ -6540,6 +6541,7 @@ public class PedidoDAO {
 		            System.out.println("distanciaKm: "+ validacionDistancia.get("distanciaKm"));
 				  				    
 	
+
 
 					String idLink = rs.getString("idlink");
 					if(idLink == null)
@@ -6595,6 +6597,7 @@ public class PedidoDAO {
 							fechaPagoVirtual,
 							fechaFinalizacion
 					);
+
 					
 					cadaPedido.setAplicaRappiCargoDist(aplicaRappiCargoDist);
 
@@ -6602,6 +6605,7 @@ public class PedidoDAO {
 					    cadaPedido.setMotivoNoAplicaRappiCargo(validacionDistancia.get("mensaje").toString()
 					    );
 					}
+
 
 
 					consultaPedidos.add(cadaPedido);

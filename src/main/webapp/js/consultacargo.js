@@ -414,8 +414,10 @@ function consultarAplicabilidadRappiCargo() {
 	    }
 
 	    tableAplicabilidadRappi.rows.add(response.datos).draw();
+<
 		
 		$('.informacion-rappi').tooltip();
+
 
 	}).fail(function() {
 		Swal.fire({
@@ -1232,6 +1234,7 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
     if (!datospedido) {
         return;
     }
+
 	
 	var advertencia = "";
 	
@@ -1262,6 +1265,7 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 	Swal.fire({
 	    icon: datospedido.aplicaRappiCargoDist ? 'question' : 'warning',
 	    title: titulo,
+
 		html: `
 		<div class="rappi-info">
 		    <div><b>Pedido:</b> ${datospedido.idpedido}</div>
@@ -1288,7 +1292,7 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 	        title: 'rappi-title',
 	        actions: 'rappi-actions'
 	    }
-		
+
 	}).then((result) => {
 	    if (result.isConfirmed) {
 	        crearOrdenRappiCargo(datospedido.idpedido);
