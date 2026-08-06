@@ -81,8 +81,32 @@ public class TercerizadoDomicilioEventoDAO {
 	            orden.setExternalPickingPointId(String.valueOf(rs.getInt("idtienda")));
 	            orden.setInstructions("");
 
-	            orden.setFirstName(rs.getString("nombre"));
-	            orden.setLastName(rs.getString("apellido"));
+	            String nombre = rs.getString("nombre");
+	            String apellido = rs.getString("apellido");
+
+	            if (nombre == null) {
+	                nombre = "";
+	            }
+
+	            if (apellido == null || apellido.trim().isEmpty()) {
+
+	                nombre = nombre.trim();
+
+	                int ultimoEspacio = nombre.lastIndexOf(" ");
+
+	                if (ultimoEspacio > 0) {
+
+	                    apellido = nombre.substring(ultimoEspacio + 1).trim();
+	                    nombre = nombre.substring(0, ultimoEspacio).trim();
+
+	                } else {
+
+	                    apellido = "N/A";
+	                }
+	            }
+
+	            orden.setFirstName(nombre);
+	            orden.setLastName(apellido);
 
 	            String telefono = rs.getString("telefono_celular");
 	            if (telefono == null || telefono.trim().isEmpty()) {
