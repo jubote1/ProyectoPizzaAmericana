@@ -49,7 +49,7 @@ public class ConexionBaseDatos {
 			
 			con = DriverManager.getConnection(
 		            "jdbc:mysql://localhost/pizzaamericana?"
-		            + "user=root&password=4m32017&serverTimezone=UTC");
+		            + "user=root&password=4m32017&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8");
 
 		    // Otros y operaciones sobre la base de datos...
 
