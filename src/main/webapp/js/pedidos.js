@@ -3465,6 +3465,7 @@ function ConfirmarPedido()
                             var pagoEsVirtual = false;
                             //Incluimos validación de procesar marcaciones solo si se es administrador, sino no aplicaría
                             procesarMarcaciones(idPedido);
+							var aplicaDomiTerce = false;
 							$.ajax({ 
 		    				url: server + 'FinalizarPedido?idpedido=' + idPedido + "&idformapago=" + idformapago + "&valortotal=" + totalpedido + "&valorformapago=" + valorformapago + "&idcliente=" + idCliente + "&insertado=" + insertado + "&tiempopedido=" + tiempopedido +"&validadir=" + validaDir + "&descuento=" + descuentoPedido + "&motivodescuento=" + motivoDescuento + "&programado=" + programado, 
 		    				dataType: 'json', 
@@ -3474,6 +3475,91 @@ function ConfirmarPedido()
                                     resultado = data[0];
 									var resJSON = JSON.stringify(resultado);
 									var urlTienda = resultado.url;
+									//Se realiza modificación para hacer validación de DOMICILIOS TERCERIZADO
+									$.ajax({
+									    url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido,
+									    dataType: 'json',
+									    async: false,
+									    success: function(dataTerce) {
+
+											if (dataTerce.resultado) {
+
+											    var esAdvertencia = !dataTerce.validacionDistancia;
+
+											    var icono = esAdvertencia ? "warning" : "info";
+											    var colorBoton = esAdvertencia ? "#f59e0b" : "#2563eb";
+
+											    var htmlMensaje = "";
+
+											    if (esAdvertencia) {
+
+											        htmlMensaje = `
+											            <div style="
+											                margin-top:10px;
+											                padding:12px;
+											                border-left:5px solid #f59e0b;
+											                background:#fff8e1;
+											                color:#8a5700;
+											                border-radius:4px;
+											                text-align:left;
+											                font-size:15px;">
+
+											                <i class="fa fa-exclamation-triangle"></i>
+											                <b> Advertencia</b>
+
+											                <br><br>
+
+											                ${dataTerce.mensaje}
+
+											                <br><br>
+
+											                <b>Antes de continuar, verifica esta condición con el cliente.</b>
+
+											            </div>
+											        `;
+
+											    } else {
+
+											        htmlMensaje = `
+											            <div style="
+											                margin-top:10px;
+											                text-align:left;
+											                font-size:15px;">
+
+											                ${dataTerce.mensaje}
+
+											            </div>
+											        `;
+
+											    }
+
+											    Swal.fire({
+											        icon: icono,
+											        title: 'Pedido apto para Domicilio Tercerizado',
+											        html: htmlMensaje,
+											        confirmButtonText: 'Entendido',
+											        confirmButtonColor: colorBoton
+											    });
+
+											    aplicaDomiTerce = true;
+											} else {
+
+									            console.log(dataTerce.mensaje || 'El pedido no aplica para Rappi Cargo por filtros base.');
+
+									        }
+									    },
+									    error: function(dataErrorTerce) {
+
+									        Swal.fire({
+									            icon: 'error',
+									            title: 'Error',
+									            text: 'Se produjo un error validando Domicilios Tercerizados.',
+									            confirmButtonText: 'Entendido'
+									        });
+
+									        console.log(dataErrorTerce);
+									    }
+									});
                                     //En este punto realizaremos la verficación para consumir el servicio de creación de link de pagos
                                     //Se realizaría una vez se insertó el pedido en el contact center
                                     for(var i = 0; i < formas.length;i++)
@@ -3538,7 +3624,7 @@ function ConfirmarPedido()
 
 									//OJO CAMBIOS PARA EL SERVICIO CON LOS PARÁMETROS Y NO SERÁ AJAX SINO JSON ES DECIR ASINCRONO
                                     //Si el pago no es virtual, el pedido se envia inmediatamente
-                                    if(!pagoEsVirtual)
+                                    if(!pagoEsVirtual && !aplicaDomiTerce)
                                     {
     									$.ajax({ 
     							    				url: urlTienda + 'FinalizarPedidoPixel' , 

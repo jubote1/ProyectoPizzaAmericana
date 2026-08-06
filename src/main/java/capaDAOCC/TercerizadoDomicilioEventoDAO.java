@@ -194,7 +194,8 @@ public class TercerizadoDomicilioEventoDAO {
             String urlSeguimiento,
             String fechaEntrega,
             String fechaCancelacion,
-            String jsonEvento) {
+            String jsonEvento,
+            String resultadoProceso) {
 
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDPrincipal();
@@ -214,7 +215,7 @@ public class TercerizadoDomicilioEventoDAO {
                   + "fecha_cancelacion,"
                   + "json_evento,"
                   + "resultado_proceso"
-                  + ") VALUES (?,?,?,?,?,?,?,?,?,NULL)";
+                  + ") VALUES (?,?,?,?,?,?,?,?,?,?)";
 
             ps = con1.prepareStatement(sql);
 
@@ -244,6 +245,13 @@ public class TercerizadoDomicilioEventoDAO {
             }
 
             ps.setString(9, jsonEvento);
+            
+            if (resultadoProceso == null || resultadoProceso.trim().isEmpty()) {
+                ps.setNull(10, Types.VARCHAR);
+            } else {
+                ps.setString(10, resultadoProceso);
+            }
+           
 
             return ps.executeUpdate() > 0;
 

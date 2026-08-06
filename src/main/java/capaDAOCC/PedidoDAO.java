@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import com.mysql.cj.jdbc.result.ResultSetMetaData;
 
+import capaControladorCC.TercerizadoDomicilioCtrl;
 import capaModeloCC.AlertaEntregaDom;
 import capaModeloCC.Cliente;
 import capaModeloCC.Correo;
@@ -22,6 +23,7 @@ import capaModeloCC.DetallePedido;
 import capaModeloCC.DetallePedidoAdicion;
 import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.DireccionFueraZona;
+import capaModeloCC.DomicilioTercerizado;
 import capaModeloCC.EncuestaGenerica;
 import capaModeloCC.Especialidad;
 import capaModeloCC.Estadistica;
@@ -6324,60 +6326,100 @@ public class PedidoDAO {
 		 * @param idPedido
 		 * @return
 		 */
-		public static boolean consultarAplicabilidadPedidoRAPPICARGO(int idPedido)
-		{
-			Logger logger = Logger.getLogger("log_file");
-			ConexionBaseDatos con = new ConexionBaseDatos();
-			Connection con1 = con.obtenerConexionBDPrincipal();
-			boolean respuesta = false;
-			try
-			{
-				Statement stm = con1.createStatement();
-				// Actualizamos la tabla pedido con el numero pedido pixel y le ponemos estado al pedido = 1, indicando que ya fue enviado a la tienda.
-				String select = " SELECT a.*, c.*, e.* "
-						+ " FROM pedido a "
-						+ " JOIN pedido_forma_pago c ON a.idpedido = c.idpedido "
-						+ " JOIN detalle_pedido e ON a.idpedido = e.idpedido "
-						+ " WHERE a.idpedido = " +  idPedido + " "
-						+ "  AND a.idtienda IN ("
-						+ "      SELECT b.idtienda "
-						+ "      FROM tienda b "
-						+ "      WHERE b.domicilio_tercerizado = 'S'"
-						+ "  )"
-						+ "  AND c.idforma_pago IN ("
-						+ "      SELECT d.idforma_pago "
-						+ "      FROM forma_pago d "
-						+ "      WHERE d.domicilio_tercerizado = 'S'"
-						+ "  )"
-						+ "  AND NOT EXISTS ("
-						+ "      SELECT 1 "
-						+ "      FROM detalle_pedido e2"
-						+ "      JOIN producto f ON e2.idproducto = f.idproducto"
-						+ "      WHERE e2.idpedido = a.idpedido"
-						+ "        AND (f.domicilio_tercerizado <> 'S' OR f.domicilio_tercerizado IS NULL)"
-						+ "  )";
-				logger.info(select);
-				ResultSet rs =stm.executeQuery(select);
-				while(rs.next())
-				{
-					respuesta = true;
-					break;
-				}
-				stm.close();
-				con1.close();
-			}
-			catch (Exception e){
-				logger.error(e.toString());
-				try
-				{
-					con1.close();
-				}catch(Exception e1)
-				{
-				}
-			}
-			return(respuesta);
+		public static org.json.simple.JSONObject consultarAplicabilidadPedidoRAPPICARGO(int idPedido) {
+		    Logger logger = Logger.getLogger("log_file");
+		    ConexionBaseDatos con = new ConexionBaseDatos();
+		    Connection con1 = con.obtenerConexionBDPrincipal();
+
+		    org.json.simple.JSONObject jsonRespuesta = new org.json.simple.JSONObject();
+		    jsonRespuesta.put("resultado", false);
+		    jsonRespuesta.put("validacionDistancia", false);
+		    jsonRespuesta.put("mensaje", "El pedido no cumple las condiciones para Rappi Cargo.");
+
+		    String select =
+		            "SELECT " +
+		            "    b.latitud AS latitud_tienda, " +
+		            "    b.longitud AS longitud_tienda, " +
+		            "    cli.latitud AS latitud_cliente, " +
+		            "    cli.longitud AS longitud_cliente " +
+		            "FROM pedido a " +
+		            "INNER JOIN tienda b ON a.idtienda = b.idtienda " +
+		            "INNER JOIN cliente cli ON a.idcliente = cli.idcliente " +
+		            "WHERE a.idpedido = ? " +
+		            "AND a.idestadopedido = 2 " +
+		            "AND a.enviadopixel = 0 " +
+		            "AND a.fechapedido = CURDATE() " +
+		            "AND b.domicilio_tercerizado = 'S' " +
+		            "AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S' " +
+		            "AND EXISTS ( " +
+		            "    SELECT 1 " +
+		            "    FROM pedido_forma_pago pfp " +
+		            "    INNER JOIN forma_pago fp ON pfp.idforma_pago = fp.idforma_pago " +
+		            "    WHERE pfp.idpedido = a.idpedido " +
+		            "    AND fp.domicilio_tercerizado = 'S' " +
+		            ") " +
+		            "AND NOT EXISTS ( " +
+		            "    SELECT 1 " +
+		            "    FROM detalle_pedido dp " +
+		            "    INNER JOIN producto p ON dp.idproducto = p.idproducto " +
+		            "    WHERE dp.idpedido = a.idpedido " +
+		            "    AND (p.domicilio_tercerizado <> 'S' OR p.domicilio_tercerizado IS NULL) " +
+		            ")";
+
+		    try {
+		        PreparedStatement stm = con1.prepareStatement(select);
+		        stm.setInt(1, idPedido);
+
+		        logger.info(select);
+
+		        ResultSet rs = stm.executeQuery();
+
+		        if (rs.next()) {
+		            double latitudTienda = rs.getDouble("latitud_tienda");
+		            double longitudTienda = rs.getDouble("longitud_tienda");
+		            double latitudCliente = rs.getDouble("latitud_cliente");
+		            double longitudCliente = rs.getDouble("longitud_cliente");
+
+		            org.json.simple.JSONObject validacionDistancia =
+		                    TercerizadoDomicilioCtrl.validarDistanciaRappiCargo(
+		                            latitudTienda,
+		                            longitudTienda,
+		                            latitudCliente,
+		                            longitudCliente
+		                    );
+
+		            logger.info("Validacion distancia Rappi Cargo pedido " + idPedido + ": "
+		                    + validacionDistancia.get("mensaje"));
+
+		            boolean respuesta = Boolean.TRUE.equals(validacionDistancia.get("respuesta"));
+		            
+		            jsonRespuesta.put("validacionDistancia", respuesta);
+		            jsonRespuesta.put("resultado", true);
+		            jsonRespuesta.put("mensaje", validacionDistancia.get("mensaje"));
+		            jsonRespuesta.put("distanciaKm", validacionDistancia.get("distanciaKm"));
+
+		        } else {
+		            jsonRespuesta.put("mensaje", "El pedido no existe o no cumple las condiciones base para Rappi Cargo.");
+		        }
+
+		        rs.close();
+		        stm.close();
+		        con1.close();
+
+		    } catch (Exception e) {
+		        logger.error("Error consultando aplicabilidad de pedido para Rappi Cargo", e);
+		        jsonRespuesta.put("resultado", false);
+		        jsonRespuesta.put("mensaje", "Error consultando aplicabilidad para Rappi Cargo: " + e.getMessage());
+		        jsonRespuesta.put("validacionDistancia", false);
+
+		        try {
+		            con1.close();
+		        } catch (Exception e1) {
+		        }
+		    }
+
+		    return jsonRespuesta;
 		}
-	
 	
 		/**
 		 * Método que retornara los pedidos que al momento aplican para ser llevados por RAPPI CARGO, devuelve un arrayList <Pedidos> con los 
@@ -6413,6 +6455,10 @@ public class PedidoDAO {
 			        "       a.fechapagovirtual, " +
 			        "       a.fechafinalizacion, " +
 			        "       f.idforma_pago, " +
+			        "		b.latitud AS latitud_tienda, " +
+			        "		b.longitud AS longitud_tienda, " +
+			        "		c.latitud AS latitud_cliente, " +
+			        "       c.longitud AS longitud_cliente, " +
 			        "       f.nombre AS forma_pago " +
 			        "FROM pedido a " +
 			        "INNER JOIN tienda b ON a.idtienda = b.idtienda " +
@@ -6474,6 +6520,26 @@ public class PedidoDAO {
 					String formapago =  rs.getString("forma_pago");
 					int idformapago = rs.getInt("idforma_pago");
 					double tiempopedido = rs.getDouble("tiempopedido");
+					
+					double latitudTienda = rs.getDouble("latitud_tienda");
+					double longitudTienda = rs.getDouble("longitud_tienda");
+					double latitudCliente = rs.getDouble("latitud_cliente");
+					double longitudCliente = rs.getDouble("longitud_cliente");
+
+
+				    org.json.simple.JSONObject validacionDistancia = TercerizadoDomicilioCtrl.validarDistanciaRappiCargo(
+				            latitudTienda,
+				            longitudTienda,
+				            latitudCliente,
+				            longitudCliente
+				    );
+				    
+
+		            boolean aplicaRappiCargoDist = Boolean.TRUE.equals(validacionDistancia.get("respuesta"));		          
+		            
+		            System.out.println("distanciaKm: "+ validacionDistancia.get("distanciaKm"));
+				  				    
+	
 
 					String idLink = rs.getString("idlink");
 					if(idLink == null)
@@ -6529,6 +6595,14 @@ public class PedidoDAO {
 							fechaPagoVirtual,
 							fechaFinalizacion
 					);
+					
+					cadaPedido.setAplicaRappiCargoDist(aplicaRappiCargoDist);
+
+					if (!aplicaRappiCargoDist) {
+					    cadaPedido.setMotivoNoAplicaRappiCargo(validacionDistancia.get("mensaje").toString()
+					    );
+					}
+
 
 					consultaPedidos.add(cadaPedido);
 				}
@@ -6555,5 +6629,45 @@ public class PedidoDAO {
 			return consultaPedidos;
 		}
 
+		
+		/**
+		 * Método que permite traer la información de domicilio tercerizado de un pedido
+		 * @param idPedido
+		 * @return
+		 */
+		public static DomicilioTercerizado obtenerInfoDomTercerizadoPedido(int idPedido)
+		{
+			DomicilioTercerizado info = new DomicilioTercerizado();
+			Logger logger = Logger.getLogger("log_file");
+			String domicilioTercerizado = "";
+			String empresaTercerizada = "";
+			ConexionBaseDatos con = new ConexionBaseDatos();
+			Connection con1 = con.obtenerConexionBDPrincipal();
+			try
+			{
+				Statement stm = con1.createStatement();
+				String consulta = "SELECT domicilio_tercerizado, empresa_tercerizada FROM pedido WHERE idpedido= " + idPedido ; 
+				logger.info(consulta);
+				ResultSet rs = stm.executeQuery(consulta);
+				while(rs.next()){
+					domicilioTercerizado = rs.getString("domicilio_tercerizado") != null ? rs.getString("domicilio_tercerizado") : "";
+				    empresaTercerizada = rs.getString("empresa_tercerizada") != null ? rs.getString("empresa_tercerizada") : "";
+				    info  = new DomicilioTercerizado(domicilioTercerizado, empresaTercerizada);
+				}
+		        rs.close();
+				stm.close();
+				con1.close();
+			}
+			catch (Exception e){
+				logger.error(e.toString());
+				try
+				{
+					con1.close();
+				}catch(Exception e1)
+				{
+				}
+			}
+			return(info);
+		}
 
 }

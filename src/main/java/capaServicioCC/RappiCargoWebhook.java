@@ -77,35 +77,54 @@ public class RappiCargoWebhook extends HttpServlet {
         String trackingUrl = getText(json, "tracking_url");
         String deliveredAt = getText(json, "delivered_at");
         String cancelledAt = getText(json, "cancelled_at");
-        
-        long idPedido = Long.parseLong(externalOrderId);
-        
+        long idPedido = 0;
+        String processResult = null;
+
+        try {
+
+            idPedido = Long.parseLong(externalOrderId);
+
+        } catch (NumberFormatException e) {
+
+            try {
+
+                idPedido = Long.parseLong(externalOrderId.split(":")[0]);
+
+            } catch (Exception ex) {
+
+                System.out.println("El external_order_id no tiene formato numérico: " + externalOrderId);
+
+                processResult = "El external_order_id no tiene formato numérico: " + externalOrderId;
+            }
+        }
+
         guardarEventoRappi(
-        		idPedido,
+                idPedido,
                 rappiOrderId,
                 cargoOrderId,
                 state,
                 trackingUrl,
                 deliveredAt,
                 cancelledAt,
-                body
+                body,
+                processResult
         );
-       
         
-        try {
+     // Solo se procesa el pedido si fue posible obtener un id interno válido.
+        if (idPedido != 0) {
+            try {
+                actualizarPedidoSegunEstado(idPedido, state, cargoOrderId);
+            } catch (Exception e) {
+                e.printStackTrace();
 
-            actualizarPedidoSegunEstado(idPedido, state, cargoOrderId);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
-            		idPedido,
-                    false,
-                    "Error procesando webhook: " + e.getMessage());
+                TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
+                        idPedido,
+                        false,
+                        "Error procesando webhook: " + e.getMessage());
+            }
         }
-
+        
+ 
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write("{\"ok\":true}");
     }
@@ -124,7 +143,8 @@ public class RappiCargoWebhook extends HttpServlet {
             String trackingUrl,
             String deliveredAt,
             String cancelledAt,
-            String payloadJson) {
+            String payloadJson,
+            String processResult) {
 
         try {
 
@@ -139,7 +159,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     trackingUrl,
                     deliveredAt,
                     cancelledAt,
-                    payloadJson);
+                    payloadJson,
+                    processResult);
 
         } catch (Exception e) {
             e.printStackTrace();
