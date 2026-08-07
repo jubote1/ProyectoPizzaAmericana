@@ -37,8 +37,10 @@ public class ActualizarClienteDireccion extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		response.setContentType("application/json;charset=UTF-8");
 		Logger logger = Logger.getLogger("log_file");
 		HttpSession sesion = request.getSession();
+		request.setCharacterEncoding("UTF-8");
 		//Final de captura del usuario
         String direccion = request.getParameter("direccion");
         String zona = request.getParameter("zona");

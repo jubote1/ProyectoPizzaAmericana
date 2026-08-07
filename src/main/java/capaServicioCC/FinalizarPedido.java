@@ -31,14 +31,16 @@ public class FinalizarPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como parámetro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
+	 * El servicio recibe como parï¿½metro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
 	 * indica si el cliente fue insertado o por el contrario actualizado, valor de la forma pago del cliente, con los datos
-	 * anteriores se invocará el método de la capa controlador pedido FinalizarPedido.
+	 * anteriores se invocarï¿½ el mï¿½todo de la capa controlador pedido FinalizarPedido.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		response.setContentType("application/json;charset=UTF-8");
 		HttpSession sesion = request.getSession();
+		request.setCharacterEncoding("UTF-8");
 		int idpedido = Integer.parseInt(request.getParameter("idpedido"));
 		int idformapago;
 		int idcliente;

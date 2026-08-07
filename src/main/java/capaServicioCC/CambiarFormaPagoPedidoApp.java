@@ -27,7 +27,8 @@ public class CambiarFormaPagoPedidoApp extends HttpServlet {
             throws ServletException, IOException {
 
         response.addHeader("Access-Control-Allow-Origin", "*");
-
+        response.setContentType("application/json;charset=UTF-8");
+        request.setCharacterEncoding("UTF-8");
         int idPedidoTienda = parseIntSafe(request.getParameter("idpedidotienda"));
         int idTienda = parseIntSafe(request.getParameter("idtienda"));
         String claveUsuario = getParam(request, "claveusuario", "");

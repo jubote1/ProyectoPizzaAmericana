@@ -13,7 +13,7 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el número de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el nï¿½mero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
  */
 @WebServlet("/CancelarPedido")
 public class CancelarPedido extends HttpServlet {
@@ -29,13 +29,15 @@ public class CancelarPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Método GET del Servicio que recibe como parámetroel idpedido del sistema Contact Center y el numPedidoPixel el cual es el 
-	 * número de pedido Pixel que retorno la inserción, se invoca en al capa controlador el método actualizarEstadoNumeroPedidoPixel.
+	 * Mï¿½todo GET del Servicio que recibe como parï¿½metroel idpedido del sistema Contact Center y el numPedidoPixel el cual es el 
+	 * nï¿½mero de pedido Pixel que retorno la inserciï¿½n, se invoca en al capa controlador el mï¿½todo actualizarEstadoNumeroPedidoPixel.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 				response.addHeader("Access-Control-Allow-Origin", "*");
+				response.setContentType("application/json;charset=UTF-8");
 				HttpSession sesion = request.getSession();
+				request.setCharacterEncoding("UTF-8");
 				int idpedido = Integer.parseInt(request.getParameter("idpedido"));
 				PedidoCtrl PedidoCtrl = new PedidoCtrl();
 		        String respuesta = PedidoCtrl.cancelarPedido(idpedido);

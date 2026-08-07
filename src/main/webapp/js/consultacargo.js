@@ -414,8 +414,7 @@ function consultarAplicabilidadRappiCargo() {
 	    }
 
 	    tableAplicabilidadRappi.rows.add(response.datos).draw();
-<
-		
+
 		$('.informacion-rappi').tooltip();
 
 

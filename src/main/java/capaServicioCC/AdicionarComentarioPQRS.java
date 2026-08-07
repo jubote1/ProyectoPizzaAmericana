@@ -39,6 +39,7 @@ public class AdicionarComentarioPQRS extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		response.setContentType("application/json;charset=UTF-8");
 		request.setCharacterEncoding("UTF-8");
 		HttpSession sesion = request.getSession();
 		int PQRS = 0;
