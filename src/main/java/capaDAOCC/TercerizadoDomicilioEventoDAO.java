@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import capaModeloCC.DetallePedido;
 import capaModeloCC.RappiCargoOrden;
 import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
+import capaModeloCC.TercerizadoDomicilioEvento;
 import conexionCC.ConexionBaseDatos;
 
 public class TercerizadoDomicilioEventoDAO {
@@ -427,4 +428,78 @@ public class TercerizadoDomicilioEventoDAO {
 
         return respuesta;
     }
+    
+    
+    /**
+     * Método que se encarga de dado un pedido de tienda, retornar la información de CARGO del pedido en cuestion
+     * @param idPedidoTienda
+     * @param idTienda
+     * @return
+     */
+    public static TercerizadoDomicilioEvento ConsultarInfoRappiCargo(int idPedidoTienda, int idTienda) {
+
+    	TercerizadoDomicilioEvento infoPedidoCargo = null;
+    	int idPedidoContact = 0;
+	    String consulta = "select a.idpedido from pedido a where a.numposheader = ? and a.idtienda = ?";
+	    String consulta2 = "SELECT id_pedido,url_seguimiento, fecha_entrega, fecha_cancelacion FROM tercerizado_domicilio_evento WHERE id_pedido = ? LIMIT 1";
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+
+	    PreparedStatement ps = null;
+	    PreparedStatement ps2 = null;
+	    ResultSet rs = null;
+	    
+	    try {
+
+	        ps = con1.prepareStatement(consulta);
+	        ps.setInt(1, idPedidoTienda);
+	        ps.setInt(2, idTienda);
+	        rs = ps.executeQuery();
+
+	        if (rs.next()) {
+
+	        	idPedidoContact = rs.getInt("idPedido");
+	        }
+	        //Luego de recuperar el pedido vamos a traer la información de rappi cargo
+	        ps2 = con1.prepareStatement(consulta2);
+	        ps2.setInt(1, idPedidoContact);
+	        rs = ps2.executeQuery();
+	        
+	        if(rs.next())
+	        {
+	        	infoPedidoCargo = new TercerizadoDomicilioEvento();
+	        	infoPedidoCargo.setIdPedido(idPedidoContact);
+	        	infoPedidoCargo.setUrlSeguimiento(rs.getString("url_seguimiento"));
+	        	infoPedidoCargo.setFechaCancelacion(rs.getString("fecha_cancelacion"));
+	        	infoPedidoCargo.setFechaEntrega(rs.getString("fecha_entrega"));
+	        	
+	        }
+
+	    } catch (Exception e) {
+
+	        e.printStackTrace();
+
+	    } finally {
+
+	        try {
+	            if (rs != null)
+	                rs.close();
+	        } catch (Exception e) {
+	        }
+
+	        try {
+	            if (ps != null)
+	                ps.close();
+	        } catch (Exception e) {
+	        }
+
+	        try {
+	            if (con1 != null)
+	                con1.close();
+	        } catch (Exception e) {
+	        }
+	    }
+
+	    return infoPedidoCargo;
+	}
 }
