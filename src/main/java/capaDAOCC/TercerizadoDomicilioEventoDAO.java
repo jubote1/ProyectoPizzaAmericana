@@ -122,8 +122,16 @@ public class TercerizadoDomicilioEventoDAO {
 	            orden.setPhoneCountryCode("57");
 
 	            String email = rs.getString("email");
-	            if (email == null ) {
-	                email = "";
+
+	            if (email == null || email.trim().isEmpty()) {
+
+	                String emailDefault = ParametrosDAO.retornarValorAlfanumerico("CORREO_DEFAULT_RAPPI_CARGO");
+
+	                if (emailDefault != null && !emailDefault.trim().isEmpty()) {
+	                    email = emailDefault;
+	                } else {
+	                    email = "";
+	                }
 	            }
 
 	            orden.setEmail(email);
