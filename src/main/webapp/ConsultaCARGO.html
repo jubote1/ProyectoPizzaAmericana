@@ -17,6 +17,7 @@
 		  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
 		  <meta http-equiv="pragma" content="no-cache">
 		  <meta http-equiv="expires" content="0">
+		  <link rel="icon" href="images/favicon-pz.ico" type="image/x-icon">
 
 	</head>
 	<body>
@@ -41,8 +42,27 @@
 				</div>
 			</header>
 
+			<!-- ================= PESTAÑAS ================= -->
+			<nav class="rc-tabs" role="tablist">
+				<ul class="nav nav-tabs">
+					<li class="active">
+						<a href="#tab-pedidos" data-toggle="tab">
+							<i class="fas fa-clipboard-list"></i> Pedidos actuales
+						</a>
+					</li>
+					<li>
+						<a href="#tab-enviados-tienda" data-toggle="tab">
+							<i class="fas fa-store"></i> Enviados a tienda
+						</a>
+					</li>
+				</ul>
+			</nav>
+
+			<div class="tab-content rc-tab-content">
+				<div class="tab-pane active" id="tab-pedidos">
+
 			<!-- ================= FILTROS ================= -->
-			<section class="card">
+			<section class="card-info">
 				<div class="card-head">
 					<h2><i class="fas fa-filter"></i> Información filtro pedidos plataformas domicilios</h2>
 				</div>
@@ -122,7 +142,7 @@
 			<div class="cols">
 
 				<!-- Cliente del Pedido -->
-				<section class="card">
+				<section class="card-info">
 					<div class="card-head card-header-collapse" data-toggle="collapse" data-target="#collapseCliente">
 						<h2><i class="fas fa-user"></i> Cliente del Pedido</h2>
 						<i class="fas fa-chevron-down"></i>
@@ -168,7 +188,7 @@
 				</section>
 
 				<!-- Información del Pedido -->
-				<section class="card">
+				<section class="card-info">
 					<div class="card-head card-header-collapse" data-toggle="collapse" data-target="#collapseDetallePedido">
 						<h2><i class="fas fa-info-circle"></i> Información Detallada del Pedido</h2>
 						<i class="fas fa-chevron-down"></i>
@@ -274,6 +294,39 @@
 				</div>
 			</section>
 
+				</div>
+
+				<div class="tab-pane" id="tab-enviados-tienda">
+					<section class="card">
+						<div class="card-head">
+							<h2><i class="fas fa-shipping-fast"></i> Pedidos enviados a tienda aplicables para Rappi Cargo</h2>
+						</div>
+						<div class="table-wrap table-wrap-padded">
+							<table id="grid-enviados-tienda-rappicargo" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+								<thead>
+									<tr>
+										<th data-column-id="idpedido">Id Pedido</th>
+										<th data-column-id="idordencomercio">Id Orden</th>
+										<th data-column-id="tienda">Tienda</th>
+										<th data-column-id="fechainsercion">Fecha/hora Tomado</th>
+										<th data-column-id="cliente">Cliente</th>
+										<th data-column-id="direccion">Dirección</th>
+										<th data-column-id="telefono">Teléfono</th>
+										<th data-column-id="totalneto">Total Neto</th>
+										<th data-column-id="estadopedido">Estado Pedido</th>
+										<th data-column-id="estadoenviotienda">Estado Envío Tienda</th>
+										<th data-column-id="numposheader">#Pedido Tienda</th>
+										<th data-column-id="formapago">Forma Pago</th>
+										<th data-column-id="tiempopedido">Tiempo Pedido</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</div>
+
 		</main>
 
 		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -286,7 +339,18 @@
 			$("#fechainicial").datepicker('setDate', new Date());
 			$("#fechafinal").datepicker($.datepicker.regional["es"]);
 			$("#fechafinal").datepicker('setDate', new Date());
+
+			$(".rc-tabs a[data-toggle='tab']").on("click", function(e) {
+				e.preventDefault();
+
+				$(".rc-tabs li").removeClass("active");
+				$(this).parent("li").addClass("active");
+
+				$(".rc-tab-content .tab-pane").removeClass("active");
+				$($(this).attr("href")).addClass("active");
+			});
 		</script>
 	</body>
 
 </html>
+

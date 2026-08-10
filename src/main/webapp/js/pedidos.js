@@ -3480,9 +3480,50 @@ function ConfirmarPedido()
 									    url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido,
 									    dataType: 'json',
 									    async: false,
-									    success: function(dataTerce) {
+									    success: function(dataTerce) {								
 
 											if (dataTerce.resultado) {
+												
+												var esPagoVirtual =
+												    Number(dataTerce.idformapago) === 4 ||
+												    (
+												        dataTerce.formapago &&
+												        dataTerce.formapago.trim().toLowerCase() === "pago virtual"
+												    );
+
+												var pagoConfirmado = !!(
+													    dataTerce.fechapagovirtual &&
+													    dataTerce.fechapagovirtual.toString().trim() !== ""
+													);
+
+												if (esPagoVirtual && !pagoConfirmado) {
+
+												    aplicaDomiTerce = true;
+
+												    Swal.fire({
+												        icon: 'info',
+												        title: 'Pedido pendiente de pago',
+												        html: `
+												            <div style="
+												                margin-top:10px;
+												                text-align:left;
+												                font-size:15px;">
+
+												                Este pedido <b>cumple las condiciones para Domicilio Tercerizado</b>,
+												                pero su forma de pago es <b>Pago Virtual</b> y el pago aún no ha sido confirmado.
+
+												                <br><br>
+
+												                <b>Una vez se confirme el pago, el pedido podrá enviarse a Rappi Cargo.</b>
+
+												            </div>
+												        `,
+												        confirmButtonText: 'Entendido',
+												        confirmButtonColor: '#2563eb'
+												    });
+
+												    return;
+												}
 
 											    var esAdvertencia = !dataTerce.validacionDistancia;
 

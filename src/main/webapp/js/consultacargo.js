@@ -1229,74 +1229,108 @@ function validarFechaPedido()
 // Agregar despues de inicializar tableAplicabilidadRappi en consultacargo.js.
 
 $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
+
     var datospedido = tableAplicabilidadRappi.row(this).data();
+
     if (!datospedido) {
         return;
     }
 
-	
-	var advertencia = "";
-	
-	var titulo = datospedido.aplicaRappiCargoDist
-	    ? '¿Crear orden en Rappi Cargo?'
-	    : 'Pedido con advertencia';
-		
-	if (!datospedido.aplicaRappiCargoDist) {
+    // Validar pedidos con Pago Virtual sin confirmar
+	const esPagoVirtual =
+	    Number(datospedido.idformapago) === 4 ||
+	    (
+	        datospedido.formapago &&
+	        datospedido.formapago.trim().toLowerCase() === "pago virtual"
+	    );
 
-	    advertencia = `
-	        <div class="advertencia" >
+	const pagoConfirmado = !!(
+	    datospedido.fechapagovirtual &&
+	    datospedido.fechapagovirtual.toString().trim() !== ""
+	);
 
-	            <i class="fa fa-exclamation-triangle"></i>
-	            <b> Advertencia</b>
+    if (esPagoVirtual && !pagoConfirmado) {
 
-	            <br><br>
+        Swal.fire({
+            icon: 'info',
+            title: 'Pago pendiente de confirmación',
+            html: `
+                <div style="text-align:left">
+                    Este pedido <b>sí aplica para Rappi Cargo</b>, pero su forma de pago es
+                    <b>Pago Virtual</b> y aún no se ha registrado la confirmación del pago.
+                    <br><br>
+                    <b>No es posible crear la orden en Rappi Cargo hasta que el pago sea confirmado.</b>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#2563eb'
+        });
 
-	            ${datospedido.motivoNoAplicaRappiCargo}
+        return;
+    }
 
-	            <br><br>
+    var advertencia = "";
 
-	            <b>Si decide continuar, el sistema intentará crear la orden en Rappi Cargo aun cuando el pedido no cumple con la validación de distancia.</b>
+    var titulo = datospedido.aplicaRappiCargoDist
+        ? '¿Crear orden en Rappi Cargo?'
+        : 'Pedido con advertencia';
 
-	        </div>
-	    `;
-	}
+    if (!datospedido.aplicaRappiCargoDist) {
 
-	Swal.fire({
-	    icon: datospedido.aplicaRappiCargoDist ? 'question' : 'warning',
-	    title: titulo,
+        advertencia = `
+            <div class="advertencia">
 
-		html: `
-		<div class="rappi-info">
-		    <div><b>Pedido:</b> ${datospedido.idpedido}</div>
-		    <div><b>Cliente:</b> ${datospedido.cliente}</div>
-		    <div><b>Tienda:</b> ${datospedido.tienda}</div>
-		    <div><b>Dirección:</b> ${datospedido.direccion}</div>
-		    <div><b>Total:</b> $${Number(datospedido.totalneto).toLocaleString('es-CO')}</div>
-		    <div><b>Forma pago:</b> ${datospedido.formapago}</div>
-		</div>
+                <i class="fa fa-exclamation-triangle"></i>
+                <b> Advertencia</b>
 
-		${advertencia}
-		`,
-	    showCancelButton: true,
-		confirmButtonText: datospedido.aplicaRappiCargoDist
-		    ? 'Crear orden'
-		    : 'Crear de todas formas',
-	    cancelButtonText: 'Cancelar',
-	    confirmButtonColor: '#2563eb',
-	    cancelButtonColor: '#6b7280',
-	    reverseButtons: true,
-	    customClass: {
-	        popup: 'rappi-popup',
-	        icon: 'rappi-icon',
-	        title: 'rappi-title',
-	        actions: 'rappi-actions'
-	    }
+                <br><br>
 
-	}).then((result) => {
-	    if (result.isConfirmed) {
-	        crearOrdenRappiCargo(datospedido.idpedido);
-	    }
-	});
+                ${datospedido.motivoNoAplicaRappiCargo}
+
+                <br><br>
+
+                <b>Si decide continuar, el sistema intentará crear la orden en Rappi Cargo aun cuando el pedido no cumple con la validación de distancia.</b>
+
+            </div>
+        `;
+    }
+
+    Swal.fire({
+        icon: datospedido.aplicaRappiCargoDist ? 'question' : 'warning',
+        title: titulo,
+        html: `
+            <div class="rappi-info">
+                <div><b>Pedido:</b> ${datospedido.idpedido}</div>
+                <div><b>Cliente:</b> ${datospedido.cliente}</div>
+                <div><b>Tienda:</b> ${datospedido.tienda}</div>
+                <div><b>Dirección:</b> ${datospedido.direccion}</div>
+                <div><b>Total:</b> $${Number(datospedido.totalneto).toLocaleString('es-CO')}</div>
+                <div><b>Forma pago:</b> ${datospedido.formapago}</div>
+            </div>
+
+            ${advertencia}
+        `,
+        showCancelButton: true,
+        confirmButtonText: datospedido.aplicaRappiCargoDist
+            ? 'Crear orden'
+            : 'Crear de todas formas',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        customClass: {
+            popup: 'rappi-popup',
+            icon: 'rappi-icon',
+            title: 'rappi-title',
+            actions: 'rappi-actions'
+        }
+
+    }).then((result) => {
+        if (result.isConfirmed) {
+            crearOrdenRappiCargo(datospedido.idpedido);
+        }
+    });
+
 });
 
 function crearOrdenRappiCargo(idpedido) {
