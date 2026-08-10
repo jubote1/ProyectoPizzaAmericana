@@ -209,98 +209,105 @@ public class TercerizadoDomicilioEventoDAO {
 
 	    return orden;
 	}
-    public static boolean guardarEvento(
-            long idPedido,
-            String proveedor,
-            String idPedidoProveedor,
-            String idPedidoLogistico,
-            String estado,
-            String urlSeguimiento,
-            String fechaEntrega,
-            String fechaCancelacion,
-            String jsonEvento,
-            String resultadoProceso) {
+	public static Long guardarEvento(
+	        long idPedido,
+	        String proveedor,
+	        String idPedidoProveedor,
+	        String idPedidoLogistico,
+	        String estado,
+	        String urlSeguimiento,
+	        String fechaEntrega,
+	        String fechaCancelacion,
+	        String jsonEvento,
+	        String resultadoProceso) {
 
-        ConexionBaseDatos con = new ConexionBaseDatos();
-        Connection con1 = con.obtenerConexionBDPrincipal();
-        PreparedStatement ps = null;
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    PreparedStatement ps = null;
+	    ResultSet rs = null;
 
-        try {
+	    try {
 
-            String sql =
-                    "INSERT INTO tercerizado_domicilio_evento ("
-                  + "id_pedido,"
-                  + "proveedor,"
-                  + "id_pedido_proveedor,"
-                  + "id_pedido_logistico,"
-                  + "estado,"
-                  + "url_seguimiento,"
-                  + "fecha_entrega,"
-                  + "fecha_cancelacion,"
-                  + "json_evento,"
-                  + "resultado_proceso"
-                  + ") VALUES (?,?,?,?,?,?,?,?,?,?)";
+	        String sql =
+	                "INSERT INTO tercerizado_domicilio_evento ("
+	              + "id_pedido,"
+	              + "proveedor,"
+	              + "id_pedido_proveedor,"
+	              + "id_pedido_logistico,"
+	              + "estado,"
+	              + "url_seguimiento,"
+	              + "fecha_entrega,"
+	              + "fecha_cancelacion,"
+	              + "json_evento,"
+	              + "resultado_proceso"
+	              + ") VALUES (?,?,?,?,?,?,?,?,?,?)";
 
-            ps = con1.prepareStatement(sql);
+	        ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
-            ps.setLong(1, idPedido);
-            ps.setString(2, proveedor);
-            ps.setString(3, idPedidoProveedor);
-            ps.setString(4, idPedidoLogistico);
-            ps.setString(5, estado);
-            ps.setString(6, urlSeguimiento);
+	        ps.setLong(1, idPedido);
+	        ps.setString(2, proveedor);
+	        ps.setString(3, idPedidoProveedor);
+	        ps.setString(4, idPedidoLogistico);
+	        ps.setString(5, estado);
+	        ps.setString(6, urlSeguimiento);
 
-            // Fecha de entrega
-            Timestamp tsEntrega = convertirTimestamp(fechaEntrega);
+	        // Fecha de entrega
+	        Timestamp tsEntrega = convertirTimestamp(fechaEntrega);
 
-            if (tsEntrega == null) {
-                ps.setNull(7, Types.TIMESTAMP);
-            } else {
-                ps.setTimestamp(7, tsEntrega);
-            }
+	        if (tsEntrega == null) {
+	            ps.setNull(7, Types.TIMESTAMP);
+	        } else {
+	            ps.setTimestamp(7, tsEntrega);
+	        }
 
-            // Fecha de cancelación
-            Timestamp tsCancelacion = convertirTimestamp(fechaCancelacion);
+	        // Fecha de cancelación
+	        Timestamp tsCancelacion = convertirTimestamp(fechaCancelacion);
 
-            if (tsCancelacion == null) {
-                ps.setNull(8, Types.TIMESTAMP);
-            } else {
-                ps.setTimestamp(8, tsCancelacion);
-            }
+	        if (tsCancelacion == null) {
+	            ps.setNull(8, Types.TIMESTAMP);
+	        } else {
+	            ps.setTimestamp(8, tsCancelacion);
+	        }
 
-            ps.setString(9, jsonEvento);
-            
-            if (resultadoProceso == null || resultadoProceso.trim().isEmpty()) {
-                ps.setNull(10, Types.VARCHAR);
-            } else {
-                ps.setString(10, resultadoProceso);
-            }
-           
+	        ps.setString(9, jsonEvento);
 
-            return ps.executeUpdate() > 0;
+	        if (resultadoProceso == null || resultadoProceso.trim().isEmpty()) {
+	            ps.setNull(10, Types.VARCHAR);
+	        } else {
+	            ps.setString(10, resultadoProceso);
+	        }
 
-        } catch (Exception e) {
+	        int filas = ps.executeUpdate();
 
-            e.printStackTrace();
-            return false;
+	        if (filas > 0) {
+	            rs = ps.getGeneratedKeys();
+	            if (rs.next()) {
+	                return rs.getLong(1); // id_evento generado
+	            }
+	        }
 
-        } finally {
+	        return null;
 
-            try {
-                if (ps != null) {
-                    ps.close();
-                }
-            } catch (Exception ignored) {
-            }
+	    } catch (Exception e) {
 
-            try {
-                if (con1 != null) {
-                    con1.close();
-                }
-            } catch (Exception ignored) {
-            }
-        }
-    }
+	        e.printStackTrace();
+	        return null;
+
+	    } finally {
+
+	        try {
+	            if (rs != null) rs.close();
+	        } catch (Exception ignored) {}
+
+	        try {
+	            if (ps != null) ps.close();
+	        } catch (Exception ignored) {}
+
+	        try {
+	            if (con1 != null) con1.close();
+	        } catch (Exception ignored) {}
+	    }
+	}
 
     /**
      * Convierte diferentes formatos de fecha a Timestamp.
@@ -347,7 +354,14 @@ public class TercerizadoDomicilioEventoDAO {
     public static boolean actualizarResultadoProcesoPorPedido(
             long idPedido,
             boolean procesado,
-            String mensaje) {
+            String mensaje,
+            Long idEvento
+          ) {
+    	
+    	
+    	if (idEvento == null) {
+    	    return false;
+    	}
 
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDPrincipal();
@@ -359,13 +373,14 @@ public class TercerizadoDomicilioEventoDAO {
                     "UPDATE tercerizado_domicilio_evento " +
                     "SET procesado = ?, " +
                     "resultado_proceso = ? " +
-                    "WHERE id_pedido = ?";
+                    "WHERE id_pedido = ? AND id_evento = ?";
 
             ps = con1.prepareStatement(sql);
 
             ps.setInt(1, procesado ? 1 : 0);
             ps.setString(2, mensaje);
             ps.setLong(3, idPedido);
+            ps.setLong(4, idEvento);
 
             return ps.executeUpdate() > 0;
 

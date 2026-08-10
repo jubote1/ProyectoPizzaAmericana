@@ -6336,35 +6336,41 @@ public class PedidoDAO {
 		    jsonRespuesta.put("validacionDistancia", false);
 		    jsonRespuesta.put("mensaje", "El pedido no cumple las condiciones para Rappi Cargo.");
 
-		    String select =
-		            "SELECT " +
-		            "    b.latitud AS latitud_tienda, " +
-		            "    b.longitud AS longitud_tienda, " +
-		            "    cli.latitud AS latitud_cliente, " +
-		            "    cli.longitud AS longitud_cliente " +
-		            "FROM pedido a " +
-		            "INNER JOIN tienda b ON a.idtienda = b.idtienda " +
-		            "INNER JOIN cliente cli ON a.idcliente = cli.idcliente " +
-		            "WHERE a.idpedido = ? " +
-		            "AND a.idestadopedido = 2 " +
-		            "AND a.enviadopixel = 0 " +
-		            "AND a.fechapedido = CURDATE() " +
-		            "AND b.domicilio_tercerizado = 'S' " +
-		            "AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S' " +
-		            "AND EXISTS ( " +
-		            "    SELECT 1 " +
-		            "    FROM pedido_forma_pago pfp " +
-		            "    INNER JOIN forma_pago fp ON pfp.idforma_pago = fp.idforma_pago " +
-		            "    WHERE pfp.idpedido = a.idpedido " +
-		            "    AND fp.domicilio_tercerizado = 'S' " +
-		            ") " +
-		            "AND NOT EXISTS ( " +
-		            "    SELECT 1 " +
-		            "    FROM detalle_pedido dp " +
-		            "    INNER JOIN producto p ON dp.idproducto = p.idproducto " +
-		            "    WHERE dp.idpedido = a.idpedido " +
-		            "    AND (p.domicilio_tercerizado <> 'S' OR p.domicilio_tercerizado IS NULL) " +
-		            ")";
+		    String select = """ 
+						SELECT
+						    b.latitud AS latitud_tienda,
+						    b.longitud AS longitud_tienda,
+						    cli.latitud AS latitud_cliente,
+						    cli.longitud AS longitud_cliente,
+						    a.fechapagovirtual,
+						    fp.idforma_pago,
+						    fp.nombre AS formapago
+						FROM pedido a
+						INNER JOIN tienda b
+						    ON a.idtienda = b.idtienda
+						INNER JOIN cliente cli
+						    ON a.idcliente = cli.idcliente
+						INNER JOIN pedido_forma_pago pfp
+						    ON pfp.idpedido = a.idpedido
+						INNER JOIN forma_pago fp
+						    ON fp.idforma_pago = pfp.idforma_pago
+						WHERE a.idpedido = ?
+						AND a.idestadopedido = 2
+						AND a.enviadopixel = 0
+						AND a.fechapedido = CURDATE()
+						AND b.domicilio_tercerizado = 'S'
+						AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S'
+						AND fp.domicilio_tercerizado = 'S'
+						AND NOT EXISTS (
+						    SELECT 1
+						    FROM detalle_pedido dp
+						    INNER JOIN producto p
+						        ON dp.idproducto = p.idproducto
+						    WHERE dp.idpedido = a.idpedido
+						      AND (p.domicilio_tercerizado <> 'S'
+						           OR p.domicilio_tercerizado IS NULL)
+						);
+		    		""";
 
 		    try {
 		        PreparedStatement stm = con1.prepareStatement(select);
@@ -6379,6 +6385,15 @@ public class PedidoDAO {
 		            double longitudTienda = rs.getDouble("longitud_tienda");
 		            double latitudCliente = rs.getDouble("latitud_cliente");
 		            double longitudCliente = rs.getDouble("longitud_cliente");
+					String fechaPagoVirtual = rs.getString("fechapagovirtual");
+					int idformapago =  rs.getInt("idforma_pago");
+				    String formapago =  rs.getString("formapago");
+					
+					
+					if(fechaPagoVirtual == null)
+					{
+						fechaPagoVirtual = "";
+					}
 
 		            org.json.simple.JSONObject validacionDistancia =
 		                    TercerizadoDomicilioCtrl.validarDistanciaRappiCargo(
@@ -6397,6 +6412,9 @@ public class PedidoDAO {
 		            jsonRespuesta.put("resultado", true);
 		            jsonRespuesta.put("mensaje", validacionDistancia.get("mensaje"));
 		            jsonRespuesta.put("distanciaKm", validacionDistancia.get("distanciaKm"));
+		            jsonRespuesta.put("fechapagovirtual",fechaPagoVirtual);
+		            jsonRespuesta.put("idformapago",idformapago);
+		            jsonRespuesta.put("formapago",formapago);
 
 		        } else {
 		            jsonRespuesta.put("mensaje", "El pedido no existe o no cumple las condiciones base para Rappi Cargo.");

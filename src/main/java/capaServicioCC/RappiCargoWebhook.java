@@ -98,7 +98,7 @@ public class RappiCargoWebhook extends HttpServlet {
             }
         }
 
-        guardarEventoRappi(
+        Long idEvento = guardarEventoRappi(
                 idPedido,
                 rappiOrderId,
                 cargoOrderId,
@@ -113,14 +113,14 @@ public class RappiCargoWebhook extends HttpServlet {
      // Solo se procesa el pedido si fue posible obtener un id interno válido.
         if (idPedido != 0) {
             try {
-                actualizarPedidoSegunEstado(idPedido, state, cargoOrderId);
+                actualizarPedidoSegunEstado(idPedido, state, cargoOrderId,idEvento);
             } catch (Exception e) {
                 e.printStackTrace();
 
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         idPedido,
                         false,
-                        "Error procesando webhook: " + e.getMessage());
+                        "Error procesando webhook: " + e.getMessage(),idEvento);
             }
         }
         
@@ -135,7 +135,7 @@ public class RappiCargoWebhook extends HttpServlet {
                 : null;
     }
 
-    private void guardarEventoRappi(
+    private Long  guardarEventoRappi(
             long idPedido,
             String rappiOrderId,
             String cargoOrderId,
@@ -146,11 +146,14 @@ public class RappiCargoWebhook extends HttpServlet {
             String payloadJson,
             String processResult) {
 
+    	
+    	Long idEvento = null;
         try {
+        
 
           
 
-            TercerizadoDomicilioEventoDAO.guardarEvento(
+        idEvento = TercerizadoDomicilioEventoDAO.guardarEvento(
                     idPedido,
                     "RAPPICARGO",
                     cargoOrderId,
@@ -165,15 +168,17 @@ public class RappiCargoWebhook extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
+        return  idEvento;
     }
 
-    private void actualizarPedidoSegunEstado(long externalOrderId, String state, String cargoOrderId) {
+    private void actualizarPedidoSegunEstado(long externalOrderId, String state, String cargoOrderId,Long idEvento) {
 
         if (state == null) {
             TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                     externalOrderId,
                     false,
-                    "El webhook llegó sin estado.");
+                    "El webhook llegó sin estado.",idEvento);
             return;
         }
 
@@ -191,7 +196,8 @@ public class RappiCargoWebhook extends HttpServlet {
             TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                     externalOrderId,
                     false,
-                    mensaje);
+                    mensaje,
+                    idEvento);
 
             return;
         }
@@ -210,7 +216,8 @@ public class RappiCargoWebhook extends HttpServlet {
             TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                     externalOrderId,
                     false,
-                    mensaje);
+                    mensaje,
+                    idEvento);
 
             return;
         }
@@ -222,7 +229,8 @@ public class RappiCargoWebhook extends HttpServlet {
             TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                     externalOrderId,
                     false,
-                    "No se encontró la tienda asociada al pedido.");
+                    "No se encontró la tienda asociada al pedido.",
+                    idEvento);
 
             return;
         }
@@ -235,6 +243,9 @@ public class RappiCargoWebhook extends HttpServlet {
         switch (state) {
 
             case "created":
+            case "scheduled":
+            case "finding_courier":
+            case "in_progress":
 
                 Pedido pedido = PedidoDAO.ConsultaPedido((int) externalOrderId);
 
@@ -243,7 +254,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
                             false,
-                            "No existe el pedido interno.");
+                            "No existe el pedido interno.",
+                            idEvento);
 
                     break;
                 }
@@ -263,7 +275,8 @@ public class RappiCargoWebhook extends HttpServlet {
                             externalOrderId,
                             false,
                             "El pedido ya tiene asociado otro idOrdenComercio. Actual: "
-                                    + idActual + ", recibido: " + idCargo);
+                                    + idActual + ", recibido: " + idCargo,
+                                    idEvento);
 
                     break;
                 }
@@ -271,13 +284,11 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "OK");
+                        "OK",
+                        idEvento);
 
                 break;
-
-            case "scheduled":
-            case "finding_courier":
-            case "in_progress":
+                
             case "in_store":
             case "arrive":
             case "pending_review":
@@ -286,7 +297,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "OK");
+                        "OK",
+                        idEvento);
 
                 break;
 
@@ -323,7 +335,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
                             false,
-                            "Error consumiendo DarSalidaDomicilioPlataforma: " + e.getMessage());
+                            "Error consumiendo DarSalidaDomicilioPlataforma: " + e.getMessage(),
+                            idEvento);
 
                     break;
                 }
@@ -333,7 +346,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
                             false,
-                            "El servicio DarSalidaDomicilioPlataforma respondió vacío.");
+                            "El servicio DarSalidaDomicilioPlataforma respondió vacío.",
+                            idEvento);
 
                     break;
                 }
@@ -341,7 +355,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "OK");
+                        "OK",
+                        idEvento);
 
                 break;
 
@@ -380,7 +395,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
                             false,
-                            "Error consumiendo DarEntregaDomicilio: " + e.getMessage());
+                            "Error consumiendo DarEntregaDomicilio: " + e.getMessage(),
+                            idEvento);
 
                     break;
                 }
@@ -390,7 +406,8 @@ public class RappiCargoWebhook extends HttpServlet {
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
                             false,
-                            "El servicio DarEntregaDomicilio respondió vacío.");
+                            "El servicio DarEntregaDomicilio respondió vacío.",
+                            idEvento);
 
                     break;
                 }
@@ -398,7 +415,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "OK");
+                        "OK",
+                        idEvento);
 
                 break;
 
@@ -444,7 +462,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "OK");
+                        "OK",
+                        idEvento);
 
                 break;
 
@@ -455,7 +474,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         true,
-                        "Webhook procesado correctamente. El pedido finalizó con un estado excepcional: " + state);
+                        "Webhook procesado correctamente. El pedido finalizó con un estado excepcional: " + state,
+                        idEvento);
 
                 break;
 
@@ -464,7 +484,8 @@ public class RappiCargoWebhook extends HttpServlet {
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         externalOrderId,
                         false,
-                        "Estado no soportado recibido desde RappiCargo: " + state);
+                        "Estado no soportado recibido desde RappiCargo: " + state,
+                        idEvento);
 
                 break;
         }

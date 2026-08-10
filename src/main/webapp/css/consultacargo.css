@@ -190,6 +190,56 @@ body {
 	color: #fff;
 }
 
+/* ===== Tabs ===== */
+.rc-tabs {
+	margin-bottom: 20px;
+}
+
+.rc-tabs .nav-tabs {
+	border-bottom: 1px solid var(--rc-line);
+}
+
+.rc-tabs .nav-tabs>li>a {
+	border: 1px solid transparent;
+	border-radius: 10px 10px 0 0;
+	color: var(--rc-ink-soft);
+	font-size: 13px;
+	font-weight: 700;
+	padding: 12px 18px;
+}
+
+.rc-tabs .nav-tabs>li>a i {
+	color: var(--rc-red);
+	margin-right: 8px;
+}
+
+.rc-tabs .nav-tabs>li.active>a,
+.rc-tabs .nav-tabs>li.active>a:focus,
+.rc-tabs .nav-tabs>li.active>a:hover {
+	background: #fff;
+	color: var(--rc-ink);
+}
+
+.rc-tabs .nav-tabs>li.active>a i,
+.rc-tabs .nav-tabs>li.active>a:focus i,
+.rc-tabs .nav-tabs>li.active>a:hover i {
+	color: var(--rc-red);
+}
+
+.rc-tabs .nav-tabs>li>a:hover {
+	background: #fff7f6;
+	border-color: var(--rc-line-soft);
+	color: var(--rc-ink);
+}
+
+.rc-tab-content {
+	padding-top: 2px;
+}
+
+.table-wrap-padded {
+	padding: 0 20px 20px;
+}
+
 /* ===== Cards ===== */
 .card {
 	background: var(--rc-card);
@@ -199,6 +249,15 @@ body {
 	box-shadow: 0 1px 3px rgba(20, 20, 30, .04);
 	overflow: hidden;
 	padding-right:15px;
+}
+
+.card-info{
+	background: var(--rc-card);
+	border: 1px solid var(--rc-line);
+	border-radius: var(--radius);
+	margin-bottom: 20px;
+	box-shadow: 0 1px 3px rgba(20, 20, 30, .04);
+	overflow: hidden;
 }
 
 .card-head {
