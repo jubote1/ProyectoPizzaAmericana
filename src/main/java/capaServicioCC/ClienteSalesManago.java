@@ -32,6 +32,7 @@ public class ClienteSalesManago extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
 		//	HttpSession sesion = request.getSession();
+			request.setCharacterEncoding("UTF-8");
 	        String nombres = request.getParameter("nombres");
 	        String apellidos = request.getParameter("apellidos");
 	        String direccion = request.getParameter("direccion");
@@ -47,7 +48,7 @@ public class ClienteSalesManago extends HttpServlet {
 	        cliente.setEmail(email);
 	        
 			response.addHeader("Access-Control-Allow-Origin", "*");
-			response.setContentType("application/json");
+			response.setContentType("application/json;charset=UTF-8");
 			PedidoCtrl pedCtrl = new PedidoCtrl();
 			String respuesta = pedCtrl.ClienteSalesManago(cliente,isAdd);
 			PrintWriter out = response.getWriter();

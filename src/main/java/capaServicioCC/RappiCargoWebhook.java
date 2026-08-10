@@ -117,11 +117,13 @@ public class RappiCargoWebhook extends HttpServlet {
             } catch (Exception e) {
                 e.printStackTrace();
 
+
                 TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                         idPedido,
                         false,
                         "Error procesando webhook: " + e.getMessage(),idEvento);
             }
+
         }
         
  
@@ -300,6 +302,7 @@ public class RappiCargoWebhook extends HttpServlet {
                         "OK",
                         idEvento);
 
+
                 break;
 
             case "on_the_route":
@@ -331,6 +334,7 @@ public class RappiCargoWebhook extends HttpServlet {
                     PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
 
                 } catch (Exception e) {
+
 
                     TercerizadoDomicilioEventoDAO.actualizarResultadoProcesoPorPedido(
                             externalOrderId,
