@@ -15,14 +15,14 @@ import capaControladorCC.PedidoCtrl;
 /**
  * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el n�mero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
  */
-@WebServlet("/CancelarPedido")
-public class CancelarPedido extends HttpServlet {
+@WebServlet("/ConsultarInfoRappiCargo")
+public class ConsultarInfoRappiCargo extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public CancelarPedido() {
+    public ConsultarInfoRappiCargo() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -38,9 +38,10 @@ public class CancelarPedido extends HttpServlet {
 				response.setContentType("application/json;charset=UTF-8");
 				HttpSession sesion = request.getSession();
 				request.setCharacterEncoding("UTF-8");
-				int idpedido = Integer.parseInt(request.getParameter("idpedido"));
+				int idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
+				int idTienda = Integer.parseInt(request.getParameter("idtienda"));
 				PedidoCtrl PedidoCtrl = new PedidoCtrl();
-		        String respuesta = PedidoCtrl.cancelarPedido(idpedido);
+		        String respuesta = PedidoCtrl.consultarInfoRappiCargo(idPedidoTienda, idTienda);
 		        System.out.println(respuesta);
 		        PrintWriter out = response.getWriter();
 				out.write(respuesta);
