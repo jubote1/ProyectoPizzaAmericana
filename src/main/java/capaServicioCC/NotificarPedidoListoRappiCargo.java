@@ -25,24 +25,33 @@ public class NotificarPedidoListoRappiCargo extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        String idPedidoParam = request.getParameter("idPedido");
+        String idPedidoParam = request.getParameter("idPedidoTienda");
+        String idTiendaParam = request.getParameter("idTienda");
 
         if (idPedidoParam == null || idPedidoParam.trim().isEmpty()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            response.getWriter().write("{\"ok\":false,\"message\":\"idPedido es obligatorio\"}");
+            response.getWriter().write("{\"exito\":false,\"message\":\"idPedido es obligatorio\"}");
+            return;
+        }
+        
+        
+        if (idTiendaParam == null || idTiendaParam.trim().isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"exito\":false,\"message\":\"idTienda es obligatorio\"}");
             return;
         }
 
         try {
 
-            long idPedido = Long.parseLong(idPedidoParam);
+            int idPedidoTienda = Integer.parseInt(idPedidoParam);
+            int idTienda = Integer.parseInt(idTiendaParam);
 
             RespuestaRappiCargo respuestaRappi =
-                    TercerizadoDomicilioCtrl.notificarPedidoListo(idPedido);
+                    TercerizadoDomicilioCtrl.notificarPedidoListo(idPedidoTienda, idTienda);
 
             JSONObject json = new JSONObject();
 
-            json.put("ok", respuestaRappi.isExito());
+            json.put("exito", respuestaRappi.isExito());
             json.put("httpStatus", respuestaRappi.getHttpStatus());
             json.put("mensaje", respuestaRappi.getMensaje());
             json.put("respuestaRappi", respuestaRappi.getBody());
@@ -54,12 +63,22 @@ public class NotificarPedidoListoRappiCargo extends HttpServlet {
 
             response.getWriter().write(json.toJSONString());
 
+        } catch (NumberFormatException e) {
+
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write(
+                "{\"exito\":false,"
+                + "\"message\":\"idPedidoTienda='" + idPedidoParam
+                + "', idTienda='" + idTiendaParam
+                + "' no son valores numéricos válidos.\"}"
+            );
+
         } catch (Exception e) {
 
             e.printStackTrace();
 
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write("{\"ok\":false,\"message\":\"" + e.getMessage() + "\"}");
+            response.getWriter().write("{\"exito\":false,\"message\":\"" + e.getMessage() + "\"}");
         }
     }
 }

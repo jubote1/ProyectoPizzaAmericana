@@ -29,6 +29,7 @@ import capaModeloCC.Parametro;
 import capaModeloCC.RappiCargoOrden;
 import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
 import capaModeloCC.RespuestaRappiCargo;
+import capaModeloCC.TercerizadoDomicilioEvento;
 public class TercerizadoDomicilioCtrl {
 	
 	// Numero fijo usado para calcular distancias con latitud y longitud.
@@ -697,19 +698,29 @@ public class TercerizadoDomicilioCtrl {
 	}
 
 	
-	public static RespuestaRappiCargo notificarPedidoListo(long idPedido) {
+	public static RespuestaRappiCargo notificarPedidoListo(int idPedidoTienda , int idTienda) {
 
 	    RespuestaRappiCargo respuesta = new RespuestaRappiCargo();
 
 	    try {
 
-	        String rappiOrderId =
-	                TercerizadoDomicilioEventoDAO.consultarRappiOrderId(idPedido);
-
+	    	TercerizadoDomicilioEvento tercerizadoDomicilioEvento = TercerizadoDomicilioEventoDAO.ConsultarInfoRappiCargo(idPedidoTienda ,idTienda);
+            
+	    	if (tercerizadoDomicilioEvento == null) {
+	    	    respuesta.setExito(false);
+	    	    respuesta.setMensaje(
+	    	    	    "No se encontró información de Rappi Cargo para el pedido "
+	    	    	    + idPedidoTienda + " de la tienda " + idTienda + ".");
+	    	    return respuesta;
+	    	}
+	    	
+	    	String rappiOrderId = tercerizadoDomicilioEvento.getIdPedidoLogistico();
+	    	
 	        if (rappiOrderId == null || rappiOrderId.trim().isEmpty()) {
 
 	            respuesta.setExito(false);
-	            respuesta.setMensaje("El pedido no tiene rappi_order_id.");
+	            respuesta.setMensaje(
+	            	    "El pedido " + idPedidoTienda + " no tiene rappi_order_id asociado.");
 
 	            return respuesta;
 	        }
@@ -814,7 +825,8 @@ public class TercerizadoDomicilioCtrl {
 	        e.printStackTrace();
 
 	        respuesta.setExito(false);
-	        respuesta.setMensaje("ERROR: " + e.getMessage());
+	        respuesta.setMensaje(
+	        	    "Error notificando pedido listo a Rappi Cargo: " + e.getMessage());
 	    }
 
 	    return respuesta;

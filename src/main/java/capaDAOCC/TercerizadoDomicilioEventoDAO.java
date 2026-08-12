@@ -453,30 +453,69 @@ public class TercerizadoDomicilioEventoDAO {
     }
     
     
-    public static String consultarRappiOrderId(long idPedido) {
+    public static TercerizadoDomicilioEvento ConsultarInfoRappiCargo(int idPedidoTienda, int idTienda) {
+
+        TercerizadoDomicilioEvento infoPedidoCargo = null;
+        int idPedidoContact = 0;
+
+        String consulta =
+                "SELECT a.idpedido " +
+                "FROM pedido a " +
+                "WHERE a.numposheader = ? " +
+                "AND a.idtienda = ?";
+
+        String consulta2 =
+                "SELECT id_pedido, " +
+                "       id_pedido_logistico, " +
+                "       url_seguimiento, " +
+                "       fecha_entrega, " +
+                "       fecha_cancelacion " +
+                "FROM tercerizado_domicilio_evento " +
+                "WHERE id_pedido = ? " +
+                "ORDER BY id_evento DESC " +
+                "LIMIT 1";
 
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDPrincipal();
 
         PreparedStatement ps = null;
-        ResultSet rs = null;
+        PreparedStatement ps2 = null;
+
+        ResultSet rsPedido = null;
+        ResultSet rsEvento = null;
 
         try {
 
-            String sql =
-                    "SELECT id_pedido_logistico " +
-                    "FROM tercerizado_domicilio_evento " +
-                    "WHERE id_pedido = ? " +
-                    "ORDER BY id_evento DESC " +
-                    "LIMIT 1";
+            // Buscar el id del pedido interno
+            ps = con1.prepareStatement(consulta);
+            ps.setInt(1, idPedidoTienda);
+            ps.setInt(2, idTienda);
 
-            ps = con1.prepareStatement(sql);
-            ps.setLong(1, idPedido);
+            rsPedido = ps.executeQuery();
 
-            rs = ps.executeQuery();
+            if (rsPedido.next()) {
+                idPedidoContact = rsPedido.getInt("idpedido");
+            }
 
-            if (rs.next()) {
-                return rs.getString("id_pedido_logistico");
+            if (idPedidoContact == 0) {
+                return null;
+            }
+
+            // Buscar el último evento de Rappi Cargo
+            ps2 = con1.prepareStatement(consulta2);
+            ps2.setInt(1, idPedidoContact);
+
+            rsEvento = ps2.executeQuery();
+
+            if (rsEvento.next()) {
+
+                infoPedidoCargo = new TercerizadoDomicilioEvento();
+
+                infoPedidoCargo.setIdPedido(rsEvento.getInt("id_pedido"));
+                infoPedidoCargo.setIdPedidoLogistico(rsEvento.getString("id_pedido_logistico"));
+                infoPedidoCargo.setUrlSeguimiento(rsEvento.getString("url_seguimiento"));
+                infoPedidoCargo.setFechaEntrega(rsEvento.getString("fecha_entrega"));
+                infoPedidoCargo.setFechaCancelacion(rsEvento.getString("fecha_cancelacion"));
             }
 
         } catch (Exception e) {
@@ -486,8 +525,14 @@ public class TercerizadoDomicilioEventoDAO {
         } finally {
 
             try {
-                if (rs != null)
-                    rs.close();
+                if (rsPedido != null)
+                    rsPedido.close();
+            } catch (Exception e) {
+            }
+
+            try {
+                if (rsEvento != null)
+                    rsEvento.close();
             } catch (Exception e) {
             }
 
@@ -498,13 +543,19 @@ public class TercerizadoDomicilioEventoDAO {
             }
 
             try {
+                if (ps2 != null)
+                    ps2.close();
+            } catch (Exception e) {
+            }
+
+            try {
                 if (con1 != null)
                     con1.close();
             } catch (Exception e) {
             }
         }
 
-        return null;
+        return infoPedidoCargo;
     }
 
     /**
