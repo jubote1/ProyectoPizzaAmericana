@@ -104,6 +104,7 @@ import capaDAOCC.SolicitudCumpleImagenesDAO;
 import capaDAOCC.SolicitudFacturaDAO;
 import capaDAOCC.SolicitudFacturaImagenesDAO;
 import capaDAOCC.SolicitudPQRSDAO;
+import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaDAOCC.TiempoPedidoDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
@@ -162,6 +163,7 @@ import capaModeloCC.SolicitudFactura;
 import capaModeloCC.SolicitudFacturaImagenes;
 import capaModeloCC.SolicitudImagenes;
 import capaModeloCC.SolicitudPQRSImagenes;
+import capaModeloCC.TercerizadoDomicilioEvento;
 import capaModeloCC.TiempoPedido;
 import capaModeloCC.Tienda;
 import capaModeloCC.Ubicacion;
@@ -12923,8 +12925,10 @@ public class PedidoCtrl {
             cadaPedidoJSON.put("horaprogramado", cadaPedido.getHoraProgramado());
             cadaPedidoJSON.put("idtipopedido", cadaPedido.getIdTipoPedido());
             cadaPedidoJSON.put("usuarioreenvio", cadaPedido.getUsuarioReenvio());
+
             cadaPedidoJSON.put("aplicaRappiCargoDist", cadaPedido.isAplicaRappiCargoDist());
             cadaPedidoJSON.put("motivoNoAplicaRappiCargo", cadaPedido.getMotivoNoAplicaRappiCargo());
+
 
             listJSON.add(cadaPedidoJSON);
         }
@@ -12933,7 +12937,6 @@ public class PedidoCtrl {
     }
 
 
-    
     /**
      * Método que retornará un JSON indicando con booleano si al pedido pasado como parámetro cumple las condiciones para RAPPICARGO
      * @param idPedido
@@ -12946,5 +12949,20 @@ public class PedidoCtrl {
     	return(respuestaJSON.toJSONString());
 	}
 
+    /**
+     * Método que retorna la información de RAPPI CARGO dado un pedido tienda y su tienda
+     * @param idPedidoTienda
+     * @param idTienda
+     * @return
+     */
+	public  String consultarInfoRappiCargo(int idPedidoTienda, int idTienda) {
+		JSONObject respuesta = new JSONObject();
+		TercerizadoDomicilioEvento infoPedido = TercerizadoDomicilioEventoDAO.ConsultarInfoRappiCargo(idPedidoTienda, idTienda);
+		respuesta.put("idpedido", infoPedido.getIdPedido());
+		respuesta.put("urlseguimiento", infoPedido.getUrlSeguimiento());
+		respuesta.put("fechaentrega", infoPedido.getFechaEntrega());
+		respuesta.put("fechacancelacion", infoPedido.getFechaCancelacion());
+		return(respuesta.toJSONString());
+	}
 
 }

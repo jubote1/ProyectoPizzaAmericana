@@ -6,6 +6,7 @@ public class TercerizadoDomicilioEvento {
 	private String urlSeguimiento;
 	private String fechaEntrega;
 	private String fechaCancelacion;
+
 	private String idPedidoLogistico;
 
 	public String getIdPedidoLogistico() {
@@ -15,6 +16,7 @@ public class TercerizadoDomicilioEvento {
 	public void setIdPedidoLogistico(String idPedidoLogistico) {
 	    this.idPedidoLogistico = idPedidoLogistico;
 	}
+
 	public int getIdPedido() {
 		return idPedido;
 	}
@@ -43,4 +45,6 @@ public class TercerizadoDomicilioEvento {
 		super();
 	}
 	
+
 }
+

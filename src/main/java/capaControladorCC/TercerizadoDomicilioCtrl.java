@@ -24,6 +24,7 @@ import capaDAOCC.ParametrosDAO;
 import capaDAOCC.PedidoDAO;
 import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaModeloCC.DetallePedido;
+
 import capaModeloCC.Parametro;
 import capaModeloCC.RappiCargoOrden;
 import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
@@ -695,6 +696,7 @@ public class TercerizadoDomicilioCtrl {
 	            && longitud >= -180 && longitud <= 180
 	            && !(latitud == 0 && longitud == 0);
 	}
+
 	
 	public static RespuestaRappiCargo notificarPedidoListo(int idPedidoTienda , int idTienda) {
 
@@ -829,4 +831,5 @@ public class TercerizadoDomicilioCtrl {
 
 	    return respuesta;
 	}
+
 }

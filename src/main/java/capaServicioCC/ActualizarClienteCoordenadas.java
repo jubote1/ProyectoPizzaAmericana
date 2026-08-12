@@ -34,7 +34,7 @@ public class ActualizarClienteCoordenadas extends HttpServlet {
 
 		Logger logger = Logger.getLogger("log_file");
 		HttpSession sesion = request.getSession();
-
+		request.setCharacterEncoding("UTF-8");
 		float latitud;
 		float longitud;
 		int idCliente;
