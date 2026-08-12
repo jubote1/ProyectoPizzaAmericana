@@ -696,4 +696,128 @@ public class TercerizadoDomicilioCtrl {
 	            && !(latitud == 0 && longitud == 0);
 	}
 
+	
+	public static RespuestaRappiCargo notificarPedidoListo(long idPedido) {
+
+	    RespuestaRappiCargo respuesta = new RespuestaRappiCargo();
+
+	    try {
+
+	        String rappiOrderId =
+	                TercerizadoDomicilioEventoDAO.consultarRappiOrderId(idPedido);
+
+	        if (rappiOrderId == null || rappiOrderId.trim().isEmpty()) {
+
+	            respuesta.setExito(false);
+	            respuesta.setMensaje("El pedido no tiene rappi_order_id.");
+
+	            return respuesta;
+	        }
+
+	        String urlService =
+	                ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_URL_SERVICE");
+
+	        String token =
+	                ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_TOKEN");
+
+	        if (urlService == null || urlService.trim().isEmpty()) {
+
+	            respuesta.setExito(false);
+	            respuesta.setMensaje("No está configurado RP_CARGO_URL_SERVICE");
+
+	            return respuesta;
+	        }
+
+	        if (token == null || token.trim().isEmpty()) {
+
+	            respuesta.setExito(false);
+	            respuesta.setMensaje("No está configurado RP_CARGO_TOKEN");
+
+	            return respuesta;
+	        }
+
+	        String urlReady = urlService.endsWith("/")
+	                ? urlService + "v3/order-ready/" + rappiOrderId
+	                : urlService + "/v3/order-ready/" + rappiOrderId;
+
+	        HttpPost request = new HttpPost(urlReady);
+
+	        request.setHeader("user-token", token);
+	        request.setHeader("Content-Type", "application/json");
+
+	        HttpClient client =
+	                HttpClientBuilder.create().build();
+
+	        HttpResponse response =
+	                client.execute(request);
+
+	        int status =
+	                response.getStatusLine().getStatusCode();
+
+	        StringBuilder retorno = new StringBuilder();
+
+	        if (response.getEntity() != null) {
+
+	            BufferedReader rd =
+	                    new BufferedReader(
+	                            new InputStreamReader(
+	                                    response.getEntity().getContent()));
+
+	            String line;
+
+	            while ((line = rd.readLine()) != null) {
+	                retorno.append(line);
+	            }
+
+	            rd.close();
+	        }
+
+	        respuesta.setHttpStatus(status);
+	        respuesta.setBody(retorno.toString());
+
+	        if (status >= 200 && status < 300) {
+
+	            respuesta.setExito(true);
+	            respuesta.setMensaje("Pedido notificado correctamente.");
+
+	        } else {
+
+	            respuesta.setExito(false);
+
+	            try {
+
+	                ObjectMapper mapper = new ObjectMapper();
+
+	                JsonNode error =
+	                        mapper.readTree(retorno.toString());
+
+	                if (error.has("message")) {
+
+	                    respuesta.setMensaje(
+	                            error.get("message").asText());
+
+	                } else {
+
+	                    respuesta.setMensaje("HTTP " + status);
+	                }
+
+	            } catch (Exception e) {
+
+	                respuesta.setMensaje(
+	                        "HTTP " + status + " "
+	                                + response.getStatusLine().getReasonPhrase());
+	            }
+	        }
+
+	    } catch (Exception e) {
+
+	        e.printStackTrace();
+
+	        respuesta.setExito(false);
+	        respuesta.setMensaje("ERROR: " + e.getMessage());
+	    }
+
+	    return respuesta;
+	}
+
 }

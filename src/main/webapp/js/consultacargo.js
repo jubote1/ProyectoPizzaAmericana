@@ -30,6 +30,8 @@ var idMarcacionSel = 0;
 
 
 $(document).ready(function() {
+	
+	
 
 	// Obtener la URL base de tu proyecto "ProyectoPizzaAmericana"
 	const loc = window.location;
@@ -324,7 +326,7 @@ $(document).ready(function() {
         //Obtenemos las marcaciones del Pedido
         $.getJSON(server + 'ObtenerMarcacionesPedido?idpedido=' + idPedido, function(data2){
 	                		var respuesta = data2;
-	                		var str = '<h1>Marcaciones Pedido</h1>';
+	                		var str = '<h5 style="font-weight:bold; color:#1f2937; text-align:center; margin-bottom:15px;">Marcaciones Pedido</h5>';
         					str += '<table class="table table-bordered">';
 							str += '<tbody>';
 	                		for(var i = 0; i < respuesta.length;i++)
@@ -729,6 +731,36 @@ function geocodeResult(results, status) {
     }
 }
 
+function limpiarDetallePedido()
+{
+	idPedido = 0;
+	idOrdenComercio = 0;
+	idTienda = 0;
+	fechaPedido = "";
+	tienda = "";
+	idCliente = 0;
+	idEstadoPedido = 0;
+	longitud = 0;
+	latitud = 0;
+	urlTienda = "";
+	idformapago = 0;
+	totalpedido = "";
+	valorformapago = "";
+	stringPixel = "";
+	idMarcacionSel = 0;
+
+	$('#telefono, #telcelular, #email, #nombres, #direccion, #municipio, #zona, #tienda, #observacionDir, #observacionVirtual').val('');
+	$('#NumPedido, #Cliente, #estadopedido, #estadotienda, #numpedidotienda, #totalpedido, #valorpago, #valordevolver, #formapago, #valorformapago, #descuento, #idlink, #fechafinalizacion, #fechapagovirtual, #linkparapago').val('');
+	$('#estadotienda').css('background-color', '');
+	$('#marcacionesPedido').empty();
+
+	$('#aceptarPedidoPlat, #reenviarPedido, #marcarPedido, #cancelarPedido, #reenviarNotificacion, #recrearLink').attr('disabled', true);
+
+	if ($.fn.dataTable.isDataTable('#grid-detallepedido')) {
+		$('#grid-detallepedido').DataTable().clear().draw();
+	}
+}
+
 function consultarPedido() 
 {
 	var fechaini = $("#fechainicial").val();
@@ -772,6 +804,9 @@ function consultarPedido()
 	{
 		tienda = 'TODAS';
 	}
+	
+	limpiarDetallePedido();
+
 
 	if ($.fn.dataTable.isDataTable('#grid-encabezadopedido')) {
     		table = $('#grid-encabezadopedido').DataTable();
@@ -1459,5 +1494,7 @@ function crearOrdenRappiCargo(idpedido) {
         }
 
     });
+	
+
 
 }

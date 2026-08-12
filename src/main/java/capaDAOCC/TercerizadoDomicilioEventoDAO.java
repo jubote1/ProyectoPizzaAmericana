@@ -453,6 +453,60 @@ public class TercerizadoDomicilioEventoDAO {
     }
     
     
+    public static String consultarRappiOrderId(long idPedido) {
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal();
+
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+
+            String sql =
+                    "SELECT id_pedido_logistico " +
+                    "FROM tercerizado_domicilio_evento " +
+                    "WHERE id_pedido = ? " +
+                    "ORDER BY id_evento DESC " +
+                    "LIMIT 1";
+
+            ps = con1.prepareStatement(sql);
+            ps.setLong(1, idPedido);
+
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("id_pedido_logistico");
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        } finally {
+
+            try {
+                if (rs != null)
+                    rs.close();
+            } catch (Exception e) {
+            }
+
+            try {
+                if (ps != null)
+                    ps.close();
+            } catch (Exception e) {
+            }
+
+            try {
+                if (con1 != null)
+                    con1.close();
+            } catch (Exception e) {
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Método que se encarga de dado un pedido de tienda, retornar la información de CARGO del pedido en cuestion
      * @param idPedidoTienda
@@ -525,4 +579,5 @@ public class TercerizadoDomicilioEventoDAO {
 
 	    return infoPedidoCargo;
 	}
+
 }
