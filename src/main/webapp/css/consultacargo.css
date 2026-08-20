@@ -710,3 +710,51 @@ table.dataTable.no-footer {
 
 }
 
+
+#grid-enviados-tienda-rappicargo tr.pedido-tercerizado-cargo td {
+    background-color: #faf5ff !important;
+    color: #4a044e;
+    font-weight: 600;
+    border-top-color: #f3e8ff;
+    border-bottom-color: #f3e8ff;
+}
+
+#grid-enviados-tienda-rappicargo tr.pedido-tercerizado-cargo td:first-child {
+    border-left: 4px solid #c084fc;
+}
+
+#grid-enviados-tienda-rappicargo tr.pedido-tercerizado-cargo:hover td {
+    background-color: #f3e8ff !important;
+}
+.filtros-candidatos-cargo {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 18px 36px 24px;
+    border-top: 1px solid #edf0f5;
+}
+
+.campo-filtro-cargo {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.campo-filtro-cargo label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.campo-filtro-cargo select {
+    width: 190px;
+    height: 42px;
+    border: 1px solid #dfe3eb;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 13px;
+    background: #ffffff;
+    color: #111827;
+    outline: none;
+}
+

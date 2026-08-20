@@ -6325,13 +6325,69 @@ public class PedidoDAO {
 		 * Método que dado un pedido, valida si al mismo le aplica o no las condiciones para ser un pedido de RAPPI CARGO
 		 * @param idPedido
 		 * @return
+		 * @throws SQLException 
 		 */
+		
 		public static org.json.simple.JSONObject consultarAplicabilidadPedidoRAPPICARGO(int idPedido) {
+		    return consultarAplicabilidadPedidoRAPPICARGO(idPedido, 0 , 0);
+		}
+		
+		
+		public static org.json.simple.JSONObject consultarAplicabilidadPedidoRAPPICARGO(
+		        int idPedido,
+		        int numposheader, int idtienda
+		)  {
+			
 		    Logger logger = Logger.getLogger("log_file");
+			org.json.simple.JSONObject jsonRespuesta = new org.json.simple.JSONObject();
+			
 		    ConexionBaseDatos con = new ConexionBaseDatos();
 		    Connection con1 = con.obtenerConexionBDPrincipal();
+		    
+		    try {
 
-		    org.json.simple.JSONObject jsonRespuesta = new org.json.simple.JSONObject();
+		    PreparedStatement ps = null;
+		    ResultSet rs = null;
+		   
+		    
+		    String filtroEnviadoPixel = " AND a.enviadopixel = 0 ";
+		    
+	        if (numposheader != 0) {
+
+	            String consultaIdPedido =
+	                    "SELECT idpedido " +
+	                    "FROM pedido " +
+	                    "WHERE numposheader = ? " +
+	                    "AND idtienda = ?";
+
+	            ps = con1.prepareStatement(consultaIdPedido);
+
+	            ps.setInt(1, numposheader);
+	            ps.setInt(2, idtienda);
+
+	            rs = ps.executeQuery();
+
+	            if (rs.next()) {
+
+	                idPedido = rs.getInt("idpedido");
+
+	            } else {
+
+	                // No se encontró el pedido
+	                return null;
+	            }
+
+	            rs.close();
+	            ps.close();
+
+	            rs = null;
+	            ps = null;
+	            
+			    filtroEnviadoPixel = " AND a.enviadopixel > 0 ";
+	        }
+	        
+
+		 
 		    jsonRespuesta.put("resultado", false);
 		    jsonRespuesta.put("validacionDistancia", false);
 		    jsonRespuesta.put("mensaje", "El pedido no cumple las condiciones para Rappi Cargo.");
@@ -6356,7 +6412,9 @@ public class PedidoDAO {
 						    ON fp.idforma_pago = pfp.idforma_pago
 						WHERE a.idpedido = ?
 						AND a.idestadopedido = 2
-						AND a.enviadopixel = 0
+						""" +
+						filtroEnviadoPixel +
+						"""
 						AND a.fechapedido = CURDATE()
 						AND b.domicilio_tercerizado = 'S'
 						AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S'
@@ -6372,13 +6430,13 @@ public class PedidoDAO {
 						);
 		    		""";
 
-		    try {
-		        PreparedStatement stm = con1.prepareStatement(select);
-		        stm.setInt(1, idPedido);
+	
+		        ps = con1.prepareStatement(select);
+		        ps.setInt(1, idPedido);
 
 		        logger.info(select);
 
-		        ResultSet rs = stm.executeQuery();
+		        rs = ps.executeQuery();
 
 		        if (rs.next()) {
 		            double latitudTienda = rs.getDouble("latitud_tienda");
@@ -6421,7 +6479,7 @@ public class PedidoDAO {
 		        }
 
 		        rs.close();
-		        stm.close();
+		        ps.close();
 		        con1.close();
 
 		    } catch (Exception e) {

@@ -6,7 +6,15 @@ public class TercerizadoDomicilioEvento {
 	private String urlSeguimiento;
 	private String fechaEntrega;
 	private String fechaCancelacion;
+	int canceladoInterno ;
 
+	public int getCanceladoInterno() {
+		return canceladoInterno;
+	}
+
+	public void setCanceladoInterno(int canceladoInterno) {
+		this.canceladoInterno = canceladoInterno;
+	}
 	private String idPedidoLogistico;
 
 	public String getIdPedidoLogistico() {

@@ -1,308 +1,120 @@
 <!DOCTYPE html>
 <html lang="es">
-	<head>
-		<title>Gestión de Pedidos - Rappi Cargo</title>
-		<meta charset="utf-8" />
-		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
-		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
-		  <!-- FontAwesome para íconos -->
-		  <link href="css/all.min.css" rel="stylesheet" type="text/css" />
-		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
-		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
-		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
-		  <link rel="stylesheet" href="css/jquery-confirm.min.css">
-		  <link rel="stylesheet" href="css/consultacargo.css">
+<head>
+<title>Gestión de Pedidos - Rappi Cargo</title>
+<meta charset="utf-8" />
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css"
+	href="css/jquery.dataTables.min.css">
+<!-- FontAwesome para íconos -->
+<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" charset="utf8"
+	src="js/jquery.dataTables.js"></script>
+<link rel="stylesheet" href="css/jquery-confirm.min.css">
+<link rel="stylesheet" href="css/consultacargo.css">
 
-		  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
-		  <meta http-equiv="pragma" content="no-cache">
-		  <meta http-equiv="expires" content="0">
-		  <link rel="icon" href="images/favicon-pz.ico" type="image/x-icon">
+<meta http-equiv="cache-control"
+	content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<link rel="icon" href="images/favicon-pz.ico" type="image/x-icon">
 
-	</head>
-	<body>
-		<audio id="notificationSound" src="img/tono.mpeg"></audio>
-		<div id="cargarMenu"></div>
+</head>
+<body>
+	<audio id="notificationSound" src="img/tono.mpeg"></audio>
+	<div id="cargarMenu"></div>
 
-		<main class="layout">
+	<main class="layout">
 
-			<!-- ================= TOPBAR ================= -->
-			<header class="topbar">
-				<div class="brand">
-					<span class="logo">RC</span>
-					<div class="brand-txt">
-						<h1><i class="fas fa-motorcycle"></i> Módulo de Domicilios · Rappi Cargo</h1>
-						<p>Panel de control y consulta de pedidos en tiempo real</p>
+		<!-- ================= TOPBAR ================= -->
+		<header class="topbar">
+			<div class="brand">
+				<span class="logo">RC</span>
+				<div class="brand-txt">
+					<h1>
+						<i class="fas fa-motorcycle"></i> Módulo de Domicilios · Rappi
+						Cargo
+					</h1>
+					<p>Panel de control y consulta de pedidos en tiempo real</p>
 
-					</div>
 				</div>
-				<div class="user-chip">
-					<span class="dot"></span>
-					<span>Usuario en sesión: <b id="usuariologin"></b></span>
-				</div>
-			</header>
-
-			<!-- ================= PESTAÑAS ================= -->
-			<nav class="rc-tabs" role="tablist">
-				<ul class="nav nav-tabs">
-					<li class="active">
-						<a href="#tab-pedidos" data-toggle="tab">
-							<i class="fas fa-clipboard-list"></i> Pedidos actuales
-						</a>
-					</li>
-					<li>
-						<a href="#tab-enviados-tienda" data-toggle="tab">
-							<i class="fas fa-store"></i> Enviados a tienda
-						</a>
-					</li>
-				</ul>
-			</nav>
-
-			<div class="tab-content rc-tab-content">
-				<div class="tab-pane active" id="tab-pedidos">
-
-			<!-- ================= FILTROS ================= -->
-			<section class="card-info">
-				<div class="card-head">
-					<h2><i class="fas fa-filter"></i> Información filtro pedidos plataformas domicilios</h2>
-				</div>
-				<form>
-					<div class="filtros-grid">
-						<label class="field"><span>Fecha Inicial</span>
-							<input type="text" id="fechainicial" name="fechainicial" placeholder="Fecha Inicial">
-						</label>
-						<label class="field"><span>Fecha Final</span>
-							<input type="text" id="fechafinal" name="fechafinal" placeholder="Fecha Final">
-						</label>
-						<label class="field"><span>Tienda</span>
-							<select id="selectTiendas"></select>
-						</label>
-						<label class="field"><span>Estado pedido</span>
-							<select id="selectEstado">
-								<option value="0" id="0" selected>SELECCIONE...</option>
-								<option value="2" id="2">FINALIZADO</option>
-								<option value="1" id="1">EN CURSO</option>
-								<option value="4" id="4">CANCELADO</option>
-							</select>
-						</label>
-						<label class="field wide"><span>Estado Envio Tienda</span>
-							<select id="selectEstadoTienda">
-								<option value="-1" id="-1" selected>SELECCIONE...</option>
-								<option value="0" id="0">PENDIENTE TIENDA</option>
-								<option value="1" id="1">ENVIADO A TIENDA</option>
-								<option value="2" id="2">PENDIENTE PAGO VIRTUAL</option>
-							</select>
-						</label>
-						<div class="field field-action">
-							<span>&nbsp;</span>
-							<button type="button" class="btn btn-primary" onclick="consultarPedido()"><i class="fas fa-search"></i> Consultar Pedidos</button>
-						</div>
-					</div>
-				</form>
-			</section>
-
-			<!-- ================= LISTADO PRINCIPAL ================= -->
-			<section class="card">
-				<div class="card-head">
-					<h2><i class="fas fa-list-alt"></i> Listado de Pedidos para RAPPI CARGO</h2>
-				</div>
-				<div class="table-wrap tall">
-					<div class="table-scroll-inner">
-					<table id="grid-encabezadopedido" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-						<thead>
-							<tr>
-								<th data-column-id="idpedido">Id Pedido</th>
-								<th data-column-id="idordencomercio">Id Orden</th>
-								<th data-column-id="tienda">Tienda</th>
-								<th data-column-id="fechainsercion">Fecha/hora Tomado</th>
-								<th data-column-id="cliente">Cliente</th>
-								<th data-column-id="direccion">Direccion</th>
-								<th data-column-id="telefono">Teléfono</th>
-								<th data-column-id="totalneto">Total Neto</th>
-								<th data-column-id="estadopedido">Estado Pedido</th>
-								<th data-column-id="usuariopedido">Usuario</th>
-								<th data-column-id="numposheader">#Pedido Tienda</th>
-								<th data-column-id="enviadopixel">Estado Tienda</th>
-								<th data-column-id="estadoenviotienda">Estado Pedido Tienda</th>
-								<th data-column-id="formapago">Forma Pago</th>
-								<th data-column-id="tiempopedido">Tiempo Pedido</th>
-								<th data-column-id="aceptadorappi">Aceptado</th>
-								<th data-column-id="idtienda">ID Tienda</th>
-								<th data-column-id="urltienda">URL Tienda</th>
-								<th data-column-id="stringpixel">String Pixel</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
-				</div>
-					</div>
-			</section>
-
-			<!-- ================= DETALLE: 2 COLUMNAS ================= -->
-			<div class="cols">
-
-				<!-- Cliente del Pedido -->
-				<section class="card-info">
-					<div class="card-head card-header-collapse" data-toggle="collapse" data-target="#collapseCliente">
-						<h2><i class="fas fa-user"></i> Cliente del Pedido</h2>
-						<i class="fas fa-chevron-down"></i>
-					</div>
-					<div id="collapseCliente" class="collapse">
-						<form>
-							<div class="card-body form-grid">
-								<label class="field"><span>Teléfono</span>
-									<span id="encTelefono"><input type="text" id="telefono" name="telefono" placeholder="Telefono" disabled></span>
-								</label>
-								<label class="field"><span>Teléfono Celular</span>
-									<span id="encTelefono"><input type="text" id="telcelular" name="telcelular" placeholder="Telefono Celular" disabled></span>
-								</label>
-								<label class="field"><span>Correo Electrónico</span>
-									<span id="encTelefono"><input type="text" id="email" name="email" placeholder="Correo Electrónico" disabled></span>
-								</label>
-								<label class="field"><span>Nombres</span>
-									<span id="encNombres"><input type="text" id="nombres" name="nombres" placeholder="Nombres" disabled></span>
-								</label>
-								<label class="field wide"><span>Dirección</span>
-									<span id="encDireccion">
-										<div class="input-group">
-											<input type="text" id="direccion" name="direccion" placeholder="Direccion" disabled>
-											<input type="text" id="municipio" name="municipio" placeholder="Municipio" disabled>
-										</div>
-									</span>
-								</label>
-								<label class="field"><span>Zona</span>
-									<span id="encZona"><input type="text" id="zona" name="zona" placeholder="Zona" disabled></span>
-								</label>
-								<label class="field"><span>Tienda</span>
-									<input type="text" id="tienda" name="tienda" placeholder="Tienda" disabled>
-								</label>
-								<label class="field wide"><span>Observacion</span>
-									<span id="encObservacion"><input type="text" id="observacionDir" name="observacionDir" placeholder="Observacion" disabled></span>
-								</label>
-								<label class="field wide"><span>Observación Virtual</span>
-									<textarea id="observacionVirtual" name="observacionVirtual" rows="3" disabled></textarea>
-								</label>
-							</div>
-						</form>
-					</div>
-				</section>
-
-				<!-- Información del Pedido -->
-				<section class="card-info">
-					<div class="card-head card-header-collapse" data-toggle="collapse" data-target="#collapseDetallePedido">
-						<h2><i class="fas fa-info-circle"></i> Información Detallada del Pedido</h2>
-						<i class="fas fa-chevron-down"></i>
-					</div>
-					<div id="collapseDetallePedido" class="collapse">
-						<div class="card-body form-grid dense">
-							<label class="field"><span>Número de Pedido</span><input type="text" id="NumPedido" placeholder="Número de pedido" disabled></label>
-							<label class="field"><span>Nombre Cliente</span><input type="text" id="Cliente" placeholder="Cliente" disabled></label>
-							<label class="field"><span>Estado del Pedido</span><input type="text" id="estadopedido" placeholder="Estado del Pedido" disabled></label>
-							<label class="field"><span>Enviado a Sistema Tienda</span><input type="text" id="estadotienda" placeholder="Estado Envío Tienda" disabled></label>
-							<label class="field"><span>Número Pedido Tienda</span><input type="text" id="numpedidotienda" placeholder="Número Pedido Tienda" disabled></label>
-							<label class="field"><span>Valor Total del Pedido</span><input type="text" id="totalpedido" placeholder="Valor total del Pedido" disabled></label>
-							<label class="field"><span>Valor de Pago</span><input type="text" id="valorpago" placeholder="Valor de pago del cliente" disabled></label>
-							<label class="field"><span>Valor a Devolver</span><input type="text" id="valordevolver" placeholder="Valor Devuelta" disabled></label>
-							<label class="field"><span>Forma de Pago</span><input type="text" id="formapago" placeholder="Forma de Pago" disabled></label>
-							<label class="field"><span>Valor Forma de Pago</span><input type="text" id="valorformapago" placeholder="Valor Forma de Pago" disabled></label>
-							<label class="field"><span>Descuento</span><input type="text" id="descuento" placeholder="Descuento Pedido" disabled></label>
-							<label class="field"><span>Id Link WOMPI</span><input type="text" id="idlink" placeholder="Link WOMPI" disabled></label>
-							<label class="field"><span>Fecha Finalización</span><input type="text" id="fechafinalizacion" placeholder="Fecha Final Pedido" disabled></label>
-							<label class="field"><span>Fecha Pago Virtual</span><input type="text" id="fechapagovirtual" placeholder="Fecha del pago virtual" disabled></label>
-							<label class="field wide"><span>Link para el pago</span><input type="text" id="linkparapago" placeholder="Link para el pago" disabled></label>
-						</div>
-						<div class="card-foot">
-							<button type="button" class="btn btn-soft" id="reenviarNotificacion" name="reenviarNotificacion" value="Reenviar Notificacion Cliente" onclick="reenviarNotificacion()" disabled><i class="fas fa-paper-plane"></i> Reenviar Notificación Cliente</button>
-							<button type="button" class="btn btn-warning" id="recrearLink" name="recrearLink" value="Recrear Link" onclick="recrearLink()" disabled><i class="fas fa-link"></i> Recrear Link</button>
-						</div>
-					</div>
-				</section>
 			</div>
+			<div class="user-chip">
+				<span class="dot"></span> <span>Usuario en sesión: <b
+					id="usuariologin"></b></span>
+			</div>
+		</header>
 
-			<form id="marcacionesPedido"></form>
+		<!-- ================= PESTAÑAS ================= -->
+		<nav class="rc-tabs" role="tablist">
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#tab-pedidos" data-toggle="tab">
+						<i class="fas fa-clipboard-list"></i> Pedidos actuales
+				</a></li>
+				<li><a href="#tab-enviados-tienda" data-toggle="tab"> <i
+						class="fas fa-store"></i>    Pedidos enviados a tienda
+				</a></li>
+			</ul>
+		</nav>
 
-			<!-- ================= DETALLE PRODUCTOS ================= -->
-			<section class="card">
-				<div class="card-head">
-					<h2><i class="fas fa-box-open"></i> Detalle de Productos del Pedido</h2>
-				</div>
-				<div class="table-wrap">
-					<table id="grid-detallepedido" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-						<thead>
-							<tr>
-								<th data-column-id="iddetallepedido">Id Detalle Pedido</th>
-								<th data-column-id="nombreproducto">Producto</th>
-								<th data-column-id="cantidad">Cantidad</th>
-								<th data-column-id="especialidad1">Especialidad 1</th>
-								<th data-column-id="modespecialidad1">Mod Espec 1</th>
-								<th data-column-id="especialidad2">Especialidad 2</th>
-								<th data-column-id="modespecialidad2">Mod Espec 2</th>
-								<th data-column-id="valorunitario">Valor Unitario</th>
-								<th data-column-id="valortotal">Valor Total</th>
-								<th data-column-id="adicion">Adición</th>
-								<th data-column-id="observacion">Observacion</th>
-								<th data-column-id="liquido">Liquido</th>
-								<th data-column-id="excepcion">Excepción</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
-				</div>
-				<div class="card-foot">
-					<button type="button" class="btn btn-danger" id="reenviarPedido" name="reenviarPedido" value="Reenviar Pedido a Tienda" onclick="enviarPedidoTienda(true)" disabled><i class="fas fa-store"></i> Reenviar Pedido a Tienda</button>
-					<button type="button" class="btn btn-warning" id="marcarPedido" name="marcarPedido" value="Marcar pedido como enviado SIN ENVIAR" onclick="marcarPedidoTienda()" disabled><i class="fas fa-check"></i> Marcar como enviado</button>
-					<button type="button" class="btn btn-soft" id="cancelarPedido" name="cancelarPedido" value="Cancelar Pedido" onclick="cancelarPedido()" disabled><i class="fas fa-ban"></i> Cancelar Pedido</button>
-				</div>
-			</section>
+		<div class="tab-content rc-tab-content">
+			<div class="tab-pane active" id="tab-pedidos">
 
-			<!-- ================= APLICABILIDAD ================= -->
-			<section class="card">
-				<div class="card-head">
-					<h2><i class="fas fa-clipboard-check"></i> Listado de Aplicabilidad Pedidos RAPPICARGO</h2>
-					<span class="legend"><i class="sw-warn"></i> No aplica por distancia</span>
-				</div>
-				<div class="table-wrap">
-					<table id="grid-aplicabilidad-rappicargo" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-						<thead>
-							<tr>
-								<th></th>
-								<th data-column-id="idpedido">Id Pedido</th>
-								<th data-column-id="tienda">Tienda</th>
-								<th data-column-id="totalneto">Total Neto</th>
-								<th data-column-id="idcliente">Id Cliente</th>
-								<th data-column-id="cliente">Cliente</th>
-								<th data-column-id="estadopedido">Estado Pedido</th>
-								<th data-column-id="estadoenviotienda">Estado Envío Tienda</th>
-								<th data-column-id="numposheader">#Pedido Tienda</th>
-								<th data-column-id="fechapedido">Fecha Pedido</th>
-								<th data-column-id="fechainsercion">Fecha Inserción</th>
-								<th data-column-id="usuariopedido">Usuario</th>
-								<th data-column-id="direccion">Dirección</th>
-								<th data-column-id="telefono">Teléfono</th>
-								<th data-column-id="formapago">Forma Pago</th>
-								<th data-column-id="tiempopedido">Tiempo Pedido</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
-				</div>
-				<div class="card-foot">
-					<button type="button" class="btn btn-primary" onclick="consultarAplicabilidadRappiCargo()"><i class="fas fa-sync-alt"></i> Actualizar Aplicabilidad RAPPICARGO</button>
-				</div>
-				<div class="advertencia">
-					Los pedidos resaltados no cumplen las condiciones de aplicabilidad de Rappi Cargo por su distancia.
-				</div>
-			</section>
-
-				</div>
-
-				<div class="tab-pane" id="tab-enviados-tienda">
-					<section class="card">
-						<div class="card-head">
-							<h2><i class="fas fa-shipping-fast"></i> Pedidos enviados a tienda aplicables para Rappi Cargo</h2>
+				<!-- ================= FILTROS ================= -->
+				<section class="card-info">
+					<div class="card-head">
+						<h2>
+							<i class="fas fa-filter"></i> Información filtro pedidos
+							plataformas domicilios
+						</h2>
+					</div>
+					<form>
+						<div class="filtros-grid">
+							<label class="field"><span>Fecha Inicial</span> <input
+								type="text" id="fechainicial" name="fechainicial"
+								placeholder="Fecha Inicial"> </label> <label class="field"><span>Fecha
+									Final</span> <input type="text" id="fechafinal" name="fechafinal"
+								placeholder="Fecha Final"> </label> <label class="field"><span>Tienda</span>
+								<select id="selectTiendas"></select> </label> <label class="field"><span>Estado
+									pedido</span> <select id="selectEstado">
+									<option value="0" id="0" selected>SELECCIONE...</option>
+									<option value="2" id="2">FINALIZADO</option>
+									<option value="1" id="1">EN CURSO</option>
+									<option value="4" id="4">CANCELADO</option>
+							</select> </label> <label class="field wide"><span>Estado Envio
+									Tienda</span> <select id="selectEstadoTienda">
+									<option value="-1" id="-1" selected>SELECCIONE...</option>
+									<option value="0" id="0">PENDIENTE TIENDA</option>
+									<option value="1" id="1">ENVIADO A TIENDA</option>
+									<option value="2" id="2">PENDIENTE PAGO VIRTUAL</option>
+							</select> </label>
+							<div class="field field-action">
+								<span>&nbsp;</span>
+								<button type="button" class="btn btn-primary"
+									onclick="consultarPedido()">
+									<i class="fas fa-search"></i> Consultar Pedidos
+								</button>
+							</div>
 						</div>
-						<div class="table-wrap table-wrap-padded">
-							<table id="grid-enviados-tienda-rappicargo" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+					</form>
+				</section>
+
+				<!-- ================= LISTADO PRINCIPAL ================= -->
+				<section class="card">
+					<div class="card-head">
+						<h2>
+							<i class="fas fa-list-alt"></i> Listado de Pedidos para RAPPI
+							CARGO
+						</h2>
+					</div>
+					<div class="table-wrap tall">
+						<div class="table-scroll-inner">
+							<table id="grid-encabezadopedido"
+								class="tbl table table-condensed table-hover table-striped"
+								cellspacing="0" width="100%">
 								<thead>
 									<tr>
 										<th data-column-id="idpedido">Id Pedido</th>
@@ -310,47 +122,330 @@
 										<th data-column-id="tienda">Tienda</th>
 										<th data-column-id="fechainsercion">Fecha/hora Tomado</th>
 										<th data-column-id="cliente">Cliente</th>
-										<th data-column-id="direccion">Dirección</th>
+										<th data-column-id="direccion">Direccion</th>
 										<th data-column-id="telefono">Teléfono</th>
 										<th data-column-id="totalneto">Total Neto</th>
 										<th data-column-id="estadopedido">Estado Pedido</th>
-										<th data-column-id="estadoenviotienda">Estado Envío Tienda</th>
+										<th data-column-id="usuariopedido">Usuario</th>
 										<th data-column-id="numposheader">#Pedido Tienda</th>
+										<th data-column-id="enviadopixel">Estado Tienda</th>
+										<th data-column-id="estadoenviotienda">Estado Pedido
+											Tienda</th>
 										<th data-column-id="formapago">Forma Pago</th>
 										<th data-column-id="tiempopedido">Tiempo Pedido</th>
+										<th data-column-id="aceptadorappi">Aceptado</th>
+										<th data-column-id="idtienda">ID Tienda</th>
+										<th data-column-id="urltienda">URL Tienda</th>
+										<th data-column-id="stringpixel">String Pixel</th>
 									</tr>
 								</thead>
 								<tbody></tbody>
 							</table>
 						</div>
+					</div>
+				</section>
+
+				<!-- ================= DETALLE: 2 COLUMNAS ================= -->
+				<div class="cols">
+
+					<!-- Cliente del Pedido -->
+					<section class="card-info">
+						<div class="card-head card-header-collapse" data-toggle="collapse"
+							data-target="#collapseCliente">
+							<h2>
+								<i class="fas fa-user"></i> Cliente del Pedido
+							</h2>
+							<i class="fas fa-chevron-down"></i>
+						</div>
+						<div id="collapseCliente" class="collapse">
+							<form>
+								<div class="card-body form-grid">
+									<label class="field"><span>Teléfono</span> <span
+										id="encTelefono"><input type="text" id="telefono"
+											name="telefono" placeholder="Telefono" disabled></span> </label> <label
+										class="field"><span>Teléfono Celular</span> <span
+										id="encTelefono"><input type="text" id="telcelular"
+											name="telcelular" placeholder="Telefono Celular" disabled></span>
+									</label> <label class="field"><span>Correo Electrónico</span> <span
+										id="encTelefono"><input type="text" id="email"
+											name="email" placeholder="Correo Electrónico" disabled></span>
+									</label> <label class="field"><span>Nombres</span> <span
+										id="encNombres"><input type="text" id="nombres"
+											name="nombres" placeholder="Nombres" disabled></span> </label> <label
+										class="field wide"><span>Dirección</span> <span
+										id="encDireccion">
+											<div class="input-group">
+												<input type="text" id="direccion" name="direccion"
+													placeholder="Direccion" disabled> <input
+													type="text" id="municipio" name="municipio"
+													placeholder="Municipio" disabled>
+											</div>
+									</span> </label> <label class="field"><span>Zona</span> <span
+										id="encZona"><input type="text" id="zona" name="zona"
+											placeholder="Zona" disabled></span> </label> <label class="field"><span>Tienda</span>
+										<input type="text" id="tienda" name="tienda"
+										placeholder="Tienda" disabled> </label> <label
+										class="field wide"><span>Observacion</span> <span
+										id="encObservacion"><input type="text"
+											id="observacionDir" name="observacionDir"
+											placeholder="Observacion" disabled></span> </label> <label
+										class="field wide"><span>Observación Virtual</span> <textarea
+											id="observacionVirtual" name="observacionVirtual" rows="3"
+											disabled></textarea> </label>
+								</div>
+							</form>
+						</div>
+					</section>
+
+					<!-- Información del Pedido -->
+					<section class="card-info">
+						<div class="card-head card-header-collapse" data-toggle="collapse"
+							data-target="#collapseDetallePedido">
+							<h2>
+								<i class="fas fa-info-circle"></i> Información Detallada del
+								Pedido
+							</h2>
+							<i class="fas fa-chevron-down"></i>
+						</div>
+						<div id="collapseDetallePedido" class="collapse">
+							<div class="card-body form-grid dense">
+								<label class="field"><span>Número de Pedido</span><input
+									type="text" id="NumPedido" placeholder="Número de pedido"
+									disabled></label> <label class="field"><span>Nombre
+										Cliente</span><input type="text" id="Cliente" placeholder="Cliente"
+									disabled></label> <label class="field"><span>Estado
+										del Pedido</span><input type="text" id="estadopedido"
+									placeholder="Estado del Pedido" disabled></label> <label
+									class="field"><span>Enviado a Sistema Tienda</span><input
+									type="text" id="estadotienda" placeholder="Estado Envío Tienda"
+									disabled></label> <label class="field"><span>Número
+										Pedido Tienda</span><input type="text" id="numpedidotienda"
+									placeholder="Número Pedido Tienda" disabled></label> <label
+									class="field"><span>Valor Total del Pedido</span><input
+									type="text" id="totalpedido"
+									placeholder="Valor total del Pedido" disabled></label> <label
+									class="field"><span>Valor de Pago</span><input
+									type="text" id="valorpago"
+									placeholder="Valor de pago del cliente" disabled></label> <label
+									class="field"><span>Valor a Devolver</span><input
+									type="text" id="valordevolver" placeholder="Valor Devuelta"
+									disabled></label> <label class="field"><span>Forma
+										de Pago</span><input type="text" id="formapago"
+									placeholder="Forma de Pago" disabled></label> <label
+									class="field"><span>Valor Forma de Pago</span><input
+									type="text" id="valorformapago"
+									placeholder="Valor Forma de Pago" disabled></label> <label
+									class="field"><span>Descuento</span><input type="text"
+									id="descuento" placeholder="Descuento Pedido" disabled></label>
+								<label class="field"><span>Id Link WOMPI</span><input
+									type="text" id="idlink" placeholder="Link WOMPI" disabled></label>
+								<label class="field"><span>Fecha Finalización</span><input
+									type="text" id="fechafinalizacion"
+									placeholder="Fecha Final Pedido" disabled></label> <label
+									class="field"><span>Fecha Pago Virtual</span><input
+									type="text" id="fechapagovirtual"
+									placeholder="Fecha del pago virtual" disabled></label> <label
+									class="field wide"><span>Link para el pago</span><input
+									type="text" id="linkparapago" placeholder="Link para el pago"
+									disabled></label>
+							</div>
+							<div class="card-foot">
+								<button type="button" class="btn btn-soft"
+									id="reenviarNotificacion" name="reenviarNotificacion"
+									value="Reenviar Notificacion Cliente"
+									onclick="reenviarNotificacion()" disabled>
+									<i class="fas fa-paper-plane"></i> Reenviar Notificación
+									Cliente
+								</button>
+								<button type="button" class="btn btn-warning" id="recrearLink"
+									name="recrearLink" value="Recrear Link" onclick="recrearLink()"
+									disabled>
+									<i class="fas fa-link"></i> Recrear Link
+								</button>
+							</div>
+						</div>
 					</section>
 				</div>
+
+				<form id="marcacionesPedido"></form>
+
+				<!-- ================= DETALLE PRODUCTOS ================= -->
+				<section class="card">
+					<div class="card-head">
+						<h2>
+							<i class="fas fa-box-open"></i> Detalle de Productos del Pedido
+						</h2>
+					</div>
+					<div class="table-wrap">
+						<table id="grid-detallepedido"
+							class="tbl table table-condensed table-hover table-striped"
+							cellspacing="0" width="100%">
+							<thead>
+								<tr>
+									<th data-column-id="iddetallepedido">Id Detalle Pedido</th>
+									<th data-column-id="nombreproducto">Producto</th>
+									<th data-column-id="cantidad">Cantidad</th>
+									<th data-column-id="especialidad1">Especialidad 1</th>
+									<th data-column-id="modespecialidad1">Mod Espec 1</th>
+									<th data-column-id="especialidad2">Especialidad 2</th>
+									<th data-column-id="modespecialidad2">Mod Espec 2</th>
+									<th data-column-id="valorunitario">Valor Unitario</th>
+									<th data-column-id="valortotal">Valor Total</th>
+									<th data-column-id="adicion">Adición</th>
+									<th data-column-id="observacion">Observacion</th>
+									<th data-column-id="liquido">Liquido</th>
+									<th data-column-id="excepcion">Excepción</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="card-foot">
+						<button type="button" class="btn btn-danger" id="reenviarPedido"
+							name="reenviarPedido" value="Reenviar Pedido a Tienda"
+							onclick="enviarPedidoTienda(true)" disabled>
+							<i class="fas fa-store"></i> Reenviar Pedido a Tienda
+						</button>
+						<button type="button" class="btn btn-warning" id="marcarPedido"
+							name="marcarPedido" value="Marcar pedido como enviado SIN ENVIAR"
+							onclick="marcarPedidoTienda()" disabled>
+							<i class="fas fa-check"></i> Marcar como enviado
+						</button>
+						<button type="button" class="btn btn-soft" id="cancelarPedido"
+							name="cancelarPedido" value="Cancelar Pedido"
+							onclick="cancelarPedido()" disabled>
+							<i class="fas fa-ban"></i> Cancelar Pedido
+						</button>
+					</div>
+				</section>
+
+				<!-- ================= APLICABILIDAD ================= -->
+				<section class="card">
+					<div class="card-head">
+						<h2>
+							<i class="fas fa-clipboard-check"></i> Listado de Aplicabilidad
+							Pedidos RAPPICARGO
+						</h2>
+						<span class="legend"><i class="sw-warn"></i> No aplica por
+							distancia</span>
+					</div>
+					<div class="table-wrap">
+						<table id="grid-aplicabilidad-rappicargo"
+							class="tbl table table-condensed table-hover table-striped"
+							cellspacing="0" width="100%">
+							<thead>
+								<tr>
+									<th></th>
+									<th data-column-id="idpedido">Id Pedido</th>
+									<th data-column-id="tienda">Tienda</th>
+									<th data-column-id="totalneto">Total Neto</th>
+									<th data-column-id="idcliente">Id Cliente</th>
+									<th data-column-id="cliente">Cliente</th>
+									<th data-column-id="estadopedido">Estado Pedido</th>
+									<th data-column-id="estadoenviotienda">Estado Envío Tienda</th>
+									<th data-column-id="numposheader">#Pedido Tienda</th>
+									<th data-column-id="fechapedido">Fecha Pedido</th>
+									<th data-column-id="fechainsercion">Fecha Inserción</th>
+									<th data-column-id="usuariopedido">Usuario</th>
+									<th data-column-id="direccion">Dirección</th>
+									<th data-column-id="telefono">Teléfono</th>
+									<th data-column-id="formapago">Forma Pago</th>
+									<th data-column-id="tiempopedido">Tiempo Pedido</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<div class="card-foot">
+						<button type="button" class="btn btn-primary"
+							onclick="consultarAplicabilidadRappiCargo()">
+							<i class="fas fa-sync-alt"></i> Actualizar Aplicabilidad
+							RAPPICARGO
+						</button>
+					</div>
+					<div class="advertencia">Los pedidos resaltados no cumplen
+						las condiciones de aplicabilidad de Rappi Cargo por su distancia.
+					</div>
+				</section>
+
 			</div>
 
-		</main>
+			<div class="tab-pane" id="tab-enviados-tienda">
+				<section class="card">
+					<div class="card-head">
+						<h2>
+							<i class="fas fa-shipping-fast"></i>Posibles candidatos Rappi Cargo
 
-		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-		<script src="js/consultacargo.js" type="text/javascript"></script>
-		<script src="js/jquery-confirm.min.js"></script>
-		<script src="js/jquery-ui.min.js"></script>
-		<script type="text/javascript" src="js/datepicker.js"></script>
-		<script>
-			$("#fechainicial").datepicker($.datepicker.regional["es"]);
-			$("#fechainicial").datepicker('setDate', new Date());
-			$("#fechafinal").datepicker($.datepicker.regional["es"]);
-			$("#fechafinal").datepicker('setDate', new Date());
+						</h2>
+					</div>
+					<div class="table-wrap table-wrap-padded">
+						<table id="grid-enviados-tienda-rappicargo"
+							class="tbl table table-condensed table-hover table-striped"
+							cellspacing="0" width="100%">
+							<thead>
+								<tr>
+									<th>#Pedido Tienda</th>
+									<th>Fecha Ingreso</th>
+									<th>Estado Actual</th>
+									<th>Min Ingreso</th>
+									<th>Fecha Cocina</th>
+									<th>Min Cocina</th>
+									<th>Cliente</th>
+									<th>Dirección</th>
+									<th>Teléfono</th>
+									<th>Celular</th>
+									<th>Total Neto</th>
+									<th>Forma Pago</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
 
-			$(".rc-tabs a[data-toggle='tab']").on("click", function(e) {
-				e.preventDefault();
+					</div>
+					<div class="card-foot">
+						<div class="filtros-candidatos-cargo">
+						    <div class="campo-filtro-cargo">
+						        <label for="ListTiendas">Tienda</label>
+						        <select id="ListTiendas">
 
-				$(".rc-tabs li").removeClass("active");
-				$(this).parent("li").addClass("active");
+						        </select>
+						    </div>
+						
+						    <button class="btn btn-primary" onclick="consultarCandidatosRappiCargoTienda()"  type="button">
+						        <i class="fa fa-search"></i>
+						        <span>Consultar</span>
+						    </button>
+						</div>
 
-				$(".rc-tab-content .tab-pane").removeClass("active");
-				$($(this).attr("href")).addClass("active");
-			});
-		</script>
-	</body>
+					</div>
+				</section>
+			</div>
+		</div>
+
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="js/consultacargo.js" type="text/javascript"></script>
+	<script src="js/jquery-confirm.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechainicial").datepicker($.datepicker.regional["es"]);
+		$("#fechainicial").datepicker('setDate', new Date());
+		$("#fechafinal").datepicker($.datepicker.regional["es"]);
+		$("#fechafinal").datepicker('setDate', new Date());
+
+		$(".rc-tabs a[data-toggle='tab']").on("click", function(e) {
+			e.preventDefault();
+
+			$(".rc-tabs li").removeClass("active");
+			$(this).parent("li").addClass("active");
+
+			$(".rc-tab-content .tab-pane").removeClass("active");
+			$($(this).attr("href")).addClass("active");
+		});
+	</script>
+</body>
 
 </html>
 

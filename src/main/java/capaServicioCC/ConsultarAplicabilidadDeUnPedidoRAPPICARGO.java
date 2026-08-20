@@ -33,26 +33,51 @@ public class ConsultarAplicabilidadDeUnPedidoRAPPICARGO extends HttpServlet {
 	 * Este servicio se encarga de recibir como par�metros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
 	 * tomados bajo estos par�metros, se invoca en la capa controlador al m�todo ConsultaIntegradaPedidos.
 	 */
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		Logger logger = Logger.getLogger("log_file");
-		HttpSession sesion = request.getSession();
-		PedidoCtrl consultapedido = new PedidoCtrl();
-		int idPedido;
-		 try
-        {
-			 idPedido = Integer.parseInt(request.getParameter("idpedido"));
-        }catch(Exception e)
-        {
-        	idPedido = 0;
-        }
-        String respuestaConsulta = consultapedido.consultarAplicabilidadPedidoRAPPICARGO(idPedido);
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+
+        Logger logger = Logger.getLogger("log_file");
+        PedidoCtrl consultapedido = new PedidoCtrl();
+
+		int idpedido = 0;
+		int idtienda = 0;
+		int numposheader = 0;
+
+		try {
+		    if (request.getParameter("idpedido") != null) {
+		        idpedido = Integer.parseInt(request.getParameter("idpedido"));
+		    }
+		} catch (Exception e) {
+		    idpedido = 0;
+		}
+
+		try {
+		    if (request.getParameter("idtienda") != null) {
+		    	idtienda = Integer.parseInt(request.getParameter("idtienda"));
+		    }
+		} catch (Exception e) {
+			idtienda = 0;
+		}
+		
+		try {
+		    if (request.getParameter("numposheader") != null) {
+		    	numposheader = Integer.parseInt(request.getParameter("numposheader"));
+		    }
+		} catch (Exception e) {
+			numposheader = 0;
+		}
+		
+
+        String respuestaConsulta =
+                consultapedido.consultarAplicabilidadPedidoRAPPICARGO(idpedido, numposheader, idtienda);
+
         PrintWriter out = response.getWriter();
-        //Comentamos resultado de la consulta debido a que consultas grandes pueden generar mucha informaci�n
-        //logger.debug(respuestaConsulta);
-		out.write(respuestaConsulta);
-	}
+        out.write(respuestaConsulta);
+    }
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)

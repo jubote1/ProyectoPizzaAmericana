@@ -27,6 +27,7 @@ var wompiClavePrivada = "";
 var wompiAmbiente = "";
 var wompiEndPoint = "";
 var idMarcacionSel = 0;
+var tableEnviadosTiendaRappiCargo;
 
 
 $(document).ready(function() {
@@ -157,6 +158,30 @@ $(document).ready(function() {
         		}
     		}
     	} );
+		
+		
+		tableEnviadosTiendaRappiCargo = $('#grid-enviados-tienda-rappicargo').DataTable({
+		    "aoColumns": [
+		        { "mData": "idpedidotienda" },
+		        { "mData": "fechainsercion" },
+		        { "mData": "estadoActual" },
+		        { "mData": "minutosDesdeIngreso" },
+		        { "mData": "fechaCocina" },
+		        { "mData": "minutosCocina" },
+		        { "mData": "nombreCompleto" },
+		        { "mData": "direccion" },
+		        { "mData": "telefono" },
+		        { "mData": "telefonoCelular" },
+		        { "mData": "totalNeto" },
+		        { "mData": "idFormaPago" }
+		    ],
+			createdRow: function (row, data) {
+			    if (esPedidoTercerizado(data)) {
+			        $(row).addClass('pedido-tercerizado-cargo');
+			    }
+			}
+		});
+
 
     // Inicialización del nuevo DataTable para ConsultarAplicabilidadPedidoRAPPICARGO
 	tableAplicabilidadRappi = $('#grid-aplicabilidad-rappicargo').DataTable({
@@ -365,7 +390,6 @@ $(document).ready(function() {
 	 consultarYCargarInicial();
  	
  	
-     
 
 	} );
 
@@ -535,8 +559,15 @@ function getListaTiendas(){
 			var cadaTienda  = data[i];
 			str +='<option value="'+ cadaTienda.nombre +'" id ="'+ cadaTienda.id +'">' + cadaTienda.nombre +'</option>';
 		}
-		str +='<option value="'+ 'TODAS' +'" id ="'+ 'TODAS' +'">' + 'TODAS' +'</option>';
+		
+		
+		opciones = str + '<option value="0" id="0">Seleccionar...</option>';
+		$('#ListTiendas').html(opciones).val('0');
+		
+		str += '<option value="TODAS" id="TODAS">TODAS</option>';
 		$('#selectTiendas').html(str).val('TODAS');
+		
+	
 	});
 }
 
@@ -1368,6 +1399,7 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 
 });
 
+
 function crearOrdenRappiCargo(idpedido) {
 
     $.ajax({
@@ -1495,6 +1527,353 @@ function crearOrdenRappiCargo(idpedido) {
 
     });
 	
-
-
 }
+
+
+$('#grid-enviados-tienda-rappicargo').off('click').on('click', 'tr', function () {
+
+    var datospedido = tableEnviadosTiendaRappiCargo.row(this).data();
+
+    if (!datospedido) {
+        return;
+    }
+
+    if (esPedidoTercerizado(datospedido)) {
+        confirmarNotificarPedidoListoRappiCargo(datospedido);
+        return;
+    }
+
+    consultaAplicabilidadCargoTienda(datospedido);
+});
+
+
+
+function consultaAplicabilidadCargoTienda(datospedido) {
+
+    $.ajax({
+        url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            numposheader: datospedido.idpedidotienda,
+            idtienda: datospedido.idtienda
+        },
+        success: function (validacion) {
+
+            if (!validacion || validacion.resultado !== true) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No se puede crear la orden',
+                    html: `
+                        <div style="text-align:left">
+                            Este pedido aparece como <b>posible candidato</b> porque en la tienda cumple condiciones básicas.
+                            <br><br>
+                            Pero el servidor principal indicó que <b>no se puede crear la orden en Rappi Cargo</b>.
+                            <br><br>
+                            <b>Pedido tienda:</b> ${datospedido.idpedidotienda}
+                            <br>
+                            <b>Cliente:</b> ${datospedido.nombreCompleto}
+                            <br>
+                            <b>Motivo:</b> ${validacion && validacion.mensaje ? validacion.mensaje : 'Sin detalle.'}
+                        </div>
+                    `,
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#2563eb'
+                });
+                return;
+            }
+
+            confirmarCrearOrdenCandidatoCargo(datospedido, validacion);
+        },
+        error: function (xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error validando aplicabilidad',
+                text: 'No fue posible validar el pedido contra el servidor principal. HTTP ' + xhr.status,
+                confirmButtonColor: '#2563eb'
+            });
+        }
+    });
+}
+
+
+function confirmarCrearOrdenCandidatoCargo(datospedido, validacion) {
+
+    var aplica = validacion && validacion.validacionDistancia === true;
+
+    var motivo = validacion && validacion.mensaje
+        ? validacion.mensaje
+        : 'No fue posible validar la distancia del pedido.';
+
+    var advertencia = "";
+
+    if (!aplica) {
+        advertencia = `
+            <div class="advertencia">
+                <i class="fa fa-exclamation-triangle"></i>
+                <b> Advertencia</b>
+                <br><br>
+                ${motivo}
+                <br><br>
+                <b>Si decide continuar, el sistema intentará crear la orden en Rappi Cargo aun cuando el pedido no cumple con la validación de distancia.</b>
+            </div>
+        `;
+    }
+
+    Swal.fire({
+        icon: aplica ? 'question' : 'warning',
+        title: aplica ? '¿Crear orden en Rappi Cargo?' : 'Pedido con advertencia',
+        html: `
+            <div class="rappi-info">
+                <div><b>Pedido tienda:</b> ${datospedido.idpedidotienda}</div>
+                <div><b>Cliente:</b> ${datospedido.nombreCompleto}</div>
+                <div><b>Dirección:</b> ${datospedido.direccion}</div>
+                <div><b>Estado:</b> ${datospedido.estadoActual}</div>
+                <div><b>Minutos cocina:</b> ${datospedido.minutosCocina}</div>
+                <div><b>Total:</b> $${Number(datospedido.totalNeto).toLocaleString('es-CO')}</div>
+                <div><b>Forma pago:</b> ${validacion.formapago || datospedido.idFormaPago}</div>
+                <div><b>Distancia:</b> ${validacion.distanciaKm || 0} km</div>
+            </div>
+
+            ${advertencia}
+        `,
+        showCancelButton: true,
+        confirmButtonText: aplica ? 'Crear orden' : 'Crear de todas formas',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            crearOrdenRappiCargoCandidatoTienda(datospedido);
+        }
+    });
+}
+
+
+function crearOrdenRappiCargoCandidatoTienda(datospedido) {
+
+    $.ajax({
+        url: server + 'CrearOrdenRappiCargo',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            numposheader: datospedido.idpedidotienda,
+            idtienda: datospedido.idtienda
+        },
+        success: function (data) {
+
+            var respuesta = Array.isArray(data) ? data[0] : data;
+
+            if (!respuesta) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El servidor no devolvió información.',
+                    confirmButtonColor: '#2563eb'
+                });
+                return;
+            }
+
+			if (respuesta.resultado === true) {
+
+			    if (respuesta.marcadoTienda === true) {
+
+			        Swal.fire({
+			            icon: 'success',
+			            title: 'Orden creada',
+			            text: 'La orden fue creada en Rappi Cargo y el pedido quedó marcado como tercerizado en tienda.',
+			            timer: 2500,
+			            showConfirmButton: false
+			        });
+
+			    } else if (respuesta.marcadoTienda === false && respuesta.mensajeMarcacionTienda) {
+
+			        Swal.fire({
+			            icon: 'warning',
+			            title: 'Orden creada, pero falta marcar en tienda',
+			            text: respuesta.mensajeMarcacionTienda,
+			            confirmButtonColor: '#2563eb'
+			        });
+
+			    } else {
+
+			        Swal.fire({
+			            icon: 'success',
+			            title: 'Orden creada',
+			            text: respuesta.mensaje || 'La orden fue creada correctamente.',
+			            timer: 2500,
+			            showConfirmButton: false
+			        });
+			    }
+
+			    consultarCandidatosRappiCargoTienda();
+			}else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No fue posible crear la orden',
+                    text: respuesta.mensaje || 'No se pudo crear la orden en Rappi Cargo.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
+        },
+        error: function (xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de comunicación',
+                text: 'No fue posible crear la orden. HTTP ' + xhr.status,
+                confirmButtonColor: '#2563eb'
+            });
+        }
+    });
+}
+
+
+function consultarCandidatosRappiCargoTienda() {
+
+	    var tienda = $('#ListTiendas option:selected').attr('id');
+
+	    if ($.fn.dataTable.isDataTable('#grid-enviados-tienda-rappicargo')) {
+	        tableEnviadosTiendaRappiCargo = $('#grid-enviados-tienda-rappicargo').DataTable();
+	    }
+
+		
+		if (!tableEnviadosTiendaRappiCargo) {
+		    return;
+		}
+		
+		if (tienda == '' || tienda == null || tienda == '0') {
+		    tableEnviadosTiendaRappiCargo.clear().draw();
+		    return;
+		}
+		
+	    var dsnodbc;
+	    var pos;
+	    var urlTienda;
+
+	    $.ajax({
+	        url: server + 'ObtenerUrlTienda?idtienda=' + tienda,
+	        dataType: 'json',
+	        async: false,
+	        success: function(data2) {
+	            urlTienda = data2[0].urltienda;
+	            dsnodbc = data2[0].dsnodbc;
+	            pos = data2[0].pos;
+	        },
+	        error: function() {
+	            tableEnviadosTiendaRappiCargo.clear().draw();
+	            alert('No fue posible obtener la información de la tienda');
+	        }
+	    });
+
+	    if (!urlTienda || !dsnodbc || !pos) {
+	        tableEnviadosTiendaRappiCargo.clear().draw();
+	        return;
+	    }
+
+	    $.getJSON(
+	        urlTienda + 'ConsultarCandidatosRappiCargoTienda',
+	        function(data) {
+	            tableEnviadosTiendaRappiCargo.clear().draw();
+
+	            for (var i = 0; i < data.length; i++) {
+	                tableEnviadosTiendaRappiCargo.row.add(data[i]);
+	            }
+
+	            tableEnviadosTiendaRappiCargo.draw();
+	        }
+	    ).fail(function() {
+	        tableEnviadosTiendaRappiCargo.clear().draw();
+	        alert('No fue posible consultar los candidatos RappiCargo de la tienda');
+	    });
+	}
+	
+	
+	function esPedidoTercerizado(datospedido) {
+	    var valor = datospedido.domicilioTercerizado || datospedido.domicilio_tercerizado || '';
+	    return valor.toString().trim().toUpperCase() === 'S';
+	}
+
+
+	function confirmarNotificarPedidoListoRappiCargo(datospedido) {
+
+	    Swal.fire({
+	        icon: 'question',
+	        title: '¿Marcar pedido listo para recoger en Rappi Cargo?',
+	        html: `
+	            <div class="rappi-info">
+	                <div><b>Pedido tienda:</b> ${datospedido.idpedidotienda}</div>
+	                <div><b>Cliente:</b> ${datospedido.nombreCompleto}</div>
+	                <div><b>Dirección:</b> ${datospedido.direccion}</div>
+	                <div><b>Estado:</b> ${datospedido.estadoActual}</div>
+	                <div><b>Minutos cocina:</b> ${datospedido.minutosCocina}</div>
+	            </div>
+	        `,
+	        showCancelButton: true,
+	        confirmButtonText: 'Notificar listo',
+	        cancelButtonText: 'Cancelar',
+	        confirmButtonColor: '#7c3aed',
+	        cancelButtonColor: '#6b7280',
+	        reverseButtons: true
+	    }).then((result) => {
+	        if (result.isConfirmed) {
+	            notificarPedidoListoRappiCargo(datospedido);
+	        }
+	    });
+	}
+
+
+	function notificarPedidoListoRappiCargo(datospedido) {
+
+	    $.ajax({
+	        url: server + 'NotificarPedidoListoRappiCargo',
+	        type: 'POST',
+	        dataType: 'json',
+	        data: {
+	            idPedidoTienda: datospedido.idpedidotienda,
+	            idTienda: datospedido.idtienda
+	        },
+	        success: function (respuesta) {
+
+	            if (respuesta.exito === true) {
+	                Swal.fire({
+	                    icon: 'success',
+	                    title: 'Pedido notificado',
+	                    text: respuesta.mensaje || 'El pedido fue marcado como listo para recoger en rappi Cargo.',
+	                    timer: 2500,
+	                    showConfirmButton: false
+	                });
+
+	                consultarCandidatosRappiCargoTienda();
+	                return;
+	            }
+
+	            Swal.fire({
+	                icon: 'warning',
+	                title: 'No se pudo notificar',
+	                text: respuesta.mensaje || respuesta.message || 'Rappi Cargo no aceptó la notificación.',
+	                confirmButtonColor: '#2563eb'
+	            });
+	        },
+	        error: function (xhr) {
+
+	            var mensaje = 'No fue posible notificar el pedido listo. HTTP ' + xhr.status;
+
+	            try {
+	                var respuesta = JSON.parse(xhr.responseText);
+	                mensaje = respuesta.mensaje || respuesta.message || mensaje;
+	            } catch (e) {
+	            }
+
+	            Swal.fire({
+	                icon: 'error',
+	                title: 'Error notificando pedido',
+	                text: mensaje,
+	                confirmButtonColor: '#2563eb'
+	            });
+	        }
+	    });
+	}
+
+	
+	

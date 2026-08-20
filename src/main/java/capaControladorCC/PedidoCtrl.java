@@ -12943,9 +12943,9 @@ public class PedidoCtrl {
      * @return
      */
 
-    public String consultarAplicabilidadPedidoRAPPICARGO(int idPedido)
+    public String consultarAplicabilidadPedidoRAPPICARGO(int idPedido,int  numposheader, int idtienda)
 	{
-    	JSONObject respuestaJSON = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido);
+    	JSONObject respuestaJSON = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido,numposheader,idtienda );
     	return(respuestaJSON.toJSONString());
 	}
 

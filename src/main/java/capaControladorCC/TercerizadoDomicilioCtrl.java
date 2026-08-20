@@ -14,6 +14,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -273,7 +274,7 @@ public class TercerizadoDomicilioCtrl {
 	    return respuesta;
 	}
 	
-	public String crearOrdenRappiCargo(int idpedido) {
+	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader) {
 
 	    JSONArray listJSON = new JSONArray();
 	    JSONObject respuestaJSON = new JSONObject();
@@ -281,7 +282,7 @@ public class TercerizadoDomicilioCtrl {
 	    try {
 
 	        RappiCargoOrden orden =
-	                TercerizadoDomicilioEventoDAO.ConsultarPedidoRappiCargo(idpedido);
+	                TercerizadoDomicilioEventoDAO.ConsultarPedidoRappiCargo(idpedido ,idtienda, numposheader);
 
 
 	        if (orden == null) {
@@ -406,7 +407,18 @@ public class TercerizadoDomicilioCtrl {
 	            TercerizadoDomicilioEventoDAO.actualizarPedidoRappiCargo(
 	                    idpedido,
 	                    cargoOrderId);
+	            
+	                       
+	            if (numposheader > 0 && idtienda > 0) {
+	                JSONObject respuestaMarcacionTienda =
+	                        marcarPedidoTercerizadoEnTienda(idtienda, numposheader);
 
+	                respuestaJSON.put("marcadoTienda",
+	                        Boolean.TRUE.equals(respuestaMarcacionTienda.get("exito")));
+
+	                respuestaJSON.put("mensajeMarcacionTienda",
+	                        respuestaMarcacionTienda.get("mensaje"));
+	            }
 
 
 	            respuestaJSON.put("resultado", true);
@@ -724,6 +736,29 @@ public class TercerizadoDomicilioCtrl {
 
 	            return respuesta;
 	        }
+	        
+	    	String fechacancelacion = tercerizadoDomicilioEvento.getFechaCancelacion();
+	    	
+	        if (fechacancelacion == null || fechacancelacion.trim().isEmpty()) {
+
+	            respuesta.setExito(false);
+	            respuesta.setMensaje(
+	            	    "El pedido " + idPedidoTienda + " se registra como cancelado en la plataforma de Rappi Cargo");
+
+	            return respuesta;
+	        }
+	        
+	        
+	    	int  canceladoInterno = tercerizadoDomicilioEvento.getCanceladoInterno();
+	    	
+	        if (canceladoInterno == 1 ) {
+
+	            respuesta.setExito(false);
+	            respuesta.setMensaje(
+	            	    "El pedido " + idPedidoTienda + " se registra como cancelado en nuestro sistema.");
+
+	            return respuesta;
+	        }
 
 	        String urlService =
 	                ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_URL_SERVICE");
@@ -789,7 +824,7 @@ public class TercerizadoDomicilioCtrl {
 	        if (status >= 200 && status < 300) {
 
 	            respuesta.setExito(true);
-	            respuesta.setMensaje("Pedido notificado correctamente.");
+	            respuesta.setMensaje("Pedido notificado correctamente en Rappi Cargo.");
 
 	        } else {
 
@@ -830,6 +865,81 @@ public class TercerizadoDomicilioCtrl {
 	    }
 
 	    return respuesta;
+	}
+	
+	private JSONObject marcarPedidoTercerizadoEnTienda(int idtienda, int numposheader) {
+
+	    JSONObject json = new JSONObject();
+	    json.put("exito", false);
+	    json.put("mensaje", "No se pudo marcar el pedido en tienda.");
+
+	    try {
+	        TiendaCtrl tiendaCtrl = new TiendaCtrl();
+
+	        String respuestaTienda = tiendaCtrl.obtenerUrlTienda(idtienda);
+
+	        JSONParser parser = new JSONParser();
+	        JSONArray array = (JSONArray) parser.parse(respuestaTienda);
+
+	        if (array.isEmpty()) {
+	            json.put("mensaje", "No se encontró URL de tienda para idtienda " + idtienda);
+	            return json;
+	        }
+
+	        JSONObject tienda = (JSONObject) array.get(0);
+
+	        String urlTienda = String.valueOf(tienda.get("urltienda"));
+
+	        if (urlTienda == null || urlTienda.trim().isEmpty()) {
+	            json.put("mensaje", "La tienda " + idtienda + " no tiene URL configurada.");
+	            return json;
+	        }
+
+	        String separador = urlTienda.endsWith("/") ? "" : "/";
+
+	        String urlServicio =
+	                urlTienda + separador
+	                + "MarcarPedidoTercerizadoTienda"
+	                + "?idPedidoTienda=" + numposheader
+	                + "&idTienda=" + idtienda;
+
+	        HttpClient client = HttpClientBuilder.create().build();
+	        HttpPost post = new HttpPost(urlServicio);
+
+	        HttpResponse response = client.execute(post);
+
+	        StringBuilder body = new StringBuilder();
+
+	        if (response.getEntity() != null) {
+	            BufferedReader rd = new BufferedReader(
+	                    new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+
+	            String line;
+
+	            while ((line = rd.readLine()) != null) {
+	                body.append(line);
+	            }
+
+	            rd.close();
+	        }
+
+	        int status = response.getStatusLine().getStatusCode();
+
+	        if (status >= 200 && status < 300) {
+	            JSONObject respuestaLocal =
+	                    (JSONObject) parser.parse(body.toString());
+
+	            return respuestaLocal;
+	        }
+
+	        json.put("mensaje", "La tienda respondió HTTP " + status + ": " + body.toString());
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        json.put("mensaje", "Error llamando servicio local de tienda: " + e.getMessage());
+	    }
+
+	    return json;
 	}
 
 }

@@ -20,33 +20,13 @@ import conexionCC.ConexionBaseDatos;
 
 public class TercerizadoDomicilioEventoDAO {
 
-	
 
-	public static RappiCargoOrden ConsultarPedidoRappiCargo(int idPedido) {
+	public static RappiCargoOrden ConsultarPedidoRappiCargo(
+	        int idPedido,
+	        int idtienda,
+	        int numposheader) {
 
 	    RappiCargoOrden orden = null;
-
-	    String consulta =
-	            "SELECT " +
-	            "p.idpedido, " +
-	            "p.total_neto, " +
-	            "p.idtienda, " +
-	            "c.nombre, " +
-	            "c.apellido, " +
-	            "c.telefono, " +
-	            "c.telefono_celular, " +
-	            "c.email, " +
-	            "c.direccion, " +
-	            "c.latitud, " +
-	            "c.longitud, " +
-	            "c.observacion, " +
-	            "m.nombre AS municipio, " +
-	            "f.idforma_pago " +	            
-	            "FROM pedido p " +
-	            "INNER JOIN cliente c ON p.idcliente = c.idcliente " +
-	            "LEFT JOIN municipio m ON c.idmunicipio = m.idmunicipio " +
-	            "INNER JOIN pedido_forma_pago f ON f.idpedido = p.idpedido " +
-	            "WHERE p.idpedido = ?";
 
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
@@ -55,6 +35,72 @@ public class TercerizadoDomicilioEventoDAO {
 	    ResultSet rs = null;
 
 	    try {
+
+	        /*
+	         * Si viene numposheader, primero obtenemos
+	         * el idpedido real.
+	         */
+	        if (numposheader != 0) {
+
+	            String consultaIdPedido =
+	                    "SELECT idpedido " +
+	                    "FROM pedido " +
+	                    "WHERE numposheader = ? " +
+	                    "AND idtienda = ?";
+
+	            ps = con1.prepareStatement(consultaIdPedido);
+
+	            ps.setInt(1, numposheader);
+	            ps.setInt(2, idtienda);
+
+	            rs = ps.executeQuery();
+
+	            if (rs.next()) {
+
+	                idPedido = rs.getInt("idpedido");
+
+	            } else {
+
+	                // No se encontró el pedido
+	                return null;
+	            }
+
+	            rs.close();
+	            ps.close();
+
+	            rs = null;
+	            ps = null;
+	        }
+
+	        /*
+	         * A partir de aquí idPedido ya es el ID real
+	         * de la tabla pedido.
+	         *
+	         * Si numposheader era 0, conserva el idPedido
+	         * que llegó originalmente.
+	         */
+
+	        String consulta =
+	                "SELECT " +
+	                "p.idpedido, " +
+	                "p.total_neto, " +
+	                "p.idtienda, " +
+	                "c.nombre, " +
+	                "c.apellido, " +
+	                "c.telefono, " +
+	                "c.telefono_celular, " +
+	                "c.email, " +
+	                "c.direccion, " +
+	                "c.latitud, " +
+	                "c.longitud, " +
+	                "c.observacion, " +
+	                "m.nombre AS municipio, " +
+	                "f.idforma_pago " +
+	                "FROM pedido p " +
+	                "INNER JOIN cliente c ON p.idcliente = c.idcliente " +
+	                "LEFT JOIN municipio m ON c.idmunicipio = m.idmunicipio " +
+	                "INNER JOIN pedido_forma_pago f ON f.idpedido = p.idpedido " +
+	                "WHERE p.idpedido = ?";
 
 	        ps = con1.prepareStatement(consulta);
 	        ps.setInt(1, idPedido);
@@ -452,14 +498,21 @@ public class TercerizadoDomicilioEventoDAO {
         return respuesta;
     }
     
+    /**
+     * Método que se encarga de dado un pedido de tienda, retornar la información de CARGO del pedido en cuestion
+     * @param idPedidoTienda
+     * @param idTienda
+     * @return
+     */
     
     public static TercerizadoDomicilioEvento ConsultarInfoRappiCargo(int idPedidoTienda, int idTienda) {
 
         TercerizadoDomicilioEvento infoPedidoCargo = null;
         int idPedidoContact = 0;
+        int cancelado = 0;
 
         String consulta =
-                "SELECT a.idpedido " +
+                "SELECT a.idpedido ,a.cancelado  " +
                 "FROM pedido a " +
                 "WHERE a.numposheader = ? " +
                 "AND a.idtienda = ?";
@@ -495,7 +548,7 @@ public class TercerizadoDomicilioEventoDAO {
 
             if (rsPedido.next()) {
                 idPedidoContact = rsPedido.getInt("idpedido");
-            }
+                cancelado = rsPedido.getInt("cancelado");}
 
             if (idPedidoContact == 0) {
                 return null;
@@ -516,7 +569,7 @@ public class TercerizadoDomicilioEventoDAO {
                 infoPedidoCargo.setUrlSeguimiento(rsEvento.getString("url_seguimiento"));
                 infoPedidoCargo.setFechaEntrega(rsEvento.getString("fecha_entrega"));
                 infoPedidoCargo.setFechaCancelacion(rsEvento.getString("fecha_cancelacion"));
-            }
+                infoPedidoCargo.setCanceladoInterno(cancelado);            }
 
         } catch (Exception e) {
 
@@ -557,78 +610,11 @@ public class TercerizadoDomicilioEventoDAO {
 
         return infoPedidoCargo;
     }
+    
+    
+    
 
-    /**
-     * Método que se encarga de dado un pedido de tienda, retornar la información de CARGO del pedido en cuestion
-     * @param idPedidoTienda
-     * @param idTienda
-     * @return
-     */
-    public static TercerizadoDomicilioEvento ConsultarInfoRappiCargo(int idPedidoTienda, int idTienda) {
-
-    	TercerizadoDomicilioEvento infoPedidoCargo = null;
-    	int idPedidoContact = 0;
-	    String consulta = "select a.idpedido from pedido a where a.numposheader = ? and a.idtienda = ?";
-	    String consulta2 = "SELECT id_pedido,url_seguimiento, fecha_entrega, fecha_cancelacion FROM tercerizado_domicilio_evento WHERE id_pedido = ? LIMIT 1";
-	    ConexionBaseDatos con = new ConexionBaseDatos();
-	    Connection con1 = con.obtenerConexionBDPrincipal();
-
-	    PreparedStatement ps = null;
-	    PreparedStatement ps2 = null;
-	    ResultSet rs = null;
-	    
-	    try {
-
-	        ps = con1.prepareStatement(consulta);
-	        ps.setInt(1, idPedidoTienda);
-	        ps.setInt(2, idTienda);
-	        rs = ps.executeQuery();
-
-	        if (rs.next()) {
-
-	        	idPedidoContact = rs.getInt("idPedido");
-	        }
-	        //Luego de recuperar el pedido vamos a traer la información de rappi cargo
-	        ps2 = con1.prepareStatement(consulta2);
-	        ps2.setInt(1, idPedidoContact);
-	        rs = ps2.executeQuery();
-	        
-	        if(rs.next())
-	        {
-	        	infoPedidoCargo = new TercerizadoDomicilioEvento();
-	        	infoPedidoCargo.setIdPedido(idPedidoContact);
-	        	infoPedidoCargo.setUrlSeguimiento(rs.getString("url_seguimiento"));
-	        	infoPedidoCargo.setFechaCancelacion(rs.getString("fecha_cancelacion"));
-	        	infoPedidoCargo.setFechaEntrega(rs.getString("fecha_entrega"));
-	        	
-	        }
-
-	    } catch (Exception e) {
-
-	        e.printStackTrace();
-
-	    } finally {
-
-	        try {
-	            if (rs != null)
-	                rs.close();
-	        } catch (Exception e) {
-	        }
-
-	        try {
-	            if (ps != null)
-	                ps.close();
-	        } catch (Exception e) {
-	        }
-
-	        try {
-	            if (con1 != null)
-	                con1.close();
-	        } catch (Exception e) {
-	        }
-	    }
-
-	    return infoPedidoCargo;
-	}
+ 
+    
 
 }

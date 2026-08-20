@@ -86,6 +86,8 @@ public class TiendaCtrl {
 			cadaViajeJSON.put("pos", tienda.getPos());
 			cadaViajeJSON.put("alertarpedidos", tienda.getAlertarPedidos());
 			cadaViajeJSON.put("manejazonas", tienda.getManejaZonas());
+			cadaViajeJSON.put("latitud", tienda.getLatitud());
+			cadaViajeJSON.put("longitud", tienda.getLongitud());
 			listJSON.add(cadaViajeJSON);
 		}
 		return listJSON.toJSONString();

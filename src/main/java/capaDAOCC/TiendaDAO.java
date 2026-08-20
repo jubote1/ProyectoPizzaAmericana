@@ -279,6 +279,8 @@ public class TiendaDAO {
 				String hosbd = rs.getString("hosbd");
 				String alertarPedidos = rs.getString("alertarpedidos");
 				String manejaZonas = rs.getString("maneja_zonas");
+				double latitud = rs.getDouble("latitud");
+				double longitud = rs.getDouble("longitud");
 				if (alertarPedidos.equals(new String ("1")))
 				{
 					alertarPedidos = "S";
@@ -287,6 +289,8 @@ public class TiendaDAO {
 					alertarPedidos = "N";
 				}
 				Tienda tien = new Tienda(idTienda, nombre, dsn, url, pos, hosbd, alertarPedidos, manejaZonas);
+				tien.setLatitud(latitud);
+				tien.setLongitud(longitud);
 				tiendas.add(tien);
 			}
 			rs.close();

@@ -30,17 +30,42 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 
 		Logger logger = Logger.getLogger("log_file");
 		int idpedido = 0;
+		int idtienda = 0;
+		int numposheader = 0;
 
 		try {
-			idpedido = Integer.parseInt(request.getParameter("idpedido"));
+		    if (request.getParameter("idpedido") != null) {
+		        idpedido = Integer.parseInt(request.getParameter("idpedido"));
+		    }
 		} catch (Exception e) {
-			idpedido = 0;
+		    idpedido = 0;
 		}
 
-		logger.info("Llamado a CrearOrdenRappiCargo con idpedido " + idpedido);
+		try {
+		    if (request.getParameter("idtienda") != null) {
+		    	idtienda = Integer.parseInt(request.getParameter("idtienda"));
+		    }
+		} catch (Exception e) {
+			idtienda = 0;
+		}
+		
+		try {
+		    if (request.getParameter("numposheader") != null) {
+		    	numposheader = Integer.parseInt(request.getParameter("numposheader"));
+		    }
+		} catch (Exception e) {
+			numposheader = 0;
+		}
+		
 
-		TercerizadoDomicilioCtrl terceridadoCtrl = new TercerizadoDomicilioCtrl();
-		String respuesta = terceridadoCtrl.crearOrdenRappiCargo(idpedido);
+		TercerizadoDomicilioCtrl terceridadoCtrl =
+		        new TercerizadoDomicilioCtrl();
+
+		String respuesta = terceridadoCtrl.crearOrdenRappiCargo(
+		        idpedido,
+		        idtienda,
+		        numposheader
+		);
 
 		PrintWriter out = response.getWriter();
 		out.write(respuesta);
