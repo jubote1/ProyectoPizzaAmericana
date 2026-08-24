@@ -1,6 +1,6 @@
 package capaDAOCC;
 
-import java.lang.System.Logger;
+
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -468,34 +468,85 @@ public class TercerizadoDomicilioEventoDAO {
 
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection con1 = con.obtenerConexionBDPrincipal();
-        boolean respuesta = false;
+        PreparedStatement ps = null;
 
         try {
 
-            Statement stm = con1.createStatement();
-
             String update =
-                    "UPDATE pedido " +
-                    "SET domicilio_tercerizado='S', " +
-                    "idordencomercio=" + cargoOrderId +
-                    " WHERE idpedido=" + idpedido;
+                    "UPDATE pedido "
+                  + "SET domicilio_tercerizado = 'S', "
+                  + "    idordencomercio = ? "
+                  + "WHERE idpedido = ? "
+                  + "  AND idordencomercio = 0";
 
-            respuesta = stm.executeUpdate(update) > 0;
+            ps = con1.prepareStatement(update);
 
-            stm.close();
-            con1.close();
+            ps.setLong(1, cargoOrderId.longValueExact());
+            ps.setInt(2, idpedido);
+
+            return ps.executeUpdate() > 0;
 
         } catch (Exception e) {
 
-            System.out.println(e.toString());
+            e.printStackTrace();
+            return false;
+
+        } finally {
 
             try {
-                con1.close();
-            } catch (Exception ex) {
-            }
-        }
+                if (ps != null) ps.close();
+            } catch (Exception ignored) {}
 
-        return respuesta;
+            try {
+                if (con1 != null) con1.close();
+            } catch (Exception ignored) {}
+        }
+    }
+
+    public static long consultarIdOrdenComercioPedido(int idpedido) {
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+
+            String sql =
+                    "SELECT idordencomercio "
+                  + "FROM pedido "
+                  + "WHERE idpedido = ?";
+
+            ps = con1.prepareStatement(sql);
+            ps.setInt(1, idpedido);
+
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getLong("idordencomercio");
+            }
+
+            return -1L;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return -1L;
+
+        } finally {
+
+            try {
+                if (rs != null) rs.close();
+            } catch (Exception ignored) {}
+
+            try {
+                if (ps != null) ps.close();
+            } catch (Exception ignored) {}
+
+            try {
+                if (con1 != null) con1.close();
+            } catch (Exception ignored) {}
+        }
     }
     
     /**

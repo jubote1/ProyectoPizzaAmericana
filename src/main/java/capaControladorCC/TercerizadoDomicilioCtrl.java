@@ -295,6 +295,21 @@ public class TercerizadoDomicilioCtrl {
 
 	            return listJSON.toJSONString();
 	        }
+	        
+	        int idPedidoReal = idpedido;
+
+	        try {
+	            idPedidoReal = Integer.parseInt(orden.getOrderId());
+	        } catch (Exception e) {
+
+	            respuestaJSON.put("resultado", false);
+	            respuestaJSON.put("mensaje",
+	                    "No fue posible identificar el idpedido real de la orden Rappi Cargo.");
+
+	            listJSON.add(respuestaJSON);
+
+	            return listJSON.toJSONString();
+	        }
 
 
 	        if (orden.getPhone() == null ||
@@ -400,14 +415,45 @@ public class TercerizadoDomicilioCtrl {
 
 
 	            BigInteger cargoOrderId =
-	                    new BigInteger(cargoNode.asText());
+	                    new BigInteger(cargoNode.asText().trim());
 
 
 
-	            TercerizadoDomicilioEventoDAO.actualizarPedidoRappiCargo(
-	                    idpedido,
-	                    cargoOrderId);
-	            
+	            long cargoOrderIdLong = cargoOrderId.longValueExact();
+
+	            boolean actualizado =
+	                    TercerizadoDomicilioEventoDAO.actualizarPedidoRappiCargo(
+	                    		idPedidoReal,
+	                            cargoOrderId
+	                    );
+
+	            if (!actualizado) {
+
+	                long idActualBd =
+	                        TercerizadoDomicilioEventoDAO
+	                                .consultarIdOrdenComercioPedido(idPedidoReal);
+
+	                if (idActualBd != cargoOrderIdLong) {
+
+	                    respuestaJSON.put("resultado", false);
+	                    respuestaJSON.put(
+	                            "mensaje",
+	                            "La orden fue creada en Rappi Cargo, pero no fue posible "
+	                            + "asociarla al pedido interno porque ya existe otro "
+	                            + "idordencomercio en BD. Actual BD: "
+	                            + idActualBd
+	                            + ", recibido: "
+	                            + cargoOrderIdLong
+	                    );
+
+	                    respuestaJSON.put("cargo_order_id", cargoOrderId.toString());
+	                    respuestaJSON.put("respuestaRappi", respuestaRappi.getBody());
+
+	                    listJSON.add(respuestaJSON);
+
+	                    return listJSON.toJSONString();
+	                }
+	            }
 	                       
 	            if (numposheader > 0 && idtienda > 0) {
 	                JSONObject respuestaMarcacionTienda =
@@ -737,13 +783,18 @@ public class TercerizadoDomicilioCtrl {
 	            return respuesta;
 	        }
 	        
-	    	String fechacancelacion = tercerizadoDomicilioEvento.getFechaCancelacion();
-	    	
-	        if (fechacancelacion == null || fechacancelacion.trim().isEmpty()) {
+	        String fechacancelacion =
+	                tercerizadoDomicilioEvento.getFechaCancelacion();
+
+	        if (fechacancelacion != null
+	                && !fechacancelacion.trim().isEmpty()) {
 
 	            respuesta.setExito(false);
+
 	            respuesta.setMensaje(
-	            	    "El pedido " + idPedidoTienda + " se registra como cancelado en la plataforma de Rappi Cargo");
+	                    "El pedido " + idPedidoTienda
+	                    + " se registra como cancelado en la plataforma de Rappi Cargo."
+	            );
 
 	            return respuesta;
 	        }
