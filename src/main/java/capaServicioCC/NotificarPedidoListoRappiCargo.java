@@ -45,6 +45,10 @@ public class NotificarPedidoListoRappiCargo extends HttpServlet {
 
             int idPedidoTienda = Integer.parseInt(idPedidoParam);
             int idTienda = Integer.parseInt(idTiendaParam);
+            
+            System.out.println("idPedidoTienda: " + idPedidoTienda);
+            System.out.println("idTienda: " + idTienda);
+
 
             RespuestaRappiCargo respuestaRappi =
                     TercerizadoDomicilioCtrl.notificarPedidoListo(idPedidoTienda, idTienda);

@@ -1711,7 +1711,7 @@ function crearOrdenRappiCargoCandidatoTienda(datospedido) {
 			}else {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'No fue posible crear la orden',
+                    title: 'Problemas en la creación de la orden',
                     text: respuesta.mensaje || 'No se pudo crear la orden en Rappi Cargo.',
                     confirmButtonColor: '#2563eb'
                 });

@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -27,10 +28,12 @@ import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaModeloCC.DetallePedido;
 
 import capaModeloCC.Parametro;
+import capaModeloCC.Pedido;
 import capaModeloCC.RappiCargoOrden;
 import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
 import capaModeloCC.RespuestaRappiCargo;
 import capaModeloCC.TercerizadoDomicilioEvento;
+import capaModeloCC.Tienda;
 public class TercerizadoDomicilioCtrl {
 	
 	// Numero fijo usado para calcular distancias con latitud y longitud.
@@ -416,7 +419,35 @@ public class TercerizadoDomicilioCtrl {
 
 	            BigInteger cargoOrderId =
 	                    new BigInteger(cargoNode.asText().trim());
+	            
+	            JsonNode rappiNode =
+		                respuesta.get("rappi_order_id");
+	            
+	            JsonNode tracking_urlNode =
+		                respuesta.get("tracking_url");
+	            
+	            String rappiOrderId = rappiNode != null
+	                    ? rappiNode.asText().trim()
+	                    : "";
 
+	            String trackingUrl = tracking_urlNode != null
+	                    ? tracking_urlNode.asText().trim()
+	                    : "";
+	            long idPedidoEv = idPedidoReal;
+	            
+	            
+	            Long idEvento = TercerizadoDomicilioEventoDAO.guardarEvento(
+	            		idPedidoEv,
+	            		"RAPPICARGO",
+	            		cargoNode.toString(),
+	            		rappiOrderId,
+	                    "created",
+	                    trackingUrl,
+	                    null,
+	                    null,
+	                    respuestaRappi.getBody(),
+	                    "OK"
+	            );
 
 
 	            long cargoOrderIdLong = cargoOrderId.longValueExact();
@@ -426,6 +457,8 @@ public class TercerizadoDomicilioCtrl {
 	                    		idPedidoReal,
 	                            cargoOrderId
 	                    );
+	           
+	            String msg = "Orden creada correctamente.";
 
 	            if (!actualizado) {
 
@@ -434,24 +467,15 @@ public class TercerizadoDomicilioCtrl {
 	                                .consultarIdOrdenComercioPedido(idPedidoReal);
 
 	                if (idActualBd != cargoOrderIdLong) {
-
-	                    respuestaJSON.put("resultado", false);
-	                    respuestaJSON.put(
-	                            "mensaje",
-	                            "La orden fue creada en Rappi Cargo, pero no fue posible "
+                        
+	                	
+	                	
+	                	msg =  " La orden fue creada en Rappi Cargo, pero no fue posible "
 	                            + "asociarla al pedido interno porque ya existe otro "
-	                            + "idordencomercio en BD. Actual BD: "
+	                            + "idordencomercio en BD. se debe revisar para evitar inconvenientes con el pedido. Actual BD: "
 	                            + idActualBd
 	                            + ", recibido: "
-	                            + cargoOrderIdLong
-	                    );
-
-	                    respuestaJSON.put("cargo_order_id", cargoOrderId.toString());
-	                    respuestaJSON.put("respuestaRappi", respuestaRappi.getBody());
-
-	                    listJSON.add(respuestaJSON);
-
-	                    return listJSON.toJSONString();
+	                            + cargoOrderIdLong;
 	                }
 	            }
 	                       
@@ -469,8 +493,7 @@ public class TercerizadoDomicilioCtrl {
 
 	            respuestaJSON.put("resultado", true);
 
-	            respuestaJSON.put("mensaje",
-	                    "Orden creada correctamente.");
+	            respuestaJSON.put("mensaje",msg);
 
 	            respuestaJSON.put("cargo_order_id",
 	                    cargoOrderId.toString());
@@ -756,116 +779,94 @@ public class TercerizadoDomicilioCtrl {
 	}
 
 	
-	public static RespuestaRappiCargo notificarPedidoListo(int idPedidoTienda , int idTienda) {
+	public static RespuestaRappiCargo notificarPedidoListo(int idPedidoTienda, int idTienda) {
 
 	    RespuestaRappiCargo respuesta = new RespuestaRappiCargo();
 
 	    try {
 
-	    	TercerizadoDomicilioEvento tercerizadoDomicilioEvento = TercerizadoDomicilioEventoDAO.ConsultarInfoRappiCargo(idPedidoTienda ,idTienda);
-            
-	    	if (tercerizadoDomicilioEvento == null) {
-	    	    respuesta.setExito(false);
-	    	    respuesta.setMensaje(
-	    	    	    "No se encontró información de Rappi Cargo para el pedido "
-	    	    	    + idPedidoTienda + " de la tienda " + idTienda + ".");
-	    	    return respuesta;
-	    	}
-	    	
-	    	String rappiOrderId = tercerizadoDomicilioEvento.getIdPedidoLogistico();
-	    	
+	        TercerizadoDomicilioEvento tercerizadoDomicilioEvento = 
+	                TercerizadoDomicilioEventoDAO.ConsultarInfoRappiCargo(idPedidoTienda, idTienda);
+	        
+	        if (tercerizadoDomicilioEvento == null) {
+	            respuesta.setExito(false);
+	            respuesta.setMensaje("No se encontró información de Rappi Cargo para el pedido "
+	                    + idPedidoTienda + " de la tienda " + idTienda + ".");
+	            return respuesta;
+	        }
+	        
+	        String rappiOrderId = tercerizadoDomicilioEvento.getIdPedidoLogistico();
+	        
 	        if (rappiOrderId == null || rappiOrderId.trim().isEmpty()) {
-
 	            respuesta.setExito(false);
-	            respuesta.setMensaje(
-	            	    "El pedido " + idPedidoTienda + " no tiene rappi_order_id asociado.");
-
+	            respuesta.setMensaje("El pedido " + idPedidoTienda + " no tiene rappi_order_id asociado.");
 	            return respuesta;
 	        }
 	        
-	        String fechacancelacion =
-	                tercerizadoDomicilioEvento.getFechaCancelacion();
+	        String fechacancelacion = tercerizadoDomicilioEvento.getFechaCancelacion();
 
-	        if (fechacancelacion != null
-	                && !fechacancelacion.trim().isEmpty()) {
-
+	        if (fechacancelacion != null && !fechacancelacion.trim().isEmpty()) {
 	            respuesta.setExito(false);
-
-	            respuesta.setMensaje(
-	                    "El pedido " + idPedidoTienda
-	                    + " se registra como cancelado en la plataforma de Rappi Cargo."
-	            );
-
+	            respuesta.setMensaje("El pedido " + idPedidoTienda
+	                    + " se registra como cancelado en la plataforma de Rappi Cargo.");
 	            return respuesta;
 	        }
 	        
+	        int canceladoInterno = tercerizadoDomicilioEvento.getCanceladoInterno();
 	        
-	    	int  canceladoInterno = tercerizadoDomicilioEvento.getCanceladoInterno();
-	    	
-	        if (canceladoInterno == 1 ) {
-
+	        if (canceladoInterno == 1) {
 	            respuesta.setExito(false);
-	            respuesta.setMensaje(
-	            	    "El pedido " + idPedidoTienda + " se registra como cancelado en nuestro sistema.");
-
+	            respuesta.setMensaje("El pedido " + idPedidoTienda + " se registra como cancelado en nuestro sistema.");
 	            return respuesta;
 	        }
 
-	        String urlService =
-	                ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_URL_SERVICE");
-
-	        String token =
-	                ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_TOKEN");
+	        String urlService = ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_URL_SERVICE");
+	        String token = ParametrosDAO.retornarValorAlfanumerico("RP_CARGO_TOKEN");
 
 	        if (urlService == null || urlService.trim().isEmpty()) {
-
 	            respuesta.setExito(false);
 	            respuesta.setMensaje("No está configurado RP_CARGO_URL_SERVICE");
-
 	            return respuesta;
 	        }
 
 	        if (token == null || token.trim().isEmpty()) {
-
 	            respuesta.setExito(false);
 	            respuesta.setMensaje("No está configurado RP_CARGO_TOKEN");
-
 	            return respuesta;
 	        }
 
+	        // URL exacta según la documentación oficial de Rappi (sin barra adicional al final)
 	        String urlReady = urlService.endsWith("/")
 	                ? urlService + "v3/order-ready/" + rappiOrderId
 	                : urlService + "/v3/order-ready/" + rappiOrderId;
 
-	        HttpPost request = new HttpPost(urlReady);
+	        // Asegurar el protocolo HTTPS si venía como HTTP desde BD
+	        if (urlReady.startsWith("http://")) {
+	            urlReady = urlReady.replace("http://", "https://");
+	        }
 
+	        HttpPost request = new HttpPost(urlReady);
 	        request.setHeader("user-token", token);
 	        request.setHeader("Content-Type", "application/json");
 
-	        HttpClient client =
-	                HttpClientBuilder.create().build();
+	        // SOLUCIÓN AL 307: Permite al cliente HTTP seguir redirecciones en peticiones POST
+	        HttpClient client = HttpClientBuilder.create()
+	                .setRedirectStrategy(new org.apache.http.impl.client.LaxRedirectStrategy())
+	                .build();
 
-	        HttpResponse response =
-	                client.execute(request);
+	        HttpResponse response = client.execute(request);
 
-	        int status =
-	                response.getStatusLine().getStatusCode();
+	        int status = response.getStatusLine().getStatusCode();
 
 	        StringBuilder retorno = new StringBuilder();
 
 	        if (response.getEntity() != null) {
-
-	            BufferedReader rd =
-	                    new BufferedReader(
-	                            new InputStreamReader(
-	                                    response.getEntity().getContent()));
-
+	            BufferedReader rd = new BufferedReader(
+	                    new InputStreamReader(response.getEntity().getContent()));
 	            String line;
-
 	            while ((line = rd.readLine()) != null) {
 	                retorno.append(line);
 	            }
-
 	            rd.close();
 	        }
 
@@ -882,37 +883,24 @@ public class TercerizadoDomicilioCtrl {
 	            respuesta.setExito(false);
 
 	            try {
-
 	                ObjectMapper mapper = new ObjectMapper();
-
-	                JsonNode error =
-	                        mapper.readTree(retorno.toString());
+	                JsonNode error = mapper.readTree(retorno.toString());
 
 	                if (error.has("message")) {
-
-	                    respuesta.setMensaje(
-	                            error.get("message").asText());
-
+	                    respuesta.setMensaje(error.get("message").asText());
 	                } else {
-
 	                    respuesta.setMensaje("HTTP " + status);
 	                }
 
 	            } catch (Exception e) {
-
-	                respuesta.setMensaje(
-	                        "HTTP " + status + " "
-	                                + response.getStatusLine().getReasonPhrase());
+	                respuesta.setMensaje("HTTP " + status + " " + response.getStatusLine().getReasonPhrase());
 	            }
 	        }
 
 	    } catch (Exception e) {
-
 	        e.printStackTrace();
-
 	        respuesta.setExito(false);
-	        respuesta.setMensaje(
-	        	    "Error notificando pedido listo a Rappi Cargo: " + e.getMessage());
+	        respuesta.setMensaje("Error notificando pedido listo a Rappi Cargo: " + e.getMessage());
 	    }
 
 	    return respuesta;
@@ -991,6 +979,64 @@ public class TercerizadoDomicilioCtrl {
 	    }
 
 	    return json;
+	}
+	
+	/**
+	 * Desmarca el pedido como tercerizado tanto en la base principal como
+	 * en la base local de la tienda, sin importar el motivo de la
+	 * cancelación. Es "best effort": si falla, se deja un log pero NO se
+	 * interrumpe el resto del flujo de cancelación (el pedido igual se
+	 * cancela normalmente).
+	 */
+	public static void desmarcarTercerizado(
+	        Pedido pedEvento,
+	        Tienda tienda,
+	        Long idEvento) {
+
+	    long idPedido = pedEvento.getIdpedido();
+
+	    // 1. Base principal.
+	    boolean desmarcadoPrincipal =
+	    		TercerizadoDomicilioEventoDAO.desmarcarPedidoRappiCargo((int) idPedido);
+
+	    if (!desmarcadoPrincipal) {
+	        System.out.println(
+	                "No se pudo desmarcar domicilio_tercerizado en la base "
+	                        + "principal para el pedido " + idPedido);
+	    }
+
+	    // 2. Base local de la tienda.
+	    String rutaURL =
+	            tienda.getUrl()
+	                    + "DesmarcarPedidoTercerizadoTienda?idPedidoTienda="
+	                    + pedEvento.getNumposheader()
+	                    + "&idTienda=" + tienda.getIdTienda();
+
+	    HttpClient client = HttpClientBuilder.create().build();
+
+	    try {
+	        HttpGet request = new HttpGet(rutaURL);
+	        HttpResponse response = client.execute(request);
+	        if (response.getEntity() != null) {
+	            BufferedReader rd = new BufferedReader(
+	                    new InputStreamReader(
+	                            response.getEntity().getContent()));
+	            StringBuilder retorno = new StringBuilder();
+	            String line;
+	            while ((line = rd.readLine()) != null) {
+	                retorno.append(line);
+	            }
+	            rd.close();
+	            System.out.println(
+	                    "Respuesta DesmarcarPedidoTercerizadoTienda: "
+	                            + retorno.toString());
+	        }
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        System.out.println(
+	                "Error consumiendo DesmarcarPedidoTercerizadoTienda: "
+	                        + e.getMessage());
+	    }
 	}
 
 }

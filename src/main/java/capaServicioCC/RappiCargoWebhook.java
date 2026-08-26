@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import capaControladorCC.PedidoCtrl;
+import capaControladorCC.TercerizadoDomicilioCtrl;
 import capaDAOCC.ParametrosDAO;
 import capaDAOCC.PedidoDAO;
 import capaDAOCC.TercerizadoDomicilioEventoDAO;
@@ -548,125 +549,10 @@ public class RappiCargoWebhook extends HttpServlet {
             return;
         }
 
-        /*
-         * ============================================================
-         * 5. VALIDAR QUE EL PEDIDO CORRESPONDA
-         * ============================================================
-         */
-
-        if (idPedido != pedEvento.getIdpedido()) {
-
-            String mensaje =
-                    "Inconsistencia entre external_order_id ("
-                            + idPedido
-                            + ") e id_pedido encontrado ("
-                            + pedEvento.getIdpedido()
-                            + ")";
-
-            System.out.println(mensaje);
-
-            TercerizadoDomicilioEventoDAO
-                    .actualizarResultadoProcesoPorPedido(
-                            idPedido,
-                            false,
-                            mensaje,
-                            idEvento
-                    );
-
-            return;
-        }
-
-        /*
-         * ============================================================
-         * 6. ASOCIAR CARGO_ORDER_ID CON IDORDENCOMERCIO
-         *
-         * AQUÍ ESTÁ EL CAMBIO MÁS IMPORTANTE.
-         *
-         * Si todavía está vacío:
-         *
-         *     idOrdenComercio = 0
-         *
-         * entonces lo asociamos inmediatamente.
-         *
-         * Si ya está asociado al mismo cargo_order_id:
-         *
-         *     continuamos.
-         *
-         * Si está asociado a otro:
-         *
-         *     detenemos el proceso por inconsistencia.
-         * ============================================================
-         */
-
-        long idActual =
-                pedEvento.getIdOrdenComercio();
-
         long idCargo =
                 idOrdenComercio.longValue();
 
-        if (idActual == 0L) {
-
-            boolean actualizado =
-                    TercerizadoDomicilioEventoDAO.actualizarPedidoRappiCargo(
-                            pedEvento.getIdpedido(),
-                            idOrdenComercio
-                    );
-
-            if (!actualizado) {
-
-                long idActualBd =
-                        TercerizadoDomicilioEventoDAO
-                                .consultarIdOrdenComercioPedido(
-                                        pedEvento.getIdpedido()
-                                );
-
-                if (idActualBd != idCargo) {
-
-                    String mensaje =
-                            "No fue posible asociar el cargo_order_id al pedido. "
-                            + "Otro valor quedó asociado en BD. "
-                            + "Actual BD: "
-                            + idActualBd
-                            + ", recibido: "
-                            + idCargo;
-
-                    System.out.println(mensaje);
-
-                    TercerizadoDomicilioEventoDAO
-                            .actualizarResultadoProcesoPorPedido(
-                                    idPedido,
-                                    false,
-                                    mensaje,
-                                    idEvento
-                            );
-
-                    return;
-                }
-            }
-
-            pedEvento.setIdOrdenComercio(idCargo);
-
-        } else if (idActual != idCargo) {
-
-            String mensaje =
-                    "El pedido ya tiene asociado otro idOrdenComercio. "
-                    + "Actual: "
-                    + idActual
-                    + ", recibido: "
-                    + idCargo;
-
-            System.out.println(mensaje);
-
-            TercerizadoDomicilioEventoDAO
-                    .actualizarResultadoProcesoPorPedido(
-                            idPedido,
-                            false,
-                            mensaje,
-                            idEvento
-                    );
-
-            return;
-        }
+  
         /*
          * ============================================================
          * 7. OBTENER TIENDA
@@ -997,101 +883,45 @@ public class RappiCargoWebhook extends HttpServlet {
              */
 
             case "canceled":
+                /*
+                 * Sin importar el motivo, toda cancelación de RappiCargo desmarca
+                 * el pedido como tercerizado (principal y tienda). El resto del
+                 * flujo de cancelación sigue igual que hasta ahora.
+                 */
+            	TercerizadoDomicilioCtrl.desmarcarTercerizado(pedEvento, tienda, idEvento);
 
                 boolean ordenCancelada =
-                        PedidoDAO.validarCancelacionPlataforma(
-                                idOrdenComercio
-                        );
-
+                        PedidoDAO.validarCancelacionPlataforma(idOrdenComercio);
                 if (!ordenCancelada) {
-
-                    PedidoDAO.marcarCancelacionPlataforma(
-                            idOrdenComercio
-                    );
-
+                    PedidoDAO.marcarCancelacionPlataforma(idOrdenComercio);
                     String mensaje =
-                            ParametrosDAO
-                                    .retornarValorAlfanumerico(
-                                            "MSG_CANCELACION"
-                                    );
-
+                            ParametrosDAO.retornarValorAlfanumerico("MSG_CANCELACION");
                     if (mensaje == null) {
                         mensaje = "Pedido cancelado por tercero.";
                     }
+                    mensaje = mensaje.replace("{nombreOrigen}", "TERCERO");
+                    mensaje = mensaje.replace("{orderComercio}", cargoOrderId);
+                    mensaje = mensaje.replace(
+                            "{orderInterno}", String.valueOf(pedEvento.getIdpedido()));
 
-                    mensaje =
-                            mensaje.replace(
-                                    "{nombreOrigen}",
-                                    "TERCERO"
-                            );
-
-                    mensaje =
-                            mensaje.replace(
-                                    "{orderComercio}",
-                                    cargoOrderId
-                            );
-
-                    mensaje =
-                            mensaje.replace(
-                                    "{orderInterno}",
-                                    String.valueOf(
-                                            pedEvento.getIdpedido()
-                                    )
-                            );
-
-                    Notificaciones notificacion =
-                            new Notificaciones(mensaje);
-
+                    Notificaciones notificacion = new Notificaciones(mensaje);
                     notificacion.setOrigen("TERCERO");
-
-                    notificacion.setIdpedido(
-                            pedEvento.getIdpedido()
-                    );
-
-                    int idNotificacion =
-                            PedidoDAO.insertarNotificacion(
-                                    notificacion
-                            );
-
+                    notificacion.setIdpedido(pedEvento.getIdpedido());
+                    int idNotificacion = PedidoDAO.insertarNotificacion(notificacion);
                     if (idNotificacion > 0) {
-
-                        notificacion.setId(
-                                idNotificacion
-                        );
-
+                        notificacion.setId(idNotificacion);
                         notificacion.setFechaHora(
-                                new java.text.SimpleDateFormat(
-                                        "yyyy-MM-dd HH:mm:ss"
-                                ).format(
-                                        new java.util.Date()
-                                )
-                        );
-
-                        NotificacionSocket
-                                .enviarATodos(
-                                        notificacion
-                                );
+                                new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                                        .format(new java.util.Date()));
+                        NotificacionSocket.enviarATodos(notificacion);
                     }
-
-                    notificacion.setIdpedido(
-                            pedEvento.getNumposheader()
-                    );
-
-                    PedidoCtrl
-                            .registrarNotificacionATiendaAsync(
-                                    pedEvento.getIdtienda(),
-                                    notificacion
-                            );
+                    notificacion.setIdpedido(pedEvento.getNumposheader());
+                    PedidoCtrl.registrarNotificacionATiendaAsync(
+                            pedEvento.getIdtienda(), notificacion);
                 }
-
                 TercerizadoDomicilioEventoDAO
                         .actualizarResultadoProcesoPorPedido(
-                                idPedido,
-                                true,
-                                "OK",
-                                idEvento
-                        );
-
+                                idPedido, true, "OK", idEvento);
                 break;
 
             /*

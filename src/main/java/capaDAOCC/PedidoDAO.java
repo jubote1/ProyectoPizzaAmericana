@@ -6392,43 +6392,57 @@ public class PedidoDAO {
 		    jsonRespuesta.put("validacionDistancia", false);
 		    jsonRespuesta.put("mensaje", "El pedido no cumple las condiciones para Rappi Cargo.");
 
-		    String select = """ 
-						SELECT
-						    b.latitud AS latitud_tienda,
-						    b.longitud AS longitud_tienda,
-						    cli.latitud AS latitud_cliente,
-						    cli.longitud AS longitud_cliente,
-						    a.fechapagovirtual,
-						    fp.idforma_pago,
-						    fp.nombre AS formapago
-						FROM pedido a
-						INNER JOIN tienda b
-						    ON a.idtienda = b.idtienda
-						INNER JOIN cliente cli
-						    ON a.idcliente = cli.idcliente
-						INNER JOIN pedido_forma_pago pfp
-						    ON pfp.idpedido = a.idpedido
-						INNER JOIN forma_pago fp
-						    ON fp.idforma_pago = pfp.idforma_pago
-						WHERE a.idpedido = ?
-						AND a.idestadopedido = 2
-						""" +
-						filtroEnviadoPixel +
-						"""
-						AND a.fechapedido = CURDATE()
-						AND b.domicilio_tercerizado = 'S'
-						AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S'
-						AND fp.domicilio_tercerizado = 'S'
-						AND NOT EXISTS (
-						    SELECT 1
-						    FROM detalle_pedido dp
-						    INNER JOIN producto p
-						        ON dp.idproducto = p.idproducto
-						    WHERE dp.idpedido = a.idpedido
-						      AND (p.domicilio_tercerizado <> 'S'
-						           OR p.domicilio_tercerizado IS NULL)
-						);
-		    		""";
+		    String select = """
+		    	    SELECT
+		    	        b.latitud AS latitud_tienda,
+		    	        b.longitud AS longitud_tienda,
+		    	        cli.latitud AS latitud_cliente,
+		    	        cli.longitud AS longitud_cliente,
+		    	        a.fechapagovirtual,
+		    	        fp.idforma_pago,
+		    	        fp.nombre AS formapago
+
+		    	    FROM pedido a
+
+		    	    INNER JOIN tienda b
+		    	        ON a.idtienda = b.idtienda
+
+		    	    INNER JOIN cliente cli
+		    	        ON a.idcliente = cli.idcliente
+
+		    	    INNER JOIN pedido_forma_pago pfp
+		    	        ON pfp.idpedido = a.idpedido
+
+		    	    INNER JOIN forma_pago fp
+		    	        ON fp.idforma_pago = pfp.idforma_pago
+
+		    	    WHERE a.idpedido = ?
+		    	      AND a.idestadopedido = 2
+
+		    	    """ +
+		    	    filtroEnviadoPixel +
+		    	    """
+
+		    	      AND a.fechapedido = CURDATE()
+		    	      AND b.domicilio_tercerizado = 'S'
+		    	      AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S'
+		    	      AND fp.domicilio_tercerizado = 'S'
+
+		    	      AND IFNULL(a.cancelado, 0) = 0
+
+		    	      AND NOT EXISTS (
+		    	          SELECT 1
+		    	          FROM detalle_pedido dp
+		    	          INNER JOIN producto p
+		    	              ON dp.idproducto = p.idproducto
+		    	          WHERE dp.idpedido = a.idpedido
+		    	            AND (
+		    	                p.domicilio_tercerizado <> 'S'
+		    	                OR p.domicilio_tercerizado IS NULL
+		    	            )
+		    	      );
+
+		    	""";
 
 	
 		        ps = con1.prepareStatement(select);
@@ -6547,6 +6561,7 @@ public class PedidoDAO {
 			        "AND a.fechapedido = CURDATE() " +
 			        "AND b.domicilio_tercerizado = 'S' " +    
 			        "AND IFNULL(a.domicilio_tercerizado, 'N') <> 'S' " + 
+			        "AND IFNULL(a.cancelado, 0) = 0 "+
 			        "AND EXISTS ( " +
 			        "    SELECT 1 " +
 			        "    FROM pedido_forma_pago pfp " +

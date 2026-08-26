@@ -7775,6 +7775,7 @@ public class PedidoCtrl {
 			
 			 if (idPedido > 0) {
 			        pedidoInsertado = true; // aquí sí sabemos que se insertó
+			        LogPedidoVirtualKunoDAO.actualizarLogCRMBOTIdPedido(idLog, idPedido);
 			   }
 
 		       // Realizamos la inserción del producto ordenado

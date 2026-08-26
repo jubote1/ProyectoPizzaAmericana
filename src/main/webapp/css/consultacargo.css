@@ -54,14 +54,23 @@
 	text-align: left;
 	font-size: 15px;
 	line-height: 1.9;
-	margin: 15px 30px;
+	margin: 15px 20px;
+}
+
+.rappi-info div {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
 }
 
 .rappi-info b {
-	display: inline-block;
-	width: 90px;
+	min-width: 115px;
+	flex-shrink: 0;
+	white-space: nowrap;
 	color: #444;
 }
+
+
 
 /* Botones */
 .swal2-confirm, .swal2-cancel {

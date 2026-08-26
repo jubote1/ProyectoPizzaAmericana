@@ -476,13 +476,49 @@ public class TercerizadoDomicilioEventoDAO {
                     "UPDATE pedido "
                   + "SET domicilio_tercerizado = 'S', "
                   + "    idordencomercio = ? "
-                  + "WHERE idpedido = ? "
-                  + "  AND idordencomercio = 0";
+                  + "WHERE idpedido = ? ";
 
             ps = con1.prepareStatement(update);
 
             ps.setLong(1, cargoOrderId.longValueExact());
             ps.setInt(2, idpedido);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return false;
+
+        } finally {
+
+            try {
+                if (ps != null) ps.close();
+            } catch (Exception ignored) {}
+
+            try {
+                if (con1 != null) con1.close();
+            } catch (Exception ignored) {}
+        }
+    }
+    
+    
+    public static boolean desmarcarPedidoRappiCargo(int idpedido) {
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal();
+        PreparedStatement ps = null;
+
+        try {
+
+            String update =
+                    "UPDATE pedido "
+                  + "SET domicilio_tercerizado = 'N' "
+                  + "WHERE idpedido = ? ";
+
+            ps = con1.prepareStatement(update);
+
+            ps.setInt(1, idpedido);
 
             return ps.executeUpdate() > 0;
 

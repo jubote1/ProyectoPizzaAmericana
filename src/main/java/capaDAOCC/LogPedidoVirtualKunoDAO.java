@@ -8,6 +8,7 @@ import java.sql.Statement;
 import org.apache.log4j.Logger;
 
 import capaModeloCC.LogEventoWompi;
+import capaModeloCC.TercerizadoDomicilioEvento;
 import conexionCC.ConexionBaseDatos;
 
 public class LogPedidoVirtualKunoDAO {
@@ -263,6 +264,56 @@ public class LogPedidoVirtualKunoDAO {
 	    return false;
 	}
 
-
 	
+	public static boolean actualizarLogCRMBOTIdPedido(int idLog, int idPedido) {
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    PreparedStatement ps = null;
+
+	    try {
+
+	        String sql = "UPDATE log_pedido_crmbot " +
+	                     "SET id_pedido = ? " +
+	                     "WHERE idlog = ?";
+
+	        ps = con1.prepareStatement(sql);
+
+	        ps.setInt(1, idPedido);
+	        ps.setInt(2, idLog);
+
+	        int filasActualizadas = ps.executeUpdate();
+
+	        return filasActualizadas > 0;
+
+	    } catch (Exception e) {
+
+	        System.out.println(
+	            "Error actualizando id_pedido en log CRM BOT: " + e.toString()
+	        );
+
+	        e.printStackTrace();
+
+	        return false;
+
+	    } finally {
+
+	        try {
+	            if (ps != null) {
+	                ps.close();
+	            }
+	        } catch (Exception e) {
+	        }
+
+	        try {
+	            if (con1 != null) {
+	                con1.close();
+	            }
+	        } catch (Exception e) {
+	        }
+	    }
+	}
+
+
+
 }
