@@ -1583,7 +1583,7 @@ function consultaAplicabilidadCargoTienda(datospedido) {
                 return;
             }
 
-            confirmarCrearOrdenCandidatoCargo(datospedido, validacion);
+            verificarUltimoEstadoYContinuar(datospedido, validacion);
         },
         error: function (xhr) {
             Swal.fire({
@@ -1596,8 +1596,7 @@ function consultaAplicabilidadCargoTienda(datospedido) {
     });
 }
 
-
-function confirmarCrearOrdenCandidatoCargo(datospedido, validacion) {
+function confirmarCrearOrdenCandidatoCargo(datospedido, validacion, estadoAnterior) {
 
     var aplica = validacion && validacion.validacionDistancia === true;
 
@@ -1605,10 +1604,11 @@ function confirmarCrearOrdenCandidatoCargo(datospedido, validacion) {
         ? validacion.mensaje
         : 'No fue posible validar la distancia del pedido.';
 
-    var advertencia = "";
+    var fueCancelado = estadoAnterior === 'canceled';
 
+    var advertenciaDistancia = "";
     if (!aplica) {
-        advertencia = `
+        advertenciaDistancia = `
             <div class="advertencia">
                 <i class="fa fa-exclamation-triangle"></i>
                 <b> Advertencia</b>
@@ -1620,9 +1620,28 @@ function confirmarCrearOrdenCandidatoCargo(datospedido, validacion) {
         `;
     }
 
+    var advertenciaCancelado = "";
+    if (fueCancelado) {
+        advertenciaCancelado = `
+            <div style="background-color:#ffe1e1;border:2px solid #ff4d4f;border-radius:8px;padding:12px;text-align:left;margin-top:10px;">
+                <b style="color:#b30000;">
+                    Este pedido ya había sido creado antes en Rappi Cargo y esa orden fue CANCELADA.
+                </b>
+                <br><br>
+                <span style="color:#b30000;">
+                    Si continúa, se intentará crear la orden nuevamente.
+                </span>
+            </div>
+        `;
+    }
+
+    var titulo = fueCancelado
+        ? 'Pedido cancelado anteriormente en Rappi Cargo'
+        : (aplica ? '¿Crear orden en Rappi Cargo?' : 'Pedido con advertencia');
+
     Swal.fire({
-        icon: aplica ? 'question' : 'warning',
-        title: aplica ? '¿Crear orden en Rappi Cargo?' : 'Pedido con advertencia',
+        icon: (fueCancelado || !aplica) ? 'warning' : 'question',
+        title: titulo,
         html: `
             <div class="rappi-info">
                 <div><b>Pedido tienda:</b> ${datospedido.idpedidotienda}</div>
@@ -1635,12 +1654,13 @@ function confirmarCrearOrdenCandidatoCargo(datospedido, validacion) {
                 <div><b>Distancia:</b> ${validacion.distanciaKm || 0} km</div>
             </div>
 
-            ${advertencia}
+            ${advertenciaDistancia}
+            ${advertenciaCancelado}
         `,
         showCancelButton: true,
-        confirmButtonText: aplica ? 'Crear orden' : 'Crear de todas formas',
+        confirmButtonText: (aplica && !fueCancelado) ? 'Crear orden' : 'Crear de todas formas',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#2563eb',
+        confirmButtonColor: fueCancelado ? '#b30000' : '#2563eb',
         cancelButtonColor: '#6b7280',
         reverseButtons: true
     }).then((result) => {
@@ -1871,6 +1891,27 @@ function consultarCandidatosRappiCargoTienda() {
 	                text: mensaje,
 	                confirmButtonColor: '#2563eb'
 	            });
+	        }
+	    });
+	}
+	
+	function verificarUltimoEstadoYContinuar(datospedido, validacion) {
+
+	    $.ajax({
+	        url: server + 'ConsultarUltimoEstadoRappiCargoTienda',
+	        type: 'GET',
+	        dataType: 'json',
+	        data: {
+	            idpedidotienda: datospedido.idpedidotienda,
+	            idtienda: datospedido.idtienda
+	        },
+	        success: function (data) {
+	            var estadoAnterior = data ? data.estado : null;
+	            confirmarCrearOrdenCandidatoCargo(datospedido, validacion, estadoAnterior);
+	        },
+	        error: function () {
+	            // Si falla la verificación, seguimos sin la advertencia de cancelación.
+	            confirmarCrearOrdenCandidatoCargo(datospedido, validacion, null);
 	        }
 	    });
 	}

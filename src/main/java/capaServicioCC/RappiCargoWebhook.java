@@ -28,6 +28,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @WebServlet("/api/rappi-cargo/webhook/status")
 public class RappiCargoWebhook extends HttpServlet {
@@ -156,6 +158,14 @@ public class RappiCargoWebhook extends HttpServlet {
 
         String cancelledAt =
                 getText(json, "cancelled_at");
+        
+        
+        if ("pending_review".equals(state)) {
+            deliveredAt = LocalDateTime.now(ZoneId.of("America/Bogota")).toString();
+        }
+        if ("canceled".equals(state)) {
+            cancelledAt = LocalDateTime.now(ZoneId.of("America/Bogota")).toString();
+        }
 
         System.out.println("==========================================");
         System.out.println("WEBHOOK RAPPICARGO");
@@ -675,7 +685,6 @@ public class RappiCargoWebhook extends HttpServlet {
 
             case "in_store":
             case "arrive":
-            case "pending_review":
             case "return_in_store":
 
                 TercerizadoDomicilioEventoDAO
@@ -787,7 +796,7 @@ public class RappiCargoWebhook extends HttpServlet {
              * ========================================================
              */
 
-            case "delivered_to_user":
+            case "pending_review":
 
                 rutaURL =
                         tienda.getUrl()
