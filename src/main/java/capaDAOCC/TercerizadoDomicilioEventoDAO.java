@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 
 import capaModeloCC.DetallePedido;
@@ -373,37 +374,40 @@ public class TercerizadoDomicilioEventoDAO {
      * 2022-09-12T21:41:39
      * 2022-09-12 21:41:39
      */
-    private static Timestamp convertirTimestamp(String fecha) {
+	private static Timestamp convertirTimestamp(String fecha) {
 
-        if (fecha == null || fecha.trim().isEmpty()) {
-            return null;
-        }
+	    if (fecha == null || fecha.trim().isEmpty()) {
+	        return null;
+	    }
 
-        fecha = fecha.trim();
+	    fecha = fecha.trim();
 
-        // Formato ISO-8601 con zona horaria (ej: 2022-09-12T21:41:39.694Z)
-        try {
-            return Timestamp.from(Instant.parse(fecha));
-        } catch (Exception ignored) {
-        }
+	    // Formato ISO-8601 con zona horaria (ej: 2022-09-12T21:41:39.694Z)
+	    try {
+	        Instant instant = Instant.parse(fecha);
+	        LocalDateTime ldtBogota =
+	                LocalDateTime.ofInstant(instant, ZoneId.of("America/Bogota"));
+	        return Timestamp.valueOf(ldtBogota);
+	    } catch (Exception ignored) {
+	    }
 
-        // Formato ISO-8601 sin zona horaria (ej: 2022-09-12T21:41:39)
-        try {
-            LocalDateTime ldt = LocalDateTime.parse(fecha);
-            return Timestamp.valueOf(ldt);
-        } catch (Exception ignored) {
-        }
+	    // Formato ISO-8601 sin zona horaria (ej: 2022-09-12T21:41:39)
+	    try {
+	        LocalDateTime ldt = LocalDateTime.parse(fecha);
+	        return Timestamp.valueOf(ldt);
+	    } catch (Exception ignored) {
+	    }
 
-        // Formato SQL (ej: 2022-09-12 21:41:39)
-        try {
-            return Timestamp.valueOf(fecha);
-        } catch (Exception ignored) {
-        }
+	    // Formato SQL (ej: 2022-09-12 21:41:39)
+	    try {
+	        return Timestamp.valueOf(fecha);
+	    } catch (Exception ignored) {
+	    }
 
-        System.err.println("Formato de fecha no soportado recibido de Rappi: " + fecha);
+	    System.err.println("Formato de fecha no soportado recibido de Rappi: " + fecha);
 
-        return null;
-    }
+	    return null;
+	}
     
     
     public static boolean actualizarResultadoProcesoPorPedido(
@@ -699,7 +703,61 @@ public class TercerizadoDomicilioEventoDAO {
     }
     
     
-    
+    /**
+     * Retorna el estado del último evento registrado en
+     * tercerizado_domicilio_evento para un pedido de tienda dado.
+     * Retorna null si no hay pedido o no hay eventos.
+     */
+    public static String consultarUltimoEstadoPorPedidoTienda(int idPedidoTienda, int idTienda) {
+
+        String estado = null;
+
+        String consultaPedido =
+                "SELECT idpedido FROM pedido WHERE numposheader = ? AND idtienda = ?";
+        String consultaEvento =
+                "SELECT estado FROM tercerizado_domicilio_evento " +
+                "WHERE id_pedido = ? ORDER BY id_evento DESC LIMIT 1";
+
+        ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = con.obtenerConexionBDPrincipal();
+        PreparedStatement ps = null;
+        PreparedStatement ps2 = null;
+        ResultSet rs = null;
+        ResultSet rs2 = null;
+
+        try {
+            ps = con1.prepareStatement(consultaPedido);
+            ps.setInt(1, idPedidoTienda);
+            ps.setInt(2, idTienda);
+            rs = ps.executeQuery();
+
+            int idPedido = 0;
+            if (rs.next()) {
+                idPedido = rs.getInt("idpedido");
+            }
+            if (idPedido == 0) {
+                return null;
+            }
+
+            ps2 = con1.prepareStatement(consultaEvento);
+            ps2.setInt(1, idPedido);
+            rs2 = ps2.executeQuery();
+            if (rs2.next()) {
+                estado = rs2.getString("estado");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try { if (rs != null) rs.close(); } catch (Exception ignored) {}
+            try { if (rs2 != null) rs2.close(); } catch (Exception ignored) {}
+            try { if (ps != null) ps.close(); } catch (Exception ignored) {}
+            try { if (ps2 != null) ps2.close(); } catch (Exception ignored) {}
+            try { if (con1 != null) con1.close(); } catch (Exception ignored) {}
+        }
+
+        return estado;
+    }
 
  
     
