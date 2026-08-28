@@ -86,6 +86,7 @@ public class TercerizadoDomicilioEventoDAO {
 	                "p.idpedido, " +
 	                "p.total_neto, " +
 	                "p.idtienda, " +
+	                "c.idcliente, " +     
 	                "c.nombre, " +
 	                "c.apellido, " +
 	                "c.telefono, " +
@@ -131,6 +132,8 @@ public class TercerizadoDomicilioEventoDAO {
 
 	            String nombre = rs.getString("nombre");
 	            String apellido = rs.getString("apellido");
+	            int idcliente = rs.getInt("idcliente");
+	            
 
 	            if (nombre == null) {
 	                nombre = "";
@@ -155,6 +158,7 @@ public class TercerizadoDomicilioEventoDAO {
 
 	            orden.setFirstName(nombre);
 	            orden.setLastName(apellido);
+	            orden.setIdcliente(idcliente);
 
 	            String telefono = rs.getString("telefono_celular");
 	            if (telefono == null || telefono.trim().isEmpty()) {

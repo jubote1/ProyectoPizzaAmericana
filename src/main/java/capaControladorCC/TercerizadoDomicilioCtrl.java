@@ -34,6 +34,7 @@ import capaModeloCC.RappiCargoOrden.RappiCargoProducto;
 import capaModeloCC.RespuestaRappiCargo;
 import capaModeloCC.TercerizadoDomicilioEvento;
 import capaModeloCC.Tienda;
+import capaModeloCC.Ubicacion;
 public class TercerizadoDomicilioCtrl {
 	
 	// Numero fijo usado para calcular distancias con latitud y longitud.
@@ -44,6 +45,12 @@ public class TercerizadoDomicilioCtrl {
 	private static final double KM_MAX_RAPPI_CARGO = 3.0;
 
 	private static final double FACTOR_ESTIMACION_RUTA = 1.25;
+	
+	private static final double LAT_MIN = -90.0;
+	private static final double LAT_MAX = 90.0;
+	private static final double LNG_MIN = -180.0;
+	private static final double LNG_MAX = 180.0;
+	private static final int DECIMALES_MINIMOS_RAPPI = 3; // Rappi exige "more than 2 decimal digits"
 
 	public static RespuestaRappiCargo crearOrden(RappiCargoOrden orden) {
 
@@ -327,7 +334,33 @@ public class TercerizadoDomicilioCtrl {
 	            return listJSON.toJSONString();
 	        }
 
-
+	        if (!coordenadaValidaParaRappiCargo(orden.getLat(), orden.getLng())) {
+	            System.out.println("Pedido " + idPedidoReal + " llega con coordenadas en 0 para Rappi Cargo, intentando geocodificar...");
+	            UbicacionCtrl ubicacionCtrl = new UbicacionCtrl();
+	            Ubicacion ubicacionEncontrada = ubicacionCtrl.ubicarDireccionEnTiendaBatch(
+	                    orden.getAddress(), orden.getCity(), ""
+	            );
+	            if (ubicacionEncontrada != null
+	                    && coordenadaValidaParaRappiCargo(ubicacionEncontrada.getLatitud(), ubicacionEncontrada.getLongitud())) {
+	                orden.setLat(ubicacionEncontrada.getLatitud());
+	                orden.setLng(ubicacionEncontrada.getLongitud());
+	                if (orden.getIdcliente() > 0) {
+	                    new ClienteCtrl().actualizarClienteCoordenadas(
+	                            orden.getIdcliente(),
+	                            (float) ubicacionEncontrada.getLatitud(),
+	                            (float) ubicacionEncontrada.getLongitud(),
+	                            orden.getAddress()
+	                    );
+	                }
+	            } else {
+	                respuestaJSON.put("resultado", false);
+	                respuestaJSON.put("mensaje",
+	                        "No fue posible determinar las coordenadas de la dirección del cliente. "
+	                        + "Verifica o corrige la dirección antes de crear la orden en Rappi Cargo.");
+	                listJSON.add(respuestaJSON);
+	                return listJSON.toJSONString();
+	            }
+	        }
 
 	        // Crear orden en Rappi Cargo
 	        RespuestaRappiCargo respuestaRappi =
@@ -1037,6 +1070,34 @@ public class TercerizadoDomicilioCtrl {
 	                "Error consumiendo DesmarcarPedidoTercerizadoTienda: "
 	                        + e.getMessage());
 	    }
+	}
+	
+
+
+	public static boolean coordenadaValidaParaRappiCargo(double lat, double lng) {
+	    // rechaza valores no numericos o infinitos
+	    if (Double.isNaN(lat) || Double.isNaN(lng) || Double.isInfinite(lat) || Double.isInfinite(lng)) {
+	        return false;
+	    }
+	    // rechaza fuera del rango geografico valido
+	    if (lat < LAT_MIN || lat > LAT_MAX || lng < LNG_MIN || lng > LNG_MAX) {
+	        return false;
+	    }
+	    // rechaza sin ubicacion real
+	    if (lat == 0 && lng == 0) {
+	        return false;
+	    }
+	    // rechaza precision insuficiente para Rappi
+	    if (!tieneSuficientesDecimales(lat) || !tieneSuficientesDecimales(lng)) {
+	        return false;
+	    }
+	    return true;
+	}
+
+	private static boolean tieneSuficientesDecimales(double valor) {
+	    java.math.BigDecimal bd = java.math.BigDecimal.valueOf(valor).stripTrailingZeros();
+	    int decimales = Math.max(0, bd.scale());
+	    return decimales >= DECIMALES_MINIMOS_RAPPI;
 	}
 
 }

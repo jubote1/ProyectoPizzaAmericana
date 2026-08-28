@@ -1401,7 +1401,16 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 
 
 function crearOrdenRappiCargo(idpedido) {
-
+	
+	Swal.fire({
+	    title: 'Creando orden...',
+	    html: 'Validando dirección y coordenadas del cliente, esto puede tardar unos segundos.',
+	    allowOutsideClick: false,
+	    didOpen: () => {
+	        Swal.showLoading();
+	    }
+	});
+	
     $.ajax({
 
         url: server + 'CrearOrdenRappiCargo',

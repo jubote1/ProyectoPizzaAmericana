@@ -29,8 +29,15 @@ public class RappiCargoOrden {
     private String complement;
     private String city;
     private String comments;
+    private int idcliente;
     
     
+	public int getIdcliente() {
+		return idcliente;
+	}
+	public void setIdcliente(int idcliente) {
+		this.idcliente = idcliente;
+	}
 	public String getOrderId() {
 		return orderId;
 	}

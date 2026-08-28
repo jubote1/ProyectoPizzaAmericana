@@ -7746,11 +7746,12 @@ public class PedidoCtrl {
 
 			    if (idCliente == 0) {
 			        obserProceso = obserProceso + " CRITICO: tampoco fue posible obtener/crear el cliente generico.";
-			        alertarPedidoConClienteSinValidar(lead, idLog, resumenCliente, "fallo total de creacion de cliente");
+			        alertarPedidoConClienteSinValidar(lead, idLog, 0, resumenCliente, "fallo total de creacion de cliente - NO SE CREO PEDIDO");
 			        return false;
 			    }
-			    alertarPedidoConClienteSinValidar(lead, idLog, resumenCliente, obserProceso);
+		
 			}
+			
 	        // >>> FIN CAMBIO
 			// Vamos a proceser la fuente del pedido
 			String fuentePedido = "CRM-BOT";
@@ -7796,6 +7797,10 @@ public class PedidoCtrl {
 			        pedidoInsertado = true; // aquí sí sabemos que se insertó
 			        LogPedidoVirtualKunoDAO.actualizarLogCRMBOTIdPedido(idLog, idPedido);
 			   }
+			 
+			 if (clienteSinValidar) {
+				    alertarPedidoConClienteSinValidar(lead, idLog, idPedido, resumenCliente, obserProceso); // <<< NUEVO lugar
+			  }
 			 
 			 
 			 	String prefijoResumen = clienteSinValidar ? (resumenCliente + "\n--- LOG PRODUCTOS ---\n") : "";
@@ -7925,10 +7930,11 @@ public class PedidoCtrl {
 	
 	
 	// <<< NUEVO metodo, agregalo en la misma clase (ya usa Correo/ControladorEnvioCorreo que aqui ya estan importados)
-	private void alertarPedidoConClienteSinValidar(String lead, int idLog, String infoLead, String motivo) {
-	    String asuntoAlerta = "URGENTE - Pedido CRM-BOT con cliente sin validar - Lead " + lead;
-	    String mensajeAlerta = "El lead " + lead + " (log id " + idLog + ") genero un pedido pero no se pudo "
-	            + "crear/actualizar el cliente real. Motivo: " + motivo
+	private void alertarPedidoConClienteSinValidar(String lead, int idLog, int idPedido, String infoLead, String motivo) {
+	    String refPedido = (idPedido > 0) ? ("Pedido #" + idPedido) : "SIN PEDIDO CREADO";
+	    String asuntoAlerta = "URGENTE - " + refPedido + " con cliente sin validar - Lead " + lead;
+	    String mensajeAlerta = "El lead " + lead + " (log id " + idLog + ") genero " + refPedido
+	            + " pero no se pudo crear/actualizar el cliente real. Motivo: " + motivo
 	            + ". Se uso el cliente generico de respaldo. Revisar y confirmar datos de entrega con el "
 	            + "cliente antes de despachar. Info del lead: " + infoLead;
 
