@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
+import org.apache.log4j.Logger;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
@@ -969,7 +970,31 @@ public String obtenerNotificacionesCliente(int idCliente)
 	}
 	
 
+	 private static final String TELEFONO_CLIENTE_GENERICO = "0000000000";
 
+	 public static int obtenerOCrearClienteGenerico(int idTienda) {
+	     Logger logger = Logger.getLogger("log_file");
+
+	     Cliente existente = ClienteDAO.obtenerClienteTiendaVirtual(TELEFONO_CLIENTE_GENERICO, idTienda);
+	     if (existente != null && existente.getIdcliente() > 0) {
+	         return existente.getIdcliente();
+	     }
+
+	     logger.error("No existe cliente generico de respaldo para idtienda=" + idTienda
+	             + ", se crea uno nuevo automaticamente.");
+
+	     Cliente generico = new Cliente(0, TELEFONO_CLIENTE_GENERICO, "CLIENTE GENERICO CRM-BOT",
+	             "SIN DIRECCION", "", "", "", idTienda);
+	     generico.setEmail("");
+	     generico.setTelefonoCelular(TELEFONO_CLIENTE_GENERICO);
+	     generico.setPoliticaDatos("S");
+
+	     int idGenerico = ClienteDAO.insertarCliente(generico);
+	     if (idGenerico == 0) {
+	         logger.error("CRITICO: no se pudo ni siquiera crear el cliente generico de respaldo para idtienda=" + idTienda);
+	     }
+	     return idGenerico;
+	 }
 	
 
 

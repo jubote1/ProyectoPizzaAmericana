@@ -7462,6 +7462,7 @@ public class PedidoCtrl {
 	public boolean procesarPedidoBOTCRM(String datosJSON, String lead, int idLog) {
 		boolean pedidoInsertado = false; 	
 		String resultadoProceso = "";
+		boolean clienteSinValidar = false; // <<< NUEVO
 		String obserProceso = "";
 		String asesor = "";
 		String nombreCliente = "";
@@ -7728,11 +7729,29 @@ public class PedidoCtrl {
 			// Aprovecharemos que los objetos se pasan como valores por referencia por lo
 			// tanto las modificaciones realizadas al objeto tendrán mucho que ver
 			int idCliente = clienteCtrl.validarClienteTiendaVirtualKuno(clienteVirtual, "");
+	        // <<< CAMBIO: en vez de idCliente = 1 fijo, buscar/crear cliente generico y marcar el pedido
+			
+			String resumenCliente = ""; // <<< NUEVO
+			
 			if (idCliente == 0) {
-				idCliente = 1;
-				obserProceso = obserProceso + " "
-						+ "No se logro crear o actualizar el cliente, se debe revisar el pedido para asignar el cliente correctamente.";
+			    obserProceso = obserProceso + " "
+			            + "No se logro crear o actualizar el cliente con sus datos originales.";
+
+			    resumenCliente = construirResumenClienteParaRevision(nombreCliente, telefono, telefonoCelular, correo,
+			            direccion, referencia, barrio, municipio, tienda, idTienda, identificacion,
+			            nombreClienteFactura, correoElecFactura, tipoClienteFAC, formaPago, asesor);
+
+			    idCliente = clienteCtrl.obtenerOCrearClienteGenerico(idTienda);
+			    clienteSinValidar = true;
+
+			    if (idCliente == 0) {
+			        obserProceso = obserProceso + " CRITICO: tampoco fue posible obtener/crear el cliente generico.";
+			        alertarPedidoConClienteSinValidar(lead, idLog, resumenCliente, "fallo total de creacion de cliente");
+			        return false;
+			    }
+			    alertarPedidoConClienteSinValidar(lead, idLog, resumenCliente, obserProceso);
 			}
+	        // >>> FIN CAMBIO
 			// Vamos a proceser la fuente del pedido
 			String fuentePedido = "CRM-BOT";
 			// Validamos la fecha del pedido si es programado
@@ -7777,21 +7796,20 @@ public class PedidoCtrl {
 			        pedidoInsertado = true; // aquí sí sabemos que se insertó
 			        LogPedidoVirtualKunoDAO.actualizarLogCRMBOTIdPedido(idLog, idPedido);
 			   }
-
+			 
+			 
+			 	String prefijoResumen = clienteSinValidar ? (resumenCliente + "\n--- LOG PRODUCTOS ---\n") : "";
 		       // Realizamos la inserción del producto ordenado
-					String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
-					LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log == null ? "" : log);
-					
-					// Agregamos el procesamiento del segundo producto si lo hay
-					if (!nombreDelCombo_2.equals(new String(""))) {
-						String log2 = 	insertarProductoBOTCRMMultiple(idPedido,nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
 
+			 	String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida, acompanamiento, bebida2, detalles, idTipoPedido, condimentos, balon);
+			 	LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, prefijoResumen + (log == null ? "" : log));
 
-						if (log2 != null && log2.trim().length() > 0) {
-							LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (log == null ? "" : log) + " " + log2);
-						}
-		        
-		      }
+			 	if (!nombreDelCombo_2.equals(new String(""))) {
+			 	    String log2 = insertarProductoBOTCRMMultiple(idPedido, nombreDelCombo_2, sabor1_2, sabor2_2, adicion_2, bebida_2, detalles_2, acompanamiento2);
+			 	    if (log2 != null && log2.trim().length() > 0) {
+			 	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, prefijoResumen + (log == null ? "" : log) + " " + log2);
+			 	    }
+			 	}
 
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
@@ -7816,9 +7834,12 @@ public class PedidoCtrl {
 			int idEstadoPedido = 2;
 			// Realizamos un cambio temporal para evitar las diferencias pero igual seguirán
 			// llegando los correos
-			FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", 0,
-					"DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado,
-					idEstadoPedido);
+
+	        FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S", 0,
+	                "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado, horaProgramado,
+	                idEstadoPedido);
+
+	        
 			// Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y
 			// realizaremos el envío del link del pedido para pago al cliente
 			if (idFormaPago == 4) {
@@ -7869,6 +7890,69 @@ public class PedidoCtrl {
 					+ " Se tiene error dado que el LEAD no tiene los datos de pedido, posiblemente no es un LEAD de pedido de BOT o no estan llenos los campos.";
 			return false;
 		}
+	}
+	
+	private String construirResumenClienteParaRevision(String nombreCliente, String telefono, String telefonoCelular,
+	        String correo, String direccion, String referencia, String barrio, String municipio, String tienda,
+	        int idTienda, String identificacion, String nombreClienteFactura, String correoElecFactura,
+	        int tipoClienteFAC, String formaPago, String asesor) {
+
+	    StringBuilder resumen = new StringBuilder();
+	    resumen.append("=== DATOS DEL CLIENTE RECIBIDOS DEL BOT (para registro manual) ===\n");
+	    resumen.append("Nombre: ").append(vacio(nombreCliente)).append("\n");
+	    resumen.append("Telefono: ").append(vacio(telefono)).append("\n");
+	    resumen.append("Telefono celular: ").append(vacio(telefonoCelular)).append("\n");
+	    resumen.append("Correo: ").append(vacio(correo)).append("\n");
+	    resumen.append("Direccion: ").append(vacio(direccion)).append("\n");
+	    resumen.append("Referencia: ").append(vacio(referencia)).append("\n");
+	    resumen.append("Barrio: ").append(vacio(barrio)).append("\n");
+	    resumen.append("Municipio: ").append(vacio(municipio)).append("\n");
+	    resumen.append("Tienda: ").append(vacio(tienda)).append(" (idTienda=").append(idTienda).append(")\n");
+	    resumen.append("Asesor que atiende: ").append(vacio(asesor)).append("\n");
+	    resumen.append("Forma de pago (texto original del bot): ").append(vacio(formaPago)).append("\n");
+	    resumen.append("--- Datos de facturacion electronica ---\n");
+	    resumen.append("Identificacion (NIT/CC): ").append(vacio(identificacion)).append("\n");
+	    resumen.append("Nombre empresa/cliente factura: ").append(vacio(nombreClienteFactura)).append("\n");
+	    resumen.append("Correo facturacion: ").append(vacio(correoElecFactura)).append("\n");
+	    resumen.append("Tipo de cliente FAC: ").append(tipoClienteFAC).append("\n");
+
+	    return resumen.toString();
+	}
+
+	private String vacio(String valor) {
+	    return (valor == null || valor.trim().isEmpty()) ? "(no informado)" : valor;
+	}
+	
+	
+	// <<< NUEVO metodo, agregalo en la misma clase (ya usa Correo/ControladorEnvioCorreo que aqui ya estan importados)
+	private void alertarPedidoConClienteSinValidar(String lead, int idLog, String infoLead, String motivo) {
+	    String asuntoAlerta = "URGENTE - Pedido CRM-BOT con cliente sin validar - Lead " + lead;
+	    String mensajeAlerta = "El lead " + lead + " (log id " + idLog + ") genero un pedido pero no se pudo "
+	            + "crear/actualizar el cliente real. Motivo: " + motivo
+	            + ". Se uso el cliente generico de respaldo. Revisar y confirmar datos de entrega con el "
+	            + "cliente antes de despachar. Info del lead: " + infoLead;
+
+	    System.out.println("🚨🚨🚨 CLIENTE_SIN_VALIDAR - " + asuntoAlerta + " 🚨🚨🚨");
+	    System.out.println(mensajeAlerta);
+
+	    try {
+	        Correo correoAlerta = new Correo();
+	        CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+	        ArrayList correos = new ArrayList();
+	        correos.add("pqrs@pizzaamericana.com.co");
+	        correos.add("lidercontactcenter@pizzaamericana.com.co");
+	        correos.add("a.desarrollosi@gmail.com");
+	        correos.add("tecnologia@pizzaamericana.com.co");
+	        correoAlerta.setAsunto(asuntoAlerta);
+	        correoAlerta.setContrasena(infoCorreo.getClaveCorreo());
+	        correoAlerta.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+	        correoAlerta.setMensaje(mensajeAlerta);
+	        ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correoAlerta, correos);
+	        contro.enviarCorreo();
+	    } catch (Exception e) {
+	        System.out.println("No se pudo enviar alerta de cliente sin validar, lead " + lead + ": " + e.toString());
+	        e.printStackTrace();
+	    }
 	}
 
 	/**

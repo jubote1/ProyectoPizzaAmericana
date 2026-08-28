@@ -274,7 +274,7 @@ public class LogPedidoVirtualKunoDAO {
 	    try {
 
 	        String sql = "UPDATE log_pedido_crmbot " +
-	                     "SET id_pedido = ? " +
+	                     "SET idpedido = ? " +
 	                     "WHERE idlog = ?";
 
 	        ps = con1.prepareStatement(sql);
@@ -289,7 +289,7 @@ public class LogPedidoVirtualKunoDAO {
 	    } catch (Exception e) {
 
 	        System.out.println(
-	            "Error actualizando id_pedido en log CRM BOT: " + e.toString()
+	            "Error actualizando idpedido en log CRM BOT: " + e.toString()
 	        );
 
 	        e.printStackTrace();

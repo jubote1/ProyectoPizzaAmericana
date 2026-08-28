@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.util.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.sql.Types;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -453,87 +454,85 @@ public class ClienteDAO {
 	 * @param clienteInsertar Se recibe como par�metro un objeto Modelo Cliente con base en el cual se inserta el cliente.
 	 * @return  Se retorna un int con el valor del idcliente insertado en la base de datos.
 	 */
-	public static int insertarCliente(Cliente clienteInsertar)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		int idClienteInsertado = 0;
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			String fechaNacimiento = "";
-			if(clienteInsertar.getFechaNacimiento()==null)
-			{
-				clienteInsertar.setFechaNacimiento("");
-			}
-			if(clienteInsertar.getFechaNacimiento().equals(new String("")))
-			{
-				fechaNacimiento = null;
-			}else
-			{
-				Date fechaTemporal = new Date();
-				DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
-				String fechaPedidoFinal ="";
-				try
-				{
-					fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(clienteInsertar.getFechaNacimiento());
-					fechaPedidoFinal = formatoFinal.format(fechaTemporal);
-					
-				}catch(Exception e){
-					logger.error(e.toString());
-					return(0);
-				}
-				fechaNacimiento = "'"+fechaPedidoFinal+"'";
-			}
-			//Controlamos los datos que estamos adicionando para facturación electrónica
-			if(clienteInsertar.getClienteSinIden()==null)
-			{
-				clienteInsertar.setClienteSinIden("S");
-			}else if(clienteInsertar.getClienteSinIden().equals(new String("")))
-			{
-				clienteInsertar.setClienteSinIden("S");
-			}
-			if(clienteInsertar.getEmailFacturacion()==null)
-			{
-				clienteInsertar.setEmailFacturacion("");
-			}
-			if(clienteInsertar.getIdTipoPersona()==0)
-			{
-				clienteInsertar.setIdTipoPersona(2);
-			}
-			if(clienteInsertar.getIdentificacion()==null)
-			{
-				clienteInsertar.setIdentificacion("");
-			}
-			Statement stm = con1.createStatement();
-			String insert = "insert into cliente (idtienda,nombre, apellido, nombrecompania, direccion, zona, telefono, observacion, idmunicipio, latitud, longitud, distancia_tienda, idnomenclatura, num_nomencla1, num_nomencla2, num3, telefono_celular, email, politica_datos, fecha_nacimiento,facturar_sin,email_facturacion,idtipopersona,identificacion) values (" + clienteInsertar.getIdtienda() + ", '" +clienteInsertar.getNombres() + "' , '" + clienteInsertar.getApellidos() + "' , '" + clienteInsertar.getNombreCompania() + "' , '" + clienteInsertar.getDireccion() + "' , '" + clienteInsertar.getZonaDireccion() +"' , '" + clienteInsertar.getTelefono() + "' , '" + clienteInsertar.getObservacion() + "' , " + clienteInsertar.getIdMunicipio() + " , " + clienteInsertar.getLatitud() + " , " + clienteInsertar.getLontitud() + " , " + clienteInsertar.getDistanciaTienda() + " , " + clienteInsertar.getIdnomenclatura() + " , '" + clienteInsertar.getNumNomenclatura() + "' , '" + clienteInsertar.getNumNomenclatura2() + "' ,  '" + clienteInsertar.getNum3() + "' , '" + clienteInsertar.getTelefonoCelular() + "' , '" + clienteInsertar.getEmail() + "' , '" + clienteInsertar.getPoliticaDatos() + "' ," + fechaNacimiento + " , '" + clienteInsertar.getClienteSinIden() +"' , '" + clienteInsertar.getEmailFacturacion() + "' , " + clienteInsertar.getIdTipoPersona() + " , '" + clienteInsertar.getIdentificacion() + "')"; 
-			logger.info(insert);
-			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs = stm.getGeneratedKeys();
-			if (rs.next()){
-				idClienteInsertado=rs.getInt(1);
-				
+	public static int insertarCliente(Cliente clienteInsertar) {
+	    Logger logger = Logger.getLogger("log_file");
+	    int idClienteInsertado = 0;
+
+	    if (clienteInsertar.getFechaNacimiento() == null) clienteInsertar.setFechaNacimiento("");
+	    if (clienteInsertar.getClienteSinIden() == null || clienteInsertar.getClienteSinIden().equals(""))
+	        clienteInsertar.setClienteSinIden("S");
+	    if (clienteInsertar.getEmailFacturacion() == null) clienteInsertar.setEmailFacturacion("");
+	    if (clienteInsertar.getIdTipoPersona() == 0) clienteInsertar.setIdTipoPersona(2);
+	    if (clienteInsertar.getIdentificacion() == null) clienteInsertar.setIdentificacion("");
+
+	    java.sql.Date fechaNacimientoSql = null;
+	    if (!clienteInsertar.getFechaNacimiento().equals("")) {
+	        try {
+	            Date fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(clienteInsertar.getFechaNacimiento());
+	            fechaNacimientoSql = new java.sql.Date(fechaTemporal.getTime());
+	        } catch (Exception e) {
+	            logger.error("Fecha de nacimiento invalida al insertar cliente telefono="
+	                    + clienteInsertar.getTelefono() + ": " + e.toString());
 	        }
-			stm.close();
-			rs.close();
-			con1.close();
-		}
-		catch (Exception e){
-			System.out.println(e);
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{ e.printStackTrace(); // Usar Logger en producción
-			}
-			
-			 e.printStackTrace(); // Usar Logger en producción
-			return(0);
-		}
-		return(idClienteInsertado);
+	    }
+
+	    String sql = "INSERT INTO cliente (idtienda, nombre, apellido, nombrecompania, direccion, zona, "
+	            + "telefono, observacion, idmunicipio, latitud, longitud, distancia_tienda, idnomenclatura, "
+	            + "num_nomencla1, num_nomencla2, num3, telefono_celular, email, politica_datos, "
+	            + "fecha_nacimiento, facturar_sin, email_facturacion, idtipopersona, identificacion) "
+	            + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+	        int i = 1;
+	        ps.setInt(i++, clienteInsertar.getIdtienda());
+	        ps.setString(i++, clienteInsertar.getNombres());
+	        ps.setString(i++, clienteInsertar.getApellidos());
+	        ps.setString(i++, clienteInsertar.getNombreCompania());
+	        ps.setString(i++, clienteInsertar.getDireccion());
+	        ps.setString(i++, clienteInsertar.getZonaDireccion());
+	        ps.setString(i++, clienteInsertar.getTelefono());
+	        ps.setString(i++, clienteInsertar.getObservacion());
+	        ps.setInt(i++, clienteInsertar.getIdMunicipio());
+	        ps.setFloat(i++, clienteInsertar.getLatitud());
+	        ps.setFloat(i++, clienteInsertar.getLontitud());
+	        ps.setDouble(i++, clienteInsertar.getDistanciaTienda());
+	        ps.setInt(i++, clienteInsertar.getIdnomenclatura());
+	        ps.setString(i++, clienteInsertar.getNumNomenclatura());
+	        ps.setString(i++, clienteInsertar.getNumNomenclatura2());
+	        ps.setString(i++, clienteInsertar.getNum3());
+	        ps.setString(i++, clienteInsertar.getTelefonoCelular());
+	        ps.setString(i++, clienteInsertar.getEmail());
+	        ps.setString(i++, clienteInsertar.getPoliticaDatos());
+	        if (fechaNacimientoSql != null) ps.setDate(i++, fechaNacimientoSql);
+	        else ps.setNull(i++, Types.DATE);
+	        ps.setString(i++, clienteInsertar.getClienteSinIden());
+	        ps.setString(i++, clienteInsertar.getEmailFacturacion());
+	        ps.setInt(i++, clienteInsertar.getIdTipoPersona());
+	        ps.setString(i++, clienteInsertar.getIdentificacion());
+
+	        logger.info("INSERT cliente telefono=" + clienteInsertar.getTelefono()
+	                + " idtienda=" + clienteInsertar.getIdtienda());
+
+	        ps.executeUpdate();
+
+	        try (ResultSet rs = ps.getGeneratedKeys()) {
+	            if (rs.next()) {
+	                idClienteInsertado = rs.getInt(1);
+	            }
+	        }
+
+	    } catch (Exception e) {
+	        logger.error("Error insertando cliente telefono=" + clienteInsertar.getTelefono()
+	                + " idtienda=" + clienteInsertar.getIdtienda() + ": " + e.toString());
+	        e.printStackTrace();
+	        idClienteInsertado = 0;
+	    }
+
+	    return idClienteInsertado;
 	}
-	
 	/**
 	 * M�todo que se encarga de retonar un objeto Modelo CLiente, con base en un id que env�a como par�metro.
 	 * @param id Se recibe un id cliente y con base en este se busca en base de datos.
@@ -646,97 +645,107 @@ public class ClienteDAO {
 	 * @param clienteAct Se env�a como par�metro un tipo de Modelo Cliente con base en el cual se hace la actualizaci�n.
 	 * @return Se retorna un valor entero con el valor del id cliente actualizado en el sistema.
 	 */
-	public static int actualizarCliente(Cliente clienteAct)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		int idClienteActualizado = 0;
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		String adiObserVirtual = "";
-		if(clienteAct.getObservacionVirtual() != null)
-		{
-			if(clienteAct.getObservacionVirtual().length() > 0)
-			{
-				if(clienteAct.getObservacionVirtual().length() > 3000)
-				{
-					adiObserVirtual = adiObserVirtual.substring(0, 3000);
-				}
-				adiObserVirtual = " , observacion_virtual = '" + clienteAct.getObservacionVirtual() + "' ";
-			}
-		}
-		try
-		{
-			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
-			Statement stm = con1.createStatement();
-			String fechaNacimiento = "";
-			if(clienteAct.getFechaNacimiento()==null)
-			{
-				clienteAct.setFechaNacimiento("");
-			}
-			if(clienteAct.getFechaNacimiento().equals(new String("")))
-			{
-				fechaNacimiento = null;
-			}else
-			{
-				Date fechaTemporal = new Date();
-				DateFormat formatoFinal = new SimpleDateFormat("yyyy-MM-dd");
-				String fechaPedidoFinal ="";
-				try
-				{
-					fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(clienteAct.getFechaNacimiento());
-					fechaPedidoFinal = formatoFinal.format(fechaTemporal);
-					
-				}catch(Exception e){
-					logger.error(e.toString());
-					return(0);
-				}
-				fechaNacimiento = "'"+fechaPedidoFinal+"'";
-			}
-			//Controlamos los datos que estamos adicionando para facturación electrónica
-			if(clienteAct.getClienteSinIden()==null)
-			{
-				clienteAct.setClienteSinIden("S");
-			}else if(clienteAct.getClienteSinIden().equals(new String("")))
-			{
-				clienteAct.setClienteSinIden("S");
-			}
-			if(clienteAct.getEmailFacturacion()==null)
-			{
-				clienteAct.setEmailFacturacion("");
-			}
-			if(clienteAct.getIdTipoPersona()==0)
-			{
-				clienteAct.setIdTipoPersona(2);
-			}
-			if(clienteAct.getIdentificacion()==null)
-			{
-				clienteAct.setIdentificacion("");
-			}
-			if(clienteAct.getIdcliente() > 0)
-			{
-				String update = "update cliente set telefono  = '" + clienteAct.getTelefono() +"' , nombre = '" + clienteAct.getNombres() + "' , direccion = '" + clienteAct.getDireccion() + "' , idmunicipio = " + clienteAct.getIdMunicipio() + " , latitud = " + clienteAct.getLatitud() + " , longitud = " + clienteAct.getLontitud() + " , distancia_tienda = " + clienteAct.getDistanciaTienda()  + " , zona = '" + clienteAct.getZonaDireccion() + "' , observacion = '" + clienteAct.getObservacion() +"', apellido = '" + clienteAct.getApellidos() + "' , nombrecompania = '" + clienteAct.getNombreCompania() + "' , idnomenclatura = " + clienteAct.getIdnomenclatura() + " , num_nomencla1 = '" + clienteAct.getNumNomenclatura() + "' , num_nomencla2 = '" + clienteAct.getNumNomenclatura2() + "' , num3 =  '" + clienteAct.getNum3()  + "' , telefono_celular = '" + clienteAct.getTelefonoCelular() + "' , email = '" + clienteAct.getEmail() + "' , politica_datos= '" + clienteAct.getPoliticaDatos() + "' , idtienda = " + clienteAct.getIdtienda() + adiObserVirtual + " , fecha_nacimiento = " + fechaNacimiento + " , facturar_sin = '" + clienteAct.getClienteSinIden() + "' , email_facturacion = '" + clienteAct.getEmailFacturacion() + "' , idtipopersona = " + clienteAct.getIdTipoPersona() + " , identificacion = '" + clienteAct.getIdentificacion() +"' where idcliente = " + clienteAct.getIdcliente(); 
-				logger.info(update);
-				stm.executeUpdate(update);
-				idClienteActualizado = clienteAct.getIdcliente();
-			}else
-			{
-				logger.info("No se pudo hacer actualizaci�n dado que el idCliente venia en ceros o vac�o");
-			}
-			stm.close();
-			con1.close();
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-			return(0);
-		}
-		logger.info("id cliente actualizado" + idClienteActualizado);
-		return(idClienteActualizado);
+	public static int actualizarCliente(Cliente clienteAct) {
+	    Logger logger = Logger.getLogger("log_file");
+	    int idClienteActualizado = 0;
+
+	    if (clienteAct.getIdcliente() <= 0) {
+	        logger.info("No se pudo hacer actualizacion dado que el idCliente venia en ceros o vacio");
+	        return 0;
+	    }
+
+	    // Mismas normalizaciones que ya tenian
+	    if (clienteAct.getFechaNacimiento() == null) clienteAct.setFechaNacimiento("");
+	    if (clienteAct.getClienteSinIden() == null || clienteAct.getClienteSinIden().equals(""))
+	        clienteAct.setClienteSinIden("S");
+	    if (clienteAct.getEmailFacturacion() == null) clienteAct.setEmailFacturacion("");
+	    if (clienteAct.getIdTipoPersona() == 0) clienteAct.setIdTipoPersona(2);
+	    if (clienteAct.getIdentificacion() == null) clienteAct.setIdentificacion("");
+
+	    java.sql.Date fechaNacimientoSql = null;
+	    if (!clienteAct.getFechaNacimiento().equals("")) {
+	        try {
+	            Date fechaTemporal = new SimpleDateFormat("dd/MM/yyyy").parse(clienteAct.getFechaNacimiento());
+	            fechaNacimientoSql = new java.sql.Date(fechaTemporal.getTime());
+	        } catch (Exception e) {
+	            // Ya NO abortamos todo el update por una fecha mal formada: seguimos sin fecha
+	            logger.error("Fecha de nacimiento invalida para idcliente " + clienteAct.getIdcliente()
+	                    + ": " + e.toString());
+	        }
+	    }
+
+	    String observacionVirtual = null;
+	    if (clienteAct.getObservacionVirtual() != null && clienteAct.getObservacionVirtual().length() > 0) {
+	        observacionVirtual = clienteAct.getObservacionVirtual();
+	        if (observacionVirtual.length() > 3000) {
+	            observacionVirtual = observacionVirtual.substring(0, 3000);
+	        }
+	    }
+
+	    String sql = "UPDATE cliente SET telefono = ?, nombre = ?, direccion = ?, idmunicipio = ?, "
+	            + "latitud = ?, longitud = ?, distancia_tienda = ?, zona = ?, observacion = ?, "
+	            + "apellido = ?, nombrecompania = ?, idnomenclatura = ?, num_nomencla1 = ?, "
+	            + "num_nomencla2 = ?, num3 = ?, telefono_celular = ?, email = ?, politica_datos = ?, "
+	            + "observacion_virtual = ?, fecha_nacimiento = ?, facturar_sin = ?, email_facturacion = ?, "
+	            + "idtipopersona = ?, identificacion = ?, idtienda = ? "
+	            + "WHERE idcliente = ?";
+
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    try (Connection con1 = con.obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql)) {
+
+	        int i = 1;
+	        ps.setString(i++, clienteAct.getTelefono());
+	        ps.setString(i++, clienteAct.getNombres());
+	        ps.setString(i++, clienteAct.getDireccion());
+	        ps.setInt(i++, clienteAct.getIdMunicipio());
+	        ps.setFloat(i++, clienteAct.getLatitud());
+	        ps.setFloat(i++, clienteAct.getLontitud());
+	        ps.setDouble(i++, clienteAct.getDistanciaTienda());
+	        ps.setString(i++, clienteAct.getZonaDireccion());
+	        ps.setString(i++, clienteAct.getObservacion());
+	        ps.setString(i++, clienteAct.getApellidos());
+	        ps.setString(i++, clienteAct.getNombreCompania());
+	        ps.setInt(i++, clienteAct.getIdnomenclatura());
+	        ps.setString(i++, clienteAct.getNumNomenclatura());
+	        ps.setString(i++, clienteAct.getNumNomenclatura2());
+	        ps.setString(i++, clienteAct.getNum3());
+	        ps.setString(i++, clienteAct.getTelefonoCelular());
+	        ps.setString(i++, clienteAct.getEmail());
+	        ps.setString(i++, clienteAct.getPoliticaDatos());
+	        ps.setString(i++, observacionVirtual);
+	        if (fechaNacimientoSql != null) ps.setDate(i++, fechaNacimientoSql);
+	        else ps.setNull(i++, Types.DATE);
+	        ps.setString(i++, clienteAct.getClienteSinIden());
+	        ps.setString(i++, clienteAct.getEmailFacturacion());
+	        ps.setInt(i++, clienteAct.getIdTipoPersona());
+	        ps.setString(i++, clienteAct.getIdentificacion());
+	        ps.setInt(i++, clienteAct.getIdtienda());
+	        ps.setInt(i++, clienteAct.getIdcliente());
+
+	        logger.info("UPDATE cliente idcliente=" + clienteAct.getIdcliente()
+	                + " telefono=" + clienteAct.getTelefono());
+
+	        int filasAfectadas = ps.executeUpdate();
+
+	        if (filasAfectadas == 0) {
+	            // Aqui SI podemos distinguir el caso real: el idcliente ya no existe.
+	            logger.error("UPDATE no afecto ninguna fila. idcliente=" + clienteAct.getIdcliente()
+	                    + " probablemente ya no existe en la tabla cliente.");
+	            idClienteActualizado = 0;
+	        } else {
+	            idClienteActualizado = clienteAct.getIdcliente();
+	        }
+
+	    } catch (Exception e) {
+	        logger.error("Error actualizando cliente idcliente=" + clienteAct.getIdcliente()
+	                + " telefono=" + clienteAct.getTelefono() + ": " + e.toString());
+	        e.printStackTrace();
+	        idClienteActualizado = 0;
+	    }
+
+	    logger.info("id cliente actualizado " + idClienteActualizado);
+	    return idClienteActualizado;
 	}
 	
 	/**
@@ -1706,7 +1715,9 @@ public class ClienteDAO {
 		}
 
 
-	
+
+	 
+	 
 	 public static void main(String[] args) {
 		    // 🔹 Prueba del método
 		    Cliente cliente = obtenerUltimoClientePorTelefono("3148807773");
@@ -1719,6 +1730,8 @@ public class ClienteDAO {
 		    }
 		}
 
+	 
+	 
 	 
 	
 }
