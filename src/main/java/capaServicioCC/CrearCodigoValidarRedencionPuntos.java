@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.FidelizacionCtrl;
@@ -42,7 +41,6 @@ public class CrearCodigoValidarRedencionPuntos extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
-			HttpSession sesion = request.getSession();
 			String correo = request.getParameter("correo");
 			String fechaSistema = request.getParameter("fechasistema");
 			double puntosRedimir = Double.parseDouble(request.getParameter("puntosredimir"));

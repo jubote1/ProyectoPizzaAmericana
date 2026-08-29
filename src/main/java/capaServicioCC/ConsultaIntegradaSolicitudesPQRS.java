@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
@@ -40,7 +39,6 @@ public class ConsultaIntegradaSolicitudesPQRS extends HttpServlet {
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("application/json; charset=UTF-8");
 		Logger logger = Logger.getLogger("log_file");
-		HttpSession sesion = request.getSession();
 		String fechainicial = request.getParameter("fechainicial");
         String fechafinal = request.getParameter("fechafinal");
         String tienda = request.getParameter("tienda");

@@ -53,4 +53,32 @@
 		<url-pattern>/PronosticoWb</url-pattern>
 	</filter-mapping>
 
+	<!--
+		Tiempo de vida de las sesiones HTTP, en minutos.
+
+		Antes no estaba definido, asi que Tomcat aplicaba su valor por defecto de 30
+		minutos. Los servicios de esta aplicacion son sin estado y los clientes (POS,
+		tablet) abren un cliente HTTP nuevo por llamada, sin reenviar el JSESSIONID.
+		Resultado: cada llamada creaba una sesion nueva que vivia media hora sin que
+		nadie la usara jamas, y la memoria del Tomcat crecia en proporcion directa al
+		trafico.
+
+		Con 2 minutos, esas sesiones se recogen casi de inmediato.
+
+		Esto NO acorta la sesion de los usuarios logueados. GetIngresarAplicacion, que
+		es el servlet de ingreso, fija su propio tiempo por codigo con
+		sesion.setMaxInactiveInterval(60*20), es decir 20 minutos, y ese valor manda
+		sobre el de aqui. Lo que se define en este archivo es solo el valor por defecto,
+		que es el que aplica a las sesiones basura de los servicios sin estado.
+
+		Los 10 servicios que si usan la sesion la consumen dentro de la misma peticion o
+		dependen de la sesion de login: CRUDOfertaCliente, CRUDTiempoPedido,
+		EliminarPedidoSinConfirmar, FinalizarPedidoReenvio, GetIngresarAplicacion,
+		GetUsarCodigoPromocional, InsertarClienteEncabezadoPedido, InsertarEncabezadoPedido,
+		SalirUsuarioAplicacion y ValidarUsuarioAplicacion.
+	-->
+	<session-config>
+		<session-timeout>2</session-timeout>
+	</session-config>
+
 </web-app>

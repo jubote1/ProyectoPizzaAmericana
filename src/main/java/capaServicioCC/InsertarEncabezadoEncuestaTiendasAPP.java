@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.EncuestaCtrl;
 import capaModeloCC.EmpleadoEncuesta;
@@ -40,7 +39,6 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
 		int  idTienda = 0;
 		try
 		{

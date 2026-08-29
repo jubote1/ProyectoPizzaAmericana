@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.PedidoCtrl;
 
@@ -38,7 +37,6 @@ public class ObtenerEgresosServicio extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
 		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
 		String fecha = request.getParameter("fecha");
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();

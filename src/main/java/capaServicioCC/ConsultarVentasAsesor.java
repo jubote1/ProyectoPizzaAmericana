@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
@@ -37,7 +36,6 @@ public class ConsultarVentasAsesor extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		Logger logger = Logger.getLogger("log_file");
-		HttpSession sesion = request.getSession();
         String fechaInicial, fechaFinal, asesor;
         fechaInicial = request.getParameter("fechainicial");
         fechaFinal = request.getParameter("fechafinal");

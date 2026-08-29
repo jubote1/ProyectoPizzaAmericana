@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;;
@@ -41,7 +40,6 @@ public class ActualizarFormaPago extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json;charset=UTF-8");
 		try{
-			HttpSession sesion = request.getSession();
 			request.setCharacterEncoding("UTF-8");
 			int idFormaPagoNueva = Integer.parseInt(request.getParameter("idformapagonueva"));
 			int idPedido = Integer.parseInt(request.getParameter("idpedido"));

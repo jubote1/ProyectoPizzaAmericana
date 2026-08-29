@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.PedidoCtrl;
 
@@ -36,7 +35,6 @@ public class ActualizarMemcode extends HttpServlet {
 		// TODO Auto-generated method stub
 				response.addHeader("Access-Control-Allow-Origin", "*");
 				response.setContentType("application/json;charset=UTF-8");
-				HttpSession sesion = request.getSession();
 				request.setCharacterEncoding("UTF-8");
 				int membercode;
 				int idcliente;

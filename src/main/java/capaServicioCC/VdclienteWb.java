@@ -11,7 +11,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 import java.lang.reflect.Type;
 import com.google.gson.Gson;
@@ -45,7 +44,6 @@ public class VdclienteWb extends HttpServlet {
 
         try {
             PedidoCtrl pedCtrl = new PedidoCtrl();
-        	HttpSession sesion = request.getSession();
 			int idPedido = Integer.parseInt(request.getParameter("idpedido"));
 			int idTienda = Integer.parseInt(request.getParameter("idtienda"));
             String respuesta = pedCtrl.validarPedidoEncuesta(idPedido, idTienda);

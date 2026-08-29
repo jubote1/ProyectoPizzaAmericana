@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.PedidoCtrl;
 
@@ -38,7 +37,6 @@ public class ConsultarEstadoPedidoTracking extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
 		int idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
 		int idTienda = Integer.parseInt(request.getParameter("idtienda"));
 		PedidoCtrl PedidoCtrl = new PedidoCtrl();

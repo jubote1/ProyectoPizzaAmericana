@@ -7,7 +7,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 import capaModeloCC.DomiciliarioPedido;
@@ -40,7 +39,6 @@ public class InsertarDomiciliarioPedido extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json");
 		Logger logger = Logger.getLogger("log_file");
-		HttpSession sesion = request.getSession(true);
 		String fecha = request.getParameter("fecha");
         int idTienda;
         try

@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;;
 
@@ -39,7 +38,6 @@ public class ValidarTelefono extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
-			HttpSession sesion = request.getSession();
 			String tel = request.getParameter("telefono");
 			System.out.println(tel);
 			response.addHeader("Access-Control-Allow-Origin", "*");

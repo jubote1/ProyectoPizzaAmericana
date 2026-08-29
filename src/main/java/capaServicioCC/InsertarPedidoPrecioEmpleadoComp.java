@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;
@@ -41,7 +40,6 @@ public class InsertarPedidoPrecioEmpleadoComp extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		HttpSession sesion = request.getSession();
 		//Capturamos la información de la sesion del usuario que está ejecutando la inserción
 		int idEmpleado = Integer.parseInt(request.getParameter("idempleado"));
 		String fecha = request.getParameter("fecha");		

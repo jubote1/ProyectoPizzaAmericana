@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.TiendaCtrl;
@@ -38,7 +37,6 @@ public class AprobarBloqueoTienda extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException 
 	{
 		//Operaci�n idoperacion 1 insertar 3 Eliminar  4 Consultar
-		HttpSession sesion = request.getSession();
 		request.setCharacterEncoding("UTF-8");
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json;charset=UTF-8");

@@ -8,7 +8,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PromocionesCtrl;;
@@ -40,7 +39,6 @@ public class GetEnviarMensajesOferta extends HttpServlet {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		try{
-			HttpSession sesion = request.getSession();
 			String strIdOferta= request.getParameter("idoferta");
 			int idOferta = 0;
 			try
