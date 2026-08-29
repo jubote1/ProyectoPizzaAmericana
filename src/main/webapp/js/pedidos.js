@@ -80,6 +80,7 @@ var descuentoPorcentaje = 0;
 var idOfertaClienteActual = 0;
 var idExcepcionOferta = 0;
 var montoFactura = 0;
+var pilotoDomicilioTercerizado = "N";
 
 // Validar usuario
 $.ajax({
@@ -1175,6 +1176,10 @@ function obtenerParametrosGenerales()
 
     $.getJSON(server + 'GetParametro?parametro=CLAVEAPIGOOGLE' , function(data1){
         apiGoogle = data1.valortexto;
+    });
+	
+	$.getJSON(server + 'GetParametro?parametro=PILOTODOMICILIOTERCERIZADO' , function(data6){
+	        pilotoDomicilioTercerizado = data6.valortexto;
     });
 
     $.getJSON(server + 'GetParametro?parametro=WOMPIAMBIENTE' , function(data2){
@@ -3475,132 +3480,135 @@ function ConfirmarPedido()
                                     resultado = data[0];
 									var resJSON = JSON.stringify(resultado);
 									var urlTienda = resultado.url;
-									//Se realiza modificación para hacer validación de DOMICILIOS TERCERIZADO
-									$.ajax({
-									    url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido,
-									    dataType: 'json',
-									    async: false,
-									    success: function(dataTerce) {								
-
-											if (dataTerce.resultado) {
-												
-												var esPagoVirtual =
-												    Number(dataTerce.idformapago) === 4 ||
-												    (
-												        dataTerce.formapago &&
-												        dataTerce.formapago.trim().toLowerCase() === "pago virtual"
-												    );
-
-												var pagoConfirmado = !!(
-													    dataTerce.fechapagovirtual &&
-													    dataTerce.fechapagovirtual.toString().trim() !== ""
-													);
-
-												if (esPagoVirtual && !pagoConfirmado) {
-
-												    aplicaDomiTerce = true;
-
-												    Swal.fire({
-												        icon: 'info',
-												        title: 'Pedido pendiente de pago',
-												        html: `
+									if(pilotoDomicilioTercerizado == "S")
+									{
+										//Se realiza modificación para hacer validación de DOMICILIOS TERCERIZADO
+										$.ajax({
+										    url: server + 'ConsultarAplicabilidadDeUnPedidoRAPPICARGO?idpedido=' + idPedido,
+										    dataType: 'json',
+										    async: false,
+										    success: function(dataTerce) {								
+	
+												if (dataTerce.resultado) {
+													
+													var esPagoVirtual =
+													    Number(dataTerce.idformapago) === 4 ||
+													    (
+													        dataTerce.formapago &&
+													        dataTerce.formapago.trim().toLowerCase() === "pago virtual"
+													    );
+	
+													var pagoConfirmado = !!(
+														    dataTerce.fechapagovirtual &&
+														    dataTerce.fechapagovirtual.toString().trim() !== ""
+														);
+	
+													if (esPagoVirtual && !pagoConfirmado) {
+	
+													    aplicaDomiTerce = true;
+	
+													    Swal.fire({
+													        icon: 'info',
+													        title: 'Pedido pendiente de pago',
+													        html: `
+													            <div style="
+													                margin-top:10px;
+													                text-align:left;
+													                font-size:15px;">
+	
+													                Este pedido <b>cumple las condiciones para Domicilio Tercerizado</b>,
+													                pero su forma de pago es <b>Pago Virtual</b> y el pago aún no ha sido confirmado.
+	
+													                <br><br>
+	
+													                <b>Una vez se confirme el pago, el pedido podrá enviarse a Rappi Cargo.</b>
+	
+													            </div>
+													        `,
+													        confirmButtonText: 'Entendido',
+													        confirmButtonColor: '#2563eb'
+													    });
+	
+													    return;
+													}
+	
+												    var esAdvertencia = !dataTerce.validacionDistancia;
+	
+												    var icono = esAdvertencia ? "warning" : "info";
+												    var colorBoton = esAdvertencia ? "#f59e0b" : "#2563eb";
+	
+												    var htmlMensaje = "";
+	
+												    if (esAdvertencia) {
+	
+												        htmlMensaje = `
+												            <div style="
+												                margin-top:10px;
+												                padding:12px;
+												                border-left:5px solid #f59e0b;
+												                background:#fff8e1;
+												                color:#8a5700;
+												                border-radius:4px;
+												                text-align:left;
+												                font-size:15px;">
+	
+												                <i class="fa fa-exclamation-triangle"></i>
+												                <b> Advertencia</b>
+	
+												                <br><br>
+	
+												                ${dataTerce.mensaje}
+	
+												                <br><br>
+	
+												                <b>Antes de continuar, verifica esta condición con el cliente.</b>
+	
+												            </div>
+												        `;
+	
+												    } else {
+	
+												        htmlMensaje = `
 												            <div style="
 												                margin-top:10px;
 												                text-align:left;
 												                font-size:15px;">
-
-												                Este pedido <b>cumple las condiciones para Domicilio Tercerizado</b>,
-												                pero su forma de pago es <b>Pago Virtual</b> y el pago aún no ha sido confirmado.
-
-												                <br><br>
-
-												                <b>Una vez se confirme el pago, el pedido podrá enviarse a Rappi Cargo.</b>
-
+	
+												                ${dataTerce.mensaje}
+	
 												            </div>
-												        `,
+												        `;
+	
+												    }
+	
+												    Swal.fire({
+												        icon: icono,
+												        title: 'Pedido apto para Domicilio Tercerizado',
+												        html: htmlMensaje,
 												        confirmButtonText: 'Entendido',
-												        confirmButtonColor: '#2563eb'
+												        confirmButtonColor: colorBoton
 												    });
-
-												    return;
-												}
-
-											    var esAdvertencia = !dataTerce.validacionDistancia;
-
-											    var icono = esAdvertencia ? "warning" : "info";
-											    var colorBoton = esAdvertencia ? "#f59e0b" : "#2563eb";
-
-											    var htmlMensaje = "";
-
-											    if (esAdvertencia) {
-
-											        htmlMensaje = `
-											            <div style="
-											                margin-top:10px;
-											                padding:12px;
-											                border-left:5px solid #f59e0b;
-											                background:#fff8e1;
-											                color:#8a5700;
-											                border-radius:4px;
-											                text-align:left;
-											                font-size:15px;">
-
-											                <i class="fa fa-exclamation-triangle"></i>
-											                <b> Advertencia</b>
-
-											                <br><br>
-
-											                ${dataTerce.mensaje}
-
-											                <br><br>
-
-											                <b>Antes de continuar, verifica esta condición con el cliente.</b>
-
-											            </div>
-											        `;
-
-											    } else {
-
-											        htmlMensaje = `
-											            <div style="
-											                margin-top:10px;
-											                text-align:left;
-											                font-size:15px;">
-
-											                ${dataTerce.mensaje}
-
-											            </div>
-											        `;
-
-											    }
-
-											    Swal.fire({
-											        icon: icono,
-											        title: 'Pedido apto para Domicilio Tercerizado',
-											        html: htmlMensaje,
-											        confirmButtonText: 'Entendido',
-											        confirmButtonColor: colorBoton
-											    });
-
-											    aplicaDomiTerce = true;
-											} else {
-
-									            console.log(dataTerce.mensaje || 'El pedido no aplica para Rappi Cargo por filtros base.');
-
-									        }
-									    },
-									    error: function(dataErrorTerce) {
-
-									        Swal.fire({
-									            icon: 'error',
-									            title: 'Error',
-									            text: 'Se produjo un error validando Domicilios Tercerizados.',
-									            confirmButtonText: 'Entendido'
-									        });
-
-									        console.log(dataErrorTerce);
-									    }
-									});
+	
+												    aplicaDomiTerce = true;
+												} else {
+	
+										            console.log(dataTerce.mensaje || 'El pedido no aplica para Rappi Cargo por filtros base.');
+	
+										        }
+										    },
+										    error: function(dataErrorTerce) {
+	
+										        Swal.fire({
+										            icon: 'error',
+										            title: 'Error',
+										            text: 'Se produjo un error validando Domicilios Tercerizados.',
+										            confirmButtonText: 'Entendido'
+										        });
+	
+										        console.log(dataErrorTerce);
+										    }
+										});
+									}
                                     //En este punto realizaremos la verficación para consumir el servicio de creación de link de pagos
                                     //Se realizaría una vez se insertó el pedido en el contact center
                                     for(var i = 0; i < formas.length;i++)
