@@ -19,6 +19,14 @@ import capaModeloCC.Correo;
 
 public class ControladorEnvioCorreo {
 
+/**
+ * Tiempo maximo, en milisegundos, para cada etapa del dialogo SMTP: conectar,
+ * leer y escribir. Antes no se definia ninguno y el valor por defecto de
+ * JavaMail es esperar de forma indefinida, asi que un Gmail lento dejaba
+ * colgada la peticion que disparo el correo.
+ */
+private static final String MILIS_ESPERA_SMTP = "5000";
+
 private Correo  c;
 private ArrayList correos;
 
@@ -33,6 +41,12 @@ public boolean enviarCorreo()
 	try
 	{
 		Properties p = new Properties();
+		// Tiempos de espera del SMTP, en milisegundos. Sin estas tres propiedades
+		// JavaMail espera de forma indefinida, y un Gmail lento congela la peticion
+		// que disparo el correo. Ver MILIS_ESPERA_SMTP.
+		p.setProperty("mail.smtp.connectiontimeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.timeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.writetimeout", String.valueOf(MILIS_ESPERA_SMTP));
 		p.put("mail.smtp.host", "smtp.gmail.com");
 		p.put("mail.smtp.ssl.protocols", "TLSv1.2");
 		p.setProperty("mail.smtp.starttls.enable", "true");
@@ -93,6 +107,12 @@ public boolean enviarCorreoContingencia()
 	try
 	{
 		Properties p = new Properties();
+		// Tiempos de espera del SMTP, en milisegundos. Sin estas tres propiedades
+		// JavaMail espera de forma indefinida, y un Gmail lento congela la peticion
+		// que disparo el correo. Ver MILIS_ESPERA_SMTP.
+		p.setProperty("mail.smtp.connectiontimeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.timeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.writetimeout", String.valueOf(MILIS_ESPERA_SMTP));
 		p.put("mail.smtp.host", "smtp.gmail.com");
 		p.put("mail.smtp.ssl.protocols", "TLSv1.2");
 		p.setProperty("mail.smtp.starttls.enable", "true");
@@ -140,6 +160,12 @@ public boolean enviarCorreoInstitucional()
 	try
 	{
 		Properties p = new Properties();
+		// Tiempos de espera del SMTP, en milisegundos. Sin estas tres propiedades
+		// JavaMail espera de forma indefinida, y un Gmail lento congela la peticion
+		// que disparo el correo. Ver MILIS_ESPERA_SMTP.
+		p.setProperty("mail.smtp.connectiontimeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.timeout", String.valueOf(MILIS_ESPERA_SMTP));
+		p.setProperty("mail.smtp.writetimeout", String.valueOf(MILIS_ESPERA_SMTP));
 		p.put("mail.smtp.host", "mail.pizzaamericana.co");
 		//p.setProperty("mail.smtp.starttls.enable", "true");
 		p.setProperty("mail.smtp.port", "587");
@@ -188,4 +214,39 @@ public static CorreoElectronico recuperarCorreo(String variableCuenta, String va
 	return(respuesta);
 }
 	
+
+/**
+ * Envia el correo en un hilo aparte y retorna de inmediato.
+ *
+ * Para alertas operativas que no deben demorar la peticion que las origina. El
+ * caso que motivo esto: el servicio de la tienda virtual mandaba el correo de
+ * alerta dentro del request, el dialogo SMTP con Gmail se tomaba varios
+ * segundos, y Gloria Food reintentaba el pedido por falta de respuesta, con lo
+ * que se generaban intentos duplicados.
+ *
+ * No retorna si el envio funciono, porque cuando se llama todavia no se sabe.
+ * Usar enviarCorreo() cuando el resultado importe.
+ */
+public void enviarCorreoAsincrono()
+{
+	final ControladorEnvioCorreo controlador = this;
+	Thread hilo = new Thread(new Runnable()
+	{
+		public void run()
+		{
+			try
+			{
+				controlador.enviarCorreo();
+			}
+			catch(Exception e)
+			{
+				// Silencio deliberado: una alerta que no sale no puede tumbar nada
+				System.out.println("enviarCorreoAsincrono: " + e.toString());
+			}
+		}
+	});
+	hilo.setDaemon(true);
+	hilo.setName("envio-correo-asincrono");
+	hilo.start();
+}
 }

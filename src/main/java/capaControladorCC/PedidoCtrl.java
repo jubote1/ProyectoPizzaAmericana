@@ -2069,7 +2069,7 @@ public class PedidoCtrl {
 				correo.setMensaje(" Se tiene una invocación al servicio con Authorization no autorizado, el cual es  "
 						+ authHeader);
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-				contro.enviarCorreo();
+				contro.enviarCorreoAsincrono();
 				return ("");
 			}
 		}
@@ -2144,7 +2144,7 @@ public class PedidoCtrl {
 						correo.setMensaje(" Se tuvo problema creando el pedido   " + idOrdenComercio
 								+ " dado que ya esta creado y se estaba intentando duplicar.");
 						ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-						contro.enviarCorreo();
+						contro.enviarCorreoAsincrono();
 					} else if (idInterno == 0 && esProgramado && estadoPedido.equals(new String("accepted"))) {
 						// Deberíamos de incluir la lógica para decir que es un pedido programado y fue
 						// aceptado
@@ -2433,7 +2433,7 @@ public class PedidoCtrl {
 							correo.setMensaje(
 									" Se tiene un problema creando el cliente en el pedido número  " + idOrdenComercio);
 							ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-							contro.enviarCorreo();
+							contro.enviarCorreoAsincrono();
 						}
 						// Vamos a proceder a realizar el procesamiento del pedido
 
@@ -2492,7 +2492,7 @@ public class PedidoCtrl {
 								correo.setMensaje(" Se tiene un problema con el pedido   " + idOrdenComercio
 										+ " dado que los totales no coinciden entre lo que venía en la tienda virtual y lo que arrojo la creación en el sistema de contact center.");
 								ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-								contro.enviarCorreo();
+								contro.enviarCorreoAsincrono();
 							}
 						}
 
@@ -2528,7 +2528,7 @@ public class PedidoCtrl {
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			correo.setMensaje(" Se tuvo problema creando la orden del cliente  " + idOrdenComercio);
 			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-			contro.enviarCorreo();
+			contro.enviarCorreoAsincrono();
 		}
 
 		return ("");
