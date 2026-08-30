@@ -1,6 +1,8 @@
 package capaControladorCC;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -155,6 +157,114 @@ public class EncuestaMercadeoCtrl {
 	 */
 	public boolean existeEncuestaPedido(final int idPedidoTienda, final int idTienda) {
 		return (EncuestaMercadeoDAO.existeEncuestaPedido(idPedidoTienda, idTienda));
+	}
+
+	/**
+	 * Arma el reporte de respuestas de encuestas de mercadeo, en sus dos vistas.
+	 *
+	 * Retorna un solo JSON con:
+	 *   resumen: cuantas veces se dio cada respuesta por pregunta, con su porcentaje
+	 *            dentro de la pregunta.
+	 *   detalle: una fila por respuesta, para revisar caso por caso y para leer las
+	 *            respuestas de las preguntas abiertas.
+	 *   totales: cantidad de respuestas y de encuestas distintas del periodo.
+	 *
+	 * @param idTienda     tienda a filtrar; 0 para todas
+	 * @param fechaInicial fecha inicial inclusive, formato aaaa-mm-dd
+	 * @param fechaFinal   fecha final inclusive, formato aaaa-mm-dd
+	 * @param idPregunta   pregunta a filtrar; 0 para todas
+	 * @return JSON del reporte
+	 */
+	@SuppressWarnings("unchecked")
+	public String consultarReporte(final int idTienda, final String fechaInicial, final String fechaFinal,
+			final int idPregunta) {
+		final JSONObject respuesta = new JSONObject();
+		final JSONArray arregloResumen = new JSONArray();
+		final JSONArray arregloDetalle = new JSONArray();
+		try {
+			if (!fechaValida(fechaInicial) || !fechaValida(fechaFinal)) {
+				respuesta.put("resultado", "ERROR");
+				respuesta.put("mensaje", "Las fechas deben venir en formato aaaa-mm-dd.");
+				respuesta.put("resumen", arregloResumen);
+				respuesta.put("detalle", arregloDetalle);
+				return (respuesta.toJSONString());
+			}
+			if (fechaFinal.compareTo(fechaInicial) < 0) {
+				respuesta.put("resultado", "ERROR");
+				respuesta.put("mensaje", "La fecha final no puede ser anterior a la inicial.");
+				respuesta.put("resumen", arregloResumen);
+				respuesta.put("detalle", arregloDetalle);
+				return (respuesta.toJSONString());
+			}
+
+			final ArrayList<JSONObject> resumen = EncuestaMercadeoDAO.obtenerResumen(idTienda, fechaInicial,
+					fechaFinal, idPregunta);
+			// Total por pregunta, para poder calcular el porcentaje de cada respuesta
+			// dentro de su propia pregunta y no sobre el total general
+			final HashMap<Integer, Integer> totalPorPregunta = new HashMap<Integer, Integer>();
+			for (final JSONObject fila : resumen) {
+				final Integer idPreg = (Integer) fila.get("idpregunta");
+				final Integer cantidad = (Integer) fila.get("cantidad");
+				final Integer acumulado = totalPorPregunta.get(idPreg);
+				totalPorPregunta.put(idPreg,
+						Integer.valueOf((acumulado == null ? 0 : acumulado.intValue()) + cantidad.intValue()));
+			}
+			int totalRespuestas = 0;
+			for (final JSONObject fila : resumen) {
+				final Integer idPreg = (Integer) fila.get("idpregunta");
+				final int cantidad = ((Integer) fila.get("cantidad")).intValue();
+				final int totalPreg = totalPorPregunta.get(idPreg).intValue();
+				final double porcentaje = totalPreg == 0 ? 0d
+						: Math.round(cantidad * 1000d / totalPreg) / 10d;
+				fila.put("totalpregunta", Integer.valueOf(totalPreg));
+				fila.put("porcentaje", Double.valueOf(porcentaje));
+				arregloResumen.add(fila);
+				totalRespuestas += cantidad;
+			}
+
+			final ArrayList<JSONObject> detalle = EncuestaMercadeoDAO.obtenerDetalle(idTienda, fechaInicial,
+					fechaFinal, idPregunta);
+			// Una encuesta es el conjunto de respuestas de un mismo pedido en una tienda
+			final HashSet<String> encuestas = new HashSet<String>();
+			for (final JSONObject fila : detalle) {
+				arregloDetalle.add(fila);
+				encuestas.add(fila.get("idtienda") + "-" + fila.get("idpedidotienda"));
+			}
+
+			final JSONObject totales = new JSONObject();
+			totales.put("respuestas", Integer.valueOf(totalRespuestas));
+			totales.put("encuestas", Integer.valueOf(encuestas.size()));
+			respuesta.put("resultado", "OK");
+			respuesta.put("totales", totales);
+			respuesta.put("resumen", arregloResumen);
+			respuesta.put("detalle", arregloDetalle);
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("consultarReporte: " + e.toString());
+			respuesta.put("resultado", "ERROR");
+			respuesta.put("mensaje", e.toString());
+			respuesta.put("resumen", arregloResumen);
+			respuesta.put("detalle", arregloDetalle);
+		}
+		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * Valida que una fecha venga en formato aaaa-mm-dd y sea real.
+	 *
+	 * @param fecha texto a validar
+	 * @return true si es valida
+	 */
+	private boolean fechaValida(final String fecha) {
+		boolean valida = false;
+		if (fecha != null && fecha.matches("\\d{4}-\\d{2}-\\d{2}")) {
+			try {
+				java.time.LocalDate.parse(fecha);
+				valida = true;
+			} catch (final Exception e) {
+				valida = false;
+			}
+		}
+		return (valida);
 	}
 
 	/**
