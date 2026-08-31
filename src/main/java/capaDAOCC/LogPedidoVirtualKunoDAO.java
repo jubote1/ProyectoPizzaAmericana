@@ -47,43 +47,82 @@ public class LogPedidoVirtualKunoDAO {
 	}
 	
 	
-	public static int insertarLogCRMBOT(String datosJSON, String authHeader, String operacion) {
-	    Logger logger = Logger.getLogger("log_file");  
+	public static int insertarLogCRMBOT(
+	        String datosJSON,
+	        String authHeader,
+	        String operacion,
+	        int leadNum) {
+
+	    Logger logger = Logger.getLogger("log_file");
+
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
-	    
 
 	    int idEventoIns = 0;
 
-	    String sql = "INSERT INTO log_pedido_crmbot (datos_json, header, tipo) VALUES (?, ?, ?)";
+	    String sql =
+	            "INSERT INTO log_pedido_crmbot " +
+	            "(datos_json, header, tipo, lead_id) " +
+	            "VALUES (?, ?, ?, ?)";
 
-	    try (PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+	    try (PreparedStatement ps =
+	            con1.prepareStatement(
+	                    sql,
+	                    Statement.RETURN_GENERATED_KEYS
+	            )) {
 
 	        ps.setString(1, datosJSON);
 	        ps.setString(2, authHeader);
 	        ps.setString(3, operacion);
+	        ps.setInt(4, leadNum);
 
-	        logger.info("Insertando log CRMBOT");
+	        logger.info(
+	                "Insertando log CRMBOT. Tipo: "
+	                + operacion
+	                + " - Lead: "
+	                + leadNum
+	        );
 
 	        ps.executeUpdate();
 
 	        try (ResultSet rs = ps.getGeneratedKeys()) {
+
 	            if (rs.next()) {
+
 	                idEventoIns = rs.getInt(1);
-	                logger.info("Id log pedido crmbot en bd: " + idEventoIns);
+
+	                logger.info(
+	                        "Id log pedido crmbot en bd: "
+	                        + idEventoIns
+	                );
 	            }
 	        }
 
 	    } catch (Exception e) {
-	        logger.error("Error insertando log CRMBOT: " + e.toString());
+
+	        logger.error(
+	                "Error insertando log CRMBOT: "
+	                + e.toString()
+	        );
+
 	        return 0;
-	    }finally {
-        try {
-            if (con1 != null) con1.close();
-        } catch (Exception e) {
-            logger.error("Error cerrando conexión: " + e.toString());
-        }
-    }
+
+	    } finally {
+
+	        try {
+
+	            if (con1 != null) {
+	                con1.close();
+	            }
+
+	        } catch (Exception e) {
+
+	            logger.error(
+	                    "Error cerrando conexión: "
+	                    + e.toString()
+	            );
+	        }
+	    }
 
 	    return idEventoIns;
 	}
@@ -226,44 +265,78 @@ public class LogPedidoVirtualKunoDAO {
 		}
 	}
 	
-	public static boolean existePedidoRecienteCRMBOT(String lead, String tipo, int minutosVentana) {
-	    Logger logger = Logger.getLogger("log_file");  
+	public static boolean existePedidoRecienteCRMBOT(
+	        String lead,
+	        String tipo,
+	        int minutosVentana) {
+
+	    Logger logger = Logger.getLogger("log_file");
+
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
-	    int lead_num = 0;
+
+	    int leadNum;
+
 	    try {
-	        lead_num = Integer.parseInt(lead);
+
+	        leadNum = Integer.parseInt(lead);
+
 	    } catch (Exception e) {
+
+	        logger.error(
+	                "Lead inválido al validar duplicado: "
+	                + lead
+	        );
+
 	        return false;
 	    }
 
-	    String sql = "SELECT 1 FROM log_pedido_crmbot " +
-	                 "WHERE lead_id = ? " +
-	                 "AND tipo = ? " +
-	                 "AND fecha_real >= NOW() - INTERVAL ? MINUTE " +
-	                 "LIMIT 1";
-    try (PreparedStatement ps = con1.prepareStatement(sql)) {
+	    String sql =
+	            "SELECT 1 " +
+	            "FROM log_pedido_crmbot " +
+	            "WHERE lead_id = ? " +
+	            "AND tipo = ? " +
+	            "AND fecha_real >= NOW() - INTERVAL ? MINUTE " +
+	            "LIMIT 1";
 
-	        ps.setInt(1, lead_num);
+	    try (PreparedStatement ps =
+	            con1.prepareStatement(sql)) {
+
+	        ps.setInt(1, leadNum);
 	        ps.setString(2, tipo);
 	        ps.setInt(3, minutosVentana);
 
-	        ResultSet rs = ps.executeQuery();
-	        return rs.next();
+	        try (ResultSet rs = ps.executeQuery()) {
+
+	            return rs.next();
+	        }
 
 	    } catch (Exception e) {
-	        logger.error("Error validando duplicado: " + e.toString());
+
+	        logger.error(
+	                "Error validando duplicado CRMBOT: "
+	                + e.toString()
+	        );
+
 	    } finally {
+
 	        try {
-	            if (con1 != null) con1.close();
+
+	            if (con1 != null) {
+	                con1.close();
+	            }
+
 	        } catch (Exception e) {
-	            logger.error("Error cerrando conexión: " + e.toString());
+
+	            logger.error(
+	                    "Error cerrando conexión: "
+	                    + e.toString()
+	            );
 	        }
 	    }
 
 	    return false;
 	}
-
 	
 	public static boolean actualizarLogCRMBOTIdPedido(int idLog, int idPedido) {
 
