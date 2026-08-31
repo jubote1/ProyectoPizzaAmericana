@@ -8,11 +8,13 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.FidelizacionCtrl;
 import capaControladorCC.PedidoCtrl;
-import capaModeloCC.CodigoRedencionPuntos;;
+import capaModeloCC.CodigoRedencionPuntos;
+import capaModeloCC.Usuario;;
 
 /**
  * Servlet implementation class GetCliente
@@ -44,6 +46,32 @@ public class CrearCodigoValidarRedencionPuntos extends HttpServlet {
 			String correo = request.getParameter("correo");
 			String fechaSistema = request.getParameter("fechasistema");
 			double puntosRedimir = Double.parseDouble(request.getParameter("puntosredimir"));
+			int idTienda = 0;
+			try {
+				idTienda = Integer.parseInt(request.getParameter("idtienda"));
+			}catch(Exception e)
+			{
+				idTienda = 0;
+			}
+
+			/*
+			 * Quien pide el codigo de redencion. Misma logica que en
+			 * RealizarRedencionPuntos: del contact center se toma de la sesion, que no
+			 * se puede alterar; del punto de venta llega como parametro porque no hay
+			 * sesion.
+			 */
+			String usuario = "";
+			HttpSession sesion = request.getSession(false);
+			if (sesion != null && sesion.getAttribute("usuario") != null) {
+				Usuario usuarioSesion = (Usuario) sesion.getAttribute("usuario");
+				usuario = usuarioSesion.getNombreUsuario();
+			} else {
+				usuario = request.getParameter("usuario");
+				if (usuario == null) {
+					usuario = "";
+				}
+			}
+
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			FidelizacionCtrl fidCtrl = new FidelizacionCtrl();
@@ -51,6 +79,8 @@ public class CrearCodigoValidarRedencionPuntos extends HttpServlet {
 			codRed.setCorreo(correo);
 			codRed.setFechaSistema(fechaSistema);
 			codRed.setPuntos(puntosRedimir);
+			codRed.setIdTienda(idTienda);
+			codRed.setUsuario(usuario);
 			String respuesta = fidCtrl.crearCodigoValidarRedencionPuntos(codRed);
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);

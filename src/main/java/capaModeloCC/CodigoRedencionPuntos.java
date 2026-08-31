@@ -64,6 +64,34 @@ public CodigoRedencionPuntos(int idCodigo, String correo, String codigo, String 
 }
 public CodigoRedencionPuntos() {
 	super();
+	this.usuario = "";
+}
+
+/**
+ * Tienda desde la que se pidio el codigo de redencion. Cero cuando lo pide el
+ * contact center, que no esta atado a una tienda.
+ */
+private int idTienda;
+/**
+ * Usuario que pidio el codigo de redencion. Antes no se guardaba, asi que no
+ * habia forma de saber quien habia iniciado una redencion.
+ */
+private String usuario;
+
+public int getIdTienda() {
+	return this.idTienda;
+}
+
+public void setIdTienda(int idTienda) {
+	this.idTienda = idTienda;
+}
+
+public String getUsuario() {
+	return this.usuario;
+}
+
+public void setUsuario(String usuario) {
+	this.usuario = usuario;
 }
 
 

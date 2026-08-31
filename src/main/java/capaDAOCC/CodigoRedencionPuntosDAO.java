@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -21,11 +22,20 @@ public class CodigoRedencionPuntosDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into codigo_redencion_puntos (correo,codigo,puntos,fecha_sistema) values('" +  codigo.getCorreo() + "', '" + codigo.getCodigo() + "' , " + codigo.getPuntos() + " , '" + codigo.getFechaSistema() + "')";
-					logger.info(insert);
-			stm.executeUpdate(insert);
-			stm.close();
+			//Se agregan idtienda y usuario para saber desde donde y quien pidio el
+			//codigo. Se usa PreparedStatement porque el usuario es texto de entrada.
+			String insert = "insert into codigo_redencion_puntos (correo,codigo,puntos,fecha_sistema,idtienda,usuario) values(?,?,?,?,?,?)";
+			logger.info(insert + " correo=" + codigo.getCorreo() + " tienda=" + codigo.getIdTienda()
+					+ " usuario=" + codigo.getUsuario());
+			PreparedStatement pst = con1.prepareStatement(insert);
+			pst.setString(1, codigo.getCorreo());
+			pst.setString(2, codigo.getCodigo());
+			pst.setDouble(3, codigo.getPuntos());
+			pst.setString(4, codigo.getFechaSistema());
+			pst.setInt(5, codigo.getIdTienda());
+			pst.setString(6, codigo.getUsuario() == null ? "" : codigo.getUsuario());
+			pst.executeUpdate();
+			pst.close();
 			con1.close();
 		}
 		catch (Exception e){

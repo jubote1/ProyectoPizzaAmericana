@@ -8,11 +8,13 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.FidelizacionCtrl;
 import capaControladorCC.PedidoCtrl;
-import capaModeloCC.CodigoRedencionPuntos;;
+import capaModeloCC.CodigoRedencionPuntos;
+import capaModeloCC.Usuario;
 
 /**
  * Servlet implementation class GetCliente
@@ -58,10 +60,41 @@ public class RealizarRedencionPuntos extends HttpServlet {
 				idPedido = 0;
 			}
 			double puntosRedimir = Double.parseDouble(request.getParameter("puntosredimir"));
+
+			/*
+			 * Trazabilidad de quien redime. Antes no quedaba registro y no se podia
+			 * saber quien habia sacado el producto.
+			 *
+			 * Los dos canales se resuelven distinto a proposito:
+			 *
+			 * CC  El contact center llega con sesion HTTP iniciada, asi que el usuario
+			 *     se toma de la sesion. Es la fuente confiable: un parametro se puede
+			 *     alterar desde el navegador, la sesion no. Para una revision de
+			 *     fraude esa diferencia importa.
+			 * POS El punto de venta no tiene sesion, asi que lo envia como parametro.
+			 *     Menos blindado, pero el riesgo real es un cajero usando la pantalla,
+			 *     no alguien fabricando peticiones HTTP.
+			 */
+			String usuario = "";
+			String origen = "";
+			HttpSession sesion = request.getSession(false);
+			if (sesion != null && sesion.getAttribute("usuario") != null) {
+				Usuario usuarioSesion = (Usuario) sesion.getAttribute("usuario");
+				usuario = usuarioSesion.getNombreUsuario();
+				origen = "CC";
+			} else {
+				usuario = request.getParameter("usuario");
+				if (usuario == null) {
+					usuario = "";
+				}
+				origen = "POS";
+			}
+
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			FidelizacionCtrl fidCtrl = new FidelizacionCtrl();
-			String respuesta = fidCtrl.realizarRedencionPuntos(codigo, correo, puntosRedimir, idTienda, idPedido);
+			String respuesta = fidCtrl.realizarRedencionPuntos(codigo, correo, puntosRedimir, idTienda, idPedido,
+					usuario, origen);
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
 			

@@ -265,7 +265,37 @@ public class ClienteFidelizacionDAO {
 		return(respuesta);
 	}
 	
+	/**
+	 * Version anterior, que solo dejaba correo y puntos. Se conserva para no romper
+	 * llamadas existentes, pero registra la redencion sin trazabilidad.
+	 *
+	 * @deprecated usar la version que recibe tienda, pedido, usuario y origen. Sin
+	 *             esos datos no se puede saber quien proceso la redencion, que es
+	 *             justamente lo que se necesita para revisar posibles fraudes.
+	 */
+	@Deprecated
 	public static boolean insertarLogRedencion(String correo, double puntosRedimir)
+	{
+		return(insertarLogRedencion(correo, puntosRedimir, 0, 0, "", ""));
+	}
+
+	/**
+	 * Deja el registro de una redencion de puntos con su trazabilidad completa.
+	 *
+	 * Antes esta tabla solo guardaba correo, fecha y puntos, asi que no habia forma
+	 * de saber quien habia procesado la redencion ni desde donde. Los datos de
+	 * tienda y pedido ya viajaban hasta el controlador y se descartaban aqui.
+	 *
+	 * @param correo         cliente del plan de fidelizacion
+	 * @param puntosRedimir  puntos que se redimen
+	 * @param idTienda       tienda donde se redimio; 0 si no aplica
+	 * @param idPedidoTienda consecutivo del pedido en la tienda; 0 si no aplica
+	 * @param usuario        usuario que proceso la redencion
+	 * @param origen         POS o CC segun desde donde se redimio
+	 * @return true si quedo registrada
+	 */
+	public static boolean insertarLogRedencion(String correo, double puntosRedimir, int idTienda,
+			int idPedidoTienda, String usuario, String origen)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		boolean respuesta = false;
@@ -273,15 +303,24 @@ public class ClienteFidelizacionDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into fidelizacion_redencion (correo,puntos_redimidos) values ('" + correo + "', " + puntosRedimir +")";
-			logger.info(insert);
-			stm.executeUpdate(insert);
+			//Se usa PreparedStatement porque el usuario y el correo son texto de
+			//entrada, y un apostrofo romperia una sentencia concatenada
+			String insert = "insert into fidelizacion_redencion (correo, puntos_redimidos, idtienda, idpedidotienda, usuario, origen) values (?,?,?,?,?,?)";
+			logger.info(insert + " correo=" + correo + " tienda=" + idTienda + " pedido=" + idPedidoTienda
+					+ " usuario=" + usuario + " origen=" + origen);
+			PreparedStatement pst = con1.prepareStatement(insert);
+			pst.setString(1, correo);
+			pst.setDouble(2, puntosRedimir);
+			pst.setInt(3, idTienda);
+			pst.setInt(4, idPedidoTienda);
+			pst.setString(5, usuario == null ? "" : usuario);
+			pst.setString(6, origen == null ? "" : origen);
+			pst.executeUpdate();
 			respuesta = true;
-			stm.close();
+			pst.close();
 			con1.close();
 		}catch (Exception e){
-			logger.error(e.toString());
+			logger.error("insertarLogRedencion: " + e.toString());
 			try
 			{
 				con1.close();

@@ -181,12 +181,37 @@ public class FidelizacionCtrl {
 	 * @param idPedidoTienda
 	 * @return
 	 */
+	/**
+	 * Version anterior, sin trazabilidad. Se conserva para no romper llamadas
+	 * existentes.
+	 *
+	 * @deprecated usar la version que recibe tienda, pedido, usuario y origen.
+	 */
+	@Deprecated
 	public double redimirPuntosClienteFidelizacion(String correo, double puntosRedimir)
+	{
+		return(redimirPuntosClienteFidelizacion(correo, puntosRedimir, 0, 0, "", ""));
+	}
+
+	/**
+	 * Descuenta los puntos del cliente y deja el registro de la redencion con su
+	 * trazabilidad: tienda, pedido, usuario que la proceso y canal de origen.
+	 *
+	 * @param correo         cliente del plan de fidelizacion
+	 * @param puntosRedimir  puntos que se redimen
+	 * @param idTienda       tienda donde se redimio; 0 si no aplica
+	 * @param idPedidoTienda consecutivo del pedido en la tienda; 0 si no aplica
+	 * @param usuario        usuario que proceso la redencion
+	 * @param origen         POS o CC
+	 * @return puntos que le quedan al cliente
+	 */
+	public double redimirPuntosClienteFidelizacion(String correo, double puntosRedimir, int idTienda,
+			int idPedidoTienda, String usuario, String origen)
 	{
 		double puntosRestantes =  0;
 		puntosRestantes=  ClienteFidelizacionDAO.redimirPuntosClienteFidelizacion(correo, puntosRedimir);
 		//Instalar log de la redención
-		ClienteFidelizacionDAO.insertarLogRedencion(correo, puntosRedimir);
+		ClienteFidelizacionDAO.insertarLogRedencion(correo, puntosRedimir, idTienda, idPedidoTienda, usuario, origen);
 		return(puntosRestantes);
 	}
 
@@ -435,7 +460,34 @@ public class FidelizacionCtrl {
 
 
 
+	/**
+	 * Version anterior, sin usuario ni origen. Se conserva para no romper llamadas
+	 * existentes.
+	 *
+	 * @deprecated usar la version que recibe usuario y origen, para que la redencion
+	 *             quede con trazabilidad de quien la proceso.
+	 */
+	@Deprecated
 	public String realizarRedencionPuntos(String codigo, String  correo, double puntosRedimir, int idTienda, int idPedido)
+	{
+		return(realizarRedencionPuntos(codigo, correo, puntosRedimir, idTienda, idPedido, "", ""));
+	}
+
+	/**
+	 * Realiza la redencion de puntos y deja constancia de quien la proceso.
+	 *
+	 * @param codigo        codigo de redencion que se valido
+	 * @param correo        cliente del plan de fidelizacion
+	 * @param puntosRedimir puntos a redimir
+	 * @param idTienda      tienda donde se redime
+	 * @param idPedido      consecutivo del pedido en la tienda
+	 * @param usuario       usuario que procesa la redencion
+	 * @param origen        POS o CC
+	 * @return JSON con OK y los puntos restantes, o NOK1 si no hay puntos
+	 *         suficientes, o NOK2 si el cliente no esta en el plan
+	 */
+	public String realizarRedencionPuntos(String codigo, String  correo, double puntosRedimir, int idTienda,
+			int idPedido, String usuario, String origen)
 	{
 		JSONObject respuesta = new JSONObject();
 
@@ -462,8 +514,10 @@ public class FidelizacionCtrl {
 		//creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
 		//Hacemos el gasto de los puntos en la tabla de fidelizacion transaccion
 		realizarRedencionFidelizacionTransaccion(correo, puntosRedimir);
-		//Posteriormente hacemos la resta de los puntos
-		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir);
+		//Posteriormente hacemos la resta de los puntos, dejando la trazabilidad de
+		//tienda, pedido, usuario y canal en fidelizacion_redencion
+		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir, idTienda, idPedido,
+				usuario, origen);
 		respuesta.put("respuesta", "OK");
 		respuesta.put("puntosrestantes", puntosRestantes);
 		return(respuesta.toJSONString());
