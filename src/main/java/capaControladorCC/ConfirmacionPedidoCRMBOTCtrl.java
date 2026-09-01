@@ -432,11 +432,9 @@ public class ConfirmacionPedidoCRMBOTCtrl {
 		}
 
 		// ------------------------------------------------------------------
-		// 2. Condimentos (incluidos, $0)
+		// 2. Condimentos
+		// Se omiten del resumen visible a solicitud del bot
 		// ------------------------------------------------------------------
-		if (condimentos != null && !condimentos.trim().isEmpty()) {
-			agregarItem(items, "Condimentos: " + condimentos, 1, 0, true, false);
-		}
 
 		// ------------------------------------------------------------------
 		// 3. Balón
@@ -981,9 +979,7 @@ public class ConfirmacionPedidoCRMBOTCtrl {
 		mensaje.append("\n💳 *DETALLE DE PAGO:*\n");
 		mensaje.append("• Subtotal productos: ").append(FORMATO_MONEDA.format(subtotal)).append("\n");
 		mensaje.append("• Domicilio: ").append(FORMATO_MONEDA.format(valorDomicilio)).append("\n");
-		mensaje.append("💰 *TOTAL A PAGAR: ").append(FORMATO_MONEDA.format(total)).append("*\n");
-
-		mensaje.append("\n👉 *¿Confirmas que este es el pedido que deseas registrar?*");
+		mensaje.append("💰 *TOTAL A PAGAR: ").append(FORMATO_MONEDA.format(total)).append("*");
 
 		return mensaje.toString();
 	}
