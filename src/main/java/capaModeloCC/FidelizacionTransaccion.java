@@ -13,6 +13,13 @@ public class FidelizacionTransaccion {
 	private double puntosVencidos;
 	private double puntosRedimidos;
 	private String vencidos;
+	/**
+	 * Usuario que tomo el pedido que genero los puntos, copiado de
+	 * pedido.usuariopedido de la base de la tienda. Queda vacio cuando la
+	 * acumulacion no viene del proceso por lote (por ejemplo el servicio que usa
+	 * el contact center), para no cambiar lo que ya funcionaba.
+	 */
+	private String usuario = "";
 	
 	
 	
@@ -89,6 +96,20 @@ public class FidelizacionTransaccion {
 		this.idPedidoTienda = idPedidoTienda;
 		this.valorNeto = valorNeto;
 		this.puntos = puntos;
+	}
+
+	public FidelizacionTransaccion(String correo, int idTienda, int idPedidoTienda, double valorNeto,
+			double puntos, String usuario) {
+		this(correo, idTienda, idPedidoTienda, valorNeto, puntos);
+		this.usuario = usuario == null ? "" : usuario;
+	}
+
+	public String getUsuario() {
+		return this.usuario;
+	}
+
+	public void setUsuario(String usuario) {
+		this.usuario = usuario == null ? "" : usuario;
 	}
 	public FidelizacionTransaccion(String correo, int idTienda, String tienda, int idPedidoTienda,
 			String fechaTransaccion, double valorNeto, double puntos) {

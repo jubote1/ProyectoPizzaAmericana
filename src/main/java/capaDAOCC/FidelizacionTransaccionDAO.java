@@ -62,12 +62,24 @@ public class FidelizacionTransaccionDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into fidelizacion_transaccion (correo,idtienda, idpedidotienda, valor_neto, puntos, fecha_vencimiento) values ('" + transaccion.getCorreo() +"' ," + transaccion.getIdTienda()+ " ," +  transaccion.getIdPedidoTienda()+ "," + transaccion.getValorNeto() + ", " + transaccion.getPuntos() + ", " + "DATE_ADD(CURDATE(), INTERVAL " + diasVigencia + " DAY)" +")";
-			logger.info(insert);
-			stm.executeUpdate(insert);
+			//Se usa PreparedStatement porque el correo es texto libre que llega desde
+			//el punto de venta. Pegandolo a la cadena, un apostrofo en el correo rompe
+			//la consulta y la acumulacion de ese pedido se pierde en silencio.
+			String insert = "insert into fidelizacion_transaccion (correo, idtienda, idpedidotienda, valor_neto, puntos, usuario, fecha_vencimiento) values (?,?,?,?,?,?, DATE_ADD(CURDATE(), INTERVAL ? DAY))";
+			logger.info(insert + " correo=" + transaccion.getCorreo() + " tienda=" + transaccion.getIdTienda()
+					+ " pedido=" + transaccion.getIdPedidoTienda() + " puntos=" + transaccion.getPuntos()
+					+ " usuario=" + transaccion.getUsuario());
+			PreparedStatement pst = con1.prepareStatement(insert);
+			pst.setString(1, transaccion.getCorreo());
+			pst.setInt(2, transaccion.getIdTienda());
+			pst.setInt(3, transaccion.getIdPedidoTienda());
+			pst.setDouble(4, transaccion.getValorNeto());
+			pst.setDouble(5, transaccion.getPuntos());
+			pst.setString(6, transaccion.getUsuario());
+			pst.setInt(7, diasVigencia);
+			pst.executeUpdate();
 			respuesta = true;
-			stm.close();
+			pst.close();
 			con1.close();
 		}catch (Exception e){
 			logger.error(e.toString());
