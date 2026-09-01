@@ -17,7 +17,7 @@ import capaModeloCC.Tienda;
 public class GeolocalizacionCtrl implements Runnable {
 	
 	/*
-	 * Método que retorna los poligonos definidos en un JSON
+	 * MÃ©todo que retorna los poligonos definidos en un JSON
 	 */
 	Thread hiloInsertarUbicacion;
 	String claveDomiciliario;

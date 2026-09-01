@@ -1,7 +1,7 @@
 package PedidoInfoAdicional;
 
 /**
- * Clase que implementa la entidad DetallePedidoPixel la cual tiene los par·metros para detallar al sistema Pos el pedido
+ * Clase que implementa la entidad DetallePedidoPixel la cual tiene los par√°metros para detallar al sistema Pos el pedido
  * @author JuanDavid
  *
  */

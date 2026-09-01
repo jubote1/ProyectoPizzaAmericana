@@ -30,8 +30,8 @@ public class ObtenerDescuentoDiarioPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe par·metros y se encarga de retornar en formato JSON todas las formas de pago
-	 * parametrizadas en el sistema, invocando al mÈtodo obtenerFormaPagoPedido de la capa Parametros controlador.
+	 * Este servicio no recibe par√°metros y se encarga de retornar en formato JSON todas las formas de pago
+	 * parametrizadas en el sistema, invocando al m√©todo obtenerFormaPagoPedido de la capa Parametros controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub

@@ -25,10 +25,10 @@ public class PedidoPixelDAO {
 		//Debemos obtener el idTienda del Pedido que vamos a finalizar
 				Tienda tiendaPedido = PedidoPixelDAO.obtenerTiendaPedido(idpedido);
 				
-				//Llamado Inserci�n Pixel
+				//Llamado Inserciï¿½n Pixel
 				ArrayList <DetallePedidoPixel> envioPixel = PedidoPixelDAO.InsertarPedidoPixel(idpedido, tiendaPedido.getIdTienda());
 				
-				//La invocaci�n del pedido ya no se realizar� as�
+				//La invocación del pedido ya no se realizará así
 				//OJO
 				//Main principal = new Main();
 				Cliente cliente = PedidoPixelDAO.obtenerClienteporID(idcliente);
@@ -92,8 +92,8 @@ public class PedidoPixelDAO {
 	public static ArrayList<DetallePedidoPixel> InsertarPedidoPixel(int idpedido, int idtienda)
 	{
 		Logger logger = Logger.getLogger("log_file");
-		logger.info("Se inicia la homologaci�n para base de datos Pixel, para el pedido " + idpedido);
-		//Tener en cuenta que tenemos en homologaci�n el producto 10000 interno que har� el simil al producto de mensaje en Pixel
+		logger.info("Se inicia la homologaciï¿½n para base de datos Pixel, para el pedido " + idpedido);
+		//Tener en cuenta que tenemos en homologaciï¿½n el producto 10000 interno que harï¿½ el simil al producto de mensaje en Pixel
 		ArrayList <DetallePedido> pedidoPixel = PedidoPixelDAO.ConsultarDetallePedidoSinAdiciones(idpedido);
 		ArrayList <DetallePedidoPixel> pedidoDefinitivoPixel = new ArrayList();
 		double cantidadPixel;
@@ -101,7 +101,7 @@ public class PedidoPixelDAO {
 		int idproductomaestroext;
 		int idproductoextsep;
 		int idSaborTipoLiquido;
-		//extraemos el c�digo producto pixel de la gaseosa para las que van dentro de los combos
+		//extraemos el cï¿½digo producto pixel de la gaseosa para las que van dentro de los combos
 		int idproductogasext;
 		ArrayList<DetallePedidoAdicion> adicionDetallePedido = new ArrayList();
 		ArrayList<ModificadorDetallePedido> modificadoresDetallePedido = new ArrayList();
@@ -109,7 +109,7 @@ public class PedidoPixelDAO {
 		{
 			adicionDetallePedido = PedidoPixelDAO.ObtenerAdicionDetallePedido(cadaDetallePedido.getIddetallepedido());
 			modificadoresDetallePedido = PedidoPixelDAO.ObtenerModificadorDetallePedido(cadaDetallePedido.getIddetallepedido());
-			//Aqui tendremos la l�gica para generar un array list
+			//Aqui tendremos la lï¿½gica para generar un array list
 			//Definimos la cantidad del item que se va a pasar al otro sistema
 			int cantidad = (int) cadaDetallePedido.getCantidad();
 			// Este caso se puede dar o para otro producto, o para pizzas un solo ingrediente
@@ -177,8 +177,8 @@ public class PedidoPixelDAO {
 				{
 					if((cadaDetallePedido.getIdespecialidad1() > 0)&&(cadaDetallePedido.getIdespecialidad2() == 0))
 					{
-						//En las pizzas y con base en la pizza que se est� facturando, al principio debo de tener un master item
-						//Master ITEM Se har� la homologaci�n entre el c�digo producto y la excepci�n de precio
+						//En las pizzas y con base en la pizza que se estï¿½ facturando, al principio debo de tener un master item
+						//Master ITEM Se harï¿½ la homologaciï¿½n entre el cï¿½digo producto y la excepciï¿½n de precio
 						idproductomaestroext = PedidoPixelDAO.RetornarIdproductoMaestroExterno(cadaDetallePedido.getIdproducto(), cadaDetallePedido.getIdexcepcion(), idtienda);
 						int idproductopizza = 0;
 						cantidadPixel = 0.5;
@@ -263,8 +263,8 @@ public class PedidoPixelDAO {
 						
 					}else
 					{
-						//En las pizzas y con base en la pizza que se est� facturando, al principio debo de tener un master item
-						//Master ITEM Se har� la homologaci�n entre el c�digo producto y la excepci�n de precio
+						//En las pizzas y con base en la pizza que se estï¿½ facturando, al principio debo de tener un master item
+						//Master ITEM Se harï¿½ la homologaciï¿½n entre el cï¿½digo producto y la excepciï¿½n de precio
 						idproductomaestroext = PedidoPixelDAO.RetornarIdproductoMaestroExterno(cadaDetallePedido.getIdproducto(), cadaDetallePedido.getIdexcepcion(), idtienda);
 						cantidadPixel = 0.5;
 						idSaborTipoLiquido = cadaDetallePedido.getIdsabortipoliquido();
@@ -426,7 +426,7 @@ public class PedidoPixelDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
+			//Para actualizar el cliente el idcliente debe ser diferente de vacï¿½o.
 			Statement stm = con1.createStatement();
 			String update = "update cliente set memcode = " + memcode + "  where idcliente = " + idCliente; 
 			logger.info(update);

@@ -1,7 +1,7 @@
 package PedidoInfoAdicional;
 
 /**
- * Clase que implementa la entidad Excepción Precio.
+ * Clase que implementa la entidad ExcepciÃ³n Precio.
  * @author JuanDavid
  *
  */

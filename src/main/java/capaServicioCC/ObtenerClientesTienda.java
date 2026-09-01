@@ -14,7 +14,7 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class GetOtrosProductos
- * MÈtodo que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta informaciÛn
+ * M√©todo que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta informaci√≥n
  * es retornada en formato JSON.
  */
 @WebServlet("/ObtenerClientesTienda")
@@ -31,8 +31,8 @@ public class ObtenerClientesTienda extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe par·metros se encarga de retornar en formato JSON todos los productos parametrizados en el
-	 * sistema invocando al mÈtodo obtenerTodosProductos de la capa Pedido Controlador.
+	 * Este servicio no recibe par√°metros se encarga de retornar en formato JSON todos los productos parametrizados en el
+	 * sistema invocando al m√©todo obtenerTodosProductos de la capa Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try{

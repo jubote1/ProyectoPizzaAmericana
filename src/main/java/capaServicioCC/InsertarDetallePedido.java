@@ -13,8 +13,8 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class InsertarDetallePedido
- * Servicio que es consumido en la inserciÛn del pedido, cada vez que se agrega un detalle al pedido, para lo cual recibe 
- * la informaciÛn clave para la inserciÛn.
+ * Servicio que es consumido en la inserci√≥n del pedido, cada vez que se agrega un detalle al pedido, para lo cual recibe 
+ * la informaci√≥n clave para la inserci√≥n.
  */
 @WebServlet("/InsertarDetallePedido")
 public class InsertarDetallePedido extends HttpServlet {
@@ -30,8 +30,8 @@ public class InsertarDetallePedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metros el idproducto qeu se va a agregar, el idpedido al cual estar· relacionado
-	 * el detalle de pedido, se ingresa la informaciÛn del detalle pedido, como las especialidades, la cantidad, observaciones, excepciones de precio etc.
+	 * Este servicio recibe como par√°metros el idproducto qeu se va a agregar, el idpedido al cual estar√° relacionado
+	 * el detalle de pedido, se ingresa la informaci√≥n del detalle pedido, como las especialidades, la cantidad, observaciones, excepciones de precio etc.
 	 * 
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

@@ -14,7 +14,7 @@ import capaControladorCC.PedidoCtrl;;
 
 /**
  * Servlet implementation class InsertarEspecialidad
- * MÈtodo que se encarga recibir los par·metros para la inserciÛn de una especialidad.
+ * M√©todo que se encarga recibir los par√°metros para la inserci√≥n de una especialidad.
  */
 @WebServlet("/ConsultarDireccionesPedido")
 public class ConsultarDireccionesPedido extends HttpServlet {
@@ -30,7 +30,7 @@ public class ConsultarDireccionesPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Servicio que recibe los par·metros para llamar al mÈtodo insertarEspecialidad de la capa Parametros controlador,
+	 * Servicio que recibe los par√°metros para llamar al m√©todo insertarEspecialidad de la capa Parametros controlador,
 	 * e insertar la especialidad.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

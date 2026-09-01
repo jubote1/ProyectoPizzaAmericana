@@ -16,7 +16,7 @@ import capaModeloCC.Usuario;;
 /**
  * Servlet implementation class GetCliente
  * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par·metro un telÈfono determinado.
+ * como par√°metro un tel√©fono determinado.
  */
 @WebServlet("/GetCodigoPromocional")
 public class GetCodigoPromocional extends HttpServlet {
@@ -32,9 +32,9 @@ public class GetCodigoPromocional extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como par·metro del telÈfono el cual es manejado como un String, con base en esto se retorna
-	 * en formato JSON todos los registros que tiene asociado el cliente en la tabla de clientes con el telÈfono indicado.
-	 * Lo anterior invocando el mÈtodo obtenerCliente(tel) de la capa controlador cliente.
+	 * El servicio recibe como par√°metro del tel√©fono el cual es manejado como un String, con base en esto se retorna
+	 * en formato JSON todos los registros que tiene asociado el cliente en la tabla de clientes con el tel√©fono indicado.
+	 * Lo anterior invocando el m√©todo obtenerCliente(tel) de la capa controlador cliente.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -49,7 +49,7 @@ public class GetCodigoPromocional extends HttpServlet {
 			{
 				idOfertaCliente = 0;
 			}
-			//Capturamos la informaciÛn de la sesion del usuario que est· ejecutando la inserciÛn
+			//Capturamos la informaci√≥n de la sesion del usuario que est√° ejecutando la inserci√≥n
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			PromocionesCtrl promoCtrl = new PromocionesCtrl();

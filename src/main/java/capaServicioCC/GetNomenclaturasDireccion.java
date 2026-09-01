@@ -13,8 +13,8 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class GetEspecialidades
- * Servicio que retorna todas la especialidades creadas en el sistemas, no se tiene filtro y por lo tanto no toma ningún
- * parámetro o filtro, el retorno de la información es formato JSON.
+ * Servicio que retorna todas la especialidades creadas en el sistemas, no se tiene filtro y por lo tanto no toma ningÃºn
+ * parÃ¡metro o filtro, el retorno de la informaciÃ³n es formato JSON.
  */
 @WebServlet("/GetNomenclaturasDireccion")
 public class GetNomenclaturasDireccion extends HttpServlet {
@@ -30,7 +30,7 @@ public class GetNomenclaturasDireccion extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio no toma ningún parámetro y retorna todas las especialidades en formato JSON, invocando al método
+	 * El servicio no toma ningÃºn parÃ¡metro y retorna todas las especialidades en formato JSON, invocando al mÃ©todo
 	 * obtenerEspecialidades() de la capa Controlador Pedido.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

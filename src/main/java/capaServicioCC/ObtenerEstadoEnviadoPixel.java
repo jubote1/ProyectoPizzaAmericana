@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el número de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el nÃºmero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
  */
 @WebServlet("/ObtenerEstadoEnviadoPixel")
 public class ObtenerEstadoEnviadoPixel extends HttpServlet {
@@ -28,8 +28,8 @@ public class ObtenerEstadoEnviadoPixel extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Método GET del Servicio que recibe como parámetroel idpedido del sistema Contact Center y el numPedidoPixel el cual es el 
-	 * número de pedido Pixel que retorno la inserción, se invoca en al capa controlador el método actualizarEstadoNumeroPedidoPixel.
+	 * MÃ©todo GET del Servicio que recibe como parÃ¡metroel idpedido del sistema Contact Center y el numPedidoPixel el cual es el 
+	 * nÃºmero de pedido Pixel que retorno la inserciÃ³n, se invoca en al capa controlador el mÃ©todo actualizarEstadoNumeroPedidoPixel.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub

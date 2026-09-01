@@ -21,7 +21,7 @@ import conexionCC.ConexionBaseDatos;
 public class PoligonoDAO {
 	
 /**
- * MÈtodo que se encarga de retornar todas las entidades Poligonos definidas en la base de datos
+ * M√©todo que se encarga de retornar todas las entidades Poligonos definidas en la base de datos
  * @return Se retorna un ArrayList con todas las entidades Poligono definidas en la base de datos.
  */
 	public static ArrayList<Poligono> obtenerPoligonos()
@@ -62,8 +62,8 @@ public class PoligonoDAO {
 	
 	
 	/**
-	 * MÈtodo que se encarga de la inserciÛn de un nuevo poligono, con base en la informaciÛn recibida como par·metro.
-	 * @param pro Se recibe como par·metro un objeto Modelo Poligono con base en el cual se realiza la inserciÛn de una nueva entidad Poligono
+	 * M√©todo que se encarga de la inserci√≥n de un nuevo poligono, con base en la informaci√≥n recibida como par√°metro.
+	 * @param pro Se recibe como par√°metro un objeto Modelo Poligono con base en el cual se realiza la inserci√≥n de una nueva entidad Poligono
 	 * en el sistema.
 	 * @return Se retorna un valor entero, que contiene el valor del idtienda asociado a la nueva tienda creada.
 	 */
@@ -101,8 +101,8 @@ public class PoligonoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de la eliminaciÛn de una poligono con base en los par·metros recibidos.
-	 * @param idtienda Se revise como par·metro el idpoligono de la entidad que se desea eliminar, no se retornan valores.
+	 * M√©todo que se encarga de la eliminaci√≥n de una poligono con base en los par√°metros recibidos.
+	 * @param idtienda Se revise como par√°metro el idpoligono de la entidad que se desea eliminar, no se retornan valores.
 	 */
 	public static void eliminarPoligono(int idPoligono)
 	{
@@ -131,9 +131,9 @@ public class PoligonoDAO {
 	}
 
 	/**
-	 * MÈtodo que retorna un poligono, con base en el par·metro recibido de idpoligono.
-	 * @param idpoligono Se recibe como par·metro valor entero que indica el idpoligono que se desea retornar con sus valores
-	 * @return Se retorna un objeto Modelo Poligono con la informaciÛn de la entidad Poligono.
+	 * M√©todo que retorna un poligono, con base en el par√°metro recibido de idpoligono.
+	 * @param idpoligono Se recibe como par√°metro valor entero que indica el idpoligono que se desea retornar con sus valores
+	 * @return Se retorna un objeto Modelo Poligono con la informaci√≥n de la entidad Poligono.
 	 */
 	public static Poligono retornarPoligono(int idPoligono)
 	{
@@ -171,9 +171,9 @@ public class PoligonoDAO {
 	}
 
 	/**
-	 * MÈtodo que permite la ediciÛn de la entidad Poligono, con base en la informaciÛn recibida como par·metro.
-	 * @param Pro Se recibe como par·metro un objeto Modelo Poligono con base en los par·metros de este objeto
-	 * se realiza la modificaciÛn.
+	 * M√©todo que permite la edici√≥n de la entidad Poligono, con base en la informaci√≥n recibida como par√°metro.
+	 * @param Pro Se recibe como par√°metro un objeto Modelo Poligono con base en los par√°metros de este objeto
+	 * se realiza la modificaci√≥n.
 	 * @return se retorna en una variable tipo String el resultado del proceso.
 	 */
 	public static String editarPoligono(Poligono poli)

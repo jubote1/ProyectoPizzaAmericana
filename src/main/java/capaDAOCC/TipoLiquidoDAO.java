@@ -11,14 +11,14 @@ import capaModeloCC.TipoLiquido;
 import conexionCC.ConexionBaseDatos;	
 
 /**
- * Clase que se encarga de implementar toda la interacciÛn con la base de datos para la entidad tipoLiquido
+ * Clase que se encarga de implementar toda la interacci√≥n con la base de datos para la entidad tipoLiquido
  * @author JuanDavid
  *
  */
 public class TipoLiquidoDAO {
 	
 	/**
-	 * MÈtodo que se encarga de retornar todos las entidades tipo liquido definidos en la base de datos.
+	 * M√©todo que se encarga de retornar todos las entidades tipo liquido definidos en la base de datos.
 	 * @return Se retorna un ArrayList con todos los tipo Liquido definidos en el sistema.
 	 */
 	public static ArrayList<TipoLiquido> obtenerTiposLiquido()
@@ -57,8 +57,8 @@ public class TipoLiquidoDAO {
 	}
 	
 	/**	
-	 * MÈtodo que se encarga de insertar un tipo liquido con base en la informaciÛn recibida como par·metro.
-	 * @param pro Se recibe par·metro objeto Modelo TipoLiquido con base en el cual se realizar· la inserciÛn de la
+	 * M√©todo que se encarga de insertar un tipo liquido con base en la informaci√≥n recibida como par√°metro.
+	 * @param pro Se recibe par√°metro objeto Modelo TipoLiquido con base en el cual se realizar√° la inserci√≥n de la
 	 * nueva entidad en la base de datos.
 	 * @return Se retorna un valor entero con el idtipoliquido asignado al objeto nuevo insertado en la base de datos.
 	 */
@@ -96,9 +96,9 @@ public class TipoLiquidoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de eliminar un tipo Liquido con base en la informaciÛn enviada como par·metro
-	 * @param idtipoliquido Se recibe como par·metro un entero con la informaciÛn del tipo liquido que se desea
-	 * eliminar, el mÈtodo no tiene ning˙n retorno.
+	 * M√©todo que se encarga de eliminar un tipo Liquido con base en la informaci√≥n enviada como par√°metro
+	 * @param idtipoliquido Se recibe como par√°metro un entero con la informaci√≥n del tipo liquido que se desea
+	 * eliminar, el m√©todo no tiene ning√∫n retorno.
 	 */
 	public static void eliminarTipoLiquido(int idtipoliquido)
 	{
@@ -127,10 +127,10 @@ public class TipoLiquidoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de retornar una entidad TipoLIquido con base en la informaciÛn enviada como par·metro.
-	 * @param idtipoliquido Se recibe como par·metro un entero idtipoliquido, el cual indicia el id del tipo liquido que se
+	 * M√©todo que se encarga de retornar una entidad TipoLIquido con base en la informaci√≥n enviada como par√°metro.
+	 * @param idtipoliquido Se recibe como par√°metro un entero idtipoliquido, el cual indicia el id del tipo liquido que se
 	 * se desea consultar.
-	 * @return Se retorna un objeto Modelo TipoLiquido con la informaciÛn del tipo liquido que se desea consultar.
+	 * @return Se retorna un objeto Modelo TipoLiquido con la informaci√≥n del tipo liquido que se desea consultar.
 	 */
 	public static TipoLiquido retornarTipoProducto(int idtipoliquido)
 	{
@@ -171,10 +171,10 @@ public class TipoLiquidoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de editar un tipo liquido con base en la informaciÛn envÌada como par·metro.
-	 * @param Pro Se recibe como par·metro un objeto Modelo TipoLiquido el cual contiene la base de la informaciÛn
+	 * M√©todo que se encarga de editar un tipo liquido con base en la informaci√≥n env√≠ada como par√°metro.
+	 * @param Pro Se recibe como par√°metro un objeto Modelo TipoLiquido el cual contiene la base de la informaci√≥n
 	 * a modificar.
-	 * @return Se retorna una variable String con el resultado del proceso de actualizaciÛn.
+	 * @return Se retorna una variable String con el resultado del proceso de actualizaci√≥n.
 	 */
 	public static String editarTipoLiquido(TipoLiquido Pro)
 	{

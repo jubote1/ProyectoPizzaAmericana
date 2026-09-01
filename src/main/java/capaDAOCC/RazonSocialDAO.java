@@ -19,7 +19,7 @@ import conexionCC.ConexionBaseDatos;
 public class RazonSocialDAO {
 	
 /**
- * Método que se encarga de retornar todas las entidades Tiendas definidas en la base de datos
+ * MÃ©todo que se encarga de retornar todas las entidades Tiendas definidas en la base de datos
  * @return Se retorna un ArrayList con todas las entidades Tiendas definidas en la base de datos.
  */
 	public static ArrayList<RazonSocial> obtenerTiendas()

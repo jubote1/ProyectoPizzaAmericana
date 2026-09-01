@@ -13,14 +13,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
- * Clase que se encarga de la implementaci髇 de toda la interacci髇 con la base de datos para la entidad Municipio.
+ * Clase que se encarga de la implementaci贸n de toda la interacci贸n con la base de datos para la entidad Municipio.
  * @author JuanDavid
  *
  */
 public class IntegracionCRMDAO {
 	
 	/**
-	 * M閠odo que se encarga de retornar la informaci髇 de todos los municipios definidos en el sistema.
+	 * M茅todo que se encarga de retornar la informaci贸n de todos los municipios definidos en el sistema.
 	 * @return Se retorna un ArrayList con todos los municipios definidos en el sistema
 	 */
 	public static IntegracionCRM obtenerInformacionIntegracion(String crm)
@@ -60,7 +60,7 @@ public class IntegracionCRMDAO {
 	}
 	
 	/**
-	 * Se recibe un arrayList de las integraciones asociadas a un solo nombre pero que se repite debido a que es una integraci髇
+	 * Se recibe un arrayList de las integraciones asociadas a un solo nombre pero que se repite debido a que es una integraci贸n
 	 * por tienda.
 	 * @param crm
 	 * @return
@@ -104,7 +104,7 @@ public class IntegracionCRMDAO {
 	}
 	
 	/**
-	 * M閠odo que se encarga de recuperar la informaci髇 de la integraci髇 por el nombre de la integraci髇 y por el id de la tienda.
+	 * M茅todo que se encarga de recuperar la informaci贸n de la integraci贸n por el nombre de la integraci贸n y por el id de la tienda.
 	 * @param crm
 	 * @param idTienda
 	 * @return
@@ -145,9 +145,9 @@ public class IntegracionCRMDAO {
 	}
 	
 	/**
-	 * M閠odo qeu se encarga de retornar el id de un Municipio dado el nombre de un Munipio
-	 * @param municipio Se recibe como par醡etro un String con el nombre del Municipio.
-	 * @return Se retorna un entero con el id del municipio seg鷑 el nombre del Municipio enviado como par醡etro.
+	 * M茅todo qeu se encarga de retornar el id de un Municipio dado el nombre de un Munipio
+	 * @param municipio Se recibe como par谩metro un String con el nombre del Municipio.
+	 * @return Se retorna un entero con el id del municipio seg煤n el nombre del Municipio enviado como par谩metro.
 	 */
 	public static void actualizarTokenIntegracionCRM(String crm, String accessToken, String freshToken)
 	{
@@ -175,7 +175,7 @@ public class IntegracionCRMDAO {
 	}
 	
 	/**
-	 * Se realiza la actualizaci髇 de los datos del token de actualizaci髇 pero recibiendo el nombre de la integraci髇 y el idTienda
+	 * Se realiza la actualizaci贸n de los datos del token de actualizaci贸n pero recibiendo el nombre de la integraci贸n y el idTienda
 	 * @param crm
 	 * @param idTienda
 	 * @param accessToken
@@ -207,7 +207,7 @@ public class IntegracionCRMDAO {
 	}
 	
 	/**
-	 * M閠odo que permite recuperar de que tienda es la integraci髇 enviando el appShopId
+	 * M茅todo que permite recuperar de que tienda es la integraci贸n enviando el appShopId
 	 * @param appShopId
 	 * @return
 	 */

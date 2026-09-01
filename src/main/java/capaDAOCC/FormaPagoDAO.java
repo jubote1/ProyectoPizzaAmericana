@@ -12,7 +12,7 @@ import capaModeloCC.FormaPago;
 import conexionCC.ConexionBaseDatos;
 
 /**
- * Clase que se encarga de implementar los mÈtodos que se encargar·n de la interacciÛn de base de datos con la entidad
+ * Clase que se encarga de implementar los m√©todos que se encargar√°n de la interacci√≥n de base de datos con la entidad
  * FormaPago
  * @author JuanDavid
  *
@@ -20,11 +20,11 @@ import conexionCC.ConexionBaseDatos;
 public class FormaPagoDAO {
 	
 	/**
-	 * MÈtodo que se encarga de insertar una forma de pago en la base de datos con base en la informaciÛn recibida
-	 * como par·metro
+	 * M√©todo que se encarga de insertar una forma de pago en la base de datos con base en la informaci√≥n recibida
+	 * como par√°metro
 	 * @param forma Se recibe objeto de Modelo FormaPago que contiene los valores de la entidad a insertar en la base de datos.
 	 * 
-	 * @return Se retorna el id de forma de pago retornado en la inserciÛn de la entidad en la base de datos.
+	 * @return Se retorna el id de forma de pago retornado en la inserci√≥n de la entidad en la base de datos.
 	 */
 	public static int insertarFormaPago(FormaPago forma)
 	{
@@ -60,8 +60,8 @@ public class FormaPagoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de la eliminaciÛn de una Forma de pago con base en la informaciÛn de par·metros enviada.
-	 * @param idFormaPago Se recibe como par·metro el idformapago que se desea eliminar.
+	 * M√©todo que se encarga de la eliminaci√≥n de una Forma de pago con base en la informaci√≥n de par√°metros enviada.
+	 * @param idFormaPago Se recibe como par√°metro el idformapago que se desea eliminar.
 	 */
 	public static void eliminarFormaPago(int idFormaPago)
 	{
@@ -90,9 +90,9 @@ public class FormaPagoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de retornar la informacion de una forma de pago con base en el par·metro recibido.
-	 * @param idFormaPago Se recibe como par·metro un entero con el id forma de pago
-	 * @return Se retorna un objeto Modelo Forma de pago con la informaciÛn de la forma de pago cosultada.
+	 * M√©todo que se encarga de retornar la informacion de una forma de pago con base en el par√°metro recibido.
+	 * @param idFormaPago Se recibe como par√°metro un entero con el id forma de pago
+	 * @return Se retorna un objeto Modelo Forma de pago con la informaci√≥n de la forma de pago cosultada.
 	 */
 	public static FormaPago retornarFormaPago(int idFormaPago)
 	{
@@ -142,8 +142,8 @@ public class FormaPagoDAO {
 	}
 
 	/**
-	 * MÈtodo que se encarga de editar una forma de pago con base en los par·metros recibidos
-	 * @param forma Se recibe como par·metro un objeto Modelo Forma Pago con los valores base para la modificaciÛn.
+	 * M√©todo que se encarga de editar una forma de pago con base en los par√°metros recibidos
+	 * @param forma Se recibe como par√°metro un objeto Modelo Forma Pago con los valores base para la modificaci√≥n.
 	 * @return se retorna un valor tipo String con el resultado del proceso.
 	 */
 	public static String editarFormaPago(FormaPago forma)
@@ -176,7 +176,7 @@ public class FormaPagoDAO {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de retornar todas las formas pago definidas en base de datos
+	 * M√©todo que se encarga de retornar todas las formas pago definidas en base de datos
 	 * @return Se retorna un ArrayList con todos los objetos Forma Pago definidos en el sistema.
 	 */
 	public static ArrayList<FormaPago> obtenerFormasPago(String tipoPago)
@@ -247,7 +247,7 @@ public class FormaPagoDAO {
 	
 	
 	/**
-	 * Retorna las formas de pago que se deber·n ver para un perfil normal de contact center
+	 * Retorna las formas de pago que se deber√°n ver para un perfil normal de contact center
 	 * @return
 	 */
 	public static ArrayList<FormaPago> obtenerFormasPagoContact(String tipoPago)

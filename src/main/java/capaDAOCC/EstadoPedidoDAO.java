@@ -10,16 +10,16 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.sql.ResultSet;
 /**
- * Clase que se encarga de hacer la comunicaic髇 con la base de datos, en todo lo relacionado con la entidad Estado Pedio
+ * Clase que se encarga de hacer la comunicaic贸n con la base de datos, en todo lo relacionado con la entidad Estado Pedio
  * @author JuanDavid
  *
  */
 public class EstadoPedidoDAO {
 	
 	/**
-	 * M閠odo que se encarga de la inserci髇 de la entidad Estado Pedido.
-	 * @param Est recibe como par醡etro un objeto Modelo Estado Pedido con base en el cual realiza la inserci髇 en base de datos.
-	 * @return Retorna un Entero con el idestadopedido creado por el m閠odo.
+	 * M茅todo que se encarga de la inserci贸n de la entidad Estado Pedido.
+	 * @param Est recibe como par谩metro un objeto Modelo Estado Pedido con base en el cual realiza la inserci贸n en base de datos.
+	 * @return Retorna un Entero con el idestadopedido creado por el m茅todo.
 	 */
 	public static int insertarEstadoPedido(EstadoPedido Est)
 	{
@@ -56,8 +56,8 @@ public class EstadoPedidoDAO {
 	}
 
 	/**
-	 * M閠odo que se encarga de la eliminaci髇 de un estado pedido
-	 * @param idestadopedido Se recibe como par醡etro el idestadopedido que se sea eliminar.
+	 * M茅todo que se encarga de la eliminaci贸n de un estado pedido
+	 * @param idestadopedido Se recibe como par谩metro el idestadopedido que se sea eliminar.
 	 */
 	public static void eliminarEstadoPedido(int idestadopedido)
 	{
@@ -86,9 +86,9 @@ public class EstadoPedidoDAO {
 	}
 
 	/**
-	 * M閠odo que se encarga de consultar un estado pedido con base en el par醡etro recibido.
+	 * M茅todo que se encarga de consultar un estado pedido con base en el par谩metro recibido.
 	 * @param idestadopedido Se recibe un entero con el idestadopedido que se desea consultar
-	 * @return Se retorna un objeto Modelo estadoPedido con la informaci髇 del estado pedido que se desea consultar.
+	 * @return Se retorna un objeto Modelo estadoPedido con la informaci贸n del estado pedido que se desea consultar.
 	 */
 	public static EstadoPedido retornarEstadoPedido(int idestadopedido)
 	{
@@ -127,9 +127,9 @@ public class EstadoPedidoDAO {
 	}
 
 	/**
-	 * M閠odo que se encarga de editar un estado pedido con base en la informaci髇 enviada como par醡etro.
-	 * @param Est Recibe como par醡etro un objeto Modleo Estado pedido con base en el cual se realiza la edici髇
-	 * @return Se retorna un string con el resultado del proceso de edici髇.
+	 * M茅todo que se encarga de editar un estado pedido con base en la informaci贸n enviada como par谩metro.
+	 * @param Est Recibe como par谩metro un objeto Modleo Estado pedido con base en el cual se realiza la edici贸n
+	 * @return Se retorna un string con el resultado del proceso de edici贸n.
 	 */
 	public static String editarEstadoPedido(EstadoPedido Est)
 	{
@@ -161,7 +161,7 @@ public class EstadoPedidoDAO {
 	}
 	
 	/**
-	 * M閠odo que se encarga de retornar un ArrayList la informaci髇 de los estados pedidos creados en el sistema.
+	 * M茅todo que se encarga de retornar un ArrayList la informaci贸n de los estados pedidos creados en el sistema.
 	 * @return ArrayList con los objetos de Modelo EstadoPedido creados en el sistema.
 	 */
 	public static ArrayList<EstadoPedido> obtenerEstadosPedido()

@@ -29,11 +29,11 @@ public class CRUDFormaPago extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se recibir· como par·metro principal el idoperacion con base en los siguientes valores 
-	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedir·n los otros par·metros y se invocar· el mÈtodo en la capa controlador.
+	 * Se recibir√° como par√°metro principal el idoperacion con base en los siguientes valores 
+	 *  idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar, de acuerdo a la id operacion se pedir√°n los otros par√°metros y se invocar√° el m√©todo en la capa controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//OperaciÛn idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaci√≥n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");		
 				response.addHeader("Access-Control-Allow-Origin", "*");
 				String idoperacion = request.getParameter("idoperacion");

@@ -98,8 +98,8 @@ public class ParametrosDAO {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de obtener un arrayList con los par·metros ingresados en el sistema. 
-	 * @return Se retorna ArrayList genÈrico con todos los par·metros del sistema.
+	 * M√©todo que se encarga de obtener un arrayList con los par√°metros ingresados en el sistema. 
+	 * @return Se retorna ArrayList gen√©rico con todos los par√°metros del sistema.
 	 */
 	public static ArrayList obtenerParametros()
 	{
@@ -185,9 +185,9 @@ public class ParametrosDAO {
 	}
 	
 	/**
-	 * MÈtodo de la capa DAO que se encarga de insertar una entidad parametro
-	 * @param Parametro como objeto tipo parametro del cual se extrae la informaciÛn para la inserciÛn.
-	 * @return Se retorna un valor booleano con la respuesta de si fue o no creado el objeto par·metro en la base de datos.
+	 * M√©todo de la capa DAO que se encarga de insertar una entidad parametro
+	 * @param Parametro como objeto tipo parametro del cual se extrae la informaci√≥n para la inserci√≥n.
+	 * @return Se retorna un valor booleano con la respuesta de si fue o no creado el objeto par√°metro en la base de datos.
 	 */
 	public static boolean insertarParametro(Parametro parametro)
 	{
@@ -218,9 +218,9 @@ public class ParametrosDAO {
 	}
 	
 	/**
-	 * MÈtodo que se encarga de eliminar un determinado parametro, teniendo en cuenta el valorparmaetro pasado como par·metro
-	 * @param valorparametro Se recibe como par·metro el valorParametro que se desea eliminar, teniendo en cuenta que es la 
-	 * clave primarÌa de la tabla.
+	 * M√©todo que se encarga de eliminar un determinado parametro, teniendo en cuenta el valorparmaetro pasado como par√°metro
+	 * @param valorparametro Se recibe como par√°metro el valorParametro que se desea eliminar, teniendo en cuenta que es la 
+	 * clave primar√≠a de la tabla.
 	 * @return Se retorna un valor booleano que indica si el resultado del proceso fue satisfactorio o no.
 	 */
 	public static boolean eliminarParametro(String valorParametro)
@@ -253,8 +253,8 @@ public class ParametrosDAO {
 	}
 	
 	/**
-	 * MÈtodo de la capa DAO que se encarga de editar un impuesto ya existente.
-	 * @param impuesto Recibe como par·metro un objeto de la entidad impuesto con base en el cual se realiza la modificaciÛn
+	 * M√©todo de la capa DAO que se encarga de editar un impuesto ya existente.
+	 * @param impuesto Recibe como par√°metro un objeto de la entidad impuesto con base en el cual se realiza la modificaci√≥n
 	 * @return Se retorna un valor booleano indicando si el proceso fue o no satisfactorio
 	 */
 	public static boolean EditarParametro(Parametro parametro)
@@ -268,7 +268,7 @@ public class ParametrosDAO {
 			Statement stm = con1.createStatement();
 			String update = "update parametros set valortexto = '" + parametro.getValorTexto() + "' , valornumerico = " + parametro.getValorNumerico() + " where valorparametro = '" + parametro.getValorParametro()+"'" ; 
 			stm.executeUpdate(update);
-			//Ejecutamos la inserciÛn de log
+			//Ejecutamos la inserci√≥n de log
 			String insercionLog = "insert into parametros_log (usuario, nuevovalor,variable) values ('"  + Sesion.getUsuario() + "' , '" + parametro.getValorNumerico()+parametro.getValorTexto() +"' ,'" + parametro.getValorParametro() + "')" ;
 			stm.executeUpdate(insercionLog);
 			

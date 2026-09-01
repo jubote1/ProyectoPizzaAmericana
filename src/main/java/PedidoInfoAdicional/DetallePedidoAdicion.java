@@ -1,7 +1,7 @@
 package PedidoInfoAdicional;
 
 /**
- * Clase que implementa la entidad Detalle Pedido Adición.
+ * Clase que implementa la entidad Detalle Pedido AdiciÃ³n.
  * @author JuanDavid
  *
  */

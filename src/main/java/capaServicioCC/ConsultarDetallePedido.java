@@ -29,8 +29,8 @@ public class ConsultarDetallePedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro un numeropedido y con base en este retorna la informaciÛn, de un pedido.
-	 * Se invoca en la capa controlador el mÈtodo  ConsultarDetallePedido, el cual retorna en formato JSON la informaciÛn.
+	 * Este servicio recibe como par√°metro un numeropedido y con base en este retorna la informaci√≥n, de un pedido.
+	 * Se invoca en la capa controlador el m√©todo  ConsultarDetallePedido, el cual retorna en formato JSON la informaci√≥n.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -44,7 +44,7 @@ public class ConsultarDetallePedido extends HttpServlet {
         {
         	numeropedido= 0;
         }
-        logger.info("Llamado a servicio con par·metros numeropedido " + numeropedido);
+        logger.info("Llamado a servicio con par√°metros numeropedido " + numeropedido);
         PedidoCtrl consultapedido = new PedidoCtrl();
         String respuestaConsulta = consultapedido.ConsultarDetallePedido(numeropedido);
         logger.debug(respuestaConsulta);

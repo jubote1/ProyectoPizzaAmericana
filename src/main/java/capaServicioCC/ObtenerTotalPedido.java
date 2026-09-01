@@ -30,8 +30,8 @@ public class ObtenerTotalPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro el idpedido correspondiente y se encarga de retornar el total del pedido,
-	 * sumando los detalles de pedidos asociados al pedido, esto invocando al mÈtodo obtenerTotalPedido de la capa
+	 * Este servicio recibe como par√°metro el idpedido correspondiente y se encarga de retornar el total del pedido,
+	 * sumando los detalles de pedidos asociados al pedido, esto invocando al m√©todo obtenerTotalPedido de la capa
 	 * Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

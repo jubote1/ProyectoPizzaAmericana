@@ -10,7 +10,6 @@ ext {
     arcgisVersion = '100.15.0'
 }
 	repositories {
-        jcenter()
         mavenLocal()
     	mavenCentral()
     	maven {

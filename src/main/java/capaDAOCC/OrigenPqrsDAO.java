@@ -10,7 +10,7 @@ import capaModeloCC.Especialidad;
 import capaModeloCC.OrigenPqrs;
 import conexionCC.ConexionBaseDatos;
 /**
- * Clase que se encarga de implementar todos aquellos mÈtodos que tienen una interacciÛn directa con la base de datos
+ * Clase que se encarga de implementar todos aquellos m√©todos que tienen una interacci√≥n directa con la base de datos
  * @author JuanDavid
  *
  */
@@ -18,8 +18,8 @@ public class OrigenPqrsDAO {
 	
 	
 /**
- * MÈtodo que se encarga de insertar en base de datos la informaciÛn de la entidad Origen PQRS
- * @param Espe recibe como par·metro un objeto Modelo OrigenPqrs con base en el cual se realiza la inserciÛn de la
+ * M√©todo que se encarga de insertar en base de datos la informaci√≥n de la entidad Origen PQRS
+ * @param Espe recibe como par√°metro un objeto Modelo OrigenPqrs con base en el cual se realiza la inserci√≥n de la
  * especialidad.
  * @return Se retonra valor entero con el id del origen insertada.
  */
@@ -57,8 +57,8 @@ public static int insertarOrigenPqrs(OrigenPqrs origen)
 }
 
 /**
- * MÈtodo que se encarga de eliminar un origen en la base de datos.
- * @param idespecialidad Se recibe como par·metro el id Origen qeu se desea eliminar.
+ * M√©todo que se encarga de eliminar un origen en la base de datos.
+ * @param idespecialidad Se recibe como par√°metro el id Origen qeu se desea eliminar.
  */
 public static void eliminarOrigenPqrs(int idOrigen)
 {
@@ -87,10 +87,10 @@ public static void eliminarOrigenPqrs(int idOrigen)
 }
 
 /**
- * MÈtodo que se encarga de retornar un origen de pqrs dado un idOrigen
- * @param idespecialidad recibe como par·metro un entero id Origen y con base en esto, realiza la consulta
- * en base de datos y retorna la informaciÛn.
- * @return Se retorna la informaciÛn del Origen en un objeto Modelo Origen.
+ * M√©todo que se encarga de retornar un origen de pqrs dado un idOrigen
+ * @param idespecialidad recibe como par√°metro un entero id Origen y con base en esto, realiza la consulta
+ * en base de datos y retorna la informaci√≥n.
+ * @return Se retorna la informaci√≥n del Origen en un objeto Modelo Origen.
  */
 public static OrigenPqrs retornarOrigen(int idOrigen)
 {
@@ -128,7 +128,7 @@ public static OrigenPqrs retornarOrigen(int idOrigen)
 }
 
 /**
- * MÈtodo que se encarga de retornar en un ArrayList todos los origenes de pqrs
+ * M√©todo que se encarga de retornar en un ArrayList todos los origenes de pqrs
  * @return
  */
 public static ArrayList<OrigenPqrs> retornarOrigenesPqrs()
@@ -169,8 +169,8 @@ public static ArrayList<OrigenPqrs> retornarOrigenesPqrs()
 }
 
 /**
- * MÈtodo que tiene como objetivo modificar un origen de Pqrs.
- * @param Espe Recibe como par·metro un objeto Modelo Origen con base en la cual se har· la modificaciÛn.
+ * M√©todo que tiene como objetivo modificar un origen de Pqrs.
+ * @param Espe Recibe como par√°metro un objeto Modelo Origen con base en la cual se har√° la modificaci√≥n.
  * @return Se retorna un string indicadno si el proceso fue exitoso o no.
  */
 public static String editarOrigenPqrs(OrigenPqrs orPqrs)

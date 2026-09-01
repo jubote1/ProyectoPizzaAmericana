@@ -15,8 +15,8 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class EliminarDetallePedido
- * Servicio que se encarga de eliminar un detalle pedido, seleccionado desde la capa de presentacion, el servicio recibir·
- * el iddetallepedido que se desea eliminar, finalmente retornar· el formato JSON el resultado de la operaciÛn.
+ * Servicio que se encarga de eliminar un detalle pedido, seleccionado desde la capa de presentacion, el servicio recibir√°
+ * el iddetallepedido que se desea eliminar, finalmente retornar√° el formato JSON el resultado de la operaci√≥n.
  */
 @WebServlet("/EliminarDetallePedido")
 public class EliminarDetallePedido extends HttpServlet {
@@ -32,7 +32,7 @@ public class EliminarDetallePedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio el recibir· iddetallepedido que se desea eliminar, finalmente retornar· el formato JSON el resultado de la operaciÛn
+	 * El servicio el recibir√° iddetallepedido que se desea eliminar, finalmente retornar√° el formato JSON el resultado de la operaci√≥n
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -46,10 +46,10 @@ public class EliminarDetallePedido extends HttpServlet {
         {
         	iddetallepedido= 0;
         }
-        logger.info("Llamado a servicio con par·metros iddetallepedido " + iddetallepedido);
+        logger.info("Llamado a servicio con par√°metros iddetallepedido " + iddetallepedido);
         PedidoCtrl detallePedido = new PedidoCtrl();
         String respuestaEliminacion = detallePedido.EliminarDetallePedido(iddetallepedido);
-        logger.debug("Respuesta eliminaciÛn de detalle pedido " + iddetallepedido + " " + respuestaEliminacion);
+        logger.debug("Respuesta eliminaci√≥n de detalle pedido " + iddetallepedido + " " + respuestaEliminacion);
         PrintWriter out = response.getWriter();
 		out.write(respuestaEliminacion);
 	}

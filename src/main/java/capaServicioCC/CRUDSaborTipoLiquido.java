@@ -29,11 +29,11 @@ public class CRUDSaborTipoLiquido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se recibe como par·metro principal el idoperaciÛn, con base en los siguientes valores 1 insertar 2 editar 3 Eliminar  4 Consultar
-	 * se toman el resto de par·metros y se invoca el mÈtodo correspondiente en la capa Controlador.
+	 * Se recibe como par√°metro principal el idoperaci√≥n, con base en los siguientes valores 1 insertar 2 editar 3 Eliminar  4 Consultar
+	 * se toman el resto de par√°metros y se invoca el m√©todo correspondiente en la capa Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//OperaciÛn idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaci√≥n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		String idoperacion = request.getParameter("idoperacion");
 		ParametrosCtrl ParametrosCtrl = new ParametrosCtrl();

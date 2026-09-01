@@ -30,8 +30,8 @@ public class ObtenerUrlTienda extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro el idtienda y con base en este se retorna la URL tienda que ser· la base, para 
-	 * invocar los servicios para la inserciÛn del pedido en la tienda.
+	 * Este servicio recibe como par√°metro el idtienda y con base en este se retorna la URL tienda que ser√° la base, para 
+	 * invocar los servicios para la inserci√≥n del pedido en la tienda.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub

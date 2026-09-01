@@ -31,11 +31,11 @@ public class CRUDOferta extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se implementa el CRUD para la entidad Excepción Precio, se recibe como parámetro principal el idoperacion
-	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en el idoperacion se pediran el resto de parámetros.
+	 * Se implementa el CRUD para la entidad ExcepciÃ³n Precio, se recibe como parÃ¡metro principal el idoperacion
+	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en el idoperacion se pediran el resto de parÃ¡metros.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operación idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//OperaciÃ³n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		String idoperacion = request.getParameter("idoperacion");

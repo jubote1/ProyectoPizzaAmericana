@@ -15,7 +15,7 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class InsertarModificadorDetallePedido
- * Este servicio se encarga de la inserciÛn de lo llamado como modificadores de pedido, los cuales se refieren aquellos, 
+ * Este servicio se encarga de la inserci√≥n de lo llamado como modificadores de pedido, los cuales se refieren aquellos, 
  * productos con y sin que se le desean agregar a un producto.
  */
 @WebServlet("/InsertarModificadorDetallePedido")
@@ -32,8 +32,8 @@ public class InsertarModificadorDetallePedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metros el iddetalle pedido padre al cual va asociado el modificador, adicionalmente
-	 * se recibe para que mitad y en que cantidad es la modificaciÛn. Lo anterior invocando al mÈtodo InsertarModificadorDetallePedido
+	 * Este servicio recibe como par√°metros el iddetalle pedido padre al cual va asociado el modificador, adicionalmente
+	 * se recibe para que mitad y en que cantidad es la modificaci√≥n. Lo anterior invocando al m√©todo InsertarModificadorDetallePedido
 	 * de la capa Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -73,7 +73,7 @@ public class InsertarModificadorDetallePedido extends HttpServlet {
         {
         	iddetallepedido = 0;
         }
-        logger.info("Llamado a servicio InsertarModificadorDetallePedido con par·metros iddetallepedidopadre: "
+        logger.info("Llamado a servicio InsertarModificadorDetallePedido con par√°metros iddetallepedidopadre: "
         		+ iddetallepedidopadre +  " idproductoespecialidad1: " + idproductoespecialidad1
         		+ " idproductoespecialidad2: " + idproductoespecialidad2 + " cantidad: " + cantidad );
         PedidoCtrl PedidoCtrl = new PedidoCtrl();

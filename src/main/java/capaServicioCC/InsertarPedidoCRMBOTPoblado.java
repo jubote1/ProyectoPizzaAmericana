@@ -17,8 +17,8 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
  * Servlet implementation class InsertarPedidoCRMBOTPoblado
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr· tomar un pedido, 
- * la informaciÛn ser· retornada en formato JSON.
+ * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr√° tomar un pedido, 
+ * la informaci√≥n ser√° retornada en formato JSON.
  */
 @WebServlet("/InsertarPedidoCRMBOTPoblado")
 public class InsertarPedidoCRMBOTPoblado extends HttpServlet {
@@ -34,16 +34,16 @@ public class InsertarPedidoCRMBOTPoblado extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe par·metros dado que no filtra la informaciÛn, simplemente retorna en formato JSON 
-	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el mÈtodo obtenerTiendas de la capa Tienda Controlador.
+	 * Este servicio no recibe par√°metros dado que no filtra la informaci√≥n, simplemente retorna en formato JSON 
+	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el m√©todo obtenerTiendas de la capa Tienda Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		try{
 			response.addHeader("Access-Control-Allow-Origin", "*");
-			//Devolveremos seg˙n documentaciÛn de WOMPI un JSON vacÌo
+			//Devolveremos seg√∫n documentaci√≥n de WOMPI un JSON vac√≠o
 			response.setContentType("application/json");
-			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maraciÛn
+			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maraci√≥n
 			BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(), "UTF-8"));
 			String line = null;
 			StringBuilder sb = new StringBuilder();

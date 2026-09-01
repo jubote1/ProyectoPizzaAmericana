@@ -30,8 +30,8 @@ public class GenerarReporteOperacionVenta extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio se encarga de recibir como par·metros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
-	 * tomados bajo estos par·metros, se invoca en la capa controlador al mÈtodo ConsultaIntegradaPedidos.
+	 * Este servicio se encarga de recibir como par√°metros una fecha inicial, una fecha final y una tienda, esto con el fin de consultar los pedidos
+	 * tomados bajo estos par√°metros, se invoca en la capa controlador al m√©todo ConsultaIntegradaPedidos.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -40,7 +40,7 @@ public class GenerarReporteOperacionVenta extends HttpServlet {
         PedidoCtrl pedCtrl = new PedidoCtrl();
         String reporteOperacion = pedCtrl.generarStringHTMLReporteOperacionVenta();
         PrintWriter out = response.getWriter();
-        //Comentamos resultado de la consulta debido a que consultas grandes pueden generar mucha informaciÛn
+        //Comentamos resultado de la consulta debido a que consultas grandes pueden generar mucha informaci√≥n
         //logger.debug(respuestaConsulta);
 		out.write(reporteOperacion);
 	}

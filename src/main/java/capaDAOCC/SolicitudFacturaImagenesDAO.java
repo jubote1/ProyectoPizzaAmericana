@@ -21,10 +21,10 @@ import conexionCC.ConexionBaseDatos;
 public class SolicitudFacturaImagenesDAO {
 	
 	/**
-	 * MÈtodo de la capa DAO que se encarga de implementar la inserciÛn de la entidad solicitudPQRS, recibiendo como par·metro
-	 * un objeto tipo SolicitudPQRS, retornar· como resultado de la inserciÛn el idsolicitudPQRS asignado por la base de datos
+	 * M√©todo de la capa DAO que se encarga de implementar la inserci√≥n de la entidad solicitudPQRS, recibiendo como par√°metro
+	 * un objeto tipo SolicitudPQRS, retornar√° como resultado de la inserci√≥n el idsolicitudPQRS asignado por la base de datos
 	 * en base a un campo configurado como autoincrementable en la misma.
-	 * @param solicitud Se recibe como par·metro un objeto de la capaModelo SolicitudPQRS
+	 * @param solicitud Se recibe como par√°metro un objeto de la capaModelo SolicitudPQRS
 	 * @return Se retorna valor intero con el idSolicitudPQRS asignado por la base de datos.
 	 */
 	public static int insertarSolicitudFacturaImagen(SolicitudFacturaImagenes solicitud)

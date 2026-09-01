@@ -16,8 +16,8 @@ import capaModeloCC.Usuario;
 
 /**
  * Servlet implementation class ValidarUsuarioAplicacion
- * Servicio que es invocado siempre que es cargada una p·gina con el fin de validar si quien accede esta logueado en el sistema
- * en caso negativo se redirecciona a la URL de logueo a la aplicaciÛ.
+ * Servicio que es invocado siempre que es cargada una p√°gina con el fin de validar si quien accede esta logueado en el sistema
+ * en caso negativo se redirecciona a la URL de logueo a la aplicaci√≥.
  */
 @WebServlet("/SalirUsuarioAplicacion")
 public class SalirUsuarioAplicacion extends HttpServlet {
@@ -33,8 +33,8 @@ public class SalirUsuarioAplicacion extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio retorna el atributo de tipo usuario y con base en este valida si el usuario si est· logueado.Se 
-	 * retornan tres posibles valores NOK si la validaciÛn del usuario no es correcta, OKA si es un usuario administrador
+	 * Este servicio retorna el atributo de tipo usuario y con base en este valida si el usuario si est√° logueado.Se 
+	 * retornan tres posibles valores NOK si la validaci√≥n del usuario no es correcta, OKA si es un usuario administrador
 	 * y OK si es un usuario normal
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

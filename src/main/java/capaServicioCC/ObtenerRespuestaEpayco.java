@@ -17,8 +17,8 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
  * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr· tomar un pedido, 
- * la informaciÛn ser· retornada en formato JSON.
+ * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr√° tomar un pedido, 
+ * la informaci√≥n ser√° retornada en formato JSON.
  */
 @WebServlet("/ObtenerRespuestaEpayco")
 public class ObtenerRespuestaEpayco extends HttpServlet {
@@ -34,19 +34,19 @@ public class ObtenerRespuestaEpayco extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio no recibe par·metros dado que no filtra la informaciÛn, simplemente retorna en formato JSON 
-	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el mÈtodo obtenerTiendas de la capa Tienda Controlador.
+	 * Este servicio no recibe par√°metros dado que no filtra la informaci√≥n, simplemente retorna en formato JSON 
+	 * las tiendas o puntos de venta parametrizados en el sistema, invocando el m√©todo obtenerTiendas de la capa Tienda Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		try{
 			response.addHeader("Access-Control-Allow-Origin", "*");
-			//Devolveremos seg˙n documentaciÛn de WOMPI un JSON vacÌo
+			//Devolveremos seg√∫n documentaci√≥n de WOMPI un JSON vac√≠o
 			
-			//Esta parte es modificada pues los par·metros no llegar· asi
+			//Esta parte es modificada pues los par√°metros no llegar√° asi
 			
 //			response.setContentType("application/json");
-//			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maraciÛn
+//			//Recuperamos el valor enviado en el body, el cual no tiene ninguna maraci√≥n
 //			BufferedReader br = new BufferedReader(new InputStreamReader(request.getInputStream(), "UTF-8"));
 //			String line = null;
 //			StringBuilder sb = new StringBuilder();
@@ -55,7 +55,7 @@ public class ObtenerRespuestaEpayco extends HttpServlet {
 //			}
 //			String dataJSON = sb.toString();
 			
-			//Realizamos cambio para tomar los par·metros
+			//Realizamos cambio para tomar los par√°metros
 			int idOrdenComercio = Integer.parseInt(request.getParameter("idOrden"));
 			int codRespuesta =  Integer.parseInt(request.getParameter("codRespuesta"));
 			String tipoPago = request.getParameter("tipoPago");

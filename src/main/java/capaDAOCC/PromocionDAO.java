@@ -13,14 +13,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
- * Clase que se encarga de la implementación de toda la interacción con la base de datos para la entidad Municipio.
+ * Clase que se encarga de la implementaciÃ³n de toda la interacciÃ³n con la base de datos para la entidad Municipio.
  * @author JuanDavid
  *
  */
 public class PromocionDAO {
 	
 	/**
-	 * Método que se encarga de retornar la información de todos los municipios definidos en el sistema.
+	 * MÃ©todo que se encarga de retornar la informaciÃ³n de todos los municipios definidos en el sistema.
 	 * @return Se retorna un ArrayList con todos los municipios definidos en el sistema
 	 */
 	public static ArrayList<Promocion> obtenerPromociones()

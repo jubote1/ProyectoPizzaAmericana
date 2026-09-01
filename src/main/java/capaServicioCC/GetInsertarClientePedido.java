@@ -13,8 +13,8 @@ import capaControladorCC.ClienteCtrl;
 
 /**
  * Servlet implementation class GetInsertarClientePedido
- * Servicio que se encarga de recibir los par·metros de cliente con el fin de tomar alguna acciÛn, que podr· ser actualizaciÛn
- * o inserciÛn. Se reciben todo lso par·metos del cliente.
+ * Servicio que se encarga de recibir los par√°metros de cliente con el fin de tomar alguna acci√≥n, que podr√° ser actualizaci√≥n
+ * o inserci√≥n. Se reciben todo lso par√°metos del cliente.
  */
 @WebServlet("/GetInsertarClientePedido")
 public class GetInsertarClientePedido extends HttpServlet {
@@ -30,7 +30,7 @@ public class GetInsertarClientePedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Servicio que recibe los par·metros de cliente y realiza la utilizaciÛn de mÈtodo en capa Cliente Controlador.
+	 * Servicio que recibe los par√°metros de cliente y realiza la utilizaci√≥n de m√©todo en capa Cliente Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");

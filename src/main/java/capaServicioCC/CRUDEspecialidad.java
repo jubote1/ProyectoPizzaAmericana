@@ -31,11 +31,11 @@ public class CRUDEspecialidad extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe un idoperación que puede ser 1 insertar 2 editar 3 Eliminar  4 Consultar
-	 * dependiendo el valor de idoperacion, se recibirán los diferentes parámetros de la entidad especialidad.
+	 * Este servicio recibe un idoperaciÃ³n que puede ser 1 insertar 2 editar 3 Eliminar  4 Consultar
+	 * dependiendo el valor de idoperacion, se recibirÃ¡n los diferentes parÃ¡metros de la entidad especialidad.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			//Operación idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+			//OperaciÃ³n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");	
 		Logger logger = Logger.getLogger("log_file");
 			response.addHeader("Access-Control-Allow-Origin", "*");
@@ -60,7 +60,7 @@ public class CRUDEspecialidad extends HttpServlet {
 				int idespedit= Integer.parseInt(request.getParameter("idespecialidad"));
 				String nombedit= request.getParameter("nombre");
 				String abreedit = request.getParameter("abreviatura");
-				logger.info("editar especialiad con parámetros idespecialidad  " + idespedit + " nombre " + nombedit  + " abreviatura " + abreedit);
+				logger.info("editar especialiad con parÃ¡metros idespecialidad  " + idespedit + " nombre " + nombedit  + " abreviatura " + abreedit);
 				respuesta = ParametrosCtrl.editarEspecialidad(idespedit, nombedit, abreedit);
 			}else if (operacion ==3 )
 			{

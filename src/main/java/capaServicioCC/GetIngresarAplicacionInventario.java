@@ -16,7 +16,7 @@ import capaControladorCC.AutenticacionCtrl;
 import capaModeloCC.Usuario;
 /**
  * Servlet implementation class IngresarAplicacion
- * Servicio utilizado para el logueo de la aplicaciÛn, recibiendo usuario y password, validando el resultado de la operacion
+ * Servicio utilizado para el logueo de la aplicaci√≥n, recibiendo usuario y password, validando el resultado de la operacion
  * y retornando un resultado para que el sistema interprete y continue la carga de la interface de pedidos.
  */
 @WebServlet("/GetIngresarAplicacionInventario")
@@ -30,8 +30,8 @@ public class GetIngresarAplicacionInventario extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Servicio para el logueo a la aplicaciÛn recibiendo los par·metros de usuario y login, e invocando al mÈtodo autenticarUsuario 
-	 * de la capa Autenticacion controlador, si el proceso es exitoso, se crear· un objeto tipo usuario y se dejar· dentro de la sesiÛn.
+	 * Servicio para el logueo a la aplicaci√≥n recibiendo los par√°metros de usuario y login, e invocando al m√©todo autenticarUsuario 
+	 * de la capa Autenticacion controlador, si el proceso es exitoso, se crear√° un objeto tipo usuario y se dejar√° dentro de la sesi√≥n.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub

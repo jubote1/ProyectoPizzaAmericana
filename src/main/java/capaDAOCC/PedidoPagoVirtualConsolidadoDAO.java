@@ -82,7 +82,7 @@ public class PedidoPagoVirtualConsolidadoDAO {
 	}
 	
 	/**
-	 * MÈtodo para validar si el idLink pagado en WOMPI proviene de un Pago de Tienda
+	 * M√©todo para validar si el idLink pagado en WOMPI proviene de un Pago de Tienda
 	 * @param idLink
 	 * @param tipoPago
 	 * @return
@@ -123,7 +123,7 @@ public class PedidoPagoVirtualConsolidadoDAO {
 	
 	
 	/**
-	 * MÈtodo qeu se encarga de retonar un ArrayList con los pedidos que se deber·n notificar como pagados a las tiendas
+	 * M√©todo qeu se encarga de retonar un ArrayList con los pedidos que se deber√°n notificar como pagados a las tiendas
 	 * @return
 	 */
 	public static ArrayList<PedidoPagoVirtualConsolidado> obtenerPagosNotificarTienda()
@@ -186,7 +186,7 @@ public class PedidoPagoVirtualConsolidadoDAO {
 	
 	
 	/**
-	 * MÈtodo que encarga de actualizar el estado de notificado de un pago que ya fue notificado a una tienda
+	 * M√©todo que encarga de actualizar el estado de notificado de un pago que ya fue notificado a una tienda
 	 * @param idLink
 	 * @return
 	 */

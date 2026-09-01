@@ -29,12 +29,12 @@ public class CRUDProductoNoExistente extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Se soportan las operaciones para el CRUD de la entidad Producto, se recibe como par·metro principal
-	 * el idoperaciÛn de acuerdo a los siguientes valores 1 insertar 2 editar 3 Eliminar  4 Consultar, 
-	 * con base en la operaciÛn se solicitar·n el resto de par·metros y se invocar· el mÈtodo correspondiente en la capa controladora.
+	 * Se soportan las operaciones para el CRUD de la entidad Producto, se recibe como par√°metro principal
+	 * el idoperaci√≥n de acuerdo a los siguientes valores 1 insertar 2 editar 3 Eliminar  4 Consultar, 
+	 * con base en la operaci√≥n se solicitar√°n el resto de par√°metros y se invocar√° el m√©todo correspondiente en la capa controladora.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//OperaciÛn idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaci√≥n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 				response.addHeader("Access-Control-Allow-Origin", "*");
 				response.addHeader("Access-Control-Allow-Origin", "*");
 				String idoperacion = request.getParameter("idoperacion");

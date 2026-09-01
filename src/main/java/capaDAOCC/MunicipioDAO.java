@@ -12,14 +12,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
- * Clase que se encarga de la implementaciÛn de toda la interacciÛn con la base de datos para la entidad Municipio.
+ * Clase que se encarga de la implementaci√≥n de toda la interacci√≥n con la base de datos para la entidad Municipio.
  * @author JuanDavid
  *
  */
 public class MunicipioDAO {
 	
 	/**
-	 * MÈtodo que se encarga de retornar la informaciÛn de todos los municipios definidos en el sistema.
+	 * M√©todo que se encarga de retornar la informaci√≥n de todos los municipios definidos en el sistema.
 	 * @return Se retorna un ArrayList con todos los municipios definidos en el sistema
 	 */
 	public static ArrayList<Municipio> obtenerMunicipios()
@@ -57,9 +57,9 @@ public class MunicipioDAO {
 	}
 	
 	/**
-	 * MÈtodo qeu se encarga de retornar el id de un Municipio dado el nombre de un Munipio
-	 * @param municipio Se recibe como par·metro un String con el nombre del Municipio.
-	 * @return Se retorna un entero con el id del municipio seg˙n el nombre del Municipio enviado como par·metro.
+	 * M√©todo qeu se encarga de retornar el id de un Municipio dado el nombre de un Munipio
+	 * @param municipio Se recibe como par√°metro un String con el nombre del Municipio.
+	 * @return Se retorna un entero con el id del municipio seg√∫n el nombre del Municipio enviado como par√°metro.
 	 */
 	public static int obteneridMunicipio(String municipio)
 	{

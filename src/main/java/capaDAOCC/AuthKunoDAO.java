@@ -12,7 +12,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 
 /**
- * Clase que se encarga de la implementación de toda la interacción con la base de datos para la entidad Municipio.
+ * Clase que se encarga de la implementaciÃ³n de toda la interacciÃ³n con la base de datos para la entidad Municipio.
  * @author JuanDavid
  *
  */

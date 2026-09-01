@@ -12,14 +12,14 @@ import capaModeloCC.TipoPedido;
 import conexionCC.ConexionBaseDatos;	
 
 /**
- * Clase que se encarga de implementar toda la interacción con la base de datos para la entidad tipoLiquido
+ * Clase que se encarga de implementar toda la interacciÃ³n con la base de datos para la entidad tipoLiquido
  * @author JuanDavid
  *
  */
 public class TipoPedidoDAO {
 	
 /**
- * Método que retorna todos los tipos de pedido disponible para un pedido determinado
+ * MÃ©todo que retorna todos los tipos de pedido disponible para un pedido determinado
  * @return
  */
 	public static ArrayList<TipoPedido> obtenerTiposPedido()

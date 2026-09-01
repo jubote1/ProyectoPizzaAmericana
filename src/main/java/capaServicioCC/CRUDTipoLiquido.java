@@ -29,12 +29,12 @@ public class CRUDTipoLiquido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este mÈtodo se encarga de solicitar principalmente el idoperacion de acuerdo a lo siguiente:
-	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en lo anterior se solicitar·n los parametros y 
-	 * posteriormente se invocar· el mÈtodo correspondiente en la capa controlador.
+	 * Este m√©todo se encarga de solicitar principalmente el idoperacion de acuerdo a lo siguiente:
+	 * 1 insertar 2 editar 3 Eliminar  4 Consultar, con base en lo anterior se solicitar√°n los parametros y 
+	 * posteriormente se invocar√° el m√©todo correspondiente en la capa controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//OperaciÛn idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaci√≥n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		String idoperacion = request.getParameter("idoperacion");
 		ParametrosCtrl ParametrosCtrl = new ParametrosCtrl();

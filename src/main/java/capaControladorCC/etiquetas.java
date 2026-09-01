@@ -61,7 +61,7 @@ public class etiquetas {
            		"^FT680,120^BQN,2,3\r\n" + 
            		"^FH^FDLA,www.pizzaamericana.co/^FS\r\n" + 
            		"\r\n" + 
-           		"^FO150,420^FB230,2,0,J^A0N,20,20^FDCLI: Pablo Diego José María de los\r\n" + 
+           		"^FO150,420^FB230,2,0,J^A0N,20,20^FDCLI: Pablo Diego JosÃ© MarÃ­a de los\r\n" + 
            		"Remedios Picasso^FS\r\n" + 
            		"\r\n" + 
            		"^FO30,460^FB350,3,0,J^A0N,20,20^FDDIR:San Antonio de Prado Carrera 68 #\r\n" + 
@@ -87,15 +87,15 @@ public class etiquetas {
            		"\r\n" + 
            		"^FO30,220^A0N,16,16^FD9012907451^FS\r\n" + 
            		"\r\n" + 
-           		"^FO30,236^A0N,16,16^FDREGIMÉN COMÚN^FS\r\n" + 
+           		"^FO30,236^A0N,16,16^FDREGIMÃ‰N COMÃšN^FS\r\n" + 
            		"\r\n" + 
-           		"^FO30,252^A0N,16,16^FDResolución # 18762015195196^FS\r\n" + 
+           		"^FO30,252^A0N,16,16^FDResoluciÃ³n # 18762015195196^FS\r\n" + 
            		"\r\n" + 
            		"^FO30,268^A0N,16,16^FD2019-06-18^FS\r\n" + 
            		"\r\n" + 
            		"^FO30,284^A0N,16,16^FDDesde P7 1 Hasta P7 100000^FS\r\n" + 
            		"\r\n" + 
-           		"^FO30,300^A0N,16,16^FDItagüí-Colombia^FS\r\n" + 
+           		"^FO30,300^A0N,16,16^FDItagÃ¼Ã­-Colombia^FS\r\n" + 
            		"\r\n" + 
            		"^FO30,316^A0N,16,16^FDFactura de Venta:  123456^FS\r\n" + 
            		"\r\n" + 
@@ -103,7 +103,7 @@ public class etiquetas {
            		"\r\n" + 
            		"^FO30,427^A0N,28,28^FD# 456789^FS\r\n" + 
            		"\r\n" + 
-           		"^FO410,140^FB230,2,0,J^A0N,20,20^FDCLI: Pablo Diego José María de los\r\n" + 
+           		"^FO410,140^FB230,2,0,J^A0N,20,20^FDCLI: Pablo Diego JosÃ© MarÃ­a de los\r\n" + 
            		"Remedios Picasso^FS\r\n" + 
            		"\r\n" + 
            		"^FO410,180^FB350,1,0,J^A0N,20,20^FDTEL: 3003001234^FS\r\n" + 
@@ -120,18 +120,18 @@ public class etiquetas {
            		"\r\n" + 
            		"^FO300,360^A0N,20,20^FDDel horno a tus manos^FS\r\n" + 
            		"\r\n" + 
-           		"^FO400,420^FB370,2,0,J^A0N,30,30^FDPeq Pepperoni champiñón / Jamón con\r\n" + 
-           		"champiñón^FS\r\n" + 
+           		"^FO400,420^FB370,2,0,J^A0N,30,30^FDPeq Pepperoni champiÃ±Ã³n / JamÃ³n con\r\n" + 
+           		"champiÃ±Ã³n^FS\r\n" + 
            		"\r\n" + 
            		"^FO400,480^FB370,1,0,J^A0N,30,30^FDGAS:7Up^FS\r\n" + 
            		"\r\n" + 
-           		"^FO400,510^FB370,3,0,J^A0N,17,17^FDADI: Doble queso, Jamón ahumado,\r\n" + 
-           		"Salami, Pepperoni, Pollo, Chorizo de ternera, Tocineta, Tocinitos, Piña,\r\n" + 
-           		"Champiñón, Tomate fresco^FS\r\n" + 
+           		"^FO400,510^FB370,3,0,J^A0N,17,17^FDADI: Doble queso, JamÃ³n ahumado,\r\n" + 
+           		"Salami, Pepperoni, Pollo, Chorizo de ternera, Tocineta, Tocinitos, PiÃ±a,\r\n" + 
+           		"ChampiÃ±Ã³n, Tomate fresco^FS\r\n" + 
            		"\r\n" + 
-           		"^FO400,561^FB370,3,0,J^A0N,17,17^FDMod: Doble queso, Jamón ahumado,\r\n" + 
-           		"Salami, Pepperoni, Pollo, Chorizo de ternera, Tocineta, Tocinitos, Piña,\r\n" + 
-           		"Champiñón, Tomate fresco^FS\r\n" + 
+           		"^FO400,561^FB370,3,0,J^A0N,17,17^FDMod: Doble queso, JamÃ³n ahumado,\r\n" + 
+           		"Salami, Pepperoni, Pollo, Chorizo de ternera, Tocineta, Tocinitos, PiÃ±a,\r\n" + 
+           		"ChampiÃ±Ã³n, Tomate fresco^FS\r\n" + 
            		"\r\n" + 
            		"^PQ1,0,1,Y\r\n" + 
            		"^XZ";

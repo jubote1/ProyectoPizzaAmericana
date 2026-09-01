@@ -12,7 +12,7 @@ import conexionCC.ConexionBaseDatos;
 public class PedidoTiendaVirtualDAO {
 
 	/**
-	 * En este mÈtodo trabajaremos en la inserciÛn del log de la llegada de la orden inicialmente.
+	 * En este m√©todo trabajaremos en la inserci√≥n del log de la llegada de la orden inicialmente.
 	 * @param id
 	 * @return
 	 */
@@ -26,7 +26,7 @@ public class PedidoTiendaVirtualDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			//Realizamos la validacion de que el id no estÈ insertado ya
+			//Realizamos la validacion de que el id no est√© insertado ya
 			String select = "select count(*) from pedido_tienda_virtual where idordencomercio = " + id;
 			logger.info(select);
 			ResultSet rs = stm.executeQuery(select);
@@ -69,7 +69,7 @@ public class PedidoTiendaVirtualDAO {
 	
 	
 	/**
-	 * MÈtodo que se encargar· de actualizar el estado de un pedido virtual con base en el idInterno
+	 * M√©todo que se encargar√° de actualizar el estado de un pedido virtual con base en el idInterno
 	 * @param idInterno
 	 * @param estado
 	 * @return

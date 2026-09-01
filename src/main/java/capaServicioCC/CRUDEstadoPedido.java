@@ -13,7 +13,7 @@ import capaControladorCC.ParametrosCtrl;
 
 /**
  * Servlet implementation class CRUDEstadoPedido
- * Servicio que implementa los diferentes m閠odos para soportar el CRUD de la entidad Estado Pedido
+ * Servicio que implementa los diferentes m茅todos para soportar el CRUD de la entidad Estado Pedido
  */
 @WebServlet("/CRUDEstadoPedido")
 public class CRUDEstadoPedido extends HttpServlet {
@@ -29,11 +29,11 @@ public class CRUDEstadoPedido extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como par醡etro principal un idoperaci髇 que significa lo siguiente: 1 insertar 2 editar 3 Eliminar  4 Consultar
-	 * con base en el idoperaci髇 se pedir醤 los par醡etros necesario para cada operaci髇 del CRUD en la entidad estado pedido.
+	 * El servicio recibe como par谩metro principal un idoperaci贸n que significa lo siguiente: 1 insertar 2 editar 3 Eliminar  4 Consultar
+	 * con base en el idoperaci贸n se pedir谩n los par谩metros necesario para cada operaci贸n del CRUD en la entidad estado pedido.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Operaci髇 idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
+		//Operaci贸n idoperacion 1 insertar 2 editar 3 Eliminar  4 Consultar
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		String idoperacion = request.getParameter("idoperacion");

@@ -13,7 +13,7 @@ import capaModeloCC.FormaPago;
 import conexionCC.ConexionBaseDatos;
 
 /**
- * Clase que se encarga de implementar los mÈtodos que se encargar·n de la interacciÛn de base de datos con la entidad
+ * Clase que se encarga de implementar los m√©todos que se encargar√°n de la interacci√≥n de base de datos con la entidad
  * FormaPago
  * @author JuanDavid
  *
@@ -21,7 +21,7 @@ import conexionCC.ConexionBaseDatos;
 public class FocoPqrsDAO {
 	
 	/**
-	 * MÈtodo que se encarga de retornar los focos pqrs paramÈtrizados en el sistema para la radicaciÛn de PQRS.
+	 * M√©todo que se encarga de retornar los focos pqrs param√©trizados en el sistema para la radicaci√≥n de PQRS.
 	 * @return Un arrayList con los focosPqrs existentes en base de datos
 	 */
 	public static ArrayList<FocoPqrs> obtenerFocosPqrs()

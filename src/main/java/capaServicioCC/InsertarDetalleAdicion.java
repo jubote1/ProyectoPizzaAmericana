@@ -14,7 +14,7 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class InsertarDetalleAdicion
- * Este servicio se encarga de insertar en el sistema la informaciÛn de adiciÛn a un producto especifico.
+ * Este servicio se encarga de insertar en el sistema la informaci√≥n de adici√≥n a un producto especifico.
  */
 @WebServlet("/InsertarDetalleAdicion")
 public class InsertarDetalleAdicion extends HttpServlet {
@@ -30,9 +30,9 @@ public class InsertarDetalleAdicion extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro el iddetallepedido al cual se le realizÛ la adicion, adicionalmente se 
-	 * envÌa el iddetallepedido relacionado a la adicion, la adiciÛn relacionada a la especialidad 1 o la especialidad 2 y 
-	 * las cantidades. Lo anterior invocando al mÈtodo InsertarDetalleAdicion de la capa Pedido Controlador.
+	 * Este servicio recibe como par√°metro el iddetallepedido al cual se le realiz√≥ la adicion, adicionalmente se 
+	 * env√≠a el iddetallepedido relacionado a la adicion, la adici√≥n relacionada a la especialidad 1 o la especialidad 2 y 
+	 * las cantidades. Lo anterior invocando al m√©todo InsertarDetalleAdicion de la capa Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
@@ -72,7 +72,7 @@ public class InsertarDetalleAdicion extends HttpServlet {
 		        {
 		        	cantidad2 = 0;
 		        }
-		        logger.info("Llamado a servicio InsertarDetalleAdicion con par·metros iddetallepedidopadre: "
+		        logger.info("Llamado a servicio InsertarDetalleAdicion con par√°metros iddetallepedidopadre: "
 		        		+ iddetallepedidopadre + " iddetallepedidoadicion:  " + iddetallepedidoadicion + " idespecialidad1: " + idespecialidad1
 		        		+ " idespecialidad2: " + idespecialidad2 + " cantidad1: " + cantidad1 + " cantidad2: " + cantidad2 );
 		        PedidoCtrl PedidoCtrl = new PedidoCtrl();

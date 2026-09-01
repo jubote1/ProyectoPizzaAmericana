@@ -13,8 +13,8 @@ import capaControladorCC.PedidoCtrl;
 
 /**
  * Servlet implementation class GetSaboresLiquidoExcepcion
- * Servicio que toma par醡etro el idexcepci髇 pasado como par醡etro y con base en este retorna en formato JSON
- * los liquidos parametrizados para la excepci髇 de precio.
+ * Servicio que toma par谩metro el idexcepci贸n pasado como par谩metro y con base en este retorna en formato JSON
+ * los liquidos parametrizados para la excepci贸n de precio.
  */
 @WebServlet("/GetSaboresLiquidoExcepcion")
 public class GetSaboresLiquidoExcepcion extends HttpServlet {
@@ -30,9 +30,9 @@ public class GetSaboresLiquidoExcepcion extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como par醡etro idExcepcion, con base en este invocando al m閠odo ObtenerSaboresLiquidoExcepcion(idExcep);
-	 * de la capa Pedido controlador, retorna en formato JSON los tipos liquidos asociados a la excepci髇 de precio, esto
-	 * con el fin de pintarlo en la capa de presentaci髇.
+	 * El servicio recibe como par谩metro idExcepcion, con base en este invocando al m茅todo ObtenerSaboresLiquidoExcepcion(idExcep);
+	 * de la capa Pedido controlador, retorna en formato JSON los tipos liquidos asociados a la excepci贸n de precio, esto
+	 * con el fin de pintarlo en la capa de presentaci贸n.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try{

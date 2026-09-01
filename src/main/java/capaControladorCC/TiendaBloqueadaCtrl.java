@@ -17,7 +17,7 @@ import capaModeloCC.TiendaBloqueada;
 public class TiendaBloqueadaCtrl {
 	
 	/**
-	 * MÈtodo que se encarga de retornar todas las tiendas bloqueadas en el sistema desde la capa controladora, es en esta capa
+	 * M√©todo que se encarga de retornar todas las tiendas bloqueadas en el sistema desde la capa controladora, es en esta capa
 	 * donde se realiza el paso a formato json con las tiendas bloqueadas en el sistema.
 	 * @return Se retorna un String en formato JSON con todas las tiendas bloqueadas definidas en el sistema
 	 */
@@ -37,10 +37,10 @@ public class TiendaBloqueadaCtrl {
 	}
 	
 	/**
-	 * MÈtodo en la capa controladora que se encarga de recibir los par·metros para la inserciÛn de una tienda bloqueadas y de hacer
-	 * la respectiva comunicaciÛn con la capa DAO.
+	 * M√©todo en la capa controladora que se encarga de recibir los par√°metros para la inserci√≥n de una tienda bloqueadas y de hacer
+	 * la respectiva comunicaci√≥n con la capa DAO.
 	 * @param idtienda Se recibe la identificacion de la tienda que se pretende bloquear
-	 * @param comentario Se recibe un String con un posible comentarios de porque se est· realiazando la acciÛn de bloqueo de tienda.
+	 * @param comentario Se recibe un String con un posible comentarios de porque se est√° realiazando la acci√≥n de bloqueo de tienda.
 	 * @return Se retorna un String con el resultado del proceso en formato JSON.
 	 */
 	public String insertarTiendaBloqueada(int idtienda, String observacion, String motivo, String desbloqueoEn){
@@ -55,9 +55,9 @@ public class TiendaBloqueadaCtrl {
 		return listJSON.toJSONString();
 	}
 	/**
-	 * MÈtodoe en la capa controlador que se encarga de eliminar una tienda bloqueada, este mÈtodo se encarga de comunicarse con el
-	 * correspondiente mÈtodo en la capa DAO.
-	 * @param idtienda Se recibe como par·metro la identificacion de la tienda que va a ser eliminada.
+	 * M√©todoe en la capa controlador que se encarga de eliminar una tienda bloqueada, este m√©todo se encarga de comunicarse con el
+	 * correspondiente m√©todo en la capa DAO.
+	 * @param idtienda Se recibe como par√°metro la identificacion de la tienda que va a ser eliminada.
 	 * @return Se retornar un String en formato JSON con el resultado del proceso.
 	 */
 	public String eliminarTiendaBloqueada(int idtienda){

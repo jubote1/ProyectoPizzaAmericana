@@ -33,14 +33,14 @@ public class GenerarCodigoValeEmpleadoRemoto extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro la informaciÛn m·s b·sica de un pedido como lo son, tinda, idcliente, 
-	 * fechapedido, con estos tres hace una inserciÛn del encabezado pedido y retorna en formato JSON el idpedido que se
-	 * manejar· para el pedido. Esta labor se realiza invocando el mÈtodo InsertarEncabezadoPedido de la capa Pedido
+	 * Este servicio recibe como par√°metro la informaci√≥n m√°s b√°sica de un pedido como lo son, tinda, idcliente, 
+	 * fechapedido, con estos tres hace una inserci√≥n del encabezado pedido y retorna en formato JSON el idpedido que se
+	 * manejar√° para el pedido. Esta labor se realiza invocando el m√©todo InsertarEncabezadoPedido de la capa Pedido
 	 * Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
-		//Capturamos la informaciÛn de la sesion del usuario que est· ejecutando la inserciÛn
+		//Capturamos la informaci√≥n de la sesion del usuario que est√° ejecutando la inserci√≥n
 		int idEmpleado = Integer.parseInt(request.getParameter("idempleado"));
 		String fecha = request.getParameter("fecha");		
 		PedidoCtrl pedCtrl = new PedidoCtrl();

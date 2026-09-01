@@ -17,8 +17,8 @@ import capaModeloCC.SolicitudPQRSImagenes;;
 
 /**
  * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la informaciÛn de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocaciÛn a la clase en la capa Controladora.
+ * Este servicio se encarga de insertar en el sistema la informaci√≥n de una solicitud PQRS, este servlet hace las veces de front
+ * y se encarga de la invocaci√≥n a la clase en la capa Controladora.
  */
 @WebServlet("/InsertarSolicitudFacturaImagenes")
 public class InsertarSolicitudFacturaImagenes extends HttpServlet {
@@ -34,9 +34,9 @@ public class InsertarSolicitudFacturaImagenes extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * Este servicio recibe como par·metro el iddetallepedido al cual se le realizÛ la adicion, adicionalmente se 
-	 * envÌa el iddetallepedido relacionado a la adicion, la adiciÛn relacionada a la especialidad 1 o la especialidad 2 y 
-	 * las cantidades. Lo anterior invocando al mÈtodo InsertarDetalleAdicion de la capa Pedido Controlador.
+	 * Este servicio recibe como par√°metro el iddetallepedido al cual se le realiz√≥ la adicion, adicionalmente se 
+	 * env√≠a el iddetallepedido relacionado a la adicion, la adici√≥n relacionada a la especialidad 1 o la especialidad 2 y 
+	 * las cantidades. Lo anterior invocando al m√©todo InsertarDetalleAdicion de la capa Pedido Controlador.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub

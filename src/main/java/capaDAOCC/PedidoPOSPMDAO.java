@@ -26,14 +26,14 @@ public class PedidoPOSPMDAO {
 		//Debemos obtener el idTienda del Pedido que vamos a finalizar
 				Tienda tiendaPedido = PedidoDAO.obtenerTiendaPedido(idpedido);
 				
-				//Llamado Inserci�n Pixel
-				//En este punto es donde debemos intervenir para la holmologaci�n
+				//Llamado Inserciï¿½n Pixel
+				//En este punto es donde debemos intervenir para la holmologación
 				ArrayList <DetallePedidoPixel> envioPixel = PedidoPOSPMDAO.InsertarPedidoPOSPM(idpedido, tiendaPedido.getIdTienda());
 				
 				//Obtenemos el origen del pedido y otra
 				PedidoInfoAdicional pediInfoAdicional = PedidoDAO.obtenerOrigenPedido(idpedido);
 				
-				//La invocaci�n del pedido ya no se realizar� as�
+				//La invocación del pedido ya no se realizará así
 				//OJO
 				//Main principal = new Main();
 				Cliente cliente = ClienteDAO.obtenerClienteporID(idcliente);
@@ -61,7 +61,7 @@ public class PedidoPOSPMDAO {
 		
 		
 	/**
-	 * M�todo que se encarga de generar la homologaci�n para los productos en el sistema POS de PIzza Americana, porl o visto 
+	 * Método que se encarga de generar la homologación para los productos en el sistema POS de PIzza Americana, porl o visto 
 	 * es demasiado similar a como se maneja con el sistema POS Pixel
 	 * @param idpedido
 	 * @param idtienda
@@ -70,8 +70,8 @@ public class PedidoPOSPMDAO {
 	public static ArrayList<DetallePedidoPixel> InsertarPedidoPOSPM(int idpedido, int idtienda)
 	{
 		Logger logger = Logger.getLogger("log_file");
-		logger.info("Se inicia la homologaci�n para base de datos POS Pizza Americana, para el pedido " + idpedido);
-		//Tener en cuenta que tenemos en homologaci�n el producto 10000 interno que har� el simil al producto de mensaje en Pixel
+		logger.info("Se inicia la homologaciï¿½n para base de datos POS Pizza Americana, para el pedido " + idpedido);
+		//Tener en cuenta que tenemos en homologaciï¿½n el producto 10000 interno que harï¿½ el simil al producto de mensaje en Pixel
 		ArrayList <DetallePedido> pedidoPOSPM = PedidoPOSPMDAO.ConsultarDetallePedidoSinAdiciones(idpedido);
 		ArrayList <DetallePedidoPixel> pedidoDefinitivoPOSMP = new ArrayList();
 		double cantidadPixel;
@@ -79,7 +79,7 @@ public class PedidoPOSPMDAO {
 		int idproductomaestroext;
 		int idproductoextsep;
 		int idSaborTipoLiquido;
-		//extraemos el c�digo producto pixel de la gaseosa para las que van dentro de los combos
+		//extraemos el cï¿½digo producto pixel de la gaseosa para las que van dentro de los combos
 		int idproductogasext;
 		double valor = 0;
 		ArrayList<DetallePedidoAdicion> adicionDetallePedido = new ArrayList();
@@ -90,10 +90,10 @@ public class PedidoPOSPMDAO {
 		{
 			adicionDetallePedido = PedidoPOSPMDAO.ObtenerAdicionDetallePedido(cadaDetallePedido.getIddetallepedido());
 			modificadoresDetallePedido = PedidoPOSPMDAO.ObtenerModificadorDetallePedido(cadaDetallePedido.getIddetallepedido());
-			//Aqui tendremos la l�gica para generar un array list
+			//Aqui tendremos la lï¿½gica para generar un array list
 			//Definimos la cantidad del item que se va a pasar al otro sistema
 			int cantidad = (int) cadaDetallePedido.getCantidad();
-			//Tomamos el idDetalleMaster que est� procesando
+			//Tomamos el idDetalleMaster que está procesando
 			idDetalleMaster = cadaDetallePedido.getIddetallepedido();
 			// Este caso se puede dar o para otro producto, o para pizzas un solo ingrediente
 			if(cadaDetallePedido.getIdespecialidad1() == 0 && cadaDetallePedido.getIdespecialidad2() == 0)
@@ -165,8 +165,8 @@ public class PedidoPOSPMDAO {
 				{
 					if((cadaDetallePedido.getIdespecialidad1() > 0)&&(cadaDetallePedido.getIdespecialidad2() == 0))
 					{
-						//En las pizzas y con base en la pizza que se est� facturando, al principio debo de tener un master item
-						//Master ITEM Se har� la homologaci�n entre el c�digo producto y la excepci�n de precio
+						//En las pizzas y con base en la pizza que se estï¿½ facturando, al principio debo de tener un master item
+						//Master ITEM Se harï¿½ la homologaciï¿½n entre el cï¿½digo producto y la excepciï¿½n de precio
 						idproductomaestroext = PedidoPOSPMDAO.RetornarIdproductoMaestroExterno(cadaDetallePedido.getIdproducto(), cadaDetallePedido.getIdexcepcion(), idtienda);
 						idDetalleMaster = cadaDetallePedido.getIddetallepedido();
 						int idproductopizza = 0;
@@ -254,8 +254,8 @@ public class PedidoPOSPMDAO {
 						
 					}else
 					{
-						//En las pizzas y con base en la pizza que se est� facturando, al principio debo de tener un master item
-						//Master ITEM Se har� la homologaci�n entre el c�digo producto y la excepci�n de precio
+						//En las pizzas y con base en la pizza que se estï¿½ facturando, al principio debo de tener un master item
+						//Master ITEM Se harï¿½ la homologaciï¿½n entre el cï¿½digo producto y la excepciï¿½n de precio
 						idproductomaestroext = PedidoPOSPMDAO.RetornarIdproductoMaestroExterno(cadaDetallePedido.getIdproducto(), cadaDetallePedido.getIdexcepcion(), idtienda);
 						cantidadPixel = 0.5;
 						//Tomamos el idDetalleMaster para agregarlo a lo items detalle hijos

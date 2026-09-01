@@ -32,9 +32,9 @@ public class MarcarPedidoEmpresarial extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-	 * El servicio recibe como par·metro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
+	 * El servicio recibe como par√°metro el idpedido, el idformapgo, el idcliente asociado al pedido, un marcador que nos
 	 * indica si el cliente fue insertado o por el contrario actualizado, valor de la forma pago del cliente, con los datos
-	 * anteriores se invocar· el mÈtodo de la capa controlador pedido FinalizarPedido.
+	 * anteriores se invocar√° el m√©todo de la capa controlador pedido FinalizarPedido.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
