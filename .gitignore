@@ -1,2 +1,9 @@
-/.gradle/
-/build/
+# Salidas de compilacion
+build/
+bin/
+.gradle/
+
+# El jar del POS que se copia a mano aqui pesa 274 MB, muy por encima del limite
+# de 100 MB por archivo de GitHub: nunca puede entrar al repositorio. Cada quien
+# lo genera desde ProyectoTiendaAmericanaCliente.
+libs/*.jar
