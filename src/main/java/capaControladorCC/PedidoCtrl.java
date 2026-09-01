@@ -5916,76 +5916,226 @@ public class PedidoCtrl {
 	}
 
 	public String insertarPedidoCRMBOT(String datos, String authHeader) throws IOException {
-		String respuesta = "";
 
-		try {
+	    String respuesta = "";
 
-			// Decode
-			String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
-			System.out.println("PARAMETROS DECODE: " + parametrosDecode);
+	    try {
 
-			Map parSep = separarURL(parametrosDecode);
-			System.out.println("MAP: " + parSep);
+	        // Decode
+	        String parametrosDecode = java.net.URLDecoder.decode(
+	                datos,
+	                StandardCharsets.UTF_8.name()
+	        );
 
-			String lead = (String) parSep.get("leads[status][0][id]");
-			System.out.println("LEAD RAW: " + lead);
+	        System.out.println("PARAMETROS DECODE: " + parametrosDecode);
 
-			// Validacion basica
-			if (lead == null || lead.trim().isEmpty()) {
-				System.out.println("❌ Lead inválido");
-				return respuesta;
-			}
+	        Map parSep = separarURL(parametrosDecode);
 
-			lead = lead.trim();
-			System.out.println("LEAD LIMPIO: " + lead);
+	        System.out.println("MAP: " + parSep);
 
-			// Parametro configurable con fallback
-			int minutos = ParametrosDAO.retornarValorNumerico("VENTANA_MINUTOS_CRMBOT");
-			System.out.println("MINUTOS DESDE BD: " + minutos);
+	        String lead = (String) parSep.get("leads[status][0][id]");
 
-			if (minutos <= 0 || minutos > 1440) {
-				minutos = 60;
-				System.out.println("⚠️ MINUTOS AJUSTADO A DEFAULT: " + minutos);
-			}
+	        System.out.println("LEAD RAW: " + lead);
 
-			// VALIDAR DUPLICADO
-			boolean existeDuplicado = LogPedidoVirtualKunoDAO.existePedidoRecienteCRMBOT(lead, "I", minutos);
+	        // Validación básica
+	        if (lead == null || lead.trim().isEmpty()) {
 
-			System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
+	            System.out.println("❌ Lead inválido");
 
-
-	        System.out.println("¿EXISTE DUPLICADO?: " + existeDuplicado);
-	        // INSERTAR LOG
-	        int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
-	        System.out.println("ID LOG GENERADO: " + idLog);
-	        
-	        if (existeDuplicado) {
-	            System.out.println("🚫 Se detecta duplicado, se detiene flujo");
 	            return respuesta;
 	        }
-	       
 
-			// Obtener info del lead
-			System.out.println("🔎 Consultando info del lead...");
-			String infLead = obtenerInformacionLeadCRM(lead);
-			System.out.println("INF LEAD: " + infLead);
+	        lead = lead.trim();
 
-			// Actualizar log
-			System.out.println("✏️ Actualizando log...");
-			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "I");
+	        System.out.println("LEAD LIMPIO: " + lead);
 
-			// Procesar
-			System.out.println("⚙️ Procesando pedido...");
-			boolean ok = procesarPedidoBOTCRM(infLead, lead, idLog);
-			actualizarPedidoInsertadoLeadCRMBOT(lead, ok);
+	        // Validar que el lead sea numérico
+	        int leadNum;
 
+	        try {
 
-		} catch (Exception e) {
-			System.out.println("❌ Error en insertarPedidoCRMBOT: " + e.toString());
-			e.printStackTrace();
-		}
+	            leadNum = Integer.parseInt(lead);
 
-		return respuesta;
+	        } catch (NumberFormatException e) {
+
+	            System.out.println(
+	                    "❌ Lead no numérico: " + lead
+	            );
+
+	            return respuesta;
+	        }
+
+	        // Parámetro configurable con fallback
+	        int minutos = ParametrosDAO.retornarValorNumerico(
+	                "VENTANA_MINUTOS_CRMBOT"
+	        );
+
+	        System.out.println(
+	                "MINUTOS DESDE BD: " + minutos
+	        );
+
+	        if (minutos <= 0 || minutos > 1440) {
+
+	            minutos = 30;
+
+	            System.out.println(
+	                    "⚠️ MINUTOS AJUSTADO A DEFAULT: " + minutos
+	            );
+	        }
+
+	        /*
+	         * =========================================================
+	         * VALIDACIÓN E INSERCIÓN DEL PEDIDO
+	         * =========================================================
+	         *
+	         * La validación de duplicados solamente aplica
+	         * para el webhook de tipo "I".
+	         *
+	         * Los webhook "LI" pueden ejecutarse varias veces.
+	         *
+	         * El synchronized utiliza una clave diferente para
+	         * cada lead, por lo que no bloquea todos los pedidos.
+	         *
+	         * Ejemplo:
+	         *
+	         * CRMBOT_I_30161293
+	         * CRMBOT_I_30161294
+	         *
+	         * Son bloqueos independientes.
+	         *
+	         * El bloqueo solamente dura durante:
+	         *
+	         *     SELECT de duplicado
+	         *             +
+	         *     INSERT del log
+	         *
+	         * NO incluye llamadas al CRM ni procesamiento del pedido.
+	         * =========================================================
+	         */
+
+	        int idLog;
+
+	        synchronized (("CRMBOT_I_" + lead).intern()) {
+
+	            // VALIDAR DUPLICADO
+	            boolean existeDuplicado =
+	                    LogPedidoVirtualKunoDAO.existePedidoRecienteCRMBOT(
+	                            lead,
+	                            "I",
+	                            minutos
+	                    );
+
+	            System.out.println(
+	                    "¿EXISTE DUPLICADO?: " + existeDuplicado
+	            );
+
+	            // Si ya existe un I reciente, no crear otro pedido
+	            if (existeDuplicado) {
+
+	                System.out.println(
+	                        "🚫 Se detecta duplicado para lead: "
+	                        + lead
+	                );
+
+	                return respuesta;
+	            }
+
+	            /*
+	             * Insertar el log.
+	             *
+	             * IMPORTANTE:
+	             * El lead_id se guarda desde este momento.
+	             *
+	             * Ya no se inserta primero con lead_id = 0.
+	             */
+	            idLog =
+	                    LogPedidoVirtualKunoDAO.insertarLogCRMBOT(
+	                            datos,
+	                            authHeader,
+	                            "I",
+	                            leadNum
+	                    );
+
+	            System.out.println(
+	                    "ID LOG GENERADO: " + idLog
+	            );
+
+	            // Si falló la inserción del log, no continuar
+	            if (idLog == 0) {
+
+	                System.out.println(
+	                        "❌ No fue posible insertar el log CRMBOT"
+	                );
+
+	                return respuesta;
+	            }
+	        }
+
+	        /*
+	         * =========================================================
+	         * AQUÍ YA TERMINÓ EL synchronized
+	         * =========================================================
+	         *
+	         * El lead ya fue registrado como "I".
+	         *
+	         * Por lo tanto, otro webhook I del mismo lead que llegue
+	         * después encontrará este registro y será considerado
+	         * duplicado durante la ventana configurada.
+	         *
+	         * A partir de aquí NO tenemos ningún bloqueo.
+	         */
+
+	        // Obtener información del lead
+	        System.out.println(
+	                "🔎 Consultando info del lead..."
+	        );
+
+	        String infLead = obtenerInformacionLeadCRM(lead);
+
+	        System.out.println(
+	                "INF LEAD: " + infLead
+	        );
+
+	        // Actualizar log con la información obtenida
+	        System.out.println(
+	                "✏️ Actualizando log..."
+	        );
+
+	        LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(
+	                idLog,
+	                infLead,
+	                lead,
+	                "I"
+	        );
+
+	        // Procesar pedido
+	        System.out.println(
+	                "⚙️ Procesando pedido..."
+	        );
+
+	        boolean ok = procesarPedidoBOTCRM(
+	                infLead,
+	                lead,
+	                idLog
+	        );
+
+	        // Actualizar resultado del pedido
+	        actualizarPedidoInsertadoLeadCRMBOT(
+	                lead,
+	                ok
+	        );
+
+	    } catch (Exception e) {
+
+	        System.out.println(
+	                "❌ Error en insertarPedidoCRMBOT: "
+	                + e.toString()
+	        );
+
+	        e.printStackTrace();
+	    }
+
+	    return respuesta;
 	}
 
 	/**
@@ -6005,14 +6155,28 @@ public class PedidoCtrl {
 		} else {
 
 		}
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "C");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String) parSep.get("leads[status][0][id]");
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		// Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "C",leadNum);
+		
 		String infLead = obtenerInformacionLeadCRM(lead);
 		// System.out.println("información " + infLead);
 		LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "C");
@@ -6039,7 +6203,7 @@ public class PedidoCtrl {
 		// ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program
 		// Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "T");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6047,6 +6211,20 @@ public class PedidoCtrl {
 		System.out.println("1. REVISIÓN LEAD " + lead);
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "T" ,leadNum);
+		
 		String infLead = obtenerInformacionLeadCRM(lead);
 		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
 		// System.out.println("información " + infLead);
@@ -6139,11 +6317,23 @@ public class PedidoCtrl {
 	{
 		String respuesta = "Exitoso";
 		try {
-			int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "CR");
+		
 			String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 			Map parSep = separarURL(parametrosDecode);
 			String lead = (String) parSep.get("leads[status][0][id]");
+	        int leadNum;
 
+	        try {
+
+	            leadNum = Integer.parseInt(lead);
+
+	        } catch (NumberFormatException e) {
+
+	        	leadNum = 0;
+	        }
+	        
+	    	int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "CR",leadNum);
+	    	
 			String infLead = obtenerInformacionLeadCRM(lead);
 			// System.out.println("información " + infLead);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "CR");
@@ -6232,7 +6422,7 @@ public class PedidoCtrl {
 		// ArcGISRuntimeEnvironment.setInstallDirectory("C:\\Program
 		// Files\\POSPM\\arcgis-runtime-sdk-java-100.15.0");
 		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "LP");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
@@ -6240,6 +6430,19 @@ public class PedidoCtrl {
 		System.out.println("1. REVISIÓN LEAD " + lead);
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "LP",leadNum);
+		
 		String infLead = obtenerInformacionLeadCRM(lead);
 		System.out.println("2. OBTUVIMOS EL LEAD  " + infLead);
 		// System.out.println("información " + infLead);
@@ -6329,12 +6532,25 @@ public class PedidoCtrl {
 		} else {
 
 		}
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String) parSep.get("leads[status][0][id]");
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		// Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "I",leadNum);
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
 		String infLead = obtenerInformacionLeadCRM(lead);
@@ -6352,12 +6568,26 @@ public class PedidoCtrl {
 		} else {
 
 		}
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "LI");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String) parSep.get("leads[status][0][id]");
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		// Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "LI",leadNum);
+		
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
 		limpiarLeadCRM(lead);
@@ -6393,6 +6623,17 @@ public class PedidoCtrl {
 
         lead = lead.trim();
         System.out.println("LEAD LIMPIO: " + lead);
+        
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
 
         // Parametro configurable con fallback
         int minutos = ParametrosDAO.retornarValorNumerico("VENTANA_MINUTOS_CRMBOT");
@@ -6417,7 +6658,7 @@ public class PedidoCtrl {
         System.out.println("✅ Pasa validación de duplicado");
         
 		//Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"P");
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader,"P",leadNum);
 		//Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de la información
 
 		String infLead = obtenerInformacionLeadCRM(lead);
@@ -6434,12 +6675,26 @@ public class PedidoCtrl {
 		} else {
 
 		}
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "SF");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String) parSep.get("leads[status][0][id]");
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		// Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "SF",leadNum);
+		
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
 		String infLead = obtenerInformacionLeadCRM(lead);
@@ -12050,12 +12305,26 @@ public class PedidoCtrl {
 	 */
 	public String procesarSolFacturaPedidoWebBOTNiv1(String datos, String authHeader) throws IOException {
 		String respuesta = "";
-		// Realizamos la inserción de log con el JSON recibido
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "F");
+
 		// Vamos a realizar la extracción del parámetro
 		String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
 		Map parSep = separarURL(parametrosDecode);
 		String lead = (String) parSep.get("leads[status][0][id]");
+		
+        int leadNum;
+
+        try {
+
+            leadNum = Integer.parseInt(lead);
+
+        } catch (NumberFormatException e) {
+
+        	leadNum = 0;
+        }
+        
+		// Realizamos la inserción de log con el JSON recibido
+		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "F",leadNum);
+        
 		// Ya tenemos la información del LEAD, por lo tanto realizaremos la consulta de
 		// la información
 		String infLead = obtenerInformacionLeadCRM(lead);
@@ -12217,7 +12486,7 @@ public class PedidoCtrl {
 
 	public String procesarEncuestaServicio(String datos, String authHeader) {
 		String respuesta = "";
-		int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "ES");
+
 
 		try {
 			String parametrosDecode = java.net.URLDecoder.decode(datos, StandardCharsets.UTF_8.name());
@@ -12227,6 +12496,20 @@ public class PedidoCtrl {
 				return "No se encontró información del LEAD.";
 			}
 
+	        int leadNum;
+
+	        try {
+
+	            leadNum = Integer.parseInt(lead);
+
+	        } catch (NumberFormatException e) {
+
+	        	leadNum = 0;
+	        }
+	        
+	        
+			int idLog = LogPedidoVirtualKunoDAO.insertarLogCRMBOT(datos, authHeader, "ES" ,leadNum);
+			
 			String infLead = obtenerInformacionLeadCRM(lead);
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOT(idLog, infLead, lead, "ES");
 
