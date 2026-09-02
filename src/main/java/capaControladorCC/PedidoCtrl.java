@@ -177,6 +177,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import utilidadesCC.ControladorEnvioCorreo;
+import utilidadesCC.PlantillaCorreoLinkPago;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -1539,122 +1540,112 @@ public class PedidoCtrl {
 
 	}
 
+	/**
+	 * Canales desde los que puede nacer un pedido con Pago Virtual. Determinan
+	 * como se le avisa al cliente el link de pago.
+	 */
+	private static final String CANAL_CONTACT = "CONTACT";
+	private static final String CANAL_APP = "APP";
+	private static final String CANAL_BOT = "BOT";
+
+	/**
+	 * Notificacion del link de pago para los pedidos del contact center.
+	 *
+	 * @param idLink      identificador del link en Wompi
+	 * @param idCliente   cliente al que se le avisa
+	 * @param linkPago    URL de pago
+	 * @param idFormaPago forma de pago, para recuperar el texto configurable
+	 * @param idPedido    numero del pedido
+	 * @return JSON con la respuesta
+	 */
 	public String realizarNotificacionWompi(String idLink, int idCliente, String linkPago, int idFormaPago,
 			int idPedido) {
-		boolean correoCorrecto;
-		Date date = new Date(); // given date
-		Calendar calendar = GregorianCalendar.getInstance(); // creates a new calendar instance
-		int horaActual = calendar.get(Calendar.HOUR_OF_DAY);
-		calendar.setTime(date);
-		String observacionLog = "";
-		String emailEnvio = "";
-		// Comenzamos por consultar al cliente para recuperar la información de correo
-		// electrónico y número celular
+		return (notificarLinkPago(idLink, idCliente, linkPago, idFormaPago, idPedido, CANAL_CONTACT));
+	}
+
+	/**
+	 * Notificacion del link de pago indicando de que canal viene el pedido.
+	 *
+	 * El ultimo parametro cambio de significado el 2026-09-02: antes recibia el
+	 * valor del parametro WHATSAPPEXTERNO ("S" o "N") y ahora recibe el canal
+	 * ("APP" o "BOT"). El cambio es a proposito: quien llama no tiene por que saber
+	 * cual parametro se consulta, y teniendo el canal el metodo decide bien.
+	 *
+	 * @param idLink      identificador del link en Wompi
+	 * @param idCliente   cliente al que se le avisa
+	 * @param linkPago    URL de pago
+	 * @param idFormaPago forma de pago, para recuperar el texto configurable
+	 * @param idPedido    numero del pedido
+	 * @param canal       CANAL_APP o CANAL_BOT
+	 * @return JSON con la respuesta
+	 */
+	public String realizarNotificacionWompiParametrico(String idLink, int idCliente, String linkPago,
+			int idFormaPago, int idPedido, String canal) {
+		return (notificarLinkPago(idLink, idCliente, linkPago, idFormaPago, idPedido, canal));
+	}
+
+	/**
+	 * Avisa al cliente su link de pago: correo siempre, y WhatsApp segun el canal.
+	 *
+	 * POR QUE ESTE METODO EXISTE. Antes habia dos copias de esta logica,
+	 * realizarNotificacionWompi y realizarNotificacionWompiParametrico, identicas
+	 * linea por linea salvo el trozo del WhatsApp. Y ahi estaba el problema: la
+	 * version del contact center tenia el camino alterno -avisar por Kommo o por
+	 * Brevo cuando el envio directo esta apagado- y la version de la tienda virtual
+	 * y el BOT nunca lo tuvo. Como el parametro WHATSAPPEXTERNO esta en "N", esos
+	 * dos canales entraban a un if que no se cumplia y salian sin hacer nada: el
+	 * WhatsApp no se enviaba, no fallaba y no quedaba registro. Con una sola copia
+	 * eso no puede volver a pasar.
+	 *
+	 * COMO SE AVISA POR CANAL:
+	 *
+	 *  - CONTACT y APP: se avisa por WhatsApp. Si el parametro del canal esta en
+	 *    "S" sale directo por Ultramsg; si esta en "N" sale por Kommo -un correo a
+	 *    la lista PARSERLINKDEPAGO que Kommo convierte en mensaje- o por Brevo,
+	 *    segun CONTINGENCIALINKPAGO.
+	 *  - BOT: NO se manda WhatsApp. El link ya se le muestra al cliente dentro de la
+	 *    conversacion del bot con actualizarLinkPagoLeadCRMBOT, asi que mandarlo
+	 *    tambien por WhatsApp se lo entregaria dos veces.
+	 *
+	 * @param idLink      identificador del link en Wompi
+	 * @param idCliente   cliente al que se le avisa
+	 * @param linkPago    URL de pago
+	 * @param idFormaPago forma de pago, para recuperar el texto configurable
+	 * @param idPedido    numero del pedido
+	 * @param canal       CANAL_CONTACT, CANAL_APP o CANAL_BOT
+	 * @return JSON con la respuesta
+	 */
+	private String notificarLinkPago(String idLink, int idCliente, String linkPago, int idFormaPago,
+			int idPedido, String canal) {
+
 		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
-		// Obtenemos la forma de pago
-		FormaPago formaPagoNoti = FormaPagoDAO.retornarFormaPago(idFormaPago);
-		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		// Procesamos los mensajes de texto y correo electrónico
-		String mensajeTexto = formaPagoNoti.getMensajeTexto();
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
-		mensajeTexto = mensajeTexto.replace("#VINCULO", linkPago);
-		// Envío del mensaje de Texto
-		promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
-		observacionLog = "Se envio mensaje de texto.";
-		// Vamos a verificar si el cliente tiene correo electrónico para enviarlo si es
-		// el caso
-		if (clienteNoti.getEmail() != null) {
-			if (clienteNoti.getEmail().length() > 0) {
-				if (clienteNoti.getEmail().contains("@")) {
-					observacionLog = observacionLog + " Se tiene email para enviar.";
-					String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-					String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-					String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
-					String mensajeCorreo = formaPagoNoti.getMensajeCorreo();
-					mensajeCorreo = mensajeCorreo.replace("#VINCULO", linkPago);
-					Correo correo = new Correo();
-					correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
-					ArrayList correos = new ArrayList();
-					String correoEle = clienteNoti.getEmail();
-					emailEnvio = correoEle;
-					correos.add(correoEle);
-					correo.setContrasena(claveCorreo);
-					correo.setUsuarioCorreo(cuentaCorreo);
-					String mensajeCuerpoCorreo = "Cordiar Saludo " + clienteNoti.getNombres() + " "
-							+ clienteNoti.getApellidos() + " ." + mensajeCorreo + "\n" + "<body><a href=\"" + linkPago
-							+ "\"><img align=\" center \" src=\"" + imagenWompi + "\"></a></body>";
-					correo.setMensaje(mensajeCuerpoCorreo);
-					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					// Agregamos control para que verifique con que método debe hacer el envío
-					if (cuentaCorreo.contains("@gmail.com")) {
-						correoCorrecto = contro.enviarCorreo();
-					} else {
-						correoCorrecto = contro.enviarCorreo();
-					}
-					if (!correoCorrecto) {
-						ClienteDAO.marcarCorreoIncorrecto(idCliente);
-					}
-					observacionLog = observacionLog + " Se intento realizar el envío del correo electrónico.";
-				}
-			}
-		}
-		// Verificar el mensaje de WhatsApp
-//		if(horaActual >= 18 && horaActual<=20)
-//		{
-//			notificarWhatsApp(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
-//		}
-		String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNOCONTACT");
-		if (mensajeExterno.equals(new String(""))) {
-			mensajeExterno = "S";
-		}
 
-		if(mensajeExterno.equals(new String("S")))
-		{
-			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente, linkPago);
-		}else
-		{
-			//En este punto deberemos de enviar el correo electrónico para lider contact center con los datos para la creación del mensaje
-			//Validaremos si está activada la contingencia en cuyo caso se usará o BREVO o el envío del correo
-			String contingenciaLinkPago = ParametrosDAO.retornarValorAlfanumerico("CONTINGENCIALINKPAGO");
-			if(contingenciaLinkPago.equals(new String("N")))
-			{
-				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
-				Correo correo = new Correo();
-				correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
-				ArrayList correos = new ArrayList();
-				correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
-				correo.setContrasena(claveCorreo);
-				correo.setUsuarioCorreo(cuentaCorreo);
-				String mensajeCuerpoCorreo = "Cordial Saludo \n <br>"
-						+ "Nombre Cliente:" + clienteNoti.getNombres()+ " "  +clienteNoti.getApellidos() + " \n <br>"
-						+ "Link de pago:" + linkPago + " \n <br>"
-						+ "Numero Telefono:" + clienteNoti.getTelefonoCelular()+ " \n <br>"
-						+ "email:" + clienteNoti.getEmail()+ " \n <br>";
-				correo.setMensaje(mensajeCuerpoCorreo);
-				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-				correoCorrecto = contro.enviarCorreo();
-			}else //En caso de que el valor sea S significa que deberemos enviar el link por intermedio de BREVO
-			{
-				try
-				{
-					Map<String, Object> params;
-					params = Map.of(
-			                "link", linkPago
-			        );
-					enviarMensajeWhatsAppBrevo(38, clienteNoti.getTelefonoCelular(), params);
-				}catch(Exception exception)
-				{
-					
-				}
-			}
+		// El mensaje de texto quedo desactivado el 2026-09-02: el canal de SMS no se
+		// esta usando. Ademas esta llamada sale a un PHP externo en plena creacion
+		// del pedido, asi que si ese servicio se pone lento demora la respuesta al
+		// cliente por un mensaje que nadie recibe. Se deja comentada y no se borra,
+		// por si se retoma el canal.
+		//
+		// FormaPago formaPagoTexto = FormaPagoDAO.retornarFormaPago(idFormaPago);
+		// PromocionesCtrl promoCtrl = new PromocionesCtrl();
+		// String mensajeTexto = formaPagoTexto.getMensajeTexto().replace("#VINCULO", linkPago);
+		// promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
 
-		}
-		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
+		String emailEnvio = enviarCorreoLinkPago(clienteNoti, idCliente, idPedido, linkPago, idFormaPago);
+		String observacionLog = (emailEnvio.length() > 0)
+				? "Se envio el correo con el link de pago a " + emailEnvio + "."
+				: "El cliente no tiene correo valido, no se envio correo.";
+
+		observacionLog = observacionLog + " "
+				+ avisarWhatsAppLinkPago(clienteNoti, idPedido, idCliente, linkPago, canal);
+
+		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular,
+				observacionLog);
 		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
 		// Al pedido le adicionamos el campo de idLink para el pago
 		PedidoDAO.actualizarLinkPagoPedido(idPedido, idLink);
+
 		JSONArray listJSON = new JSONArray();
 		JSONObject precioJSON = new JSONObject();
 		precioJSON.put("respuesta", "OK");
@@ -1663,90 +1654,153 @@ public class PedidoCtrl {
 	}
 
 	/**
-	 * Método que se encarga de realizar la notificación de WOMPI, siendo
-	 * paramétrica para el caso del Whatsapp, en caso de que se use tambien la
-	 * mensajeria externa
-	 * 
-	 * @param idLink
-	 * @param idCliente
-	 * @param linkPago
-	 * @param idFormaPago
-	 * @param idPedido
-	 * @param mensajeWhatsapp
-	 * @return
+	 * Envia al cliente el correo con el link de pago.
+	 *
+	 * El correo anterior tenia un problema que no se veia: el unico enlace era la
+	 * imagen de medios de pago. Como Gmail y Outlook bloquean imagenes por defecto
+	 * cuando el remitente no esta en contactos, el cliente recibia un saludo y nada
+	 * en que hacer clic. La plantilla nueva pone el enlace en un boton de texto y
+	 * repite la URL escrita debajo, asi que hay como pagar sin una sola imagen.
+	 *
+	 * @param clienteNoti cliente destinatario
+	 * @param idCliente   id del cliente, para marcar el correo si rebota
+	 * @param idPedido    numero del pedido
+	 * @param linkPago    URL de pago
+	 * @param idFormaPago forma de pago, de donde sale el texto configurable
+	 * @return el correo al que se envio, o cadena vacia si no se pudo enviar
 	 */
-	public String realizarNotificacionWompiParametrico(String idLink, int idCliente, String linkPago, int idFormaPago,
-			int idPedido, String mensajeWhatsapp) {
-		boolean correoCorrecto;
-		Date date = new Date(); // given date
-		Calendar calendar = GregorianCalendar.getInstance(); // creates a new calendar instance
-		int horaActual = calendar.get(Calendar.HOUR_OF_DAY);
-		calendar.setTime(date);
-		String observacionLog = "";
-		String emailEnvio = "";
-		// Comenzamos por consultar al cliente para recuperar la información de correo
-		// electrónico y número celular
-		Cliente clienteNoti = ClienteDAO.obtenerClienteporID(idCliente);
-		// Obtenemos la forma de pago
-		FormaPago formaPagoNoti = FormaPagoDAO.retornarFormaPago(idFormaPago);
-		PromocionesCtrl promoCtrl = new PromocionesCtrl();
-		// Procesamos los mensajes de texto y correo electrónico
-		String mensajeTexto = formaPagoNoti.getMensajeTexto();
-		String telefonoCelular = clienteNoti.getTelefonoCelular();
-		mensajeTexto = mensajeTexto.replace("#VINCULO", linkPago);
-		// Envío del mensaje de Texto
-		promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
-		observacionLog = "Se envio mensaje de texto.";
-		// Vamos a verificar si el cliente tiene correo electrónico para enviarlo si es
-		// el caso
-		if (clienteNoti.getEmail() != null) {
-			if (clienteNoti.getEmail().length() > 0) {
-				if (clienteNoti.getEmail().contains("@")) {
-					observacionLog = observacionLog + " Se tiene email para enviar.";
-					String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-					String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-					String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
-					String mensajeCorreo = formaPagoNoti.getMensajeCorreo();
-					mensajeCorreo = mensajeCorreo.replace("#VINCULO", linkPago);
-					Correo correo = new Correo();
-					correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
-					ArrayList correos = new ArrayList();
-					String correoEle = clienteNoti.getEmail();
-					emailEnvio = correoEle;
-					correos.add(correoEle);
-					correo.setContrasena(claveCorreo);
-					correo.setUsuarioCorreo(cuentaCorreo);
-					String mensajeCuerpoCorreo = "Cordiar Saludo " + clienteNoti.getNombres() + " "
-							+ clienteNoti.getApellidos() + " ." + mensajeCorreo + "\n" + "<body><a href=\"" + linkPago
-							+ "\"><img align=\" center \" src=\"" + imagenWompi + "\"></a></body>";
-					correo.setMensaje(mensajeCuerpoCorreo);
-					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-					// Agregamos control para que verifique con que método debe hacer el envío
-					if (cuentaCorreo.contains("@gmail.com")) {
-						correoCorrecto = contro.enviarCorreo();
-					} else {
-						correoCorrecto = contro.enviarCorreo();
-					}
-					if (!correoCorrecto) {
-						ClienteDAO.marcarCorreoIncorrecto(idCliente);
-					}
-					observacionLog = observacionLog + " Se intento realizar el envío del correo electrónico.";
-				}
+	private String enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
+			String linkPago, int idFormaPago) {
+
+		String correoCliente = clienteNoti.getEmail();
+		if (correoCliente == null || !correoCliente.contains("@")) {
+			return ("");
+		}
+		correoCliente = correoCliente.trim();
+
+		try {
+			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+			String imagenPago = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+			String urlLogo = ParametrosDAO.retornarValorAlfanumerico("IMAGENLOGOCORREO");
+
+			// El texto de presentacion sigue saliendo de forma_pago.mensaje_correo para
+			// que se pueda cambiar sin desplegar. Se le quita el token #VINCULO porque
+			// el link ya va en el boton: dejarlo pondria la URL cruda en la mitad de
+			// una frase.
+			String mensajeIntro = "";
+			FormaPago formaPagoNoti = FormaPagoDAO.retornarFormaPago(idFormaPago);
+			if (formaPagoNoti != null && formaPagoNoti.getMensajeCorreo() != null) {
+				mensajeIntro = formaPagoNoti.getMensajeCorreo().replace("#VINCULO", "").trim();
+			}
+
+			Correo correo = new Correo();
+			correo.setUsuarioCorreo(cuentaCorreo);
+			correo.setContrasena(claveCorreo);
+			correo.setAsunto(PlantillaCorreoLinkPago.asunto(idPedido));
+			correo.setMensaje(PlantillaCorreoLinkPago.cuerpo(
+					clienteNoti.getNombres() + " " + clienteNoti.getApellidos(),
+					idPedido, linkPago, mensajeIntro, urlLogo, imagenPago));
+
+			ArrayList correos = new ArrayList();
+			correos.add(correoCliente);
+
+			boolean correoCorrecto = new ControladorEnvioCorreo(correo, correos).enviarCorreo();
+			if (!correoCorrecto) {
+				ClienteDAO.marcarCorreoIncorrecto(idCliente);
+				return ("");
+			}
+			return (correoCliente);
+
+		} catch (Exception e) {
+			System.out.println("Error enviando el correo del link de pago del pedido " + idPedido
+					+ ": " + e.toString());
+			return ("");
+		}
+	}
+
+	/**
+	 * Avisa el link de pago por WhatsApp, segun el canal del pedido.
+	 *
+	 * @param clienteNoti cliente destinatario
+	 * @param idPedido    numero del pedido
+	 * @param idCliente   id del cliente
+	 * @param linkPago    URL de pago
+	 * @param canal       CANAL_CONTACT, CANAL_APP o CANAL_BOT
+	 * @return texto para la observacion del log, describiendo que se hizo
+	 */
+	private String avisarWhatsAppLinkPago(Cliente clienteNoti, int idPedido, int idCliente,
+			String linkPago, String canal) {
+
+		// En el BOT el link ya se le muestra al cliente en la conversacion, asi que
+		// mandarlo tambien por WhatsApp se lo entregaria dos veces.
+		if (CANAL_BOT.equals(canal)) {
+			return ("Canal BOT: el link se muestra en la conversacion, no se envia WhatsApp.");
+		}
+
+		// Cada canal tiene su propio interruptor. Antes cada llamador leia el
+		// parametro y se lo pasaba a este metodo, y por eso la tienda virtual acabo
+		// consultando el del contact center: ahora la decision vive en un solo lugar.
+		String nombreParametro = CANAL_CONTACT.equals(canal)
+				? "WHATSAPPEXTERNOCONTACT"
+				: "WHATSAPPEXTERNO";
+
+		String envioDirecto = ParametrosDAO.retornarValorAlfanumerico(nombreParametro);
+		if (envioDirecto == null || envioDirecto.trim().length() == 0) {
+			envioDirecto = "S";
+		}
+
+		String nombreCliente = clienteNoti.getNombres() + " " + clienteNoti.getApellidos();
+
+		if (envioDirecto.equals("S")) {
+			notificarWhatsAppUltramsg(nombreCliente, idPedido, idCliente, linkPago);
+			return ("WhatsApp enviado directo por Ultramsg.");
+		}
+
+		// Con el envio directo apagado se usa el tercero: Kommo por correo, o Brevo.
+		String contingencia = ParametrosDAO.retornarValorAlfanumerico("CONTINGENCIALINKPAGO");
+		if (contingencia == null) {
+			contingencia = "N";
+		}
+
+		if (contingencia.equals("N")) {
+			// Kommo recibe un correo con los datos y lo convierte en el mensaje de
+			// WhatsApp. Este correo NO va al cliente: va a la lista PARSERLINKDEPAGO.
+			try {
+				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+				Correo correo = new Correo();
+				correo.setAsunto("Pizza Americana link de pago pedido # " + idPedido);
+				correo.setContrasena(claveCorreo);
+				correo.setUsuarioCorreo(cuentaCorreo);
+				// El formato de este cuerpo lo parsea Kommo: no se debe cambiar sin
+				// ajustar alla, o el mensaje al cliente sale incompleto.
+				correo.setMensaje("Cordial Saludo \n <br>"
+						+ "Nombre Cliente:" + nombreCliente + " \n <br>"
+						+ "Link de pago:" + linkPago + " \n <br>"
+						+ "Numero Telefono:" + clienteNoti.getTelefonoCelular() + " \n <br>"
+						+ "email:" + clienteNoti.getEmail() + " \n <br>");
+				ArrayList correos = GeneralDAO.obtenerCorreosParametro("PARSERLINKDEPAGO");
+				boolean enviado = new ControladorEnvioCorreo(correo, correos).enviarCorreo();
+				return (enviado
+						? "WhatsApp solicitado a Kommo por correo."
+						: "No se pudo avisar a Kommo, el cliente quedo sin WhatsApp.");
+			} catch (Exception e) {
+				System.out.println("Error avisando a Kommo el link de pago del pedido " + idPedido
+						+ ": " + e.toString());
+				return ("Error avisando a Kommo, el cliente quedo sin WhatsApp.");
 			}
 		}
-		if (mensajeWhatsapp.equals(new String("S"))) {
-			notificarWhatsAppUltramsg(clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, idCliente,
-					linkPago);
+
+		try {
+			Map<String, Object> params = Map.of("link", linkPago);
+			enviarMensajeWhatsAppBrevo(38, clienteNoti.getTelefonoCelular(), params);
+			return ("WhatsApp enviado por Brevo.");
+		} catch (Exception e) {
+			System.out.println("Error enviando el WhatsApp por Brevo del pedido " + idPedido
+					+ ": " + e.toString());
+			return ("Error enviando por Brevo, el cliente quedo sin WhatsApp.");
 		}
-		PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, emailEnvio, telefonoCelular, observacionLog);
-		PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
-		// Al pedido le adicionamos el campo de idLink para el pago
-		PedidoDAO.actualizarLinkPagoPedido(idPedido, idLink);
-		JSONArray listJSON = new JSONArray();
-		JSONObject precioJSON = new JSONObject();
-		precioJSON.put("respuesta", "OK");
-		listJSON.add(precioJSON);
-		return listJSON.toJSONString();
 	}
 
 	/**
@@ -2499,13 +2553,11 @@ public class PedidoCtrl {
 						// Intervenimos cuando el idFormaPago es igual a 4 es porque es WOMPI y
 						// realizaremos el envío del link del pedido para pago al cliente
 						if (idFormaPago == 4) {
-							// Se hace validación si esta activo el envio de mensajería con Tercero
-							String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
-							if (mensajeExterno.equals(new String(""))) {
-								mensajeExterno = "S";
-							}
+							// El canal define como se avisa el link. Ya no se lee aqui el
+							// parametro del WhatsApp: eso lo decide notificarLinkPago, que
+							// sabe cual corresponde a cada canal.
 							verificarEnvioLinkPagosParametrico(idPedidoCreado, clienteVirtual, (valorTotal), idTienda,
-									mensajeExterno);
+									CANAL_APP);
 						}
 
 						// Actualizamos la fecha de procesamiento
@@ -4065,7 +4117,7 @@ public class PedidoCtrl {
 	 * @return
 	 */
 	public JSONObject verificarEnvioLinkPagosParametrico(int idPedidoTienda, Cliente clienteVirtual, double totalPedido,
-			int idTienda, String mensajeWhatsapp) {
+			int idTienda, String canal) {
 
 		String idLink = "";
 		JSONObject resp = new JSONObject();
@@ -4187,7 +4239,7 @@ public class PedidoCtrl {
 
 			// 🔹 8. Notificación (igual que tu código original)
 			realizarNotificacionWompiParametrico(idLink, clienteVirtual.getIdcliente(), urlPago, 4, idPedidoTienda,
-					mensajeWhatsapp);
+					canal);
 			resp.put("success", true);
 			resp.put("urlPago", urlPago);
 			resp.put("mensaje", "Link generado correctamente");
@@ -8104,12 +8156,11 @@ public class PedidoCtrl {
 			// realizaremos el envío del link del pedido para pago al cliente
 			if (idFormaPago == 4) {
 				// Se hace validación si esta activo el envio de mensajería con Tercero
-				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
-				if (mensajeExterno.equals(new String(""))) {
-					mensajeExterno = "S";
-				}
+				// CANAL_BOT: no se manda WhatsApp. El link se le muestra al cliente en la
+				// conversacion con actualizarLinkPagoLeadCRMBOT, unas lineas mas abajo, y
+				// mandarlo tambien por WhatsApp se lo entregaria dos veces.
 				JSONObject js_link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact,
-						idTienda, mensajeExterno);
+						idTienda, CANAL_BOT);
 
 				boolean existe_link = (boolean) js_link.get("success");
 				String mensaje = "ERROR";
@@ -8994,12 +9045,11 @@ public class PedidoCtrl {
 			// realizaremos el envío del link del pedido para pago al cliente
 			if (idFormaPago == 4) {
 				// Se hace validación si esta activo el envio de mensajería con Tercero
-				String mensajeExterno = ParametrosDAO.retornarValorAlfanumerico("WHATSAPPEXTERNO");
-				if (mensajeExterno.equals(new String(""))) {
-					mensajeExterno = "S";
-				}
+				// CANAL_BOT: no se manda WhatsApp. El link se le muestra al cliente en la
+				// conversacion con actualizarLinkPagoLeadCRMBOT, unas lineas mas abajo, y
+				// mandarlo tambien por WhatsApp se lo entregaria dos veces.
 				JSONObject js_link = verificarEnvioLinkPagosParametrico(idPedido, clienteVirtual, valorTotalContact,
-						idTienda, mensajeExterno);
+						idTienda, CANAL_BOT);
 
 				boolean existe_link = (boolean) js_link.get("success");
 				String mensaje = "ERROR";
