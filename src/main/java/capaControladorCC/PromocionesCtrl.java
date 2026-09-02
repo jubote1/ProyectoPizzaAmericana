@@ -154,7 +154,10 @@ public class PromocionesCtrl {
 		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
 		ResultadoJSON.put("idofertacliente", respuesta);
 		//En este punto una vez hagamos la asignaci�n de la oferta realizaremos la notificaci�n de las ofertas
-		enviarMensajesOferta(ofer.getIdOferta());
+		//SMS desactivado el 2026-09-01: el canal de mensajes de texto no se esta
+		//usando. El aviso al cliente pasa a ser por correo. Se deja la llamada
+		//comentada y no se borra el metodo, por si se retoma el canal.
+		//enviarMensajesOferta(ofer.getIdOferta());
 		listJSON.add(ResultadoJSON);
 		System.out.println(listJSON.toJSONString());
 		return listJSON.toJSONString();
