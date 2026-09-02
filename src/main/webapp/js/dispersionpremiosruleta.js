@@ -47,6 +47,25 @@ $(function () {
 });
 
 /**
+ * Abre el manual de la pantalla en una ventana aparte.
+ *
+ * Se abre en ventana y no en la misma pestaña para que se pueda leer con la
+ * pantalla al lado: la ayuda sirve justo cuando se esta a mitad de una consulta y
+ * no conviene perderla. Si el navegador bloquea la ventana emergente, se cae a
+ * abrirla en una pestaña nueva.
+ */
+function abrirAyuda() {
+	var ventana = window.open(server + 'AyudaDispersionPremiosRuleta.html',
+		'ayudaDispersionPremios',
+		'width=980,height=760,scrollbars=yes,resizable=yes');
+	if (!ventana) {
+		window.open(server + 'AyudaDispersionPremiosRuleta.html', '_blank');
+		return;
+	}
+	ventana.focus();
+}
+
+/**
  * Deja por defecto el dia de ayer y hoy. La ruleta se juega despues del pedido,
  * asi que lo normal es revisar lo de las ultimas horas.
  */

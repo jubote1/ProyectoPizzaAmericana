@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Ayuda - Dispersión de Premios Ruleta</title>
+<style>
+	/* La ayuda es autocontenida a proposito: se abre en una ventana aparte y el
+	   mismo archivo se convierte en el manual de Word, asi que no puede depender
+	   de las hojas de estilo del sistema. */
+	body {
+		font-family: Arial, Helvetica, sans-serif;
+		color: #333;
+		line-height: 1.6;
+		max-width: 900px;
+		margin: 0 auto;
+		padding: 28px 34px 60px 34px;
+		background: #fff;
+	}
+	h1 {
+		color: #20287f;
+		font-size: 26px;
+		border-bottom: 3px solid #d0201f;
+		padding-bottom: 10px;
+		margin-bottom: 6px;
+	}
+	.subtitulo { color: #777; font-size: 13px; margin-bottom: 26px; }
+	h2 {
+		color: #20287f;
+		font-size: 19px;
+		margin-top: 32px;
+		margin-bottom: 8px;
+		border-left: 5px solid #f5c518;
+		padding-left: 10px;
+	}
+	h3 { color: #444; font-size: 15px; margin-top: 20px; margin-bottom: 6px; }
+	p { margin: 8px 0; }
+	table { border-collapse: collapse; width: 100%; margin: 12px 0 18px 0; font-size: 13px; }
+	th {
+		background: #20287f; color: #fff; text-align: left;
+		padding: 8px 10px; font-size: 12px;
+	}
+	td { border: 1px solid #ddd; padding: 8px 10px; vertical-align: top; }
+	tr:nth-child(even) td { background: #fafafa; }
+	.etq {
+		display: inline-block; padding: 2px 8px; border-radius: 10px;
+		font-size: 11px; font-weight: bold; white-space: nowrap;
+	}
+	.e-pend { background: #fdebd0; color: #a04000; }
+	.e-disp { background: #d5f5e3; color: #1e6b3a; }
+	.e-avis { background: #f9e79f; color: #7d6608; }
+	.e-mano { background: #eaecee; color: #566573; }
+	.e-scor { background: #fadbd8; color: #922b21; }
+	.e-sofe { background: #e8daef; color: #5b2c6f; }
+	.e-usad { background: #d6eaf8; color: #1a5276; }
+	.aviso {
+		background: #fdecec; border-left: 4px solid #d0201f;
+		padding: 12px 16px; margin: 16px 0; font-size: 14px;
+	}
+	.nota {
+		background: #f4f6f8; border-left: 4px solid #20287f;
+		padding: 12px 16px; margin: 16px 0; font-size: 14px;
+	}
+	ol li, ul li { margin: 6px 0; }
+	code {
+		background: #f0f0f0; padding: 1px 5px; border-radius: 3px;
+		font-family: 'Courier New', Courier, monospace; font-size: 13px;
+	}
+	.pie { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Dispersión de Premios de la Ruleta</h1>
+<div class="subtitulo">Manual de usuario &middot; Pizza Americana &middot; Menú Administrador &rarr; Dispersión Premios Ruleta</div>
+
+<h2>1. Para qué sirve esta pantalla</h2>
+<p>
+	Cuando un cliente contesta la encuesta de servicio, como agradecimiento puede jugar
+	en la ruleta de premios de la página web. Si gana, hay que hacerle dos cosas:
+	asignarle la oferta que corresponde a su premio y avisarle con el código para que
+	lo pueda reclamar.
+</p>
+<p>
+	Antes eso se hacía cliente por cliente a mano: buscarlo en la administración de
+	clientes, agregarle la oferta y escribirle. Esta pantalla lo hace por rango de
+	fechas y con un botón.
+</p>
+<p><strong>Dispersar un premio significa tres cosas, todas juntas:</strong></p>
+<ol>
+	<li>Se le asigna al cliente la oferta que corresponde a su premio.</li>
+	<li>Se genera un código promocional único para redimirla.</li>
+	<li>Se le envía un correo con el premio, el código y la fecha de vencimiento.</li>
+</ol>
+
+<h2>2. Cómo consultar</h2>
+<ol>
+	<li>Entre por <strong>Administrador &rarr; Dispersión Premios Ruleta</strong>.</li>
+	<li>Escoja <strong>Fecha desde</strong> y <strong>Fecha hasta</strong>. Puede
+		escribirlas como <code>aaaa-mm-dd</code> o usar el calendario.</li>
+	<li>Presione <strong>Consultar</strong>.</li>
+</ol>
+<p>
+	Al abrir, la pantalla trae por defecto <strong>ayer y hoy</strong>, que es lo que
+	normalmente se revisa: la ruleta se juega poco después del pedido.
+</p>
+<div class="nota">
+	<strong>El rango no puede pasar de 92 días.</strong> No es un capricho: un rango
+	abierto sobre una tabla que crece a diario traería miles de filas al navegador sin
+	que nadie las necesite. Si necesita revisar un periodo largo, consúltelo por meses.
+</div>
+
+<h2>3. Los seis contadores</h2>
+<p>Después de consultar aparecen seis cifras. Son el resumen de lo que hay en ese rango.</p>
+<table>
+	<tr><th style="width:22%">Contador</th><th>Qué significa</th></tr>
+	<tr><td><strong>Premios</strong></td>
+		<td>Total de premios ganados en el rango. Solo cuenta los que sí son premio: "Gira de nuevo" y "Sin premio" no aparecen en esta pantalla.</td></tr>
+	<tr><td><strong>Por dispersar</strong></td>
+		<td>Premios listos para entregar. Es el número que habilita el botón <em>Dispersar premios</em>. Si está en cero, no hay nada que hacer.</td></tr>
+	<tr><td><strong>Falta avisar</strong></td>
+		<td>Premios que ya tienen oferta y código, pero al cliente no le llegó el correo. Habilita el botón <em>Reenviar correos</em>. Ver la sección 6.</td></tr>
+	<tr><td><strong>Dispersados</strong></td>
+		<td>Premios ya entregados. Incluye los que se entregaron a mano antes de que existiera esta pantalla.</td></tr>
+	<tr><td><strong>Sin correo</strong></td>
+		<td>Ganadores de los que no tenemos correo por ninguna vía. No se les puede avisar automáticamente. Ver la sección 7.</td></tr>
+	<tr><td><strong>Sin oferta</strong></td>
+		<td>Premios que no tienen configurada la oferta que les corresponde. Es un problema de configuración, no del cliente. Ver la sección 7.</td></tr>
+</table>
+
+<h2>4. La tabla y sus columnas</h2>
+<table>
+	<tr><th style="width:18%">Columna</th><th>Qué muestra</th></tr>
+	<tr><td>Fecha</td><td>Cuándo jugó el cliente en la ruleta.</td></tr>
+	<tr><td>Tienda</td><td>Tienda del pedido que originó la encuesta.</td></tr>
+	<tr><td>Pedido</td><td>Número del pedido en la tienda.</td></tr>
+	<tr><td>Premio</td><td>El premio tal como lo vio el cliente girar en la ruleta.</td></tr>
+	<tr><td>Cliente</td><td>Nombre del ganador.</td></tr>
+	<tr><td>Correo</td><td>Correo al que se le envía o se le envió el premio.</td></tr>
+	<tr><td>Teléfono</td><td>Celular del ganador.</td></tr>
+	<tr><td>Estado</td><td>En qué va ese premio. Ver la sección 5.</td></tr>
+	<tr><td>Código</td><td>Código promocional que el cliente presenta para redimir. Aparece solo después de dispersar.</td></tr>
+	<tr><td>Vence</td><td>Hasta cuándo puede usar el código.</td></tr>
+	<tr><td>Avisado</td><td>Cuándo le salió el correo. Si está vacío y el premio ya se dispersó, el cliente no se enteró.</td></tr>
+	<tr><td>Redimido</td><td>Cuándo el cliente usó su premio. Vacío significa que todavía no lo ha reclamado.</td></tr>
+</table>
+<p>
+	La tabla se puede ordenar haciendo clic en los títulos, buscar con el campo
+	<em>Buscar</em>, y cambiar cuántos registros se ven a la vez.
+</p>
+<h3>Exportar a CSV</h3>
+<p>
+	El botón <strong>Exportar a CSV</strong> baja un archivo con <em>todo</em> lo
+	consultado, no solo lo que se ve en la página actual. Se abre en Excel con las
+	tildes correctas.
+</p>
+
+<h2>5. Los siete estados</h2>
+<table>
+	<tr><th style="width:24%">Estado</th><th>Qué significa y qué hacer</th></tr>
+	<tr>
+		<td><span class="etq e-pend">PENDIENTE</span></td>
+		<td>El premio está listo para entregar y no se ha hecho. <strong>Es el único estado que se dispersa.</strong></td>
+	</tr>
+	<tr>
+		<td><span class="etq e-disp">DISPERSADO</span></td>
+		<td>Ya se le asignó la oferta y le llegó el correo con el código. No hay nada que hacer.</td>
+	</tr>
+	<tr>
+		<td><span class="etq e-avis">FALTA AVISO</span></td>
+		<td>La oferta y el código existen, pero el correo no salió. <strong>El cliente tiene un premio del que no se enteró.</strong> Use <em>Reenviar correos</em>.</td>
+	</tr>
+	<tr>
+		<td><span class="etq e-mano">ENTREGADO A MANO</span></td>
+		<td>Premio entregado manualmente antes de que existiera esta pantalla. De estos no tenemos código ni fecha de aviso, por eso esas columnas salen vacías. No se pueden dispersar de nuevo.</td>
+	</tr>
+	<tr>
+		<td><span class="etq e-scor">SIN CORREO</span></td>
+		<td>No tenemos un correo válido del ganador. El sistema no puede avisarle. Ver la sección 7.</td>
+	</tr>
+	<tr>
+		<td><span class="etq e-sofe">SIN OFERTA</span></td>
+		<td>A ese premio le falta configurar cuál oferta le corresponde. No se dispersa hasta que se configure. Ver la sección 7.</td>
+	</tr>
+	<tr>
+		<td><span class="etq e-usad">REDIMIDO</span></td>
+		<td>El cliente ya usó su premio. Es el final feliz del proceso.</td>
+	</tr>
+</table>
+
+<h2>6. Cómo dispersar</h2>
+<ol>
+	<li>Consulte el rango.</li>
+	<li><strong>Revise la tabla antes de tocar el botón.</strong> Mire que los nombres
+		y los correos se vean razonables. Una vez dispersado no se puede deshacer.</li>
+	<li>Presione <strong>Dispersar premios</strong>. El botón le dice cuántos va a
+		entregar, por ejemplo <em>"Dispersar 12 premios"</em>.</li>
+	<li>Confirme el mensaje. Le indica cuántos entran en esta tanda, cuántos quedan
+		para la siguiente y cuánto va a tardar.</li>
+	<li>Espere. Aparece una barra de avance. <strong>No cierre la página.</strong></li>
+	<li>Al terminar sale un resumen: premios dispersados, correos enviados, clientes
+		creados y cuántos tuvieron novedad. La tabla se refresca sola.</li>
+</ol>
+
+<div class="aviso">
+	<strong>Máximo 30 premios por tanda, con 2 segundos entre correos.</strong>
+	Esto no es un límite arbitrario. El 2 de septiembre de 2026 se dispersaron 54
+	premios seguidos y el servidor de correo rechazó los últimos 4 por enviarlos
+	demasiado rápido. Con 30 y dos segundos de pausa, una tanda tarda un minuto y no
+	se toca ese límite.
+	<br><br>
+	Si hay más de 30 pendientes, disperse, espere y vuelva a presionar el botón. La
+	pantalla le va diciendo cuántos quedan.
+</div>
+
+<h3>Qué pasa si el cliente no existe</h3>
+<p>
+	Para asignarle una oferta, el ganador tiene que existir como cliente. El sistema lo
+	busca primero por el pedido, luego por el teléfono, y si no lo encuentra
+	<strong>lo crea</strong> con el nombre, el teléfono y el correo que el propio
+	cliente escribió al jugar. Por eso el resumen dice cuántos clientes se crearon.
+</p>
+
+<h3>El correo que recibe el cliente</h3>
+<p>Un solo correo con todo: el agradecimiento por contestar, el premio que ganó, el
+	código en grande y la fecha exacta de vencimiento. Trae también las condiciones
+	para reclamarlo y el teléfono del contact center.</p>
+<p>
+	En los premios cuyo nombre no dice en qué consisten &mdash;el caso de
+	<em>Premio Sorpresa</em>&mdash; el correo incluye una línea que lo explica.
+</p>
+
+<h2>7. Reenviar correos</h2>
+<p>
+	El contador <strong>Falta avisar</strong> y el estado
+	<span class="etq e-avis">FALTA AVISO</span> señalan lo mismo: premios con oferta y
+	código asignados a los que el correo no les salió. Pasa cuando el servidor de correo
+	rechaza el envío.
+</p>
+<p>
+	Presione <strong>Reenviar correos</strong>. El botón le dice cuántos son, por
+	ejemplo <em>"Reenviar 4 correos"</em>.
+</p>
+<div class="nota">
+	<strong>Reenviar es seguro y puede presionarlo cuantas veces necesite.</strong>
+	No vuelve a asignar ofertas ni genera códigos nuevos: solo manda el correo que
+	debía haber salido. Y solo mira los que tienen la casilla <em>Avisado</em> vacía,
+	así que nunca le reenvía a un cliente que ya recibió su premio. Por eso este botón
+	no pide confirmación.
+</div>
+
+<h2>8. Situaciones que requieren atención</h2>
+
+<h3>Aparecen premios SIN CORREO</h3>
+<p>
+	Son ganadores de los que no tenemos correo por ninguna vía. Tienen nombre y celular,
+	pero no dirección de correo, así que el sistema no puede avisarles y quedan
+	esperando. Estos casos hay que atenderlos por fuera: llamarlos o escribirles por
+	WhatsApp con los datos de la tabla.
+</p>
+
+<h3>Aparecen premios SIN OFERTA</h3>
+<p>
+	Significa que se agregó un premio nuevo a la ruleta y nadie configuró con cuál
+	oferta se entrega. <strong>Esto lo tiene que resolver el área de tecnología</strong>,
+	no se arregla desde esta pantalla. Mientras no se configure, esos premios no se
+	pueden dispersar. Avise indicando cuál es el premio.
+</p>
+
+<h3>El resumen dice "Con novedad"</h3>
+<p>
+	Cuando algo no salió como debía, el resumen lo dice y detalla el pedido y el motivo.
+	Los casos más comunes son que el correo no salió &mdash;quedan en
+	<span class="etq e-avis">FALTA AVISO</span> y se resuelven reenviando&mdash; o que
+	no se pudo identificar ni crear al cliente.
+</p>
+<p>
+	<strong>Si algo falla a mitad de camino, vuelva a consultar.</strong> La pantalla
+	siempre muestra la verdad de lo que quedó hecho. Nunca hay que adivinar: lo que diga
+	el estado es lo que pasó.
+</p>
+
+<h3>Se cerró la página mientras dispersaba</h3>
+<p>
+	No se pierde nada ni se duplica nada. Vuelva a consultar el mismo rango: lo que
+	alcanzó a dispersarse aparece como dispersado y lo que no, sigue pendiente. Puede
+	continuar donde quedó.
+</p>
+
+<h2>9. Preguntas frecuentes</h2>
+
+<h3>¿Puedo dispersar dos veces el mismo premio por error?</h3>
+<p>
+	No. El sistema marca cada premio en el momento de dispersarlo, y solo dispersa los
+	que están en <span class="etq e-pend">PENDIENTE</span>. Incluso si dos personas
+	presionan el botón al mismo tiempo, solo uno de los dos entrega el premio.
+</p>
+
+<h3>¿Por qué el botón de dispersar está apagado?</h3>
+<p>
+	Porque no hay premios pendientes en el rango que consultó. Si sabe que debería haber,
+	revise las fechas.
+</p>
+
+<h3>¿Puedo cambiar el premio que le tocó a un cliente?</h3>
+<p>
+	No desde esta pantalla. Lo que la ruleta entregó es lo que se entrega. Si hay un caso
+	excepcional, se maneja desde la administración de clientes agregando la oferta a mano,
+	como se hacía antes.
+</p>
+
+<h3>El cliente dice que no le llegó el correo</h3>
+<p>
+	Mire la columna <strong>Avisado</strong>. Si tiene fecha, el correo salió de nuestro
+	lado: pídale que revise correo no deseado. Si está vacía, use
+	<strong>Reenviar correos</strong>.
+</p>
+
+<h3>¿Cada cuánto debería entrar a esta pantalla?</h3>
+<p>
+	Todos los días hábiles. En promedio hay unos 5 o 6 ganadores diarios, y cada día que
+	pasa es un cliente esperando su premio. El reporte diario de la ruleta que llega por
+	correo avisa en rojo cuántos hay pendientes, así que también sirve de recordatorio.
+</p>
+
+<div class="pie">
+	Pizza Americana &middot; Dispersión de Premios de la Ruleta &middot; Documento
+	generado desde la ayuda de la pantalla, para que el manual y la ayuda en línea
+	nunca digan cosas distintas.
+</div>
+
+</body>
+</html>
