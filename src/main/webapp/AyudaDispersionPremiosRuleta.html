@@ -66,6 +66,12 @@
 		font-family: 'Courier New', Courier, monospace; font-size: 13px;
 	}
 	.pie { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; color: #999; font-size: 12px; }
+	/* Las imagenes son una maqueta con datos inventados, no capturas de la pantalla
+	   real: asi el manual puede circular sin llevar nombres, correos ni telefonos
+	   de clientes de verdad. */
+	.figura { margin: 16px 0 20px 0; }
+	.figura img { width: 100%; max-width: 860px; border: 1px solid #ccc; }
+	.figura .pie-figura { color: #888; font-size: 12px; margin-top: 5px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -103,6 +109,13 @@
 	Al abrir, la pantalla trae por defecto <strong>ayer y hoy</strong>, que es lo que
 	normalmente se revisa: la ruleta se juega poco después del pedido.
 </p>
+<div class="figura">
+	<img src="images/ayuda/01-filtros.png" alt="Encabezado y filtros de la pantalla">
+	<div class="pie-figura">
+		Figura 1. Encabezado, filtros y los tres botones. El botón <strong>? Ayuda</strong>,
+		arriba a la derecha del título, abre este mismo manual.
+	</div>
+</div>
 <div class="nota">
 	<strong>El rango no puede pasar de 92 días.</strong> No es un capricho: un rango
 	abierto sobre una tabla que crece a diario traería miles de filas al navegador sin
@@ -111,6 +124,13 @@
 
 <h2>3. Los seis contadores</h2>
 <p>Después de consultar aparecen seis cifras. Son el resumen de lo que hay en ese rango.</p>
+<div class="figura">
+	<img src="images/ayuda/02-contadores.png" alt="Los seis contadores">
+	<div class="pie-figura">
+		Figura 2. Los seis contadores. <strong>Por dispersar</strong> y
+		<strong>Falta avisar</strong> salen en rojo porque son los dos que piden acción.
+	</div>
+</div>
 <table>
 	<tr><th style="width:22%">Contador</th><th>Qué significa</th></tr>
 	<tr><td><strong>Premios</strong></td>
@@ -128,6 +148,13 @@
 </table>
 
 <h2>4. La tabla y sus columnas</h2>
+<div class="figura">
+	<img src="images/ayuda/03-tabla.png" alt="La tabla de premios con los distintos estados">
+	<div class="pie-figura">
+		Figura 3. La tabla, con varios estados a la vez. Los datos son de ejemplo: las
+		imágenes de este manual son una maqueta, no capturas de clientes reales.
+	</div>
+</div>
 <table>
 	<tr><th style="width:18%">Columna</th><th>Qué muestra</th></tr>
 	<tr><td>Fecha</td><td>Cuándo jugó el cliente en la ruleta.</td></tr>
