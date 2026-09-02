@@ -80,8 +80,16 @@ public class DispersarPremiosRuleta extends HttpServlet {
 				return;
 			}
 
+			// REENVIAR solo reintenta el correo de los que quedaron sin avisar; no
+			// asigna ofertas. Van en el mismo servicio porque comparten la validacion
+			// de sesion y de fechas, y porque son la misma decision de negocio vista
+			// desde dos momentos.
 			final RuletaCtrl ruletaCtrl = new RuletaCtrl();
-			out.write(ruletaCtrl.dispersarPremios(fechaDesde, fechaHasta, usuario));
+			if ("REENVIAR".equalsIgnoreCase(texto(request.getParameter("accion")))) {
+				out.write(ruletaCtrl.reenviarCorreos(fechaDesde, fechaHasta, usuario));
+			} else {
+				out.write(ruletaCtrl.dispersarPremios(fechaDesde, fechaHasta, usuario));
+			}
 
 		} catch (final Exception e) {
 			System.out.println("DispersarPremiosRuleta: " + e.toString());

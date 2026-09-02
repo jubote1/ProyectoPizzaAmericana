@@ -58,6 +58,10 @@ public class PlantillaCorreoPremio {
 	 *
 	 * @param nombreCliente    nombre del cliente. Si viene vacio se saluda sin nombre
 	 * @param premio           premio como lo vio el cliente en la ruleta
+	 * @param mensajePremio    explicacion de en que consiste el premio, para los que
+	 *                         por su nombre no lo dicen. Viene de
+	 *                         ruleta_oferta.observacion y solo se llena para esos;
+	 *                         si viene vacio no se muestra nada
 	 * @param codigo           codigo promocional generado
 	 * @param fechaVencimiento fecha de vencimiento en formato aaaa-mm-dd
 	 * @param urlLogo          URL publica del logo. Si viene vacia se usa el
@@ -66,7 +70,8 @@ public class PlantillaCorreoPremio {
 	 * @return el HTML del correo
 	 */
 	public static String cuerpo(final String nombreCliente, final String premio,
-			final String codigo, final String fechaVencimiento, final String urlLogo) {
+			final String mensajePremio, final String codigo, final String fechaVencimiento,
+			final String urlLogo) {
 
 		final String saludo = (nombreCliente == null || nombreCliente.trim().length() == 0)
 				? "&iexcl;Hola!"
@@ -125,9 +130,18 @@ public class PlantillaCorreoPremio {
 		h.append(";text-transform:uppercase;letter-spacing:1px;\">Tu premio</div>");
 		h.append("<div style=\"font-size:22px;font-weight:bold;color:").append(ROJO);
 		h.append(";margin-top:6px;\">").append(escapar(premio)).append("</div>");
-		// No se muestra con que oferta interna se entrega el premio: al cliente no
-		// le dice nada un nombre como "Encueta Deditos Masa Queso - Madurito", y
-		// ver dos nombres distintos solo genera dudas sobre que fue lo que gano.
+		// Hay premios cuyo nombre no dice que se gano: "Premio Sorpresa" deja al
+		// cliente sin saber en que consiste. Para esos se configura el texto en
+		// ruleta_oferta.observacion y se muestra aqui. En los demas queda vacio,
+		// porque repetir "Pizzeta Gratis" debajo de "Pizzeta Gratis" no aporta.
+		//
+		// Nunca se muestra el nombre de la oferta interna: al cliente no le dice
+		// nada algo como "Encueta Deditos Masa Queso - Madurito".
+		if (mensajePremio != null && mensajePremio.trim().length() > 0) {
+			h.append("<div style=\"font-size:15px;color:").append(GRIS);
+			h.append(";margin-top:8px;line-height:1.5;\">");
+			h.append(escapar(mensajePremio.trim())).append("</div>");
+		}
 		h.append("</td></tr></table></td></tr>");
 
 		// El codigo

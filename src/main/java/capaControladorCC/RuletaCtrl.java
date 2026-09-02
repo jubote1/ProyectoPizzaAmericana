@@ -34,23 +34,29 @@ public class RuletaCtrl {
 	private static final String PENDIENTE = "PENDIENTE";
 	private static final String DISPERSADO = "DISPERSADO";
 	private static final String ENTREGADO_A_MANO = "ENTREGADO A MANO";
+	private static final String FALTA_AVISO = "FALTA AVISO";
 	private static final String SIN_CORREO = "SIN CORREO";
 	private static final String SIN_OFERTA = "SIN OFERTA";
 
 	/**
-	 * Tope de premios por tanda. La dispersion corre dentro de la peticion HTTP y
-	 * cada correo lleva una pausa, asi que un represado de cientos dejaria al
-	 * navegador esperando hasta que se corte la conexion. Con el tope se dispersa
-	 * por tandas y la pantalla dice cuantos quedan.
+	 * Tope de premios por tanda.
+	 *
+	 * Bajado de 60 a 30 el 2026-09-02: una tanda de 54 correos con pausa de 800 ms
+	 * hizo que Gmail rechazara los ultimos 4. Con 30 correos cada 2 segundos la
+	 * tanda tarda un minuto y se mantiene lejos del limite de ritmo.
+	 *
+	 * Tambien acota el tiempo de la peticion HTTP: la dispersion corre dentro de
+	 * ella, asi que una tanda muy grande dejaria al navegador esperando hasta que
+	 * se corte la conexion.
 	 */
-	private static final int MAXIMO_POR_TANDA = 60;
+	private static final int MAXIMO_POR_TANDA = 30;
 
 	/**
-	 * Pausa entre correos. No es lo que evita que los tomen por envio masivo -a
-	 * seis ganadores diarios eso no es un riesgo-, sino que evita pegarle seguido
-	 * al servidor de correo cuando se despacha un represado.
+	 * Pausa entre correos. Subida de 800 a 2000 ms por el rechazo de Gmail del
+	 * 2026-09-02. El limite que se toca no es el de correos por dia sino el de
+	 * ritmo, asi que espaciarlos importa mas que reducir la cantidad.
 	 */
-	private static final long PAUSA_ENVIO_MS = 800;
+	private static final long PAUSA_ENVIO_MS = 2000;
 
 	/** Marca en usuario_ingreso de la oferta, para distinguirla de las manuales. */
 	private static final String ORIGEN_RULETA = "RULETA";
@@ -75,6 +81,7 @@ public class RuletaCtrl {
 
 		int pendientes = 0;
 		int dispersados = 0;
+		int faltaAviso = 0;
 		int sinCorreo = 0;
 		int sinOferta = 0;
 
@@ -83,6 +90,8 @@ public class RuletaCtrl {
 			final String estado = texto(premio.get("estado"));
 			if (PENDIENTE.equals(estado)) {
 				pendientes++;
+			} else if (FALTA_AVISO.equals(estado)) {
+				faltaAviso++;
 			} else if (DISPERSADO.equals(estado) || ENTREGADO_A_MANO.equals(estado)) {
 				// Los entregados a mano se cuentan como dispersados: para el contador
 				// lo que importa es que no estan pendientes. En la tabla si se
@@ -100,6 +109,7 @@ public class RuletaCtrl {
 		resumen.put("total", premios.size());
 		resumen.put("pendientes", pendientes);
 		resumen.put("dispersados", dispersados);
+		resumen.put("falta_aviso", faltaAviso);
 		resumen.put("sin_correo", sinCorreo);
 		resumen.put("sin_oferta", sinOferta);
 
@@ -217,7 +227,7 @@ public class RuletaCtrl {
 				}
 
 				if (enviarCorreo(texto(premio.get("correo")), texto(premio.get("nombre_cliente")),
-						premioTitulo, codigo, vence)) {
+						premioTitulo, texto(premio.get("mensaje_premio")), codigo, vence)) {
 					OfertaClienteDAO.actualizarMensajeOferta(idOfertaCliente);
 					correosEnviados++;
 				} else {
@@ -241,6 +251,91 @@ public class RuletaCtrl {
 		respuesta.put("clientes_creados", clientesCreados);
 		respuesta.put("con_error", conError);
 		respuesta.put("pendientes_sin_procesar", pendientesSinProcesar);
+		respuesta.put("detalle_errores", novedades);
+
+		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * Reintenta el correo de los premios que quedaron dispersados pero sin avisar
+	 * al cliente: la oferta y el codigo existen, el correo no salio.
+	 *
+	 * Pasa cuando el servidor de correo rechaza el envio. El 2026-09-02 una tanda
+	 * de 54 dejo 4 asi, porque Gmail freno el ritmo.
+	 *
+	 * Esta operacion NO asigna ofertas ni toca resultado_ruleta: solo manda correo y
+	 * marca la fecha de aviso. Por eso reintentar es seguro cuantas veces sea: no
+	 * hay forma de que genere un segundo codigo para el mismo cliente. Y como solo
+	 * mira los que tienen fecha_mensaje vacia, tampoco reenvia a quien ya recibio.
+	 *
+	 * @param fechaDesde fecha inicial inclusive, formato aaaa-mm-dd
+	 * @param fechaHasta fecha final inclusive, formato aaaa-mm-dd
+	 * @param usuario    quien ejecuta el reintento
+	 * @return JSON con los conteos y las novedades
+	 */
+	@SuppressWarnings("unchecked")
+	public String reenviarCorreos(final String fechaDesde, final String fechaHasta,
+			final String usuario) {
+
+		final JSONObject respuesta = new JSONObject();
+		final JSONArray novedades = new JSONArray();
+
+		int correosEnviados = 0;
+		int conError = 0;
+		int sinProcesar = 0;
+
+		final List<JSONObject> premios = RuletaDAO.obtenerPremiosParaDispersion(fechaDesde, fechaHasta);
+
+		for (final JSONObject premio : premios) {
+
+			if (!FALTA_AVISO.equals(texto(premio.get("estado")))) {
+				continue;
+			}
+			if (correosEnviados + conError >= MAXIMO_POR_TANDA) {
+				sinProcesar++;
+				continue;
+			}
+
+			final int idOfertaCliente = numero(premio.get("idofertacliente"));
+			try {
+				final OfertaCliente asignada = OfertaClienteDAO.retornarOfertaCliente(idOfertaCliente);
+				final String codigo = (asignada == null) ? "" : texto(asignada.getCodigoPromocion());
+				final String vence = (asignada == null) ? "" : texto(asignada.getFechaCaducidad());
+
+				if (codigo.length() == 0) {
+					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": la oferta no tiene "
+							+ "codigo promocional, no hay que enviar.");
+					conError++;
+					continue;
+				}
+
+				if (enviarCorreo(texto(premio.get("correo")), texto(premio.get("nombre_cliente")),
+						texto(premio.get("premio")), texto(premio.get("mensaje_premio")),
+						codigo, vence)) {
+					OfertaClienteDAO.actualizarMensajeOferta(idOfertaCliente);
+					correosEnviados++;
+				} else {
+					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": el correo "
+							+ "tampoco salio esta vez.");
+					conError++;
+				}
+
+				pausar();
+
+			} catch (final Exception e) {
+				System.out.println("Error reenviando el correo de la oferta " + idOfertaCliente
+						+ ": " + e.toString());
+				novedades.add("Pedido " + texto(premio.get("idpedido")) + ": " + e.getMessage());
+				conError++;
+			}
+		}
+
+		respuesta.put("resultado", "OK");
+		respuesta.put("dispersados", 0);
+		respuesta.put("correos_enviados", correosEnviados);
+		respuesta.put("clientes_creados", 0);
+		respuesta.put("con_error", conError);
+		respuesta.put("pendientes_sin_procesar", sinProcesar);
 		respuesta.put("detalle_errores", novedades);
 
 		return (respuesta.toJSONString());
@@ -323,13 +418,15 @@ public class RuletaCtrl {
 	 * @param correo        destinatario
 	 * @param nombreCliente nombre para el saludo
 	 * @param premio        premio como lo vio en la ruleta
+	 * @param mensajePremio explicacion del premio, solo para los que la necesitan
 	 * @param codigo        codigo promocional
 	 * @param vence         fecha de vencimiento aaaa-mm-dd
 	 * @return true si el envio no reporto error
 	 */
 	@SuppressWarnings("unchecked")
 	private boolean enviarCorreo(final String correo, final String nombreCliente,
-			final String premio, final String codigo, final String vence) {
+			final String premio, final String mensajePremio, final String codigo,
+			final String vence) {
 
 		if (!RuletaDAO.correoValido(correo)) {
 			return (false);
@@ -357,8 +454,8 @@ public class RuletaCtrl {
 			mensaje.setUsuarioCorreo(cuenta);
 			mensaje.setContrasena(clave);
 			mensaje.setAsunto(PlantillaCorreoPremio.asunto());
-			mensaje.setMensaje(PlantillaCorreoPremio.cuerpo(nombreCliente, premio, codigo,
-					vence, urlLogo));
+			mensaje.setMensaje(PlantillaCorreoPremio.cuerpo(nombreCliente, premio, mensajePremio,
+					codigo, vence, urlLogo));
 
 			final ArrayList<String> destinatarios = new ArrayList<String>();
 			destinatarios.add(correo);

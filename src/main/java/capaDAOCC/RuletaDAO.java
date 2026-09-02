@@ -176,6 +176,10 @@ public class RuletaDAO {
                 + " IFNULL(p.idcliente,0) AS idcliente, IFNULL(p.idpedido,0) AS idpedido_central,"
                 + " IFNULL(p.origen,'') AS origen,"
                 + " IFNULL(ro.idoferta,0) AS idoferta, IFNULL(f.nombre_oferta,'') AS nombre_oferta,"
+                // Texto que se le muestra al cliente en el correo. Solo se llena para
+                // los premios que por si solos no dicen que gano -el caso de Premio
+                // Sorpresa-; en los demas seria repetir el nombre del premio.
+                + " IFNULL(ro.observacion,'') AS mensaje_premio,"
                 + " IFNULL(f.dias_caducidad,0) AS dias_caducidad,"
                 + " r.idofertacliente,"
                 + " IFNULL(DATE_FORMAT(r.fecha_dispersion,'%Y-%m-%d %H:%i'),'') AS fecha_dispersion,"
@@ -228,6 +232,7 @@ public class RuletaDAO {
                         obj.put("idcliente", rs.getInt("idcliente"));
                         obj.put("idoferta", rs.getInt("idoferta"));
                         obj.put("nombre_oferta", rs.getString("nombre_oferta"));
+                        obj.put("mensaje_premio", rs.getString("mensaje_premio"));
                         obj.put("dias_caducidad", rs.getInt("dias_caducidad"));
                         obj.put("idofertacliente", rs.getInt("idofertacliente"));
                         obj.put("fecha_dispersion", rs.getString("fecha_dispersion"));
@@ -239,7 +244,8 @@ public class RuletaDAO {
                         obj.put("uso_oferta", rs.getString("uso_oferta"));
                         obj.put("usuario_uso", rs.getString("usuario_uso"));
                         obj.put("estado", calcularEstado(rs.getInt("idofertacliente"),
-                                rs.getInt("idoferta"), rs.getString("correo")));
+                                rs.getInt("idoferta"), rs.getString("correo"),
+                                rs.getString("fecha_aviso")));
                         premios.add(obj);
                     }
                 }
@@ -258,7 +264,8 @@ public class RuletaDAO {
      * Se calcula aqui y no en la pantalla para que la lista y el boton de
      * dispersar nunca discrepen sobre que es dispersable.
      */
-    private static String calcularEstado(int idOfertaCliente, int idOferta, String correo) {
+    private static String calcularEstado(int idOfertaCliente, int idOferta, String correo,
+            String fechaAviso) {
         // Negativo es la marca de los premios entregados a mano antes de que
         // existiera esta pantalla. Se distinguen de los que disperso el sistema
         // porque de esos no tenemos codigo ni fecha de aviso: mostrarlos como
@@ -268,6 +275,13 @@ public class RuletaDAO {
             return "ENTREGADO A MANO";
         }
         if (idOfertaCliente > 0) {
+            // Oferta asignada pero sin fecha de aviso: el codigo existe y el cliente
+            // no se entero. Pasa cuando el servidor de correo rechaza el envio, por
+            // ejemplo si Gmail frena una tanda por ritmo. Se distingue para poder
+            // reintentar solo esos, sin volver a asignar ofertas.
+            if (fechaAviso == null || fechaAviso.trim().length() == 0) {
+                return "FALTA AVISO";
+            }
             return "DISPERSADO";
         }
         if (idOferta == 0) {

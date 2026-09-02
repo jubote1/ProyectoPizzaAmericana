@@ -81,6 +81,7 @@ function pintarEstado(dato, tipo, fila) {
 	var clases = {
 		'PENDIENTE': 'est-pendiente',
 		'DISPERSADO': 'est-dispersado',
+		'FALTA AVISO': 'est-faltaaviso',
 		'ENTREGADO A MANO': 'est-amano',
 		'SIN CORREO': 'est-sincorreo',
 		'SIN OFERTA': 'est-sinoferta'
@@ -103,6 +104,7 @@ function consultarPremios() {
 
 	$('#btnconsultar').val('...').prop('disabled', true);
 	$('#btndispersar').prop('disabled', true);
+	$('#btnreenviar').prop('disabled', true);
 
 	$.ajax({
 		url: server + 'ConsultarPremiosRuleta',
@@ -135,6 +137,7 @@ function pintarTotales(resumen) {
 	if (!resumen) { return; }
 	$('#totPremios').text(resumen.total);
 	$('#totPendientes').text(resumen.pendientes);
+	$('#totFaltaAviso').text(resumen.falta_aviso);
 	$('#totDispersados').text(resumen.dispersados);
 	$('#totSinCorreo').text(resumen.sin_correo);
 	$('#totSinOferta').text(resumen.sin_oferta);
@@ -144,6 +147,14 @@ function pintarTotales(resumen) {
 	$('#btndispersar').val(resumen.pendientes > 0
 		? 'Dispersar ' + resumen.pendientes + ' premios'
 		: 'Dispersar premios');
+
+	// El boton de reenviar se habilita solo si hay premios con codigo y sin aviso.
+	// Reintentar es seguro cuantas veces sea -no vuelve a asignar ofertas- pero si
+	// no hay nada que reenviar, el boton apagado evita el clic que no hace nada.
+	$('#btnreenviar').prop('disabled', resumen.falta_aviso === 0);
+	$('#btnreenviar').val(resumen.falta_aviso > 0
+		? 'Reenviar ' + resumen.falta_aviso + ' correos'
+		: 'Reenviar correos');
 }
 
 /**
@@ -181,8 +192,12 @@ function dispersarPremios() {
 		return;
 	}
 
-	var mensaje = 'Se van a dispersar ' + pendientes + ' premios del ' + fechadesde
+	var porTanda = Math.min(pendientes, 30);
+	var mensaje = 'Hay ' + pendientes + ' premios pendientes del ' + fechadesde
 		+ ' al ' + fechahasta + '.\n\n'
+		+ 'Se van a dispersar ' + porTanda + ' en esta tanda'
+		+ (pendientes > 30 ? ' (el maximo son 30; los demas quedan para la siguiente)' : '')
+		+ ', lo que toma unos ' + Math.ceil(porTanda * 2 / 60) + ' minuto(s).\n\n'
 		+ 'A cada ganador se le asigna la oferta, se le genera el codigo y se le '
 		+ 'envia el correo. Esta accion no se puede deshacer.\n\n¿Continuar?';
 
@@ -223,6 +238,66 @@ function dispersarPremios() {
 			$('#btnconsultar').prop('disabled', false);
 			// Se vuelve a consultar siempre, incluso si hubo error: es la unica
 			// forma de saber con certeza que quedo dispersado y que no.
+			consultarPremios();
+		}
+	});
+}
+
+/**
+ * Reintenta el correo de los premios que quedaron con codigo pero sin avisar al
+ * cliente, es decir los que salen como FALTA AVISO.
+ *
+ * No pide confirmacion, a diferencia de dispersar. Dispersar asigna ofertas y no
+ * se puede deshacer; esto solo reenvia un correo que ya debia haber salido, y
+ * ademas nunca reenvia a quien si lo recibio, porque el servidor solo mira los
+ * que tienen la fecha de aviso vacia.
+ */
+function reenviarCorreos() {
+	var fechadesde = $('#fechadesde').val();
+	var fechahasta = $('#fechahasta').val();
+	var faltantes = parseInt($('#totFaltaAviso').text(), 10) || 0;
+
+	if (faltantes === 0) {
+		alert('No hay correos pendientes por reenviar en el rango consultado.');
+		return;
+	}
+
+	$('#btnreenviar').prop('disabled', true);
+	$('#btndispersar').prop('disabled', true);
+	$('#btnconsultar').prop('disabled', true);
+	$('#barraAvanceValor').text('Reenviando correos, no cierre esta pagina...');
+	$('#barraAvance').show();
+
+	$.ajax({
+		url: server + 'DispersarPremiosRuleta',
+		dataType: 'json',
+		type: 'post',
+		data: { 'fechadesde': fechadesde, 'fechahasta': fechahasta, 'accion': 'REENVIAR' },
+		success: function (data) {
+			if (data.resultado !== 'OK') {
+				alert(data.mensaje || 'No se pudo reenviar los correos.');
+				return;
+			}
+			var txt = 'Reenvio terminado.\n\n'
+				+ 'Correos enviados: ' + data.correos_enviados + '\n'
+				+ 'Con novedad: ' + data.con_error;
+			if (data.pendientes_sin_procesar > 0) {
+				txt += '\nQuedaron sin procesar: ' + data.pendientes_sin_procesar
+					+ ' (vuelva a reenviar para despacharlos)';
+			}
+			if (data.detalle_errores && data.detalle_errores.length > 0) {
+				txt += '\n\nNovedades:\n' + data.detalle_errores.join('\n');
+			}
+			alert(txt);
+		},
+		error: function () {
+			alert('No hubo respuesta del servidor al reenviar. Vuelva a consultar para '
+				+ 'ver cuales alcanzaron a salir.');
+		},
+		complete: function () {
+			$('#barraAvance').hide();
+			$('#barraAvanceValor').text('Dispersando premios, no cierre esta pagina...');
+			$('#btnconsultar').prop('disabled', false);
 			consultarPremios();
 		}
 	});
