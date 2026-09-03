@@ -92,9 +92,19 @@ public class RealizarRedencionPuntos extends HttpServlet {
 
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
+			/*
+			 * reservar es opcional a proposito. El POS que esta hoy en produccion
+			 * no lo envia, y sin el la redencion queda CONFIRMADA de inmediato,
+			 * exactamente como se comportaba antes. Cuando se actualice el POS
+			 * empezara a enviar reservar=S para que los puntos queden RESERVADA y
+			 * solo se confirmen si el pedido llega a finalizarse. Asi el central
+			 * puede salir hoy sin tener que esperar a las tiendas.
+			 */
+			boolean reservar = "S".equalsIgnoreCase(request.getParameter("reservar"));
+
 			FidelizacionCtrl fidCtrl = new FidelizacionCtrl();
 			String respuesta = fidCtrl.realizarRedencionPuntos(codigo, correo, puntosRedimir, idTienda, idPedido,
-					usuario, origen);
+					usuario, origen, reservar);
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
 			

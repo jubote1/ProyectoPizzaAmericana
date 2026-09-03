@@ -41,6 +41,9 @@ var totalpedido = 0;
 var totalpuntospedido = 0;
 var puntosredimidos = 0;
 var puntosProcesoRedencion = 0;
+//idredencion que devolvio el central al redimir. Lo necesita la reversa: sin el
+//hay que buscar la redencion por tienda y pedido.
+var idRedencionPedido = 0;
 //Tendremos una variable total general 
 var totalpedidogeneral = 0;
 var radioEsp1Ant= 0;
@@ -3230,6 +3233,7 @@ function ReiniciarPedido()
 															    	totalpedido = 0;
                                                                     totalpuntospedido = 0;
                                                                     puntosredimidos = 0;
+                                                                    idRedencionPedido = 0;
                                                                     totalpedidogeneral = 0;
                                                                     descuentoPedido = 0;
                                                                     motivoDescuento = "";
@@ -3791,6 +3795,7 @@ function ConfirmarPedido()
 							    	totalpedido = 0;
                                     totalpuntospedido = 0;
                                     puntosredimidos = 0;
+                                    idRedencionPedido = 0;
                                     totalpedidogeneral = 0;
                                     descuentoPedido = 0;
                                     motivoDescuento = "";
@@ -6764,22 +6769,29 @@ function continuarRedencion()
     var fechaSistema = obtenerFechaFormatoBD();
     var codigoValidar = $('#codigoverificacion').val();
     var idtienReden = $("#selectTiendas option:selected").attr('id');
+    //El cierre del modal y la suma de los puntos redimidos van DENTRO del
+    //callback. Estaban afuera, y como el return de la rama de error solo sale
+    //de la funcion del callback y no de continuarRedencion, se sumaban los
+    //puntos y se cerraba el modal incluso cuando la redencion habia fallado:
+    //el asesor veia la alerta de error pero el pedido seguia como si el
+    //cliente hubiera pagado con puntos.
     $.getJSON(server + "RealizarRedencionPuntos?correo=" + $('#correoclienteprograma').val() + "&codigo=" + codigoValidar + "&puntosredimir=" + puntosProcesoRedencion + "&idtienda=" + idtienReden + "&idpedido=" + idPedido, function(data1){
             var respuesta1 = data1;
             if(respuesta1.respuesta == 'OK')
             {
+                 idRedencionPedido = respuesta1.idredencion;
+                 puntosredimidos = puntosredimidos + puntosProcesoRedencion;
+                 $('#continuarredencion').attr('disabled', true);
+                 $('#codigoverificacion').val('');
+                 $('#modalRedimirPuntosPrograma').modal('hide');
                  $.alert('Finalizó correctamente el proceso de REDENCIÓN!');
-            }else 
+            }else
             {
-                $.alert('No se pudo finalizar la redención, comunicar al área de tecnologia!');
-                return;
+                var detalleError = respuesta1.detalle ? '<br><br>' + respuesta1.detalle : '';
+                $.alert('No se pudo finalizar la redención, comunicar al área de tecnologia!' + detalleError);
             }
 
     });
-    puntosredimidos = puntosredimidos + puntosProcesoRedencion;
-    $('#continuarredencion').attr('disabled', true);
-    $('#codigoverificacion').val('');
-    $('#modalRedimirPuntosPrograma').modal('hide');
 }
 
 function obtenerFechaFormatoBD()

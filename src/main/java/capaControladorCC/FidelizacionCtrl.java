@@ -12,6 +12,8 @@ import capaDAOCC.ClienteDAO;
 import capaDAOCC.ClienteFidelizacionDAO;
 import capaDAOCC.ClienteNoFidelizacionDAO;
 import capaDAOCC.CodigoRedencionPuntosDAO;
+import capaDAOCC.FidelizacionRedencionDAO;
+import capaDAOCC.FidelizacionReversaSolicitudDAO;
 import capaDAOCC.FidelizacionTransaccionDAO;
 import capaDAOCC.GeneralDAO;
 import capaDAOCC.IntegracionCRMDAO;
@@ -489,66 +491,184 @@ public class FidelizacionCtrl {
 	public String realizarRedencionPuntos(String codigo, String  correo, double puntosRedimir, int idTienda,
 			int idPedido, String usuario, String origen)
 	{
-		JSONObject respuesta = new JSONObject();
-
-		boolean creaTransaccion = false;
-		ClienteFidelizacion cliente = ConsultarClienteFidelizacionOBJ(correo);
-		if(cliente == null)
-		{
-			//Cliente no existe en plan de fidelizacion
-			respuesta.put("respuesta", "NOK2");
-			respuesta.put("puntosrestantes", 0);
-			return(respuesta.toJSONString());
-		}
-		if(cliente.getPuntosVigentes() < puntosRedimir)
-		{
-			//No hay puntos suficientes
-			respuesta.put("respuesta", "NOK1");
-			respuesta.put("puntosrestantes", 0);
-			return(respuesta.toJSONString());
-		}
-		//Marcamos como validado el código
-		CodigoRedencionPuntosDAO.marcarValidadoRedencionPuntos(codigo);
-		//Crearemos transacción para que quede la información - ANALIZAR MEJOR ESTA PARTE
-		//FidelizacionTransaccion transaccion = new FidelizacionTransaccion(correo, idTienda, idPedido, 0, puntosRedimir);
-		//creaTransaccion = FidelizacionTransaccionDAO.insertarFidelizacionTransaccion(transaccion);
-		//Hacemos el gasto de los puntos en la tabla de fidelizacion transaccion
-		realizarRedencionFidelizacionTransaccion(correo, puntosRedimir);
-		//Posteriormente hacemos la resta de los puntos, dejando la trazabilidad de
-		//tienda, pedido, usuario y canal en fidelizacion_redencion
-		double puntosRestantes = redimirPuntosClienteFidelizacion(correo, puntosRedimir, idTienda, idPedido,
-				usuario, origen);
-		respuesta.put("respuesta", "OK");
-		respuesta.put("puntosrestantes", puntosRestantes);
-		return(respuesta.toJSONString());
-		
+		return(realizarRedencionPuntos(codigo, correo, puntosRedimir, idTienda, idPedido, usuario, origen, false));
 	}
-	
-	public void realizarRedencionFidelizacionTransaccion(String correo, double puntosRedimir)
+
+	/**
+	 * Realiza la redencion de puntos de forma atomica y deja registrado de
+	 * cuales acumulaciones salio cada punto, que es lo que permite reversarla
+	 * despues con exactitud.
+	 *
+	 * Antes esto eran cuatro operaciones en cuatro conexiones distintas, en
+	 * autocommit: marcar el codigo, repartir el debito entre las acumulaciones,
+	 * restar el saldo del cliente y dejar el log. Un fallo a mitad de camino
+	 * dejaba las acumulaciones y el saldo descuadrados, en silencio. Ahora todo
+	 * va en una transaccion dentro de FidelizacionRedencionDAO.
+	 *
+	 * @param reservar true deja la redencion en RESERVADA: los puntos ya estan
+	 *                 descontados, pero la redencion es provisional hasta que
+	 *                 el POS confirme que el pedido si quedo finalizado. false
+	 *                 la deja CONFIRMADA de una vez, que es el comportamiento
+	 *                 historico y el que sigue usando el POS que aun no se ha
+	 *                 actualizado.
+	 * @return JSON con respuesta OK, los puntos restantes y el idredencion; o
+	 *         NOK1 sin puntos suficientes, NOK2 cliente fuera del plan, NOK3
+	 *         error tecnico, NOK4 codigo inexistente o ya usado, NOK5 las
+	 *         acumulaciones no cubren la redencion
+	 */
+	public String realizarRedencionPuntos(String codigo, String correo, double puntosRedimir, int idTienda,
+			int idPedido, String usuario, String origen, boolean reservar)
 	{
-		//Se obtienen las transacciones de las cuales se harán la redencion
-		ArrayList<FidelizacionTransaccion> transRedencion = FidelizacionTransaccionDAO.obtenerFidelizacionTransaccionesRedencion(correo);
-		double puntosAcumRed = puntosRedimir;
-		double puntosDisponibles = 0;
-		double puntosRedimidosTemp = 0;
-		boolean terminaRedencion = false;
-		for(FidelizacionTransaccion tranTemp: transRedencion)
+		JSONObject respuesta = new JSONObject();
+		FidelizacionRedencionDAO.ResultadoRedencion resultado = FidelizacionRedencionDAO.ejecutarRedencion(codigo,
+				correo, puntosRedimir, idTienda, idPedido, usuario, origen, reservar);
+		if(!resultado.exitosa)
 		{
-			//
-			puntosRedimidosTemp = tranTemp.getPuntosRedimidos();
-			puntosDisponibles = tranTemp.getPuntos() - tranTemp.getPuntosRedimidos();
-			if(puntosDisponibles > puntosAcumRed)
-			{
-				puntosRedimidosTemp = puntosRedimidosTemp + puntosAcumRed;
-				FidelizacionTransaccionDAO.actualizarPuntosRedimidosFidelizacionTransaccion(correo, tranTemp.getIdTienda(),tranTemp.getIdPedidoTienda(), puntosRedimidosTemp);
-				terminaRedencion = true;
-				break;
-			}else
-			{
-				puntosAcumRed  = puntosAcumRed - puntosDisponibles;
-				FidelizacionTransaccionDAO.actualizarPuntosRedimidosFidelizacionTransaccion(correo, tranTemp.getIdTienda(),tranTemp.getIdPedidoTienda(), tranTemp.getPuntos());
-			}
+			respuesta.put("respuesta", resultado.codigoError);
+			respuesta.put("puntosrestantes", 0);
+			respuesta.put("idredencion", 0);
+			respuesta.put("detalle", resultado.detalleError);
+			return(respuesta.toJSONString());
 		}
+		respuesta.put("respuesta", "OK");
+		respuesta.put("puntosrestantes", resultado.puntosRestantes);
+		respuesta.put("idredencion", resultado.idRedencion);
+		respuesta.put("detalle", "");
+		return(respuesta.toJSONString());
+	}
+
+	/**
+	 * Confirma una redencion que quedo RESERVADA. La llama el POS cuando el
+	 * pedido quedo finalizado de verdad, no cuando se abre la pantalla de pago.
+	 */
+	public String confirmarRedencionPuntos(int idRedencion, String usuario)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean confirmada = FidelizacionRedencionDAO.confirmarRedencion(idRedencion, usuario);
+		respuesta.put("respuesta", confirmada ? "OK" : "NOK");
+		respuesta.put("detalle", confirmada ? ""
+				: "No se encontro la redencion en estado RESERVADA; puede que ya estuviera confirmada o reversada");
+		return(respuesta.toJSONString());
+	}
+
+	/**
+	 * Devuelve los puntos de un pedido sin pasar por revision. Es para el caso
+	 * en que el pedido NO se finalizo: no hubo entrega, asi que no hay nada que
+	 * revisar y devolver los puntos es lo unico correcto.
+	 *
+	 * El caso del pedido ya finalizado que se anula NO va por aqui, va por
+	 * solicitarReversaRedencion, porque ahi si hay riesgo de abuso.
+	 *
+	 * @param puntos puntos a devolver; 0 devuelve todo lo que quede pendiente
+	 */
+	public String reversarRedencionPedido(int idTienda, int idPedidoTienda, double puntos, String usuario,
+			String motivo)
+	{
+		JSONObject respuesta = new JSONObject();
+		FidelizacionRedencionDAO.RedencionPedido redencion = FidelizacionRedencionDAO
+				.obtenerRedencionPorPedido(idTienda, idPedidoTienda);
+		if(redencion == null)
+		{
+			// No es un error: la enorme mayoria de los pedidos no tienen redencion.
+			respuesta.put("respuesta", "OK");
+			respuesta.put("idredencion", 0);
+			respuesta.put("puntosdevueltos", 0);
+			respuesta.put("detalle", "El pedido no tiene una redencion pendiente por reversar");
+			return(respuesta.toJSONString());
+		}
+		boolean reversada = FidelizacionRedencionDAO.reversarRedencion(redencion.idRedencion, puntos, usuario,
+				motivo == null ? "" : motivo);
+		respuesta.put("respuesta", reversada ? "OK" : "NOK");
+		respuesta.put("idredencion", redencion.idRedencion);
+		respuesta.put("puntosdevueltos", reversada
+				? (puntos <= 0 ? redencion.puntosPendientesPorReversar() : puntos) : 0);
+		respuesta.put("detalle", reversada ? "" : "No se pudo devolver los puntos de la redencion "
+				+ redencion.idRedencion);
+		return(respuesta.toJSONString());
+	}
+
+	/**
+	 * Crea la solicitud de devolucion que pasa por aprobacion. Es el camino de
+	 * los pedidos que SI se finalizaron: se anularon, o se les quito el producto
+	 * de redencion. Los puntos no se mueven hasta que alguien apruebe.
+	 *
+	 * @param puntos puntos a devolver; si es una devolucion parcial, solo los
+	 *               del producto que se quito
+	 */
+	public String solicitarReversaRedencion(int idTienda, int idPedidoTienda, double puntos, String motivo,
+			String observacion, String usuario, String origen)
+	{
+		JSONObject respuesta = new JSONObject();
+		FidelizacionRedencionDAO.RedencionPedido redencion = FidelizacionRedencionDAO
+				.obtenerRedencionPorPedido(idTienda, idPedidoTienda);
+		if(redencion == null)
+		{
+			respuesta.put("respuesta", "OK");
+			respuesta.put("idsolicitud", 0);
+			respuesta.put("detalle", "El pedido no tiene una redencion pendiente por reversar");
+			return(respuesta.toJSONString());
+		}
+		double pendiente = redencion.puntosPendientesPorReversar();
+		double solicitados = (puntos <= 0 || puntos > pendiente) ? pendiente : puntos;
+		int idSolicitud = FidelizacionReversaSolicitudDAO.crearSolicitud(redencion.idRedencion, redencion.correo,
+				redencion.idTienda, redencion.idPedidoTienda, solicitados, motivo, observacion, usuario, origen);
+		respuesta.put("respuesta", idSolicitud > 0 ? "OK" : "NOK");
+		respuesta.put("idsolicitud", idSolicitud);
+		respuesta.put("puntossolicitados", solicitados);
+		respuesta.put("detalle", idSolicitud > 0 ? "" : "No se pudo crear la solicitud de devolucion de puntos");
+		return(respuesta.toJSONString());
+	}
+
+	/** Solicitudes de devolucion para la pantalla de revision. */
+	public String obtenerSolicitudesReversa(String estado, String fechaDesde, String fechaHasta)
+	{
+		JSONArray solicitudes = new JSONArray();
+		for(FidelizacionReversaSolicitudDAO.Solicitud s: FidelizacionReversaSolicitudDAO.obtenerSolicitudes(estado,
+				fechaDesde, fechaHasta))
+		{
+			JSONObject fila = new JSONObject();
+			fila.put("idsolicitud", s.idSolicitud);
+			fila.put("idredencion", s.idRedencion);
+			fila.put("correo", s.correo);
+			fila.put("idtienda", s.idTienda);
+			fila.put("tienda", s.nombreTienda);
+			fila.put("idpedidotienda", s.idPedidoTienda);
+			fila.put("puntossolicitados", s.puntosSolicitados);
+			fila.put("motivo", s.motivo);
+			fila.put("observacion", s.observacion);
+			fila.put("usuariosolicita", s.usuarioSolicita);
+			fila.put("origen", s.origen);
+			fila.put("fechasolicitud", s.fechaSolicitud);
+			fila.put("estado", s.estado);
+			fila.put("usuariorevisa", s.usuarioRevisa);
+			fila.put("fecharevision", s.fechaRevision);
+			fila.put("observacionrevision", s.observacionRevision);
+			fila.put("puntosredimidos", s.puntosRedimidos);
+			fila.put("puntosreversados", s.puntosReversados);
+			fila.put("estadoredencion", s.estadoRedencion);
+			solicitudes.add(fila);
+		}
+		return(solicitudes.toJSONString());
+	}
+
+	/** Aprueba o rechaza una solicitud de devolucion de puntos. */
+	public String resolverSolicitudReversa(int idSolicitud, boolean aprobar, String usuario, String observacion)
+	{
+		JSONObject respuesta = new JSONObject();
+		String resultado = FidelizacionReversaSolicitudDAO.resolverSolicitud(idSolicitud, aprobar, usuario,
+				observacion);
+		respuesta.put("respuesta", "OK".equals(resultado) ? "OK" : "NOK");
+		respuesta.put("detalle", "OK".equals(resultado) ? "" : resultado);
+		return(respuesta.toJSONString());
+	}
+
+	/** Cuantas solicitudes estan esperando revision. */
+	public String contarSolicitudesReversaPendientes()
+	{
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("respuesta", "OK");
+		respuesta.put("pendientes", FidelizacionReversaSolicitudDAO.contarPendientes());
+		return(respuesta.toJSONString());
 	}
 
 
