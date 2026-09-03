@@ -78,6 +78,24 @@ public class ReversarRedencionPedido extends HttpServlet {
 				}
 			}
 
+			/*
+			 * Se puede ubicar la redencion de dos formas. Por idredencion, que es
+			 * el que devolvio la propia llamada de redencion, o por tienda y
+			 * pedido. Se prefiere el idredencion: cuando se cancela un pedido, el
+			 * pedido se borra y despues ya no hay con que buscarla.
+			 */
+			int idRedencion = 0;
+			try {
+				idRedencion = Integer.parseInt(request.getParameter("idredencion"));
+			} catch (Exception e) {
+				idRedencion = 0;
+			}
+			if (idRedencion > 0) {
+				FidelizacionCtrl fidCtrlId = new FidelizacionCtrl();
+				out.write(fidCtrlId.reversarRedencionPorId(idRedencion, puntos, usuario, motivo));
+				return;
+			}
+
 			if (idTienda <= 0 || idPedidoTienda <= 0) {
 				out.write("{\"respuesta\":\"NOK\",\"detalle\":\"Falta la tienda o el pedido\"}");
 				return;

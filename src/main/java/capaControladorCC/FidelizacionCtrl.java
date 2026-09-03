@@ -662,6 +662,24 @@ public class FidelizacionCtrl {
 		return(respuesta.toJSONString());
 	}
 
+	/**
+	 * Reversa directa usando el idredencion, que es el que devolvio la propia
+	 * llamada de redencion. Es mas robusto que ubicarla por tienda y pedido:
+	 * cuando el asesor cancela el pedido, el selector de tienda ya pudo haber
+	 * cambiado, y despues de borrar el pedido no queda con que buscarla.
+	 */
+	public String reversarRedencionPorId(int idRedencion, double puntos, String usuario, String motivo)
+	{
+		JSONObject respuesta = new JSONObject();
+		boolean reversada = FidelizacionRedencionDAO.reversarRedencion(idRedencion, puntos, usuario,
+				motivo == null ? "" : motivo);
+		respuesta.put("respuesta", reversada ? "OK" : "NOK");
+		respuesta.put("idredencion", idRedencion);
+		respuesta.put("detalle", reversada ? ""
+				: "No se pudo devolver los puntos; puede que la redencion ya estuviera reversada");
+		return(respuesta.toJSONString());
+	}
+
 	/** Cuantas solicitudes estan esperando revision. */
 	public String contarSolicitudesReversaPendientes()
 	{
