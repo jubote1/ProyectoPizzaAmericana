@@ -16,26 +16,36 @@ public class GeocodificarDireccion extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String direccion = request.getParameter("direccion");
-        String municipio = request.getParameter("municipio");
-        String barrio = request.getParameter("barrio");
+    	String direccion = request.getParameter("direccion");
+    	String municipio = request.getParameter("municipio");
+    	String barrio = request.getParameter("barrio");
 
-        response.setContentType("application/json; charset=UTF-8");
-        PrintWriter out = response.getWriter();
+    	response.setContentType("application/json; charset=UTF-8");
+    	PrintWriter out = response.getWriter();
 
-        try {
-            Ubicacion ubicacion = new UbicacionCtrl().ubicarDireccionEnTiendaBatch(
-                    direccion == null ? "" : direccion,
-                    municipio == null ? "" : municipio,
-                    barrio == null ? "" : barrio
-            );
-            out.print(String.format(
-                    "{\"latitud\":%s,\"longitud\":%s}",
-                    ubicacion.getLatitud(), ubicacion.getLongitud()
-            ));
-        } catch (Exception e) {
-            out.print("{\"error\":\"" + String.valueOf(e.getMessage()).replace("\"", "'") + "\"}");
-        }
-        out.flush();
+    	if (direccion == null || direccion.trim().isEmpty()) {
+    	    out.print("{\"error\":\"La dirección es obligatoria\"}");
+    	    out.flush();
+    	    return;
+    	}
+
+    	try {
+    	    Ubicacion ubicacion = new UbicacionCtrl().ubicarDireccionEnTiendaBatch(
+    	            direccion,
+    	            municipio == null ? "" : municipio,
+    	            barrio == null ? "" : barrio
+    	    );
+
+    	    out.print(String.format(
+    	            "{\"latitud\":%s,\"longitud\":%s}",
+    	            ubicacion.getLatitud(),
+    	            ubicacion.getLongitud()
+    	    ));
+
+    	} catch (Exception e) {
+    	    out.print("{\"error\":\"" + String.valueOf(e.getMessage()).replace("\"", "'") + "\"}");
+    	}
+
+    	out.flush();
     }
 }
