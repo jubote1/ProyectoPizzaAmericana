@@ -927,61 +927,48 @@ public class ConfirmacionPedidoCRMBOTCtrl {
 	 * de productos, aclaraciones de precio por especialidad, domicilio y total a pagar.</p>
 	 */
 	public String construirMensajeConfirmacion(JSONObject cotizacion) {
+	    StringBuilder productosTexto = new StringBuilder();
+	    JSONArray items = (JSONArray) cotizacion.get("items");
+	    for (int i = 0; i < items.size(); i++) {
+	        JSONObject item = (JSONObject) items.get(i);
+	        if (Boolean.TRUE.equals(item.get("esDomicilio"))) continue;
+	        int cantidad = ((Number) item.get("cantidad")).intValue();
+	        double valorTotal = ((Number) item.get("valorTotal")).doubleValue();
+	        boolean incluido = Boolean.TRUE.equals(item.get("incluido"));
+	        productosTexto.append("• ").append(cantidad).append(" x ").append(item.get("descripcion")).append(" : ");
+	        productosTexto.append((incluido || valorTotal == 0) ? "_(Incluido)_" : "*" + FORMATO_MONEDA.format(valorTotal) + "*");
+	        productosTexto.append("\n");
+	        String aclaracion = (String) item.get("aclaracion");
+	        if (aclaracion != null && !aclaracion.trim().isEmpty()) {
+	            productosTexto.append("  _(").append(aclaracion).append(")_\n");
+	        }
+	    }
 
-		StringBuilder mensaje = new StringBuilder();
+	    double valorDomicilio = ((Number) cotizacion.get("valorDomicilio")).doubleValue();
+	    double subtotal = ((Number) cotizacion.get("subtotalProductos")).doubleValue();
+	    double total = ((Number) cotizacion.get("total")).doubleValue();
 
-		String cliente = (String) cotizacion.get("cliente");
+	    String plantilla = obtenerPlantillaConfirmacion(); // lee de BD, con fallback
 
-		mensaje.append("🍕 *RESUMEN DE TU PEDIDO* 🍕\n\n");
+	    return plantilla
+	        .replace("{PRODUCTOS}", productosTexto.toString().trim())
+	        .replace("{SUBTOTAL}", FORMATO_MONEDA.format(subtotal))
+	        .replace("{DOMICILIO}", FORMATO_MONEDA.format(valorDomicilio))
+	        .replace("{TOTAL}", FORMATO_MONEDA.format(total));
+	}
 
-		if (cliente != null && !cliente.trim().isEmpty()) {
-			mensaje.append("Hola *").append(cliente).append("*, por favor revisa el detalle de tu pedido antes de confirmarlo:\n\n");
-		} else {
-			mensaje.append("Por favor revisa el detalle de tu pedido antes de confirmarlo:\n\n");
-		}
-
-		mensaje.append("📋 *PRODUCTOS:*\n");
-
-		JSONArray items = (JSONArray) cotizacion.get("items");
-
-		for (int i = 0; i < items.size(); i++) {
-
-			JSONObject item = (JSONObject) items.get(i);
-			boolean esDomicilio = Boolean.TRUE.equals(item.get("esDomicilio"));
-			if (esDomicilio) {
-				continue; // Se muestra en la sección de DETALLE DE PAGO
-			}
-
-			int cantidad = ((Number) item.get("cantidad")).intValue();
-			double valorTotal = ((Number) item.get("valorTotal")).doubleValue();
-			boolean incluido = Boolean.TRUE.equals(item.get("incluido"));
-
-			mensaje.append("• ").append(cantidad).append(" x ").append(item.get("descripcion")).append(" : ");
-
-			if (incluido || valorTotal == 0) {
-				mensaje.append("_(Incluido)_");
-			} else {
-				mensaje.append("*").append(FORMATO_MONEDA.format(valorTotal)).append("*");
-			}
-
-			mensaje.append("\n");
-
-			String aclaracion = (String) item.get("aclaracion");
-			if (aclaracion != null && !aclaracion.trim().isEmpty()) {
-				mensaje.append("  _(").append(aclaracion).append(")_\n");
-			}
-		}
-
-		double valorDomicilio = ((Number) cotizacion.get("valorDomicilio")).doubleValue();
-		double subtotal = ((Number) cotizacion.get("subtotalProductos")).doubleValue();
-		double total = ((Number) cotizacion.get("total")).doubleValue();
-
-		mensaje.append("\n💳 *DETALLE DE PAGO:*\n");
-		mensaje.append("• Subtotal productos: ").append(FORMATO_MONEDA.format(subtotal)).append("\n");
-		mensaje.append("• Domicilio: ").append(FORMATO_MONEDA.format(valorDomicilio)).append("\n");
-		mensaje.append("💰 *TOTAL A PAGAR: ").append(FORMATO_MONEDA.format(total)).append("*");
-
-		return mensaje.toString();
+	private static final String PLANTILLA_POR_DEFECTO =
+		    "*RESUMEN DE TU PEDIDO*\n\n*PRODUCTOS:*\n{PRODUCTOS}\n\n"
+		    + "*DETALLE DE PAGO:*\n- Subtotal productos: {SUBTOTAL}\n- Domicilio: {DOMICILIO}\n"
+		    + "*TOTAL A PAGAR: {TOTAL}*";
+	
+	
+	private String obtenerPlantillaConfirmacion() {
+	    String plantilla = ParametrosDAO.retornarValorAlfanumerico("PLANTILLA_MENSAJE_CONFIRMACION_BOT"); // ajusta al método real de tu DAO
+	    if (plantilla == null || plantilla.trim().isEmpty()) {
+	        plantilla = PLANTILLA_POR_DEFECTO;
+	    }
+	    return plantilla;
 	}
 
 	/**
