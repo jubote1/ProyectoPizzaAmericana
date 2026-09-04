@@ -1632,10 +1632,27 @@ public class PedidoCtrl {
 		// String mensajeTexto = formaPagoTexto.getMensajeTexto().replace("#VINCULO", linkPago);
 		// promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
 
-		String emailEnvio = enviarCorreoLinkPago(clienteNoti, idCliente, idPedido, linkPago, idFormaPago);
-		String observacionLog = (emailEnvio.length() > 0)
-				? "Se envio el correo con el link de pago a " + emailEnvio + "."
-				: "El cliente no tiene correo valido, no se envio correo.";
+		/*
+		 * El mensaje del log distingue las tres situaciones. Antes decia "el cliente
+		 * no tiene correo valido" en cualquier fallo, y eso era falso justo en el
+		 * caso mas comun: el correo del cliente estaba bien y lo que fallo fue el
+		 * servidor. Ese mensaje queda guardado en pedido_pago_virtual, asi que la
+		 * mentira quedaba archivada.
+		 */
+		final ResultadoCorreoLinkPago envioCorreo = enviarCorreoLinkPago(clienteNoti, idCliente, idPedido,
+				linkPago, idFormaPago);
+		String emailEnvio = envioCorreo.email;
+		String observacionLog;
+		if (emailEnvio.length() > 0) {
+			observacionLog = "Se envio el correo con el link de pago a " + emailEnvio + ".";
+		} else if (envioCorreo.resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
+			observacionLog = "El correo del cliente es invalido, no se envio correo.";
+		} else if (envioCorreo.resultado == null) {
+			observacionLog = "El cliente no tiene correo registrado, no se envio correo.";
+		} else {
+			observacionLog = "No se pudo enviar el correo por una falla del servidor de correo;"
+					+ " quedo reintentandose en segundo plano.";
+		}
 
 		observacionLog = observacionLog + " "
 				+ avisarWhatsAppLinkPago(clienteNoti, idPedido, idCliente, linkPago, canal);
@@ -1667,14 +1684,15 @@ public class PedidoCtrl {
 	 * @param idPedido    numero del pedido
 	 * @param linkPago    URL de pago
 	 * @param idFormaPago forma de pago, de donde sale el texto configurable
-	 * @return el correo al que se envio, o cadena vacia si no se pudo enviar
+	 * @return el correo al que se envio y el motivo, si no se pudo
 	 */
-	private String enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
+	private ResultadoCorreoLinkPago enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
 			String linkPago, int idFormaPago) {
 
 		String correoCliente = clienteNoti.getEmail();
 		if (correoCliente == null || !correoCliente.contains("@")) {
-			return ("");
+			// resultado en null: el cliente no tiene correo, no es que algo fallara
+			return (new ResultadoCorreoLinkPago("", null));
 		}
 		correoCliente = correoCliente.trim();
 
@@ -1713,30 +1731,65 @@ public class PedidoCtrl {
 			 * estaba perfecto. El campo email_correcto es un dato del cliente, no
 			 * un registro de que la red se puso lenta.
 			 *
-			 * Una falla transitoria se reporta pero no toca al cliente: el pedido
-			 * se queda sin el correo del link de pago, que ya se avisa por el
-			 * retorno vacio, y se puede reintentar.
+			 * Una falla transitoria no toca al cliente: el correo queda
+			 * reintentandose en segundo plano y la direccion no es el problema.
+			 *
+			 * Se usa enviarConReintentos y no un solo intento. El primer intento
+			 * sigue siendo rapido, con la espera corta, porque esto se dispara con
+			 * un asesor mirando la pantalla y desde el ciclo de la tienda virtual.
+			 * Si ese intento falla por algo pasajero, los reintentos siguen aparte
+			 * con espera larga, y el cliente recibe su link unos segundos despues
+			 * en vez de nunca.
 			 */
 			final ControladorEnvioCorreo.ResultadoEnvio resultado =
-					new ControladorEnvioCorreo(correo, correos).enviarCorreoClasificado();
+					new ControladorEnvioCorreo(correo, correos).enviarConReintentos();
 
 			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
 				ClienteDAO.marcarCorreoIncorrecto(idCliente);
 				System.out.println("Link de pago del pedido " + idPedido + ": la direccion " + correoCliente
 						+ " es invalida, se marca el cliente " + idCliente);
-				return ("");
+				return (new ResultadoCorreoLinkPago("", resultado));
 			}
 			if (resultado != ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
-				System.out.println("Link de pago del pedido " + idPedido + ": no se pudo enviar a " + correoCliente
-						+ " por " + resultado + ". No se marca el cliente, la direccion no es el problema.");
-				return ("");
+				System.out.println("Link de pago del pedido " + idPedido + ": el primer intento a " + correoCliente
+						+ " fallo por " + resultado + ". Quedo reintentandose en segundo plano."
+						+ " No se marca el cliente, la direccion no es el problema.");
+				return (new ResultadoCorreoLinkPago("", resultado));
 			}
-			return (correoCliente);
+			return (new ResultadoCorreoLinkPago(correoCliente, resultado));
 
 		} catch (Exception e) {
 			System.out.println("Error enviando el correo del link de pago del pedido " + idPedido
 					+ ": " + e.toString());
-			return ("");
+			return (new ResultadoCorreoLinkPago("",
+					ControladorEnvioCorreo.ResultadoEnvio.FALLA_TRANSITORIA));
+		}
+	}
+
+	/**
+	 * Resultado del envio del correo del link de pago.
+	 *
+	 * Hacen falta los dos datos juntos. El correo, para guardarlo en
+	 * pedido_pago_virtual, y el motivo, para poder decir en el log que fue lo que
+	 * paso. Antes el metodo retornaba solo una cadena vacia en cualquier fallo, y
+	 * quien llamaba lo traducia a "el cliente no tiene correo valido", que era
+	 * falso justo en el caso mas comun: el correo estaba bien y fallo el servidor.
+	 *
+	 * Se resuelve con este objeto y no con un campo de la clase porque PedidoCtrl
+	 * atiende peticiones concurrentes, y un campo compartido se pisaria entre
+	 * hilos.
+	 */
+	private static class ResultadoCorreoLinkPago {
+
+		/** Correo al que se envio, o cadena vacia si no salio. */
+		private final String email;
+
+		/** Motivo del fallo, o null si el cliente no tenia correo registrado. */
+		private final ControladorEnvioCorreo.ResultadoEnvio resultado;
+
+		private ResultadoCorreoLinkPago(String email, ControladorEnvioCorreo.ResultadoEnvio resultado) {
+			this.email = email;
+			this.resultado = resultado;
 		}
 	}
 

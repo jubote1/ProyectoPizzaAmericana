@@ -24,11 +24,39 @@ public class ControladorEnvioCorreo {
  * leer y escribir. Antes no se definia ninguno y el valor por defecto de
  * JavaMail es esperar de forma indefinida, asi que un Gmail lento dejaba
  * colgada la peticion que disparo el correo.
+ *
+ * La espera corta es la que se usa cuando hay alguien esperando del otro lado:
+ * un asesor en el contact center, o el ciclo que le pide pedidos a la tienda
+ * virtual. Ahi no importa tanto que el correo salga como que nadie se quede
+ * bloqueado.
  */
 private static final String MILIS_ESPERA_SMTP = "5000";
 
+/**
+ * Espera larga, para los reintentos que corren en segundo plano. Ahi ya nadie
+ * esta esperando, asi que se le puede dar al servidor el tiempo que necesite.
+ *
+ * La distincion no es entre correos importantes y accesorios: es entre si hay
+ * o no alguien esperando. El correo del link de pago es de los mas importantes
+ * que manda el sistema, y aun asi su primer intento usa la espera corta,
+ * porque se dispara con un asesor mirando la pantalla.
+ */
+private static final String MILIS_ESPERA_SEGUNDO_PLANO = "30000";
+
+/** Cuanto esperar antes de cada reintento, en milisegundos. */
+private static final long[] ESPERA_ENTRE_REINTENTOS = { 3000L, 10000L, 30000L };
+
 private Correo  c;
 private ArrayList correos;
+
+/** Espera SMTP de esta instancia. Arranca en la corta. */
+private String milisEspera = MILIS_ESPERA_SMTP;
+
+/**
+ * Si este envio avisa por correo cuando falla. Se apaga durante los reintentos
+ * para que un solo correo perdido no genere un aviso por intento.
+ */
+private boolean avisarFallo = true;
 
 public ControladorEnvioCorreo(Correo co,ArrayList correosenv)
 {
@@ -78,10 +106,11 @@ public ResultadoEnvio enviarCorreoClasificado()
 		Properties p = new Properties();
 		// Tiempos de espera del SMTP, en milisegundos. Sin estas tres propiedades
 		// JavaMail espera de forma indefinida, y un Gmail lento congela la peticion
-		// que disparo el correo. Ver MILIS_ESPERA_SMTP.
-		p.setProperty("mail.smtp.connectiontimeout", String.valueOf(MILIS_ESPERA_SMTP));
-		p.setProperty("mail.smtp.timeout", String.valueOf(MILIS_ESPERA_SMTP));
-		p.setProperty("mail.smtp.writetimeout", String.valueOf(MILIS_ESPERA_SMTP));
+		// que disparo el correo. La espera es la de esta instancia: corta cuando
+		// hay alguien esperando, larga en los reintentos de segundo plano.
+		p.setProperty("mail.smtp.connectiontimeout", this.milisEspera);
+		p.setProperty("mail.smtp.timeout", this.milisEspera);
+		p.setProperty("mail.smtp.writetimeout", this.milisEspera);
 		p.put("mail.smtp.host", "smtp.gmail.com");
 		p.put("mail.smtp.ssl.protocols", "TLSv1.2");
 		p.setProperty("mail.smtp.starttls.enable", "true");
@@ -131,6 +160,14 @@ public ResultadoEnvio enviarCorreoClasificado()
 		//esta mal o si simplemente el servidor no respondio a tiempo.
 		ResultadoEnvio resultado = clasificarFallo(e);
 
+		//Durante los reintentos el aviso queda apagado. Si no, un solo correo que
+		//necesito tres intentos generaria tres avisos, y el objetivo de reintentar
+		//es justamente que deje de haber ruido.
+		if(!this.avisarFallo)
+		{
+			return(resultado);
+		}
+
 		//Desde este punto enviaremos un correo para notificar problemas en env�o correo
 		//Aqui daremos alcance a aquellas situaciones de problemas puntuales con la cuenta
 		Correo correo = new Correo();
@@ -147,6 +184,133 @@ public ResultadoEnvio enviarCorreoClasificado()
 		return(resultado);
 	}
 
+}
+
+/**
+ * Envia el correo y, si falla por algo pasajero, sigue reintentando en segundo
+ * plano hasta lograrlo o agotar los intentos.
+ *
+ * Retorna el resultado del PRIMER intento, que se hace con la espera corta.
+ * Eso es a proposito: quien llama necesita una respuesta ya, no quedarse
+ * esperando un minuto y medio. Este metodo se dispara desde el ciclo que le
+ * pide pedidos a la tienda virtual y desde peticiones del contact center, y en
+ * los dos casos hay alguien o algo esperando del otro lado.
+ *
+ * Los reintentos corren aparte, con la espera larga y sin avisar por correo en
+ * cada vuelta. El aviso se manda una sola vez, y solo si se agotaron todos los
+ * intentos: asi un correo que se logro en el segundo intento no genera ninguna
+ * alarma, que es justamente lo que hoy sobra.
+ *
+ * No se reintenta una direccion invalida. Reintentar una direccion mal escrita
+ * es perder tiempo tres veces por el mismo motivo.
+ *
+ * @return el resultado del primer intento
+ */
+public ResultadoEnvio enviarConReintentos()
+{
+	//Primer intento: espera corta y sin aviso, porque si hay reintentos el aviso
+	//lo decide el hilo de segundo plano.
+	this.avisarFallo = false;
+	final ResultadoEnvio primero = enviarCorreoClasificado();
+
+	if(primero == ResultadoEnvio.ENVIADO || primero == ResultadoEnvio.SIN_DESTINATARIOS)
+	{
+		this.avisarFallo = true;
+		return(primero);
+	}
+	if(primero == ResultadoEnvio.DIRECCION_INVALIDA)
+	{
+		//La direccion esta mal: no hay nada que reintentar, pero si hay que avisar.
+		this.avisarFallo = true;
+		avisarFalloDefinitivo("La direccion del destinatario es invalida, no se reintenta.");
+		return(primero);
+	}
+
+	//Falla transitoria: los reintentos van en su propio hilo con la espera larga.
+	final Correo correoReintento = this.c;
+	final ArrayList correosReintento = this.correos;
+	Thread hilo = new Thread(new Runnable()
+	{
+		public void run()
+		{
+			for(int intento = 0; intento < ESPERA_ENTRE_REINTENTOS.length; intento++)
+			{
+				try
+				{
+					Thread.sleep(ESPERA_ENTRE_REINTENTOS[intento]);
+				}
+				catch(InterruptedException ie)
+				{
+					Thread.currentThread().interrupt();
+					return;
+				}
+
+				ControladorEnvioCorreo envio = new ControladorEnvioCorreo(correoReintento, correosReintento);
+				envio.milisEspera = MILIS_ESPERA_SEGUNDO_PLANO;
+				envio.avisarFallo = false;
+				ResultadoEnvio resultado = envio.enviarCorreoClasificado();
+
+				if(resultado == ResultadoEnvio.ENVIADO)
+				{
+					System.out.println("Correo enviado en el reintento " + (intento + 1) + ": "
+							+ correoReintento.getAsunto());
+					return;
+				}
+				if(resultado == ResultadoEnvio.DIRECCION_INVALIDA)
+				{
+					ControladorEnvioCorreo avisador =
+							new ControladorEnvioCorreo(correoReintento, correosReintento);
+					avisador.avisarFalloDefinitivo("La direccion resulto invalida en el reintento "
+							+ (intento + 1) + ".");
+					return;
+				}
+			}
+
+			//Se agotaron los intentos: aqui si vale avisar, porque el correo se perdio.
+			ControladorEnvioCorreo avisador = new ControladorEnvioCorreo(correoReintento, correosReintento);
+			avisador.avisarFalloDefinitivo("No se logro enviar despues de "
+					+ (ESPERA_ENTRE_REINTENTOS.length + 1) + " intentos.");
+		}
+	});
+	hilo.setDaemon(true);
+	hilo.setName("reintento-correo");
+	hilo.start();
+
+	this.avisarFallo = true;
+	return(primero);
+}
+
+/**
+ * Avisa que un correo se perdio de forma definitiva. Va por la cuenta de
+ * contingencia, que usa otro servidor, para que un problema de Gmail no impida
+ * enterarse de que hay un problema de Gmail.
+ *
+ * A diferencia del aviso que sale del catch, este NO incluye el cuerpo del
+ * correo original: ese cuerpo trae el link de pago, el telefono y el correo del
+ * cliente, y no tiene por que circular en una bandeja de errores.
+ */
+private void avisarFalloDefinitivo(String motivo)
+{
+	try
+	{
+		Date fecha = new Date();
+		Correo aviso = new Correo();
+		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
+				"CLAVECORREOERROR");
+		ArrayList destinos = new ArrayList();
+		destinos.add("jubote1@gmail.com");
+		aviso.setAsunto("Correo no entregado: " + this.c.getAsunto());
+		aviso.setContrasena(infoCorreo.getClaveCorreo());
+		aviso.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+		aviso.setMensaje(motivo + " Asunto: " + this.c.getAsunto()
+				+ ". Destinatarios: " + this.correos.size() + ". Fecha: " + fecha.toString());
+		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(aviso, destinos);
+		contro.enviarCorreoContingencia();
+	}
+	catch(Exception e)
+	{
+		System.out.println("No se pudo avisar del correo no entregado: " + e.toString());
+	}
 }
 
 /**
