@@ -36,7 +36,42 @@ public ControladorEnvioCorreo(Correo co,ArrayList correosenv)
 	this.correos = correosenv;
 }
 
+/**
+ * Por que fallo un envio. Antes enviarCorreo solo retornaba true o false, y
+ * con eso quien llamaba no podia distinguir una direccion mala de un problema
+ * pasajero de red. Esa confusion tenia una consecuencia concreta: el envio del
+ * link de pago marcaba email_correcto = 'N' en el cliente ante cualquier
+ * fallo, asi que un Gmail lento durante cinco segundos dejaba marcado como
+ * incorrecto el correo de un cliente que estaba perfecto.
+ */
+public enum ResultadoEnvio
+{
+	/** El correo salio. */
+	ENVIADO,
+	/** La direccion del destinatario esta mal escrita o el servidor la rechazo. */
+	DIRECCION_INVALIDA,
+	/** Timeout, caida de red, credenciales, limite del proveedor. Se puede reintentar. */
+	FALLA_TRANSITORIA,
+	/** No habia a quien enviarle. */
+	SIN_DESTINATARIOS
+}
+
+/**
+ * Envia el correo. Se conserva para los llamadores que solo necesitan saber si
+ * salio o no; si hay que actuar distinto segun el motivo del fallo, usar
+ * enviarCorreoClasificado.
+ */
 public boolean enviarCorreo()
+{
+	return (enviarCorreoClasificado() == ResultadoEnvio.ENVIADO);
+}
+
+/**
+ * Envia el correo diciendo que paso. Es la version que hay que usar cuando la
+ * decision de quien llama dependa del motivo del fallo, como marcar el correo
+ * de un cliente por incorrecto.
+ */
+public ResultadoEnvio enviarCorreoClasificado()
 {
 	try
 	{
@@ -65,11 +100,17 @@ public boolean enviarCorreo()
 		//Ponemos un control para cuando no hay destinatarios del correo y evitarse una demora en el env�o
 		if(correos.size() == 0)
 		{
-			return(false);
+			return(ResultadoEnvio.SIN_DESTINATARIOS);
 		}
 		for(int i = 0; i< correos.size(); i++)
 		{
-			mensaje.addRecipient(Message.RecipientType.TO, new InternetAddress((String)correos.get(i)));
+			//Se valida la direccion antes de conectarse al servidor. El segundo
+			//parametro en true hace la validacion estricta: asi una direccion mal
+			//escrita se detecta aqui como AddressException, en vez de gastarse una
+			//conexion SMTP para terminar en un error que no se sabe interpretar.
+			String direccion = (String)correos.get(i);
+			mensaje.addRecipient(Message.RecipientType.TO,
+					new InternetAddress(direccion == null ? "" : direccion.trim(), true));
 		}
 		mensaje.setSubject(c.getAsunto());
 		mensaje.setContent(m);
@@ -77,13 +118,19 @@ public boolean enviarCorreo()
 		t.connect(c.getUsuarioCorreo(),c.getContrasena());
 		t.sendMessage(mensaje, mensaje.getAllRecipients());
 		t.close();
-		return(true);
-		
+		return(ResultadoEnvio.ENVIADO);
+
 	}
 	catch(Exception e)
 	{
 		Date fecha = new Date();
 		System.out.println(e.toString());
+
+		//Se separa la direccion mala del problema pasajero. Es la razon de ser de
+		//este metodo: quien llama tiene que poder saber si el correo del cliente
+		//esta mal o si simplemente el servidor no respondio a tiempo.
+		ResultadoEnvio resultado = clasificarFallo(e);
+
 		//Desde este punto enviaremos un correo para notificar problemas en env�o correo
 		//Aqui daremos alcance a aquellas situaciones de problemas puntuales con la cuenta
 		Correo correo = new Correo();
@@ -97,9 +144,41 @@ public boolean enviarCorreo()
 		correo.setMensaje(e.toString() + " " + " Se tuvo problemas enviando correo, por favor revisar " + c.getMensaje());
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreoContingencia();
-		return(false);
+		return(resultado);
 	}
-	
+
+}
+
+/**
+ * Decide si el fallo fue por la direccion del destinatario o por algo pasajero.
+ *
+ * Solo se considera direccion invalida cuando el propio JavaMail lo dice: o la
+ * direccion no se pudo ni construir (AddressException), o el servidor la
+ * rechazo de forma explicita (SendFailedException con direcciones invalidas).
+ * Todo lo demas (timeout, red caida, credenciales, limite del proveedor) es
+ * transitorio y no dice nada sobre el correo del cliente.
+ */
+private ResultadoEnvio clasificarFallo(Exception e)
+{
+	Throwable causa = e;
+	while(causa != null)
+	{
+		if(causa instanceof javax.mail.internet.AddressException)
+		{
+			return(ResultadoEnvio.DIRECCION_INVALIDA);
+		}
+		if(causa instanceof javax.mail.SendFailedException)
+		{
+			javax.mail.SendFailedException fallo = (javax.mail.SendFailedException) causa;
+			javax.mail.Address[] invalidas = fallo.getInvalidAddresses();
+			if(invalidas != null && invalidas.length > 0)
+			{
+				return(ResultadoEnvio.DIRECCION_INVALIDA);
+			}
+		}
+		causa = causa.getCause();
+	}
+	return(ResultadoEnvio.FALLA_TRANSITORIA);
 }
 
 public boolean enviarCorreoContingencia()

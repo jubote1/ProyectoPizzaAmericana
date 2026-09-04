@@ -1705,9 +1705,30 @@ public class PedidoCtrl {
 			ArrayList correos = new ArrayList();
 			correos.add(correoCliente);
 
-			boolean correoCorrecto = new ControladorEnvioCorreo(correo, correos).enviarCorreo();
-			if (!correoCorrecto) {
+			/*
+			 * Solo se marca el correo del cliente como incorrecto cuando de verdad
+			 * lo es. Antes se marcaba ante cualquier fallo del envio, y eso
+			 * significaba que un timeout del SMTP -cinco segundos de lentitud de
+			 * Gmail- dejaba marcado como incorrecto el correo de un cliente que
+			 * estaba perfecto. El campo email_correcto es un dato del cliente, no
+			 * un registro de que la red se puso lenta.
+			 *
+			 * Una falla transitoria se reporta pero no toca al cliente: el pedido
+			 * se queda sin el correo del link de pago, que ya se avisa por el
+			 * retorno vacio, y se puede reintentar.
+			 */
+			final ControladorEnvioCorreo.ResultadoEnvio resultado =
+					new ControladorEnvioCorreo(correo, correos).enviarCorreoClasificado();
+
+			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
 				ClienteDAO.marcarCorreoIncorrecto(idCliente);
+				System.out.println("Link de pago del pedido " + idPedido + ": la direccion " + correoCliente
+						+ " es invalida, se marca el cliente " + idCliente);
+				return ("");
+			}
+			if (resultado != ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
+				System.out.println("Link de pago del pedido " + idPedido + ": no se pudo enviar a " + correoCliente
+						+ " por " + resultado + ". No se marca el cliente, la direccion no es el problema.");
 				return ("");
 			}
 			return (correoCliente);
