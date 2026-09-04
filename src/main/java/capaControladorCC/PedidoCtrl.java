@@ -1689,12 +1689,31 @@ public class PedidoCtrl {
 	private ResultadoCorreoLinkPago enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
 			String linkPago, int idFormaPago) {
 
+		/*
+		 * Si el cliente no tiene correo, o lo que tiene no sirve, no se intenta el
+		 * envio. Antes la revision era solo que contuviera una arroba, asi que
+		 * direcciones como "juan perez@gmail.com" o "juan@gmail" pasaban, se
+		 * gastaba una conexion SMTP y el fallo terminaba generando una alarma por
+		 * algo que se sabia desde el principio.
+		 *
+		 * Se separan las dos situaciones porque no significan lo mismo. Sin correo
+		 * no hay nada que reprocharle al dato; con un correo mal escrito si, y por
+		 * eso ese caso si marca el cliente.
+		 */
 		String correoCliente = clienteNoti.getEmail();
-		if (correoCliente == null || !correoCliente.contains("@")) {
+		if (correoCliente == null || correoCliente.trim().length() == 0) {
 			// resultado en null: el cliente no tiene correo, no es que algo fallara
 			return (new ResultadoCorreoLinkPago("", null));
 		}
 		correoCliente = correoCliente.trim();
+
+		if (!ControladorEnvioCorreo.esDireccionValida(correoCliente)) {
+			ClienteDAO.marcarCorreoIncorrecto(idCliente);
+			System.out.println("Link de pago del pedido " + idPedido + ": no se intenta el envio, la direccion \""
+					+ correoCliente + "\" del cliente " + idCliente + " no es valida.");
+			return (new ResultadoCorreoLinkPago("",
+					ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA));
+		}
 
 		try {
 			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");

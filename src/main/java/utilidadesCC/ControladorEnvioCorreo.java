@@ -85,6 +85,58 @@ public enum ResultadoEnvio
 }
 
 /**
+ * Si una direccion de correo sirve para intentar un envio.
+ *
+ * Se valida antes de conectarse al servidor por una razon practica: intentar
+ * enviarle a una direccion mal escrita gasta una conexion SMTP, se demora, y
+ * termina en un error que despues genera una alarma. Y no hay nada que
+ * aprender de ese error, porque la direccion ya se sabia mala desde el
+ * principio.
+ *
+ * La regla es deliberadamente sencilla y no pretende decidir si el buzon
+ * existe, que eso solo lo sabe el servidor del destinatario. Descarta lo que
+ * seguro no va a funcionar: vacios, espacios en medio, sin arroba, sin dominio
+ * o sin punto en el dominio. Es la misma regla del script de limpieza de
+ * email_correcto, para que no digan cosas distintas.
+ */
+public static boolean esDireccionValida(String direccion)
+{
+	if(direccion == null)
+	{
+		return(false);
+	}
+	String limpia = direccion.trim();
+	if(limpia.length() == 0 || limpia.contains(" "))
+	{
+		return(false);
+	}
+	int arroba = limpia.indexOf('@');
+	//Una sola arroba, con algo antes y algo despues
+	if(arroba <= 0 || arroba != limpia.lastIndexOf('@') || arroba == limpia.length() - 1)
+	{
+		return(false);
+	}
+	String dominio = limpia.substring(arroba + 1);
+	int punto = dominio.lastIndexOf('.');
+	//El dominio necesita un punto que no este al principio ni al final, y una
+	//terminacion de al menos dos letras
+	if(punto <= 0 || punto == dominio.length() - 1 || dominio.length() - punto - 1 < 2)
+	{
+		return(false);
+	}
+	try
+	{
+		//El modo estricto de JavaMail atrapa lo que la revision de arriba no ve
+		new InternetAddress(limpia, true);
+	}
+	catch(Exception e)
+	{
+		return(false);
+	}
+	return(true);
+}
+
+/**
  * Envia el correo. Se conserva para los llamadores que solo necesitan saber si
  * salio o no; si hay que actuar distinto segun el motivo del fallo, usar
  * enviarCorreoClasificado.
@@ -131,15 +183,48 @@ public ResultadoEnvio enviarCorreoClasificado()
 		{
 			return(ResultadoEnvio.SIN_DESTINATARIOS);
 		}
+
+		/*
+		 * Las direcciones se revisan ANTES de abrir la conexion. Si ninguna sirve
+		 * no se intenta nada: no se gasta una conexion SMTP, no hay demora, y
+		 * sobre todo no se produce un error que despues genere una alarma por algo
+		 * que ya se sabia desde el principio.
+		 *
+		 * Cuando hay varias y solo algunas estan malas, se envia a las buenas.
+		 * Antes una sola direccion mal escrita en la lista tumbaba el envio
+		 * completo, asi que un reporte con seis destinatarios no le llegaba a
+		 * ninguno por culpa de uno.
+		 */
+		int validas = 0;
+		StringBuilder descartadas = new StringBuilder();
 		for(int i = 0; i< correos.size(); i++)
 		{
-			//Se valida la direccion antes de conectarse al servidor. El segundo
-			//parametro en true hace la validacion estricta: asi una direccion mal
-			//escrita se detecta aqui como AddressException, en vez de gastarse una
-			//conexion SMTP para terminar en un error que no se sabe interpretar.
 			String direccion = (String)correos.get(i);
-			mensaje.addRecipient(Message.RecipientType.TO,
-					new InternetAddress(direccion == null ? "" : direccion.trim(), true));
+			if(!esDireccionValida(direccion))
+			{
+				if(descartadas.length() > 0)
+				{
+					descartadas.append(", ");
+				}
+				descartadas.append(direccion);
+				continue;
+			}
+			mensaje.addRecipient(Message.RecipientType.TO, new InternetAddress(direccion.trim(), true));
+			validas++;
+		}
+		if(descartadas.length() > 0)
+		{
+			System.out.println("Correo \"" + c.getAsunto() + "\": se omiten direcciones invalidas: "
+					+ descartadas.toString());
+		}
+		if(validas == 0)
+		{
+			//Se retorna desde dentro del try, asi que no pasa por el catch y no se
+			//manda ninguna alarma. Una direccion mala no es un incidente del
+			//servidor de correo.
+			System.out.println("Correo \"" + c.getAsunto()
+					+ "\": no se envia, ninguna direccion de destino es valida.");
+			return(ResultadoEnvio.DIRECCION_INVALIDA);
 		}
 		mensaje.setSubject(c.getAsunto());
 		mensaje.setContent(m);
@@ -220,9 +305,13 @@ public ResultadoEnvio enviarConReintentos()
 	}
 	if(primero == ResultadoEnvio.DIRECCION_INVALIDA)
 	{
-		//La direccion esta mal: no hay nada que reintentar, pero si hay que avisar.
+		//La direccion esta mal: no hay nada que reintentar y tampoco nada que
+		//avisar por correo. No es un incidente del servidor, es un dato del
+		//cliente que esta mal, y eso queda registrado donde corresponde: en el
+		//log del pedido y en email_correcto.
 		this.avisarFallo = true;
-		avisarFalloDefinitivo("La direccion del destinatario es invalida, no se reintenta.");
+		System.out.println("Correo \"" + this.c.getAsunto()
+				+ "\": direccion invalida, no se reintenta y no se genera alarma.");
 		return(primero);
 	}
 
@@ -256,12 +345,12 @@ public ResultadoEnvio enviarConReintentos()
 							+ correoReintento.getAsunto());
 					return;
 				}
-				if(resultado == ResultadoEnvio.DIRECCION_INVALIDA)
+				if(resultado == ResultadoEnvio.DIRECCION_INVALIDA
+						|| resultado == ResultadoEnvio.SIN_DESTINATARIOS)
 				{
-					ControladorEnvioCorreo avisador =
-							new ControladorEnvioCorreo(correoReintento, correosReintento);
-					avisador.avisarFalloDefinitivo("La direccion resulto invalida en el reintento "
-							+ (intento + 1) + ".");
+					//Nada que seguir intentando y nada que avisar: no es un incidente.
+					System.out.println("Reintento " + (intento + 1) + " descartado por " + resultado
+							+ ": " + correoReintento.getAsunto());
 					return;
 				}
 			}
