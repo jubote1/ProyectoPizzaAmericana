@@ -1923,7 +1923,7 @@ public class PedidoCtrl {
 		promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
 
 		// ENVIAREMOS MENSAJE DE WHATSAPP
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		String mensajeEvidencia = "token=tjjy9tki646vwazi&to=+57" + telefonoCelular + "&body=" + mensajeTexto
@@ -5218,7 +5218,7 @@ public class PedidoCtrl {
 
 		// Validaremos que el telefono celular si se hubiese podido tomar
 		if (!telefonoCelular.equals(new String(""))) {
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 			String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + telefonoCelular
@@ -5347,7 +5347,7 @@ public class PedidoCtrl {
 
 		// Validaremos que el telefono celular si se hubiese podido tomar
 		if (!telefonoCelular.equals(new String(""))) {
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 			String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + telefonoCelular + "&body="
@@ -5686,7 +5686,7 @@ public class PedidoCtrl {
 	}
 
 	public void notificarWhatsAppUltramsgSolFactura(SolicitudFactura solFactura) {
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + "3148807773"
@@ -5933,7 +5933,7 @@ public class PedidoCtrl {
 				+ "\",\n"
 				+ "  \"redirect_uri\": \"https://tiendapizzaamericana.co/ProyectoPizzaAmericana/InsertarPedidoCRMBOT\"\n"
 				+ "}";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/oauth2/access_token").post(body)
@@ -5987,7 +5987,7 @@ public class PedidoCtrl {
 		try {
 			String strBody = "{\r\n" + "    \"email\": \"tecnologia@pizzaamericana.com.co\",\r\n"
 					+ "    \"password\": \"americana.Pzz19005\",\r\n" + "    \"remember_me\": 0\r\n" + "}";
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 			RequestBody body = RequestBody.create(mediaType, strBody);
 			Request request = new Request.Builder().url("https://api-v2.matias-api.com/api/ubl2.1/auth/login")
@@ -7168,7 +7168,7 @@ public class PedidoCtrl {
 		String jsonBody = new ObjectMapper().writeValueAsString(Collections.singletonList(leadData));
 
 		// Enviar petición
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonBody);
 		System.out.println("body: " + body);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8569,7 +8569,7 @@ public class PedidoCtrl {
 				+ "            \"values\": [\r\n" + "                {\r\n" + "                    \"value\": \" "
 				+ origen + "\"\n" + "                }\r\n" + "            ]\r\n" + "        }\r\n" + "    ]\r\n"
 				+ "    }\r\n" + "]";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8599,7 +8599,7 @@ public class PedidoCtrl {
 				+ "            \"values\": [\r\n" + "                {\r\n" + "                    \"value\": \" "
 				+ mensaje + "\"\n" + "                }\r\n" + "            ]\r\n" + "        }\r\n" + "    ]\r\n"
 				+ "    }\r\n" + "]\r\n" + "    ";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8688,7 +8688,7 @@ public class PedidoCtrl {
 		System.out.println("Datos enviados para actualización del lead: " + datos);
 
 		// Envío HTTP
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 
@@ -8805,7 +8805,7 @@ public class PedidoCtrl {
 		System.out.println("Datos enviados a CRM: " + datos);
 
 		// HTTP PATCH
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -9316,7 +9316,7 @@ public class PedidoCtrl {
 	 * @param mensaje
 	 */
 	public void notificarWhatsAppUltramsg(String telefono, String mensaje) {
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		RequestBody body = RequestBody.create(mediaType, "token=" + intWhat.getAccessToken() + "&to=+57" + telefono
@@ -9819,7 +9819,7 @@ public class PedidoCtrl {
 				+ intCRM.getFreshToken() + "\",\n"
 				+ "  \"audience\": \"https://services.rappi.com/api/v2/restaurants-integrations-public-api\",\n"
 				+ "  \"grant_type\": \"client_credentials\"}";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder().url("https://rests-integrations.auth0.com/oauth/token").post(body)
@@ -11277,7 +11277,7 @@ public class PedidoCtrl {
 		boolean respuesta = false;
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
 		String strBody = "";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder()
@@ -11798,7 +11798,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -11858,7 +11858,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -11917,7 +11917,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -12418,7 +12418,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder().url(url).addHeader(CONTENT_TYPE, APPLICATION_JSON)
 					.addHeader(ACCEPT, APPLICATION_JSON).get().build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -13259,7 +13259,7 @@ public class PedidoCtrl {
 
 		System.out.println("Datos enviados para actualizar pedido insertado: " + datos);
 
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 
@@ -13305,10 +13305,7 @@ public class PedidoCtrl {
         String NUMEROWHATSAPPBREVO =
         		ParametrosDAO.retornarValorAlfanumerico("NUMEROWHATSAPPBREVO");
         
-        java.net.http.HttpClient CLIENT =
-        		java.net.http.HttpClient.newBuilder()
-                        .connectTimeout(Duration.ofSeconds(15))
-                        .build();
+        java.net.http.HttpClient CLIENT = utilidadesCC.ClientesHttp.jdk();
 
         ObjectMapper MAPPER = new ObjectMapper();
         Map<String, Object> body = Map.of(
@@ -13357,7 +13354,7 @@ public class PedidoCtrl {
 		boolean respuesta = false;
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
 		String strBody = "";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody );
 		Request request = new Request.Builder()

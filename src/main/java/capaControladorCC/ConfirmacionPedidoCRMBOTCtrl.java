@@ -1010,7 +1010,7 @@ public class ConfirmacionPedidoCRMBOTCtrl {
 			return;
 		}
 
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 

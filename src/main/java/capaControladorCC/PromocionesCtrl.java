@@ -802,7 +802,7 @@ public class PromocionesCtrl {
 	        jsonPayload.put("unicodeEnabled", true);
 	        jsonPayload.put("organisationPrefix", "!Pizza Americana!");
 	        // Crear el cliente OkHttp
-	        OkHttpClient client = new OkHttpClient();
+	        OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 
 	        Request request = new Request.Builder()
 	                .url(API_URL)

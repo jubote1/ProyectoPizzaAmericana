@@ -297,7 +297,7 @@ public class TiendaCtrl {
 	public String obtenerMonitoreoEstadoLocal() {
 	    ArrayList<JSONObject> tiendas = TiendaDAO.obtenerHostTiendas();
 	    Gson gson = new Gson();
-	    OkHttpClient client = new OkHttpClient();
+	    OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 
 	    ExecutorService executor = Executors.newFixedThreadPool(6); // Puedes ajustar el número
 	    List<Callable<MonitoreoTienda>> tasks = new ArrayList<>();

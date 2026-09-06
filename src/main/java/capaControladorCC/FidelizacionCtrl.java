@@ -72,7 +72,7 @@ public class FidelizacionCtrl {
 		//Realizamos modificación para que cuando se haga matricula de programa de fidelizacion
 				IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
 				//Se realiza logica para envio de correo
-				OkHttpClient client = new OkHttpClient();
+				OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			    // Configuración global
 			    String apiKey = brevo.getAccessToken();
 			    String senderEmail = "mercadeo@pizzaamericana.com.co";
