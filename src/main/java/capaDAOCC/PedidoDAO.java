@@ -2063,6 +2063,23 @@ public class PedidoDAO {
 		Logger logger = Logger.getLogger("log_file");
 		Pedido consultaPedido = new Pedido();
 		consultaPedido.setIdpedido(0);
+		/*
+		 * Sin un numero de orden valido no hay nada que buscar, y buscar con cero
+		 * es catastrofico: 371.920 pedidos de tienda fisica tienen
+		 * idordencomercio = 0, asi que la consulta traeria esas 371.920 filas con
+		 * el join de seis tablas y el driver las carga completas a memoria antes
+		 * de devolver el control. Se midieron 938 MB en una sola llamada.
+		 *
+		 * Cinco llamadas concurrentes asi agotaron los 4 GB de heap del Tomcat
+		 * central el 6 de septiembre de 2026. El cero llega porque varios
+		 * llamadores inicializan el BigInteger en cero y se tragan la excepcion
+		 * cuando el numero de orden no viene o no es numerico.
+		 */
+		if (idOrdenComercio == null || idOrdenComercio.signum() <= 0)
+		{
+			logger.info("ConsultaPedidoXOrden: numero de orden invalido (" + idOrdenComercio + "), no se consulta");
+			return (consultaPedido);
+		}
 		String consulta = "";
 		//Agregamos la consulta base
 		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.idordencomercio = " + idOrdenComercio ;
@@ -2073,6 +2090,10 @@ public class PedidoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
+			//Un pedido son unas pocas filas, una por forma de pago. Este tope no
+			//afecta ningun caso legitimo y evita que un dato inesperado vuelva a
+			//traer cientos de miles de filas a memoria.
+			stm.setMaxRows(100);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idpedido;
 			int idtienda;
