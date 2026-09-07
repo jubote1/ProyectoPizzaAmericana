@@ -2443,22 +2443,24 @@ public class PedidoCtrl {
 						}
 
 						String email = (String) objTemp.get("client_email");
-						// En ocasiones cuando no es definida la latitud ni la longitud esta llega como
-						// un String por lo
-						// tanto es necesario incluirlas dentro de un try y si hay excepción llenar con
-						// cero los valores
+						//La plataforma manda las coordenadas como NUMERO cuando las tiene, y como
+						//texto vacio cuando no. Por eso se convierten desde toString() y no
+						//casteando a String: ese cast fallaba justamente con las coordenadas
+						//buenas, las dejaba en cero, y el pedido se iba por la geocodificacion de
+						//respaldo perdiendo la ubicacion real que la plataforma si habia enviado.
+						//Se veian 2.034 ClassCastException en tres semanas por esta causa.
 						double latitud = 0, longitud = 0;
 						try {
-							latitud = Double.parseDouble((String) objTemp.get("latitude"));
+							latitud = Double.parseDouble(objTemp.get("latitude").toString());
 						} catch (Exception e) {
 							latitud = 0;
-							System.out.println(e.toString());
+							System.out.println("Pedido de plataforma: latitud no utilizable (" + objTemp.get("latitude") + "): " + e);
 						}
 						try {
-							longitud = Double.parseDouble((String) objTemp.get("longitude"));
+							longitud = Double.parseDouble(objTemp.get("longitude").toString());
 						} catch (Exception e) {
 							longitud = 0;
-							System.out.println(e.toString());
+							System.out.println("Pedido de plataforma: longitud no utilizable (" + objTemp.get("longitude") + "): " + e);
 						}
 						// Realizamos la intervención para tratar en el momentoen que la ubicación viene
 						// en cero
@@ -2535,7 +2537,7 @@ public class PedidoCtrl {
 						// restaurante token
 
 						// Capturamos el token del restaurante para conocer la tienda y el origen
-						int token = Integer.parseInt((String) objTemp.get("restaurant_token"));
+						int token = Integer.parseInt(objTemp.get("restaurant_token").toString());
 						HomologacionTiendaToken homoTiendaToken = HomologacionTiendaTokenDAO
 								.obtenerHomologacionTiendaToken(token);
 						int idTienda = homoTiendaToken.getIdtienda();
@@ -2756,7 +2758,7 @@ public class PedidoCtrl {
 				}
 				if (key.equals(new String("_billing_cantidad_pago"))) {
 					try {
-						valorFormaPago = Double.parseDouble((String) objTemp.get("value"));
+						valorFormaPago = Double.parseDouble(objTemp.get("value").toString());
 					} catch (Exception e) {
 						valorFormaPago = 0;
 					}
@@ -2920,7 +2922,7 @@ public class PedidoCtrl {
 			if (strHomDomicilio.contains("Valor del domicilio")) {
 				// Sabiendo que estamos en el campo que queremos conocer, verificamos y traemos
 				// el valor de domicilio
-				valorDomicilio = Long.parseLong((String) infoDomicilioTemp.get("total"));
+				valorDomicilio = Long.parseLong(infoDomicilioTemp.get("total").toString());
 				// Si el valor de domicilio es mayor a cero deberemos de recuperar el producto
 				// para agregarlo posteriormente finalizando el pedido
 				if (valorDomicilio > 0) {
@@ -2993,7 +2995,7 @@ public class PedidoCtrl {
 			// Extraemos uno a uno los items del pedido
 			JSONObject detallePedidoTemp = (JSONObject) detallePedido.get(i);
 			// Extraremos el total del item
-			valorTotalItemJSON = Long.parseLong((String) detallePedidoTemp.get("subtotal"));
+			valorTotalItemJSON = Long.parseLong(detallePedidoTemp.get("subtotal").toString());
 			// Extreamos la cantidad
 			long tmp = (long) detallePedidoTemp.get("quantity");
 			Long lngCantidad = Long.valueOf(tmp);
@@ -9908,7 +9910,7 @@ public class PedidoCtrl {
 			JSONObject jsonOrder = (JSONObject) objParserOrderDetail;
 
 			//Comenzamos a extraer la informacion que allí viene
-			idOrdenComercio = Long.parseLong((String)jsonOrder.get("order_id"));
+			idOrdenComercio = Long.parseLong(jsonOrder.get("order_id").toString());
 			String identificadorPedido = Long.toString(idOrdenComercio);
 			if(identificadorPedido.length() >= 4)
 			{
@@ -10173,7 +10175,7 @@ public class PedidoCtrl {
 			// REALIZAMOS PROCESAMIENTO DE LA INFORMACIÓN DE LA TIENDA
 			Object objParserStore = parser.parse(storeJSON);
 			JSONObject jsonStore = (JSONObject) objParserStore;
-			Long internalIDTienda = Long.parseLong((String) jsonStore.get("internal_id"));
+			Long internalIDTienda = Long.parseLong(jsonStore.get("internal_id").toString());
 			int token = internalIDTienda.intValue();
 			HomologacionTiendaToken homoTiendaToken = HomologacionTiendaTokenDAO.obtenerHomologacionTiendaToken(token);
 			int idTienda = homoTiendaToken.getIdtienda();

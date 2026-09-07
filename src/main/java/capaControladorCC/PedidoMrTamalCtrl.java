@@ -208,24 +208,26 @@ public class PedidoMrTamalCtrl {
 				
 				
 				String email  = (String)objTemp.get("client_email");
-				//En ocasiones cuando no es definida la latitud ni la longitud esta llega como un String por lo
-				//tanto es necesario incluirlas dentro de un try y si hay excepci�n llenar con cero los valores
+				//La plataforma manda las coordenadas como NUMERO cuando las tiene, y como
+				//texto vacio cuando no. Por eso se convierten desde toString() y no
+				//casteando a String, que fallaba justamente con las coordenadas buenas y
+				//las dejaba en cero.
 				double latitud = 0, longitud = 0;
 				try
 				{
-					latitud = Double.parseDouble((String)objTemp.get("latitude"));
+					latitud = Double.parseDouble(objTemp.get("latitude").toString());
 				}catch(Exception e)
 				{
 					latitud = 0;
-					System.out.println(e.toString());
+					System.out.println("Mr Tamal: latitud no utilizable (" + objTemp.get("latitude") + "): " + e);
 				}
 				try
 				{
-					longitud = Double.parseDouble((String)objTemp.get("longitude"));
+					longitud = Double.parseDouble(objTemp.get("longitude").toString());
 				}catch(Exception e)
 				{
 					longitud = 0;
-					System.out.println(e.toString());
+					System.out.println("Mr Tamal: longitud no utilizable (" + objTemp.get("longitude") + "): " + e);
 				}
 				tipoPedido = (String)objTemp.get("type");
 				if(tipoPedido.equals(new String("delivery")))
@@ -236,7 +238,7 @@ public class PedidoMrTamalCtrl {
 					idTipoPedido = 2;
 				}
 				//El servicio de Kuno permite identificar el restaurante con el campo restaurante token
-				int idTienda = Integer.parseInt((String) objTemp.get("restaurant_token"));
+				int idTienda = Integer.parseInt(objTemp.get("restaurant_token").toString());
 				String nombreTienda = (String) objTemp.get("restaurant_name");
 				String tokenPrivado = TiendaFranquiciaWompiDAO.obtenerTiendaFranquiciaWompiDAO(idTienda);
 				
