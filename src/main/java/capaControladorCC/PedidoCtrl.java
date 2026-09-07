@@ -6638,22 +6638,34 @@ public class PedidoCtrl {
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
 				// Dependiendo del campos se tendrá la recuperación del mismo
-				if (clave.equals(new String("# factura web"))) {
-					numordenkunno = strValor;
+				if (clave != null && clave.trim().equalsIgnoreCase("# factura web")) {
+					numordenkunno = strValor != null ? strValor.trim() : "";
 					break;
 				}
 			}
 
-			BigInteger idOrdenComercio = new BigInteger("0");
+			// Validar si viene un número de orden web
+			if (numordenkunno == null || numordenkunno.trim().isEmpty()) {
+				System.out.println("consultarLinkPagoVirtualCRM: Lead " + lead + " no tiene '# factura web'. Se omite consulta.");
+				return;
+			}
+
+			BigInteger idOrdenComercio = null;
 			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			try {
-				idOrdenComercio = new BigInteger((String) numordenkunno);
+				BigInteger valorOrden = new BigInteger(numordenkunno.trim());
+				if (valorOrden.signum() > 0) {
+					idOrdenComercio = valorOrden;
+				}
 			} catch (Exception e) {
-				//Si el numero de orden no es numerico queda en cero, y con cero el
-				//DAO ya no consulta. Antes no se registraba nada y ese cero
-				//terminaba pidiendo los 371.920 pedidos de tienda fisica.
 				System.out.println("consultarLinkPagoVirtualCRM: numero de orden no numerico (" + numordenkunno + "): " + e);
 			}
+
+			if (idOrdenComercio == null) {
+				System.out.println("consultarLinkPagoVirtualCRM: Lead " + lead + " con orden invalida (" + numordenkunno + "). Se omite consulta.");
+				return;
+			}
+
 			Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 			if (infoPedido.getIdcliente() > 0) {
 
@@ -12581,16 +12593,23 @@ public class PedidoCtrl {
 	 */
 	public void procesarSolFacturaPedidoWebBOT(int idTipoCliente, String identificacion, String nombreClienteFact,
 			String correoFac, String facturaWeb) {
-		// Obtenemos la información del pedido relacionada con la solicitud de factura
-		// electrónica
-		BigInteger idOrdenComercio = new BigInteger("0");
+		if (facturaWeb == null || facturaWeb.trim().isEmpty()) {
+			System.out.println("solicitud de factura: '# factura web' vacia o nula. Se omite consulta.");
+			return;
+		}
+		BigInteger idOrdenComercio = null;
 		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		try {
-			idOrdenComercio = new BigInteger((String) facturaWeb);
+			BigInteger valorOrden = new BigInteger(facturaWeb.trim());
+			if (valorOrden.signum() > 0) {
+				idOrdenComercio = valorOrden;
+			}
 		} catch (Exception e) {
-			//Igual que en consultarLinkPagoVirtualCRM: sin numero valido el DAO no
-			//consulta, pero al menos queda constancia de por que no se encontro.
 			System.out.println("solicitud de factura: numero de orden no numerico (" + facturaWeb + "): " + e);
+		}
+		if (idOrdenComercio == null) {
+			System.out.println("solicitud de factura: numero de orden invalido (" + facturaWeb + "). Se omite consulta.");
+			return;
 		}
 		Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 		if (infoPedido.getIdcliente() > 0) {
