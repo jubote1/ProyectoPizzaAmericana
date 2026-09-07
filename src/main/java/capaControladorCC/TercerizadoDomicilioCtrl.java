@@ -195,7 +195,7 @@ public class TercerizadoDomicilioCtrl {
 
 
 	        HttpClient client =
-	                HttpClientBuilder.create().build();
+	                utilidadesCC.ClientesHttp.apache();
 
 
 	        HttpResponse response =
@@ -883,9 +883,7 @@ public class TercerizadoDomicilioCtrl {
 	        request.setHeader("Content-Type", "application/json");
 
 	        // SOLUCIÓN AL 307: Permite al cliente HTTP seguir redirecciones en peticiones POST
-	        HttpClient client = HttpClientBuilder.create()
-	                .setRedirectStrategy(new org.apache.http.impl.client.LaxRedirectStrategy())
-	                .build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apacheConRedirecciones();
 
 	        HttpResponse response = client.execute(request);
 
@@ -975,7 +973,7 @@ public class TercerizadoDomicilioCtrl {
 	                + "?idPedidoTienda=" + numposheader
 	                + "&idTienda=" + idtienda;
 
-	        HttpClient client = HttpClientBuilder.create().build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apache();
 	        HttpPost post = new HttpPost(urlServicio);
 
 	        HttpResponse response = client.execute(post);
@@ -1045,7 +1043,7 @@ public class TercerizadoDomicilioCtrl {
 	                    + pedEvento.getNumposheader()
 	                    + "&idTienda=" + tienda.getIdTienda();
 
-	    HttpClient client = HttpClientBuilder.create().build();
+	    HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 	    try {
 	        HttpGet request = new HttpGet(rutaURL);

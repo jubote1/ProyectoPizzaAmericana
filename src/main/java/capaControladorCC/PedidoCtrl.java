@@ -2481,7 +2481,7 @@ public class PedidoCtrl {
 //					        String dirBuscar= direccion+",Colombia,"+ ciudad +",Antioquia";
 //					        String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey="+apikey+"&searchtext="+ URLEncoder.encode(dirBuscar,"UTF-8");
 //					        //Realizamos la invocación mediante el uso de HTTPCLIENT
-//							HttpClient client = HttpClientBuilder.create().build();
+//							HttpClient client = utilidadesCC.ClientesHttp.apache();
 //							HttpGet request = new HttpGet(connstr);
 //							
 //								StringBuffer retorno = new StringBuffer();
@@ -4154,7 +4154,7 @@ public class PedidoCtrl {
 				+ "\"redirect_url\": \"https://pizzaamericana.co\"," + "\"single_use\": false," + "\"sku\": \""
 				+ idPedidoTienda + "\"," + "\"collect_shipping\": false" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try {
@@ -4269,7 +4269,7 @@ public class PedidoCtrl {
 				return resp;
 			}
 
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			String wompiEndpoint = ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
 			HttpPost request = new HttpPost(wompiEndpoint + "payment_links");
 
@@ -4379,7 +4379,7 @@ public class PedidoCtrl {
 				+ "T23:00:00.000Z\"," + "\"redirect_url\": \"https://pizzaamericana.co\"," + "\"single_use\": false,"
 				+ "\"sku\": \"" + idPedidoTienda + "\"," + "\"collect_shipping\": false" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try {
@@ -5020,7 +5020,7 @@ public class PedidoCtrl {
 			String observacion) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -5064,7 +5064,7 @@ public class PedidoCtrl {
 			return resultado.toString();
 		}
 
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 
 		if (tienda == null) {
@@ -5118,7 +5118,7 @@ public class PedidoCtrl {
 	public String obtenerResumenDomiciliarioApp(int idTienda, String claveUsuario) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -5153,7 +5153,7 @@ public class PedidoCtrl {
 	public String obtenerResumenDomiciliarioAppV2(int idTienda, String claveUsuario) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -5295,7 +5295,7 @@ public class PedidoCtrl {
 					+ telefonoCelular + "\"," + "\"inputs\": [\"" + nombre + " - " + idPedido + "\" , \"" + linkPago
 					+ "\"]" + "}";
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			String rutaURLNotif = "https://us-east1-bottapizzaamericana.cloudfunctions.net/fnBottaWhatsAppNotification";
 			HttpPost request = new HttpPost(rutaURLNotif);
 			try {
@@ -5415,7 +5415,7 @@ public class PedidoCtrl {
 			String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey=" + apikey + "&searchtext="
 					+ URLEncoder.encode(searchtext, "UTF-8");
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
 			StringBuffer retorno = new StringBuffer();
@@ -5541,7 +5541,7 @@ public class PedidoCtrl {
 			String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey=" + apikey + "&searchtext="
 					+ URLEncoder.encode(dirBuscar, "UTF-8");
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
 			StringBuffer retorno = new StringBuffer();
@@ -6643,10 +6643,14 @@ public class PedidoCtrl {
 			}
 
 			BigInteger idOrdenComercio = new BigInteger("0");
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			try {
 				idOrdenComercio = new BigInteger((String) numordenkunno);
 			} catch (Exception e) {
+				//Si el numero de orden no es numerico queda en cero, y con cero el
+				//DAO ya no consulta. Antes no se registraba nada y ese cero
+				//terminaba pidiendo los 371.920 pedidos de tienda fisica.
+				System.out.println("consultarLinkPagoVirtualCRM: numero de orden no numerico (" + numordenkunno + "): " + e);
 			}
 			Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 			if (infoPedido.getIdcliente() > 0) {
@@ -6899,7 +6903,7 @@ public class PedidoCtrl {
 				if (pedEvento != null  && pedEvento.getIdpedido() != 0) {
 
 					String respuesta = "";
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 
@@ -6946,7 +6950,7 @@ public class PedidoCtrl {
 				if (pedEvento2 != null && pedEvento2.getIdpedido() != 0) {
 
 					String respuesta = "";
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento2.getTienda().getIdTienda());
 
@@ -7052,7 +7056,7 @@ public class PedidoCtrl {
 	public String obtenerInformacionLeadCRM(String lead) throws IOException {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/" + lead;
 		HttpGet request = new HttpGet(rutaURL);
 		try {
@@ -7105,7 +7109,7 @@ public class PedidoCtrl {
 	public String obtenerInfoCampoLeadCRM(String idcampo) throws IOException {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/custom_fields/" + idcampo;
 		HttpGet request = new HttpGet(rutaURL);
 		try {
@@ -8453,7 +8457,7 @@ public class PedidoCtrl {
 			// Teniendo la información del pedido deberemos de consultar el estado del
 			// pedido para lo cual vamos a consumir servicio a la tienda
 			// Recuperamos la tienda que requerimos trabajar con el servicio
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			if (pedConsultado.getNumposheader() > 0) {
 				Tienda tienda = TiendaDAO.obtenerTienda(pedConsultado.getTienda().getIdTienda());
 				if (tienda != null) {
@@ -9672,7 +9676,7 @@ public class PedidoCtrl {
 	public String consultarEstadosPedidoTienda(int idTienda) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9707,7 +9711,7 @@ public class PedidoCtrl {
 	public String obtenerEgresosServicio(int idTienda, String fecha) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9741,7 +9745,7 @@ public class PedidoCtrl {
 	public String consultaResumidaEstadoTienda(int idTienda, String fecha) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9775,7 +9779,7 @@ public class PedidoCtrl {
 	public String aprobarEgresoServicio(int idTienda, int idEgreso) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -11113,7 +11117,7 @@ public class PedidoCtrl {
 					// Información para hacer el llamado al servicio en la tienda
 					String respuesta = "";
 					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 					// Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null) {
@@ -11151,7 +11155,7 @@ public class PedidoCtrl {
 					// Información para hacer el llamado al servicio en la tienda
 					String respuesta = "";
 					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 					// Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null) {
@@ -11331,7 +11335,7 @@ public class PedidoCtrl {
 		String jsonData = "{  \"auth_token\": \"" + intCRM.getAccessToken() + "\",\n" + "  \"order_id\": "
 				+ idOrdenComercio + "\n" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLDIDI = "https://openapi.didi-food.com/v1/order/order/confirm";
 		HttpPost request = new HttpPost(rutaURLDIDI);
 		try {
@@ -11665,7 +11669,7 @@ public class PedidoCtrl {
 			intCRM = integraciones.get(i);
 			String rutaURL = "https://openapi.didi-food.com/v1/auth/authtoken/refresh?app_id=" + intCRM.getClientID()
 					+ "&app_shop_id=" + intCRM.getAppShopID() + "&app_secret=" + intCRM.getFreshToken();
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(rutaURL);
 			try {
 				StringBuffer retorno = new StringBuffer();
@@ -11686,7 +11690,7 @@ public class PedidoCtrl {
 					rutaURL = "https://openapi.didi-food.com/v1/auth/authtoken/get?app_id=" + intCRM.getClientID()
 							+ "&app_shop_id=" + intCRM.getAppShopID() + "&app_secret=" + intCRM.getFreshToken();
 					;
-					client = HttpClientBuilder.create().build();
+					client = utilidadesCC.ClientesHttp.apache();
 					HttpGet request2 = new HttpGet(rutaURL);
 					try {
 						StringBuffer retorno2 = new StringBuffer();
@@ -11962,7 +11966,7 @@ public class PedidoCtrl {
 				+ intSales.getFreshToken() + "\"," + "  \"owner\": \"mercadeo@pizzaamericana.com.co\","
 				+ "    \"email\": \"" + correoCliente + "\"" + "}";
 		// Realizamos la invocacion mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/hasContact";
 		HttpPost request = new HttpPost(rutaURLSales);
 		try {
@@ -12063,7 +12067,7 @@ public class PedidoCtrl {
 				+ "   \"contactExtEventType\": \"PURCHASE\", " + "   \"products\": \" " + productos + " \", "
 				+ "   \"value\": " + valorPedido + ", " + "   \"location\": \"" + origen + "\" " + "}" + "}";
 		// Realizamos la invocacion mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/addContactExtEvent";
 		HttpPost request = new HttpPost(rutaURLSales);
 		try {
@@ -12190,7 +12194,7 @@ public class PedidoCtrl {
 		// Obtenemos la URL del contact center para invocación del servicio
 		String urlContactCenter = ParametrosDAO.retornarValorAlfanumerico("URLCONTACTCENTER");
 		// Realizamos la invocaci�n mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = urlContactCenter + "FinalizarPedido?idpedido=" + idPedidoProcesar + "&idformapago="
 				+ idFormaPago + "&valortotal=" + valorTotal + "&valorformapago=" + valorFormaPago + "&idcliente="
 				+ idClienteProcesar + "&insertado=" + insertado + "&tiempopedido=" + tiempoPedido + "&validadir=" + "S"
@@ -12578,10 +12582,13 @@ public class PedidoCtrl {
 		// Obtenemos la información del pedido relacionada con la solicitud de factura
 		// electrónica
 		BigInteger idOrdenComercio = new BigInteger("0");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		try {
 			idOrdenComercio = new BigInteger((String) facturaWeb);
 		} catch (Exception e) {
+			//Igual que en consultarLinkPagoVirtualCRM: sin numero valido el DAO no
+			//consulta, pero al menos queda constancia de por que no se encontro.
+			System.out.println("solicitud de factura: numero de orden no numerico (" + facturaWeb + "): " + e);
 		}
 		Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 		if (infoPedido.getIdcliente() > 0) {
@@ -13151,13 +13158,15 @@ public class PedidoCtrl {
 	        		.setSocketTimeout(10000)
 	                .build();
 
-	        HttpClient client = HttpClientBuilder.create()
-	                .setDefaultRequestConfig(config)
-	                .build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 	        String url = tienda.getUrl() + "RegistrarNotificacionTienda";
 
 	        HttpPost post = new HttpPost(url);
+	        //Los tiempos de esta llamada son mas cortos que los del cliente
+	        //compartido, porque va contra la URL de una tienda que puede estar
+	        //apagada. En Apache el RequestConfig se le pone a la peticion.
+	        post.setConfig(config);
 
 	        List<NameValuePair> params = new ArrayList<>();
 	        params.add(new BasicNameValuePair("mensaje", notificacion.getMensaje()));

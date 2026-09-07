@@ -304,7 +304,7 @@ public class PedidoMrTamalCtrl {
                 "\"collect_shipping\": false"+
               "}";
 		//Realizamos la invocaci�n mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try

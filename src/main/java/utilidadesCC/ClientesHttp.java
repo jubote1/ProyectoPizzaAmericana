@@ -4,6 +4,12 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 
@@ -19,7 +25,7 @@ import okhttp3.OkHttpClient;
  * close() hasta Java 21. Crear uno por llamada deja hilos atras que se
  * acumulan pedido tras pedido hasta que el proceso se come los nucleos del
  * servidor girando sobre epoll. Se llego a ver 73 HttpClient y 29 OkHttpClient
- * vivos al mismo tiempo en produccion. Los dos que estan aqui son los unicos
+ * vivos al mismo tiempo en produccion. Los tres que estan aqui son los unicos
  * que deberia haber, y son seguros para uso concurrente: estan hechos para
  * compartirse entre hilos.
  *
@@ -30,8 +36,8 @@ import okhttp3.OkHttpClient;
  * estan puestos de forma explicita.
  *
  * Al usarlos NUNCA se hace .build() de uno nuevo. Si alguna llamada puntual
- * necesita otros tiempos, se deriva del compartido con .newBuilder(), que
- * reutiliza el pool de conexiones y los hilos en vez de crear otros.
+ * necesita otros tiempos, en OkHttp se deriva del compartido con .newBuilder()
+ * y en Apache se le pone un RequestConfig a la peticion, no al cliente.
  */
 public final class ClientesHttp {
 
@@ -77,6 +83,68 @@ public final class ClientesHttp {
 	 */
 	public static final Duration ESPERA_RESPUESTA = Duration.ofSeconds(SEGUNDOS_LLAMADA);
 
+	private static final int MILIS_CONEXION = (int) (SEGUNDOS_CONEXION * 1000);
+
+	private static final int MILIS_LECTURA = (int) (SEGUNDOS_LECTURA * 1000);
+
+	/** Lo que se espera por una conexion libre del pool antes de rendirse. */
+	private static final int MILIS_ESPERA_POOL = 10000;
+
+	/** Techo de conexiones simultaneas en total y contra un mismo host. */
+	private static final int CONEXIONES_TOTALES = 200;
+
+	private static final int CONEXIONES_POR_HOST = 50;
+
+	private static final RequestConfig CONFIG_APACHE = RequestConfig.custom()
+			.setConnectTimeout(MILIS_CONEXION)
+			.setSocketTimeout(MILIS_LECTURA)
+			.setConnectionRequestTimeout(MILIS_ESPERA_POOL)
+			.build();
+
+	/**
+	 * Un gestor de conexiones para cada cliente Apache compartido.
+	 *
+	 * Los dos topes de aqui son criticos y no se pueden dejar por defecto: el
+	 * defaultMaxPerRoute de Apache es 2, asi que un pool sin configurar
+	 * serializaria todas las llamadas contra un mismo host de dos en dos, y en
+	 * hora pico eso seria peor que el problema que veniamos a resolver.
+	 *
+	 * El validateAfterInactivity revisa la conexion antes de reusarla. Al pasar
+	 * de "una conexion nueva por llamada" a un pool que las reutiliza aparece un
+	 * riesgo que antes no existia: que el otro extremo haya cerrado la conexion
+	 * mientras estaba guardada. Sin esta revision eso sale como un
+	 * NoHttpResponseException esporadico en los POST, que Apache no reintenta.
+	 */
+	private static PoolingHttpClientConnectionManager nuevoGestor() {
+		final PoolingHttpClientConnectionManager gestor = new PoolingHttpClientConnectionManager();
+		gestor.setMaxTotal(CONEXIONES_TOTALES);
+		gestor.setDefaultMaxPerRoute(CONEXIONES_POR_HOST);
+		gestor.setValidateAfterInactivity(2000);
+		return (gestor);
+	}
+
+	private static final CloseableHttpClient APACHE = HttpClientBuilder.create()
+			.setConnectionManager(nuevoGestor())
+			.setDefaultRequestConfig(CONFIG_APACHE)
+			.evictExpiredConnections()
+			.evictIdleConnections(30, TimeUnit.SECONDS)
+			.build();
+
+	/**
+	 * El mismo cliente pero siguiendo redirecciones en POST.
+	 *
+	 * La estrategia de redireccion es del cliente y no de la peticion, asi que
+	 * este caso necesita instancia aparte. Lo usa la integracion de domicilios
+	 * tercerizados, cuyo proveedor contesta 307 a los POST.
+	 */
+	private static final CloseableHttpClient APACHE_REDIRECCIONES = HttpClientBuilder.create()
+			.setConnectionManager(nuevoGestor())
+			.setDefaultRequestConfig(CONFIG_APACHE)
+			.setRedirectStrategy(new LaxRedirectStrategy())
+			.evictExpiredConnections()
+			.evictIdleConnections(30, TimeUnit.SECONDS)
+			.build();
+
 	private ClientesHttp() {
 		super();
 	}
@@ -89,5 +157,21 @@ public final class ClientesHttp {
 	/** El java.net.http.HttpClient de toda la aplicacion. */
 	public static HttpClient jdk() {
 		return (JDK);
+	}
+
+	/**
+	 * El Apache HttpClient de toda la aplicacion.
+	 *
+	 * NO se le llame close(): es compartido y cerrarlo dejaria inservible el
+	 * cliente para todo el resto de la aplicacion. Las respuestas si hay que
+	 * cerrarlas o consumirlas como siempre, para que la conexion vuelva al pool.
+	 */
+	public static CloseableHttpClient apache() {
+		return (APACHE);
+	}
+
+	/** El Apache HttpClient que sigue redirecciones en POST. Tampoco se cierra. */
+	public static CloseableHttpClient apacheConRedirecciones() {
+		return (APACHE_REDIRECCIONES);
 	}
 }

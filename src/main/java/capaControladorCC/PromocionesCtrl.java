@@ -932,7 +932,7 @@ public class PromocionesCtrl {
 			"   ] " + 
 			"}";
 			//Realizamos la invocaci�n mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			String rutaURLNotif = "https://us-east1-bottapizzaamericana.cloudfunctions.net/fnBottaWhatsAppNotification";
 			HttpPost request = new HttpPost(rutaURLNotif);
 			try
