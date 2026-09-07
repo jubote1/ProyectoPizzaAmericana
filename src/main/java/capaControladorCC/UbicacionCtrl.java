@@ -2030,12 +2030,21 @@ public class UbicacionCtrl {
 	private static JsonObject ejecutarGetJson(String url) throws Exception {
 	    HttpRequest request = HttpRequest.newBuilder()
 	            .uri(URI.create(url))
+	            .version(HttpClient.Version.HTTP_1_1)
 	            .GET()
 	            .timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA)
 	            .build();
 
-	    HttpResponse<String> response = utilidadesCC.ClientesHttp.jdk()
-	            .send(request, HttpResponse.BodyHandlers.ofString());
+	    HttpResponse<String> response;
+	    try {
+	        response = utilidadesCC.ClientesHttp.jdk()
+	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    } catch (java.io.IOException e) {
+	        // Si la conexión previa fue cerrada por inactividad (GOAWAY / reset), reintentar una vez con conexión fresca
+	        System.out.println("ejecutarGetJson: Advertencia de conexion (" + e.getMessage() + "), reintentando...");
+	        response = utilidadesCC.ClientesHttp.jdk()
+	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    }
 
 	    if (response.statusCode() != 200) {
 	        throw new Exception("Error HTTP ArcGIS: " + response.statusCode() + " - " + response.body());

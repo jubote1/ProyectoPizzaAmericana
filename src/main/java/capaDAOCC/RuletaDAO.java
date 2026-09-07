@@ -114,9 +114,61 @@ public class RuletaDAO {
         }
     }
 
-    
+    /**
+     * Verifica si ya existe un resultado de ruleta registrado para el pedido y la tienda.
+     */
+    public static boolean existeResultadoRuleta(int idPedido, int idTienda) {
+        String sql = "SELECT 1 FROM resultado_ruleta WHERE idpedido = ? AND idtienda = ? LIMIT 1";
+        try (
+            Connection con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+            PreparedStatement ps = con.prepareStatement(sql)
+        ) {
+            ps.setInt(1, idPedido);
+            ps.setInt(2, idTienda);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-
+    /**
+     * Obtiene el resultado de ruleta previamente registrado junto con los datos de la opcion.
+     */
+    public static JSONObject obtenerResultadoRuletaExistente(int idPedido, int idTienda) {
+        String sql = "SELECT r.idresultado, r.idopcion, IFNULL(o.indice, 0) AS indice, "
+                   + "IFNULL(o.premio, 0) AS premio, IFNULL(o.reintento, 0) AS reintento, "
+                   + "IFNULL(o.titulo, '') AS titulo, IFNULL(o.descripcion, '') AS descripcion "
+                   + "FROM resultado_ruleta r "
+                   + "LEFT JOIN opciones_ruleta o ON o.idopcion = r.idopcion "
+                   + "WHERE r.idpedido = ? AND r.idtienda = ? "
+                   + "ORDER BY r.idresultado DESC LIMIT 1";
+        try (
+            Connection con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+            PreparedStatement ps = con.prepareStatement(sql)
+        ) {
+            ps.setInt(1, idPedido);
+            ps.setInt(2, idTienda);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("idresultado", rs.getInt("idresultado"));
+                    obj.put("idopcion", rs.getInt("idopcion"));
+                    obj.put("indice", rs.getInt("indice"));
+                    obj.put("premio", rs.getInt("premio"));
+                    obj.put("reintento", rs.getInt("reintento"));
+                    obj.put("titulo", rs.getString("titulo"));
+                    obj.put("descripcion", rs.getString("descripcion"));
+                    return obj;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 
     /**
