@@ -69,6 +69,7 @@ public final class ClientesHttp {
 			.build();
 
 	private static final HttpClient JDK = HttpClient.newBuilder()
+			.version(HttpClient.Version.HTTP_1_1)
 			.connectTimeout(Duration.ofSeconds(SEGUNDOS_CONEXION))
 			.followRedirects(HttpClient.Redirect.NORMAL)
 			.build();

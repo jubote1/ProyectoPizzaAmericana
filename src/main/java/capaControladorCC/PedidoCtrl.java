@@ -7062,8 +7062,8 @@ public class PedidoCtrl {
 		}
 		// Realizamos la inserción de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogDIDI(datos, authHeader);
-		// Realizamos el procesamiento del Pedido
-		insertarPedidoDIDI(datos, idLog);
+		// Realizamos el procesamiento del Pedido y asignamos la respuesta para DiDi
+		respuesta = insertarPedidoDIDI(datos, idLog);
 		return (respuesta);
 	}
 
@@ -10595,7 +10595,11 @@ public class PedidoCtrl {
 							" Se tiene un problema creando el pedido duplicado de DIDI número  " + idOrdenComercio);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 					// contro.enviarCorreo();
-					return ("");
+					// Respondemos confirmación a DiDi para que no reintente la orden que ya existe
+					JSONObject respDuplicado = new JSONObject();
+					respDuplicado.put("errno", 0);
+					respDuplicado.put("errmsg", "ok");
+					return (respDuplicado.toJSONString());
 				}
 				appId = ((Long) jsonGeneral.get("app_id")).toString();
 				// Obtenemos la tienda de la cual proviene la integración
