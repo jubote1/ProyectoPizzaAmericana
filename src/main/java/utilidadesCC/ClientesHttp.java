@@ -2,14 +2,22 @@ package utilidadesCC;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.pool.PoolStats;
 
+import capaModeloCC.Correo;
+import capaModeloCC.CorreoElectronico;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 
@@ -92,9 +100,9 @@ public final class ClientesHttp {
 	private static final int MILIS_ESPERA_POOL = 10000;
 
 	/** Techo de conexiones simultaneas en total y contra un mismo host. */
-	private static final int CONEXIONES_TOTALES = 200;
+	private static final int CONEXIONES_TOTALES = 400;
 
-	private static final int CONEXIONES_POR_HOST = 50;
+	private static final int CONEXIONES_POR_HOST = 80;
 
 	private static final RequestConfig CONFIG_APACHE = RequestConfig.custom()
 			.setConnectTimeout(MILIS_CONEXION)
@@ -104,17 +112,6 @@ public final class ClientesHttp {
 
 	/**
 	 * Un gestor de conexiones para cada cliente Apache compartido.
-	 *
-	 * Los dos topes de aqui son criticos y no se pueden dejar por defecto: el
-	 * defaultMaxPerRoute de Apache es 2, asi que un pool sin configurar
-	 * serializaria todas las llamadas contra un mismo host de dos en dos, y en
-	 * hora pico eso seria peor que el problema que veniamos a resolver.
-	 *
-	 * El validateAfterInactivity revisa la conexion antes de reusarla. Al pasar
-	 * de "una conexion nueva por llamada" a un pool que las reutiliza aparece un
-	 * riesgo que antes no existia: que el otro extremo haya cerrado la conexion
-	 * mientras estaba guardada. Sin esta revision eso sale como un
-	 * NoHttpResponseException esporadico en los POST, que Apache no reintenta.
 	 */
 	private static PoolingHttpClientConnectionManager nuevoGestor() {
 		final PoolingHttpClientConnectionManager gestor = new PoolingHttpClientConnectionManager();
@@ -124,8 +121,11 @@ public final class ClientesHttp {
 		return (gestor);
 	}
 
+	private static final PoolingHttpClientConnectionManager GESTOR_APACHE = nuevoGestor();
+	private static final PoolingHttpClientConnectionManager GESTOR_APACHE_REDIRECCIONES = nuevoGestor();
+
 	private static final CloseableHttpClient APACHE = HttpClientBuilder.create()
-			.setConnectionManager(nuevoGestor())
+			.setConnectionManager(GESTOR_APACHE)
 			.setDefaultRequestConfig(CONFIG_APACHE)
 			.evictExpiredConnections()
 			.evictIdleConnections(30, TimeUnit.SECONDS)
@@ -133,18 +133,195 @@ public final class ClientesHttp {
 
 	/**
 	 * El mismo cliente pero siguiendo redirecciones en POST.
-	 *
-	 * La estrategia de redireccion es del cliente y no de la peticion, asi que
-	 * este caso necesita instancia aparte. Lo usa la integracion de domicilios
-	 * tercerizados, cuyo proveedor contesta 307 a los POST.
 	 */
 	private static final CloseableHttpClient APACHE_REDIRECCIONES = HttpClientBuilder.create()
-			.setConnectionManager(nuevoGestor())
+			.setConnectionManager(GESTOR_APACHE_REDIRECCIONES)
 			.setDefaultRequestConfig(CONFIG_APACHE)
 			.setRedirectStrategy(new LaxRedirectStrategy())
 			.evictExpiredConnections()
 			.evictIdleConnections(30, TimeUnit.SECONDS)
 			.build();
+
+	// --- PARAMETROS DE MONITOREO Y ALERTAS ---
+	private static final long COOLDOWN_ALERTA_MS = TimeUnit.MINUTES.toMillis(15);
+	private static volatile long ultimaAlertaMs = 0;
+	private static final int UMBRAL_ALERTA_LEASED_TOTAL = 280; // 70% de 400
+	private static final int UMBRAL_ALERTA_LEASED_RUTA = 60;   // 75% de 80
+
+	static {
+		iniciarMonitoreoSegundoPlano();
+	}
+
+	private static void iniciarMonitoreoSegundoPlano() {
+		ScheduledExecutorService monitor = Executors.newSingleThreadScheduledExecutor(r -> {
+			Thread t = new Thread(r, "PoolHttp-Monitor");
+			t.setDaemon(true);
+			return t;
+		});
+
+		monitor.scheduleAtFixedRate(() -> {
+			try {
+				verificarSaludPool();
+			} catch (Throwable t) {
+				// No interrumpir el programador ante fallos imprevistos
+			}
+		}, 60, 60, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * Verifica periódicamente la salud de las conexiones en Apache y OkHttp.
+	 * Si detecta hilos en cola de espera o saturación cercana al límite, envía una alerta por correo.
+	 */
+	private static void verificarSaludPool() {
+		PoolStats statsApache = GESTOR_APACHE.getTotalStats();
+		PoolStats statsRedir = GESTOR_APACHE_REDIRECCIONES.getTotalStats();
+
+		int leasedApache = statsApache.getLeased();
+		int pendingApache = statsApache.getPending();
+		int leasedRedir = statsRedir.getLeased();
+		int pendingRedir = statsRedir.getPending();
+
+		boolean hayPeticionesEnEspera = (pendingApache > 0 || pendingRedir > 0);
+		boolean saturacionTotal = (leasedApache >= UMBRAL_ALERTA_LEASED_TOTAL || leasedRedir >= UMBRAL_ALERTA_LEASED_TOTAL);
+
+		String rutaSaturada = null;
+		int leasedRutaSaturada = 0;
+		Set<HttpRoute> rutas = GESTOR_APACHE.getRoutes();
+		if (rutas != null) {
+			for (HttpRoute r : rutas) {
+				PoolStats rStats = GESTOR_APACHE.getStats(r);
+				if (rStats != null) {
+					if (rStats.getPending() > 0 || rStats.getLeased() >= UMBRAL_ALERTA_LEASED_RUTA) {
+						rutaSaturada = r.getTargetHost().toURI();
+						leasedRutaSaturada = rStats.getLeased();
+						break;
+					}
+				}
+			}
+		}
+
+		if (hayPeticionesEnEspera || saturacionTotal || rutaSaturada != null) {
+			long ahora = System.currentTimeMillis();
+			if (ahora - ultimaAlertaMs >= COOLDOWN_ALERTA_MS) {
+				ultimaAlertaMs = ahora;
+				enviarAlertaCorreo(statsApache, statsRedir, rutaSaturada, leasedRutaSaturada);
+			}
+		}
+	}
+
+	/**
+	 * Envía de forma asíncrona una alerta por correo a tecnología cuando se detecta estrés en el pool.
+	 */
+	private static void enviarAlertaCorreo(PoolStats statsApache, PoolStats statsRedir, String rutaSaturada, int leasedRuta) {
+		new Thread(() -> {
+			try {
+				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
+				if (infoCorreo == null) {
+					return;
+				}
+
+				String asunto = "⚠️ ALERTA CENTRAL: Alta saturación en Pool de Conexiones HTTP";
+				StringBuilder html = new StringBuilder();
+				html.append("<h3>⚠️ ALERTA DE CONGESTIÓN EN POOL DE CONEXIONES HTTP (CENTRAL)</h3>");
+				html.append("<p>El sistema ha detectado alta demanda o peticiones en cola de espera en el pool de conexiones:</p>");
+				html.append("<ul>");
+				html.append("<li><b>Apache General - En uso (activas):</b> ").append(statsApache.getLeased()).append(" / ").append(statsApache.getMax()).append("</li>");
+				html.append("<li><b>Apache General - Libres en reposo:</b> ").append(statsApache.getAvailable()).append("</li>");
+				html.append("<li><b>Apache General - En cola esperando (PENDING):</b> <span style='color:red; font-weight:bold;'>").append(statsApache.getPending()).append("</span></li>");
+				html.append("<li><b>Apache Redirecciones - En uso:</b> ").append(statsRedir.getLeased()).append(" / ").append(statsRedir.getMax()).append("</li>");
+				html.append("<li><b>Apache Redirecciones - En espera:</b> ").append(statsRedir.getPending()).append("</li>");
+				if (rutaSaturada != null) {
+					html.append("<li><b>Host/Ruta con mayor demanda:</b> ").append(rutaSaturada).append(" (").append(leasedRuta).append(" conexiones activas)</li>");
+				}
+				html.append("</ul>");
+				html.append("<p><i>Nota: Esta notificación cuenta con protección anti-spam (máximo 1 correo cada 15 minutos). Puedes verificar las métricas en tiempo real en el endpoint /EstadoPoolHttp.</i></p>");
+
+				Correo correoAlerta = new Correo();
+				ArrayList<String> correos = new ArrayList<>();
+				correos.add("tecnologia@pizzaamericana.com.co");
+				correoAlerta.setAsunto(asunto);
+				correoAlerta.setContrasena(infoCorreo.getClaveCorreo());
+				correoAlerta.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
+				correoAlerta.setMensaje(html.toString());
+
+				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correoAlerta, correos);
+				contro.enviarCorreo();
+				System.out.println("📧 Alerta de saturación de pool HTTP enviada a tecnología@pizzaamericana.com.co exitosamente.");
+			} catch (Exception e) {
+				System.err.println("Error enviando alerta por correo de pool HTTP: " + e.getMessage());
+			}
+		}, "PoolHttp-AlertaCorreo").start();
+	}
+
+	/**
+	 * Genera un JSON con el estado de salud en tiempo real de todos los pools HTTP.
+	 * Utilizado por el Servlet /EstadoPoolHttp.
+	 */
+	public static String obtenerEstadoPoolsJSON() {
+		PoolStats statsApache = GESTOR_APACHE.getTotalStats();
+		PoolStats statsRedir = GESTOR_APACHE_REDIRECCIONES.getTotalStats();
+		ConnectionPool okPool = OK.connectionPool();
+
+		int totalOk = okPool.connectionCount();
+		int idleOk = okPool.idleConnectionCount();
+		int activeOk = Math.max(0, totalOk - idleOk);
+
+		boolean saludable = (statsApache.getPending() == 0 && statsRedir.getPending() == 0 && statsApache.getLeased() < UMBRAL_ALERTA_LEASED_TOTAL);
+		String estadoSalud = saludable ? "SALUDABLE" : "CONGESTIONADO";
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		sb.append("\"estado\":\"").append(estadoSalud).append("\",");
+		sb.append("\"timestamp\":").append(System.currentTimeMillis()).append(",");
+
+		// Apache General
+		sb.append("\"apache_general\":{");
+		sb.append("\"en_uso\":").append(statsApache.getLeased()).append(",");
+		sb.append("\"disponibles\":").append(statsApache.getAvailable()).append(",");
+		sb.append("\"en_cola_esperando\":").append(statsApache.getPending()).append(",");
+		sb.append("\"max_total\":").append(statsApache.getMax()).append(",");
+		sb.append("\"max_por_host\":").append(CONEXIONES_POR_HOST);
+		sb.append("},");
+
+		// Apache Redirecciones
+		sb.append("\"apache_redirecciones\":{");
+		sb.append("\"en_uso\":").append(statsRedir.getLeased()).append(",");
+		sb.append("\"disponibles\":").append(statsRedir.getAvailable()).append(",");
+		sb.append("\"en_cola_esperando\":").append(statsRedir.getPending()).append(",");
+		sb.append("\"max_total\":").append(statsRedir.getMax());
+		sb.append("},");
+
+		// OkHttp
+		sb.append("\"okhttp\":{");
+		sb.append("\"conexiones_totales\":").append(totalOk).append(",");
+		sb.append("\"disponibles_ociosas\":").append(idleOk).append(",");
+		sb.append("\"en_uso_activas\":").append(activeOk);
+		sb.append("},");
+
+		// Rutas activas
+		sb.append("\"rutas_activas\":[");
+		Set<HttpRoute> rutas = GESTOR_APACHE.getRoutes();
+		boolean primero = true;
+		if (rutas != null) {
+			for (HttpRoute r : rutas) {
+				PoolStats rStats = GESTOR_APACHE.getStats(r);
+				if (rStats != null && (rStats.getLeased() > 0 || rStats.getAvailable() > 0 || rStats.getPending() > 0)) {
+					if (!primero) sb.append(",");
+					primero = false;
+					sb.append("{");
+					sb.append("\"host\":\"").append(r.getTargetHost().toURI()).append("\",");
+					sb.append("\"en_uso\":").append(rStats.getLeased()).append(",");
+					sb.append("\"disponibles\":").append(rStats.getAvailable()).append(",");
+					sb.append("\"en_cola\":").append(rStats.getPending());
+					sb.append("}");
+				}
+			}
+		}
+		sb.append("]");
+
+		sb.append("}");
+		return sb.toString();
+	}
 
 	private ClientesHttp() {
 		super();

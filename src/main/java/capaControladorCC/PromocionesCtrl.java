@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -18,6 +19,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -937,32 +939,27 @@ public class PromocionesCtrl {
 			HttpPost request = new HttpPost(rutaURLNotif);
 			try
 			{
-				//Fijamos el header con el token
-				//NO HAY SEGURIDAD TODAV�A
-		
 				request.setHeader("Accept", "application/json");
 				request.setHeader("Content-type", "application/json");
-				//Fijamos los par�metros
+				//Fijamos los parametros
 				//pass the json string request in the entity
 			    HttpEntity entity = new ByteArrayEntity(jsonString.getBytes("UTF-8"));
 			    request.setEntity(entity);
-				//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-				StringBuffer retorno = new StringBuffer();
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader
-					    (new InputStreamReader(
-					    		responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					    retorno.append(line);
+				String respuestaServicio = "";
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuestaServicio = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
 					}
-				String respuestaServicio = retorno.toString();
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
+				}
 				if(respuestaServicio.equals(new String("ok : Mensaje Enviado correctamente")))
 				{
 					
 				}else
 				{
-					//Recuperar la lista de distribuci�n para este correo
+					//Recuperar la lista de distribucion para este correo
 					ArrayList correos = GeneralDAO.obtenerCorreosParametro("REPORTEVIRTUALSINPAGO");
 					Date fecha = new Date();
 					Correo correo = new Correo();
@@ -975,7 +972,7 @@ public class PromocionesCtrl {
 					contro.enviarCorreo();
 				}
 				//Traemos el valor del JSON con toda la info del pedido
-				String datosJSON = retorno.toString();
+				String datosJSON = respuestaServicio;
 				System.out.println(datosJSON);
 			}catch (Exception e2) {
 		        e2.printStackTrace();
