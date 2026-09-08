@@ -49,6 +49,7 @@ import okio.Buffer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -56,7 +57,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicNameValuePair;
+import java.nio.charset.StandardCharsets;
 import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -1933,8 +1934,8 @@ public class PedidoCtrl {
 				+ mensajeTexto + " &priority=1&referenceId=");
 		Request request = new Request.Builder().post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
+			// Solicitud completada y socket cerrado automáticamente
 		} catch (Exception e) {
 			System.out.println("ERROR " + e.toString());
 			// Recuperar la lista de distribución para este correo
@@ -4171,15 +4172,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
 			// hacemos en la parte gráfica
@@ -4286,6 +4287,15 @@ public class PedidoCtrl {
 			HttpResponse response = client.execute(request);
 
 			int statusCode = response.getStatusLine().getStatusCode();
+			String retorno = "";
+			try {
+				if (response.getEntity() != null) {
+					retorno = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(response.getEntity());
+			}
+
 			if (statusCode != 200 && statusCode != 201) {
 
 				resp.put("success", false);
@@ -4294,21 +4304,9 @@ public class PedidoCtrl {
 				return resp;
 			}
 
-			// 🔹 6. Leer respuesta
-			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-			StringBuilder retorno = new StringBuilder();
-			String line;
-
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
-			}
-
-			rd.close();
-
 			// 🔹 7. Parsear JSON
 			JSONParser parser = new JSONParser();
-			JSONObject jsonGeneral = (JSONObject) parser.parse(retorno.toString());
+			JSONObject jsonGeneral = (JSONObject) parser.parse(retorno);
 			JSONObject jsonData = (JSONObject) jsonGeneral.get("data");
 
 			if (jsonData == null) {
@@ -4395,15 +4393,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
 			// hacemos en la parte gráfica
@@ -5032,17 +5030,16 @@ public class PedidoCtrl {
 					+ claveUsuario + "&idtienda=" + idTienda + "&observacion=" + observacion;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -5088,16 +5085,14 @@ public class PedidoCtrl {
 			HttpGet request = new HttpGet(rutaURL);
 
 			HttpResponse responseFinPed = client.execute(request);
-
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-
-			StringBuilder retorno = new StringBuilder();
-			String line;
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String respuesta = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-
-			String respuesta = retorno.toString();
 
 			// Si servicio de tienda respondió vacío → error
 			if (respuesta.trim().isEmpty()) {
@@ -5130,17 +5125,16 @@ public class PedidoCtrl {
 					+ "&idtienda=" + idTienda;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -5165,17 +5159,16 @@ public class PedidoCtrl {
 					+ "&idtienda=" + idTienda;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -5233,8 +5226,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder()
 					.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 					.addHeader("content-type", "application/x-www-form-urlencoded").build();
-			try {
-				okhttp3.Response response = client.newCall(request).execute();
+			try (okhttp3.Response response = client.newCall(request).execute()) {
 				String resultado = response.toString();
 				System.out.println(resultado);
 			} catch (Exception e) {
@@ -5312,14 +5304,14 @@ public class PedidoCtrl {
 				HttpEntity entity = new ByteArrayEntity(jsonString.getBytes("UTF-8"));
 				request.setEntity(entity);
 				// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-				StringBuffer retorno = new StringBuffer();
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuestaServicio = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				respuestaServicio = retorno.toString();
 				if (respuestaServicio.equals(new String("ok : Mensaje Enviado correctamente"))) {
 
 				} else {
@@ -5337,7 +5329,7 @@ public class PedidoCtrl {
 					contro.enviarCorreo();
 				}
 				// Traemos el valor del JSON con toda la info del pedido
-				String datosJSON = retorno.toString();
+				String datosJSON = respuestaServicio;
 				System.out.println(datosJSON);
 			} catch (Exception e2) {
 				e2.printStackTrace();
@@ -5360,8 +5352,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder()
 					.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 					.addHeader("content-type", "application/x-www-form-urlencoded").build();
-			try {
-				okhttp3.Response response = client.newCall(request).execute();
+			try (okhttp3.Response response = client.newCall(request).execute()) {
 			} catch (Exception e) {
 				System.out.println("ERROR " + e.toString());
 				// Recuperar la lista de distribución para este correo
@@ -5421,14 +5412,15 @@ public class PedidoCtrl {
 			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			String datosJSON = retorno.toString();
 			System.out.println(datosJSON);
 		} catch (Exception e2) {
 			e2.printStackTrace();
@@ -5547,14 +5539,14 @@ public class PedidoCtrl {
 			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					resultado = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			resultado = retorno.toString();
 			// Posteriormente realizamos la conversión del objeto JSON para tener la latitud
 			// y la longitud
 			Object objParserServicio = parser.parse(resultado);
@@ -5708,8 +5700,7 @@ public class PedidoCtrl {
 		Request request = new Request.Builder()
 				.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
 		} catch (Exception e) {
 			System.out.println("ERROR " + e.toString());
 			// Recuperar la lista de distribución para este correo
@@ -6930,18 +6921,14 @@ public class PedidoCtrl {
 						HttpGet request = new HttpGet(rutaURL);
 
 						try {
-							StringBuilder retorno = new StringBuilder();
-
 							HttpResponse response = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(response.getEntity().getContent()));
-
-							String line;
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (response.getEntity() != null) {
+									respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(response.getEntity());
 							}
-
-							respuesta = retorno.toString();
 
 							// 🔹 Marcar entregado al domiciliario
 							PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
@@ -6978,18 +6965,14 @@ public class PedidoCtrl {
 						HttpGet request = new HttpGet(rutaURL);
 
 						try {
-							StringBuilder retorno = new StringBuilder();
-
 							HttpResponse response = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(response.getEntity().getContent()));
-
-							String line;
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (response.getEntity() != null) {
+									respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(response.getEntity());
 							}
-
-							respuesta = retorno.toString();
 
 							// 🔹 Marcar entregado en sistema
 							PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
@@ -7079,17 +7062,16 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
 			int statusCode = responseFinPed.getStatusLine().getStatusCode();
 			System.out.println("Código de estado: " + statusCode);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosLead = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			datosLead = retorno.toString();
 
 			if (statusCode != 200) {
 				Correo correo = new Correo();
@@ -7132,15 +7114,14 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosLead = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			datosLead = retorno.toString();
 
 		} catch (Exception e2) {
 			e2.printStackTrace();
@@ -7160,7 +7141,7 @@ public class PedidoCtrl {
 				863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227, 868045, 868051, 868231, 868233, 868055,
 				868057, 868059, 868061, 868063, 868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
 				872199, 872201, 862673, 862675, 872069, 872639, 872641, 872705, 872707, 872709, 872711, 872713, 872717,
-				873301, 873303, 875939, 875631));
+				873301, 873303, 875939, 875631, 876709));
 
 		// Construimos la estructura JSON
 		List<Map<String, Object>> customFields = new ArrayList<>();
@@ -8481,18 +8462,16 @@ public class PedidoCtrl {
 							+ pedConsultado.getNumposheader();
 					HttpGet request = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno = new StringBuffer();
-						StringBuffer retornoTienda = new StringBuffer();
-						// Se realiza la ejecución del servicio de finalizar pedido
 						HttpResponse responseFinPed = client.execute(request);
-						BufferedReader rd = new BufferedReader(
-								new InputStreamReader(responseFinPed.getEntity().getContent()));
-						String line = "";
-						while ((line = rd.readLine()) != null) {
-							retorno.append(line);
+						String strRetorno = "";
+						try {
+							if (responseFinPed.getEntity() != null) {
+								strRetorno = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(responseFinPed.getEntity());
 						}
-						System.out.println(retorno.toString());
-						String strRetorno = retorno.toString();
+						System.out.println(strRetorno);
 						JSONParser parser = new JSONParser();
 						Object objParser = parser.parse(strRetorno);
 						JSONObject jsonResServicio = (JSONObject) objParser;
@@ -9343,8 +9322,7 @@ public class PedidoCtrl {
 		Request request = new Request.Builder()
 				.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
 		} catch (Exception e) {
 		}
 	}
@@ -9700,17 +9678,16 @@ public class PedidoCtrl {
 					+ tienda.getPos();
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9734,17 +9711,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "ObtenerEgresosServicio?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9768,17 +9744,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "ConsultaResumidaEstadoTienda?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9802,17 +9777,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "AprobarEgresoServicio?idegreso=" + idEgreso;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -11145,17 +11119,14 @@ public class PedidoCtrl {
 								+ pedEvento.getNumposheader() + "&idusuario=180&usuario=Caja";
 						HttpGet request = new HttpGet(rutaURL);
 						try {
-							StringBuffer retorno = new StringBuffer();
-							StringBuffer retornoTienda = new StringBuffer();
-							// Se realiza la ejecución del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(responseFinPed.getEntity().getContent()));
-							String line = "";
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (responseFinPed.getEntity() != null) {
+									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(responseFinPed.getEntity());
 							}
-							respuesta = retorno.toString();
 							// Marcamos que el pedido fue entregado al domiciliario
 							PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
 						} catch (Exception e) {
@@ -11184,17 +11155,14 @@ public class PedidoCtrl {
 								+ "&observacion=PedidoEntregadoPorPlataforma";
 						HttpGet request = new HttpGet(rutaURL);
 						try {
-							StringBuffer retorno = new StringBuffer();
-							StringBuffer retornoTienda = new StringBuffer();
-							// Se realiza la ejecución del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(responseFinPed.getEntity().getContent()));
-							String line = "";
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (responseFinPed.getEntity() != null) {
+									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(responseFinPed.getEntity());
 							}
-							respuesta = retorno.toString();
 							// Marcamos el entregado al pedido en sistema central
 							PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
 						} catch (Exception e) {
@@ -11365,15 +11333,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonData.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println(datosJSON);
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
@@ -11691,14 +11659,15 @@ public class PedidoCtrl {
 			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
 				HttpResponse response = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				String respuestaJSON = "";
+				try {
+					if (response.getEntity() != null) {
+						respuestaJSON = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(response.getEntity());
 				}
-				String respuestaJSON = retorno.toString();
 				JSONParser parser = new JSONParser();
 				Object objParser = parser.parse(respuestaJSON);
 				JSONObject jsonGeneral = (JSONObject) objParser;
@@ -11712,15 +11681,15 @@ public class PedidoCtrl {
 					client = utilidadesCC.ClientesHttp.apache();
 					HttpGet request2 = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno2 = new StringBuffer();
 						HttpResponse response2 = client.execute(request2);
-						BufferedReader rd2 = new BufferedReader(
-								new InputStreamReader(response2.getEntity().getContent()));
-						String line2 = "";
-						while ((line2 = rd2.readLine()) != null) {
-							retorno2.append(line2);
+						String respuestaJSON2 = "";
+						try {
+							if (response2.getEntity() != null) {
+								respuestaJSON2 = EntityUtils.toString(response2.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(response2.getEntity());
 						}
-						String respuestaJSON2 = retorno2.toString();
 						objParser = parser.parse(respuestaJSON2);
 						jsonGeneral = (JSONObject) objParser;
 						String data = (String) jsonGeneral.get("data").toString();
@@ -11996,15 +11965,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println("RESULTADO RESPUESTA " + datosJSON);
 			// Los datos vienen en un arreglo
 			JSONParser parser = new JSONParser();
@@ -12097,15 +12066,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println("RESULTADO RESPUESTA " + datosJSON);
 //			//Los datos vienen en un arreglo
 //			JSONParser parser = new JSONParser();
@@ -12647,15 +12616,13 @@ public class PedidoCtrl {
 					System.out.println(rutaURL);
 					HttpGet request = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno = new StringBuffer();
-						StringBuffer retornoTienda = new StringBuffer();
-						// Se realiza la ejecución del servicio de finalizar pedido
 						HttpResponse responseFinPed = client.execute(request);
-						BufferedReader rd = new BufferedReader(
-								new InputStreamReader(responseFinPed.getEntity().getContent()));
-						String line = "";
-						while ((line = rd.readLine()) != null) {
-							retorno.append(line);
+						try {
+							if (responseFinPed.getEntity() != null) {
+								EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(responseFinPed.getEntity());
 						}
 					} catch (Exception e) {
 						System.out.println(e.toString());
@@ -13209,17 +13176,14 @@ public class PedidoCtrl {
 	        HttpResponse response = client.execute(post);
 
 	        int statusCode = response.getStatusLine().getStatusCode();
-
-	        BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-	        StringBuilder result = new StringBuilder();
-	        String line;
-
-	        while ((line = rd.readLine()) != null) {
-	            result.append(line);
+	        String respuesta = "";
+	        try {
+	            if (response.getEntity() != null) {
+	                respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+	            }
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
-
-	        String respuesta = result.toString();
 
 	        System.out.println("Respuesta tienda: " + statusCode + " - " + respuesta);
 
