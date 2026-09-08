@@ -57,6 +57,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -7062,8 +7063,8 @@ public class PedidoCtrl {
 		}
 		// Realizamos la inserción de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogDIDI(datos, authHeader);
-		// Realizamos el procesamiento del Pedido
-		insertarPedidoDIDI(datos, idLog);
+		// Realizamos el procesamiento del Pedido y asignamos la respuesta para DiDi
+		respuesta = insertarPedidoDIDI(datos, idLog);
 		return (respuesta);
 	}
 
@@ -10595,7 +10596,11 @@ public class PedidoCtrl {
 							" Se tiene un problema creando el pedido duplicado de DIDI número  " + idOrdenComercio);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 					// contro.enviarCorreo();
-					return ("");
+					// Respondemos confirmación a DiDi para que no reintente la orden que ya existe
+					JSONObject respDuplicado = new JSONObject();
+					respDuplicado.put("errno", 0);
+					respDuplicado.put("errmsg", "ok");
+					return (respDuplicado.toJSONString());
 				}
 				appId = ((Long) jsonGeneral.get("app_id")).toString();
 				// Obtenemos la tienda de la cual proviene la integración
@@ -12207,7 +12212,7 @@ public class PedidoCtrl {
 		boolean respuestaProceso = false;
 		// Obtenemos la URL del contact center para invocación del servicio
 		String urlContactCenter = ParametrosDAO.retornarValorAlfanumerico("URLCONTACTCENTER");
-		// Realizamos la invocaci�n mediante el uso de HTTPCLIENT
+		// Realizamos la invocación mediante el uso de HTTPCLIENT
 		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = urlContactCenter + "FinalizarPedido?idpedido=" + idPedidoProcesar + "&idformapago="
 				+ idFormaPago + "&valortotal=" + valorTotal + "&valorformapago=" + valorFormaPago + "&idcliente="
@@ -12215,47 +12220,43 @@ public class PedidoCtrl {
 				+ "&descuento=" + descuento + "&motivodescuento=" + motivoDescuento + "&programado=" + programado
 				+ "&tiendakuno=" + tiendaKuno;
 		HttpGet request = new HttpGet(rutaURL);
+		HttpResponse responseFinPed = null;
+		HttpResponse responseFinPedTienda = null;
+		HttpResponse responseFinal = null;
 		try {
-			StringBuffer retorno = new StringBuffer();
-			StringBuffer retornoTienda = new StringBuffer();
-			// Se realiza la ejecuci�n del servicio de finalizar pedido
-			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
-			}
-			String datosJSONArray = retorno.toString();
+			// Se realiza la ejecución del servicio de finalizar pedido
+			responseFinPed = client.execute(request);
+			String datosJSONArray = EntityUtils.toString(responseFinPed.getEntity(), "UTF-8");
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
-			// hacemos en la parte gr�fica
+			// hacemos en la parte gráfica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSONArray);
 			JSONObject jsonObject = (JSONObject) ((JSONArray) objParser).get(0);
 			String datosJSON = jsonObject.toJSONString();
 			// En el anterior punto sacamos el primer objeto del arreglo y lo llevamos a un
-			// string para procesarlo en la inserci�n de la tienda
+			// string para procesarlo en la inserción de la tienda
 
-			// En retorno tendremos el resultado de la finalizaci�n del pedido y
-			// continuaremos con el env�o del pedido a la tienda
+			// En retorno tendremos el resultado de la finalización del pedido y
+			// continuaremos con el envío del pedido a la tienda
 			Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
+			if (tienda == null || tienda.getUrl() == null || tienda.getUrl().trim().isEmpty()) {
+				return false;
+			}
 			// Recordar que este es un llamado POS, del JSON recibido en el anterior
 			String rutaURLTienda = tienda.getUrl() + "FinalizarPedidoPixel";
 			HttpPost post = new HttpPost(rutaURLTienda);
 			try {
 				List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 				nameValuePairs.add(new BasicNameValuePair("datos", datosJSON));
-				post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+				post.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
-				HttpResponse responseFinPedTienda = client.execute(post);
-				BufferedReader rdTienda = new BufferedReader(
-						new InputStreamReader(responseFinPedTienda.getEntity().getContent()));
-				String lineTienda = "";
-				while ((lineTienda = rdTienda.readLine()) != null) {
-					retornoTienda.append(lineTienda);
-				}
+				HttpResponse respTienda = client.execute(post);
+				responseFinPedTienda = respTienda;
+				String retornoTienda = EntityUtils.toString(respTienda.getEntity(), "UTF-8");
+
 				// Realizamos el tratamiento de la respuesta final
 				JSONParser parserFinal = new JSONParser();
-				Object objParserFinal = parser.parse(retornoTienda.toString());
+				Object objParserFinal = parserFinal.parse(retornoTienda);
 				JSONObject jsonObjectFinal = (JSONObject) ((JSONArray) objParserFinal).get(0);
 				int memberCode = ((Long) jsonObjectFinal.get("membercode")).intValue();
 				int numeroFactura = ((Long) jsonObjectFinal.get("numerofactura")).intValue();
@@ -12268,21 +12269,17 @@ public class PedidoCtrl {
 					strCreaCliente = "false";
 				}
 				int idCliente = ((Long) jsonObjectFinal.get("idcliente")).intValue();
-				// Obtenidos todos los par�metros realizamos el llamado al servicio
+				// Obtenidos todos los parámetros realizamos el llamado al servicio
 				String rutaURLFinal = urlContactCenter + "ActualizarNumeroPedidoPixel?idpedido=" + idPedido
 						+ "&numpedidopixel=" + numeroFactura + "&creacliente=" + strCreaCliente + "&membercode="
 						+ memberCode + "&idcliente=" + idCliente;
 				HttpGet requestFinal = new HttpGet(rutaURLFinal);
 				try {
-					StringBuffer retornoFinal = new StringBuffer();
-					// Se realiza la ejecuci�n del servicio de finalizar pedido
-					HttpResponse responseFinal = client.execute(requestFinal);
-					BufferedReader rdFinal = new BufferedReader(
-							new InputStreamReader(responseFinPed.getEntity().getContent()));
-					line = "";
-					while ((line = rd.readLine()) != null) {
-						retornoFinal.append(line);
-					}
+					// Se realiza la ejecución del servicio de actualizar pedido en central
+					HttpResponse respFinal = client.execute(requestFinal);
+					responseFinal = respFinal;
+					String retornoFinal = EntityUtils.toString(respFinal.getEntity(), "UTF-8");
+
 					if (numeroFactura == 0) {
 						// Es porque no se insertó el pedido en la tienda y enviamos mensaje de whatsapp
 						String mensajePla = "Se tuvo problema enviando pedido " + idPedido
@@ -12290,6 +12287,9 @@ public class PedidoCtrl {
 						// #PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
 						// PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3148807773");
 						// PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3052166792");
+						respuestaProceso = false;
+					} else {
+						respuestaProceso = true;
 					}
 
 				} catch (Exception e3) {
@@ -12305,6 +12305,16 @@ public class PedidoCtrl {
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			respuestaProceso = false;
+		} finally {
+			if (responseFinPed != null) {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
+			}
+			if (responseFinPedTienda != null) {
+				EntityUtils.consumeQuietly(responseFinPedTienda.getEntity());
+			}
+			if (responseFinal != null) {
+				EntityUtils.consumeQuietly(responseFinal.getEntity());
+			}
 		}
 		return (respuestaProceso);
 	}
