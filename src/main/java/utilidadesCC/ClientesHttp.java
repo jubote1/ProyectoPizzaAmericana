@@ -101,50 +101,6 @@ public final class ClientesHttp {
 			.setConnectionRequestTimeout(MILIS_ESPERA_POOL)
 			.build();
 
-	/**
-	 * Un gestor de conexiones para cada cliente Apache compartido.
-	 *
-	 * Los dos topes de aqui son criticos y no se pueden dejar por defecto: el
-	 * defaultMaxPerRoute de Apache es 2, asi que un pool sin configurar
-	 * serializaria todas las llamadas contra un mismo host de dos en dos, y en
-	 * hora pico eso seria peor que el problema que veniamos a resolver.
-	 *
-	 * El validateAfterInactivity revisa la conexion antes de reusarla. Al pasar
-	 * de "una conexion nueva por llamada" a un pool que las reutiliza aparece un
-	 * riesgo que antes no existia: que el otro extremo haya cerrado la conexion
-	 * mientras estaba guardada. Sin esta revision eso sale como un
-	 * NoHttpResponseException esporadico en los POST, que Apache no reintenta.
-	 */
-	private static PoolingHttpClientConnectionManager nuevoGestor() {
-		final PoolingHttpClientConnectionManager gestor = new PoolingHttpClientConnectionManager();
-		gestor.setMaxTotal(CONEXIONES_TOTALES);
-		gestor.setDefaultMaxPerRoute(CONEXIONES_POR_HOST);
-		gestor.setValidateAfterInactivity(2000);
-		return (gestor);
-	}
-
-	private static final CloseableHttpClient APACHE = HttpClientBuilder.create()
-			.setConnectionManager(nuevoGestor())
-			.setDefaultRequestConfig(CONFIG_APACHE)
-			.evictExpiredConnections()
-			.evictIdleConnections(30, TimeUnit.SECONDS)
-			.build();
-
-	/**
-	 * El mismo cliente pero siguiendo redirecciones en POST.
-	 *
-	 * La estrategia de redireccion es del cliente y no de la peticion, asi que
-	 * este caso necesita instancia aparte. Lo usa la integracion de domicilios
-	 * tercerizados, cuyo proveedor contesta 307 a los POST.
-	 */
-	private static final CloseableHttpClient APACHE_REDIRECCIONES = HttpClientBuilder.create()
-			.setConnectionManager(nuevoGestor())
-			.setDefaultRequestConfig(CONFIG_APACHE)
-			.setRedirectStrategy(new LaxRedirectStrategy())
-			.evictExpiredConnections()
-			.evictIdleConnections(30, TimeUnit.SECONDS)
-			.build();
-
 	private ClientesHttp() {
 		super();
 	}
@@ -160,18 +116,50 @@ public final class ClientesHttp {
 	}
 
 	/**
-	 * El Apache HttpClient de toda la aplicacion.
+	 * Un Apache HttpClient con los tiempos limite puestos, NUEVO en cada llamada.
 	 *
-	 * NO se le llame close(): es compartido y cerrarlo dejaria inservible el
-	 * cliente para todo el resto de la aplicacion. Las respuestas si hay que
-	 * cerrarlas o consumirlas como siempre, para que la conexion vuelva al pool.
+	 * OJO: aqui NO se comparte la instancia, y es a proposito. Se intento
+	 * compartirla el 2026-09-06 y el 07 en la noche los pedidos de plataforma
+	 * dejaron de llegar solos a las tiendas: quien operaba el central tuvo que
+	 * reenviarlos a mano toda la noche.
+	 *
+	 * El motivo es el que ya se habia advertido al hacer el cambio y que no se
+	 * mitigo lo suficiente: al compartir el cliente se comparte su pool y las
+	 * conexiones se REUTILIZAN. Los endpoints de las tiendas son POS pequenos que
+	 * cierran las conexiones ociosas sin avisar, asi que una conexion guardada
+	 * llega muerta a la siguiente llamada. Eso sale como NoHttpResponseException,
+	 * y Apache NO reintenta un POST porque no es idempotente: la llamada falla.
+	 * El setValidateAfterInactivity de 2 segundos no alcanza, porque una conexion
+	 * que la tienda cerro medio segundo antes ni siquiera se revalida.
+	 *
+	 * Y encima, los metodos que llaman a las tiendas leen la respuesta con un
+	 * BufferedReader que nunca cierran; si el parseo del JSON revienta -y hay
+	 * casts sin proteger- la conexion queda arrendada y con un pool compartido
+	 * ese cupo se pierde para todo el servidor.
+	 *
+	 * Crear un cliente por llamada tiene el costo que se conoce -no reutiliza
+	 * conexiones y deja objetos para el recolector-, pero es el comportamiento
+	 * que funciono durante anos. Los tiempos limite si se conservan, porque esos
+	 * nunca fueron el problema: sin ellos una tienda lenta dejaba el hilo de
+	 * Tomcat esperando para siempre.
+	 *
+	 * Antes de volver a intentar compartirlo hay que, en este orden: cerrar las
+	 * respuestas en los 37 sitios que llaman, y probar con una sola tienda.
 	 */
 	public static CloseableHttpClient apache() {
-		return (APACHE);
+		return (HttpClientBuilder.create()
+				.setDefaultRequestConfig(CONFIG_APACHE)
+				.build());
 	}
 
-	/** El Apache HttpClient que sigue redirecciones en POST. Tampoco se cierra. */
+	/**
+	 * Lo mismo, siguiendo redirecciones en POST, para el proveedor de domicilios
+	 * tercerizados que contesta 307. Tambien nuevo en cada llamada.
+	 */
 	public static CloseableHttpClient apacheConRedirecciones() {
-		return (APACHE_REDIRECCIONES);
+		return (HttpClientBuilder.create()
+				.setDefaultRequestConfig(CONFIG_APACHE)
+				.setRedirectStrategy(new LaxRedirectStrategy())
+				.build());
 	}
 }
