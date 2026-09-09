@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		disableMobile: true,
 	});
 
-	$("#selectPromociones, #selectPlantilla, #selectTiendas ,#selectMedio").select2({
+	$("#selectPromociones, #selectPlantilla, #selectTiendas, #selectMedio, #selectCanal, #selectTipoCliente, #selectProductos, #selectEspecialidades").select2({
 		placeholder: function() {
 			return $(this).data("placeholder");
 		},
@@ -244,6 +244,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 	cargarPlantillas();
 	getListaTiendas();
+	getCatalogoSegmentacion();
 	getExcepcionesPrecio();
 
 	async function cargarPlantillas() {
@@ -315,6 +316,53 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
+	/**
+	 * Productos y especialidades para los dos filtros nuevos.
+	 *
+	 * Vienen en una sola respuesta porque se necesitan al mismo tiempo. Son 393
+	 * productos y 39 especialidades: se cargan todos y el buscador de Select2 se
+	 * encarga, que es mas rapido que ir al servidor por cada letra.
+	 */
+	async function getCatalogoSegmentacion() {
+		try {
+			const response = await fetch(`${BASE_URL}/ObtenerCatalogoSegmentacion`);
+			if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+			const data = await response.json();
+			llenarOpciones("selectProductos", data.productos);
+			llenarOpciones("selectEspecialidades", data.especialidades);
+		} catch (error) {
+			console.error("Error al cargar el catalogo de productos y especialidades:", error);
+		}
+	}
+
+	function llenarOpciones(idSelect, lista) {
+		if (!lista) { return; }
+		let opciones = ``;
+		lista.forEach(({ id, nombre }) => {
+			opciones += `<option value="${id}">${escaparTexto(nombre)}</option>`;
+		});
+		document.getElementById(idSelect).innerHTML = opciones;
+		document.getElementById(idSelect).value = "";
+	}
+
+	/** Los nombres vienen de la tabla y se pintan como HTML. */
+	function escaparTexto(texto) {
+		if (texto === null || texto === undefined) { return ""; }
+		return String(texto)
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;");
+	}
+
+
+	/** Valores marcados de un multiselect. */
+	function seleccionados(idSelect) {
+		return Array.from(document.querySelectorAll("#" + idSelect + " option:checked"))
+			.map(option => option.value)
+			.filter(valor => valor !== "" && valor !== "TODOS");
+	}
 	async function cargarClientes(data = {}, url, columns = []) {
 		const btnConsultar = document.getElementById("btnConsultar");
 		const loadingSpinner = document.getElementById("loading-spinner");
@@ -452,17 +500,31 @@ document.addEventListener("DOMContentLoaded", function() {
 		const rangoFechas = document.getElementById("rangoFechas").value.trim();
 		const tiendas = Array.from(document.querySelectorAll("#selectTiendas option:checked")).map(option => option.value);
 		const medio = document.getElementById("selectMedio").value.trim();
-		const canal = document.getElementById("selectCanal").value.trim();
-		const tipoCliente = document.getElementById("selectTipoCliente").value.trim();
+		//Todos los multiselect se leen igual: las opciones marcadas. Antes canal y
+		//tipo de cliente eran de un solo valor y se comparaban contra "TODOS"; ahora
+		//no escoger nada ya significa todos, asi que ese caso es no mandar el filtro.
+		const canales = seleccionados("selectCanal");
+		const tiposCliente = seleccionados("selectTipoCliente");
+		const productos = seleccionados("selectProductos");
+		const especialidades = seleccionados("selectEspecialidades");
 
-		if(canal != "TODOS")
-		{
-			datos.canal = canal;
-		}
+		if (canales.length > 0) { datos.canales = canales; }
+		if (tiposCliente.length > 0) { datos.tiposcliente = tiposCliente; }
+		if (productos.length > 0) { datos.productos = productos; }
+		if (especialidades.length > 0) { datos.especialidades = especialidades; }
 
-		if(tipoCliente != "TODOS")
-		{
-			datos.tipocliente = tipoCliente;
+		const maxPedidos = document.getElementById("maxPedidos").value.trim();
+		if (maxPedidos !== "") { datos.maxPedidos = parseInt(maxPedidos, 10) || 0; }
+
+		const ultimaDesde = document.getElementById("diasUltimaCompraDesde").value.trim();
+		if (ultimaDesde !== "") { datos.diasUltimaCompraDesde = parseInt(ultimaDesde, 10) || 0; }
+
+		const ultimaHasta = document.getElementById("diasUltimaCompraHasta").value.trim();
+		if (ultimaHasta !== "") { datos.diasUltimaCompraHasta = parseInt(ultimaHasta, 10) || 0; }
+
+		//Por defecto el servidor deja fuera a los clientes de plataforma.
+		if (document.getElementById("incluirPlataformas").checked) {
+			datos.incluirPlataformas = true;
 		}
 
 		let fechaInicio = "", fechaMaxima = "";

@@ -103,24 +103,87 @@
 
 		<div class="grid_3">
 
+			<!-- Canal y tipo de cliente pasan a ser de varios valores, como
+			     Promociones. Se quito la opcion TODOS: en un multiselect, no
+			     escoger nada ya significa todos. -->
 			<div class="section">
-				<label>Canal Venta :</label> <select id="selectCanal"
-					class="form-control" data-placeholder="Seleccionar">
+				<label>Canal Venta :</label> <select id="selectCanal" multiple
+					class="form-control" data-placeholder="Todos los canales">
 					  <option value="C">Contact Center</option>
 					  <option value="TK">Tienda Virtual</option>
 					  <option value="APP">APP</option>
 					  <option value="CRM">CRM</option>
-					  <option value="TODOS" selected>TODOS</option>
+					  <option value="RAP">Rappi</option>
+					  <option value="DID">DiDi</option>
 				</select>
 			</div>
 
 			<div class="section">
-				<label>Tipo Cliente :</label> <select id="selectTipoCliente"
-					class="form-control" data-placeholder="Seleccionar">
+				<label>Tipo Cliente :</label> <select id="selectTipoCliente" multiple
+					class="form-control" data-placeholder="Todos los tipos">
 					  <option value="natural">Persona Natural</option>
 					  <option value="juridica">Persona Juridica</option>
-					  <option value="TODOS" selected>TODOS</option>
 				</select>
+			</div>
+
+		</div>
+
+		<div class="grid_3">
+
+			<!-- Filtros opcionales de lo que el cliente ha pedido. Se buscan sobre
+			     los pedidos del cliente, asi que dejan solo los pedidos que
+			     contienen ese producto o esa especialidad. -->
+			<div class="section">
+				<label>Producto pedido :</label> <select id="selectProductos" multiple
+					class="form-control" data-placeholder="Cualquier producto">
+				</select>
+			</div>
+
+			<div class="section">
+				<label>Especialidad pedida :</label> <select id="selectEspecialidades" multiple
+					class="form-control" data-placeholder="Cualquier especialidad">
+				</select>
+			</div>
+
+		</div>
+
+		<div class="grid_3">
+
+			<div class="section">
+				<label>Cantidad de pedidos maximo:</label> <input type="number"
+					class="form-control" id="maxPedidos" min="1"
+					placeholder="Sin tope">
+			</div>
+
+			<div class="section">
+				<label>Ultima compra: hace al menos (dias)</label> <input type="number"
+					class="form-control" id="diasUltimaCompraDesde" min="0"
+					placeholder="Sin limite">
+			</div>
+
+			<div class="section">
+				<label>Ultima compra: hace maximo (dias)</label> <input type="number"
+					class="form-control" id="diasUltimaCompraHasta" min="1"
+					placeholder="Sin limite">
+			</div>
+
+		</div>
+
+		<div class="grid_3">
+
+			<div class="section">
+				<input type="checkbox" id="incluirPlataformas" /> Incluir clientes de
+				plataforma (Rappi, DiDi)
+			</div>
+
+			<!-- Estos tres filtros van siempre y no se pueden apagar. Antes estaban
+			     aplicados pero invisibles, y quien usaba la pantalla no sabia que el
+			     numero que veia ya venia filtrado. -->
+			<div class="section">
+				<small style="color: #666;">
+					La consulta excluye siempre a quien no tiene correo valido, no
+					acepto politica de datos o pidio no recibir publicidad.
+				</small>
 			</div>
 
 		</div>
