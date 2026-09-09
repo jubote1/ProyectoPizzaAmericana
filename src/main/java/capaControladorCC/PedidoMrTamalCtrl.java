@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.StringTokenizer;
@@ -18,6 +19,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -208,24 +210,26 @@ public class PedidoMrTamalCtrl {
 				
 				
 				String email  = (String)objTemp.get("client_email");
-				//En ocasiones cuando no es definida la latitud ni la longitud esta llega como un String por lo
-				//tanto es necesario incluirlas dentro de un try y si hay excepci�n llenar con cero los valores
+				//La plataforma manda las coordenadas como NUMERO cuando las tiene, y como
+				//texto vacio cuando no. Por eso se convierten desde toString() y no
+				//casteando a String, que fallaba justamente con las coordenadas buenas y
+				//las dejaba en cero.
 				double latitud = 0, longitud = 0;
 				try
 				{
-					latitud = Double.parseDouble((String)objTemp.get("latitude"));
+					latitud = Double.parseDouble(objTemp.get("latitude").toString());
 				}catch(Exception e)
 				{
 					latitud = 0;
-					System.out.println(e.toString());
+					System.out.println("Mr Tamal: latitud no utilizable (" + objTemp.get("latitude") + "): " + e);
 				}
 				try
 				{
-					longitud = Double.parseDouble((String)objTemp.get("longitude"));
+					longitud = Double.parseDouble(objTemp.get("longitude").toString());
 				}catch(Exception e)
 				{
 					longitud = 0;
-					System.out.println(e.toString());
+					System.out.println("Mr Tamal: longitud no utilizable (" + objTemp.get("longitude") + "): " + e);
 				}
 				tipoPedido = (String)objTemp.get("type");
 				if(tipoPedido.equals(new String("delivery")))
@@ -236,7 +240,7 @@ public class PedidoMrTamalCtrl {
 					idTipoPedido = 2;
 				}
 				//El servicio de Kuno permite identificar el restaurante con el campo restaurante token
-				int idTienda = Integer.parseInt((String) objTemp.get("restaurant_token"));
+				int idTienda = Integer.parseInt(objTemp.get("restaurant_token").toString());
 				String nombreTienda = (String) objTemp.get("restaurant_name");
 				String tokenPrivado = TiendaFranquiciaWompiDAO.obtenerTiendaFranquiciaWompiDAO(idTienda);
 				
@@ -304,7 +308,7 @@ public class PedidoMrTamalCtrl {
                 "\"collect_shipping\": false"+
               "}";
 		//Realizamos la invocaci�n mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try
@@ -313,24 +317,22 @@ public class PedidoMrTamalCtrl {
 			request.setHeader("Authorization", "Bearer " + tokenPrivado);
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			//Fijamos los par�metros
+			//Fijamos los parmetros
 			//pass the json string request in the entity
 		    HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 		    request.setEntity(entity);
 			//request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader
-				    (new InputStreamReader(
-				    		responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				    retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
 				}
-			//Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
+			}
 			
-			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte gr�fica
+			//Los datos vienen en un arreglo, debemos de tomar el primer valor como lo hacemos en la parte grfica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSON);
 			JSONObject jsonGeneral = (JSONObject) objParser;
@@ -338,9 +340,9 @@ public class PedidoMrTamalCtrl {
 			Object objParserData = parser.parse(dataJSON);
 			JSONObject jsonData = (JSONObject) objParserData;
 			idLink = (String)jsonData.get("id");
-			//En la parte de arriba ya tenemos la generaci�n del link la idea en este punto es realizar
+			//En la parte de arriba ya tenemos la generacin del link la idea en este punto es realizar
 			
-			//reutilizaci�n de la l�gica del resto para el env�o de la notificaci�n
+			//reutilizacin de la lgica del resto para el envo de la notificacin
 			realizarNotificacionWompi(idLink, clienteVirtual, wompiUrl + idLink,  idPedidoTienda);
 		}catch (Exception e2) {
             e2.printStackTrace();

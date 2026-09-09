@@ -162,16 +162,43 @@ public class EncuestaCtrl {
 	    	);
 
 	    	if (existe) {
-	    	    respuesta.put("success", false);
-	    	    respuesta.put(
-	    	        "message",
-	    	        "Ya no es posible realizar esta acción nuevamente: "
-	    	            + encuesta.getIdpedido()
-	    	            + " - "
-	    	            + encuesta.getIdtienda()
+	    	    // Verificar si el cliente ya jugó en la ruleta
+	    	    boolean yaJugoRuleta = RuletaDAO.existeResultadoRuleta(
+	    	        encuesta.getIdpedido(),
+	    	        encuesta.getIdtienda()
 	    	    );
 
-	    	    return respuesta.toJSONString();
+	    	    if (yaJugoRuleta) {
+	    	        respuesta.put("success", false);
+	    	        respuesta.put(
+	    	            "message",
+	    	            "Ya no es posible realizar esta acción nuevamente: "
+	    	                + encuesta.getIdpedido()
+	    	                + " - "
+	    	                + encuesta.getIdtienda()
+	    	        );
+
+	    	        return respuesta.toJSONString();
+	    	    } else {
+	    	        // La encuesta fue diligenciada previamente pero el cliente no concluyó la ruleta
+	    	        // (p. ej. recarga de página, desconexión o fallo en cliente).
+	    	        // Se recuperan las opciones de la ruleta para permitirle jugar.
+	    	        List<JSONObject> listaOpcionesPublica = new ArrayList<>();
+	    	        List<JSONObject> listaOpcionesRuleta = RuletaDAO.ListaOpcionesRuleta();
+
+	    	        for (JSONObject opcion : listaOpcionesRuleta) {
+	    	            JSONObject publica = new JSONObject();
+	    	            publica.put("index", opcion.get("indice"));
+	    	            publica.put("title", opcion.get("titulo"));
+	    	            publica.put("iterations", opcion.get("repeticiones"));
+	    	            listaOpcionesPublica.add(publica);
+	    	        }
+
+	    	        respuesta.put("roulette_options", listaOpcionesPublica);
+	    	        respuesta.put("success", true);
+	    	        respuesta.put("message", "Encuesta previa encontrada. ¡Gira la ruleta!");
+	    	        return respuesta.toJSONString();
+	    	    }
 	    	}
 
 	    	existe = EmpleadoEncuestaDAO.insertarEncuestaServicio(encuesta);
@@ -222,6 +249,37 @@ public class EncuestaCtrl {
 	    }
 
 	    try {
+	        // Verificar si este pedido ya tiene un resultado registrado en la ruleta
+	        // (p. ej. si la petición anterior guardó en BD pero el cliente sufrió un timeout o corte de conexión)
+	        JSONObject resultadoPrevio = RuletaDAO.obtenerResultadoRuletaExistente(
+	                encuesta.getIdpedido(),
+	                encuesta.getIdtienda()
+	        );
+
+	        if (resultadoPrevio != null) {
+	            int indicePrevio = resultadoPrevio.get("indice") != null
+	                    ? Integer.parseInt(resultadoPrevio.get("indice").toString())
+	                    : 0;
+	            int premioPrevio = resultadoPrevio.get("premio") != null
+	                    ? Integer.parseInt(resultadoPrevio.get("premio").toString())
+	                    : 0;
+	            int reintentoPrevio = resultadoPrevio.get("reintento") != null
+	                    ? Integer.parseInt(resultadoPrevio.get("reintento").toString())
+	                    : 0;
+	            String tituloPrevio = String.valueOf(resultadoPrevio.get("titulo"));
+	            String descripcionPrevio = String.valueOf(resultadoPrevio.get("descripcion"));
+
+	            respuesta.put("roulette", true);
+	            respuesta.put("animation_index", indicePrevio);
+	            respuesta.put("retry", reintentoPrevio);
+	            respuesta.put("description", descripcionPrevio);
+	            respuesta.put("title", tituloPrevio);
+	            respuesta.put("success", true);
+	            respuesta.put("option_type", premioPrevio);
+	            respuesta.put("message", "Resultado registrado exitosamente");
+
+	            return respuesta.toJSONString();
+	        }
 
 	        // ===== PROBABILIDAD DE GANAR =====
 	        int probabilidadGanar = ParametrosDAO.retornarValorNumerico("PROBABILIDADGANAR");// %

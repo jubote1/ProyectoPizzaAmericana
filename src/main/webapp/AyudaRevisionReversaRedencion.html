@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<title>Ayuda - Revisión de Devolución de Puntos</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<style>
+		body { padding: 20px 28px 60px 28px; font-size: 14px; }
+		h1 { font-size: 24px; color: #20287f; margin-bottom: 4px; }
+		h2 { font-size: 17px; color: #20287f; margin-top: 26px; border-bottom: 1px solid #e5e5e5; padding-bottom: 5px; }
+		.intro { color: #666; margin-bottom: 20px; }
+		table { font-size: 13px; }
+		.aviso { background: #fdf3d8; border-left: 4px solid #f5c518; padding: 10px 14px; margin: 14px 0; }
+		.ojo { background: #fdecea; border-left: 4px solid #d0201f; padding: 10px 14px; margin: 14px 0; }
+		.etq { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+		.e1 { background:#fdebd0; color:#a04000; }
+		.e2 { background:#d5f5e3; color:#1e6b3a; }
+		.e3 { background:#fadbd8; color:#922b21; }
+	</style>
+</head>
+<body>
+
+<h1>Revisión de Devolución de Puntos</h1>
+<p class="intro">
+	Cómo aprobar o rechazar la devolución de puntos del plan de fidelización.
+</p>
+
+<h2>1. Qué llega a esta pantalla</h2>
+<p>
+	Solo las devoluciones que <strong>necesitan que alguien decida</strong>. Son los casos en que el
+	pedido sí se finalizó y después pasó algo:
+</p>
+<table class="table table-bordered">
+	<thead>
+		<tr><th style="width:180px;">Motivo</th><th>Qué pasó</th></tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><strong>ANULACION</strong></td>
+			<td>El pedido estaba finalizado y se anuló. Es el caso delicado: el cliente pudo
+				haber recibido el producto antes de la anulación.</td>
+		</tr>
+		<tr>
+			<td><strong>PRODUCTO_ELIMINADO</strong></td>
+			<td>Se reabrió el pedido y se le quitó el producto que se había pagado con puntos.
+				La devolución es solo por los puntos de ese producto, no por toda la redención.</td>
+		</tr>
+	</tbody>
+</table>
+
+<div class="aviso">
+	<strong>Lo que NO llega aquí:</strong> los pedidos que nunca se finalizaron. Si el cajero
+	abandonó el pedido o se cerró la pantalla de pago, no hubo entrega y los puntos se devuelven
+	solos, sin que nadie tenga que aprobar nada. Por eso esta bandeja debería estar casi siempre
+	vacía; si empieza a llenarse, algo está pasando en las tiendas.
+</div>
+
+<h2>2. Los estados</h2>
+<p>
+	<span class="etq e1">PENDIENTE</span> Espera decisión. Los puntos <strong>no</strong> se han
+	movido: el cliente todavía no los tiene de vuelta.<br><br>
+	<span class="etq e2">APROBADA</span> Los puntos ya volvieron al cliente y quedó registrado
+	quién lo autorizó.<br><br>
+	<span class="etq e3">RECHAZADA</span> No se devolvió nada. Queda la constancia y el motivo.
+</p>
+
+<h2>3. Cómo se decide</h2>
+<ol>
+	<li>Deje el filtro en <strong>Pendientes de revisión</strong> y pulse <strong>Consultar</strong>.</li>
+	<li>Revise la fila: cliente, tienda, pedido, puntos y quién lo solicitó.</li>
+	<li>Si en la columna de puntos aparece algo como <code>150 de 400</code>, es una devolución
+		<strong>parcial</strong>: se devuelven 150 de los 400 que se habían redimido.</li>
+	<li>Pulse <strong>Aprobar</strong> o <strong>Rechazar</strong>, escriba la observación y confirme.</li>
+</ol>
+<p>
+	Para rechazar, la observación es obligatoria. Es lo único que le va a explicar al cajero
+	por qué el cliente no recibió sus puntos.
+</p>
+
+<div class="ojo">
+	<strong>Antes de aprobar una ANULACION:</strong> verifique con la tienda si el producto se
+	entregó. Si se entregó y usted devuelve los puntos, el cliente se queda con el producto
+	<em>y</em> con los puntos. Ese es exactamente el abuso que esta pantalla existe para evitar,
+	y es la razón por la cual estas devoluciones no son automáticas.
+</div>
+
+<h2>4. Qué pasa cuando aprueba</h2>
+<p>
+	La devolución no es solo sumarle puntos al cliente. El sistema devuelve cada punto a la
+	acumulación de la que salió, repone el saldo del cliente, libera el código de redención para
+	que pueda volver a redimir, y registra su usuario y su observación. Todo eso ocurre en una
+	sola operación: o queda todo, o no queda nada. No puede pasar que la solicitud aparezca
+	aprobada y los puntos no hayan vuelto.
+</p>
+
+<h2>5. Preguntas frecuentes</h2>
+<table class="table table-bordered">
+	<tbody>
+		<tr>
+			<td style="width:290px;"><strong>Aprobé por error, ¿cómo lo deshago?</strong></td>
+			<td>No hay botón para deshacerlo. Los puntos ya volvieron al cliente. Si hay que
+				quitárselos de nuevo, comuníquese con tecnología.</td>
+		</tr>
+		<tr>
+			<td><strong>Le di dos veces a Aprobar.</strong></td>
+			<td>No pasa nada. Una solicitud solo se puede resolver una vez; el segundo intento
+				avisa que ya estaba resuelta.</td>
+		</tr>
+		<tr>
+			<td><strong>No me carga nada y salgo de la sesión.</strong></td>
+			<td>La pantalla necesita sesión iniciada. Recargue la página e ingrese de nuevo.</td>
+		</tr>
+		<tr>
+			<td><strong>¿Puedo devolver solo una parte?</strong></td>
+			<td>Desde aquí no. La cantidad la define quien solicita, según lo que pasó en la
+				tienda. Usted aprueba o rechaza esa cantidad.</td>
+		</tr>
+		<tr>
+			<td><strong>Aparecen dos solicitudes del mismo pedido.</strong></td>
+			<td>Puede pasar si tuvo dos motivos distintos, por ejemplo que le quitaran un
+				producto y después se anulara. Revise cada una por separado.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h2>6. El botón Exportar a CSV</h2>
+<p>
+	Baja lo que esté en pantalla, con los filtros aplicados, para revisar en Excel. Incluye las
+	observaciones y quién revisó cada solicitud.
+</p>
+
+</body>
+</html>

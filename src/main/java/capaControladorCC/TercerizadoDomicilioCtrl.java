@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -195,45 +196,26 @@ public class TercerizadoDomicilioCtrl {
 
 
 	        HttpClient client =
-	                HttpClientBuilder.create().build();
-
+	                utilidadesCC.ClientesHttp.apache();
 
 	        HttpResponse response =
 	                client.execute(request);
 
-
-
 	        int status =
 	                response.getStatusLine().getStatusCode();
 
+	        String retorno = "";
 
-
-	        StringBuilder retorno = new StringBuilder();
-
-
-	        if(response.getEntity()!=null){
-
-	            BufferedReader rd =
-	                    new BufferedReader(
-	                            new InputStreamReader(
-	                                    response.getEntity().getContent()
-	                            )
-	                    );
-
-
-	            String line;
-
-	            while((line = rd.readLine())!=null){
-	                retorno.append(line);
+	        try {
+	            if (response.getEntity() != null) {
+	                retorno = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 	            }
-
-	            rd.close();
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
 
-
-
 	        respuesta.setHttpStatus(status);
-	        respuesta.setBody(retorno.toString());
+	        respuesta.setBody(retorno);
 
 
 	        if (status >= 200 && status < 300) {
@@ -883,28 +865,24 @@ public class TercerizadoDomicilioCtrl {
 	        request.setHeader("Content-Type", "application/json");
 
 	        // SOLUCIÓN AL 307: Permite al cliente HTTP seguir redirecciones en peticiones POST
-	        HttpClient client = HttpClientBuilder.create()
-	                .setRedirectStrategy(new org.apache.http.impl.client.LaxRedirectStrategy())
-	                .build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apacheConRedirecciones();
 
 	        HttpResponse response = client.execute(request);
 
 	        int status = response.getStatusLine().getStatusCode();
 
-	        StringBuilder retorno = new StringBuilder();
+	        String retorno = "";
 
-	        if (response.getEntity() != null) {
-	            BufferedReader rd = new BufferedReader(
-	                    new InputStreamReader(response.getEntity().getContent()));
-	            String line;
-	            while ((line = rd.readLine()) != null) {
-	                retorno.append(line);
+	        try {
+	            if (response.getEntity() != null) {
+	                retorno = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 	            }
-	            rd.close();
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
 
 	        respuesta.setHttpStatus(status);
-	        respuesta.setBody(retorno.toString());
+	        respuesta.setBody(retorno);
 
 	        if (status >= 200 && status < 300) {
 
@@ -975,36 +953,31 @@ public class TercerizadoDomicilioCtrl {
 	                + "?idPedidoTienda=" + numposheader
 	                + "&idTienda=" + idtienda;
 
-	        HttpClient client = HttpClientBuilder.create().build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apache();
 	        HttpPost post = new HttpPost(urlServicio);
 
 	        HttpResponse response = client.execute(post);
 
-	        StringBuilder body = new StringBuilder();
+	        String body = "";
 
-	        if (response.getEntity() != null) {
-	            BufferedReader rd = new BufferedReader(
-	                    new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
-
-	            String line;
-
-	            while ((line = rd.readLine()) != null) {
-	                body.append(line);
+	        try {
+	            if (response.getEntity() != null) {
+	                body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 	            }
-
-	            rd.close();
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
 
 	        int status = response.getStatusLine().getStatusCode();
 
 	        if (status >= 200 && status < 300) {
 	            JSONObject respuestaLocal =
-	                    (JSONObject) parser.parse(body.toString());
+	                    (JSONObject) parser.parse(body);
 
 	            return respuestaLocal;
 	        }
 
-	        json.put("mensaje", "La tienda respondió HTTP " + status + ": " + body.toString());
+	        json.put("mensaje", "La tienda respondió HTTP " + status + ": " + body);
 
 	    } catch (Exception e) {
 	        e.printStackTrace();
@@ -1045,24 +1018,20 @@ public class TercerizadoDomicilioCtrl {
 	                    + pedEvento.getNumposheader()
 	                    + "&idTienda=" + tienda.getIdTienda();
 
-	    HttpClient client = HttpClientBuilder.create().build();
+	    HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 	    try {
 	        HttpGet request = new HttpGet(rutaURL);
 	        HttpResponse response = client.execute(request);
-	        if (response.getEntity() != null) {
-	            BufferedReader rd = new BufferedReader(
-	                    new InputStreamReader(
-	                            response.getEntity().getContent()));
-	            StringBuilder retorno = new StringBuilder();
-	            String line;
-	            while ((line = rd.readLine()) != null) {
-	                retorno.append(line);
+	        try {
+	            if (response.getEntity() != null) {
+	                String retorno = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+	                System.out.println(
+	                        "Respuesta DesmarcarPedidoTercerizadoTienda: "
+	                                + retorno);
 	            }
-	            rd.close();
-	            System.out.println(
-	                    "Respuesta DesmarcarPedidoTercerizadoTienda: "
-	                            + retorno.toString());
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
 	    } catch (Exception e) {
 	        e.printStackTrace();

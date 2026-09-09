@@ -1186,8 +1186,8 @@ public class UbicacionCtrl {
 				+ java.net.URLEncoder.encode(direccion, java.nio.charset.StandardCharsets.UTF_8)
 				+ "&lang=es&in=countryCode:COL&limit=5&apiKey=" + API_KEY_HERE;
 
-		HttpClient client = HttpClient.newHttpClient();
-		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+		HttpClient client = utilidadesCC.ClientesHttp.jdk();
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA).build();
 		JsonObject coords = crearCoordsVacias();
 
 		try {
@@ -1605,8 +1605,8 @@ public class UbicacionCtrl {
 	                    java.nio.charset.StandardCharsets.UTF_8)
 	            + "&key=" + API_KEY_GOOGLE;
 
-	    HttpClient client = HttpClient.newHttpClient();
-	    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+	    HttpClient client = utilidadesCC.ClientesHttp.jdk();
+	    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA).build();
 
 	    try {
 	        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -1888,10 +1888,11 @@ public class UbicacionCtrl {
 	            .header("X-Goog-Api-Key", API_KEY_GOOGLE)
 	            .header("X-Goog-FieldMask", "places.formattedAddress,places.location,places.displayName,places.types")
 	            .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+	            .timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA)
 	            .build();
 
 	    try {
-	        HttpResponse<String> response = HttpClient.newHttpClient()
+	        HttpResponse<String> response = utilidadesCC.ClientesHttp.jdk()
 	                .send(request, HttpResponse.BodyHandlers.ofString());
 
 	        if (response.statusCode() != 200) {
@@ -2029,11 +2030,21 @@ public class UbicacionCtrl {
 	private static JsonObject ejecutarGetJson(String url) throws Exception {
 	    HttpRequest request = HttpRequest.newBuilder()
 	            .uri(URI.create(url))
+	            .version(HttpClient.Version.HTTP_1_1)
 	            .GET()
+	            .timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA)
 	            .build();
 
-	    HttpResponse<String> response = HttpClient.newHttpClient()
-	            .send(request, HttpResponse.BodyHandlers.ofString());
+	    HttpResponse<String> response;
+	    try {
+	        response = utilidadesCC.ClientesHttp.jdk()
+	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    } catch (java.io.IOException e) {
+	        // Si la conexión previa fue cerrada por inactividad (GOAWAY / reset), reintentar una vez con conexión fresca
+	        System.out.println("ejecutarGetJson: Advertencia de conexion (" + e.getMessage() + "), reintentando...");
+	        response = utilidadesCC.ClientesHttp.jdk()
+	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    }
 
 	    if (response.statusCode() != 200) {
 	        throw new Exception("Error HTTP ArcGIS: " + response.statusCode() + " - " + response.body());

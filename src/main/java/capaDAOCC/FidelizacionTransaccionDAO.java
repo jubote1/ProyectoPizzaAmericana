@@ -312,4 +312,146 @@ public class FidelizacionTransaccionDAO {
 		return(respuesta);
 	}
 	
+
+	/**
+	 * Un cliente al que hay que avisarle que se le vencen puntos, con el total
+	 * que se le vence y la fecha mas proxima.
+	 */
+	public static class AvisoVencimiento {
+
+		public String correo = "";
+
+		public double puntos = 0;
+
+		public String fechaVence = "";
+
+		public String nombre = "";
+	}
+
+	/** Columna de control del aviso temprano. */
+	public static final String COLUMNA_AVISO_60 = "fecha_aviso_60";
+
+	/** Columna de control del ultimo recordatorio. */
+	public static final String COLUMNA_AVISO_15 = "fecha_aviso_15";
+
+	/**
+	 * Clientes a los que todavia no se les ha avisado que se les vencen puntos
+	 * dentro de la ventana indicada.
+	 *
+	 * Se agrupa por correo y no por transaccion a proposito: un cliente puede
+	 * tener varias acumulaciones venciendose la misma semana, y no tiene sentido
+	 * mandarle tres correos. Se le manda uno con el total.
+	 *
+	 * La ventana va desde hoy hasta hoy mas los dias indicados, y no exactamente
+	 * al dia numero N. Asi, si el proceso no corre una noche, los que quedaron
+	 * sin avisar se recuperan a la noche siguiente en vez de perderse.
+	 *
+	 * El tope existe porque el dia que esto arranque hay casi seis mil clientes
+	 * acumulados en la ventana de 60 dias. Sin tope serian seis mil correos de
+	 * una sola noche, y Gmail reacciona mal a eso.
+	 *
+	 * @param dias    tamano de la ventana en dias
+	 * @param columna COLUMNA_AVISO_60 o COLUMNA_AVISO_15
+	 * @param maximo  cuantos clientes atender esta noche
+	 */
+	public static ArrayList<AvisoVencimiento> obtenerClientesParaAviso(int dias, String columna, int maximo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList<AvisoVencimiento> avisos = new ArrayList<>();
+		if(!COLUMNA_AVISO_60.equals(columna) && !COLUMNA_AVISO_15.equals(columna))
+		{
+			//El nombre de una columna no puede ir como parametro de un
+			//PreparedStatement, asi que se acepta solo de esta lista.
+			logger.error("obtenerClientesParaAviso: columna no permitida " + columna);
+			return(avisos);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if(con1 == null)
+		{
+			return(avisos);
+		}
+		try
+		{
+			//El nombre sale en la misma consulta con una subconsulta, no con un viaje
+			//aparte por cada cliente. Se toma el de la fila mas reciente porque un
+			//mismo correo puede estar repetido en cliente, que es justo el problema
+			//que aparecio en el analisis de clientes centralizados.
+			String consulta = "select t.correo, SUM(t.puntos - t.puntos_redimidos) as puntos,"
+					+ " MIN(t.fecha_vencimiento) as vence,"
+					+ " IFNULL((select c.nombre from cliente c where c.email = t.correo"
+					+ "          order by c.idcliente desc limit 1),'') as nombre"
+					+ " from fidelizacion_transaccion t"
+					+ " where t.vencidos = 'N' and t.puntos > t.puntos_redimidos"
+					+ " and t.fecha_vencimiento between CURDATE() and DATE_ADD(CURDATE(), INTERVAL ? DAY)"
+					+ " and t." + columna + " is null"
+					+ " group by t.correo having puntos > 0 order by vence limit ?";
+			PreparedStatement pst = con1.prepareStatement(consulta);
+			pst.setInt(1, dias);
+			pst.setInt(2, maximo);
+			ResultSet rs = pst.executeQuery();
+			while(rs.next())
+			{
+				AvisoVencimiento aviso = new AvisoVencimiento();
+				aviso.correo = rs.getString("correo");
+				aviso.puntos = rs.getDouble("puntos");
+				aviso.fechaVence = rs.getString("vence") == null ? "" : rs.getString("vence");
+				aviso.nombre = rs.getString("nombre") == null ? "" : rs.getString("nombre");
+				avisos.add(aviso);
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		}
+		catch(Exception e)
+		{
+			logger.error("obtenerClientesParaAviso: " + e.toString());
+			System.out.println("obtenerClientesParaAviso: " + e.toString());
+			try { con1.close(); } catch(Exception e1) { }
+		}
+		return(avisos);
+	}
+
+	/**
+	 * Deja constancia de que a este cliente ya se le aviso, para que el barrido
+	 * de manana no le mande el mismo correo otra vez.
+	 *
+	 * Se marcan todas sus acumulaciones dentro de la ventana, que son las que se
+	 * le resumieron en el correo.
+	 */
+	public static boolean marcarAvisoEnviado(String correo, int dias, String columna)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean respuesta = false;
+		if(!COLUMNA_AVISO_60.equals(columna) && !COLUMNA_AVISO_15.equals(columna))
+		{
+			logger.error("marcarAvisoEnviado: columna no permitida " + columna);
+			return(false);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if(con1 == null)
+		{
+			return(false);
+		}
+		try
+		{
+			String update = "update fidelizacion_transaccion set " + columna + " = CURDATE()"
+					+ " where correo = ? and vencidos = 'N' and puntos > puntos_redimidos"
+					+ " and fecha_vencimiento between CURDATE() and DATE_ADD(CURDATE(), INTERVAL ? DAY)"
+					+ " and " + columna + " is null";
+			PreparedStatement pst = con1.prepareStatement(update);
+			pst.setString(1, correo);
+			pst.setInt(2, dias);
+			respuesta = (pst.executeUpdate() > 0);
+			pst.close();
+			con1.close();
+		}
+		catch(Exception e)
+		{
+			logger.error("marcarAvisoEnviado: " + e.toString());
+			try { con1.close(); } catch(Exception e1) { }
+		}
+		return(respuesta);
+	}
 }

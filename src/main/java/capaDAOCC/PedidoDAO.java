@@ -2063,9 +2063,26 @@ public class PedidoDAO {
 		Logger logger = Logger.getLogger("log_file");
 		Pedido consultaPedido = new Pedido();
 		consultaPedido.setIdpedido(0);
+		/*
+		 * Sin un numero de orden valido no hay nada que buscar, y buscar con cero
+		 * es catastrofico: 371.920 pedidos de tienda fisica tienen
+		 * idordencomercio = 0, asi que la consulta traeria esas 371.920 filas con
+		 * el join de seis tablas y el driver las carga completas a memoria antes
+		 * de devolver el control. Se midieron 938 MB en una sola llamada.
+		 *
+		 * Cinco llamadas concurrentes asi agotaron los 4 GB de heap del Tomcat
+		 * central el 6 de septiembre de 2026. El cero llega porque varios
+		 * llamadores inicializan el BigInteger en cero y se tragan la excepcion
+		 * cuando el numero de orden no viene o no es numerico.
+		 */
+		if (idOrdenComercio == null || idOrdenComercio.signum() <= 0)
+		{
+			logger.info("ConsultaPedidoXOrden: numero de orden invalido (" + idOrdenComercio + "), no se consulta");
+			return (consultaPedido);
+		}
 		String consulta = "";
-		//Agregamos la consulta base
-		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.idordencomercio = " + idOrdenComercio ;
+		//Agregamos la consulta base con LIMIT 10 de seguridad
+		consulta = "select a.idpedido, b.nombre, a.total_bruto, a.impuesto, a.total_neto, concat (c.nombre , '-' , c.apellido) nombrecliente, c.direccion, c.telefono, d.descripcion, a.fechapedido, c.idcliente, a.enviadopixel, a.numposheader, b.idtienda, b.url, a.stringpixel, a.fechainsercion, a.usuariopedido, e.nombre formapago, e.idforma_pago, a.tiempopedido, a.idlink, a.fechapagovirtual, a.fechafinalizacion from pedido a, tienda b, cliente c, estado_pedido d, forma_pago e, pedido_forma_pago f where a.idtienda = b.idtienda and a.idcliente = c.idcliente and a.idestadopedido = d.idestadopedido and e.idforma_pago = f.idforma_pago and f.idpedido = a.idpedido and a.idordencomercio = " + idOrdenComercio + " LIMIT 10";
 		System.out.println(consulta);
 		logger.info(consulta);
 		ConexionBaseDatos con = new ConexionBaseDatos();
@@ -2073,6 +2090,10 @@ public class PedidoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
+			//Un pedido son unas pocas filas, una por forma de pago. Este tope no
+			//afecta ningun caso legitimo y evita que un dato inesperado vuelva a
+			//traer cientos de miles de filas a memoria.
+			stm.setMaxRows(100);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idpedido;
 			int idtienda;
@@ -4989,6 +5010,80 @@ public class PedidoDAO {
 			}
 		}
 		return(pedidosDomCOMTiendas);
+	}
+
+	/**
+	 * Los domicilios tercerizados de una razon social en un rango de fechas,
+	 * agrupados por tienda, separando lo que se recaudo en efectivo de lo que no.
+	 *
+	 * Un domicilio tercerizado es un pedido NUESTRO que llevo un tercero -hoy
+	 * Rappi Cargo-, y se reconoce por pedido.domicilio_tercerizado = 'S'. No hay
+	 * que confundirlo con un pedido de la plataforma de Rappi: esos vienen por
+	 * marcacion_pedido y son pedidos de ellos. Ojo tambien con
+	 * pedido.empresa_tercerizada: existe pero esta siempre en NULL, el proveedor
+	 * de verdad vive en tercerizado_domicilio_evento.proveedor.
+	 *
+	 * El corte de efectivo se hace por forma_pago.tipoformapago y no por
+	 * idforma_pago = 1, para que siga funcionando si manana agregan otra forma de
+	 * pago en efectivo.
+	 *
+	 * Se agrupa en una sola consulta por todas las tiendas de la razon en vez de
+	 * preguntar tienda por tienda, y el count es DISTINCT porque el join con las
+	 * formas de pago multiplica la fila cuando un pedido se paga con dos medios.
+	 *
+	 * Retorna por fila: idtienda, cantidad de pedidos, recaudo en efectivo,
+	 * recaudo que no es efectivo.
+	 */
+	public static ArrayList obtenerTercerizadosPorTienda(int idRazon, String fechaAnterior, String fechaActual)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList tercerizados = new ArrayList();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			String consulta = "select a.idtienda,"
+					+ " count(distinct a.idpedido) as cantidad,"
+					+ " ifnull(sum(case when d.tipoformapago = 'EFECTIVO' then c.valorformapago else 0 end),0) as efectivo,"
+					+ " ifnull(sum(case when d.tipoformapago <> 'EFECTIVO' then c.valorformapago else 0 end),0) as no_efectivo"
+					+ " from pedido a"
+					+ " join razon_x_tienda b on b.idtienda = a.idtienda"
+					+ " left join pedido_forma_pago c on c.idpedido = a.idpedido"
+					+ " left join forma_pago d on d.idforma_pago = c.idforma_pago"
+					+ " where b.idrazon = ?"
+					+ " and a.fechapedido >= ? and a.fechapedido <= ?"
+					+ " and a.domicilio_tercerizado = 'S'"
+					+ " and ifnull(a.cancelado,'0') <> '1'"
+					+ " group by a.idtienda";
+			logger.info(consulta + " razon=" + idRazon + " " + fechaAnterior + " a " + fechaActual);
+			PreparedStatement pst = con1.prepareStatement(consulta);
+			pst.setInt(1, idRazon);
+			pst.setString(2, fechaAnterior);
+			pst.setString(3, fechaActual);
+			ResultSet rs = pst.executeQuery();
+			while(rs.next()){
+				String[] resTemp = new String[4];
+				resTemp[0] = rs.getString("idtienda");
+				resTemp[1] = rs.getString("cantidad");
+				resTemp[2] = rs.getString("efectivo");
+				resTemp[3] = rs.getString("no_efectivo");
+				tercerizados.add(resTemp);
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		}catch (Exception e){
+			logger.info(e.toString());
+			System.out.println("falle lanzando la consulta de domicilios tercerizados " + e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+				logger.info(e1.toString());
+			}
+		}
+		return(tercerizados);
 	}
 	
 	public static ArrayList obtenerPedidosPlataformas(int idRazon,String fechaAnterior, String fechaActual, int idMarcacion)

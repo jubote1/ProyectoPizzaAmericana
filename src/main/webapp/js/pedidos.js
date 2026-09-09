@@ -41,6 +41,10 @@ var totalpedido = 0;
 var totalpuntospedido = 0;
 var puntosredimidos = 0;
 var puntosProcesoRedencion = 0;
+//idredencion de cada redencion que devolvio el central. Es lista porque el
+//asesor puede redimir dos veces en el mismo pedido: CONTINUAR se rehabilita
+//cada vez que se valida un codigo nuevo.
+var idsRedencionPedido = [];
 //Tendremos una variable total general 
 var totalpedidogeneral = 0;
 var radioEsp1Ant= 0;
@@ -3129,6 +3133,30 @@ function ReiniciarPedido()
 															if (idPedido != 0)
 															{
 																//Es porque ya hemos realizado la inserción de algún item por lo tanto consumimos servicio para eliminar lo agregado del pedido
+									//Las redenciones se reversan ANTES de borrar el pedido. Despues de
+									//EliminarPedidoSinConfirmar se limpia idPedido y ya no queda con
+									//que ubicarlas. Este pedido nunca se finalizo, asi que no hubo
+									//entrega y la devolucion es automatica, sin pasar por aprobacion.
+									for (var iRev = 0; iRev < idsRedencionPedido.length; iRev++)
+									{
+										$.ajax({
+											url: server + 'ReversarRedencionPedido?idredencion=' + idsRedencionPedido[iRev]
+												+ '&puntos=0&motivo=' + encodeURIComponent('Pedido cancelado sin finalizar'),
+											dataType: 'json',
+											async: false,
+											success: function(dataRev){
+												if (dataRev.respuesta != 'OK')
+												{
+													alert('No se pudieron devolver los puntos redimidos. Avise a tecnologia. ' + (dataRev.detalle || ''));
+												}
+											},
+											error: function(){
+												alert('No hubo respuesta al devolver los puntos redimidos. Avise a tecnologia.');
+											}
+										});
+									}
+									idsRedencionPedido = [];
+									puntosredimidos = 0;
 																$.ajax({ 
 												    				url: server + 'EliminarPedidoSinConfirmar?idpedido=' + idPedido , 
 												    				dataType: 'json', 
@@ -3230,6 +3258,7 @@ function ReiniciarPedido()
 															    	totalpedido = 0;
                                                                     totalpuntospedido = 0;
                                                                     puntosredimidos = 0;
+                                                                    idsRedencionPedido = [];
                                                                     totalpedidogeneral = 0;
                                                                     descuentoPedido = 0;
                                                                     motivoDescuento = "";
@@ -3791,6 +3820,7 @@ function ConfirmarPedido()
 							    	totalpedido = 0;
                                     totalpuntospedido = 0;
                                     puntosredimidos = 0;
+                                    idsRedencionPedido = [];
                                     totalpedidogeneral = 0;
                                     descuentoPedido = 0;
                                     motivoDescuento = "";
@@ -6750,6 +6780,9 @@ function validarCodigoVerificacion()
             if(respuesta1.respuesta)
             {
                 $('#continuarredencion').attr('disabled', false);
+                //Al acertar no decia nada y el boton parecia muerto: solo habilitaba
+                //CONTINUAR en silencio. El mensaje evita que se le siga dando clic.
+                $.alert('Codigo correcto. Ya puede presionar CONTINUAR para aplicar la redencion.');
             }else 
             {
                 $.alert('La validación del código fue incorrecta.');
@@ -6764,22 +6797,29 @@ function continuarRedencion()
     var fechaSistema = obtenerFechaFormatoBD();
     var codigoValidar = $('#codigoverificacion').val();
     var idtienReden = $("#selectTiendas option:selected").attr('id');
+    //El cierre del modal y la suma de los puntos redimidos van DENTRO del
+    //callback. Estaban afuera, y como el return de la rama de error solo sale
+    //de la funcion del callback y no de continuarRedencion, se sumaban los
+    //puntos y se cerraba el modal incluso cuando la redencion habia fallado:
+    //el asesor veia la alerta de error pero el pedido seguia como si el
+    //cliente hubiera pagado con puntos.
     $.getJSON(server + "RealizarRedencionPuntos?correo=" + $('#correoclienteprograma').val() + "&codigo=" + codigoValidar + "&puntosredimir=" + puntosProcesoRedencion + "&idtienda=" + idtienReden + "&idpedido=" + idPedido, function(data1){
             var respuesta1 = data1;
             if(respuesta1.respuesta == 'OK')
             {
+                 idsRedencionPedido.push(respuesta1.idredencion);
+                 puntosredimidos = puntosredimidos + puntosProcesoRedencion;
+                 $('#continuarredencion').attr('disabled', true);
+                 $('#codigoverificacion').val('');
+                 $('#modalRedimirPuntosPrograma').modal('hide');
                  $.alert('Finalizó correctamente el proceso de REDENCIÓN!');
-            }else 
+            }else
             {
-                $.alert('No se pudo finalizar la redención, comunicar al área de tecnologia!');
-                return;
+                var detalleError = respuesta1.detalle ? '<br><br>' + respuesta1.detalle : '';
+                $.alert('No se pudo finalizar la redención, comunicar al área de tecnologia!' + detalleError);
             }
 
     });
-    puntosredimidos = puntosredimidos + puntosProcesoRedencion;
-    $('#continuarredencion').attr('disabled', true);
-    $('#codigoverificacion').val('');
-    $('#modalRedimirPuntosPrograma').modal('hide');
 }
 
 function obtenerFechaFormatoBD()

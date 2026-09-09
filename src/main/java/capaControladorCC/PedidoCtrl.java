@@ -49,6 +49,7 @@ import okio.Buffer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -56,7 +57,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicNameValuePair;
+import java.nio.charset.StandardCharsets;
+import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -1632,10 +1634,27 @@ public class PedidoCtrl {
 		// String mensajeTexto = formaPagoTexto.getMensajeTexto().replace("#VINCULO", linkPago);
 		// promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
 
-		String emailEnvio = enviarCorreoLinkPago(clienteNoti, idCliente, idPedido, linkPago, idFormaPago);
-		String observacionLog = (emailEnvio.length() > 0)
-				? "Se envio el correo con el link de pago a " + emailEnvio + "."
-				: "El cliente no tiene correo valido, no se envio correo.";
+		/*
+		 * El mensaje del log distingue las tres situaciones. Antes decia "el cliente
+		 * no tiene correo valido" en cualquier fallo, y eso era falso justo en el
+		 * caso mas comun: el correo del cliente estaba bien y lo que fallo fue el
+		 * servidor. Ese mensaje queda guardado en pedido_pago_virtual, asi que la
+		 * mentira quedaba archivada.
+		 */
+		final ResultadoCorreoLinkPago envioCorreo = enviarCorreoLinkPago(clienteNoti, idCliente, idPedido,
+				linkPago, idFormaPago);
+		String emailEnvio = envioCorreo.email;
+		String observacionLog;
+		if (emailEnvio.length() > 0) {
+			observacionLog = "Se envio el correo con el link de pago a " + emailEnvio + ".";
+		} else if (envioCorreo.resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
+			observacionLog = "El correo del cliente es invalido, no se envio correo.";
+		} else if (envioCorreo.resultado == null) {
+			observacionLog = "El cliente no tiene correo registrado, no se envio correo.";
+		} else {
+			observacionLog = "No se pudo enviar el correo por una falla del servidor de correo;"
+					+ " quedo reintentandose en segundo plano.";
+		}
 
 		observacionLog = observacionLog + " "
 				+ avisarWhatsAppLinkPago(clienteNoti, idPedido, idCliente, linkPago, canal);
@@ -1667,16 +1686,36 @@ public class PedidoCtrl {
 	 * @param idPedido    numero del pedido
 	 * @param linkPago    URL de pago
 	 * @param idFormaPago forma de pago, de donde sale el texto configurable
-	 * @return el correo al que se envio, o cadena vacia si no se pudo enviar
+	 * @return el correo al que se envio y el motivo, si no se pudo
 	 */
-	private String enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
+	private ResultadoCorreoLinkPago enviarCorreoLinkPago(Cliente clienteNoti, int idCliente, int idPedido,
 			String linkPago, int idFormaPago) {
 
+		/*
+		 * Si el cliente no tiene correo, o lo que tiene no sirve, no se intenta el
+		 * envio. Antes la revision era solo que contuviera una arroba, asi que
+		 * direcciones como "juan perez@gmail.com" o "juan@gmail" pasaban, se
+		 * gastaba una conexion SMTP y el fallo terminaba generando una alarma por
+		 * algo que se sabia desde el principio.
+		 *
+		 * Se separan las dos situaciones porque no significan lo mismo. Sin correo
+		 * no hay nada que reprocharle al dato; con un correo mal escrito si, y por
+		 * eso ese caso si marca el cliente.
+		 */
 		String correoCliente = clienteNoti.getEmail();
-		if (correoCliente == null || !correoCliente.contains("@")) {
-			return ("");
+		if (correoCliente == null || correoCliente.trim().length() == 0) {
+			// resultado en null: el cliente no tiene correo, no es que algo fallara
+			return (new ResultadoCorreoLinkPago("", null));
 		}
 		correoCliente = correoCliente.trim();
+
+		if (!ControladorEnvioCorreo.esDireccionValida(correoCliente)) {
+			ClienteDAO.marcarCorreoIncorrecto(idCliente);
+			System.out.println("Link de pago del pedido " + idPedido + ": no se intenta el envio, la direccion \""
+					+ correoCliente + "\" del cliente " + idCliente + " no es valida.");
+			return (new ResultadoCorreoLinkPago("",
+					ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA));
+		}
 
 		try {
 			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
@@ -1705,17 +1744,73 @@ public class PedidoCtrl {
 			ArrayList correos = new ArrayList();
 			correos.add(correoCliente);
 
-			boolean correoCorrecto = new ControladorEnvioCorreo(correo, correos).enviarCorreo();
-			if (!correoCorrecto) {
+			/*
+			 * Solo se marca el correo del cliente como incorrecto cuando de verdad
+			 * lo es. Antes se marcaba ante cualquier fallo del envio, y eso
+			 * significaba que un timeout del SMTP -cinco segundos de lentitud de
+			 * Gmail- dejaba marcado como incorrecto el correo de un cliente que
+			 * estaba perfecto. El campo email_correcto es un dato del cliente, no
+			 * un registro de que la red se puso lenta.
+			 *
+			 * Una falla transitoria no toca al cliente: el correo queda
+			 * reintentandose en segundo plano y la direccion no es el problema.
+			 *
+			 * Se usa enviarConReintentos y no un solo intento. El primer intento
+			 * sigue siendo rapido, con la espera corta, porque esto se dispara con
+			 * un asesor mirando la pantalla y desde el ciclo de la tienda virtual.
+			 * Si ese intento falla por algo pasajero, los reintentos siguen aparte
+			 * con espera larga, y el cliente recibe su link unos segundos despues
+			 * en vez de nunca.
+			 */
+			final ControladorEnvioCorreo.ResultadoEnvio resultado =
+					new ControladorEnvioCorreo(correo, correos).enviarConReintentos();
+
+			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
 				ClienteDAO.marcarCorreoIncorrecto(idCliente);
-				return ("");
+				System.out.println("Link de pago del pedido " + idPedido + ": la direccion " + correoCliente
+						+ " es invalida, se marca el cliente " + idCliente);
+				return (new ResultadoCorreoLinkPago("", resultado));
 			}
-			return (correoCliente);
+			if (resultado != ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
+				System.out.println("Link de pago del pedido " + idPedido + ": el primer intento a " + correoCliente
+						+ " fallo por " + resultado + ". Quedo reintentandose en segundo plano."
+						+ " No se marca el cliente, la direccion no es el problema.");
+				return (new ResultadoCorreoLinkPago("", resultado));
+			}
+			return (new ResultadoCorreoLinkPago(correoCliente, resultado));
 
 		} catch (Exception e) {
 			System.out.println("Error enviando el correo del link de pago del pedido " + idPedido
 					+ ": " + e.toString());
-			return ("");
+			return (new ResultadoCorreoLinkPago("",
+					ControladorEnvioCorreo.ResultadoEnvio.FALLA_TRANSITORIA));
+		}
+	}
+
+	/**
+	 * Resultado del envio del correo del link de pago.
+	 *
+	 * Hacen falta los dos datos juntos. El correo, para guardarlo en
+	 * pedido_pago_virtual, y el motivo, para poder decir en el log que fue lo que
+	 * paso. Antes el metodo retornaba solo una cadena vacia en cualquier fallo, y
+	 * quien llamaba lo traducia a "el cliente no tiene correo valido", que era
+	 * falso justo en el caso mas comun: el correo estaba bien y fallo el servidor.
+	 *
+	 * Se resuelve con este objeto y no con un campo de la clase porque PedidoCtrl
+	 * atiende peticiones concurrentes, y un campo compartido se pisaria entre
+	 * hilos.
+	 */
+	private static class ResultadoCorreoLinkPago {
+
+		/** Correo al que se envio, o cadena vacia si no salio. */
+		private final String email;
+
+		/** Motivo del fallo, o null si el cliente no tenia correo registrado. */
+		private final ControladorEnvioCorreo.ResultadoEnvio resultado;
+
+		private ResultadoCorreoLinkPago(String email, ControladorEnvioCorreo.ResultadoEnvio resultado) {
+			this.email = email;
+			this.resultado = resultado;
 		}
 	}
 
@@ -1830,7 +1925,7 @@ public class PedidoCtrl {
 		promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
 
 		// ENVIAREMOS MENSAJE DE WHATSAPP
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		String mensajeEvidencia = "token=tjjy9tki646vwazi&to=+57" + telefonoCelular + "&body=" + mensajeTexto
@@ -1839,8 +1934,8 @@ public class PedidoCtrl {
 				+ mensajeTexto + " &priority=1&referenceId=");
 		Request request = new Request.Builder().post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
+			// Solicitud completada y socket cerrado automáticamente
 		} catch (Exception e) {
 			System.out.println("ERROR " + e.toString());
 			// Recuperar la lista de distribución para este correo
@@ -2350,22 +2445,24 @@ public class PedidoCtrl {
 						}
 
 						String email = (String) objTemp.get("client_email");
-						// En ocasiones cuando no es definida la latitud ni la longitud esta llega como
-						// un String por lo
-						// tanto es necesario incluirlas dentro de un try y si hay excepción llenar con
-						// cero los valores
+						//La plataforma manda las coordenadas como NUMERO cuando las tiene, y como
+						//texto vacio cuando no. Por eso se convierten desde toString() y no
+						//casteando a String: ese cast fallaba justamente con las coordenadas
+						//buenas, las dejaba en cero, y el pedido se iba por la geocodificacion de
+						//respaldo perdiendo la ubicacion real que la plataforma si habia enviado.
+						//Se veian 2.034 ClassCastException en tres semanas por esta causa.
 						double latitud = 0, longitud = 0;
 						try {
-							latitud = Double.parseDouble((String) objTemp.get("latitude"));
+							latitud = Double.parseDouble(objTemp.get("latitude").toString());
 						} catch (Exception e) {
 							latitud = 0;
-							System.out.println(e.toString());
+							System.out.println("Pedido de plataforma: latitud no utilizable (" + objTemp.get("latitude") + "): " + e);
 						}
 						try {
-							longitud = Double.parseDouble((String) objTemp.get("longitude"));
+							longitud = Double.parseDouble(objTemp.get("longitude").toString());
 						} catch (Exception e) {
 							longitud = 0;
-							System.out.println(e.toString());
+							System.out.println("Pedido de plataforma: longitud no utilizable (" + objTemp.get("longitude") + "): " + e);
 						}
 						// Realizamos la intervención para tratar en el momentoen que la ubicación viene
 						// en cero
@@ -2388,7 +2485,7 @@ public class PedidoCtrl {
 //					        String dirBuscar= direccion+",Colombia,"+ ciudad +",Antioquia";
 //					        String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey="+apikey+"&searchtext="+ URLEncoder.encode(dirBuscar,"UTF-8");
 //					        //Realizamos la invocación mediante el uso de HTTPCLIENT
-//							HttpClient client = HttpClientBuilder.create().build();
+//							HttpClient client = utilidadesCC.ClientesHttp.apache();
 //							HttpGet request = new HttpGet(connstr);
 //							
 //								StringBuffer retorno = new StringBuffer();
@@ -2442,7 +2539,7 @@ public class PedidoCtrl {
 						// restaurante token
 
 						// Capturamos el token del restaurante para conocer la tienda y el origen
-						int token = Integer.parseInt((String) objTemp.get("restaurant_token"));
+						int token = Integer.parseInt(objTemp.get("restaurant_token").toString());
 						HomologacionTiendaToken homoTiendaToken = HomologacionTiendaTokenDAO
 								.obtenerHomologacionTiendaToken(token);
 						int idTienda = homoTiendaToken.getIdtienda();
@@ -2663,7 +2760,7 @@ public class PedidoCtrl {
 				}
 				if (key.equals(new String("_billing_cantidad_pago"))) {
 					try {
-						valorFormaPago = Double.parseDouble((String) objTemp.get("value"));
+						valorFormaPago = Double.parseDouble(objTemp.get("value").toString());
 					} catch (Exception e) {
 						valorFormaPago = 0;
 					}
@@ -2827,7 +2924,7 @@ public class PedidoCtrl {
 			if (strHomDomicilio.contains("Valor del domicilio")) {
 				// Sabiendo que estamos en el campo que queremos conocer, verificamos y traemos
 				// el valor de domicilio
-				valorDomicilio = Long.parseLong((String) infoDomicilioTemp.get("total"));
+				valorDomicilio = Long.parseLong(infoDomicilioTemp.get("total").toString());
 				// Si el valor de domicilio es mayor a cero deberemos de recuperar el producto
 				// para agregarlo posteriormente finalizando el pedido
 				if (valorDomicilio > 0) {
@@ -2900,7 +2997,7 @@ public class PedidoCtrl {
 			// Extraemos uno a uno los items del pedido
 			JSONObject detallePedidoTemp = (JSONObject) detallePedido.get(i);
 			// Extraremos el total del item
-			valorTotalItemJSON = Long.parseLong((String) detallePedidoTemp.get("subtotal"));
+			valorTotalItemJSON = Long.parseLong(detallePedidoTemp.get("subtotal").toString());
 			// Extreamos la cantidad
 			long tmp = (long) detallePedidoTemp.get("quantity");
 			Long lngCantidad = Long.valueOf(tmp);
@@ -4061,7 +4158,7 @@ public class PedidoCtrl {
 				+ "\"redirect_url\": \"https://pizzaamericana.co\"," + "\"single_use\": false," + "\"sku\": \""
 				+ idPedidoTienda + "\"," + "\"collect_shipping\": false" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try {
@@ -4075,15 +4172,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
 			// hacemos en la parte gráfica
@@ -4176,7 +4273,7 @@ public class PedidoCtrl {
 				return resp;
 			}
 
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			String wompiEndpoint = ParametrosDAO.retornarValorAlfanumerico("WOMPIENDPOINTP");
 			HttpPost request = new HttpPost(wompiEndpoint + "payment_links");
 
@@ -4190,6 +4287,15 @@ public class PedidoCtrl {
 			HttpResponse response = client.execute(request);
 
 			int statusCode = response.getStatusLine().getStatusCode();
+			String retorno = "";
+			try {
+				if (response.getEntity() != null) {
+					retorno = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(response.getEntity());
+			}
+
 			if (statusCode != 200 && statusCode != 201) {
 
 				resp.put("success", false);
@@ -4198,21 +4304,9 @@ public class PedidoCtrl {
 				return resp;
 			}
 
-			// 🔹 6. Leer respuesta
-			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-			StringBuilder retorno = new StringBuilder();
-			String line;
-
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
-			}
-
-			rd.close();
-
 			// 🔹 7. Parsear JSON
 			JSONParser parser = new JSONParser();
-			JSONObject jsonGeneral = (JSONObject) parser.parse(retorno.toString());
+			JSONObject jsonGeneral = (JSONObject) parser.parse(retorno);
 			JSONObject jsonData = (JSONObject) jsonGeneral.get("data");
 
 			if (jsonData == null) {
@@ -4286,7 +4380,7 @@ public class PedidoCtrl {
 				+ "T23:00:00.000Z\"," + "\"redirect_url\": \"https://pizzaamericana.co\"," + "\"single_use\": false,"
 				+ "\"sku\": \"" + idPedidoTienda + "\"," + "\"collect_shipping\": false" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLWOMPI = wompiEndPoint + "payment_links";
 		HttpPost request = new HttpPost(rutaURLWOMPI);
 		try {
@@ -4299,15 +4393,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
 			// hacemos en la parte gráfica
@@ -4927,7 +5021,7 @@ public class PedidoCtrl {
 			String observacion) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -4936,17 +5030,16 @@ public class PedidoCtrl {
 					+ claveUsuario + "&idtienda=" + idTienda + "&observacion=" + observacion;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -4971,7 +5064,7 @@ public class PedidoCtrl {
 			return resultado.toString();
 		}
 
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 
 		if (tienda == null) {
@@ -4992,16 +5085,14 @@ public class PedidoCtrl {
 			HttpGet request = new HttpGet(rutaURL);
 
 			HttpResponse responseFinPed = client.execute(request);
-
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-
-			StringBuilder retorno = new StringBuilder();
-			String line;
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String respuesta = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-
-			String respuesta = retorno.toString();
 
 			// Si servicio de tienda respondió vacío → error
 			if (respuesta.trim().isEmpty()) {
@@ -5025,7 +5116,7 @@ public class PedidoCtrl {
 	public String obtenerResumenDomiciliarioApp(int idTienda, String claveUsuario) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -5034,17 +5125,16 @@ public class PedidoCtrl {
 					+ "&idtienda=" + idTienda;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -5060,7 +5150,7 @@ public class PedidoCtrl {
 	public String obtenerResumenDomiciliarioAppV2(int idTienda, String claveUsuario) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -5069,17 +5159,16 @@ public class PedidoCtrl {
 					+ "&idtienda=" + idTienda;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -5125,7 +5214,7 @@ public class PedidoCtrl {
 
 		// Validaremos que el telefono celular si se hubiese podido tomar
 		if (!telefonoCelular.equals(new String(""))) {
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 			String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + telefonoCelular
@@ -5137,8 +5226,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder()
 					.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 					.addHeader("content-type", "application/x-www-form-urlencoded").build();
-			try {
-				okhttp3.Response response = client.newCall(request).execute();
+			try (okhttp3.Response response = client.newCall(request).execute()) {
 				String resultado = response.toString();
 				System.out.println(resultado);
 			} catch (Exception e) {
@@ -5202,7 +5290,7 @@ public class PedidoCtrl {
 					+ telefonoCelular + "\"," + "\"inputs\": [\"" + nombre + " - " + idPedido + "\" , \"" + linkPago
 					+ "\"]" + "}";
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			String rutaURLNotif = "https://us-east1-bottapizzaamericana.cloudfunctions.net/fnBottaWhatsAppNotification";
 			HttpPost request = new HttpPost(rutaURLNotif);
 			try {
@@ -5216,14 +5304,14 @@ public class PedidoCtrl {
 				HttpEntity entity = new ByteArrayEntity(jsonString.getBytes("UTF-8"));
 				request.setEntity(entity);
 				// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-				StringBuffer retorno = new StringBuffer();
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuestaServicio = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				respuestaServicio = retorno.toString();
 				if (respuestaServicio.equals(new String("ok : Mensaje Enviado correctamente"))) {
 
 				} else {
@@ -5241,7 +5329,7 @@ public class PedidoCtrl {
 					contro.enviarCorreo();
 				}
 				// Traemos el valor del JSON con toda la info del pedido
-				String datosJSON = retorno.toString();
+				String datosJSON = respuestaServicio;
 				System.out.println(datosJSON);
 			} catch (Exception e2) {
 				e2.printStackTrace();
@@ -5254,7 +5342,7 @@ public class PedidoCtrl {
 
 		// Validaremos que el telefono celular si se hubiese podido tomar
 		if (!telefonoCelular.equals(new String(""))) {
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 			String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + telefonoCelular + "&body="
@@ -5264,8 +5352,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder()
 					.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 					.addHeader("content-type", "application/x-www-form-urlencoded").build();
-			try {
-				okhttp3.Response response = client.newCall(request).execute();
+			try (okhttp3.Response response = client.newCall(request).execute()) {
 			} catch (Exception e) {
 				System.out.println("ERROR " + e.toString());
 				// Recuperar la lista de distribución para este correo
@@ -5322,17 +5409,18 @@ public class PedidoCtrl {
 			String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey=" + apikey + "&searchtext="
 					+ URLEncoder.encode(searchtext, "UTF-8");
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			String datosJSON = retorno.toString();
 			System.out.println(datosJSON);
 		} catch (Exception e2) {
 			e2.printStackTrace();
@@ -5448,17 +5536,17 @@ public class PedidoCtrl {
 			String connstr = "https://geocoder.ls.hereapi.com/6.2/geocode.json?apiKey=" + apikey + "&searchtext="
 					+ URLEncoder.encode(dirBuscar, "UTF-8");
 			// Realizamos la invocación mediante el uso de HTTPCLIENT
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(connstr);
 
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					resultado = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			resultado = retorno.toString();
 			// Posteriormente realizamos la conversión del objeto JSON para tener la latitud
 			// y la longitud
 			Object objParserServicio = parser.parse(resultado);
@@ -5593,7 +5681,7 @@ public class PedidoCtrl {
 	}
 
 	public void notificarWhatsAppUltramsgSolFactura(SolicitudFactura solFactura) {
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		String mensajeEvidencia = "token=" + intWhat.getAccessToken() + "&to=+57" + "3148807773"
@@ -5612,8 +5700,7 @@ public class PedidoCtrl {
 		Request request = new Request.Builder()
 				.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
 		} catch (Exception e) {
 			System.out.println("ERROR " + e.toString());
 			// Recuperar la lista de distribución para este correo
@@ -5840,7 +5927,7 @@ public class PedidoCtrl {
 				+ "\",\n"
 				+ "  \"redirect_uri\": \"https://tiendapizzaamericana.co/ProyectoPizzaAmericana/InsertarPedidoCRMBOT\"\n"
 				+ "}";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/oauth2/access_token").post(body)
@@ -5894,7 +5981,7 @@ public class PedidoCtrl {
 		try {
 			String strBody = "{\r\n" + "    \"email\": \"tecnologia@pizzaamericana.com.co\",\r\n"
 					+ "    \"password\": \"americana.Pzz19005\",\r\n" + "    \"remember_me\": 0\r\n" + "}";
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 			RequestBody body = RequestBody.create(mediaType, strBody);
 			Request request = new Request.Builder().url("https://api-v2.matias-api.com/api/ubl2.1/auth/login")
@@ -6543,18 +6630,34 @@ public class PedidoCtrl {
 				strValor = valor.get("value").toString();
 				strValor = strValor.replaceAll("'", " ");
 				// Dependiendo del campos se tendrá la recuperación del mismo
-				if (clave.equals(new String("# factura web"))) {
-					numordenkunno = strValor;
+				if (clave != null && clave.trim().equalsIgnoreCase("# factura web")) {
+					numordenkunno = strValor != null ? strValor.trim() : "";
 					break;
 				}
 			}
 
-			BigInteger idOrdenComercio = new BigInteger("0");
-			HttpClient client = HttpClientBuilder.create().build();
-			try {
-				idOrdenComercio = new BigInteger((String) numordenkunno);
-			} catch (Exception e) {
+			// Validar si viene un número de orden web
+			if (numordenkunno == null || numordenkunno.trim().isEmpty()) {
+				System.out.println("consultarLinkPagoVirtualCRM: Lead " + lead + " no tiene '# factura web'. Se omite consulta.");
+				return;
 			}
+
+			BigInteger idOrdenComercio = null;
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
+			try {
+				BigInteger valorOrden = new BigInteger(numordenkunno.trim());
+				if (valorOrden.signum() > 0) {
+					idOrdenComercio = valorOrden;
+				}
+			} catch (Exception e) {
+				System.out.println("consultarLinkPagoVirtualCRM: numero de orden no numerico (" + numordenkunno + "): " + e);
+			}
+
+			if (idOrdenComercio == null) {
+				System.out.println("consultarLinkPagoVirtualCRM: Lead " + lead + " con orden invalida (" + numordenkunno + "). Se omite consulta.");
+				return;
+			}
+
 			Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 			if (infoPedido.getIdcliente() > 0) {
 
@@ -6806,7 +6909,7 @@ public class PedidoCtrl {
 				if (pedEvento != null  && pedEvento.getIdpedido() != 0) {
 
 					String respuesta = "";
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 
@@ -6818,18 +6921,14 @@ public class PedidoCtrl {
 						HttpGet request = new HttpGet(rutaURL);
 
 						try {
-							StringBuilder retorno = new StringBuilder();
-
 							HttpResponse response = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(response.getEntity().getContent()));
-
-							String line;
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (response.getEntity() != null) {
+									respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(response.getEntity());
 							}
-
-							respuesta = retorno.toString();
 
 							// 🔹 Marcar entregado al domiciliario
 							PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
@@ -6853,7 +6952,7 @@ public class PedidoCtrl {
 				if (pedEvento2 != null && pedEvento2.getIdpedido() != 0) {
 
 					String respuesta = "";
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento2.getTienda().getIdTienda());
 
@@ -6866,18 +6965,14 @@ public class PedidoCtrl {
 						HttpGet request = new HttpGet(rutaURL);
 
 						try {
-							StringBuilder retorno = new StringBuilder();
-
 							HttpResponse response = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(response.getEntity().getContent()));
-
-							String line;
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (response.getEntity() != null) {
+									respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(response.getEntity());
 							}
-
-							respuesta = retorno.toString();
 
 							// 🔹 Marcar entregado en sistema
 							PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
@@ -6951,15 +7046,15 @@ public class PedidoCtrl {
 		}
 		// Realizamos la inserción de log con el JSON recibido
 		int idLog = LogPedidoVirtualKunoDAO.insertarLogDIDI(datos, authHeader);
-		// Realizamos el procesamiento del Pedido
-		insertarPedidoDIDI(datos, idLog);
+		// Realizamos el procesamiento del Pedido y asignamos la respuesta para DiDi
+		respuesta = insertarPedidoDIDI(datos, idLog);
 		return (respuesta);
 	}
 
 	public String obtenerInformacionLeadCRM(String lead) throws IOException {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/" + lead;
 		HttpGet request = new HttpGet(rutaURL);
 		try {
@@ -6967,17 +7062,16 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
 			int statusCode = responseFinPed.getStatusLine().getStatusCode();
 			System.out.println("Código de estado: " + statusCode);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosLead = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			datosLead = retorno.toString();
 
 			if (statusCode != 200) {
 				Correo correo = new Correo();
@@ -7012,7 +7106,7 @@ public class PedidoCtrl {
 	public String obtenerInfoCampoLeadCRM(String idcampo) throws IOException {
 		String datosLead = "";
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("KOMMO");
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = "https://pizzaamericana.kommo.com/api/v4/leads/custom_fields/" + idcampo;
 		HttpGet request = new HttpGet(rutaURL);
 		try {
@@ -7020,15 +7114,14 @@ public class PedidoCtrl {
 			request.setHeader("Authorization", "Bearer " + intCRM.getAccessToken());
 			request.setHeader("Accept", "application/json");
 			request.setHeader("Content-type", "application/json");
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosLead = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			datosLead = retorno.toString();
 
 		} catch (Exception e2) {
 			e2.printStackTrace();
@@ -7048,7 +7141,7 @@ public class PedidoCtrl {
 				863191, 863427, 865067, 865069, 866919, 867885, 867887, 868227, 868045, 868051, 868231, 868233, 868055,
 				868057, 868059, 868061, 868063, 868065, 870325, 870327, 865679, 870399, 872191, 872193, 872195, 872197,
 				872199, 872201, 862673, 862675, 872069, 872639, 872641, 872705, 872707, 872709, 872711, 872713, 872717,
-				873301, 873303, 875939, 875631));
+				873301, 873303, 875939, 875631, 876709));
 
 		// Construimos la estructura JSON
 		List<Map<String, Object>> customFields = new ArrayList<>();
@@ -7075,7 +7168,7 @@ public class PedidoCtrl {
 		String jsonBody = new ObjectMapper().writeValueAsString(Collections.singletonList(leadData));
 
 		// Enviar petición
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json"), jsonBody);
 		System.out.println("body: " + body);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8360,7 +8453,7 @@ public class PedidoCtrl {
 			// Teniendo la información del pedido deberemos de consultar el estado del
 			// pedido para lo cual vamos a consumir servicio a la tienda
 			// Recuperamos la tienda que requerimos trabajar con el servicio
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			if (pedConsultado.getNumposheader() > 0) {
 				Tienda tienda = TiendaDAO.obtenerTienda(pedConsultado.getTienda().getIdTienda());
 				if (tienda != null) {
@@ -8369,18 +8462,16 @@ public class PedidoCtrl {
 							+ pedConsultado.getNumposheader();
 					HttpGet request = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno = new StringBuffer();
-						StringBuffer retornoTienda = new StringBuffer();
-						// Se realiza la ejecución del servicio de finalizar pedido
 						HttpResponse responseFinPed = client.execute(request);
-						BufferedReader rd = new BufferedReader(
-								new InputStreamReader(responseFinPed.getEntity().getContent()));
-						String line = "";
-						while ((line = rd.readLine()) != null) {
-							retorno.append(line);
+						String strRetorno = "";
+						try {
+							if (responseFinPed.getEntity() != null) {
+								strRetorno = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(responseFinPed.getEntity());
 						}
-						System.out.println(retorno.toString());
-						String strRetorno = retorno.toString();
+						System.out.println(strRetorno);
 						JSONParser parser = new JSONParser();
 						Object objParser = parser.parse(strRetorno);
 						JSONObject jsonResServicio = (JSONObject) objParser;
@@ -8476,7 +8567,7 @@ public class PedidoCtrl {
 				+ "            \"values\": [\r\n" + "                {\r\n" + "                    \"value\": \" "
 				+ origen + "\"\n" + "                }\r\n" + "            ]\r\n" + "        }\r\n" + "    ]\r\n"
 				+ "    }\r\n" + "]";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8506,7 +8597,7 @@ public class PedidoCtrl {
 				+ "            \"values\": [\r\n" + "                {\r\n" + "                    \"value\": \" "
 				+ mensaje + "\"\n" + "                }\r\n" + "            ]\r\n" + "        }\r\n" + "    ]\r\n"
 				+ "    }\r\n" + "]\r\n" + "    ";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -8595,7 +8686,7 @@ public class PedidoCtrl {
 		System.out.println("Datos enviados para actualización del lead: " + datos);
 
 		// Envío HTTP
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 
@@ -8712,7 +8803,7 @@ public class PedidoCtrl {
 		System.out.println("Datos enviados a CRM: " + datos);
 
 		// HTTP PATCH
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 		Request request = new Request.Builder().url("https://pizzaamericana.kommo.com/api/v4/leads").patch(body)
@@ -9223,7 +9314,7 @@ public class PedidoCtrl {
 	 * @param mensaje
 	 */
 	public void notificarWhatsAppUltramsg(String telefono, String mensaje) {
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		IntegracionCRM intWhat = IntegracionCRMDAO.obtenerInformacionIntegracion("ULTRAMSG");
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/x-www-form-urlencoded");
 		RequestBody body = RequestBody.create(mediaType, "token=" + intWhat.getAccessToken() + "&to=+57" + telefono
@@ -9231,8 +9322,7 @@ public class PedidoCtrl {
 		Request request = new Request.Builder()
 				.url("https://api.ultramsg.com/" + intWhat.getClientID() + "/messages/chat").post(body)
 				.addHeader("content-type", "application/x-www-form-urlencoded").build();
-		try {
-			okhttp3.Response response = client.newCall(request).execute();
+		try (okhttp3.Response response = client.newCall(request).execute()) {
 		} catch (Exception e) {
 		}
 	}
@@ -9579,7 +9669,7 @@ public class PedidoCtrl {
 	public String consultarEstadosPedidoTienda(int idTienda) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9588,17 +9678,16 @@ public class PedidoCtrl {
 					+ tienda.getPos();
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9614,7 +9703,7 @@ public class PedidoCtrl {
 	public String obtenerEgresosServicio(int idTienda, String fecha) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9622,17 +9711,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "ObtenerEgresosServicio?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9648,7 +9736,7 @@ public class PedidoCtrl {
 	public String consultaResumidaEstadoTienda(int idTienda, String fecha) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9656,17 +9744,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "ConsultaResumidaEstadoTienda?fecha=" + fecha;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9682,7 +9769,7 @@ public class PedidoCtrl {
 	public String aprobarEgresoServicio(int idTienda, int idEgreso) {
 		String respuesta = "";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		// Recuperamos la tienda que requerimos trabajar con el servicio
 		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
 		if (tienda != null) {
@@ -9690,17 +9777,16 @@ public class PedidoCtrl {
 			String rutaURL = tienda.getUrl() + "AprobarEgresoServicio?idegreso=" + idEgreso;
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
-				StringBuffer retornoTienda = new StringBuffer();
 				// Se realiza la ejecución del servicio de finalizar pedido
 				HttpResponse responseFinPed = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
 				}
-				System.out.println(retorno);
-				respuesta = retorno.toString();
+				System.out.println(respuesta);
 			} catch (Exception e) {
 				System.out.println(e.toString());
 			}
@@ -9726,7 +9812,7 @@ public class PedidoCtrl {
 				+ intCRM.getFreshToken() + "\",\n"
 				+ "  \"audience\": \"https://services.rappi.com/api/v2/restaurants-integrations-public-api\",\n"
 				+ "  \"grant_type\": \"client_credentials\"}";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder().url("https://rests-integrations.auth0.com/oauth/token").post(body)
@@ -9811,7 +9897,7 @@ public class PedidoCtrl {
 			JSONObject jsonOrder = (JSONObject) objParserOrderDetail;
 
 			//Comenzamos a extraer la informacion que allí viene
-			idOrdenComercio = Long.parseLong((String)jsonOrder.get("order_id"));
+			idOrdenComercio = Long.parseLong(jsonOrder.get("order_id").toString());
 			String identificadorPedido = Long.toString(idOrdenComercio);
 			if(identificadorPedido.length() >= 4)
 			{
@@ -10076,7 +10162,7 @@ public class PedidoCtrl {
 			// REALIZAMOS PROCESAMIENTO DE LA INFORMACIÓN DE LA TIENDA
 			Object objParserStore = parser.parse(storeJSON);
 			JSONObject jsonStore = (JSONObject) objParserStore;
-			Long internalIDTienda = Long.parseLong((String) jsonStore.get("internal_id"));
+			Long internalIDTienda = Long.parseLong(jsonStore.get("internal_id").toString());
 			int token = internalIDTienda.intValue();
 			HomologacionTiendaToken homoTiendaToken = HomologacionTiendaTokenDAO.obtenerHomologacionTiendaToken(token);
 			int idTienda = homoTiendaToken.getIdtienda();
@@ -10484,7 +10570,11 @@ public class PedidoCtrl {
 							" Se tiene un problema creando el pedido duplicado de DIDI número  " + idOrdenComercio);
 					ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 					// contro.enviarCorreo();
-					return ("");
+					// Respondemos confirmación a DiDi para que no reintente la orden que ya existe
+					JSONObject respDuplicado = new JSONObject();
+					respDuplicado.put("errno", 0);
+					respDuplicado.put("errmsg", "ok");
+					return (respDuplicado.toJSONString());
 				}
 				appId = ((Long) jsonGeneral.get("app_id")).toString();
 				// Obtenemos la tienda de la cual proviene la integración
@@ -11020,7 +11110,7 @@ public class PedidoCtrl {
 					// Información para hacer el llamado al servicio en la tienda
 					String respuesta = "";
 					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 					// Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null) {
@@ -11029,17 +11119,14 @@ public class PedidoCtrl {
 								+ pedEvento.getNumposheader() + "&idusuario=180&usuario=Caja";
 						HttpGet request = new HttpGet(rutaURL);
 						try {
-							StringBuffer retorno = new StringBuffer();
-							StringBuffer retornoTienda = new StringBuffer();
-							// Se realiza la ejecución del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(responseFinPed.getEntity().getContent()));
-							String line = "";
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (responseFinPed.getEntity() != null) {
+									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(responseFinPed.getEntity());
 							}
-							respuesta = retorno.toString();
 							// Marcamos que el pedido fue entregado al domiciliario
 							PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
 						} catch (Exception e) {
@@ -11058,7 +11145,7 @@ public class PedidoCtrl {
 					// Información para hacer el llamado al servicio en la tienda
 					String respuesta = "";
 					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = HttpClientBuilder.create().build();
+					HttpClient client = utilidadesCC.ClientesHttp.apache();
 					// Recuperamos la tienda que requerimos trabajar con el servicio
 					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
 					if (tienda != null) {
@@ -11068,17 +11155,14 @@ public class PedidoCtrl {
 								+ "&observacion=PedidoEntregadoPorPlataforma";
 						HttpGet request = new HttpGet(rutaURL);
 						try {
-							StringBuffer retorno = new StringBuffer();
-							StringBuffer retornoTienda = new StringBuffer();
-							// Se realiza la ejecución del servicio de finalizar pedido
 							HttpResponse responseFinPed = client.execute(request);
-							BufferedReader rd = new BufferedReader(
-									new InputStreamReader(responseFinPed.getEntity().getContent()));
-							String line = "";
-							while ((line = rd.readLine()) != null) {
-								retorno.append(line);
+							try {
+								if (responseFinPed.getEntity() != null) {
+									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+								}
+							} finally {
+								EntityUtils.consumeQuietly(responseFinPed.getEntity());
 							}
-							respuesta = retorno.toString();
 							// Marcamos el entregado al pedido en sistema central
 							PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
 						} catch (Exception e) {
@@ -11184,7 +11268,7 @@ public class PedidoCtrl {
 		boolean respuesta = false;
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
 		String strBody = "";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody);
 		Request request = new Request.Builder()
@@ -11238,7 +11322,7 @@ public class PedidoCtrl {
 		String jsonData = "{  \"auth_token\": \"" + intCRM.getAccessToken() + "\",\n" + "  \"order_id\": "
 				+ idOrdenComercio + "\n" + "}";
 		// Realizamos la invocación mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLDIDI = "https://openapi.didi-food.com/v1/order/order/confirm";
 		HttpPost request = new HttpPost(rutaURLDIDI);
 		try {
@@ -11249,15 +11333,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonData.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println(datosJSON);
 
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
@@ -11572,17 +11656,18 @@ public class PedidoCtrl {
 			intCRM = integraciones.get(i);
 			String rutaURL = "https://openapi.didi-food.com/v1/auth/authtoken/refresh?app_id=" + intCRM.getClientID()
 					+ "&app_shop_id=" + intCRM.getAppShopID() + "&app_secret=" + intCRM.getFreshToken();
-			HttpClient client = HttpClientBuilder.create().build();
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
 			HttpGet request = new HttpGet(rutaURL);
 			try {
-				StringBuffer retorno = new StringBuffer();
 				HttpResponse response = client.execute(request);
-				BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-				String line = "";
-				while ((line = rd.readLine()) != null) {
-					retorno.append(line);
+				String respuestaJSON = "";
+				try {
+					if (response.getEntity() != null) {
+						respuestaJSON = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(response.getEntity());
 				}
-				String respuestaJSON = retorno.toString();
 				JSONParser parser = new JSONParser();
 				Object objParser = parser.parse(respuestaJSON);
 				JSONObject jsonGeneral = (JSONObject) objParser;
@@ -11593,18 +11678,18 @@ public class PedidoCtrl {
 					rutaURL = "https://openapi.didi-food.com/v1/auth/authtoken/get?app_id=" + intCRM.getClientID()
 							+ "&app_shop_id=" + intCRM.getAppShopID() + "&app_secret=" + intCRM.getFreshToken();
 					;
-					client = HttpClientBuilder.create().build();
+					client = utilidadesCC.ClientesHttp.apache();
 					HttpGet request2 = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno2 = new StringBuffer();
 						HttpResponse response2 = client.execute(request2);
-						BufferedReader rd2 = new BufferedReader(
-								new InputStreamReader(response2.getEntity().getContent()));
-						String line2 = "";
-						while ((line2 = rd2.readLine()) != null) {
-							retorno2.append(line2);
+						String respuestaJSON2 = "";
+						try {
+							if (response2.getEntity() != null) {
+								respuestaJSON2 = EntityUtils.toString(response2.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(response2.getEntity());
 						}
-						String respuestaJSON2 = retorno2.toString();
 						objParser = parser.parse(respuestaJSON2);
 						jsonGeneral = (JSONObject) objParser;
 						String data = (String) jsonGeneral.get("data").toString();
@@ -11705,7 +11790,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -11765,7 +11850,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -11824,7 +11909,7 @@ public class PedidoCtrl {
 					.addHeader("Content-Type", "application/json;charset=UTF-8").addHeader("Accept", "application/json")
 					.post(body).build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -11869,7 +11954,7 @@ public class PedidoCtrl {
 				+ intSales.getFreshToken() + "\"," + "  \"owner\": \"mercadeo@pizzaamericana.com.co\","
 				+ "    \"email\": \"" + correoCliente + "\"" + "}";
 		// Realizamos la invocacion mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/hasContact";
 		HttpPost request = new HttpPost(rutaURLSales);
 		try {
@@ -11880,15 +11965,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println("RESULTADO RESPUESTA " + datosJSON);
 			// Los datos vienen en un arreglo
 			JSONParser parser = new JSONParser();
@@ -11970,7 +12055,7 @@ public class PedidoCtrl {
 				+ "   \"contactExtEventType\": \"PURCHASE\", " + "   \"products\": \" " + productos + " \", "
 				+ "   \"value\": " + valorPedido + ", " + "   \"location\": \"" + origen + "\" " + "}" + "}";
 		// Realizamos la invocacion mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURLSales = "https://app2.salesmanago.pl/api/contact/addContactExtEvent";
 		HttpPost request = new HttpPost(rutaURLSales);
 		try {
@@ -11981,15 +12066,15 @@ public class PedidoCtrl {
 			HttpEntity entity = new ByteArrayEntity(jsonInfo.getBytes("UTF-8"));
 			request.setEntity(entity);
 			// request.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
-			StringBuffer retorno = new StringBuffer();
 			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
+			String datosJSON = "";
+			try {
+				if (responseFinPed.getEntity() != null) {
+					datosJSON = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
 			}
-			// Traemos el valor del JSON con toda la info del pedido
-			String datosJSON = retorno.toString();
 			System.out.println("RESULTADO RESPUESTA " + datosJSON);
 //			//Los datos vienen en un arreglo
 //			JSONParser parser = new JSONParser();
@@ -12096,55 +12181,51 @@ public class PedidoCtrl {
 		boolean respuestaProceso = false;
 		// Obtenemos la URL del contact center para invocación del servicio
 		String urlContactCenter = ParametrosDAO.retornarValorAlfanumerico("URLCONTACTCENTER");
-		// Realizamos la invocaci�n mediante el uso de HTTPCLIENT
-		HttpClient client = HttpClientBuilder.create().build();
+		// Realizamos la invocación mediante el uso de HTTPCLIENT
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		String rutaURL = urlContactCenter + "FinalizarPedido?idpedido=" + idPedidoProcesar + "&idformapago="
 				+ idFormaPago + "&valortotal=" + valorTotal + "&valorformapago=" + valorFormaPago + "&idcliente="
 				+ idClienteProcesar + "&insertado=" + insertado + "&tiempopedido=" + tiempoPedido + "&validadir=" + "S"
 				+ "&descuento=" + descuento + "&motivodescuento=" + motivoDescuento + "&programado=" + programado
 				+ "&tiendakuno=" + tiendaKuno;
 		HttpGet request = new HttpGet(rutaURL);
+		HttpResponse responseFinPed = null;
+		HttpResponse responseFinPedTienda = null;
+		HttpResponse responseFinal = null;
 		try {
-			StringBuffer retorno = new StringBuffer();
-			StringBuffer retornoTienda = new StringBuffer();
-			// Se realiza la ejecuci�n del servicio de finalizar pedido
-			HttpResponse responseFinPed = client.execute(request);
-			BufferedReader rd = new BufferedReader(new InputStreamReader(responseFinPed.getEntity().getContent()));
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				retorno.append(line);
-			}
-			String datosJSONArray = retorno.toString();
+			// Se realiza la ejecución del servicio de finalizar pedido
+			responseFinPed = client.execute(request);
+			String datosJSONArray = EntityUtils.toString(responseFinPed.getEntity(), "UTF-8");
 			// Los datos vienen en un arreglo, debemos de tomar el primer valor como lo
-			// hacemos en la parte gr�fica
+			// hacemos en la parte gráfica
 			JSONParser parser = new JSONParser();
 			Object objParser = parser.parse(datosJSONArray);
 			JSONObject jsonObject = (JSONObject) ((JSONArray) objParser).get(0);
 			String datosJSON = jsonObject.toJSONString();
 			// En el anterior punto sacamos el primer objeto del arreglo y lo llevamos a un
-			// string para procesarlo en la inserci�n de la tienda
+			// string para procesarlo en la inserción de la tienda
 
-			// En retorno tendremos el resultado de la finalizaci�n del pedido y
-			// continuaremos con el env�o del pedido a la tienda
+			// En retorno tendremos el resultado de la finalización del pedido y
+			// continuaremos con el envío del pedido a la tienda
 			Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
+			if (tienda == null || tienda.getUrl() == null || tienda.getUrl().trim().isEmpty()) {
+				return false;
+			}
 			// Recordar que este es un llamado POS, del JSON recibido en el anterior
 			String rutaURLTienda = tienda.getUrl() + "FinalizarPedidoPixel";
 			HttpPost post = new HttpPost(rutaURLTienda);
 			try {
 				List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
 				nameValuePairs.add(new BasicNameValuePair("datos", datosJSON));
-				post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+				post.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
-				HttpResponse responseFinPedTienda = client.execute(post);
-				BufferedReader rdTienda = new BufferedReader(
-						new InputStreamReader(responseFinPedTienda.getEntity().getContent()));
-				String lineTienda = "";
-				while ((lineTienda = rdTienda.readLine()) != null) {
-					retornoTienda.append(lineTienda);
-				}
+				HttpResponse respTienda = client.execute(post);
+				responseFinPedTienda = respTienda;
+				String retornoTienda = EntityUtils.toString(respTienda.getEntity(), "UTF-8");
+
 				// Realizamos el tratamiento de la respuesta final
 				JSONParser parserFinal = new JSONParser();
-				Object objParserFinal = parser.parse(retornoTienda.toString());
+				Object objParserFinal = parserFinal.parse(retornoTienda);
 				JSONObject jsonObjectFinal = (JSONObject) ((JSONArray) objParserFinal).get(0);
 				int memberCode = ((Long) jsonObjectFinal.get("membercode")).intValue();
 				int numeroFactura = ((Long) jsonObjectFinal.get("numerofactura")).intValue();
@@ -12157,21 +12238,17 @@ public class PedidoCtrl {
 					strCreaCliente = "false";
 				}
 				int idCliente = ((Long) jsonObjectFinal.get("idcliente")).intValue();
-				// Obtenidos todos los par�metros realizamos el llamado al servicio
+				// Obtenidos todos los parámetros realizamos el llamado al servicio
 				String rutaURLFinal = urlContactCenter + "ActualizarNumeroPedidoPixel?idpedido=" + idPedido
 						+ "&numpedidopixel=" + numeroFactura + "&creacliente=" + strCreaCliente + "&membercode="
 						+ memberCode + "&idcliente=" + idCliente;
 				HttpGet requestFinal = new HttpGet(rutaURLFinal);
 				try {
-					StringBuffer retornoFinal = new StringBuffer();
-					// Se realiza la ejecuci�n del servicio de finalizar pedido
-					HttpResponse responseFinal = client.execute(requestFinal);
-					BufferedReader rdFinal = new BufferedReader(
-							new InputStreamReader(responseFinPed.getEntity().getContent()));
-					line = "";
-					while ((line = rd.readLine()) != null) {
-						retornoFinal.append(line);
-					}
+					// Se realiza la ejecución del servicio de actualizar pedido en central
+					HttpResponse respFinal = client.execute(requestFinal);
+					responseFinal = respFinal;
+					String retornoFinal = EntityUtils.toString(respFinal.getEntity(), "UTF-8");
+
 					if (numeroFactura == 0) {
 						// Es porque no se insertó el pedido en la tienda y enviamos mensaje de whatsapp
 						String mensajePla = "Se tuvo problema enviando pedido " + idPedido
@@ -12179,6 +12256,9 @@ public class PedidoCtrl {
 						// #PENDIENTE REEMPLAZO HERRAMIENTA WHATSAPP
 						// PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3148807773");
 						// PedidoCtrl.enviarWhatsAppUltramsg(mensajePla, "3052166792");
+						respuestaProceso = false;
+					} else {
+						respuestaProceso = true;
 					}
 
 				} catch (Exception e3) {
@@ -12194,6 +12274,16 @@ public class PedidoCtrl {
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			respuestaProceso = false;
+		} finally {
+			if (responseFinPed != null) {
+				EntityUtils.consumeQuietly(responseFinPed.getEntity());
+			}
+			if (responseFinPedTienda != null) {
+				EntityUtils.consumeQuietly(responseFinPedTienda.getEntity());
+			}
+			if (responseFinal != null) {
+				EntityUtils.consumeQuietly(responseFinal.getEntity());
+			}
 		}
 		return (respuestaProceso);
 	}
@@ -12325,7 +12415,7 @@ public class PedidoCtrl {
 			Request request = new Request.Builder().url(url).addHeader(CONTENT_TYPE, APPLICATION_JSON)
 					.addHeader(ACCEPT, APPLICATION_JSON).get().build();
 
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			try (okhttp3.Response response = client.newCall(request).execute()) {
 				int statusCode = response.code();
 
@@ -12482,13 +12572,23 @@ public class PedidoCtrl {
 	 */
 	public void procesarSolFacturaPedidoWebBOT(int idTipoCliente, String identificacion, String nombreClienteFact,
 			String correoFac, String facturaWeb) {
-		// Obtenemos la información del pedido relacionada con la solicitud de factura
-		// electrónica
-		BigInteger idOrdenComercio = new BigInteger("0");
-		HttpClient client = HttpClientBuilder.create().build();
+		if (facturaWeb == null || facturaWeb.trim().isEmpty()) {
+			System.out.println("solicitud de factura: '# factura web' vacia o nula. Se omite consulta.");
+			return;
+		}
+		BigInteger idOrdenComercio = null;
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
 		try {
-			idOrdenComercio = new BigInteger((String) facturaWeb);
+			BigInteger valorOrden = new BigInteger(facturaWeb.trim());
+			if (valorOrden.signum() > 0) {
+				idOrdenComercio = valorOrden;
+			}
 		} catch (Exception e) {
+			System.out.println("solicitud de factura: numero de orden no numerico (" + facturaWeb + "): " + e);
+		}
+		if (idOrdenComercio == null) {
+			System.out.println("solicitud de factura: numero de orden invalido (" + facturaWeb + "). Se omite consulta.");
+			return;
 		}
 		Pedido infoPedido = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
 		if (infoPedido.getIdcliente() > 0) {
@@ -12516,15 +12616,13 @@ public class PedidoCtrl {
 					System.out.println(rutaURL);
 					HttpGet request = new HttpGet(rutaURL);
 					try {
-						StringBuffer retorno = new StringBuffer();
-						StringBuffer retornoTienda = new StringBuffer();
-						// Se realiza la ejecución del servicio de finalizar pedido
 						HttpResponse responseFinPed = client.execute(request);
-						BufferedReader rd = new BufferedReader(
-								new InputStreamReader(responseFinPed.getEntity().getContent()));
-						String line = "";
-						while ((line = rd.readLine()) != null) {
-							retorno.append(line);
+						try {
+							if (responseFinPed.getEntity() != null) {
+								EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+							}
+						} finally {
+							EntityUtils.consumeQuietly(responseFinPed.getEntity());
 						}
 					} catch (Exception e) {
 						System.out.println(e.toString());
@@ -13058,13 +13156,15 @@ public class PedidoCtrl {
 	        		.setSocketTimeout(10000)
 	                .build();
 
-	        HttpClient client = HttpClientBuilder.create()
-	                .setDefaultRequestConfig(config)
-	                .build();
+	        HttpClient client = utilidadesCC.ClientesHttp.apache();
 
 	        String url = tienda.getUrl() + "RegistrarNotificacionTienda";
 
 	        HttpPost post = new HttpPost(url);
+	        //Los tiempos de esta llamada son mas cortos que los del cliente
+	        //compartido, porque va contra la URL de una tienda que puede estar
+	        //apagada. En Apache el RequestConfig se le pone a la peticion.
+	        post.setConfig(config);
 
 	        List<NameValuePair> params = new ArrayList<>();
 	        params.add(new BasicNameValuePair("mensaje", notificacion.getMensaje()));
@@ -13076,17 +13176,14 @@ public class PedidoCtrl {
 	        HttpResponse response = client.execute(post);
 
 	        int statusCode = response.getStatusLine().getStatusCode();
-
-	        BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-	        StringBuilder result = new StringBuilder();
-	        String line;
-
-	        while ((line = rd.readLine()) != null) {
-	            result.append(line);
+	        String respuesta = "";
+	        try {
+	            if (response.getEntity() != null) {
+	                respuesta = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+	            }
+	        } finally {
+	            EntityUtils.consumeQuietly(response.getEntity());
 	        }
-
-	        String respuesta = result.toString();
 
 	        System.out.println("Respuesta tienda: " + statusCode + " - " + respuesta);
 
@@ -13166,7 +13263,7 @@ public class PedidoCtrl {
 
 		System.out.println("Datos enviados para actualizar pedido insertado: " + datos);
 
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json; charset=utf-8");
 		RequestBody body = RequestBody.create(mediaType, datos);
 
@@ -13212,10 +13309,7 @@ public class PedidoCtrl {
         String NUMEROWHATSAPPBREVO =
         		ParametrosDAO.retornarValorAlfanumerico("NUMEROWHATSAPPBREVO");
         
-        java.net.http.HttpClient CLIENT =
-        		java.net.http.HttpClient.newBuilder()
-                        .connectTimeout(Duration.ofSeconds(15))
-                        .build();
+        java.net.http.HttpClient CLIENT = utilidadesCC.ClientesHttp.jdk();
 
         ObjectMapper MAPPER = new ObjectMapper();
         Map<String, Object> body = Map.of(
@@ -13264,7 +13358,7 @@ public class PedidoCtrl {
 		boolean respuesta = false;
 		IntegracionCRM intCRM = IntegracionCRMDAO.obtenerInformacionIntegracion("RAPPI");
 		String strBody = "";
-		OkHttpClient client = new OkHttpClient();
+		OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 		okhttp3.MediaType mediaType = okhttp3.MediaType.parse("application/json");
 		RequestBody body = RequestBody.create(mediaType, strBody );
 		Request request = new Request.Builder()

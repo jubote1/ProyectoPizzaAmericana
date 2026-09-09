@@ -155,7 +155,7 @@ public class SegmentacionClienteCtrl {
 			requestBody.add("sender", sender);
 
 			// Enviar la solicitud con OkHttp
-			OkHttpClient client = new OkHttpClient();
+			OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 			RequestBody body = RequestBody.create(MediaType.parse("application/json"), requestBody.toString());
 			Request request = new Request.Builder().url(API_EMAIL_URL).post(body)
 					.addHeader("accept", "application/json").addHeader("api-key", apiKey)
@@ -188,7 +188,7 @@ public class SegmentacionClienteCtrl {
 	public JsonObject envioWhatsappBrevo(List<JsonObject> telefonos, String mensaje, int idplantilla, List<JsonObject> paramsDefault) throws IOException {
 	    JsonObject jsonResponse = new JsonObject();
 	    JsonArray errores = new JsonArray();
-	    OkHttpClient client = new OkHttpClient();
+	    OkHttpClient client = utilidadesCC.ClientesHttp.ok();
 
 	    try {
 	        IntegracionCRM brevo = IntegracionCRMDAO.obtenerInformacionIntegracion("BREVO");
