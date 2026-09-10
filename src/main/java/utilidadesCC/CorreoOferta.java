@@ -141,6 +141,7 @@ public class CorreoOferta {
 		}
 		return (docehoras + ":00");
 	}
+
 	/** El beneficio en una frase corta: sirve para el asunto y para el titular. */
 	private static String beneficio(DatosCorreoOferta datos) {
 		if (datos.descuentoValor > 0) {
