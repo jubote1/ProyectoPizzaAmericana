@@ -48,6 +48,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import utilidadesCC.ControladorEnvioCorreo;
+import utilidadesCC.CorreoOferta;
 
 public class PromocionesCtrl {
 	
@@ -155,11 +156,11 @@ public class PromocionesCtrl {
 		JSONObject ResultadoJSON = new JSONObject();
 		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
 		ResultadoJSON.put("idofertacliente", respuesta);
-		//En este punto una vez hagamos la asignaci�n de la oferta realizaremos la notificaci�n de las ofertas
-		//SMS desactivado el 2026-09-01: el canal de mensajes de texto no se esta
-		//usando. El aviso al cliente pasa a ser por correo. Se deja la llamada
-		//comentada y no se borra el metodo, por si se retoma el canal.
-		//enviarMensajesOferta(ofer.getIdOferta());
+		//Aca se le avisa al cliente: el correo es el canal por defecto. El mensaje de
+		//texto por Brevo quedo apagado por parametro porque es pago, y se controla con
+		//el parametro en vez de borrando la llamada, para retomarlo sin recompilar.
+		ResultadoJSON.put("avisocliente", this.notificarOfertaAsignada(respuesta));
+		this.notificarOfertaPorSMS(ofer.getIdOferta());
 		listJSON.add(ResultadoJSON);
 		System.out.println(listJSON.toJSONString());
 		return listJSON.toJSONString();
@@ -239,8 +240,11 @@ public class PromocionesCtrl {
 		int respuesta = OfertaClienteDAO.insertarOfertaCliente(ofer);
 		ResultadoJSON.put("idofertacliente", respuesta);
 		ResultadoJSON.put("codigopromocional", codigoPromocional);
-		//En este punto una vez hagamos la asignaci�n de la oferta realizaremos la notificaci�n de las ofertas
-		//enviarMensajesOferta(ofer.getIdOferta());
+		//Aca se le avisa al cliente: el correo es el canal por defecto. El mensaje de
+		//texto por Brevo quedo apagado por parametro porque es pago, y se controla con
+		//el parametro en vez de borrando la llamada, para retomarlo sin recompilar.
+		ResultadoJSON.put("avisocliente", this.notificarOfertaAsignada(respuesta));
+		this.notificarOfertaPorSMS(ofer.getIdOferta());
 		listJSON.add(ResultadoJSON);
 		return listJSON.toJSONString();
 	}
@@ -1093,4 +1097,106 @@ public class PromocionesCtrl {
 		return(codigo);
 	}
 	
+
+	/** Parametro que enciende el correo de aviso de oferta. En 1 se envia. */
+	private static final String PARAM_CORREO_OFERTA = "OFERTACORREOACTIVO";
+	/** Parametro que enciende el mensaje de texto por Brevo. Se deja en 0: es pago. */
+	private static final String PARAM_SMS_BREVO = "OFERTASMSBREVO";
+
+	/**
+	 * Le avisa al cliente por correo que tiene una oferta asignada.
+	 *
+	 * Este aviso no existia. Al asignar la oferta se le generaba el codigo y el
+	 * cliente no se enteraba; la llamada que notificaba por mensaje de texto quedo
+	 * comentada el 2026-09-01 y el correo que la iba a reemplazar nunca se escribio.
+	 *
+	 * No envia y deja constancia del motivo cuando el cliente no tiene correo, no
+	 * acepto la politica de datos, o su correo esta marcado como incorrecto. En esos
+	 * casos NO se marca fecha_mensaje, para que en la pantalla se vea que a ese
+	 * cliente hay que decirle el codigo por telefono.
+	 *
+	 * El envio va en un hilo aparte para que la pantalla no quede esperando al
+	 * servidor de correo, y fecha_mensaje se marca solo si el envio funciono.
+	 *
+	 * @param idOfertaCliente la asignacion, no la oferta
+	 * @return una frase con lo que paso, para dejarla en el log
+	 */
+	public String notificarOfertaAsignada(final int idOfertaCliente) {
+		Logger logger = Logger.getLogger("log_file");
+		if (idOfertaCliente <= 0) {
+			return ("No se notifica: la asignacion no quedo creada.");
+		}
+		if (ParametrosDAO.retornarValorNumerico(PromocionesCtrl.PARAM_CORREO_OFERTA) != 1) {
+			String aviso = "Correo de oferta apagado por el parametro " + PromocionesCtrl.PARAM_CORREO_OFERTA + ".";
+			System.out.println(aviso);
+			return (aviso);
+		}
+		final OfertaClienteDAO.DatosCorreoOferta datos = OfertaClienteDAO
+				.obtenerDatosCorreoOferta(idOfertaCliente);
+		if (!datos.seLeyo) {
+			String aviso = "No se notifica la oferta " + idOfertaCliente + ": no se pudieron leer sus datos.";
+			logger.error(aviso);
+			System.out.println(aviso);
+			return (aviso);
+		}
+		if (!datos.puedeRecibirCorreo()) {
+			String aviso = "No se envia el correo de la oferta " + idOfertaCliente + ": "
+					+ datos.motivoNoEnvio() + ".";
+			System.out.println(aviso);
+			return (aviso);
+		}
+		try {
+			CorreoElectronico credenciales = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
+					"CLAVECORREOREPORTE");
+			Correo correo = new Correo();
+			correo.setAsunto(CorreoOferta.armarAsunto(datos));
+			correo.setMensaje(CorreoOferta.armarCuerpo(datos));
+			correo.setUsuarioCorreo(credenciales.getCuentaCorreo());
+			correo.setContrasena(credenciales.getClaveCorreo());
+			ArrayList destinatarios = new ArrayList();
+			destinatarios.add(datos.correoCliente.trim());
+			final ControladorEnvioCorreo envio = new ControladorEnvioCorreo(correo, destinatarios);
+			//En hilo aparte: el que asigna la oferta no tiene por que esperar al SMTP.
+			//Y fecha_mensaje se marca solo si el envio funciono, para que la pantalla
+			//no diga "enviado" cuando no salio.
+			Thread hilo = new Thread(new Runnable() {
+				public void run() {
+					try {
+						if (envio.enviarCorreo()) {
+							OfertaClienteDAO.marcarCorreoEnviado(idOfertaCliente);
+							System.out.println("Correo de oferta " + idOfertaCliente + " enviado a "
+									+ datos.correoCliente);
+						} else {
+							System.out.println("No se pudo enviar el correo de la oferta " + idOfertaCliente);
+						}
+					} catch (Exception e) {
+						//Que falle el correo no puede tumbar la asignacion, que ya quedo hecha.
+						System.out.println("Fallo el correo de la oferta " + idOfertaCliente + ": " + e.toString());
+					}
+				}
+			});
+			hilo.setDaemon(true);
+			hilo.setName("correo-oferta-" + idOfertaCliente);
+			hilo.start();
+			return ("Correo de la oferta " + idOfertaCliente + " en camino a " + datos.correoCliente + ".");
+		} catch (Exception e) {
+			String aviso = "Fallo al armar el correo de la oferta " + idOfertaCliente + ": " + e.toString();
+			logger.error(aviso);
+			System.out.println(aviso);
+			return (aviso);
+		}
+	}
+
+	/**
+	 * Manda el mensaje de texto por Brevo solo si el parametro lo enciende.
+	 *
+	 * Brevo es pago y quedo apagado a proposito, pero se controla por parametro y no
+	 * borrando la llamada, para poderlo retomar sin recompilar.
+	 */
+	public String notificarOfertaPorSMS(int idOferta) {
+		if (ParametrosDAO.retornarValorNumerico(PromocionesCtrl.PARAM_SMS_BREVO) != 1) {
+			return ("SMS por Brevo apagado por el parametro " + PromocionesCtrl.PARAM_SMS_BREVO + ".");
+		}
+		return (this.enviarMensajesOfertaBrevo(idOferta));
+	}
 }
