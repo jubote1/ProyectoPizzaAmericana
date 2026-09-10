@@ -1145,6 +1145,15 @@ public class PromocionesCtrl {
 			System.out.println(aviso);
 			return (aviso);
 		}
+		//Se valida el formato con la misma regla que usa el resto del sistema. Intentar
+		//enviarle a una direccion mal escrita gasta una conexion SMTP y termina en una
+		//alarma de la que no hay nada que aprender.
+		if (!ControladorEnvioCorreo.esDireccionValida(datos.correoCliente.trim())) {
+			String aviso = "No se envia el correo de la oferta " + idOfertaCliente
+					+ ": la direccion del cliente no tiene formato valido.";
+			System.out.println(aviso);
+			return (aviso);
+		}
 		try {
 			CorreoElectronico credenciales = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 					"CLAVECORREOREPORTE");
@@ -1159,16 +1168,33 @@ public class PromocionesCtrl {
 			//En hilo aparte: el que asigna la oferta no tiene por que esperar al SMTP.
 			//Y fecha_mensaje se marca solo si el envio funciono, para que la pantalla
 			//no diga "enviado" cuando no salio.
+			//
+			//Se usa enviarConReintentos y no un solo intento porque un timeout no es
+			//una direccion mala. Y el resultado es el que decide que hacer con la marca
+			//email_correcto del cliente: se pone en N solo cuando el servidor rechaza
+			//de verdad la direccion. Asi la marca se corrige sola en vez de quedar como
+			//una lista negra permanente, que es lo que la volvio inservible antes.
 			Thread hilo = new Thread(new Runnable() {
 				public void run() {
 					try {
-						if (envio.enviarCorreo()) {
+						final ControladorEnvioCorreo.ResultadoEnvio resultado = envio.enviarConReintentos();
+						if (resultado == ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
 							OfertaClienteDAO.marcarCorreoEnviado(idOfertaCliente);
 							System.out.println("Correo de oferta " + idOfertaCliente + " enviado a "
 									+ datos.correoCliente);
-						} else {
-							System.out.println("No se pudo enviar el correo de la oferta " + idOfertaCliente);
+							return;
 						}
+						if (resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
+							ClienteDAO.marcarCorreoIncorrecto(datos.idCliente);
+							System.out.println("Correo de oferta " + idOfertaCliente + ": el servidor rechazo la "
+									+ "direccion " + datos.correoCliente + ", se marca el cliente "
+									+ datos.idCliente);
+							return;
+						}
+						//Transitorio: no se toca al cliente ni se marca fecha_mensaje. La
+						//pantalla va a mostrar "sin enviar" y se puede reenviar.
+						System.out.println("Correo de oferta " + idOfertaCliente + ": no salio por algo pasajero ("
+								+ resultado + "). Se puede reenviar.");
 					} catch (Exception e) {
 						//Que falle el correo no puede tumbar la asignacion, que ya quedo hecha.
 						System.out.println("Fallo el correo de la oferta " + idOfertaCliente + ": " + e.toString());
