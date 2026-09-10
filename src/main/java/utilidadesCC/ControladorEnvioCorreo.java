@@ -13,6 +13,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import capaDAOCC.GeneralDAO;
 import capaDAOCC.ParametrosDAO;
 import capaModeloCC.CorreoElectronico;
 import capaModeloCC.Correo;
@@ -46,6 +47,33 @@ private static final String MILIS_ESPERA_SEGUNDO_PLANO = "30000";
 /** Cuanto esperar antes de cada reintento, en milisegundos. */
 private static final long[] ESPERA_ENTRE_REINTENTOS = { 3000L, 10000L, 30000L };
 
+/**
+ * Minutos que se acumulan las perdidas antes de mandar UNA alerta.
+ *
+ * Con esto nunca sale mas de una alerta cada media hora, en vez de una por cada
+ * correo perdido. Media hora es suficiente para juntar una racha y lo bastante
+ * corto para enterarse el mismo dia.
+ */
+private static final long MINUTOS_VENTANA_ALERTA = 30L;
+
+/**
+ * Cuantas perdidas en la ventana obligan a avisar de una, sin esperar.
+ *
+ * Diez correos perdidos en media hora ya no es un correo que se cayo: es algo
+ * roto -la cuenta bloqueada, el servidor caido, la clave cambiada- y eso no
+ * puede esperar.
+ */
+private static final int PERDIDAS_PARA_AVISO_INMEDIATO = 10;
+
+/** Lo perdido desde la ultima alerta. Se lee y escribe siempre bajo su candado. */
+private static final ArrayList<String> PERDIDOS = new ArrayList<String>();
+
+/** Cuando salio la ultima alerta, para no mandar dos seguidas. */
+private static long ultimoAviso = 0L;
+
+/** El reloj que vacia la lista. Uno solo para toda la aplicacion. */
+private static java.util.Timer reloj = null;
+
 private Correo  c;
 private ArrayList correos;
 
@@ -56,7 +84,6 @@ private String milisEspera = MILIS_ESPERA_SMTP;
  * Si este envio avisa por correo cuando falla. Se apaga durante los reintentos
  * para que un solo correo perdido no genere un aviso por intento.
  */
-private boolean avisarFallo = true;
 
 public ControladorEnvioCorreo(Correo co,ArrayList correosenv)
 {
@@ -141,9 +168,25 @@ public static boolean esDireccionValida(String direccion)
  * salio o no; si hay que actuar distinto segun el motivo del fallo, usar
  * enviarCorreoClasificado.
  */
+/**
+ * Envia el correo y, si falla por algo pasajero, sigue reintentando en segundo
+ * plano. Retorna si el PRIMER intento salio.
+ *
+ * Antes esto era un solo intento y listo: un timeout de cinco segundos dejaba el
+ * correo perdido para siempre. El caso que lo destapo fue el link de pago que le
+ * avisa a Kommo para mandar el WhatsApp: fallo por Read timed out y la clienta
+ * nunca recibio su link.
+ *
+ * Se cambio aqui, en el metodo comun, y no en cada llamador: hay 57 llamados a
+ * este metodo y solo tres miran el valor que retorna, ninguno de ellos para
+ * intentar por otro canal. Asi que reintentar por detras no puede duplicar nada.
+ *
+ * Quien necesite saber POR QUE fallo -para marcar el correo de un cliente como
+ * incorrecto, por ejemplo- usa enviarConReintentos, que retorna el motivo.
+ */
 public boolean enviarCorreo()
 {
-	return (enviarCorreoClasificado() == ResultadoEnvio.ENVIADO);
+	return (enviarConReintentos() == ResultadoEnvio.ENVIADO);
 }
 
 /**
@@ -237,7 +280,6 @@ public ResultadoEnvio enviarCorreoClasificado()
 	}
 	catch(Exception e)
 	{
-		Date fecha = new Date();
 		System.out.println(e.toString());
 
 		//Se separa la direccion mala del problema pasajero. Es la razon de ser de
@@ -245,27 +287,17 @@ public ResultadoEnvio enviarCorreoClasificado()
 		//esta mal o si simplemente el servidor no respondio a tiempo.
 		ResultadoEnvio resultado = clasificarFallo(e);
 
-		//Durante los reintentos el aviso queda apagado. Si no, un solo correo que
-		//necesito tres intentos generaria tres avisos, y el objetivo de reintentar
-		//es justamente que deje de haber ruido.
-		if(!this.avisarFallo)
-		{
-			return(resultado);
-		}
-
-		//Desde este punto enviaremos un correo para notificar problemas en env�o correo
-		//Aqui daremos alcance a aquellas situaciones de problemas puntuales con la cuenta
-		Correo correo = new Correo();
-		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-		ArrayList correos = new ArrayList();
-		correo.setAsunto(" Ojo problemas con envio de correos " + fecha.toString());
-		String correoEle = "jubote1@gmail.com";
-		correos.add(correoEle);
-		correo.setContrasena(infoCorreo.getClaveCorreo());
-		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-		correo.setMensaje(e.toString() + " " + " Se tuvo problemas enviando correo, por favor revisar " + c.getMensaje());
-		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreoContingencia();
+		//Aqui NO se avisa nada, a proposito.
+		//
+		//Antes salia un correo "Ojo problemas con envio de correos" por cada
+		//intento fallido, con el cuerpo del correo original adentro. Eso tenia dos
+		//problemas: era ruido -un timeout de cinco segundos generaba una alarma de
+		//algo que casi siempre se resuelve solo- y hacia circular datos personales
+		//del cliente, incluido el link de pago vivo, en una bandeja de errores.
+		//
+		//Ahora el unico aviso es avisarFalloDefinitivo, que suena cuando de verdad
+		//se perdio el correo despues de agotar los reintentos, va agregado y no
+		//lleva el cuerpo.
 		return(resultado);
 	}
 
@@ -295,12 +327,10 @@ public ResultadoEnvio enviarConReintentos()
 {
 	//Primer intento: espera corta y sin aviso, porque si hay reintentos el aviso
 	//lo decide el hilo de segundo plano.
-	this.avisarFallo = false;
 	final ResultadoEnvio primero = enviarCorreoClasificado();
 
 	if(primero == ResultadoEnvio.ENVIADO || primero == ResultadoEnvio.SIN_DESTINATARIOS)
 	{
-		this.avisarFallo = true;
 		return(primero);
 	}
 	if(primero == ResultadoEnvio.DIRECCION_INVALIDA)
@@ -309,7 +339,6 @@ public ResultadoEnvio enviarConReintentos()
 		//avisar por correo. No es un incidente del servidor, es un dato del
 		//cliente que esta mal, y eso queda registrado donde corresponde: en el
 		//log del pedido y en email_correcto.
-		this.avisarFallo = true;
 		System.out.println("Correo \"" + this.c.getAsunto()
 				+ "\": direccion invalida, no se reintenta y no se genera alarma.");
 		return(primero);
@@ -336,7 +365,6 @@ public ResultadoEnvio enviarConReintentos()
 
 				ControladorEnvioCorreo envio = new ControladorEnvioCorreo(correoReintento, correosReintento);
 				envio.milisEspera = MILIS_ESPERA_SEGUNDO_PLANO;
-				envio.avisarFallo = false;
 				ResultadoEnvio resultado = envio.enviarCorreoClasificado();
 
 				if(resultado == ResultadoEnvio.ENVIADO)
@@ -365,40 +393,129 @@ public ResultadoEnvio enviarConReintentos()
 	hilo.setName("reintento-correo");
 	hilo.start();
 
-	this.avisarFallo = true;
 	return(primero);
 }
 
 /**
- * Avisa que un correo se perdio de forma definitiva. Va por la cuenta de
- * contingencia, que usa otro servidor, para que un problema de Gmail no impida
- * enterarse de que hay un problema de Gmail.
+ * Anota que un correo se perdio de forma definitiva y decide si ya toca avisar.
  *
- * A diferencia del aviso que sale del catch, este NO incluye el cuerpo del
- * correo original: ese cuerpo trae el link de pago, el telefono y el correo del
+ * Antes salia un correo de alerta por CADA fallo. Con eso, una racha de Gmail
+ * lento llenaba la bandeja de veinte alertas iguales y la que importaba se
+ * perdia entre las demas. Ahora se acumulan y sale UNA sola alerta por ventana,
+ * con el conteo y los asuntos.
+ *
+ * Nunca sale mas de una alerta cada MINUTOS_VENTANA_ALERTA, y siempre sale si
+ * hubo aunque sea una perdida: no se calla una perdida sola por no alcanzar un
+ * umbral. Si la racha es grande -PERDIDAS_PARA_AVISO_INMEDIATO o mas- no se
+ * espera la ventana, porque eso ya no es un correo perdido sino algo roto.
+ *
+ * A diferencia del aviso que salia antes, este NO incluye el cuerpo del correo
+ * original: ese cuerpo trae el link de pago, el telefono y el correo del
  * cliente, y no tiene por que circular en una bandeja de errores.
  */
 private void avisarFalloDefinitivo(String motivo)
 {
 	try
 	{
-		Date fecha = new Date();
+		synchronized(ControladorEnvioCorreo.PERDIDOS)
+		{
+			ControladorEnvioCorreo.PERDIDOS.add(motivo + " Asunto: " + this.c.getAsunto()
+					+ ". Destinatarios: " + this.correos.size() + ".");
+			ControladorEnvioCorreo.programarVaciado();
+			boolean rachaGrande = ControladorEnvioCorreo.PERDIDOS.size() >= PERDIDAS_PARA_AVISO_INMEDIATO;
+			long desdeUltimo = System.currentTimeMillis() - ControladorEnvioCorreo.ultimoAviso;
+			boolean paso = desdeUltimo >= MINUTOS_VENTANA_ALERTA * 60000L;
+			if(rachaGrande || paso)
+			{
+				ControladorEnvioCorreo.vaciarYAvisar();
+			}
+		}
+	}
+	catch(Exception e)
+	{
+		System.out.println("No se pudo anotar el correo no entregado: " + e.toString());
+	}
+}
+
+/**
+ * Arranca, una sola vez, el reloj que vacia la lista de perdidos.
+ *
+ * Hace falta porque si se pierde un solo correo y despues no se pierde ninguno
+ * mas, nadie volveria a pasar por avisarFalloDefinitivo y esa perdida se
+ * quedaria sin avisar. El reloj es un unico hilo demonio para toda la
+ * aplicacion, no uno por correo.
+ */
+private static synchronized void programarVaciado()
+{
+	if(ControladorEnvioCorreo.reloj != null)
+	{
+		return;
+	}
+	ControladorEnvioCorreo.reloj = new java.util.Timer("alerta-correos-perdidos", true);
+	long cada = MINUTOS_VENTANA_ALERTA * 60000L;
+	ControladorEnvioCorreo.reloj.schedule(new java.util.TimerTask()
+	{
+		public void run()
+		{
+			synchronized(ControladorEnvioCorreo.PERDIDOS)
+			{
+				if(!ControladorEnvioCorreo.PERDIDOS.isEmpty())
+				{
+					ControladorEnvioCorreo.vaciarYAvisar();
+				}
+			}
+		}
+	}, cada, cada);
+}
+
+/**
+ * Manda UNA alerta con todo lo acumulado y limpia la lista.
+ *
+ * Se llama siempre con el candado de PERDIDOS tomado.
+ *
+ * Los destinatarios salen de la lista ERROR de parametros_correo, no de una
+ * direccion escrita en el codigo. Si esa lista queda vacia no sale la alerta y
+ * queda dicho en la salida del servidor: es la unica forma de apagar estas
+ * alertas, y es a proposito que sea visible.
+ */
+private static void vaciarYAvisar()
+{
+	final int cuantos = ControladorEnvioCorreo.PERDIDOS.size();
+	if(cuantos == 0)
+	{
+		return;
+	}
+	final StringBuilder detalle = new StringBuilder();
+	for(int i = 0; i < ControladorEnvioCorreo.PERDIDOS.size(); i++)
+	{
+		detalle.append(i + 1).append(". ").append(ControladorEnvioCorreo.PERDIDOS.get(i)).append("\n<br>");
+	}
+	ControladorEnvioCorreo.PERDIDOS.clear();
+	ControladorEnvioCorreo.ultimoAviso = System.currentTimeMillis();
+	try
+	{
+		ArrayList destinos = GeneralDAO.obtenerCorreosParametro("ERROR");
+		if(destinos == null || destinos.isEmpty())
+		{
+			System.out.println("Hay " + cuantos + " correos no entregados pero la lista ERROR de "
+					+ "parametros_correo esta vacia, asi que no se avisa a nadie.");
+			return;
+		}
 		Correo aviso = new Correo();
 		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR",
 				"CLAVECORREOERROR");
-		ArrayList destinos = new ArrayList();
-		destinos.add("jubote1@gmail.com");
-		aviso.setAsunto("Correo no entregado: " + this.c.getAsunto());
+		aviso.setAsunto(cuantos + (cuantos == 1 ? " correo no entregado" : " correos no entregados"));
 		aviso.setContrasena(infoCorreo.getClaveCorreo());
 		aviso.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-		aviso.setMensaje(motivo + " Asunto: " + this.c.getAsunto()
-				+ ". Destinatarios: " + this.correos.size() + ". Fecha: " + fecha.toString());
+		aviso.setMensaje("Estos correos no salieron despues de agotar los reintentos, en los ultimos "
+				+ MINUTOS_VENTANA_ALERTA + " minutos:\n<br><br>" + detalle.toString()
+				+ "\n<br>Fecha del aviso: " + new Date().toString());
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(aviso, destinos);
 		contro.enviarCorreoContingencia();
 	}
 	catch(Exception e)
 	{
-		System.out.println("No se pudo avisar del correo no entregado: " + e.toString());
+		System.out.println("No se pudo avisar de " + cuantos + " correos no entregados: " + e.toString());
 	}
 }
 
