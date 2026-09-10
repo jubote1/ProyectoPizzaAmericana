@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
@@ -731,6 +732,146 @@ public class OfertaClienteDAO {
 		
 	}
 	
+
+	/**
+	 * Todo lo que el correo de la oferta necesita, en un solo objeto.
+	 *
+	 * Se llena con una sola consulta que une oferta_cliente con el cliente, la
+	 * oferta y la tienda. Antes no existia: al asignar una oferta no se le avisaba
+	 * nada al cliente.
+	 */
+	public static class DatosCorreoOferta {
+		public String nombreCliente = "";
+		public String correoCliente = "";
+		public String politicaDatos = "N";
+		public String correoCorrecto = "S";
+		public String nombreTienda = "";
+		public String nombreOferta = "";
+		public String mensaje1 = "";
+		public String mensaje2 = "";
+		public String codigoPromocion = "";
+		public String fechaCaducidad = "";
+		public double descuentoValor = 0;
+		public int descuentoPorcentaje = 0;
+		public String controlaHora = "N";
+		public String horaInicio = "";
+		public String horaFin = "";
+		public String redencionParcial = "N";
+		/** true cuando ya se le habia enviado el correo de esta oferta. */
+		public boolean yaAvisado = false;
+		public boolean seLeyo = false;
+
+		/**
+		 * Si se le puede escribir. Tres condiciones: que tenga correo, que haya
+		 * aceptado la politica de datos y que el correo no este marcado como malo.
+		 */
+		public boolean puedeRecibirCorreo() {
+			if (this.correoCliente == null || this.correoCliente.trim().length() == 0) {
+				return (false);
+			}
+			if (!"S".equals(this.politicaDatos)) {
+				return (false);
+			}
+			if ("N".equals(this.correoCorrecto)) {
+				return (false);
+			}
+			return (true);
+		}
+
+		/** El motivo por el que no se le puede escribir, para dejarlo en el log. */
+		public String motivoNoEnvio() {
+			if (this.correoCliente == null || this.correoCliente.trim().length() == 0) {
+				return ("el cliente no tiene correo registrado");
+			}
+			if (!"S".equals(this.politicaDatos)) {
+				return ("el cliente no acepto la politica de datos");
+			}
+			if ("N".equals(this.correoCorrecto)) {
+				return ("el correo del cliente esta marcado como incorrecto");
+			}
+			return ("");
+		}
+	}
+
+	/**
+	 * Trae los datos para armar el correo de una oferta ya asignada.
+	 *
+	 * @param idOfertaCliente la asignacion, no la oferta
+	 * @return los datos; con seLeyo en false si no se encontro la asignacion
+	 */
+	public static DatosCorreoOferta obtenerDatosCorreoOferta(int idOfertaCliente) {
+		Logger logger = Logger.getLogger("log_file");
+		DatosCorreoOferta datos = new DatosCorreoOferta();
+		String consulta = "SELECT c.nombre, c.apellido, c.email, c.politica_datos, c.email_correcto, "
+				+ "  t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
+				+ "  o.nombre_oferta, o.mensaje1, o.mensaje2, o.descuento_fijo_valor, "
+				+ "  o.descuento_fijo_porcentaje, o.controla_hora, o.hora_inicio, o.hora_fin, o.red_parcial "
+				+ " FROM oferta_cliente oc "
+				+ " INNER JOIN cliente c ON c.idcliente = oc.idcliente "
+				+ " INNER JOIN oferta o ON o.idoferta = oc.idoferta "
+				+ " LEFT JOIN tienda t ON t.idtienda = c.idtienda "
+				+ " WHERE oc.idofertacliente = ? ";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDPrincipal();
+				PreparedStatement pstmt = con1.prepareStatement(consulta)) {
+			pstmt.setInt(1, idOfertaCliente);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					String nombre = OfertaClienteDAO.textoSeguro(rs.getString("nombre"));
+					String apellido = OfertaClienteDAO.textoSeguro(rs.getString("apellido"));
+					datos.nombreCliente = (nombre + " " + apellido).trim();
+					datos.correoCliente = OfertaClienteDAO.textoSeguro(rs.getString("email"));
+					datos.politicaDatos = OfertaClienteDAO.textoSeguro(rs.getString("politica_datos"));
+					datos.correoCorrecto = OfertaClienteDAO.textoSeguro(rs.getString("email_correcto")).trim();
+					datos.nombreTienda = OfertaClienteDAO.textoSeguro(rs.getString("nombretienda"));
+					datos.nombreOferta = OfertaClienteDAO.textoSeguro(rs.getString("nombre_oferta"));
+					datos.mensaje1 = OfertaClienteDAO.textoSeguro(rs.getString("mensaje1"));
+					datos.mensaje2 = OfertaClienteDAO.textoSeguro(rs.getString("mensaje2"));
+					datos.codigoPromocion = OfertaClienteDAO.textoSeguro(rs.getString("codigo_promocion"));
+					datos.fechaCaducidad = OfertaClienteDAO.textoSeguro(rs.getString("fecha_caducidad"));
+					datos.descuentoValor = rs.getDouble("descuento_fijo_valor");
+					datos.descuentoPorcentaje = rs.getInt("descuento_fijo_porcentaje");
+					datos.controlaHora = OfertaClienteDAO.textoSeguro(rs.getString("controla_hora"));
+					datos.horaInicio = OfertaClienteDAO.textoSeguro(rs.getString("hora_inicio"));
+					datos.horaFin = OfertaClienteDAO.textoSeguro(rs.getString("hora_fin"));
+					datos.redencionParcial = OfertaClienteDAO.textoSeguro(rs.getString("red_parcial"));
+					datos.yaAvisado = (rs.getString("fecha_mensaje") != null);
+					datos.seLeyo = true;
+				}
+			}
+		} catch (Exception e) {
+			logger.error("obtenerDatosCorreoOferta " + idOfertaCliente + ": " + e.toString());
+			System.out.println("obtenerDatosCorreoOferta " + idOfertaCliente + ": " + e.toString());
+		}
+		return (datos);
+	}
+
+	/**
+	 * Deja constancia de que al cliente ya se le aviso.
+	 *
+	 * Se reutiliza fecha_mensaje, que es la columna que usaba el mensaje de texto:
+	 * significa lo mismo -cuando se le aviso al cliente- y asi no hay que agregar
+	 * una columna nueva.
+	 */
+	public static boolean marcarCorreoEnviado(int idOfertaCliente) {
+		Logger logger = Logger.getLogger("log_file");
+		String update = " UPDATE oferta_cliente SET fecha_mensaje = NOW() WHERE idofertacliente = ? ";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDPrincipal();
+				PreparedStatement pstmt = con1.prepareStatement(update)) {
+			pstmt.setInt(1, idOfertaCliente);
+			return (pstmt.executeUpdate() > 0);
+		} catch (Exception e) {
+			logger.error("marcarCorreoEnviado " + idOfertaCliente + ": " + e.toString());
+			System.out.println("marcarCorreoEnviado " + idOfertaCliente + ": " + e.toString());
+			return (false);
+		}
+	}
+
+	/** Cadena vacia en vez de nulo, para no tener que validar en cada uso. */
+	private static String textoSeguro(String valor) {
+		return ((valor == null) ? "" : valor);
+	}
 }
 
 

@@ -8,12 +8,14 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
 import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
+import utilidadesCC.ContextoAuditoria;
 
 /**
  * Servlet implementation class ActualizarCliente
@@ -110,8 +112,27 @@ public class ActualizarCliente extends HttpServlet {
         	idTipoPersona = 1;
         }
         String fechaNacimiento = request.getParameter("fechanacimiento");
-        ClienteCtrl ClienCtrl = new ClienteCtrl();
-        String respuesta  = ClienCtrl.InsertarClientePedidoEncabezadoJSON(idCliente,telefono, nombres, apellidos, nombreCompania,  direccion, municipio, latitud, longitud, distanciaTienda, zona, observacion, tienda, memcode, idnomenclatura, numNomenclatura, numNomenclatura2, num3, telefonoCelular, email, politicaDatos,fechaNacimiento, clienteSinIden, emailFact, idTipoPersona, identificacion);
+        //Se deja en el hilo de donde viene el cambio, para que el log del cliente
+        //pueda decir cual proceso y cual usuario lo hizo. Si no hay sesion queda el
+        //usuario vacio, pero el cambio se registra igual como DESCONOCIDO.
+        String usuarioCambio = "";
+        HttpSession sesionCambio = request.getSession(false);
+        if (sesionCambio != null) {
+            Usuario usuarioSesion = (Usuario) sesionCambio.getAttribute("usuario");
+            if (usuarioSesion != null) {
+                usuarioCambio = usuarioSesion.getNombreUsuario();
+            }
+        }
+        ContextoAuditoria.fijar("CRM", usuarioCambio);
+        String respuesta;
+        try {
+            ClienteCtrl ClienCtrl = new ClienteCtrl();
+            respuesta = ClienCtrl.InsertarClientePedidoEncabezadoJSON(idCliente,telefono, nombres, apellidos, nombreCompania,  direccion, municipio, latitud, longitud, distanciaTienda, zona, observacion, tienda, memcode, idnomenclatura, numNomenclatura, numNomenclatura2, num3, telefonoCelular, email, politicaDatos,fechaNacimiento, clienteSinIden, emailFact, idTipoPersona, identificacion);
+        } finally {
+            //Tomcat reutiliza los hilos: sin este limpiar, el siguiente cambio que pase
+            //por este hilo se atribuiria a quien no fue.
+            ContextoAuditoria.limpiar();
+        }
         PrintWriter out = response.getWriter();
         out.write(respuesta);
 	}

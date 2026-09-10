@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>NOVEDADES DE BIOMETRIA</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="Expires" content="0">
+		<meta http-equiv="Last-Modified" content="0">
+		<meta http-equiv="Cache-Control" content="no-cache, mustrevalidate">
+		<meta http-equiv="Pragma" content="no-cache">
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		<link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+		<link rel="stylesheet" href="css/jquery-confirm.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+		<script type="text/javascript" src="js/jquery-confirm.min.js"></script>
+		<style>
+			.panel-filtros { margin-top: 15px; }
+			.tarjeta-total {
+				background: #fff; border: 1px solid #ddd; border-radius: 6px;
+				padding: 14px 18px; text-align: center; margin-bottom: 12px;
+			}
+			.tarjeta-total .numero { font-size: 30px; font-weight: 700; color: #102F6F; line-height: 1.1; }
+			.tarjeta-total .rotulo { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: .5px; }
+			.tarjeta-total.destacada .numero { color: #E42528; }
+			.etiqueta-estado {
+				display: inline-block; padding: 2px 8px; border-radius: 10px;
+				font-size: 11px; font-weight: 700; white-space: nowrap;
+			}
+			/* Lo accionable resalta, lo resuelto se apaga. */
+			.est-reportada { background: #fdebd0; color: #a04000; }
+			.est-atendida  { background: #d5f5e3; color: #1e6b3a; }
+			.est-rechazada { background: #eaecee; color: #566573; }
+			.sin-datos { color: #999; font-style: italic; padding: 20px 0; }
+			table#grid-novedades { font-size: 12px; }
+			table#grid-jornada { font-size: 13px; }
+			.nota-ayuda { color: #888; font-size: 12px; margin-top: 6px; }
+			.caja-revision {
+				display: none; border: 1px solid #102F6F; border-radius: 6px;
+				padding: 0; margin-top: 18px; background: #fff;
+			}
+			.caja-revision .encabezado {
+				background: #102F6F; color: #fff; padding: 10px 16px; font-weight: 700;
+			}
+			.caja-revision .cuerpo { padding: 16px; }
+			.bloque-novedad {
+				background: #F4F5F7; border-left: 5px solid #FDC806;
+				padding: 10px 14px; margin-bottom: 14px; font-size: 13px;
+			}
+			.aviso-manual { color: #E42528; font-weight: 700; font-size: 11px; }
+			.hora-editable { width: 175px; display: inline-block; }
+			/* El log no se puede deshacer desde aqui: se avisa antes, no despues. */
+			.nota-log {
+				background: #FFFBEA; border-left: 5px solid #FDC806;
+				padding: 10px 14px; font-size: 12px; margin-top: 14px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="cargarMenu"></div>
+		<label id="usuariologin" style="color:black;"></label>
+		<script type="text/javascript">
+			//Obtenemos el valor de la variable server, con base en la URL digitada
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			var nombreusuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function(data){
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+					nombreusuario = data[0].usu;
+				}
+			});
+			switch(respuesta)
+			{
+				case 'OK':
+					$('#cargarMenu').load("Menu.html");
+					break;
+				case 'OKA':
+					$('#cargarMenu').load("MenuAdm.html");
+					break;
+				case 'OKP':
+					$('#cargarMenu').load("MenuPQRS.html");
+					break;
+				default:
+					location.href = server + "Index.html";
+					break;
+			}
+			$('#usuariologin').html(usuario);
+		</script>
+		<div class="container-fluid">
+			<div class="row" style="margin-top:14px;">
+				<div class="col-md-9">
+					<h3 style="color:#102F6F;margin-bottom:2px;">Novedades de biometría</h3>
+					<p class="nota-ayuda">
+						Las tiendas reportan aquí cuando alguien olvidó marcar o marcó a una hora
+						equivocada. Al revisar una novedad se carga la jornada completa del día de
+						ese empleado, para poder corregirla con el contexto a la vista. Todo cambio
+						se escribe en <strong>empleado_evento</strong>, que es de donde sale el
+						cálculo de horas, y queda registrado en el log.
+					</p>
+				</div>
+				<div class="col-md-3" style="text-align:right;padding-top:6px;">
+					<a href="AyudaNovedadesBiometria.html" target="_blank" rel="noopener"
+						class="btn btn-primary btn-sm" style="background-color:#102F6F;border-color:#102F6F;"
+						title="Abre el manual de operaciones en otra pesta&#241;a">&#191;C&#243;mo funciona?</a>
+				</div>
+			</div>
+
+			<div class="row panel-filtros">
+				<div class="col-md-2">
+					<label>Fecha desde</label>
+					<input type="date" id="fechaDesde" class="form-control" />
+				</div>
+				<div class="col-md-2">
+					<label>Fecha hasta</label>
+					<input type="date" id="fechaHasta" class="form-control" />
+				</div>
+				<div class="col-md-2">
+					<label>Estado</label>
+					<select id="estado" class="form-control">
+						<option value="REPORTADA">Pendientes</option>
+						<option value="">Todas</option>
+						<option value="ATENDIDA">Atendidas</option>
+						<option value="RECHAZADA">Rechazadas</option>
+					</select>
+				</div>
+				<div class="col-md-2">
+					<label>&nbsp;</label>
+					<button id="btnConsultar" class="btn btn-primary form-control">Consultar</button>
+				</div>
+			</div>
+
+			<div class="row" style="margin-top:16px;">
+				<div class="col-md-3"><div class="tarjeta-total"><div class="numero" id="totNovedades">0</div><div class="rotulo">Novedades</div></div></div>
+				<div class="col-md-3"><div class="tarjeta-total destacada"><div class="numero" id="totReportadas">0</div><div class="rotulo">Pendientes</div></div></div>
+				<div class="col-md-3"><div class="tarjeta-total"><div class="numero" id="totAtendidas">0</div><div class="rotulo">Atendidas</div></div></div>
+				<div class="col-md-3"><div class="tarjeta-total"><div class="numero" id="totRechazadas">0</div><div class="rotulo">Rechazadas</div></div></div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-12">
+					<table id="grid-novedades" class="table table-striped table-bordered" style="width:100%">
+						<thead>
+							<tr>
+								<th>#</th><th>Empleado</th><th>Día</th><th>Tipo de novedad</th>
+								<th>Registro señalado</th><th>Hora real que reportan</th>
+								<th>Explicación</th><th>Reportó</th><th>Estado</th><th>Cambios</th><th></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<div id="sinNovedades" class="sin-datos" style="display:none;">
+						No hay novedades para ese rango y estado.
+					</div>
+				</div>
+			</div>
+
+			<div class="caja-revision" id="cajaRevision">
+				<div class="encabezado" id="tituloRevision">Revisión de la jornada</div>
+				<div class="cuerpo">
+					<div class="bloque-novedad" id="bloqueNovedad"></div>
+
+					<h5 style="color:#102F6F;font-weight:700;">Jornada del día</h5>
+					<p class="nota-ayuda">
+						Cambie la hora y guarde, o elimine el registro que sobre. Cada acción se
+						aplica y se registra por separado.
+					</p>
+					<table id="grid-jornada" class="table table-bordered" style="width:100%">
+						<thead>
+							<tr><th>Evento</th><th>Hora registrada</th><th>Huellero</th><th style="width:230px;">Acciones</th></tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<div id="sinJornada" class="sin-datos" style="display:none;">
+						Este empleado no tiene ningún registro ese día.
+					</div>
+
+					<h5 style="color:#102F6F;font-weight:700;margin-top:18px;">Agregar el registro que falta</h5>
+					<div class="row">
+						<div class="col-md-3">
+							<label>Evento</label>
+							<select id="nuevoTipo" class="form-control">
+								<option value="INGRESO">INGRESO</option>
+								<option value="SALIDA">SALIDA</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<label>Hora real</label>
+							<input type="time" id="nuevaHora" step="1" class="form-control" />
+						</div>
+						<div class="col-md-3">
+							<label>&nbsp;</label>
+							<button id="btnAgregar" class="btn btn-success form-control">Agregar</button>
+						</div>
+					</div>
+
+					<div class="row" style="margin-top:18px;">
+						<div class="col-md-3">
+							<label>Quién hace el cambio</label>
+							<input type="text" id="usuarioSesion" class="form-control" readonly title="Sale de la sesión, no se puede cambiar" />
+						</div>
+						<div class="col-md-9">
+							<label>Observación (obligatoria, mínimo 10 caracteres)</label>
+							<input type="text" id="observacion" class="form-control" maxlength="1000" />
+						</div>
+					</div>
+
+					<div class="nota-log">
+						Cada cambio se escribe en <strong>empleado_evento</strong> y deja una fila en el
+						log con el antes y el después. Desde esta pantalla no se puede deshacer.
+					</div>
+
+					<div class="row" style="margin-top:16px;">
+						<div class="col-md-3">
+							<button id="btnAtendida" class="btn btn-primary form-control">Marcar atendida</button>
+						</div>
+						<div class="col-md-3">
+							<button id="btnRechazar" class="btn btn-danger form-control">Rechazar novedad</button>
+						</div>
+						<div class="col-md-2">
+							<button id="btnCerrarCaja" class="btn btn-default form-control">Cerrar</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div style="height:40px;"></div>
+		</div>
+		<script type="text/javascript" src="js/novedadesbiometria.js"></script>
+	</body>
+</html>

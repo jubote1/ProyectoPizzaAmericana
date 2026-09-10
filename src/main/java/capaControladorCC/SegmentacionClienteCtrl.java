@@ -3,6 +3,7 @@ package capaControladorCC;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -16,6 +17,7 @@ import capaDAOCC.ParametrosDAO;
 import capaDAOCC.SegmentacionClienteDAO;
 import capaModeloCC.ClienteClub;
 import capaModeloCC.ClienteSegmento;
+import capaModeloCC.FiltroSegmentacion;
 import capaModeloCC.IntegracionCRM;
 import capaModeloCC.PlantillaBrevo;
 import okhttp3.MediaType;
@@ -49,11 +51,16 @@ public class SegmentacionClienteCtrl {
 		return jsonArray.toString();
 	}
 
-	public static String obtenerClientesFiltrados(String fechaInicio, String fechaMaxima, int minPedidos,
-			List<Integer> excepciones, List<Integer> idTiendas, int diasMinimosSinPublicidad, String canal, String tipoCliente) {
+	/**
+	 * Clientes segmentados, en JSON, para la pantalla de segmentacion.
+	 *
+	 * Recibe un objeto de filtros y no catorce parametros sueltos: con la firma
+	 * anterior cualquier filtro nuevo obligaba a tocar esta capa solo para pasar el
+	 * valor de la mano.
+	 */
+	public static String obtenerClientesFiltrados(FiltroSegmentacion filtro) {
 		SegmentacionClienteDAO segmentacionClienteDAO = new SegmentacionClienteDAO();
-		List<ClienteSegmento> clientes = segmentacionClienteDAO.obtenerClientesFiltrados(fechaInicio, fechaMaxima,
-				minPedidos, excepciones, idTiendas, diasMinimosSinPublicidad, canal, tipoCliente);
+		List<ClienteSegmento> clientes = segmentacionClienteDAO.obtenerClientesFiltrados(filtro);
 
 		JSONArray jsonArray = new JSONArray();
 		for (ClienteSegmento cliente : clientes) {
@@ -375,4 +382,29 @@ public class SegmentacionClienteCtrl {
 
 
 
+
+	/**
+	 * Catalogo para los filtros de productos y especialidades, en un solo JSON.
+	 *
+	 * La pantalla los pide juntos al cargar, asi que se responden juntos: dos
+	 * llamadas para llenar dos listas es una ida y vuelta de mas.
+	 */
+	public static String obtenerCatalogoSegmentacion() {
+		SegmentacionClienteDAO dao = new SegmentacionClienteDAO();
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("productos", listaAJson(dao.obtenerCatalogo("productos")));
+		respuesta.put("especialidades", listaAJson(dao.obtenerCatalogo("especialidades")));
+		return respuesta.toString();
+	}
+
+	private static JSONArray listaAJson(final List<Map<String, Object>> lista) {
+		JSONArray arreglo = new JSONArray();
+		for (Map<String, Object> fila : lista) {
+			JSONObject obj = new JSONObject();
+			obj.put("id", fila.get("id"));
+			obj.put("nombre", fila.get("nombre"));
+			arreglo.put(obj);
+		}
+		return arreglo;
+	}
 }

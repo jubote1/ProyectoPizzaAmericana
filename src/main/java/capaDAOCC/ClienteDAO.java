@@ -18,6 +18,7 @@ import org.apache.log4j.Logger;
 import capaModeloCC.Cliente;
 import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
+import utilidadesCC.ContextoAuditoria;
 /**
  * Clase que se encarga de todo lo relacionado con clientes y la interacci�n con la base de datos
  * @author JuanDavid
@@ -485,6 +486,8 @@ public class ClienteDAO {
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    try (Connection con1 = con.obtenerConexionBDPrincipal();
 	         PreparedStatement ps = con1.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+			//Deja en la conexion de donde viene el cambio, para que el trigger del log lo registre.
+			ContextoAuditoria.marcar(con1);
 
 	        int i = 1;
 	        ps.setInt(i++, clienteInsertar.getIdtienda());
@@ -693,6 +696,8 @@ public class ClienteDAO {
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    try (Connection con1 = con.obtenerConexionBDPrincipal();
 	         PreparedStatement ps = con1.prepareStatement(sql)) {
+			//Deja en la conexion de donde viene el cambio, para que el trigger del log lo registre.
+			ContextoAuditoria.marcar(con1);
 
 	        int i = 1;
 	        ps.setString(i++, clienteAct.getTelefono());
@@ -762,6 +767,8 @@ public class ClienteDAO {
 		int idClienteActualizado = 0;
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -799,6 +806,8 @@ public class ClienteDAO {
 		int idClienteActualizado = 0;
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -902,6 +911,8 @@ public class ClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			Statement stm = con1.createStatement();
@@ -940,6 +951,8 @@ public class ClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -973,6 +986,8 @@ public class ClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -1371,6 +1386,8 @@ public class ClienteDAO {
 	    Logger logger = Logger.getLogger("log_file");
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    //Deja en la conexion de donde viene el cambio, para el trigger del log.
+	    ContextoAuditoria.marcar(con1);
 
 	    try
 	    {
@@ -1424,6 +1441,8 @@ public class ClienteDAO {
 		boolean retorno = false;
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -1453,6 +1472,8 @@ public class ClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		//Deja en la conexion de donde viene el cambio, para el trigger del log.
+		ContextoAuditoria.marcar(con1);
 		try
 		{
 			//Para actualizar el cliente el idcliente debe ser diferente de vac�o.
@@ -1545,6 +1566,8 @@ public class ClienteDAO {
 	    int idClienteInsertado = 0;
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    //Deja en la conexion de donde viene el cambio, para el trigger del log.
+	    ContextoAuditoria.marcar(con1);
 
 	    String consulta = "INSERT INTO cliente (idtienda, nombre, apellido, telefono, telefono_celular, email, politica_datos, fecha_nacimiento) " +
 	                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -1592,6 +1615,8 @@ public class ClienteDAO {
 	    boolean actualizado = false;
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    //Deja en la conexion de donde viene el cambio, para el trigger del log.
+	    ContextoAuditoria.marcar(con1);
 
 	    String consulta = "UPDATE cliente SET idtienda = ?, nombre = ?, apellido = ?, telefono = ?, telefono_celular = ?, " +
 	                      "email = ?, politica_datos = ?, fecha_nacimiento = ? WHERE idcliente = ?";

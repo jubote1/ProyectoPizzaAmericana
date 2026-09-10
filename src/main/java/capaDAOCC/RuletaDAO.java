@@ -20,44 +20,44 @@ public class RuletaDAO {
 
     
     public static List<JSONObject> ListaOpcionesRuleta() {
-    	
-    	List<JSONObject> listaOpciones = new ArrayList<>();
-    	try {
-            ConexionBaseDatos con = new ConexionBaseDatos();
-            Connection con1 = con.obtenerConexionBDPrincipal(); 
-            
-            
-            String sql = "SELECT * FROM opciones_ruleta where activo = 1";
 
-            try (PreparedStatement pstmt = con1.prepareStatement(sql)) {
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    while (rs.next()) {
-                        JSONObject obj = new JSONObject();
-                        obj.put("idopcion", rs.getInt("idopcion"));
-                        obj.put("premio", rs.getInt("premio"));
-                        obj.put("titulo", rs.getString("titulo"));
-                        obj.put("descripcion", rs.getString("descripcion"));
-                        obj.put("valor", rs.getString("valor"));
-                        obj.put("idtipo", rs.getInt("idtipo"));
-                        obj.put("indice", rs.getInt("indice"));
-                        obj.put("repeticiones", rs.getInt("repeticiones"));
-                        obj.put("reintento", rs.getInt("reintento"));
-                                            
-                        int repeticiones = rs.getInt("repeticiones");
+        List<JSONObject> listaOpciones = new ArrayList<>();
+        ConexionBaseDatos con = new ConexionBaseDatos();
 
-                        for(int i = 0; i < repeticiones; i++){
-                            listaOpciones.add(obj);
-                        }
-                    }
+        //OJO: la conexion tiene que ir dentro del try-with-resources. Antes se abria
+        //aqui afuera y no se cerraba nunca -no habia finally-, asi que cada vez que
+        //alguien abria la pantalla de la ruleta quedaba una conexion dormida en el
+        //servidor. Con wait_timeout en 8 horas no las reciclaba nadie y se iban
+        //acumulando durante todo el dia hasta disparar la alerta de la base de datos.
+        //Los demas metodos de esta clase ya cierran en su finally.
+        String sql = "SELECT * FROM opciones_ruleta where activo = 1";
+        try (Connection con1 = con.obtenerConexionBDPrincipal();
+             PreparedStatement pstmt = con1.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                JSONObject obj = new JSONObject();
+                obj.put("idopcion", rs.getInt("idopcion"));
+                obj.put("premio", rs.getInt("premio"));
+                obj.put("titulo", rs.getString("titulo"));
+                obj.put("descripcion", rs.getString("descripcion"));
+                obj.put("valor", rs.getString("valor"));
+                obj.put("idtipo", rs.getInt("idtipo"));
+                obj.put("indice", rs.getInt("indice"));
+                obj.put("repeticiones", rs.getInt("repeticiones"));
+                obj.put("reintento", rs.getInt("reintento"));
+
+                int repeticiones = rs.getInt("repeticiones");
+
+                for(int i = 0; i < repeticiones; i++){
+                    listaOpciones.add(obj);
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
 
-    	}catch(Exception e) {
-    		System.out.println("Error al obtener opciones de la ruleta: "+e.getMessage());
-    		e.printStackTrace();
-    	}
+        } catch (Exception e) {
+            System.out.println("Error al obtener opciones de la ruleta: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         return listaOpciones;
     }

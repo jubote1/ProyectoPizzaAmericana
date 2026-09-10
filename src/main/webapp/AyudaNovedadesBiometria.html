@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Novedades de Biometría</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --hoja:       #F7F8FA;
+    --tarjeta:    #FFFFFF;
+    --tinta:      #12161F;
+    --tinta-2:    #4B5464;
+    --tinta-3:    #7B8494;
+    --linea:      #DEE2E9;
+    --linea-2:    #EDEFF4;
+    --azul:       #102F6F;
+    --azul-suave: #E9EDF7;
+    --rojo:       #E42528;
+    --rojo-suave: #FDECEC;
+    --amarillo:   #FDC806;
+    --amar-suave: #FFF5D6;
+    --amar-tinta: #7A5A00;
+    --verde:      #16704F;
+    --verde-suave:#E5F1EC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --hoja:       #0B0F19;
+      --tarjeta:    #141A27;
+      --tinta:      #EDF0F6;
+      --tinta-2:    #AEB6C6;
+      --tinta-3:    #828B9C;
+      --linea:      #29313F;
+      --linea-2:    #1D2431;
+      --azul:       #86A6E4;
+      --azul-suave: #18213A;
+      --rojo:       #FF7375;
+      --rojo-suave: #38191B;
+      --amarillo:   #FDC806;
+      --amar-suave: #332807;
+      --amar-tinta: #FFD75E;
+      --verde:      #4FBA8D;
+      --verde-suave:#11291F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --hoja:       #0B0F19;
+    --tarjeta:    #141A27;
+    --tinta:      #EDF0F6;
+    --tinta-2:    #AEB6C6;
+    --tinta-3:    #828B9C;
+    --linea:      #29313F;
+    --linea-2:    #1D2431;
+    --azul:       #86A6E4;
+    --azul-suave: #18213A;
+    --rojo:       #FF7375;
+    --rojo-suave: #38191B;
+    --amarillo:   #FDC806;
+    --amar-suave: #332807;
+    --amar-tinta: #FFD75E;
+    --verde:      #4FBA8D;
+    --verde-suave:#11291F;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--hoja);
+    color: var(--tinta);
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hoja { max-width: 880px; margin: 0 auto; padding: 0 22px 90px; }
+  .angosto { max-width: 66ch; }
+  h1, h2, h3, .paso-n, .tot .n { font-family: Manrope, system-ui, sans-serif; }
+  .cifras { font-variant-numeric: tabular-nums; }
+
+  /* portada */
+  header.tapa { padding: 46px 0 4px; border-bottom: 3px solid var(--azul); margin-bottom: 8px; }
+  .marca {
+    display: flex; align-items: center; gap: 11px; margin-bottom: 20px;
+    font-size: 12px; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--tinta-3);
+  }
+  .marca .tres { display: flex; gap: 3px; }
+  .marca .tres i { width: 13px; height: 13px; border-radius: 2px; display: block; }
+  h1 {
+    font-weight: 800; font-size: clamp(2.2rem, 6.4vw, 3.6rem); line-height: 1;
+    letter-spacing: -.03em; margin: 0 0 16px; text-wrap: balance;
+  }
+  .lema { font-size: 1.18rem; line-height: 1.45; color: var(--tinta-2); max-width: 46ch; margin: 0 0 22px; }
+  .fichas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .ficha {
+    padding: 5px 12px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: var(--azul-suave); color: var(--azul);
+  }
+  .ficha.viva { background: var(--verde-suave); color: var(--verde); }
+
+  /* vistazo */
+  .vistazo {
+    background: var(--tarjeta); border: 1px solid var(--linea);
+    border-left: 5px solid var(--azul); border-radius: 6px;
+    padding: 22px 26px; margin: 28px 0 0;
+  }
+  .vistazo h2 { font-size: 1.02rem; font-weight: 700; margin: 0 0 12px; }
+  .vistazo ol { margin: 0; padding-left: 20px; }
+  .vistazo li { margin-bottom: 8px; color: var(--tinta-2); }
+  .vistazo li:last-child { margin-bottom: 0; }
+  .vistazo b { color: var(--tinta); font-weight: 700; }
+
+  /* secciones */
+  section { margin-top: 62px; }
+  .rotulo {
+    font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--rojo); margin: 0 0 8px;
+  }
+  h2 {
+    font-weight: 700; font-size: clamp(1.55rem, 3.8vw, 2.1rem); line-height: 1.1;
+    letter-spacing: -.022em; margin: 0 0 16px; text-wrap: balance;
+  }
+  h3 { font-weight: 700; font-size: 1.18rem; line-height: 1.28; letter-spacing: -.012em; margin: 36px 0 10px; }
+  h4.sub { font-family: "Source Sans 3", sans-serif; font-size: 1rem; font-weight: 700; margin: 26px 0 8px; }
+  p { margin: 0 0 15px; }
+  .angosto ul, .angosto ol { margin: 0 0 16px; padding-left: 22px; }
+  .angosto li { margin-bottom: 8px; }
+  strong { font-weight: 700; }
+  .campo {
+    font-weight: 600; background: var(--linea-2); padding: .08em .38em;
+    border-radius: 3px; font-size: .94em;
+  }
+
+  /* ilustraciones */
+  figure { margin: 30px 0; padding: 20px 20px 14px; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 8px; overflow-x: auto; }
+  figure.pantalla { background: #EFF1F6; border-color: #D3D8E2; overflow-x: auto; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 520px; }
+  figure figcaption { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--linea-2); font-size: 14.5px; color: var(--tinta-2); }
+  figure.pantalla figcaption { border-top-color: #D3D8E2; color: #4E5768; }
+  figure figcaption b { font-weight: 700; }
+  figure.pantalla figcaption b { color: #1B2436; }
+  .svg-t { font-family: "Source Sans 3", system-ui, sans-serif; }
+
+  /* pasos numerados */
+  .pasos { margin: 28px 0 0; }
+  .paso {
+    display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 20px;
+    padding: 22px 0; border-top: 1px solid var(--linea);
+  }
+  .paso:last-child { border-bottom: 1px solid var(--linea); }
+  .paso-n { font-size: 1.9rem; font-weight: 800; line-height: .9; color: var(--azul); letter-spacing: -.04em; }
+  .paso h4 { font-family: "Source Sans 3", sans-serif; font-size: 1.05rem; font-weight: 700; margin: 0 0 8px; }
+  .paso p { font-size: 15.5px; color: var(--tinta-2); margin: 0 0 10px; max-width: 62ch; }
+  .paso p:last-child { margin-bottom: 0; }
+  .paso ul { margin: 0; padding-left: 20px; font-size: 15px; color: var(--tinta-2); }
+  .paso li { margin-bottom: 6px; }
+
+  /* avisos */
+  .aviso { border-radius: 6px; padding: 17px 21px; margin: 24px 0; background: var(--azul-suave); border-left: 5px solid var(--azul); }
+  .aviso.ojo { background: var(--amar-suave); border-left-color: var(--amarillo); }
+  .aviso.alerta { background: var(--rojo-suave); border-left-color: var(--rojo); }
+  .aviso.bien { background: var(--verde-suave); border-left-color: var(--verde); }
+  .aviso h4 { font-family: "Source Sans 3", sans-serif; font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  .aviso p { margin: 0; font-size: 15.5px; color: var(--tinta-2); }
+  .aviso p + p { margin-top: 9px; }
+
+  /* tablas */
+  .caja-tabla { overflow-x: auto; margin: 24px 0; border: 1px solid var(--linea); border-radius: 6px; background: var(--tarjeta); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px; }
+  th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--linea-2); vertical-align: top; }
+  thead th {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--tinta-2); background: var(--linea-2); border-bottom: 1px solid var(--linea); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td b { font-weight: 700; }
+
+  .marbete { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .marbete.pend { background: var(--amar-suave); color: var(--amar-tinta); }
+  .marbete.ok { background: var(--verde-suave); color: var(--verde); }
+  .marbete.no { background: var(--rojo-suave); color: var(--rojo); }
+  .marbete.auto { background: var(--azul-suave); color: var(--azul); }
+
+  /* tipos */
+  .tipos { display: grid; gap: 14px; margin: 26px 0; }
+  @media (min-width: 700px) { .tipos { grid-template-columns: repeat(3, 1fr); } }
+  .tipo { background: var(--tarjeta); border: 1px solid var(--linea); border-top: 4px solid var(--azul); border-radius: 8px; padding: 16px 18px 18px; }
+  .tipo.manual { border-top-color: var(--amarillo); }
+  .tipo h4 { font-family: "Source Sans 3", sans-serif; font-size: 15.5px; font-weight: 700; margin: 0 0 7px; }
+  .tipo p { font-size: 14.5px; color: var(--tinta-2); margin: 0; }
+  .tipo .quien { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 6px; }
+
+  /* reglas */
+  .reglas { list-style: none; margin: 26px 0 0; padding: 0; counter-reset: r; }
+  .reglas li {
+    display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 16px;
+    padding: 15px 0; border-bottom: 1px solid var(--linea-2);
+  }
+  .reglas li::before {
+    counter-increment: r; content: counter(r);
+    font-family: Manrope, sans-serif; font-weight: 800; font-size: 1.2rem;
+    color: var(--rojo); line-height: 1.2;
+  }
+  .reglas b { display: block; font-weight: 700; margin-bottom: 2px; }
+  .reglas span { color: var(--tinta-2); font-size: 15.5px; }
+
+  /* preguntas */
+  .faq { margin: 26px 0 0; border-top: 1px solid var(--linea); }
+  .faq details { border-bottom: 1px solid var(--linea); }
+  .faq summary { cursor: pointer; padding: 15px 32px 15px 0; font-weight: 600; font-size: 16.5px; list-style: none; position: relative; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; position: absolute; right: 4px; top: 12px; font-size: 22px; font-weight: 400; color: var(--rojo); line-height: 1; }
+  .faq details[open] summary::after { content: "\2013"; }
+  .faq summary:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
+  .faq .resp { padding: 0 0 18px; color: var(--tinta-2); font-size: 15.5px; max-width: 64ch; }
+  .faq .resp p { margin: 0 0 10px; }
+  .faq .resp p:last-child { margin: 0; }
+
+  footer { margin-top: 68px; padding-top: 20px; border-top: 3px solid var(--azul); font-size: 14px; color: var(--tinta-3); }
+  footer b { color: var(--tinta-2); font-weight: 600; }
+
+  @media print {
+    body { background: #FFFFFF; font-size: 11pt; }
+    .hoja { max-width: none; padding: 0; }
+    section { margin-top: 24pt; }
+    figure, .paso, .tipo, .reglas li { page-break-inside: avoid; }
+    .faq details { page-break-inside: avoid; }
+    .faq summary::after { content: ""; }
+    .faq .resp { display: block !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="hoja">
+
+<header class="tapa">
+  <div class="marca">
+    <span class="tres"><i style="background:#E42528"></i><i style="background:#FDC806"></i><i style="background:#102F6F"></i></span>
+    <span>Pizza Americana &middot; Operaciones</span>
+  </div>
+  <h1>Novedades de Biometría</h1>
+  <p class="lema">
+    Qué hacer cuando alguien olvida marcar su entrada o su salida: cómo se reporta en la tienda
+    y cómo se corrige en el sistema central.
+  </p>
+  <div class="fichas">
+    <span class="ficha viva">Ya está funcionando</span>
+    <span class="ficha">Se reporta desde el POS</span>
+    <span class="ficha">Se corrige en el sistema central</span>
+  </div>
+</header>
+
+<div class="vistazo">
+  <h2>En cuatro frases</h2>
+  <ol>
+    <li>Cada noche el sistema revisa la biometría del día anterior y <b>avisa por correo</b> a quien tenga un registro incompleto.</li>
+    <li>Cuando alguien se da cuenta del olvido, lo <b>reporta desde el POS</b>. Reportar no cambia la jornada: solo deja constancia.</li>
+    <li>En el sistema central se <b>revisa y se corrige</b> la jornada de ese día, con una observación obligatoria.</li>
+    <li>Todo cambio queda registrado, y el registro corregido queda <b>marcado como Manual</b> para siempre.</li>
+  </ol>
+</div>
+
+<!-- ===================== 1 ===================== -->
+<section>
+  <p class="rotulo">Punto de partida</p>
+  <h2>Qué es una novedad de biometría</h2>
+  <div class="angosto">
+    <p>
+      La jornada de cada persona se arma en parejas: un <strong>INGRESO</strong> y una
+      <strong>SALIDA</strong>. Cuando falta una de las dos, o cuando la hora que quedó no es la
+      hora real, la jornada queda mal y eso afecta directamente la liquidación.
+    </p>
+    <p>
+      A eso le llamamos una novedad. Hay dos maneras de que aparezca: el sistema la detecta solo,
+      o una persona la reporta.
+    </p>
+  </div>
+
+  <h3>Las que el sistema detecta solo</h3>
+  <div class="tipos">
+    <div class="tipo">
+      <span class="quien">Automática</span>
+      <h4>Falta la salida</h4>
+      <p>Se dio entrada pero nunca se dio salida. Es la más común: se va de afán y no vuelve al huellero.</p>
+    </div>
+    <div class="tipo">
+      <span class="quien">Automática</span>
+      <h4>Falta el ingreso</h4>
+      <p>Aparece una salida sin la entrada correspondiente. Suele ser que llegó y no marcó.</p>
+    </div>
+    <div class="tipo">
+      <span class="quien">Automática</span>
+      <h4>Ingreso tardío</h4>
+      <p>Una entrada marcada muy de noche, después de la hora que tenemos configurada. Casi siempre es un olvido que se marcó al final del turno.</p>
+    </div>
+  </div>
+
+  <h3>Las que reporta una persona</h3>
+  <div class="tipos">
+    <div class="tipo manual">
+      <span class="quien">Reportada</span>
+      <h4>Corregir hora</h4>
+      <p>El registro existe pero la hora está mal. Ejemplo: entró a las 12:00 y la puso a las 14:00.</p>
+    </div>
+    <div class="tipo manual">
+      <span class="quien">Reportada</span>
+      <h4>Falta la salida o falta el ingreso</h4>
+      <p>Lo mismo que detecta el sistema, pero avisado el mismo día sin esperar el correo.</p>
+    </div>
+    <div class="tipo manual">
+      <span class="quien">Reportada</span>
+      <h4>Otra</h4>
+      <p>Cualquier situación que no encaje en las anteriores. Es la única en la que no hay que decir una hora.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section>
+  <p class="rotulo">El proceso completo</p>
+  <h2>Las dos puertas de entrada</h2>
+  <div class="angosto">
+    <p>
+      Esto es lo más importante de entender: el correo <strong>avisa</strong>, pero no crea nada
+      en el sistema. Para poder corregir la jornada tiene que existir un reporte hecho desde el
+      POS de la tienda.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 700 292" role="img" aria-label="El ciclo completo de una novedad de biometría">
+      <defs>
+        <marker id="fl" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--tinta-3)"/>
+        </marker>
+      </defs>
+
+      <rect x="2" y="20" width="204" height="80" rx="8" fill="var(--tarjeta)" stroke="var(--azul)" stroke-width="1.8"/>
+      <text class="svg-t" x="18" y="42" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--azul)">PUERTA 1 &middot; AUTOMÁTICA</text>
+      <text class="svg-t" x="18" y="63" font-size="14.5" font-weight="700" fill="var(--tinta)">Llega el correo</text>
+      <text class="svg-t" x="18" y="82" font-size="12.5" fill="var(--tinta-2)">Al otro día, con lo del día</text>
+      <text class="svg-t" x="18" y="96" font-size="12.5" fill="var(--tinta-2)">anterior. Solo avisa.</text>
+
+      <rect x="2" y="128" width="204" height="80" rx="8" fill="var(--tarjeta)" stroke="var(--amarillo)" stroke-width="2.2"/>
+      <text class="svg-t" x="18" y="150" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--amar-tinta)">PUERTA 2 &middot; LA TIENDA</text>
+      <text class="svg-t" x="18" y="171" font-size="14.5" font-weight="700" fill="var(--tinta)">Se reporta en el POS</text>
+      <text class="svg-t" x="18" y="190" font-size="12.5" fill="var(--tinta-2)">El mismo día o después.</text>
+      <text class="svg-t" x="18" y="204" font-size="12.5" fill="var(--tinta-2)">Esto sí crea la novedad.</text>
+
+      <path d="M206,60 L228,60 L228,110 L246,110" fill="none" stroke="var(--tinta-3)" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#fl)"/>
+      <path d="M206,168 L228,168 L228,118 L246,118" fill="none" stroke="var(--tinta-3)" stroke-width="1.8" marker-end="url(#fl)"/>
+      <text class="svg-t" x="212" y="248" font-size="11.5" fill="var(--tinta-3)">La línea punteada</text>
+      <text class="svg-t" x="212" y="262" font-size="11.5" fill="var(--tinta-3)">es solo aviso</text>
+
+      <rect x="250" y="74" width="182" height="80" rx="8" fill="var(--amar-suave)" stroke="var(--amarillo)" stroke-width="1.8"/>
+      <text class="svg-t" x="266" y="96" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--amar-tinta)">PENDIENTE</text>
+      <text class="svg-t" x="266" y="117" font-size="14.5" font-weight="700" fill="var(--tinta)">Novedad reportada</text>
+      <text class="svg-t" x="266" y="136" font-size="12.5" fill="var(--tinta-2)">La jornada todavía</text>
+      <text class="svg-t" x="266" y="150" font-size="12.5" fill="var(--tinta-2)">no ha cambiado.</text>
+
+      <path d="M432,114 L474,114" fill="none" stroke="var(--tinta-3)" stroke-width="1.8" marker-end="url(#fl)"/>
+
+      <rect x="478" y="74" width="220" height="80" rx="8" fill="var(--tarjeta)" stroke="var(--azul)" stroke-width="1.8"/>
+      <text class="svg-t" x="494" y="96" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--azul)">SISTEMA CENTRAL</text>
+      <text class="svg-t" x="494" y="117" font-size="14.5" font-weight="700" fill="var(--tinta)">Se revisa y se corrige</text>
+      <text class="svg-t" x="494" y="136" font-size="12.5" fill="var(--tinta-2)">Menú Funciones &rarr;</text>
+      <text class="svg-t" x="494" y="150" font-size="12.5" fill="var(--tinta-2)">Novedades de Biometría</text>
+
+      <path d="M588,154 L588,222" fill="none" stroke="var(--tinta-3)" stroke-width="1.8" marker-end="url(#fl)"/>
+
+      <rect x="250" y="226" width="448" height="62" rx="8" fill="var(--verde-suave)" stroke="var(--verde)" stroke-width="1.8"/>
+      <text class="svg-t" x="266" y="250" font-size="14.5" font-weight="700" fill="var(--tinta)">Jornada corregida &mdash; atendida o rechazada</text>
+      <text class="svg-t" x="266" y="272" font-size="12.5" fill="var(--tinta-2)">Con observación obligatoria, y el registro tocado queda marcado &ldquo;Manual&rdquo;.</text>
+    </svg>
+    <figcaption>
+      <b>El ciclo, de punta a punta.</b> Sin un reporte hecho en el POS no hay nada que tramitar en
+      el central, así llegue el correo.
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section>
+  <p class="rotulo">Puerta 1</p>
+  <h2>Los correos que llegan solos</h2>
+  <div class="angosto">
+    <p>
+      Cada noche, después del cierre, un proceso revisa la biometría del <strong>día
+      anterior</strong> de todas las tiendas y arma las parejas. Lo que quede desbalanceado se
+      convierte en un aviso por correo.
+    </p>
+    <p>Se envían dos correos distintos:</p>
+  </div>
+
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Correo</th><th>Para quién</th><th>Qué dice</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>El personal</b><br><span style="color:var(--tinta-3);font-size:13.5px;">&ldquo;Novedad en su registro de biometría del …&rdquo;</span></td>
+          <td>El empleado que tuvo la novedad, a su correo registrado</td>
+          <td>Uno solo por persona, con todas sus novedades de ese día. Le dice qué pasó y qué tiene que hacer.</td>
+        </tr>
+        <tr>
+          <td><b>El resumen</b><br><span style="color:var(--tinta-3);font-size:13.5px;">&ldquo;Novedades de biometría del … &mdash; N novedades&rdquo;</span></td>
+          <td>Talento Humano, Auxiliar de Operación, Supervisor de Operación, Asistente Administrativa, Auxiliar Contable, Producción y Logística</td>
+          <td>La lista completa del día, por tienda, y cuántos empleados quedaron <strong>sin correo registrado</strong>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure class="pantalla">
+    <svg viewBox="0 0 700 274" role="img" aria-label="Ejemplo del correo que recibe el empleado">
+      <rect x="1" y="1" width="698" height="228" rx="6" fill="#FFFFFF" stroke="#D3D8E2"/>
+      <text class="svg-t" x="20" y="26" font-size="11.5" font-weight="700" letter-spacing="1" fill="#8A93A5">ASUNTO</text>
+      <text class="svg-t" x="20" y="46" font-size="14.5" font-weight="700" fill="#1B2436">Novedad en su registro de biometría del 2026-09-09</text>
+      <line x1="1" y1="60" x2="699" y2="60" stroke="#E4E8EF"/>
+
+      <rect x="20" y="76" width="660" height="44" fill="#102F6F"/>
+      <text class="svg-t" x="40" y="104" font-size="16" font-weight="700" fill="#FFFFFF">PIZZA AMERICANA</text>
+      <text class="svg-t" x="660" y="104" font-size="12.5" text-anchor="end" fill="#C3D0EA">Registro de jornada</text>
+      <rect x="20" y="120" width="660" height="5" fill="#FDC806"/>
+
+      <rect x="20" y="125" width="660" height="34" fill="#F2F4F8"/>
+      <text class="svg-t" x="40" y="147" font-size="13.5" fill="#3C465A">Hola <tspan font-weight="700">Ana Marcela Ruiz</tspan>, encontramos una novedad en su jornada del 9 de septiembre.</text>
+
+      <rect x="20" y="167" width="660" height="26" fill="#102F6F"/>
+      <text class="svg-t" x="40" y="184" font-size="11.5" font-weight="700" letter-spacing=".6" fill="#FFFFFF">TIENDA</text>
+      <text class="svg-t" x="220" y="184" font-size="11.5" font-weight="700" letter-spacing=".6" fill="#FFFFFF">QUÉ PASÓ</text>
+      <text class="svg-t" x="470" y="184" font-size="11.5" font-weight="700" letter-spacing=".6" fill="#FFFFFF">REGISTRO</text>
+      <rect x="20" y="193" width="660" height="30" fill="#FFFFFF" stroke="#E4E8EF"/>
+      <text class="svg-t" x="40" y="212" font-size="13" fill="#1B2436">Centro</text>
+      <text class="svg-t" x="220" y="212" font-size="13" font-weight="700" fill="#E42528">Falta la salida</text>
+      <text class="svg-t cifras" x="470" y="212" font-size="13" fill="#1B2436">INGRESO 06:51:12</text>
+
+      <text class="svg-t" x="1" y="252" font-size="13" font-weight="700" fill="#1B2436">El correo le pide avisar en su tienda para que quede reportado desde el POS.</text>
+      <text class="svg-t" x="1" y="268" font-size="13" fill="#4E5768">Va sin imágenes ni estilos modernos a propósito, para que se vea bien en Outlook y en el celular.</text>
+    </svg>
+    <figcaption>
+      <b>El correo del empleado.</b> Si una persona tiene tres novedades el mismo día, recibe un
+      solo correo con las tres, no tres correos.
+    </figcaption>
+  </figure>
+
+  <div class="aviso ojo">
+    <h4>El caso &ldquo;sin correo registrado&rdquo;</h4>
+    <p>
+      Si el empleado no tiene correo en su ficha, el sistema <strong>no le manda nada</strong> y lo
+      lista en el resumen general. Cuando aparezcan nombres ahí, hay que pedirle a Talento Humano
+      que actualice el correo; mientras no lo tenga, ese empleado nunca se va a enterar solo.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section>
+  <p class="rotulo">Puerta 2</p>
+  <h2>Cómo se reporta desde el POS</h2>
+  <div class="angosto">
+    <p>
+      Se entra por la misma pantalla del huellero: <span class="campo">REGISTRO EVENTO
+      ENTRADA/SALIDA JORNADA</span>. Ahí hay un botón rojo <span class="campo">REPORTAR
+      NOVEDAD</span>.
+    </p>
+    <p>
+      Esa pantalla está <strong>abierta a propósito</strong>: no pide clave, porque el que se dio
+      cuenta del olvido no siempre es el dueño del registro. Puede reportarlo el mismo empleado,
+      un compañero, Servicio al Cliente (caja) o el Administrador de tienda. Lo que sí es
+      obligatorio es escribir quién está reportando.
+    </p>
+  </div>
+
+  <figure class="pantalla">
+    <svg viewBox="0 0 700 434" role="img" aria-label="Pantalla del POS para reportar una novedad de biometría">
+      <rect x="1" y="1" width="698" height="432" rx="6" fill="#F4F5F8" stroke="#C8CEDA"/>
+      <rect x="1" y="1" width="698" height="34" fill="#102F6F"/>
+      <text class="svg-t" x="18" y="24" font-size="13.5" font-weight="700" fill="#FFFFFF">REPORTAR NOVEDAD DE BIOMETRÍA</text>
+
+      <text class="svg-t" x="18" y="62" font-size="17" font-weight="700" fill="#1B2436">Reportar una novedad de biometría</text>
+      <text class="svg-t" x="18" y="82" font-size="12.5" fill="#5A6478">Esto no cambia la jornada: queda reportado para que el Líder de Operación lo revise</text>
+      <text class="svg-t" x="18" y="97" font-size="12.5" fill="#5A6478">y lo corrija en el sistema central.</text>
+
+      <text class="svg-t" x="18" y="126" font-size="12.5" font-weight="700" fill="#1B2436">Día</text>
+      <rect x="18" y="132" width="148" height="30" rx="3" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <text class="svg-t cifras" x="30" y="152" font-size="13.5" fill="#1B2436">2026-09-09</text>
+      <rect x="178" y="132" width="150" height="30" rx="3" fill="#DDE1EA" stroke="#A9B2C4"/>
+      <text class="svg-t" x="253" y="152" font-size="12.5" font-weight="700" text-anchor="middle" fill="#1B2436">Ver los registros</text>
+
+      <text class="svg-t" x="18" y="184" font-size="12.5" fill="#5A6478">Escoja de la lista el registro del que quiere hablar</text>
+      <rect x="18" y="192" width="664" height="88" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <rect x="18" y="192" width="664" height="24" fill="#E7EAF1"/>
+      <text class="svg-t" x="30" y="209" font-size="11.5" font-weight="700" fill="#3C465A">Empleado</text>
+      <text class="svg-t" x="262" y="209" font-size="11.5" font-weight="700" fill="#3C465A">Evento</text>
+      <text class="svg-t" x="410" y="209" font-size="11.5" font-weight="700" fill="#3C465A">Hora registrada</text>
+      <text class="svg-t" x="586" y="209" font-size="11.5" font-weight="700" fill="#3C465A">Huellero</text>
+      <rect x="18" y="216" width="664" height="21" fill="#FFFFFF"/>
+      <text class="svg-t" x="30" y="231" font-size="12.5" fill="#1B2436">330 - Ana Marcela Ruiz</text>
+      <text class="svg-t" x="262" y="231" font-size="12.5" fill="#1B2436">INGRESO</text>
+      <text class="svg-t cifras" x="410" y="231" font-size="12.5" fill="#1B2436">2026-09-09 18:43:51</text>
+      <text class="svg-t" x="586" y="231" font-size="12.5" fill="#16704F">Sí</text>
+      <rect x="18" y="237" width="664" height="21" fill="#CFE0FA"/>
+      <text class="svg-t" x="30" y="252" font-size="12.5" font-weight="700" fill="#0B2A63">330 - Ana Marcela Ruiz</text>
+      <text class="svg-t" x="262" y="252" font-size="12.5" font-weight="700" fill="#0B2A63">SALIDA</text>
+      <text class="svg-t cifras" x="410" y="252" font-size="12.5" font-weight="700" fill="#0B2A63">2026-09-09 19:02:10</text>
+      <text class="svg-t" x="586" y="252" font-size="12.5" font-weight="700" fill="#0B2A63">Sí</text>
+      <rect x="18" y="258" width="664" height="21" fill="#FFFFFF"/>
+      <text class="svg-t" x="30" y="273" font-size="12.5" fill="#1B2436">412 - Jorge E. Peña</text>
+      <text class="svg-t" x="262" y="273" font-size="12.5" fill="#1B2436">INGRESO</text>
+      <text class="svg-t cifras" x="410" y="273" font-size="12.5" fill="#1B2436">2026-09-09 07:58:02</text>
+      <text class="svg-t" x="586" y="273" font-size="12.5" fill="#16704F">Sí</text>
+
+      <text class="svg-t" x="18" y="304" font-size="12.5" font-weight="700" fill="#1B2436">¿Qué pasó?</text>
+      <rect x="18" y="310" width="200" height="30" rx="3" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <text class="svg-t" x="30" y="330" font-size="13" fill="#1B2436">CORREGIR HORA</text>
+      <path d="M198,321 L208,321 L203,328 Z" fill="#5A6478"/>
+
+      <text class="svg-t" x="240" y="304" font-size="12.5" font-weight="700" fill="#1B2436">Hora real (hh:mm:ss)</text>
+      <rect x="240" y="310" width="140" height="30" rx="3" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <text class="svg-t cifras" x="252" y="330" font-size="13.5" fill="#1B2436">15:30:00</text>
+      <text class="svg-t" x="388" y="330" font-size="12" fill="#8A93A5">Ejemplo: 12:00:00</text>
+
+      <text class="svg-t" x="18" y="364" font-size="12.5" font-weight="700" fill="#1B2436">Explique qué pasó</text>
+      <rect x="18" y="370" width="440" height="44" rx="3" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <text class="svg-t" x="30" y="390" font-size="13" fill="#1B2436">Se le olvidó poner la huella al llegar. Entró a las</text>
+      <text class="svg-t" x="30" y="406" font-size="13" fill="#1B2436">3:30 de la tarde, lo vio el Administrador de tienda.</text>
+
+      <text class="svg-t" x="480" y="364" font-size="12.5" font-weight="700" fill="#1B2436">¿Quién reporta?</text>
+      <rect x="480" y="370" width="202" height="30" rx="3" fill="#FFFFFF" stroke="#B9C1D0"/>
+      <text class="svg-t" x="492" y="390" font-size="13" fill="#1B2436">Ana Marcela</text>
+      <rect x="480" y="406" width="132" height="22" rx="3" fill="#E42528"/>
+      <text class="svg-t" x="546" y="421" font-size="11.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">GUARDAR NOVEDAD</text>
+      <rect x="620" y="406" width="62" height="22" rx="3" fill="#DDE1EA" stroke="#A9B2C4"/>
+      <text class="svg-t" x="651" y="421" font-size="11.5" font-weight="700" text-anchor="middle" fill="#1B2436">CERRAR</text>
+    </svg>
+    <figcaption>
+      <b>La pantalla de reporte, con el registro señalado en azul.</b> Hoy el texto de la pantalla
+      dice &ldquo;supervisor&rdquo;; queda pendiente cambiarlo por &ldquo;Líder de
+      Operación&rdquo;.
+    </figcaption>
+  </figure>
+
+  <h3>Los cinco pasos</h3>
+  <div class="pasos">
+    <div class="paso">
+      <span class="paso-n">1</span>
+      <div>
+        <h4>Poner el día y traer los registros</h4>
+        <p>
+          El campo <span class="campo">Día</span> viene con el de hoy. Si la novedad es de otro
+          día, se cambia &mdash; siempre en formato <strong>aaaa-mm-dd</strong>. Luego
+          <span class="campo">Ver los registros</span>.
+        </p>
+        <p>Aparecen todos los registros de biometría de esa tienda ese día, de todo el personal.</p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">2</span>
+      <div>
+        <h4>Escoger el registro del que se va a hablar</h4>
+        <p>
+          De ahí sale el empleado, así que no hay que escribir su nombre ni su número. Si el
+          problema es una hora mala, se escoge <em>ese</em> registro. Si lo que falta es la salida,
+          se escoge el ingreso que quedó suelto.
+        </p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">3</span>
+      <div>
+        <h4>Decir qué pasó y la hora real</h4>
+        <p>
+          Se escoge en <span class="campo">¿Qué pasó?</span> y se escribe la hora real en
+          <strong>hh:mm:ss</strong> de 24 horas. Las tres de la tarde son
+          <strong>15:00:00</strong>, no 3:00:00.
+        </p>
+        <p>La hora es obligatoria en todos los tipos, menos en <strong>OTRA</strong>.</p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">4</span>
+      <div>
+        <h4>Explicar, de verdad</h4>
+        <p>
+          Mínimo diez caracteres, pero eso es el mínimo técnico, no la meta. Esta explicación es
+          lo único que va a ver quien decida si se corrige o no. Sirve decir:
+        </p>
+        <ul>
+          <li>a qué hora fue realmente,</li>
+          <li>por qué no se marcó,</li>
+          <li>quién lo puede confirmar.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">5</span>
+      <div>
+        <h4>Firmar y guardar</h4>
+        <p>
+          En <span class="campo">¿Quién reporta?</span> va el nombre de quien está reportando.
+          Al guardar, el sistema devuelve el <strong>número de la novedad</strong> &mdash;
+          conviene anotarlo, es la forma más rápida de buscarla después.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="aviso alerta">
+    <h4>Si sale &ldquo;No se pudo guardar la novedad&rdquo;</h4>
+    <p>
+      El reporte se guarda directamente en el sistema central, así que necesita conexión. Si la
+      tienda está sin enlace, hay que volver a intentar más tarde. Si insiste, avisar a
+      tecnología. No sirve escribirlo en un cuaderno y darlo por reportado: si no está en el
+      sistema, no existe.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section>
+  <p class="rotulo">El trámite</p>
+  <h2>Cómo se corrige en el sistema central</h2>
+  <div class="angosto">
+    <p>Se entra al sistema central con el usuario de siempre y se va a:</p>
+    <p style="font-weight:700;font-size:1.05rem;">
+      Menú <span class="campo">Funciones</span> &rarr; <span class="campo">Novedades de Biometría</span>
+    </p>
+    <p>
+      Es la última opción de ese menú. La pantalla abre mostrando las
+      <strong>pendientes</strong>, que es lo que normalmente se necesita.
+    </p>
+  </div>
+
+  <figure class="pantalla">
+    <svg viewBox="0 0 700 320" role="img" aria-label="Pantalla de novedades de biometría en el sistema central">
+      <rect x="1" y="1" width="698" height="318" rx="6" fill="#FFFFFF" stroke="#C8CEDA"/>
+      <rect x="1" y="1" width="698" height="30" fill="#102F6F"/>
+      <text class="svg-t" x="16" y="21" font-size="12.5" font-weight="700" fill="#FFFFFF">Funciones</text>
+      <text class="svg-t" x="96" y="21" font-size="12.5" fill="#B9C9E8">Parametrización</text>
+      <text class="svg-t" x="204" y="21" font-size="12.5" fill="#B9C9E8">Monitoreo</text>
+      <rect x="8" y="31" width="228" height="26" fill="#F7D64A"/>
+      <text class="svg-t" x="20" y="48" font-size="12.5" font-weight="700" fill="#3A2C00">Novedades de Biometría</text>
+
+      <text class="svg-t" x="16" y="80" font-size="15" font-weight="700" fill="#102F6F">Novedades de biometría</text>
+
+      <text class="svg-t" x="16" y="102" font-size="11" font-weight="700" fill="#5A6478">Fecha desde</text>
+      <rect x="16" y="107" width="118" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t cifras" x="26" y="125" font-size="12.5" fill="#1B2436">2026-09-01</text>
+      <text class="svg-t" x="146" y="102" font-size="11" font-weight="700" fill="#5A6478">Fecha hasta</text>
+      <rect x="146" y="107" width="118" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t cifras" x="156" y="125" font-size="12.5" fill="#1B2436">2026-09-10</text>
+      <text class="svg-t" x="276" y="102" font-size="11" font-weight="700" fill="#5A6478">Estado</text>
+      <rect x="276" y="107" width="130" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t" x="286" y="125" font-size="12.5" fill="#1B2436">Pendientes</text>
+      <path d="M388,117 L398,117 L393,124 Z" fill="#5A6478"/>
+      <rect x="418" y="107" width="96" height="26" rx="3" fill="#0069D9"/>
+      <text class="svg-t" x="466" y="125" font-size="12.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Consultar</text>
+
+      <rect x="16" y="146" width="160" height="50" rx="4" fill="#F2F4F8" stroke="#DDE2EB"/>
+      <text class="svg-t cifras" x="30" y="172" font-size="20" font-weight="700" fill="#1B2436">4</text>
+      <text class="svg-t" x="30" y="188" font-size="11" fill="#5A6478">Novedades</text>
+      <rect x="184" y="146" width="160" height="50" rx="4" fill="#FFF5D6" stroke="#F0CE55"/>
+      <text class="svg-t cifras" x="198" y="172" font-size="20" font-weight="700" fill="#7A5A00">1</text>
+      <text class="svg-t" x="198" y="188" font-size="11" font-weight="700" fill="#7A5A00">Pendientes</text>
+      <rect x="352" y="146" width="160" height="50" rx="4" fill="#F2F4F8" stroke="#DDE2EB"/>
+      <text class="svg-t cifras" x="366" y="172" font-size="20" font-weight="700" fill="#1B2436">2</text>
+      <text class="svg-t" x="366" y="188" font-size="11" fill="#5A6478">Atendidas</text>
+      <rect x="520" y="146" width="162" height="50" rx="4" fill="#F2F4F8" stroke="#DDE2EB"/>
+      <text class="svg-t cifras" x="534" y="172" font-size="20" font-weight="700" fill="#1B2436">1</text>
+      <text class="svg-t" x="534" y="188" font-size="11" fill="#5A6478">Rechazadas</text>
+
+      <rect x="16" y="212" width="666" height="24" fill="#E7EAF1" stroke="#DDE2EB"/>
+      <text class="svg-t" x="26" y="229" font-size="10.5" font-weight="700" fill="#3C465A">#</text>
+      <text class="svg-t" x="50" y="229" font-size="10.5" font-weight="700" fill="#3C465A">EMPLEADO</text>
+      <text class="svg-t" x="186" y="229" font-size="10.5" font-weight="700" fill="#3C465A">DÍA</text>
+      <text class="svg-t" x="262" y="229" font-size="10.5" font-weight="700" fill="#3C465A">TIPO</text>
+      <text class="svg-t" x="366" y="229" font-size="10.5" font-weight="700" fill="#3C465A">HORA REAL</text>
+      <text class="svg-t" x="450" y="229" font-size="10.5" font-weight="700" fill="#3C465A">REPORTÓ</text>
+      <text class="svg-t" x="534" y="229" font-size="10.5" font-weight="700" fill="#3C465A">ESTADO</text>
+      <text class="svg-t" x="612" y="229" font-size="10.5" font-weight="700" fill="#3C465A">CAMBIOS</text>
+
+      <rect x="16" y="236" width="666" height="30" fill="#FFFFFF" stroke="#EDEFF4"/>
+      <text class="svg-t cifras" x="26" y="255" font-size="12" fill="#1B2436">1</text>
+      <text class="svg-t" x="50" y="255" font-size="12" fill="#1B2436">Ana Marcela Ruiz</text>
+      <text class="svg-t cifras" x="186" y="255" font-size="12" fill="#1B2436">2026-09-09</text>
+      <text class="svg-t" x="262" y="255" font-size="12" fill="#1B2436">CORREGIR HORA</text>
+      <text class="svg-t cifras" x="366" y="255" font-size="12" fill="#1B2436">15:30:00</text>
+      <text class="svg-t" x="450" y="255" font-size="12" fill="#1B2436">ana marcela</text>
+      <rect x="530" y="242" width="72" height="18" rx="3" fill="#FFF5D6"/>
+      <text class="svg-t" x="566" y="255" font-size="10.5" font-weight="700" text-anchor="middle" fill="#7A5A00">REPORTADA</text>
+      <text class="svg-t cifras" x="628" y="255" font-size="12" fill="#1B2436">0</text>
+
+      <rect x="16" y="266" width="666" height="30" fill="#F8F9FB" stroke="#EDEFF4"/>
+      <text class="svg-t cifras" x="26" y="285" font-size="12" fill="#1B2436">2</text>
+      <text class="svg-t" x="50" y="285" font-size="12" fill="#1B2436">Jorge E. Peña</text>
+      <text class="svg-t cifras" x="186" y="285" font-size="12" fill="#1B2436">2026-09-08</text>
+      <text class="svg-t" x="262" y="285" font-size="12" fill="#1B2436">FALTA LA SALIDA</text>
+      <text class="svg-t cifras" x="366" y="285" font-size="12" fill="#1B2436">22:15:00</text>
+      <text class="svg-t" x="450" y="285" font-size="12" fill="#1B2436">caja centro</text>
+      <rect x="530" y="272" width="72" height="18" rx="3" fill="#E5F1EC"/>
+      <text class="svg-t" x="566" y="285" font-size="10.5" font-weight="700" text-anchor="middle" fill="#16704F">ATENDIDA</text>
+      <text class="svg-t cifras" x="628" y="285" font-size="12" fill="#1B2436">2</text>
+      <rect x="646" y="272" width="46" height="18" rx="3" fill="#0069D9"/>
+      <text class="svg-t" x="669" y="285" font-size="10" font-weight="700" text-anchor="middle" fill="#FFFFFF">Revisar</text>
+
+      <text class="svg-t" x="16" y="314" font-size="11.5" fill="#5A6478">La columna CAMBIOS dice cuántas correcciones se le hicieron a esa jornada. Un cero en una atendida es señal de que se cerró sin tocar nada.</text>
+    </svg>
+    <figcaption>
+      <b>La lista de novedades.</b> Los cuatro contadores de arriba se recalculan con cada
+      consulta, así que sirven de tablero rápido del mes.
+    </figcaption>
+  </figure>
+
+  <h3>El recuadro de revisión</h3>
+  <div class="angosto">
+    <p>
+      Al presionar <span class="campo">Revisar</span> se abre la jornada completa de ese empleado
+      ese día &mdash; no solo el registro señalado. Eso es intencional: para arreglar bien una
+      jornada hay que verla entera.
+    </p>
+  </div>
+
+  <figure class="pantalla">
+    <svg viewBox="0 0 700 380" role="img" aria-label="Recuadro de revisión de la jornada">
+      <rect x="1" y="1" width="698" height="378" rx="6" fill="#FFFFFF" stroke="#C8CEDA"/>
+      <rect x="1" y="1" width="698" height="30" fill="#102F6F"/>
+      <text class="svg-t" x="16" y="21" font-size="12.5" font-weight="700" fill="#FFFFFF">Revisión de la jornada</text>
+
+      <rect x="16" y="42" width="666" height="44" rx="4" fill="#FFF5D6" stroke="#F0CE55"/>
+      <text class="svg-t" x="28" y="60" font-size="12" font-weight="700" fill="#7A5A00">Novedad 1 &middot; CORREGIR HORA &middot; Ana Marcela Ruiz &middot; 2026-09-09 &middot; reportó: ana marcela</text>
+      <text class="svg-t" x="28" y="78" font-size="12" fill="#3C465A">&ldquo;Se le olvidó poner la huella al llegar. Entró a las 3:30 de la tarde.&rdquo; &nbsp;Hora real reportada: 15:30:00</text>
+
+      <text class="svg-t" x="16" y="108" font-size="13.5" font-weight="700" fill="#102F6F">Jornada del día</text>
+      <rect x="16" y="116" width="666" height="24" fill="#E7EAF1" stroke="#DDE2EB"/>
+      <text class="svg-t" x="28" y="133" font-size="10.5" font-weight="700" fill="#3C465A">EVENTO</text>
+      <text class="svg-t" x="150" y="133" font-size="10.5" font-weight="700" fill="#3C465A">HORA REGISTRADA</text>
+      <text class="svg-t" x="330" y="133" font-size="10.5" font-weight="700" fill="#3C465A">HUELLERO</text>
+      <text class="svg-t" x="440" y="133" font-size="10.5" font-weight="700" fill="#3C465A">ACCIONES</text>
+
+      <rect x="16" y="140" width="666" height="36" fill="#FFFFFF" stroke="#EDEFF4"/>
+      <text class="svg-t" x="28" y="162" font-size="12.5" font-weight="700" fill="#1B2436">INGRESO</text>
+      <rect x="150" y="147" width="110" height="22" rx="3" fill="#FFFFFF" stroke="#8AB4F0" stroke-width="1.6"/>
+      <text class="svg-t cifras" x="160" y="163" font-size="12" fill="#1B2436">15:30:00</text>
+      <text class="svg-t" x="330" y="162" font-size="12" fill="#16704F">Sí</text>
+      <rect x="440" y="147" width="86" height="22" rx="3" fill="#0069D9"/>
+      <text class="svg-t" x="483" y="162" font-size="10.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Guardar hora</text>
+      <rect x="534" y="147" width="66" height="22" rx="3" fill="#C82333"/>
+      <text class="svg-t" x="567" y="162" font-size="10.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Eliminar</text>
+
+      <rect x="16" y="176" width="666" height="36" fill="#F8F9FB" stroke="#EDEFF4"/>
+      <text class="svg-t" x="28" y="198" font-size="12.5" font-weight="700" fill="#1B2436">SALIDA</text>
+      <rect x="150" y="183" width="110" height="22" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t cifras" x="160" y="199" font-size="12" fill="#1B2436">19:02:10</text>
+      <rect x="326" y="185" width="58" height="18" rx="3" fill="#FFF5D6"/>
+      <text class="svg-t" x="355" y="198" font-size="10.5" font-weight="700" text-anchor="middle" fill="#7A5A00">Manual</text>
+      <rect x="440" y="183" width="86" height="22" rx="3" fill="#0069D9"/>
+      <text class="svg-t" x="483" y="198" font-size="10.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Guardar hora</text>
+      <rect x="534" y="183" width="66" height="22" rx="3" fill="#C82333"/>
+      <text class="svg-t" x="567" y="198" font-size="10.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Eliminar</text>
+
+      <text class="svg-t" x="16" y="238" font-size="13.5" font-weight="700" fill="#102F6F">Agregar el registro que falta</text>
+      <text class="svg-t" x="16" y="258" font-size="11" font-weight="700" fill="#5A6478">Evento</text>
+      <rect x="16" y="263" width="126" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t" x="26" y="281" font-size="12.5" fill="#1B2436">SALIDA</text>
+      <text class="svg-t" x="154" y="258" font-size="11" font-weight="700" fill="#5A6478">Hora real</text>
+      <rect x="154" y="263" width="110" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t cifras" x="164" y="281" font-size="12.5" fill="#1B2436">22:15:00</text>
+      <rect x="276" y="263" width="86" height="26" rx="3" fill="#218838"/>
+      <text class="svg-t" x="319" y="281" font-size="12" font-weight="700" text-anchor="middle" fill="#FFFFFF">Agregar</text>
+
+      <line x1="16" y1="302" x2="682" y2="302" stroke="#DDE2EB"/>
+      <text class="svg-t" x="16" y="322" font-size="11" font-weight="700" fill="#5A6478">Quién hace el cambio</text>
+      <rect x="16" y="327" width="150" height="26" rx="3" fill="#EDEFF4" stroke="#C3CAD8"/>
+      <text class="svg-t" x="26" y="345" font-size="12.5" fill="#5A6478">jbotero</text>
+      <text class="svg-t" x="178" y="322" font-size="11" font-weight="700" fill="#5A6478">Observación (obligatoria, mínimo 10 caracteres)</text>
+      <rect x="178" y="327" width="272" height="26" rx="3" fill="#FFFFFF" stroke="#C3CAD8"/>
+      <text class="svg-t" x="188" y="345" font-size="12" fill="#1B2436">Confirmado con Administrador de tienda</text>
+      <rect x="462" y="327" width="112" height="26" rx="3" fill="#0069D9"/>
+      <text class="svg-t" x="518" y="345" font-size="11.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Marcar atendida</text>
+      <rect x="580" y="327" width="60" height="26" rx="3" fill="#C82333"/>
+      <text class="svg-t" x="610" y="345" font-size="11.5" font-weight="700" text-anchor="middle" fill="#FFFFFF">Rechazar</text>
+      <rect x="646" y="327" width="36" height="26" rx="3" fill="#E4E7ED" stroke="#C3CAD8"/>
+      <text class="svg-t" x="664" y="345" font-size="11.5" font-weight="700" text-anchor="middle" fill="#1B2436">Cerrar</text>
+
+      <text class="svg-t" x="16" y="374" font-size="11.5" fill="#5A6478">La SALIDA ya dice &ldquo;Manual&rdquo;: esa hora la puso una persona, no el huellero. El campo de quién hace el cambio no se puede editar.</text>
+    </svg>
+    <figcaption>
+      <b>El recuadro de revisión.</b> La observación se escribe <em>antes</em> de cada acción: sin
+      ella el sistema no deja guardar, ni agregar, ni eliminar, ni cerrar.
+    </figcaption>
+  </figure>
+
+  <h3>Las tres correcciones posibles</h3>
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Qué hacer</th><th>Cuándo se usa</th><th>Con qué botón</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Corregir la hora</b></td>
+          <td>El registro existe pero la hora está mala. Se cambia la hora en la casilla y se guarda.</td>
+          <td><span class="marbete auto">Guardar hora</span></td>
+        </tr>
+        <tr>
+          <td><b>Agregar el que falta</b></td>
+          <td>Falta el ingreso o falta la salida. Se escoge cuál es y a qué hora fue realmente.</td>
+          <td><span class="marbete ok">Agregar</span></td>
+        </tr>
+        <tr>
+          <td><b>Eliminar un registro</b></td>
+          <td>Quedó un registro que no debía existir: doble marcación, huella de otra persona.</td>
+          <td><span class="marbete no">Eliminar</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="aviso alerta">
+    <h4>Eliminar no se puede deshacer</h4>
+    <p>
+      El sistema avisa antes: <em>&ldquo;Queda en el log, pero desde esta pantalla no se puede
+      deshacer&rdquo;</em>. Queda la constancia de que se eliminó y de quién lo hizo, pero el
+      registro no vuelve. Antes de eliminar, mejor corregir la hora.
+    </p>
+  </div>
+
+  <h4 class="sub">Y para terminar: atendida o rechazada</h4>
+  <div class="angosto">
+    <p>
+      Una novedad no se deja abierta. Cuando ya se decidió qué hacer con ella, se cierra de una de
+      dos formas, siempre con observación:
+    </p>
+    <ul>
+      <li>
+        <span class="marbete auto">Marcar atendida</span> &mdash; se aceptó lo reportado y la
+        jornada quedó corregida. También aplica si se revisó y ya estaba bien.
+      </li>
+      <li>
+        <span class="marbete no">Rechazar novedad</span> &mdash; no se corrige. Se usa cuando lo
+        reportado no cuadra, no hay quien lo confirme, o el reporte está incompleto. La observación
+        aquí es la más importante de todas: es la respuesta al empleado.
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section>
+  <p class="rotulo">El control</p>
+  <h2>La marca &ldquo;Manual&rdquo;</h2>
+  <div class="angosto">
+    <p>
+      Este es el detalle que hace que el proceso sea confiable, y vale la pena explicárselo al
+      personal para que no haya malentendidos.
+    </p>
+    <p>
+      Cuando una hora la puso el huellero, la columna <span class="campo">Huellero</span> dice
+      <strong>Sí</strong>. Cuando la puso una persona desde el sistema central, esa columna cambia
+      a <strong>Manual</strong> y <strong>no vuelve a decir Sí nunca</strong>.
+    </p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 700 150" role="img" aria-label="Diferencia entre un registro con huella y uno corregido a mano">
+      <rect x="2" y="14" width="338" height="122" rx="8" fill="var(--tarjeta)" stroke="var(--verde)" stroke-width="1.8"/>
+      <rect x="22" y="34" width="52" height="24" rx="4" fill="var(--verde-suave)"/>
+      <text class="svg-t" x="48" y="51" font-size="13" font-weight="700" text-anchor="middle" fill="var(--verde)">Sí</text>
+      <text class="svg-t" x="90" y="51" font-size="15" font-weight="700" fill="var(--tinta)">Lo marcó la persona</text>
+      <text class="svg-t" x="22" y="82" font-size="13" fill="var(--tinta-2)">La hora la puso el huellero con su</text>
+      <text class="svg-t" x="22" y="100" font-size="13" fill="var(--tinta-2)">huella. Nadie la ha tocado.</text>
+      <text class="svg-t" x="22" y="124" font-size="12.5" font-weight="700" fill="var(--verde)">Es la evidencia más fuerte que tenemos.</text>
+
+      <rect x="360" y="14" width="338" height="122" rx="8" fill="var(--tarjeta)" stroke="var(--amarillo)" stroke-width="2.2"/>
+      <rect x="380" y="34" width="76" height="24" rx="4" fill="var(--amar-suave)"/>
+      <text class="svg-t" x="418" y="51" font-size="13" font-weight="700" text-anchor="middle" fill="var(--amar-tinta)">Manual</text>
+      <text class="svg-t" x="470" y="51" font-size="15" font-weight="700" fill="var(--tinta)">Lo corrigió alguien</text>
+      <text class="svg-t" x="380" y="82" font-size="13" fill="var(--tinta-2)">La hora la puso una persona desde el</text>
+      <text class="svg-t" x="380" y="100" font-size="13" fill="var(--tinta-2)">central, con su usuario y su razón.</text>
+      <text class="svg-t" x="380" y="124" font-size="12.5" font-weight="700" fill="var(--amar-tinta)">Queda marcado para siempre.</text>
+    </svg>
+    <figcaption>
+      <b>Dos orígenes, dos pesos.</b> La marca no es un castigo: es lo que permite confiar en las
+      correcciones, porque se sabe cuáles son.
+    </figcaption>
+  </figure>
+
+  <div class="aviso bien">
+    <h4>Lo que esto significa en la práctica</h4>
+    <p>
+      Si a fin de mes una persona tiene la mitad de su jornada en &ldquo;Manual&rdquo;, eso se ve
+      de una. No es que las correcciones estén prohibidas &mdash; están para usarse &mdash; pero
+      una persona que <em>siempre</em> necesita corrección es un tema de disciplina de marcación,
+      no de biometría.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section>
+  <p class="rotulo">Responsabilidades</p>
+  <h2>Quién hace qué</h2>
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Quién</th><th>Qué le toca</th><th>Dónde</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>El empleado</b></td>
+          <td>Marcar entrada y salida. Si olvidó, avisar el mismo día en su tienda. Si le llega el correo, no ignorarlo.</td>
+          <td>Huellero</td>
+        </tr>
+        <tr>
+          <td><b>Servicio al Cliente (caja)</b></td>
+          <td>Reportar la novedad desde el POS cuando el empleado avisa, con el nombre de quien reporta.</td>
+          <td>POS de la tienda</td>
+        </tr>
+        <tr>
+          <td><b>Administrador de tienda</b></td>
+          <td>Confirmar que lo reportado es cierto. Es quien pone la cara por la hora que se reporta.</td>
+          <td>En la tienda</td>
+        </tr>
+        <tr>
+          <td><b>Líder de Operación</b></td>
+          <td>Revisar las pendientes y corregir o rechazar, con observación. Que ninguna se quede abierta.</td>
+          <td>Sistema central</td>
+        </tr>
+        <tr>
+          <td><b>Talento Humano</b></td>
+          <td>Mantener los correos del personal al día, y revisar el resumen antes de liquidar.</td>
+          <td>Correo y sistema central</td>
+        </tr>
+        <tr>
+          <td><b>Líder de zona</b></td>
+          <td>Mirar el patrón: qué tiendas y qué personas repiten novedades mes a mes.</td>
+          <td>Sistema central</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="aviso">
+    <h4>Por confirmar con Talento Humano</h4>
+    <p>
+      Este reparto es una propuesta. Hay que definir formalmente <strong>quién tiene la última
+      palabra</strong> para corregir una jornada, y en cuántos días se debe cerrar una novedad
+      pendiente. Hoy la opción está disponible para los usuarios con menú de administrador del
+      sistema central.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section>
+  <p class="rotulo">No se negocian</p>
+  <h2>Cinco reglas</h2>
+  <ol class="reglas">
+    <li><div><b>Reportar no corrige</b><span>La jornada solo cambia cuando alguien la tramita en el sistema central. Un reporte guardado es una solicitud, no una corrección.</span></div></li>
+    <li><div><b>Siempre se dice quién reporta</b><span>La pantalla del POS está abierta a propósito, pero el nombre queda guardado. Reportar sin nombre no es posible.</span></div></li>
+    <li><div><b>La observación no es un trámite</b><span>Es la razón del cambio y queda para siempre. &ldquo;Corrección&rdquo; no explica nada; &ldquo;confirmado con el Administrador de tienda&rdquo; sí.</span></div></li>
+    <li><div><b>Lo corregido queda marcado</b><span>Un registro tocado por una persona dice &ldquo;Manual&rdquo; de por vida. No se puede disimular una corrección.</span></div></li>
+    <li><div><b>Ninguna novedad se queda abierta</b><span>O se atiende o se rechaza, siempre con observación. Una pendiente vieja es una jornada mal liquidada esperando.</span></div></li>
+  </ol>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section>
+  <p class="rotulo">Casos reales</p>
+  <h2>Qué hacer cuando…</h2>
+  <div class="faq">
+    <details>
+      <summary>Al empleado no le llegó el correo</summary>
+      <div class="resp">
+        <p>
+          Lo más probable es que no tenga correo registrado en su ficha. Revise el resumen general
+          de ese día: ahí aparece contado como &ldquo;sin correo registrado&rdquo;. Se le pide a
+          Talento Humano que lo actualice.
+        </p>
+        <p>
+          Mientras no tenga correo, ese empleado depende de que alguien en la tienda le avise. No
+          se puede asumir que ya sabe.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>Llegó el correo pero nadie reportó nada en la tienda</summary>
+      <div class="resp">
+        <p>
+          Entonces no hay nada que tramitar todavía: en la pantalla del central solo aparecen las
+          novedades reportadas desde el POS. Hay que pedirle a la tienda que la reporte, indicando
+          el día y el empleado.
+        </p>
+        <p>
+          Es el punto que más confusión va a generar al principio, así que conviene insistir en
+          él: <strong>el correo avisa, el POS reporta</strong>.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>La hora que reportan no me cuadra</summary>
+      <div class="resp">
+        <p>
+          No corrija por salir del paso. Rechace la novedad y escriba en la observación qué falta:
+          quién lo confirma, o por qué no coincide con la operación de ese día. El empleado puede
+          volver a reportar con el respaldo.
+        </p>
+        <p>
+          Una corrección mal hecha es peor que una novedad rechazada: la primera queda como verdad
+          en la liquidación.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>Ya la tramité y quedó mal</summary>
+      <div class="resp">
+        <p>
+          Se puede volver a abrir la misma novedad y corregir otra vez. Cada cambio queda
+          registrado, así que van a quedar los dos: el equivocado y el bueno. Eso es correcto y no
+          hay que evitarlo &mdash; lo que no se puede es borrar el historial.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>No encuentro la novedad en la lista</summary>
+      <div class="resp">
+        <p>
+          Tres cosas para revisar, en ese orden: que el rango de fechas incluya el
+          <strong>día de la novedad</strong> (no el día en que se reportó), que el
+          <span class="campo">Estado</span> esté en <strong>Todas</strong>, y que efectivamente se
+          haya guardado &mdash; si en el POS salió el mensaje de que no se pudo guardar, la
+          novedad no existe.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>El empleado marcó cuatro veces el mismo día</summary>
+      <div class="resp">
+        <p>
+          Es normal y está previsto, sobre todo en bodega, donde se entra y se sale varias veces.
+          El sistema arma parejas y solo reporta lo que quede sin pareja. En tienda es menos común,
+          pero pasa.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>En el POS dice &ldquo;No se pudo guardar la novedad&rdquo;</summary>
+      <div class="resp">
+        <p>
+          El reporte se guarda directo en el sistema central, así que necesita conexión. Vuelva a
+          intentar en unos minutos. Si sigue fallando, avise a tecnología con el día y el nombre
+          del empleado.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>¿Puedo corregir una jornada sin que exista una novedad?</summary>
+      <div class="resp">
+        <p>
+          Hoy no. La pantalla se abre siempre desde una novedad reportada, y eso es deliberado:
+          garantiza que toda corrección tenga un origen y un responsable. Si operaciones necesita
+          poder crear la novedad directamente desde el central, se puede habilitar &mdash; es un
+          cambio pequeño, pero hay que decidirlo, porque le quita ese candado.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section>
+  <p class="rotulo">Respaldo</p>
+  <h2>Qué queda registrado</h2>
+  <div class="angosto">
+    <p>
+      Nada de esto es reversible sin dejar rastro, y eso es a favor de todos. Por cada cambio que
+      se haga a una jornada queda guardado:
+    </p>
+    <ul>
+      <li>qué se hizo &mdash; corregir, agregar o eliminar;</li>
+      <li>cómo estaba <strong>antes</strong> y cómo quedó <strong>después</strong>;</li>
+      <li>quién lo hizo, con su usuario del sistema central;</li>
+      <li>a qué hora exacta se hizo;</li>
+      <li>la observación que escribió.</li>
+    </ul>
+    <p>
+      Y de la novedad misma queda quién la reportó, cuándo, qué explicó, quién la cerró y con qué
+      observación. Si alguna vez hay una discusión sobre una liquidación, esto es lo que se mira.
+    </p>
+  </div>
+
+  <div class="aviso bien">
+    <h4>Para qué sirve más allá de la liquidación</h4>
+    <p>
+      Con esta información se puede ver qué tiendas generan más novedades, si hay turnos donde
+      siempre se olvida marcar, y cuánto se tarda una novedad en cerrarse. Son tres indicadores
+      que hoy no teníamos.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <b>Novedades de Biometría</b> &middot; Manual para operaciones &middot; Versión 1.0,
+  10 de septiembre de 2026 &middot; Pizza Americana<br>
+  La función está publicada y en uso. Las pantallas de este manual son ilustraciones, con datos de ejemplo.
+</footer>
+
+</div>
+</body>
+</html>
