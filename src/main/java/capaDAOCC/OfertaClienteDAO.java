@@ -744,6 +744,7 @@ public class OfertaClienteDAO {
 		public String nombreCliente = "";
 		public String correoCliente = "";
 		public String politicaDatos = "N";
+		public int idCliente = 0;
 		public String correoCorrecto = "S";
 		public String nombreTienda = "";
 		public String nombreOferta = "";
@@ -772,9 +773,12 @@ public class OfertaClienteDAO {
 			if (!"S".equals(this.politicaDatos)) {
 				return (false);
 			}
-			if ("N".equals(this.correoCorrecto)) {
-				return (false);
-			}
+			//OJO: NO se bloquea por email_correcto = N. Esa marca no es confiable: hasta
+			//el arreglo de septiembre de 2026 se ponia ante cualquier fallo del envio, asi
+			//que cinco segundos de lentitud de Gmail dejaban marcado como malo el correo de
+			//un cliente que estaba perfecto. Hoy hay 500 marcados y 403 tienen formato
+			//valido. Quien envia valida el formato y deja que el resultado del envio
+			//decida, que ademas corrige la marca en la direccion correcta.
 			return (true);
 		}
 
@@ -785,9 +789,6 @@ public class OfertaClienteDAO {
 			}
 			if (!"S".equals(this.politicaDatos)) {
 				return ("el cliente no acepto la politica de datos");
-			}
-			if ("N".equals(this.correoCorrecto)) {
-				return ("el correo del cliente esta marcado como incorrecto");
 			}
 			return ("");
 		}
@@ -803,7 +804,7 @@ public class OfertaClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		DatosCorreoOferta datos = new DatosCorreoOferta();
 		String consulta = "SELECT c.nombre, c.apellido, c.email, c.politica_datos, c.email_correcto, "
-				+ "  t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
+				+ "  oc.idcliente, t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
 				+ "  o.nombre_oferta, o.mensaje1, o.mensaje2, o.descuento_fijo_valor, "
 				+ "  o.descuento_fijo_porcentaje, o.controla_hora, o.hora_inicio, o.hora_fin, o.red_parcial "
 				+ " FROM oferta_cliente oc "
@@ -822,6 +823,7 @@ public class OfertaClienteDAO {
 					datos.nombreCliente = (nombre + " " + apellido).trim();
 					datos.correoCliente = OfertaClienteDAO.textoSeguro(rs.getString("email"));
 					datos.politicaDatos = OfertaClienteDAO.textoSeguro(rs.getString("politica_datos"));
+					datos.idCliente = rs.getInt("idcliente");
 					datos.correoCorrecto = OfertaClienteDAO.textoSeguro(rs.getString("email_correcto")).trim();
 					datos.nombreTienda = OfertaClienteDAO.textoSeguro(rs.getString("nombretienda"));
 					datos.nombreOferta = OfertaClienteDAO.textoSeguro(rs.getString("nombre_oferta"));
