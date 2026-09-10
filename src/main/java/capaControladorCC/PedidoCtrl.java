@@ -13464,6 +13464,12 @@ public class PedidoCtrl {
     public String consultarAplicabilidadPedidoRAPPICARGO(int idPedido,int  numposheader, int idtienda)
 	{
     	JSONObject respuestaJSON = PedidoDAO.consultarAplicabilidadPedidoRAPPICARGO(idPedido,numposheader,idtienda );
+    	if (respuestaJSON == null) {
+    	    respuestaJSON = new JSONObject();
+    	    respuestaJSON.put("resultado", false);
+    	    respuestaJSON.put("validacionDistancia", false);
+    	    respuestaJSON.put("mensaje", "No se encontró información del pedido en el servidor principal.");
+    	}
     	return(respuestaJSON.toJSONString());
 	}
 

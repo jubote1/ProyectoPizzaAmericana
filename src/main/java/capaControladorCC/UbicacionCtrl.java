@@ -507,7 +507,8 @@ public class UbicacionCtrl {
 
 		resultado.setLatitud(lat);
 		resultado.setLongitud(lng);
-		resultado.setDireccion(address);
+		resultado.setDireccion(direccion != null && !direccion.isBlank() ? direccion : address);
+		resultado.setDireccionCorregida(address);
 		
 		if (coords.has("Proveedor")) {
 		    resultado.setProveedorGeocodificacion(coords.get("Proveedor").getAsString());
@@ -1179,6 +1180,125 @@ public class UbicacionCtrl {
 		}
 
 		return sb.toString();
+	}
+
+	public static JsonObject OsmGeocode(String direccion, String municipioPedido) {
+		JsonObject coords = crearCoordsVacias();
+		String direccionLimpia = quitarSufijoPais(direccion);
+
+		String url = "https://nominatim.openstreetmap.org/search?q="
+				+ java.net.URLEncoder.encode(direccion, java.nio.charset.StandardCharsets.UTF_8)
+				+ "&format=json&addressdetails=1&limit=5&countrycodes=co";
+
+		HttpClient client = utilidadesCC.ClientesHttp.jdk();
+		HttpRequest request = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.header("User-Agent", "PizzaAmericanaDelivery/1.0 (tecnologia@pizzaamericana.com.co)")
+				.header("Accept-Language", "es")
+				.GET()
+				.timeout(utilidadesCC.ClientesHttp.ESPERA_RESPUESTA)
+				.build();
+
+		try {
+			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+			if (response.statusCode() == 200) {
+				JsonElement parsed = JsonParser.parseString(response.body());
+
+				if (parsed.isJsonArray() && parsed.getAsJsonArray().size() > 0) {
+					for (JsonElement elem : parsed.getAsJsonArray()) {
+						JsonObject item = elem.getAsJsonObject();
+
+						if (!item.has("lat") || !item.has("lon") || !item.has("display_name")) {
+							continue;
+						}
+
+						String label = item.get("display_name").getAsString();
+						String tipoResultado = item.has("type") ? item.get("type").getAsString() : "";
+
+						JsonObject addr = item.has("address") && item.get("address").isJsonObject()
+								? item.getAsJsonObject("address")
+								: new JsonObject();
+
+						String municipioOsm = "";
+						if (addr.has("city")) {
+							municipioOsm = addr.get("city").getAsString();
+						} else if (addr.has("town")) {
+							municipioOsm = addr.get("town").getAsString();
+						} else if (addr.has("municipality")) {
+							municipioOsm = addr.get("municipality").getAsString();
+						} else if (addr.has("village")) {
+							municipioOsm = addr.get("village").getAsString();
+						}
+
+						String districtOsm = addr.has("suburb") ? addr.get("suburb").getAsString()
+								: (addr.has("neighbourhood") ? addr.get("neighbourhood").getAsString() : "");
+
+						if (addr.has("house_number")) {
+							tipoResultado += " housenumber streetaddress";
+						}
+
+						JsonObject attExtra = new JsonObject();
+						attExtra.addProperty("municipioPedido", normalizarTexto(municipioPedido));
+						attExtra.addProperty("municipioApi", normalizarTexto(municipioOsm));
+						attExtra.addProperty("districtApi", normalizarTexto(districtOsm));
+						attExtra.addProperty("tipoResultado", normalizarTexto(tipoResultado));
+
+						if (esCandidatoCercanoMismoMunicipio(direccionLimpia, label, municipioPedido)) {
+							coords.addProperty("CandidatoCercanoMunicipioOriginal", true);
+							coords.addProperty("LabelCandidatoCercano", label);
+							System.out.println("Candidato cercano en municipio original (OSM): " + label);
+						}
+
+						if (esCoincidencia(direccionLimpia, label, attExtra)) {
+							double lat = Double.parseDouble(item.get("lat").getAsString());
+							double lon = Double.parseDouble(item.get("lon").getAsString());
+
+							String roadOsm = addr.has("road") ? addr.get("road").getAsString() : "";
+							String houseNumberOsm = addr.has("house_number") ? addr.get("house_number").getAsString() : "";
+							String barrioLimpio = !districtOsm.isEmpty() ? districtOsm : "";
+							String munLimpio = !municipioOsm.isEmpty() ? municipioOsm : (municipioPedido != null ? municipioPedido : "");
+
+							StringBuilder sbDir = new StringBuilder();
+							if (!roadOsm.isEmpty()) {
+								sbDir.append(roadOsm);
+								if (!houseNumberOsm.isEmpty()) {
+									sbDir.append(" # ").append(houseNumberOsm);
+								}
+							}
+							if (!barrioLimpio.isEmpty() && sbDir.indexOf(barrioLimpio) == -1) {
+								if (sbDir.length() > 0) sbDir.append(", ");
+								sbDir.append(barrioLimpio);
+							}
+							if (!munLimpio.isEmpty() && sbDir.indexOf(munLimpio) == -1) {
+								if (sbDir.length() > 0) sbDir.append(", ");
+								sbDir.append(munLimpio);
+							}
+
+							String direccionLimpiaResultado = sbDir.length() > 0 ? sbDir.toString() : label;
+
+							coords.addProperty("Latitud", lat);
+							coords.addProperty("Longitud", lon);
+							coords.addProperty("Direccion", direccionLimpiaResultado);
+							coords.addProperty("DisplayName", label);
+							coords.addProperty("Proveedor", "OSM_NOMINATIM");
+							coords.addProperty("TipoResultado", tipoResultado);
+							return coords;
+						}
+					}
+					coords.addProperty("error", "OSM no encontro coincidencia exacta");
+				} else {
+					coords.addProperty("error", "OSM sin resultados");
+				}
+			} else {
+				coords.addProperty("error", "Error en peticion OSM: " + response.statusCode());
+			}
+
+		} catch (Exception e) {
+			System.out.println("No se pudo geocodificar con OSM: " + e.getMessage());
+		}
+
+		return coords;
 	}
 
 	public static JsonObject HereGeocode(String direccion, String municipioPedido) {

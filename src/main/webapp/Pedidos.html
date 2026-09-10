@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="css/jquery-confirm.min.css">
 <link rel="stylesheet"
 	href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
+<link rel="stylesheet" href="css/pedidos_mapa.css?v=10">
 
 
 <!--<style>
@@ -320,14 +321,63 @@
 
 		</form>
 	</div>
-	<div class="container">
+	<div class="container panel-mapa-contenedor">
+		<!-- Card de Asistencia Visual y Verificación de Coordenadas -->
+		<div class="panel-mapa-asistente">
+			<div class="panel-mapa-grid">
+				<!-- Dirección Registrada -->
+				<div class="panel-mapa-item">
+					<span class="panel-mapa-label"><i class="fas fa-file-alt"></i> Dirección Registrada Pedido:</span>
+					<div class="panel-mapa-valor valor-registrada" id="mapaTxtDireccionRegistrada">Sin dirección especificada</div>
+				</div>
 
-		<!--<div class="container" id="mapas" style="width:900px; height:450px; text-align:center"> -->
-		<div class="container" id="map"
-			style="width: 800px; height: 600px; margin: 0 auto; text-align: center;">
+				<!-- Dirección Detectada en Mapa con botón directo para aplicar -->
+				<div class="panel-mapa-item item-detectada">
+					<span class="panel-mapa-label"><i class="fas fa-map-marker-alt text-danger"></i> Dirección Detectada en Mapa:</span>
+					<div class="panel-mapa-valor valor-detectada" id="mapaTxtDireccionDetectada">Mueva el marcador o haga clic en el mapa...</div>
+					<div style="margin-top: 8px;">
+						<button type="button" class="btn btn-usar-direccion" id="btnCopiarDireccionMapa" style="display:none;" onclick="aplicarDireccionDetectadaAlFormulario()">
+							<i class="fas fa-check-circle"></i> Usar esta Dirección en el Pedido
+						</button>
+					</div>
+				</div>
 
+				<!-- Tienda Asignada y Cobertura -->
+				<div class="panel-mapa-item">
+					<span class="panel-mapa-label"><i class="fas fa-store"></i> Tienda / Cobertura:</span>
+					<div class="panel-mapa-valor" id="mapaTxtTiendaCobertura">-</div>
+				</div>
+
+				<!-- Coordenadas Exactas -->
+				<div class="panel-mapa-item">
+					<span class="panel-mapa-label"><i class="fas fa-location-arrow"></i> Coordenadas GPS del Pedido:</span>
+					<div class="panel-mapa-valor" id="mapaTxtCoordenadas" style="font-family: monospace; font-size: 13px;">Lat: 0.000000, Lng: 0.000000</div>
+				</div>
+			</div>
+
+			<!-- Toolbar de controles del mapa: Calles / Satélite, Mover Marcador y Street View -->
+			<div class="panel-mapa-toolbar">
+				<div class="btn-group" role="group">
+					<button type="button" class="btn btn-default active" id="btnMapaBasemapCalles" onclick="cambiarBasemapArcgis('gray-vector')">
+						<i class="fas fa-map"></i> Calles
+					</button>
+					<button type="button" class="btn btn-default" id="btnMapaBasemapSatelite" onclick="cambiarBasemapArcgis('hybrid')">
+						<i class="fas fa-satellite"></i> Satélite HD
+					</button>
+				</div>
+				<button type="button" class="btn btn-default btn-modo-mover" id="btnModoMoverMarcador" onclick="toggleModoMoverMarcador()" title="Haz clic aquí o sobre el marcador para reubicar al cliente con seguridad">
+					<i class="fas fa-arrows-alt"></i> <span id="txtBtnMoverMarcador">Mover Marcador</span>
+				</button>
+				<div>
+					<a href="#" id="btnMapaStreetView" target="_blank" class="btn-streetview" style="display: none;">
+						<i class="fab fa-google"></i> Google Maps / Street View <i class="fas fa-external-link-alt" style="font-size: 10px;"></i>
+					</a>
+				</div>
+			</div>
 		</div>
-		<!-- <button type="button"  class="btn btn-primary"  id="recargarmapa" >RECARGAR</button>-->
+
+		<!-- Contenedor del Mapa ArcGIS -->
+		<div id="map"></div>
 	</div>
 
 
@@ -1201,7 +1251,7 @@
 	});
 </script>
 <script src="https://js.arcgis.com/4.27/"></script>
-<script src="./arcgis.js" type="text/javascript"></script>
+<script src="./arcgis.js?v=10" type="text/javascript"></script>
 <script src="js/pedidos.js" type="text/javascript"></script>
 </html>
 

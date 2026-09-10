@@ -6376,26 +6376,38 @@ public class PedidoDAO {
 	        if (numposheader != 0) {
 
 	            String consultaIdPedido =
-	                    "SELECT idpedido " +
+	                    "SELECT idpedido, idtienda " +
 	                    "FROM pedido " +
 	                    "WHERE numposheader = ? " +
-	                    "AND idtienda = ?";
+	                    (idtienda != 0 ? "AND idtienda = ? " : "") +
+	                    "ORDER BY idpedido DESC LIMIT 1";
 
 	            ps = con1.prepareStatement(consultaIdPedido);
 
 	            ps.setInt(1, numposheader);
-	            ps.setInt(2, idtienda);
+	            if (idtienda != 0) {
+	                ps.setInt(2, idtienda);
+	            }
 
 	            rs = ps.executeQuery();
 
 	            if (rs.next()) {
 
 	                idPedido = rs.getInt("idpedido");
+	                if (idtienda == 0) {
+	                    idtienda = rs.getInt("idtienda");
+	                }
 
 	            } else {
 
 	                // No se encontró el pedido
-	                return null;
+	                rs.close();
+	                ps.close();
+	                con1.close();
+	                jsonRespuesta.put("resultado", false);
+	                jsonRespuesta.put("validacionDistancia", false);
+	                jsonRespuesta.put("mensaje", "No se encontró el pedido #" + numposheader + (idtienda != 0 ? (" de la tienda " + idtienda) : "") + " en la base de datos central. Es posible que aún no se haya sincronizado a la central.");
+	                return jsonRespuesta;
 	            }
 
 	            rs.close();
@@ -6406,6 +6418,14 @@ public class PedidoDAO {
 	            
 			    filtroEnviadoPixel = " AND a.enviadopixel > 0 ";
 	        }
+
+		    if (idPedido == 0) {
+		        con1.close();
+		        jsonRespuesta.put("resultado", false);
+		        jsonRespuesta.put("validacionDistancia", false);
+		        jsonRespuesta.put("mensaje", "No se proporcionó un pedido válido para consultar.");
+		        return jsonRespuesta;
+		    }
 	        
 
 		 
@@ -6417,8 +6437,11 @@ public class PedidoDAO {
 		    	    SELECT
 		    	        b.latitud AS latitud_tienda,
 		    	        b.longitud AS longitud_tienda,
+		    	        b.nombre AS nombre_tienda,
+		    	        cli.idcliente,
 		    	        cli.latitud AS latitud_cliente,
 		    	        cli.longitud AS longitud_cliente,
+		    	        cli.direccion AS direccion_cliente,
 		    	        a.fechapagovirtual,
 		    	        fp.idforma_pago,
 		    	        fp.nombre AS formapago
@@ -6478,6 +6501,9 @@ public class PedidoDAO {
 		            double longitudTienda = rs.getDouble("longitud_tienda");
 		            double latitudCliente = rs.getDouble("latitud_cliente");
 		            double longitudCliente = rs.getDouble("longitud_cliente");
+		            int idCliente = rs.getInt("idcliente");
+		            String nombreTienda = rs.getString("nombre_tienda");
+		            String direccionCliente = rs.getString("direccion_cliente");
 					String fechaPagoVirtual = rs.getString("fechapagovirtual");
 					int idformapago =  rs.getInt("idforma_pago");
 				    String formapago =  rs.getString("formapago");
@@ -6508,6 +6534,13 @@ public class PedidoDAO {
 		            jsonRespuesta.put("fechapagovirtual",fechaPagoVirtual);
 		            jsonRespuesta.put("idformapago",idformapago);
 		            jsonRespuesta.put("formapago",formapago);
+		            jsonRespuesta.put("latitudCliente", latitudCliente);
+		            jsonRespuesta.put("longitudCliente", longitudCliente);
+		            jsonRespuesta.put("latitudTienda", latitudTienda);
+		            jsonRespuesta.put("longitudTienda", longitudTienda);
+		            jsonRespuesta.put("idCliente", idCliente);
+		            jsonRespuesta.put("nombreTienda", nombreTienda);
+		            jsonRespuesta.put("direccionCliente", direccionCliente);
 
 		        } else {
 		            jsonRespuesta.put("mensaje", "El pedido no existe o no cumple las condiciones base para Rappi Cargo.");

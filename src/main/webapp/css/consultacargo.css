@@ -767,3 +767,334 @@ table.dataTable.no-footer {
     outline: none;
 }
 
+/* =========================================================
+   MODAL VERIFICACIÓN DE COORDENADAS RAPPI CARGO
+   ========================================================= */
+.modal-coord-content {
+    border-radius: 14px;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+}
+
+.modal-coord-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 16px 24px !important;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-bottom: 3px solid #ff441f !important;
+}
+
+.modal-coord-header:before,
+.modal-coord-header:after {
+    display: none !important;
+}
+
+.modal-coord-header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.modal-coord-header .modal-title {
+    font-size: 19px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-coord-header .modal-title i {
+    color: #ff441f;
+    font-size: 20px;
+}
+
+.modal-coord-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-coord-subtitle b {
+    color: #f8fafc;
+}
+
+.coord-sub-separator {
+    color: #475569;
+    font-weight: bold;
+}
+
+.btn-cerrar-modal-coord {
+    float: none !important;
+    color: #ffffff !important;
+    opacity: 0.8 !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 6px !important;
+    text-shadow: none !important;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    background: transparent !important;
+    border: none !important;
+}
+
+.btn-cerrar-modal-coord:hover {
+    opacity: 1 !important;
+    transform: scale(1.1);
+}
+
+.modal-coord-body {
+    padding: 18px 22px;
+    background: #f8fafc;
+}
+
+/* Alert box */
+.alert-coord-box {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.alert-coord-box i {
+    font-size: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.alert-coord-ok {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.alert-coord-ok i {
+    color: #059669;
+}
+
+.alert-coord-warning {
+    background-color: #fffbeb;
+    border: 1.5px solid #f59e0b;
+    color: #92400e;
+}
+
+.alert-coord-warning i {
+    color: #d97706;
+}
+
+.alert-coord-danger {
+    background-color: #fef2f2;
+    border: 1.5px solid #ef4444;
+    color: #991b1b;
+}
+
+.alert-coord-danger i {
+    color: #dc2626;
+}
+
+/* Info grid */
+.coord-info-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.3fr 0.8fr 1fr;
+    gap: 10px 14px;
+    margin-bottom: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+@media (max-width: 991px) {
+    .coord-info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .coord-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.coord-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.coord-info-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.coord-info-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.coord-item-detectada {
+    background-color: #f8fafc;
+    border-radius: 6px;
+    padding: 2px 8px;
+    border-left: 3px solid #3b82f6;
+}
+
+.coord-val-detectada {
+    color: #1e40af;
+    font-weight: 600;
+    font-size: 12.5px;
+}
+
+.coord-badges-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.badge-distancia {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 14px;
+    background-color: #e0e7ff;
+    color: #3730a3;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.badge-latlng {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 14px;
+    background-color: #f1f5f9;
+    color: #475569;
+    font-family: monospace;
+    font-size: 11.5px;
+}
+
+/* Toolbar sobre el mapa */
+.mapa-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.mapa-search-group {
+    flex: 1;
+    min-width: 280px;
+}
+
+.mapa-toolbar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mapa-toolbar-buttons .btn {
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+/* Mapa */
+.mapa-wrapper {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+#mapaVerificacionCargo {
+    height: 380px;
+    width: 100%;
+    z-index: 1;
+}
+
+.mapa-instruccion {
+    padding: 8px 14px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    font-size: 12px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mapa-instruccion i {
+    color: #2563eb;
+    font-size: 14px;
+}
+
+/* Footer */
+.modal-coord-footer {
+    padding: 14px 22px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn-cancelar-coord {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 8px 16px;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    transition: all 0.15s ease;
+}
+
+.btn-cancelar-coord:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.btn-confirmar-coord {
+    border-radius: 8px;
+    font-weight: 700;
+    padding: 8px 22px;
+    background: #2563eb;
+    border: none;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+    transition: all 0.2s ease;
+}
+
+.btn-confirmar-coord:hover {
+    background: #1d4ed8;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.45);
+}
+
+.btn-confirmar-coord:disabled {
+    background: #94a3b8 !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+

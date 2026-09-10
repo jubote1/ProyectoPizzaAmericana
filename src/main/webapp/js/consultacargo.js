@@ -1547,6 +1547,11 @@ $('#grid-enviados-tienda-rappicargo').off('click').on('click', 'tr', function ()
         return;
     }
 
+    var tiendaSeleccionada = $('#ListTiendas option:selected').attr('id') || $('#ListTiendas').val() || 0;
+    if (!datospedido.idtienda || datospedido.idtienda == 0) {
+        datospedido.idtienda = parseInt(tiendaSeleccionada) || 0;
+    }
+
     if (esPedidoTercerizado(datospedido)) {
         confirmarNotificarPedidoListoRappiCargo(datospedido);
         return;
@@ -1605,92 +1610,525 @@ function consultaAplicabilidadCargoTienda(datospedido) {
     });
 }
 
+var mapaVerificacionCargo = null;
+var markerTiendaCargo = null;
+var markerClienteCargo = null;
+var lineaRutaCargo = null;
+var capaCalles = null;
+var capaSatelite = null;
+var capaActualTipo = 'calles';
+var timerGeocodificacionInversa = null;
+var pedidoCargoActual = null;
+var validacionCargoActual = null;
+var estadoAnteriorCargoActual = null;
+var vieneSinCoordenadas = false;
+var coordenadasModificadas = false;
+
+function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+    var R = 6371; // Radio de la Tierra en km
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return parseFloat((R * c).toFixed(2));
+}
+
 function confirmarCrearOrdenCandidatoCargo(datospedido, validacion, estadoAnterior) {
+    abrirModalVerificarCoordenadasRappiCargo(datospedido, validacion, estadoAnterior);
+}
 
-    var aplica = validacion && validacion.validacionDistancia === true;
+function abrirModalVerificarCoordenadasRappiCargo(datospedido, validacion, estadoAnterior) {
+    pedidoCargoActual = datospedido;
+    validacionCargoActual = validacion || {};
+    estadoAnteriorCargoActual = estadoAnterior;
+    coordenadasModificadas = false;
 
-    var motivo = validacion && validacion.mensaje
-        ? validacion.mensaje
-        : 'No fue posible validar la distancia del pedido.';
+    var latTienda = parseFloat(validacion.latitudTienda) || 0;
+    var lngTienda = parseFloat(validacion.longitudTienda) || 0;
+    var latCliente = parseFloat(validacion.latitudCliente) || 0;
+    var lngCliente = parseFloat(validacion.longitudCliente) || 0;
 
-    var fueCancelado = estadoAnterior === 'canceled';
+    if ((latCliente === 0 || isNaN(latCliente)) && datospedido.latitud) {
+        latCliente = parseFloat(datospedido.latitud) || 0;
+    }
+    if ((lngCliente === 0 || isNaN(lngCliente)) && datospedido.longitud) {
+        lngCliente = parseFloat(datospedido.longitud) || 0;
+    }
 
-    var advertenciaDistancia = "";
-    if (!aplica) {
-        advertenciaDistancia = `
-            <div class="advertencia">
-                <i class="fa fa-exclamation-triangle"></i>
-                <b> Advertencia</b>
-                <br><br>
-                ${motivo}
-                <br><br>
-                <b>Si decide continuar, el sistema intentará crear la orden en Rappi Cargo aun cuando el pedido no cumple con la validación de distancia.</b>
+    vieneSinCoordenadas = (!latCliente || !lngCliente || (latCliente === 0 && lngCliente === 0) || isNaN(latCliente) || isNaN(lngCliente));
+
+    // Llenar etiquetas de información
+    $('#lblCoordPedido').text(datospedido.idpedidotienda || '--');
+    $('#lblCoordCliente').text(datospedido.nombreCompleto || 'Cliente');
+    $('#lblCoordDireccion').text(datospedido.direccion || validacion.direccionCliente || 'Sin dirección');
+    $('#lblCoordTienda').text(validacion.nombreTienda || ('Tienda ' + datospedido.idtienda));
+    $('#lblCoordDireccionDetectada').html('<i class="fas fa-spinner fa-spin text-muted"></i> Consultando ubicación en mapa...');
+
+    // Llenar buscador con la dirección registrada para fácil búsqueda
+    var dirBusqueda = (datospedido.direccion || validacion.direccionCliente || '').trim();
+    if (dirBusqueda && !dirBusqueda.toLowerCase().includes('medellin') && !dirBusqueda.toLowerCase().includes('bello')) {
+        dirBusqueda += ', Antioquia';
+    }
+    $('#txtBuscarDireccionMapa').val(dirBusqueda);
+
+    // Construir banner de alerta dinámico
+    var alertasHtml = '';
+
+    if (vieneSinCoordenadas) {
+        alertasHtml += `
+            <div class="alert-coord-box alert-coord-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <b>⚠️ Este pedido NO tiene coordenadas registradas en el sistema.</b><br>
+                    El mapa se centró provisionalmente en la tienda. <b>Debe arrastrar el marcador rojo (📍)</b> hasta la dirección de entrega del cliente para poder continuar.
+                </div>
+            </div>
+        `;
+    } else {
+        alertasHtml += `
+            <div class="alert-coord-box alert-coord-ok">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <b>Coordenadas existentes registradas.</b><br>
+                    Revise que el marcador rojo coincida con la dirección <b>${datospedido.direccion || ''}</b>. Compare la <b>Dirección Registrada</b> con la <b>Dirección Detectada en Mapa</b> para confirmar exactitud.
+                </div>
             </div>
         `;
     }
 
-    var advertenciaCancelado = "";
-    if (fueCancelado) {
-        advertenciaCancelado = `
-            <div style="background-color:#ffe1e1;border:2px solid #ff4d4f;border-radius:8px;padding:12px;text-align:left;margin-top:10px;">
-                <b style="color:#b30000;">
-                    Este pedido ya había sido creado antes en Rappi Cargo y esa orden fue CANCELADA.
-                </b>
-                <br><br>
-                <span style="color:#b30000;">
-                    Si continúa, se intentará crear la orden nuevamente.
-                </span>
+    if (estadoAnterior === 'canceled') {
+        alertasHtml += `
+            <div class="alert-coord-box alert-coord-danger">
+                <i class="fas fa-ban"></i>
+                <div>
+                    <b>Este pedido ya había sido creado en Rappi Cargo y esa orden fue CANCELADA.</b><br>
+                    Si continúa, se intentará generar una nueva orden en Rappi Cargo.
+                </div>
             </div>
         `;
     }
 
-    var titulo = fueCancelado
-        ? 'Pedido cancelado anteriormente en Rappi Cargo'
-        : (aplica ? '¿Crear orden en Rappi Cargo?' : 'Pedido con advertencia');
-
-    Swal.fire({
-        icon: (fueCancelado || !aplica) ? 'warning' : 'question',
-        title: titulo,
-        html: `
-            <div class="rappi-info">
-                <div><b>Pedido tienda:</b> ${datospedido.idpedidotienda}</div>
-                <div><b>Cliente:</b> ${datospedido.nombreCompleto}</div>
-                <div><b>Dirección:</b> ${datospedido.direccion}</div>
-                <div><b>Estado:</b> ${datospedido.estadoActual}</div>
-                <div><b>Minutos cocina:</b> ${datospedido.minutosCocina}</div>
-                <div><b>Total:</b> $${Number(datospedido.totalNeto).toLocaleString('es-CO')}</div>
-                <div><b>Forma pago:</b> ${validacion.formapago || datospedido.idFormaPago}</div>
-                <div><b>Distancia:</b> ${validacion.distanciaKm || 0} km</div>
+    if (validacion && validacion.validacionDistancia === false) {
+        alertasHtml += `
+            <div class="alert-coord-box alert-coord-warning">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <b>Advertencia de distancia:</b> ${validacion.mensaje || 'La distancia del pedido supera el rango habitual.'}
+                </div>
             </div>
+        `;
+    }
 
-            ${advertenciaDistancia}
-            ${advertenciaCancelado}
-        `,
-        showCancelButton: true,
-        confirmButtonText: (aplica && !fueCancelado) ? 'Crear orden' : 'Crear de todas formas',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: fueCancelado ? '#b30000' : '#2563eb',
-        cancelButtonColor: '#6b7280',
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            crearOrdenRappiCargoCandidatoTienda(datospedido);
+    $('#alertaCoordenadasModal').html(alertasHtml);
+
+    // Valores iniciales de coordenadas y distancia
+    var distanciaInicial = validacion && validacion.distanciaKm ? validacion.distanciaKm : 0;
+
+    if (vieneSinCoordenadas) {
+        // Posicionar provisionalmente cerca de la tienda
+        latCliente = (latTienda !== 0) ? (latTienda + 0.0015) : 6.2442;
+        lngCliente = (lngTienda !== 0) ? (lngTienda + 0.0015) : -75.5812;
+        distanciaInicial = 0;
+        $('#lblCoordLatLng').text('Sin registrar');
+        $('#lblCoordDistancia').text('0.0 km');
+        $('#btnConfirmarCrearOrdenCargo').prop('disabled', true).html('<i class="fas fa-hand-pointer"></i> Arrastre el pin para habilitar');
+    } else {
+        $('#lblCoordLatLng').text(latCliente.toFixed(6) + ', ' + lngCliente.toFixed(6));
+        $('#lblCoordDistancia').text(distanciaInicial + ' km');
+        $('#btnConfirmarCrearOrdenCargo').prop('disabled', false).html('<i class="fas fa-motorcycle"></i> Confirmar y Crear Orden');
+    }
+
+    // Actualizar enlace a Google Maps
+    $('#btnAbrirGoogleMaps').attr('href', 'https://www.google.com/maps/search/?api=1&query=' + latCliente + ',' + lngCliente);
+
+    // Configurar eventos del toolbar
+    $('#btnBuscarEnMapa').off('click').on('click', function () {
+        buscarDireccionEnMapa();
+    });
+
+    $('#txtBuscarDireccionMapa').off('keypress').on('keypress', function (e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            buscarDireccionEnMapa();
+        }
+    });
+
+    $('#btnCapaCalles').off('click').on('click', function () {
+        cambiarCapaMapa('calles');
+    });
+
+    $('#btnCapaSatelite').off('click').on('click', function () {
+        cambiarCapaMapa('satelite');
+    });
+
+    // Configurar evento de confirmación
+    $('#btnConfirmarCrearOrdenCargo').off('click').on('click', function () {
+        if (vieneSinCoordenadas && !coordenadasModificadas) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Ubicación requerida',
+                text: 'Este pedido no tiene coordenadas registradas. Debe arrastrar el marcador rojo hasta la dirección de entrega del cliente antes de continuar.',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        if (!markerClienteCargo) {
+            return;
+        }
+
+        var posFinal = markerClienteCargo.getLatLng();
+        $('#modalVerificarCoordenadasRappiCargo').modal('hide');
+        crearOrdenRappiCargoCandidatoTienda(pedidoCargoActual, posFinal.lat, posFinal.lng);
+    });
+
+    // Abrir modal y renderizar mapa
+    $('#modalVerificarCoordenadasRappiCargo').modal('show');
+
+    $('#modalVerificarCoordenadasRappiCargo').off('shown.bs.modal').on('shown.bs.modal', function () {
+        renderizarMapaCoordenadasRappiCargo(latTienda, lngTienda, latCliente, lngCliente);
+    });
+}
+
+function renderizarMapaCoordenadasRappiCargo(latTienda, lngTienda, latCliente, lngCliente) {
+    var contenedor = $('#mapaVerificacionCargo');
+    if (!contenedor.length) return;
+
+    if (!mapaVerificacionCargo) {
+        mapaVerificacionCargo = L.map('mapaVerificacionCargo');
+
+        capaCalles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(mapaVerificacionCargo);
+    }
+
+    // Resetear a capa seleccionada
+    cambiarCapaMapa(capaActualTipo);
+    mapaVerificacionCargo.invalidateSize();
+
+    // Limpiar capas previas
+    if (markerTiendaCargo) mapaVerificacionCargo.removeLayer(markerTiendaCargo);
+    if (markerClienteCargo) mapaVerificacionCargo.removeLayer(markerClienteCargo);
+    if (lineaRutaCargo) mapaVerificacionCargo.removeLayer(lineaRutaCargo);
+
+    // Iconos personalizados con FontAwesome
+    var iconTienda = L.divIcon({
+        className: 'custom-leaflet-store-marker',
+        html: '<div style="background-color:#2563eb;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,0.35);border:2px solid #fff;font-size:15px;"><i class="fas fa-store"></i></div>',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18]
+    });
+
+    var iconCliente = L.divIcon({
+        className: 'custom-leaflet-client-marker',
+        html: '<div style="background-color:#dc2626;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(220,38,38,0.5);border:3px solid #fff;font-size:17px;"><i class="fas fa-map-marker-alt"></i></div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -20]
+    });
+
+    // Marcador de tienda (fijo)
+    if (latTienda !== 0 && lngTienda !== 0) {
+        markerTiendaCargo = L.marker([latTienda, lngTienda], { icon: iconTienda })
+            .addTo(mapaVerificacionCargo)
+            .bindPopup('<b>Tienda:</b> ' + ($('#lblCoordTienda').text() || 'Punto de despacho'));
+    }
+
+    // Marcador de cliente (arrastrable)
+    markerClienteCargo = L.marker([latCliente, lngCliente], {
+        icon: iconCliente,
+        draggable: true
+    }).addTo(mapaVerificacionCargo);
+
+    markerClienteCargo.bindPopup(
+        '<b>Punto de Entrega</b><br>' +
+        '<b>Dirección:</b> ' + ($('#lblCoordDireccion').text() || '')
+    ).openPopup();
+
+    // Línea de referencia tienda-cliente
+    if (latTienda !== 0 && lngTienda !== 0) {
+        lineaRutaCargo = L.polyline([[latTienda, lngTienda], [latCliente, lngCliente]], {
+            color: '#2563eb',
+            weight: 3,
+            dashArray: '6, 8',
+            opacity: 0.75
+        }).addTo(mapaVerificacionCargo);
+    }
+
+    // Ajustar vista del mapa
+    if (latTienda !== 0 && lngTienda !== 0 && (latTienda !== latCliente || lngTienda !== lngCliente)) {
+        var bounds = L.latLngBounds([[latTienda, lngTienda], [latCliente, lngCliente]]);
+        mapaVerificacionCargo.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+    } else {
+        mapaVerificacionCargo.setView([latCliente, lngCliente], 16);
+    }
+
+    // Consultar geocodificación inversa inicial
+    consultarDireccionInversa(latCliente, lngCliente);
+
+    // Eventos de arrastre del marcador cliente
+    markerClienteCargo.on('drag', function (e) {
+        var pos = e.target.getLatLng();
+        actualizarDatosPosicionCliente(pos.lat, pos.lng, latTienda, lngTienda);
+    });
+
+    markerClienteCargo.on('dragend', function (e) {
+        var pos = e.target.getLatLng();
+        coordenadasModificadas = true;
+        actualizarDatosPosicionCliente(pos.lat, pos.lng, latTienda, lngTienda);
+
+        $('#btnConfirmarCrearOrdenCargo')
+            .prop('disabled', false)
+            .html('<i class="fas fa-motorcycle"></i> Confirmar y Crear Orden');
+
+        // Consultar dirección real en el punto soltado
+        consultarDireccionInversa(pos.lat, pos.lng);
+
+        if (vieneSinCoordenadas) {
+            $('#alertaCoordenadasModal').html(`
+                <div class="alert-coord-box alert-coord-ok">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <b>¡Ubicación asignada!</b><br>
+                        Verifique que la dirección detectada coincida con la del cliente. Si todo está correcto, pulse <b>Confirmar y Crear Orden</b>.
+                    </div>
+                </div>
+            `);
         }
     });
 }
 
+function actualizarDatosPosicionCliente(lat, lng, latTienda, lngTienda) {
+    $('#lblCoordLatLng').text(lat.toFixed(6) + ', ' + lng.toFixed(6));
+    $('#btnAbrirGoogleMaps').attr('href', 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng);
 
-function crearOrdenRappiCargoCandidatoTienda(datospedido) {
+    if (latTienda !== 0 && lngTienda !== 0) {
+        var distancia = calcularDistanciaKm(latTienda, lngTienda, lat, lng);
+        $('#lblCoordDistancia').text(distancia + ' km');
+
+        if (lineaRutaCargo) {
+            lineaRutaCargo.setLatLngs([[latTienda, lngTienda], [lat, lng]]);
+        }
+    }
+}
+
+function consultarDireccionInversa(lat, lng) {
+    if (!lat || !lng || (lat === 0 && lng === 0)) return;
+
+    $('#lblCoordDireccionDetectada').html('<i class="fas fa-spinner fa-spin text-muted"></i> Identificando dirección...');
+
+    if (timerGeocodificacionInversa) {
+        clearTimeout(timerGeocodificacionInversa);
+    }
+
+    timerGeocodificacionInversa = setTimeout(function () {
+        $.ajax({
+            url: 'https://nominatim.openstreetmap.org/reverse',
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                format: 'json',
+                lat: lat,
+                lon: lng,
+                zoom: 18,
+                addressdetails: 1
+            },
+            success: function (data) {
+                if (data && data.address) {
+                    var addr = data.address;
+                    var via = addr.road || addr.pedestrian || addr.cycleway || addr.path || '';
+                    var numero = addr.house_number ? (' #' + addr.house_number) : '';
+                    var barrio = addr.neighbourhood || addr.suburb || addr.residential || '';
+                    var ciudad = addr.city || addr.town || addr.municipality || '';
+
+                    var partes = [];
+                    if (via) partes.push(via + numero);
+                    if (barrio && barrio !== via) partes.push(barrio);
+                    if (ciudad && ciudad !== barrio) partes.push(ciudad);
+
+                    var direccionFinal = partes.join(', ');
+                    if (!direccionFinal && data.display_name) {
+                        direccionFinal = data.display_name.split(',').slice(0, 3).join(',');
+                    }
+
+                    $('#lblCoordDireccionDetectada').html(
+                        '<i class="fas fa-check text-success"></i> <b>' + (direccionFinal || 'Vía identificada') + '</b>'
+                    );
+
+                    if (markerClienteCargo) {
+                        markerClienteCargo.setPopupContent(
+                            '<b>Punto de Entrega</b><br>' +
+                            '<b>Registrada:</b> ' + ($('#lblCoordDireccion').text() || '') + '<br>' +
+                            '<span style="color:#059669;"><b>En mapa:</b> ' + (direccionFinal || '') + '</span>'
+                        );
+                    }
+                } else {
+                    $('#lblCoordDireccionDetectada').html('<span class="text-muted">No fue posible identificar nombre de vía</span>');
+                }
+            },
+            error: function () {
+                $('#lblCoordDireccionDetectada').html('<span class="text-muted">Servicio de dirección no disponible</span>');
+            }
+        });
+    }, 350);
+}
+
+function buscarDireccionEnMapa() {
+    var query = $('#txtBuscarDireccionMapa').val();
+    if (!query || query.trim().length < 3) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Dirección requerida',
+            text: 'Escriba una dirección o barrio para ubicar en el mapa.',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
+    var consultaCompleta = query.trim();
+    if (!consultaCompleta.toLowerCase().includes('colombia')) {
+        consultaCompleta += ', Colombia';
+    }
+
+    Swal.fire({
+        title: 'Buscando en el mapa...',
+        text: query,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $.ajax({
+        url: 'https://nominatim.openstreetmap.org/search',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            format: 'json',
+            q: consultaCompleta,
+            limit: 1,
+            addressdetails: 1
+        },
+        success: function (data) {
+            Swal.close();
+
+            if (data && data.length > 0) {
+                var res = data[0];
+                var newLat = parseFloat(res.lat);
+                var newLng = parseFloat(res.lon);
+
+                if (markerClienteCargo) {
+                    markerClienteCargo.setLatLng([newLat, newLng]);
+                }
+                if (mapaVerificacionCargo) {
+                    mapaVerificacionCargo.setView([newLat, newLng], 17);
+                }
+
+                var latTienda = parseFloat(validacionCargoActual.latitudTienda) || 0;
+                var lngTienda = parseFloat(validacionCargoActual.longitudTienda) || 0;
+
+                coordenadasModificadas = true;
+                actualizarDatosPosicionCliente(newLat, newLng, latTienda, lngTienda);
+                consultarDireccionInversa(newLat, newLng);
+
+                $('#btnConfirmarCrearOrdenCargo')
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-motorcycle"></i> Confirmar y Crear Orden');
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Dirección ubicada',
+                    text: 'El marcador se ubicó en: ' + res.display_name,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No se encontró en el mapa',
+                    text: 'No fue posible encontrar una coincidencia exacta para "' + query + '". Puede ajustar la búsqueda o arrastrar el marcador manualmente a la calle deseada.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
+        },
+        error: function () {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de búsqueda',
+                text: 'No fue posible conectar con el servicio de búsqueda de mapa.',
+                confirmButtonColor: '#2563eb'
+            });
+        }
+    });
+}
+
+function cambiarCapaMapa(tipo) {
+    if (!mapaVerificacionCargo) return;
+
+    if (tipo === 'satelite') {
+        if (capaCalles && mapaVerificacionCargo.hasLayer(capaCalles)) {
+            mapaVerificacionCargo.removeLayer(capaCalles);
+        }
+        if (!capaSatelite) {
+            capaSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 19
+            });
+        }
+        capaSatelite.addTo(mapaVerificacionCargo);
+        $('#btnCapaSatelite').addClass('active');
+        $('#btnCapaCalles').removeClass('active');
+        capaActualTipo = 'satelite';
+    } else {
+        if (capaSatelite && mapaVerificacionCargo.hasLayer(capaSatelite)) {
+            mapaVerificacionCargo.removeLayer(capaSatelite);
+        }
+        if (!capaCalles) {
+            capaCalles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            });
+        }
+        capaCalles.addTo(mapaVerificacionCargo);
+        $('#btnCapaCalles').addClass('active');
+        $('#btnCapaSatelite').removeClass('active');
+        capaActualTipo = 'calles';
+    }
+}
+
+function crearOrdenRappiCargoCandidatoTienda(datospedido, latitud, longitud) {
+    var payload = {
+        numposheader: datospedido.idpedidotienda,
+        idtienda: datospedido.idtienda
+    };
+
+    if (latitud && longitud) {
+        payload.latitud = latitud;
+        payload.longitud = longitud;
+    }
+
+    Swal.fire({
+        title: 'Creando orden en Rappi Cargo...',
+        text: 'Por favor espere mientras se envía la información.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     $.ajax({
         url: server + 'CrearOrdenRappiCargo',
         type: 'POST',
         dataType: 'json',
-        data: {
-            numposheader: datospedido.idpedidotienda,
-            idtienda: datospedido.idtienda
-        },
+        data: payload,
         success: function (data) {
+            Swal.close();
 
             var respuesta = Array.isArray(data) ? data[0] : data;
 
@@ -1704,40 +2142,34 @@ function crearOrdenRappiCargoCandidatoTienda(datospedido) {
                 return;
             }
 
-			if (respuesta.resultado === true) {
+            if (respuesta.resultado === true) {
+                if (respuesta.marcadoTienda === true) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Orden creada',
+                        text: 'La orden fue creada en Rappi Cargo y el pedido quedó marcado como tercerizado en tienda.',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                } else if (respuesta.marcadoTienda === false && respuesta.mensajeMarcacionTienda) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Orden creada, pero falta marcar en tienda',
+                        text: respuesta.mensajeMarcacionTienda,
+                        confirmButtonColor: '#2563eb'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Orden creada',
+                        text: respuesta.mensaje || 'La orden fue creada correctamente.',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                }
 
-			    if (respuesta.marcadoTienda === true) {
-
-			        Swal.fire({
-			            icon: 'success',
-			            title: 'Orden creada',
-			            text: 'La orden fue creada en Rappi Cargo y el pedido quedó marcado como tercerizado en tienda.',
-			            timer: 2500,
-			            showConfirmButton: false
-			        });
-
-			    } else if (respuesta.marcadoTienda === false && respuesta.mensajeMarcacionTienda) {
-
-			        Swal.fire({
-			            icon: 'warning',
-			            title: 'Orden creada, pero falta marcar en tienda',
-			            text: respuesta.mensajeMarcacionTienda,
-			            confirmButtonColor: '#2563eb'
-			        });
-
-			    } else {
-
-			        Swal.fire({
-			            icon: 'success',
-			            title: 'Orden creada',
-			            text: respuesta.mensaje || 'La orden fue creada correctamente.',
-			            timer: 2500,
-			            showConfirmButton: false
-			        });
-			    }
-
-			    consultarCandidatosRappiCargoTienda();
-			}else {
+                consultarCandidatosRappiCargoTienda();
+            } else {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Problemas en la creación de la orden',
@@ -1747,6 +2179,7 @@ function crearOrdenRappiCargoCandidatoTienda(datospedido) {
             }
         },
         error: function (xhr) {
+            Swal.close();
             Swal.fire({
                 icon: 'error',
                 title: 'Error de comunicación',
@@ -1806,6 +2239,7 @@ function consultarCandidatosRappiCargoTienda() {
 	            tableEnviadosTiendaRappiCargo.clear().draw();
 
 	            for (var i = 0; i < data.length; i++) {
+	                data[i].idtienda = data[i].idtienda || parseInt(tienda) || 0;
 	                tableEnviadosTiendaRappiCargo.row.add(data[i]);
 	            }
 

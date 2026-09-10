@@ -56,7 +56,25 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 		} catch (Exception e) {
 			numposheader = 0;
 		}
-		
+
+		double latitud = 0.0;
+		double longitud = 0.0;
+
+		try {
+		    if (request.getParameter("latitud") != null && !request.getParameter("latitud").trim().isEmpty()) {
+		        latitud = Double.parseDouble(request.getParameter("latitud"));
+		    }
+		} catch (Exception e) {
+		    latitud = 0.0;
+		}
+
+		try {
+		    if (request.getParameter("longitud") != null && !request.getParameter("longitud").trim().isEmpty()) {
+		        longitud = Double.parseDouble(request.getParameter("longitud"));
+		    }
+		} catch (Exception e) {
+		    longitud = 0.0;
+		}
 
 		TercerizadoDomicilioCtrl terceridadoCtrl =
 		        new TercerizadoDomicilioCtrl();
@@ -64,7 +82,9 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 		String respuesta = terceridadoCtrl.crearOrdenRappiCargo(
 		        idpedido,
 		        idtienda,
-		        numposheader
+		        numposheader,
+		        latitud,
+		        longitud
 		);
 
 		PrintWriter out = response.getWriter();

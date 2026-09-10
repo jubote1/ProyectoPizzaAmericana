@@ -267,6 +267,10 @@ public class TercerizadoDomicilioCtrl {
 	}
 	
 	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader) {
+	    return crearOrdenRappiCargo(idpedido, idtienda, numposheader, 0.0, 0.0);
+	}
+
+	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader, double latitud, double longitud) {
 
 	    JSONArray listJSON = new JSONArray();
 	    JSONObject respuestaJSON = new JSONObject();
@@ -314,6 +318,24 @@ public class TercerizadoDomicilioCtrl {
 	            listJSON.add(respuestaJSON);
 
 	            return listJSON.toJSONString();
+	        }
+
+	        // Si se reciben coordenadas válidas verificadas/ajustadas por el operador en el mapa
+	        if (latitud != 0 && longitud != 0 && coordenadaValidaParaRappiCargo(latitud, longitud)) {
+	            orden.setLat(latitud);
+	            orden.setLng(longitud);
+	            if (orden.getIdcliente() > 0) {
+	                try {
+	                    new ClienteCtrl().actualizarClienteCoordenadas(
+	                            orden.getIdcliente(),
+	                            (float) latitud,
+	                            (float) longitud,
+	                            orden.getAddress()
+	                    );
+	                } catch (Exception eCoord) {
+	                    System.out.println("Error actualizando coordenadas verificadas cliente: " + eCoord.getMessage());
+	                }
+	            }
 	        }
 
 	        if (!coordenadaValidaParaRappiCargo(orden.getLat(), orden.getLng())) {
