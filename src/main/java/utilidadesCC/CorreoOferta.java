@@ -234,6 +234,12 @@ public class CorreoOferta {
 		//aqui y de ahi en adelante se usa el texto ya armado.
 		String msj1 = CorreoOferta.reemplazarComodines(datos.mensaje1, datos);
 		String msj2 = CorreoOferta.reemplazarComodines(datos.mensaje2, datos);
+		//Si el mensaje de la oferta ya trae el codigo escrito -porque quien la
+		//redacto puso el comodin #CODIGODESCUENTO adentro-, el bloque destacado
+		//lo repetiria. Se muestra uno de los dos, no los dos: ver el mismo codigo
+		//dos veces en el mismo correo hace dudar de cual es el bueno.
+		boolean codigoYaEnMensaje = tieneCodigo
+				&& (msj1.contains(datos.codigoPromocion.trim()) || msj2.contains(datos.codigoPromocion.trim()));
 
 		StringBuilder m = new StringBuilder();
 		m.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='max-width:600px;")
@@ -274,8 +280,9 @@ public class CorreoOferta {
 		}
 		m.append("</td></tr>");
 
-		//El codigo. Solo si la oferta genera uno.
-		if (tieneCodigo) {
+		//El codigo, en su propio bloque. Solo si la oferta genera uno y el mensaje
+		//no lo trae ya escrito.
+		if (tieneCodigo && !codigoYaEnMensaje) {
 			m.append("<tr><td align='center' style='padding:22px 26px 6px;'>")
 					.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='border-collapse:collapse;'><tr>")
 					.append("<td align='center' style='background-color:").append(CorreoOferta.AMARILLO_FONDO)
