@@ -1,303 +1,312 @@
-var server;
-var table;
+/*
+ * Pantalla de administracion de ofertas.
+ *
+ * Antes esta pantalla manejaba dos parametros -el nombre y la excepcion de
+ * precio- y los otros veintiuno de la tabla oferta tocaba ponerlos a mano en la
+ * base de datos. Ahora entran todos desde aqui.
+ *
+ * Hay un bloque que explica la oferta en palabras y avisa de las combinaciones
+ * que suelen dar problema. Con veintitres parametros es muy facil armar una
+ * oferta que en el papel se ve bien y en la tienda no funciona.
+ */
 
+var tablaOfertas;
 
-$(document).ready(function() {
-
-	//Obtenemos el valor de la variable server
-	var loc = window.location;
-	var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-	server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-	
-		//Lo primero que realizaremos es validar si está logueado
-		
-		
-	    table = $('#grid-oferta').DataTable( {
-    		"aoColumns": [
-            { "mData": "idoferta" },
-            { "mData": "nombre" },
-            { "mData": "idexcepcion" },
-            { "mData": "nombreexcepcion" },
-            {
-                "mData": "accion",
-                className: "center",
-                defaultContent: '<button type="button" class="btn btn-default btn-xs" onclick="eliminarOferta()">Eliminar</button> <button type="button" class="btn btn-default btn-xs" onclick="EditarOferta()">Editar</button>'
-            }
-        ]
-    	} );
-  	  	//Pintar las ofertas que se encuentran en el sistema		
-        pintarOfertas();
-        // Llenar select de las excepciones de precio
-        llenarSelectExcepciones();
-        setInterval('validarVigenciaLogueo()',600000);
-  	  	
-  	  	$('#userForm')
-        .bootstrapValidator({
-            framework: 'bootstrap',
-            icon: {
-                valid: 'glyphicon glyphicon-ok',
-                invalid: 'glyphicon glyphicon-remove',
-                validating: 'glyphicon glyphicon-refresh'
-            },
-            fields: {
-                nombreedit: {
-                    validators: {
-                        notEmpty: {
-                            message: 'El nombre de la oferta es requerido'
-                        }
-                    }
-                }
-            }
-        }) 
-         
-        
-    	//
-		
+$(document).ready(function () {
+	tablaOfertas = $('#grid-oferta').DataTable({
+		"order": [],
+		"pageLength": 15
+	});
+	llenarSelectExcepcion();
+	pintarOfertas();
+	//El resumen se recalcula con cualquier cambio del formulario.
+	$('#nombre, #selectExcepcion, #tipooferta, #habilitado, #contact, #descuentofijovalor, '
+		+ '#descuentofijoporcentaje, #descuentoporcentajefuturo, #codigopromocional, #redparcial, '
+		+ '#reintegro, #codigogeneral, #fechadesde, #fechahasta, #diascaducidad, #tipocaducidad, '
+		+ '#controlahora, #horainicio, #horafin, #mensaje1, #mensaje2')
+		.on('change keyup', pintarResumen);
+	pintarResumen();
 });
 
-function validarVigenciaLogueo()
-{
-	var d = new Date();
-	
-	var respuesta ='';
-	$.ajax({ 
-	   	url: server + 'ValidarUsuarioAplicacion', 
-	   	dataType: 'json',
-	   	type: 'post', 
-	   	async: false, 
-	   	success: function(data){
-			    respuesta =  data[0].respuesta;		
-		} 
-	});
-	switch(respuesta)
-	{
-		case 'OK':
-				break;
-		case 'OKA':
-				break;	
-		default:
-				location.href = server +"Index.html";
-		    	break;
+/** Los valores del formulario, con los nombres que espera el servlet. */
+function datosDelFormulario() {
+	return {
+		idoferta: $('#idoferta').val(),
+		nombreoferta: $('#nombre').val(),
+		idexcepcion: $('#selectExcepcion').val(),
+		tipooferta: $('#tipooferta').val(),
+		habilitado: $('#habilitado').val(),
+		contact: $('#contact').val(),
+		descuentofijovalor: $('#descuentofijovalor').val(),
+		descuentofijoporcentaje: $('#descuentofijoporcentaje').val(),
+		descuentoporcentajefuturo: $('#descuentoporcentajefuturo').val(),
+		codigopromocional: $('#codigopromocional').val(),
+		redparcial: $('#redparcial').val(),
+		reintegro: $('#reintegro').val(),
+		codigogeneral: $('#codigogeneral').val(),
+		fechadesde: $('#fechadesde').val(),
+		fechahasta: $('#fechahasta').val(),
+		diascaducidad: $('#diascaducidad').val(),
+		tipocaducidad: $('#tipocaducidad').val(),
+		controlahora: $('#controlahora').val(),
+		horainicio: $('#horainicio').val(),
+		horafin: $('#horafin').val(),
+		mensaje1: $('#mensaje1').val(),
+		mensaje2: $('#mensaje2').val()
+	};
+}
+
+function pesos(valor) {
+	var n = parseFloat(valor) || 0;
+	return '$' + n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
+}
+
+function textoFecha(iso) {
+	if (!iso || iso.length < 10) { return ''; }
+	var partes = iso.substring(0, 10).split('-');
+	var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+		'septiembre', 'octubre', 'noviembre', 'diciembre'];
+	var m = parseInt(partes[1], 10) - 1;
+	if (m < 0 || m > 11) { return iso; }
+	return parseInt(partes[2], 10) + ' de ' + meses[m] + ' de ' + partes[0];
+}
+
+/**
+ * La oferta explicada en palabras, y los avisos.
+ *
+ * El resumen es lo que permite darse cuenta de que la oferta quedo mal antes de
+ * guardarla, que con veintitres parametros no es evidente mirando los campos.
+ */
+function pintarResumen() {
+	var d = datosDelFormulario();
+	var valor = parseFloat(d.descuentofijovalor) || 0;
+	var pct = parseFloat(d.descuentofijoporcentaje) || 0;
+	var pctFuturo = parseFloat(d.descuentoporcentajefuturo) || 0;
+	var dias = parseInt(d.diascaducidad, 10) || 0;
+	var frases = [];
+
+	var beneficio = '';
+	if (valor > 0) { beneficio = 'un bono de <strong>' + pesos(valor) + '</strong>'; }
+	else if (pct > 0) { beneficio = '<strong>' + pct + '% de descuento</strong>'; }
+	else if (pctFuturo > 0) { beneficio = '<strong>' + pctFuturo + '% para una compra futura</strong>'; }
+
+	if (beneficio === '') {
+		frases.push('Todav&iacute;a no tiene ning&uacute;n descuento definido.');
+	} else {
+		var conCodigo = (d.codigopromocional === 'S') ? ' con un c&oacute;digo &uacute;nico' : '';
+		frases.push('Se le da al cliente ' + beneficio + conCodigo + '.');
 	}
-		    		
+
+	if (dias > 0) {
+		frases.push('Puede usarlo <strong>hasta ' + dias + ' d&iacute;as</strong> despu&eacute;s de que se le asigne.');
+	} else if (d.tipocaducidad === 'P') {
+		frases.push('<strong>No caduca por d&iacute;as</strong>: los d&iacute;as de caducidad est&aacute;n en cero.');
+	}
+
+	if (d.controlahora === 'S') {
+		frases.push('Solo entre las <strong>' + (d.horainicio || '0') + ' y las ' + (d.horafin || '0') + ' horas</strong>.');
+	}
+	if (d.redparcial === 'S' && valor > 0) {
+		frases.push('Si gasta menos de ' + pesos(valor) + ', <strong>le queda el saldo</strong> para otra compra.');
+	}
+	if (d.contact === 'S') {
+		frases.push('Solo la puede asignar el <strong>contact center</strong>.');
+	}
+	if (d.fechahasta) {
+		frases.push('Deja de poderse asignar el <strong>' + textoFecha(d.fechahasta) + '</strong>.');
+	}
+	if (d.habilitado === 'N') {
+		frases.push('Est&aacute; <strong>deshabilitada</strong>: queda guardada pero nadie la puede asignar.');
+	}
+
+	$('#resumenOferta').html('<p style="margin:0 0 9px;">' + frases.join('</p><p style="margin:0 0 9px;">') + '</p>');
+	pintarAvisos(d, valor, pct, pctFuturo, dias);
 }
 
-function guardarOferta()
-{
-	
-    
-	var nombreoferta = encodeURIComponent($('#nombre').val());
-	var idexcepcion = $('#selectExcepcion').val();
+/** Las combinaciones que suelen dar problema en la tienda. */
+function pintarAvisos(d, valor, pct, pctFuturo, dias) {
+	var avisos = [];
+	if (valor > 0 && pct > 0) {
+		avisos.push('Tiene valor fijo <strong>y</strong> porcentaje. Revise cu&aacute;l de los dos quiere que aplique, '
+			+ 'porque tener los dos suele terminar en un cobro equivocado.');
+	}
+	if (valor > 0 && d.controlahora === 'S') {
+		avisos.push('Es un bono en pesos y solo aplica en una franja horaria. Confirme que la tienda lo sepa, '
+			+ 'o el cliente va a llegar fuera de hora con el c&oacute;digo en la mano.');
+	}
+	if (d.habilitado === 'S' && !d.fechahasta) {
+		avisos.push('Est&aacute; habilitada y <strong>sin fecha de fin</strong>: se va a poder asignar indefinidamente.');
+	}
+	if (dias === 0 && d.tipocaducidad === 'P' && (valor > 0 || pct > 0)) {
+		avisos.push('Caduca por d&iacute;as pero los d&iacute;as est&aacute;n en <strong>cero</strong>. '
+			+ 'El c&oacute;digo no va a vencer nunca.');
+	}
+	if (d.codigopromocional === 'N' && !d.codigogeneral) {
+		avisos.push('No genera c&oacute;digo por cliente y tampoco tiene c&oacute;digo general. '
+			+ 'Revise c&oacute;mo la va a reclamar el cliente.');
+	}
+	if (d.controlahora === 'S' && d.horainicio === d.horafin) {
+		avisos.push('La hora de inicio y la de fin son la misma.');
+	}
+	if (d.fechadesde && d.fechahasta && d.fechadesde > d.fechahasta) {
+		avisos.push('La fecha de inicio es <strong>posterior</strong> a la de fin.');
+	}
+	if (avisos.length === 0) {
+		$('#avisosOferta').html('');
+		return;
+	}
+	var html = '';
+	for (var i = 0; i < avisos.length; i++) {
+		html += '<div class="aviso-oferta">' + avisos[i] + '</div>';
+	}
+	$('#avisosOferta').html(html);
+}
 
-	$.getJSON(server + 'CRUDOferta?idoperacion=1&idexcepcion=' + idexcepcion + "&nombreoferta=" + nombreoferta, function(data){
-		var respuesta = data[0];
-		idoferta= respuesta.idoferta;
-		$('#nombre').val('');
-		$('#selectExcepcion').val('');
-		$('#addData').modal('hide');
-		pintarOfertas();
+function llenarSelectExcepcion() {
+	//El mismo servicio que usaba la pantalla anterior: devuelve idexcepcion y descripcion.
+	$.getJSON(server + 'getExcepcionesPrecio', function (data) {
+		var opciones = '<option value="0">Sin excepci&oacute;n de precio</option>';
+		for (var i = 0; i < data.length; i++) {
+			opciones += '<option value="' + data[i].idexcepcion + '">' + data[i].descripcion + '</option>';
+		}
+		$('#selectExcepcion').html(opciones);
 	});
-	
 }
 
-function eliminarOferta(idoferta)
-{
-	/*var table = $('#grid-especialidades').DataTable();
-	var datos = table.row( this ).data();
-	console.log(datos);
-	idespecialidad = datos.idespecialidad;
-	nombre = datos.nombre;*/
-	$.confirm({
-			'title'		: 'Confirmacion Eliminación de la Oferta',
-			'content'	: 'Desea confirmar la eliminación de la Oferta ' + idoferta+ '.',
-			'buttons'	: {
-				'Si'	: {
-					'class'	: 'blue',
-					'action': function(){
-					
-						var resultado
-						$.ajax({ 
-	    				url: server + 'CRUDOferta?idoperacion=3&idoferta=' + idoferta , 
-	    				dataType: 'json', 
-	    				async: false, 
-	    				success: function(data){ 
-								resultado = data[0];
-								//
-
-								if ( $.fn.dataTable.isDataTable( '#grid-oferta' ) ) {
-							    	table = $('#grid-oferta').DataTable();
-							    }
-								
-								pintarOfertas();
-
-								//
-
-								
-							} 
-						});
-						
-
-
-					}
-				},
-				'No'	: {
-					'class'	: 'gray',
-					'action': function(){}	// Nothing to do in this case. You can as well omit the action property.
-				}
-			}
-		});
+function pintarOfertas() {
+	$.getJSON(server + 'CRUDOferta?idoperacion=8', function (data) {
+		tablaOfertas.clear();
+		for (var i = 0; i < data.length; i++) {
+			var o = data[i];
+			var descuento = '&mdash;';
+			if (parseFloat(o.descuentofijovalor) > 0) { descuento = pesos(o.descuentofijovalor); }
+			else if (parseFloat(o.descuentofijoporcentaje) > 0) { descuento = o.descuentofijoporcentaje + '%'; }
+			else if (parseFloat(o.descuentoporcentajefuturo) > 0) { descuento = o.descuentoporcentajefuturo + '% futuro'; }
+			var caducidad = (parseInt(o.diascaducidad, 10) > 0) ? (o.diascaducidad + ' d&iacute;as') : '&mdash;';
+			var horario = (o.controlahora === 'S') ? (o.horainicio + ' a ' + o.horafin + ' h') : '&mdash;';
+			var hab = (o.habilitado === 'S')
+				? '<span class="sello-of si">S&iacute;</span>'
+				: '<span class="sello-of no">No</span>';
+			tablaOfertas.row.add([
+				o.idoferta,
+				escaparTexto(o.nombreoferta),
+				escaparTexto(o.nombreexcepcion || ''),
+				descuento,
+				caducidad,
+				horario,
+				hab,
+				o.asignadas,
+				o.usadas,
+				'<button class="btn btn-primary btn-xs" onclick="cargarOferta(' + o.idoferta + ')">Abrir</button>'
+			]);
+		}
+		tablaOfertas.draw();
+		window.ofertasCargadas = data;
+	});
 }
 
-function llenarSelectExcepciones()
-{
-	
-	$.ajax({ 
-	    				url: server + 'getExcepcionesPrecio' , 
-	    				dataType: 'json', 
-	    				async: false, 
-	    				success: function(data1)
-	    					{ 
-								var str = '';
-								for(var i = 0; i < data1.length;i++){
-									str +='<option value="'+ data1[i].idexcepcion +'" id ="'+ data1[i].idexcepcion +'">' + data1[i].descripcion + '</option>';
-								}
-								str += '<option value="0" id ="0"></option>';
-								$('#selectExcepcion').html(str);
-								$('#selectExcepcionedit').html(str);
-													
-							} 
-						});
-
-	
+/** El nombre lo escribe una persona: se escapa antes de meterlo a la tabla. */
+function escaparTexto(valor) {
+	if (valor === null || valor === undefined) { return ''; }
+	return String(valor).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-
-function pintarOfertas()
-{
-	$.getJSON(server + 'CRUDOferta?idoperacion=6'  , function(data1){
-			table.clear().draw();
-			for(var i = 0; i < data1.length;i++){
-				var cadaExcepcion = data1[i];
-				table.row.add({
-					"idoferta": data1[i].idoferta, 
-					"nombre": data1[i].nombreoferta,
-					"idexcepcion": data1[i].idexcepcion, 
-					"nombreexcepcion": data1[i].nombreexcepcion, 
-					"accion":'<button type="button" class="btn btn-default btn-xs" onclick="eliminarOferta(' +data1[i].idoferta + ')"><i class="fas fa-eraser fa-2x"></i>Eliminar</button> <button type="button" onclick="editarOferta('+data1[i].idoferta+')" class="btn btn-default btn-xs editButton" ' + 'data-id="' + data1[i].idoferta + '"><i class="fas fa-pizza-slice fa">Edicion</button>' + '<button type="button" onclick="enviarMensaje('+data1[i].idoferta+')" class="btn btn-success btn-xs" ' + 'data-id="' + data1[i].idoferta + '">Enviar Mensaje</button>'
-				}).draw();
-				//table.row.add(data1[i]).draw();
-			}
-		});
+function cargarOferta(idoferta) {
+	var lista = window.ofertasCargadas || [];
+	var o = null;
+	for (var i = 0; i < lista.length; i++) {
+		if (parseInt(lista[i].idoferta, 10) === parseInt(idoferta, 10)) { o = lista[i]; break; }
+	}
+	if (o === null) { return; }
+	$('#idoferta').val(o.idoferta);
+	$('#nombre').val(o.nombreoferta);
+	$('#selectExcepcion').val(o.idexcepcion);
+	$('#tipooferta').val(o.tipooferta || 'C');
+	$('#habilitado').val(o.habilitado || 'S');
+	$('#contact').val(o.contact || 'N');
+	$('#descuentofijovalor').val(o.descuentofijovalor);
+	$('#descuentofijoporcentaje').val(o.descuentofijoporcentaje);
+	$('#descuentoporcentajefuturo').val(o.descuentoporcentajefuturo);
+	$('#codigopromocional').val(o.codigopromocional || 'N');
+	$('#redparcial').val(o.redparcial || 'N');
+	$('#reintegro').val(o.reintegro || 'N');
+	$('#codigogeneral').val(o.codigogeneral || '');
+	$('#fechadesde').val((o.fechadesde || '').substring(0, 10));
+	$('#fechahasta').val((o.fechahasta || '').substring(0, 10));
+	$('#diascaducidad').val(o.diascaducidad);
+	$('#tipocaducidad').val(o.tipocaducidad || 'P');
+	$('#controlahora').val(o.controlahora || 'N');
+	$('#horainicio').val(o.horainicio || 0);
+	$('#horafin').val(o.horafin || 0);
+	$('#mensaje1').val(o.mensaje1 || '');
+	$('#mensaje2').val(o.mensaje2 || '');
+	var vencidas = parseInt(o.asignadas, 10) - parseInt(o.usadas, 10);
+	$('#comoVaOferta').html(
+		'<table class="table table-sm" style="margin:0;font-size:13px;">'
+		+ '<tr><td>Asignadas</td><td style="text-align:right;"><strong>' + o.asignadas + '</strong></td></tr>'
+		+ '<tr><td>Usadas</td><td style="text-align:right;"><strong>' + o.usadas + '</strong></td></tr>'
+		+ '<tr><td>Sin usar</td><td style="text-align:right;"><strong>' + (vencidas < 0 ? 0 : vencidas) + '</strong></td></tr>'
+		+ '</table>');
+	pintarResumen();
+	$('html, body').animate({ scrollTop: 0 }, 200);
 }
 
+function limpiarOferta() {
+	$('#idoferta').val(0);
+	$('#nombre').val('');
+	$('#selectExcepcion').val(0);
+	$('#tipooferta').val('C');
+	$('#habilitado').val('S');
+	$('#contact').val('N');
+	$('#descuentofijovalor').val(0);
+	$('#descuentofijoporcentaje').val(0);
+	$('#descuentoporcentajefuturo').val(0);
+	$('#codigopromocional').val('S');
+	$('#redparcial').val('N');
+	$('#reintegro').val('N');
+	$('#codigogeneral').val('');
+	$('#fechadesde').val('');
+	$('#fechahasta').val('');
+	$('#diascaducidad').val(0);
+	$('#tipocaducidad').val('P');
+	$('#controlahora').val('N');
+	$('#horainicio').val(0);
+	$('#horafin').val(0);
+	$('#mensaje1').val('');
+	$('#mensaje2').val('');
+	$('#comoVaOferta').html('Escoja una oferta de la lista para ver c&oacute;mo viene funcionando.');
+	pintarResumen();
+}
 
-//Se deberá consumir un servicio para el envío de los mensajes de texto pendientes
-function enviarMensaje(idOferta)
-{
-
-	$.confirm({
-		'title'		: 'Confirmacion de Envío Mensajes',
-		'content'	: 'Desea confirmar el envío de mensajes de la Oferta ' + idOferta+ '.',
-		'buttons'	: {
-			'Si'	: {
-				'class'	: 'blue',
-				'action': function(){
-					$.ajax({ 
-		    				url: server + 'GetEnviarMensajesOferta?idoferta='+ idOferta , 
-		    				dataType: 'json', 
-		    				async: false, 
-		    				success: function(data){
-		    					if(data.respuesta == 'exitoso')
-		    					{
-		    						$.alert('Los mensajes de Texto se han enviado Correctamente. ' + 'Se han enviado ' + data.mensajes + ' mensajes.');
-		    					}else
-		    					{
-		    						$.alert('Se tuvieron inconvenientes para el envío de los mensajes de Texto');
-		    					}
-		    				} 
-					}); 
-				}
-			},
-			'No'	: {
-				'class'	: 'gray',
-				'action': function(){}	// Nothing to do in this case. You can as well omit the action property.
-			}
+function guardarOferta() {
+	var d = datosDelFormulario();
+	if (!d.nombreoferta || d.nombreoferta.trim() === '') {
+		$.alert('La oferta necesita un nombre.');
+		return;
+	}
+	if (d.controlahora === 'S') {
+		var hi = parseInt(d.horainicio, 10);
+		var hf = parseInt(d.horafin, 10);
+		if (isNaN(hi) || isNaN(hf) || hi < 0 || hi > 23 || hf < 0 || hf > 23) {
+			$.alert('Las horas van de 0 a 23.');
+			return;
+		}
+	}
+	//Se manda por POST: los mensajes al cliente pueden traer tildes, comillas y
+	//hasta 500 caracteres cada uno, y eso no cabe comodo en la URL.
+	var nueva = (parseInt(d.idoferta, 10) === 0);
+	d.idoperacion = nueva ? 1 : 2;
+	$.ajax({
+		url: server + 'CRUDOferta',
+		type: 'POST',
+		data: d,
+		success: function () {
+			pintarOfertas();
+			$.alert(nueva ? 'Oferta creada.' : 'Oferta actualizada.');
+			if (nueva) { limpiarOferta(); }
+		},
+		error: function () {
+			$.alert('No se pudo guardar la oferta. Vuelva a intentarlo.');
 		}
 	});
-            
-}
-
-function editarOferta(idoferta)
-{
-	//
-				
-	// Get the record's ID via attribute
-	
-		$.ajax({ 
-    				url: server + 'CRUDOferta?idoperacion=4&idoferta=' + idoferta, 
-    				dataType: 'json', 
-    				async: false, 
-    				success: function(data){ 
-						var respuesta = data[0];
-						$('#userForm')
-				                .find('[name="idofertaedit"]').val(respuesta.idoferta).end()
-				                .find('[name="selectExcepcionedit"]').val(respuesta.idexcepcion).end()
-				                .find('[name="nombreedit"]').val(respuesta.nombreoferta).end()
-				                	                
-
-				            // Show the dialog
-				            bootbox
-				                .dialog({
-				                    title: 'Editar Oferta',
-				                    message: $('#userForm'),
-				                    show: false // We will show it manually later
-				                })
-				                .on('shown.bs.modal', function() {
-				                    $('#userForm')
-				                        .show()                             // Show the login form
-				                        .bootstrapValidator('resetForm'); // Reset form
-				                })
-				                .on('hide.bs.modal', function(e) {
-				                    // Bootbox will remove the modal (including the body which contains the login form)
-				                    // after hiding the modal
-				                    // Therefor, we need to backup the form
-				                    $('#userForm').hide().appendTo('body');
-				                })
-				                .modal('show');
-				               
-					} 
-		});
-
-		//
-}
-
-function confirmarEditarOferta()
-{
-	
-           
-            
-                var idoferta =  $('input:text[name=idofertaedit]').val();
-                var nombreoferta = $('input:text[name=nombreedit]').val();
-                var idexcepcion =  $('#selectExcepcionedit').val();
-               
-            // The url and method might be different in your application
-            $.ajax({ 
-    				url: server + 'CRUDOferta?idoperacion=2&idoferta='+ idoferta+'&nombreoferta=' + nombreoferta + "&idexcepcion=" + idexcepcion , 
-    				dataType: 'json', 
-    				async: false, 
-    				success: function(data){
-    					pintarOfertas();
-               			 // Hide the dialog
-                		$('#userForm').parents('.bootbox').modal('hide');
-
-                		// You can inform the user that the data is updated successfully
-                		// by highlighting the row or showing a message box
-                		bootbox.alert('La oferta ha sido actualizada');
-    				} 
-			}); 
-            //
-            
-
-        
-
 }

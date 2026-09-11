@@ -1225,4 +1225,45 @@ public class PromocionesCtrl {
 		}
 		return (this.enviarMensajesOfertaBrevo(idOferta));
 	}
+
+	/**
+	 * Todas las ofertas con su definicion completa, para la pantalla que las
+	 * administra. Incluye las deshabilitadas, a diferencia de obtenerOfertasGrid.
+	 */
+	public String obtenerOfertasAdministracion()
+	{
+		ArrayList<Oferta> ofertas = OfertaDAO.obtenerOfertasAdministracion();
+		JSONArray listJSON = new JSONArray();
+		for (Oferta ofer : ofertas)
+		{
+			JSONObject cada = new JSONObject();
+			cada.put("idoferta", ofer.getIdOferta());
+			cada.put("nombreoferta", ofer.getNombreOferta());
+			cada.put("idexcepcion", ofer.getIdExcepcion());
+			cada.put("nombreexcepcion", ofer.getNombreExcepcion());
+			cada.put("codigopromocional", ofer.getCodigoPromocional());
+			cada.put("descuentofijoporcentaje", ofer.getDescuentoFijoPorcentaje());
+			cada.put("descuentoporcentajefuturo", ofer.getDescuentoPorcentajeFuturo());
+			cada.put("descuentofijovalor", ofer.getDescuentoFijoValor());
+			cada.put("mensaje1", ofer.getMensaje1());
+			cada.put("mensaje2", ofer.getMensaje2());
+			cada.put("diascaducidad", ofer.getDiasCaducidad());
+			cada.put("tipocaducidad", ofer.getTipoCaducidad());
+			cada.put("controlahora", ofer.getControlaHora());
+			cada.put("horainicio", ofer.getHoraInicio());
+			cada.put("horafin", ofer.getHoraFin());
+			cada.put("tipooferta", ofer.getTipoOferta());
+			cada.put("fechadesde", ofer.getFechaDesde());
+			cada.put("fechahasta", ofer.getFechaHasta());
+			cada.put("codigogeneral", ofer.getCodigoGeneral());
+			cada.put("contact", ofer.getContact());
+			cada.put("redparcial", ofer.getRedParcial());
+			cada.put("reintegro", ofer.getReintegro());
+			cada.put("habilitado", ofer.getHabilitado());
+			cada.put("asignadas", ofer.getAsignadas());
+			cada.put("usadas", ofer.getUsadas());
+			listJSON.add(cada);
+		}
+		return (listJSON.toJSONString());
+	}
 }
