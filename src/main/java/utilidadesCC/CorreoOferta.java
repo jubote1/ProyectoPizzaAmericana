@@ -142,6 +142,35 @@ public class CorreoOferta {
 		return (docehoras + ":00");
 	}
 
+	/**
+	 * Reemplaza los comodines que los mensajes de la oferta traen escritos.
+	 *
+	 * mensaje1 y mensaje2 se redactan en la pantalla de ofertas con
+	 * #NOMBRECLIENTE, #APELLIDOCLIENTE y #CODIGODESCUENTO adentro, y el envio por
+	 * mensaje de texto los venia reemplazando desde siempre en PromocionesCtrl.
+	 * El correo no lo hacia, asi que al cliente le llegaba el texto con el
+	 * comodin literal: "equivale a una Pizzeta #CODIGODESCUENTO".
+	 *
+	 * Si un comodin no tiene con que llenarse, se quita en vez de dejarlo
+	 * escrito: es mejor una frase a la que le falta un dato que una frase con
+	 * una palabra que el cliente no entiende.
+	 */
+	private static String reemplazarComodines(String texto, DatosCorreoOferta datos) {
+		if (texto == null) {
+			return ("");
+		}
+		String resultado = texto;
+		resultado = resultado.replace("#NOMBRECLIENTE", datos.soloNombre == null ? "" : datos.soloNombre);
+		resultado = resultado.replace("#APELLIDOCLIENTE", datos.soloApellido == null ? "" : datos.soloApellido);
+		resultado = resultado.replace("#CODIGODESCUENTO",
+				datos.codigoPromocion == null ? "" : datos.codigoPromocion);
+		//Quitar un comodin deja dobles espacios y espacios antes de la coma o el
+		//punto. Se limpian para que la frase no delate que ahi faltaba algo.
+		resultado = resultado.replaceAll("\s+", " ");
+		resultado = resultado.replaceAll("\s+([,.;:!?])", "$1");
+		return (resultado.trim());
+	}
+
 	/** El beneficio en una frase corta: sirve para el asunto y para el titular. */
 	private static String beneficio(DatosCorreoOferta datos) {
 		if (datos.descuentoValor > 0) {
@@ -201,6 +230,10 @@ public class CorreoOferta {
 		boolean controlaHora = "S".equals(datos.controlaHora);
 		boolean dejaSaldo = "S".equals(datos.redencionParcial) && datos.descuentoValor > 0;
 		String fechaVence = CorreoOferta.fechaEnPalabras(datos.fechaCaducidad);
+		//Los mensajes de la oferta traen comodines escritos: se resuelven una vez
+		//aqui y de ahi en adelante se usa el texto ya armado.
+		String msj1 = CorreoOferta.reemplazarComodines(datos.mensaje1, datos);
+		String msj2 = CorreoOferta.reemplazarComodines(datos.mensaje2, datos);
 
 		StringBuilder m = new StringBuilder();
 		m.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='max-width:600px;")
@@ -225,8 +258,8 @@ public class CorreoOferta {
 		}
 		m.append("<div style='font-size:22px;font-weight:bold;color:").append(CorreoOferta.TINTA)
 				.append(";line-height:1.3;padding-top:10px;'>");
-		if (datos.mensaje1 != null && datos.mensaje1.trim().length() > 0) {
-			m.append(CorreoOferta.escapar(datos.mensaje1.trim()));
+		if (msj1.length() > 0) {
+			m.append(CorreoOferta.escapar(msj1));
 		} else if (ben.length() > 0) {
 			m.append("Tienes <span style='color:").append(CorreoOferta.ROJO).append(";'>").append(ben)
 					.append("</span> para tu pr&oacute;ximo pedido.");
@@ -235,7 +268,7 @@ public class CorreoOferta {
 		}
 		m.append("</div>");
 		//Si el mensaje de la oferta no menciona el valor, se pone aparte para que no se pierda.
-		if (ben.length() > 0 && datos.mensaje1 != null && !datos.mensaje1.contains(ben)) {
+		if (ben.length() > 0 && !msj1.contains(ben)) {
 			m.append("<div style='font-size:30px;font-weight:bold;color:").append(CorreoOferta.ROJO)
 					.append(";padding-top:8px;'>").append(ben).append("</div>");
 		}
@@ -300,8 +333,8 @@ public class CorreoOferta {
 		m.append("<tr><td style='padding:16px 26px 22px;'>")
 				.append("<div style='border-top:1px solid ").append(CorreoOferta.LINEA)
 				.append(";padding-top:14px;font-size:12px;color:#8A9199;line-height:1.5;'>");
-		if (datos.mensaje2 != null && datos.mensaje2.trim().length() > 0) {
-			m.append(CorreoOferta.escapar(datos.mensaje2.trim())).append("<br><br>");
+		if (msj2.length() > 0) {
+			m.append(CorreoOferta.escapar(msj2)).append("<br><br>");
 		}
 		m.append("Recibes este correo porque autorizaste el tratamiento de tus datos con Pizza ")
 				.append("Americana. Si no quieres m&aacute;s correos de ofertas, resp&oacute;ndenos y te ")
