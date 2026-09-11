@@ -38,7 +38,10 @@ public class OfertaClienteDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente + " and b.habilitado ='S'";
+			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente;
+			//Sin filtrar por b.habilitado: deshabilitar una oferta no puede borrar del
+			//historial del cliente las que ya se le asignaron. Esta consulta es para ver,
+			//no para escoger.
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOfertaCliente;
@@ -63,6 +66,12 @@ public class OfertaClienteDAO {
 				usuarioIngreso = rs.getString("usuario_ingreso");
 				ofertaTemp = new OfertaCliente(idOfertaCliente, idOferta, idCliente, utilizada, PQRS,ingresoOferta, usoOferta, observacion, usuarioIngreso);
 				ofertaTemp.setNombreOferta(nombreOferta);
+				//Lo que el CRM necesita mostrar y antes no se leia: el codigo que se le dio
+				//al cliente, cuando vence, cuanto saldo le queda y si ya se le aviso.
+				ofertaTemp.setCodigoPromocion(OfertaClienteDAO.textoSeguro(rs.getString("codigo_promocion")));
+				ofertaTemp.setFechaCaducidad(OfertaClienteDAO.textoSeguro(rs.getString("fecha_caducidad")));
+				ofertaTemp.setFechaMensaje(OfertaClienteDAO.textoSeguro(rs.getString("fecha_mensaje")));
+				ofertaTemp.setSaldo(rs.getDouble("saldo"));
 				ofertas.add(ofertaTemp);
 			}
 			rs.close();

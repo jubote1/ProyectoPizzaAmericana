@@ -145,6 +145,20 @@ public class CRUDOfertaCliente extends HttpServlet {
 			ofer.setTelefono(telefono);
 			ofer.setBaseDescuento(baseDescuento);
 			respuesta = PromoCtrl.insertarOfertaClienteFuturo(ofer);
+		}//Reenviar el correo de una oferta ya asignada, para el caso de "no me llego"
+		else if(operacion == 8)
+		{
+			int idOfertaClienteRe = 0;
+			try{
+				idOfertaClienteRe = Integer.parseInt(request.getParameter("idofertacliente"));
+			}catch(Exception e){
+				idOfertaClienteRe = 0;
+			}
+			//Devuelve una frase con lo que paso: si salio, o por que no se envio.
+			//La pantalla la muestra tal cual, para que quien atiende sepa si tiene que
+			//darle el codigo al cliente por telefono.
+			respuesta = "[{\"respuesta\":\"" + PromoCtrl.notificarOfertaAsignada(idOfertaClienteRe)
+					.replace("\"", "'") + "\"}]";
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

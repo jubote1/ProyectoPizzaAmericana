@@ -70,6 +70,10 @@ public class PromocionesCtrl {
 			cadaOfertaJSON.put("usooferta", ofer.getUsoOferta());
 			cadaOfertaJSON.put("observacion", ofer.getObservacion());
 			cadaOfertaJSON.put("pqrs", ofer.getPQRS());
+			cadaOfertaJSON.put("codigopromocion", ofer.getCodigoPromocion());
+			cadaOfertaJSON.put("fechacaducidad", ofer.getFechaCaducidad());
+			cadaOfertaJSON.put("fechamensaje", ofer.getFechaMensaje());
+			cadaOfertaJSON.put("saldo", ofer.getSaldo());
 			listJSON.add(cadaOfertaJSON);
 		}
 		return(listJSON.toJSONString());
@@ -91,6 +95,10 @@ public class PromocionesCtrl {
 			cadaOfertaJSON.put("usooferta", ofer.getUsoOferta());
 			cadaOfertaJSON.put("observacion", ofer.getObservacion());
 			cadaOfertaJSON.put("pqrs", ofer.getPQRS());
+			cadaOfertaJSON.put("codigopromocion", ofer.getCodigoPromocion());
+			cadaOfertaJSON.put("fechacaducidad", ofer.getFechaCaducidad());
+			cadaOfertaJSON.put("fechamensaje", ofer.getFechaMensaje());
+			cadaOfertaJSON.put("saldo", ofer.getSaldo());
 			listJSON.add(cadaOfertaJSON);
 		}
 		return(listJSON.toJSONString());
