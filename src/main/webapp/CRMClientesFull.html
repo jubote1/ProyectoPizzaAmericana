@@ -13,6 +13,7 @@
 		  <script src='js/bootstrapValidator.min.js'></script>
    		  <script src='js/language/es_ES.min.js'></script>
 		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+		  <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
 	</head>
 	<body>
 
@@ -132,7 +133,8 @@
 												<select id="selectMunicipio" class="form-control" onchange="descripcionDireccion()"></select>
 											</div>
 											<div class="col-md-2">
-												<input type="button" class="btn btn-default btn-sm" id="buscar" value="Buscar" onclick="buscarMapaDigitado1()"/>
+												<button type="button" class="btn btn-default btn-sm" id="buscarmapa">Buscar</button>
+												<span id="loaderCobertura" style="display:none;margin-left:8px;font-size:12px;color:#6c7482;">validando...</span>
 											</div>
 											<div class="col-md-6 col-md-offset-0 col-lg-6 col-lg-offset-0"> 
 												<input type="text" id="descDireccion" name="descDireccion" class="form-control" placeholder="Descripción Dirección" maxlength="10">
@@ -356,7 +358,15 @@
 									      			
 									      	</tbody>
 					</table>
-				<div class="container" id="mapas" style="width:900px; height:450px; text-align:center">
+				<!-- Verificar la direccion que el central ya tiene guardada del cliente, sin
+				     depender de lo que este escrito en los campos de arriba. -->
+				<p style="margin-top:8px;">
+					<button type="button" class="btn btn-default btn-sm" onclick="ubicarClienteEnMapa()">Ver en el mapa la direcci&oacute;n guardada del cliente</button>
+				</p>
+				<!-- El mapa es el de ArcGIS, el mismo de la pantalla de pedidos. arcgis.js espera
+				     que el contenedor se llame "map", y lee los mismos campos que ya tiene esta
+				     pantalla: #direccion, #descDireccion y #validaDir. -->
+				<div class="container" id="map" style="width:900px; height:450px; text-align:center">
 				
 				</div>
 
@@ -370,7 +380,11 @@
 									                <th data-column-id="idcliente">Id Cliente</th>
 									                <th data-column-id="idoferta">Id Oferta</th>
 									                <th data-column-id="nombreoferta">Nombre Oferta</th>
+									                <th data-column-id="codigopromocion">C&oacute;digo</th>
 									                <th data-column-id="utilizada">Utilizada</th>
+									                <th data-column-id="fechacaducidad">Vence</th>
+									                <th data-column-id="saldo">Saldo</th>
+									                <th data-column-id="fechamensaje">Aviso al cliente</th>
 									                <th data-column-id="pqrs">PQRS</th>
 									                <th data-column-id="ingresooferta">Ingreso Oferta</th>
 									                <th data-column-id="usooferta">Uso Oferta</th>
@@ -426,6 +440,9 @@
 	<script src="js/geolocalizacion.js" type="text/javascript"></script>
 	<script src="js/jquery-confirm.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
-	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCRtUQ2WV0L2gMnb9DKiFn1PTHJQLH3suA&callback=initMap&libraries=geometry">
-    </script>
+	<!-- Se cambio Google Maps por ArcGIS. La llave de Google quedo abandonada cuando la
+	     pantalla de pedidos migro, y su mapa no funciona. ArcGIS ya trae las zonas de
+	     cobertura y las tiendas, y valida contra el servicio ValidacionCobertura. -->
+	<script src="https://js.arcgis.com/4.27/"></script>
+	<script src="./arcgis.js" type="text/javascript"></script>
 </html>

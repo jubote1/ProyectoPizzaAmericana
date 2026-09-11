@@ -87,7 +87,34 @@ $(document).ready(function()
             { "mData": "idcliente", "visible": false },
             { "mData": "idoferta", "visible": false },
             { "mData": "nombreoferta" },
+            { "mData": "codigopromocion", "defaultContent": "" },
             { "mData": "utilizada" },
+            { "mData": "fechacaducidad", "defaultContent": "" },
+            {
+                "mData": "saldo",
+                "defaultContent": "",
+                "render": function (dato) {
+                    var n = parseFloat(dato) || 0;
+                    return (n > 0) ? n.toLocaleString("es-CO", { maximumFractionDigits: 0 }) : "";
+                }
+            },
+            {
+                //La columna que antes no existia: si al cliente se le aviso o no. Sin
+                //ella no habia forma de saber si el cliente se entero de su codigo, y
+                //el caso de "no me llego" no se podia resolver sin asignarle otra oferta.
+                "mData": "fechamensaje",
+                "defaultContent": "",
+                "render": function (dato, tipo, fila) {
+                    if (dato && String(dato).length > 0) {
+                        return '<span style="color:#14714e;font-weight:600;">Enviado</span><br>'
+                            + '<span style="font-size:11px;color:#6c7482;">'
+                            + String(dato).substring(0, 16) + '</span>';
+                    }
+                    return '<span style="color:#c21c1f;font-weight:600;">Sin enviar</span><br>'
+                        + '<button class="btn btn-default btn-xs" onclick="reenviarCorreoOferta('
+                        + fila.idofertacliente + ')">Reenviar</button>';
+                }
+            },
             { "mData": "pqrs" },
             { "mData": "ingresooferta" },
             { "mData": "usooferta" },
@@ -622,175 +649,55 @@ function limpiarModalOtrosPedidos()
 	$('#formapagoClick').val('');
 }
 
-function initMap() {
-        
+/*
+ * El mapa de esta pantalla era el de Google Maps, con una llave que quedo
+ * abandonada cuando la pantalla de pedidos migro; por eso no funcionaba. Ahora
+ * usa el mismo ArcGIS de pedidos (arcgis.js), que ademas de dibujar el punto
+ * valida contra ValidacionCobertura: dice si la direccion queda en cobertura y
+ * a que tienda le corresponde.
+ *
+ * Lo que queda abajo es el puente entre lo que esta pantalla ya llamaba y lo
+ * que arcgis.js expone.
+ */
 
-        
-        var map = new google.maps.Map(document.getElementById("mapas"), {
-          zoom: 13,
-          scrollwheel: false,
-          center: {lat: 6.29139, lng: -75.53611}
-        });
-
-       
-      }
-
-
-
-// Evento para cuando se da  CLICK EN EL BOTÓN BUSCAR
-function buscarMapaDigitado() {
-
-    // Obtenemos la dirección y la asignamos a una variable
-    var direccion = $('#direccion').val();
-    var municipio = $("#selectMunicipio").val();
-    municipio = municipio.toLowerCase();
-    direccion = direccion + " " + municipio + " Antioquia Colombia";
-    var resultado;
-    
-    $.ajax({ 
-                        url:'https://maps.googleapis.com/maps/api/geocode/json?components=administrative_area:Medellin|country:Colombia&address=' + direccion +'&key=AIzaSyCRtUQ2WV0L2gMnb9DKiFn1PTHJQLH3suA' , 
-                        dataType: 'json', 
-                        async: false, 
-                        success: function(data){ 
-                                resultado = data;
-                                
-                            } 
-                        });
-    // Creamos el Objeto Geocoder
-    var geocoder = new google.maps.Geocoder();
-    // Hacemos la petición indicando la dirección e invocamos la función
-    // geocodeResult enviando todo el resultado obtenido
-    geocoder.geocode({ 'address': direccion}, geocodeResult);
-    //geocodeResult(resultado.results,resultado.status);
+//arcgis.js llama esta funcion cada vez que ubica un punto, sea por la busqueda
+//o porque el usuario hizo clic en el mapa. Aqui es donde se actualizan las
+//coordenadas que despues viajan en ActualizarCliente; sin esto el cliente se
+//guardaria con la ubicacion vieja.
+function fijarCoordenadasManualmente(lat, lon)
+{
+    latitud = lat;
+    longitud = lon;
 }
 
-// Método para el nuevo esquema de direcciones
-function buscarMapaDigitado1() {
+//El boton Buscar lo engancha arcgis.js por su id. Estas quedan por si algo mas
+//de la pantalla las invoca.
+function buscarMapaDigitado()
+{
+    findAddress();
+}
 
-    //Se valida si es el esquema viejo de direcciones
-    if($("#selectNomenclaturas").val() == '' || $("#selectNomenclaturas").val() == null || $("#numNomen").val() == '' || $("#numNomen").val() == null || $("#numNomen2").val() == '' || $("#numNomen2").val() == null )
-        {
-            if(($('#direccion').val() != null) && ($('#direccion').val() != '') && ($("#selectMunicipio").val() != null) && ($("#selectMunicipio").val() != ''))
-            {
-                buscarMapaDigitado();
-            }
-            return;
-        }
+function buscarMapaDigitado1()
+{
+    findAddress();
+}
 
-        
-    // Obtenemos la dirección y la asignamos a una variable
-    var direccion = $("#selectNomenclaturas").val() +  " "  + $("#numNomen").val() + " # " + $("#numNomen2").val() ;
-    var municipio = $("#selectMunicipio").val();
-    if(municipio == '' || municipio== null)
+function buscarMapa(dir)
+{
+    findAddress();
+}
+
+//Ubica la direccion que el central tiene guardada del cliente, sin depender de
+//lo que este escrito en los campos. Es la forma de verificar si la direccion
+//registrada es de verdad la que corresponde.
+function ubicarClienteEnMapa()
+{
+    if (idCliente == null || idCliente == 0)
     {
-        $.alert('Debe ingresar el municipio para buscar la dirección.');
+        $.alert('Primero seleccione un cliente de la lista.');
         return;
     }
-    municipio = municipio.toLowerCase();
-    direccion = direccion + " " + municipio + " Antioquia Colombia";
-    var resultado;
-    
-    $.ajax({ 
-                        url:'https://maps.googleapis.com/maps/api/geocode/json?components=administrative_area:Medellin|country:Colombia&address=' + direccion +'&key=AIzaSyCRtUQ2WV0L2gMnb9DKiFn1PTHJQLH3suA' , 
-                        dataType: 'json', 
-                        async: false, 
-                        success: function(data){ 
-                                resultado = data;
-                                
-                            } 
-                        });
-    // Creamos el Objeto Geocoder
-    var geocoder = new google.maps.Geocoder();
-    // Hacemos la petición indicando la dirección e invocamos la función
-    // geocodeResult enviando todo el resultado obtenido
-    geocoder.geocode({ 'address': direccion}, geocodeResult);
-    //geocodeResult(resultado.results,resultado.status);
-}
-
-//Georeferenciación de la dirección
-
-function buscarMapa(dir) {
-
-    // Obtenemos la dirección y la asignamos a una variable
-    var direccion = dir + " Antioquia Colombia" ; 
-    var resultado;
-    
-    $.ajax({ 
-                        url:'https://maps.googleapis.com/maps/api/geocode/json?components=administrative_area:Medellin|country:Colombia&address=' + direccion +'&key=AIzaSyCRtUQ2WV0L2gMnb9DKiFn1PTHJQLH3suA' , 
-                        dataType: 'json', 
-                        async: false, 
-                        success: function(data){ 
-                                resultado = data;
-                                
-                            } 
-                        });
-    // Creamos el Objeto Geocoder
-    var geocoder = new google.maps.Geocoder();
-    // Hacemos la petición indicando la dirección e invocamos la función
-    // geocodeResult enviando todo el resultado obtenido
-    geocoder.geocode({ 'address': direccion}, geocodeResult);
-    //geocodeResult(resultado.results,resultado.status);
-}
-
-function geocodeResult(results, status) {
-    // Verificamos el estatus
-    if (status == 'OK') {
-        // Si hay resultados encontrados, centramos y repintamos el mapa
-        // esto para eliminar cualquier pin antes puesto
-        var mapOptions = {
-            center: results[0].geometry.location,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        longitud = results[0].geometry.location.lng();
-        latitud = results[0].geometry.location.lat();
-        map = new google.maps.Map($("#mapas").get(0), mapOptions);
-        // fitBounds acercará el mapa con el zoom adecuado de acuerdo a lo buscado
-        map.fitBounds(results[0].geometry.viewport);
-        // Dibujamos un marcador con la ubicación del primer resultado obtenido
-        //url: 'https://raw.githubusercontent.com/Andres-FA/KMLZonasDeReparto/master/ZonasDeRepartoTotales.kml',
-        var ctaLayer = new google.maps.KmlLayer({
-          url: 'https://raw.githubusercontent.com/Andres-FA/KMLZonasDeReparto/master/PizzaAmericana-ZonasDeRepartoTotales-Ver_03.kml',
-          map: map,
-          scrollwheel: false,
-          zoom: 17
-        });
-        
-        var markerOptions = { position: results[0].geometry.location }
-        var marker = new google.maps.Marker(markerOptions);
-        marker.setMap(map);
-        //Luego de la ubicación en el mapa trataremos de ejecutar una función asincrona para ubicar dentro del mapa y ubicar la tienda
-        ubicarTienda(latitud , longitud , map);
-        
-    } else {
-        // En caso de no haber resultados o que haya ocurrido un error
-        // lanzamos un mensaje con el error
-        alert("La Geolocalización no tuvo éxito debido a: " + status);
-    }
-}
-
-function geocodeSinServicio(lat, long) 
-{
-    longitud = long;
-    latitud = lat;
-    var map = new google.maps.Map($("#mapas").get(0), {
-        zoom: 7,
-        center: new google.maps.LatLng(6.22339, -75.6281),
-        mapTypeId: google.maps.MapTypeId.ROADMAP
-    });
-
-    var ctaLayer = new google.maps.KmlLayer({
-        url: 'https://raw.githubusercontent.com/Andres-FA/KMLZonasDeReparto/master/PizzaAmericana-ZonasDeRepartoTotales-Ver_02.kml',
-        map: map,
-        scrollwheel: false,
-        zoom: 17
-    });
-    var infowindow = new google.maps.InfoWindow();
-    var marker, i;
-    marker = new google.maps.Marker({
-        position: new google.maps.LatLng(latitud, longitud),
-        map: map,
-        icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-    });
+    findAddress(idCliente);
 }
 
 function llenarSelectOferta()
@@ -1111,4 +1018,29 @@ function ValidacionesLigerasDatos()
         return;
     }
     return(true);
+}
+/**
+ * Vuelve a mandarle al cliente el correo de una oferta que ya tiene.
+ *
+ * Es para el caso de "no me llego": antes tocaba asignarle otra oferta, con lo
+ * que quedaban dos codigos para el mismo cliente. El servicio responde con una
+ * frase que dice si salio o por que no, y se muestra tal cual, porque si el
+ * cliente no tiene correo o no acepto la politica de datos hay que decirle el
+ * codigo por telefono.
+ */
+function reenviarCorreoOferta(idofertacliente)
+{
+    $.ajax({
+        url: server + 'CRUDOfertaCliente?idoperacion=8&idofertacliente=' + idofertacliente,
+        dataType: 'json',
+        type: 'get',
+        success: function (data) {
+            var texto = (data && data[0] && data[0].respuesta) ? data[0].respuesta : 'Se solicito el reenvio.';
+            $.alert(texto);
+            pintarOfertasCliente(idCliente);
+        },
+        error: function () {
+            $.alert('No se pudo solicitar el reenvio del correo.');
+        }
+    });
 }
