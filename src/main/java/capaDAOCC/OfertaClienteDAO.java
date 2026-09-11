@@ -751,6 +751,11 @@ public class OfertaClienteDAO {
 	 */
 	public static class DatosCorreoOferta {
 		public String nombreCliente = "";
+		/* Nombre y apellido tambien por separado, porque los mensajes de la oferta
+		 * traen los comodines #NOMBRECLIENTE y #APELLIDOCLIENTE y hay que poder
+		 * reemplazar cada uno por lo suyo. */
+		public String soloNombre = "";
+		public String soloApellido = "";
 		public String correoCliente = "";
 		public String politicaDatos = "N";
 		public int idCliente = 0;
@@ -830,6 +835,8 @@ public class OfertaClienteDAO {
 					String nombre = OfertaClienteDAO.textoSeguro(rs.getString("nombre"));
 					String apellido = OfertaClienteDAO.textoSeguro(rs.getString("apellido"));
 					datos.nombreCliente = (nombre + " " + apellido).trim();
+					datos.soloNombre = nombre;
+					datos.soloApellido = apellido;
 					datos.correoCliente = OfertaClienteDAO.textoSeguro(rs.getString("email"));
 					datos.politicaDatos = OfertaClienteDAO.textoSeguro(rs.getString("politica_datos"));
 					datos.idCliente = rs.getInt("idcliente");

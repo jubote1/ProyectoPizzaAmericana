@@ -55,112 +55,173 @@
 
 			    	$('#usuariologin').html(usuario);
 		</script>
+		<style>
+			/* Mismo lenguaje visual de la pantalla de Ofertas, para que las dos se
+			   lean como parte del mismo sistema. */
+			.bloque-crm { border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 14px; background: #fff; }
+			.bloque-crm > h5 {
+				margin: 0; padding: 9px 14px; background: #f5f7fa; border-bottom: 1px solid #e6e9ef;
+				font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+				color: #465067; border-radius: 6px 6px 0 0;
+			}
+			.bloque-crm > .interior { padding: 13px 14px 4px; }
+			.bloque-crm label { font-size: 11px; font-weight: 700; color: #6c7482; text-transform: uppercase; margin-bottom: 3px; }
+			.bloque-crm .marca label { text-transform: none; font-weight: 400; font-size: 13px; color: #35405a; }
+			.nota-crm { font-size: 12px; color: #6c7482; margin: 2px 0 10px; }
+			#map { border: 1px solid #dee2e6; border-radius: 6px; }
+			.barra-crm { margin: 4px 0 14px; }
+		</style>
 
-		<div class="container">
+		<div class="container-fluid">
 			<form id="cliente">
-				<h1><center>Administración de Clientes</center></h1>
-				
-					<table class="table table-bordered">
-						<tbody>
-								<tr>
-										
-										<td class="active">Creación Ligera de Cliente</td>
-										<td><input name="creacionligera" id="creacionligera" type="checkbox"/></td>
-								</tr>
-								<tr>
-										<td class="active">Teléfono</td>
-										<td id="encTelefono"><input type="text" id="telefono" name="telefono" class="form-control" placeholder="Telefono" onchange="validarTelefono();" maxlength="10"></td>
-								</tr>
-								<tr>
-										<td class="active">Teléfono Celular
-										<input type="text" id="telcelular" name="telcelular" class="form-control" placeholder="Teléfono Celular" maxlength="10"></td>
-										<td class="active">Acepta Política Datos
-										<input name="politicadatos" id="politicadatos" type="checkbox" /></td>
-								</tr>
-								<tr>
-										<td class="active">Email</td>
-										<td id="encEmail"><input type="text" id="email" name="email" class="form-control" placeholder="Email" maxlength="50"></td>
-								</tr>
-								<tr>
-										<td class="active">Nombres</td>
-										<td id="encNombres"><input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres" maxlength="20"></td>
-								</tr>
-								<tr>
-										<td class="active">Apellidos</td>
-										<td id="encApellidos"><input type="text" id="apellidos" name="apellidos" class="form-control" placeholder="Apellidos" maxlength="20"></td>
-								</tr>
-								<tr>
-										<td class="active">Nombre Compañia</td>
-										<td id="encNombreCompania"><input type="text" id="nombreCompania" name="nombreCompania" class="form-control" placeholder="Nombre Compañia" maxlength="50"></td>
-								</tr>
-								<tr>
-										<td class="active">Dirección</td>
-										<td id="encDireccion">
-										
-											<div class="col-md-6"> 
-												<input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion" maxlength="30">
-											</div>
-											<div class="col-md-2">
-												<label><input type="checkbox" id="validaDir" value="siValidaDir" checked> Validar Direccion </label>
-											</div>
-										
-										</td>
-								</tr>
-								<tr>
-										<td class="active">Dirección </td>
-										<td id="encDireccion1">
-										<div class="container-fluid">
-										<div class="row">
-											<div class="col-md-2 col-md-offset-0 col-lg-2 col-lg-offset-0"> 
-												<select id="selectNomenclaturas" class="form-control input-md" onchange="descripcionDireccion()"></select>
-											</div>
-											<div class="col-md-2 col-md-offset-0 col-lg-2 col-lg-offset-0"> 
-												<input type="text" id="numNomen" name="numNomen" class="form-control" placeholder="Número Nomenclatura" maxlength="10" onchange="descripcionDireccion()">
-											</div>
-											<div class="col-md-1 col-md-offset-0 col-lg-1 col-lg-offset-0">
-												<label>#</label>
-											</div>
-											<div class="col-md-2 col-md-offset-0 col-lg-2 col-lg-offset-0"> 
-												<input type="text" id="numNomen2" name="numNomen2" class="form-control" placeholder="Número Nomenclatura" maxlength="10" onchange="descripcionDireccion()">
-											</div>
-											<div class="col-md-1">
-												<label>-</label>
-											</div>
-											<div class="col-md-2 col-md-offset-0 col-lg-2 col-lg-offset-0"> 
-												<input type="text" id="num3" name="num3" class="form-control" placeholder="Número" maxlength="10" onchange="descripcionDireccion()">
-											</div>
-											<div class="col-md-2"> 
-												<select id="selectMunicipio" class="form-control" onchange="descripcionDireccion()"></select>
-											</div>
-											<div class="col-md-2">
-												<button type="button" class="btn btn-default btn-sm" id="buscarmapa">Buscar</button>
-												<span id="loaderCobertura" style="display:none;margin-left:8px;font-size:12px;color:#6c7482;">validando...</span>
-											</div>
-											<div class="col-md-6 col-md-offset-0 col-lg-6 col-lg-offset-0"> 
-												<input type="text" id="descDireccion" name="descDireccion" class="form-control" placeholder="Descripción Dirección" maxlength="10">
+				<div class="row" style="margin-top:14px;">
+					<div class="col-md-8">
+						<h3 style="color:#102F6F;margin-bottom:2px;">Administraci&oacute;n de Clientes</h3>
+						<p class="nota-crm">
+							Los datos del cliente, su direcci&oacute;n verificada en el mapa y el historial de
+							ofertas que se le han dado.
+						</p>
+					</div>
+					<div class="col-md-4 barra-crm" style="text-align:right;padding-top:18px;">
+						<input type="button" class="btn btn-danger btn-sm" id="limpiar" name="limpiar" value="Limpiar selecci&oacute;n" onclick="limpiarSeleccionCliente()"/>
+						<input type="button" class="btn btn-secondary btn-sm" id="ultimospedidos" name="ultimospedidos" value="&Uacute;ltimos pedidos" onclick="consultarUltimosPedidos()"/>
+						<input type="button" class="btn btn-primary btn-sm" style="background-color:#102F6F;border-color:#102F6F;" id="actualizarcliente" name="actualizarcliente" value="Guardar cliente" onclick="actualizarCliente()"/>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-md-7">
+						<div class="bloque-crm">
+							<h5>1 &middot; Qui&eacute;n es</h5>
+							<div class="interior">
+								<div class="form-row">
+									<div class="form-group col-md-6" id="encTelefono">
+										<label for="telefono">Tel&eacute;fono</label>
+										<input type="text" id="telefono" name="telefono" class="form-control" placeholder="Telefono" onchange="validarTelefono();" maxlength="10">
+									</div>
+									<div class="form-group col-md-6">
+										<label for="telcelular">Tel&eacute;fono celular</label>
+										<input type="text" id="telcelular" name="telcelular" class="form-control" placeholder="Tel&eacute;fono Celular" maxlength="10">
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-6" id="encNombres">
+										<label for="nombres">Nombres</label>
+										<input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres" maxlength="20">
+									</div>
+									<div class="form-group col-md-6" id="encApellidos">
+										<label for="apellidos">Apellidos</label>
+										<input type="text" id="apellidos" name="apellidos" class="form-control" placeholder="Apellidos" maxlength="20">
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-7" id="encEmail">
+										<label for="email">Email</label>
+										<input type="text" id="email" name="email" class="form-control" placeholder="Email" maxlength="50">
+									</div>
+									<div class="form-group col-md-5" id="encNombreCompania">
+										<label for="nombreCompania">Nombre compa&ntilde;&iacute;a</label>
+										<input type="text" id="nombreCompania" name="nombreCompania" class="form-control" placeholder="Nombre Compa&ntilde;ia" maxlength="50">
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-5">
+										<label for="selectTiendas">Tienda</label>
+										<select id="selectTiendas" class="form-control"></select>
+									</div>
+									<div class="form-group col-md-7 marca" style="padding-top:18px;">
+										<!-- La politica de datos queda junto al correo y no perdida en una
+										     fila aparte: es la casilla que decide si al cliente se le
+										     puede escribir. -->
+										<label><input name="politicadatos" id="politicadatos" type="checkbox" /> Acepta pol&iacute;tica de datos</label><br>
+										<label><input name="creacionligera" id="creacionligera" type="checkbox"/> Creaci&oacute;n ligera de cliente</label>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="bloque-crm">
+							<h5>2 &middot; D&oacute;nde vive</h5>
+							<div class="interior">
+								<p class="nota-crm">
+									Arme la direcci&oacute;n con la nomenclatura y toque <b>Buscar</b>: el sistema
+									valida si queda en cobertura y de qu&eacute; tienda es.
+								</p>
+								<div class="form-row" id="encDireccion1">
+									<div class="form-group col-md-3">
+										<label for="selectNomenclaturas">V&iacute;a</label>
+										<select id="selectNomenclaturas" class="form-control input-md" onchange="descripcionDireccion()"></select>
+									</div>
+									<div class="form-group col-md-3">
+										<label for="numNomen">N&uacute;mero</label>
+										<input type="text" id="numNomen" name="numNomen" class="form-control" placeholder="N&uacute;mero" maxlength="10" onchange="descripcionDireccion()">
+									</div>
+									<div class="form-group col-md-3">
+										<label for="numNomen2"># N&uacute;mero</label>
+										<input type="text" id="numNomen2" name="numNomen2" class="form-control" placeholder="N&uacute;mero" maxlength="10" onchange="descripcionDireccion()">
+									</div>
+									<div class="form-group col-md-3">
+										<label for="num3">- N&uacute;mero</label>
+										<input type="text" id="num3" name="num3" class="form-control" placeholder="N&uacute;mero" maxlength="10" onchange="descripcionDireccion()">
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-4">
+										<label for="selectMunicipio">Municipio</label>
+										<select id="selectMunicipio" class="form-control" onchange="descripcionDireccion()"></select>
+									</div>
+									<div class="form-group col-md-8">
+										<label for="descDireccion">Direcci&oacute;n armada</label>
+										<div class="input-group">
+											<input type="text" id="descDireccion" name="descDireccion" class="form-control" placeholder="Descripci&oacute;n Direcci&oacute;n" maxlength="10">
+											<div class="input-group-append">
+												<button type="button" class="btn btn-secondary" id="buscarmapa">Buscar</button>
 											</div>
 										</div>
-										</div>
-										</td>
-								</tr>
-								<tr>
-										<td class="active">Complemento Dirección</td>
-										<td id="encZona"><input type="text" id="zona" name="zona" class="form-control" placeholder="Zona" maxlength="30"></td>
-								</tr>
-								<tr>
-										<td class="active">Observacion</td>
-										<td id="encObservacion"><input type="text" id="observacionDir" name="observacionDir" class="form-control" placeholder="Observacion"></td>
-								</tr>
-								<tr>
-										<td class="active">Tienda</td>
-										<td><select id="selectTiendas" class="form-control"></select></td>
-								</tr>
-							
+										<span id="loaderCobertura" style="display:none;font-size:12px;color:#6c7482;">validando...</span>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-8" id="encDireccion">
+										<label for="direccion">Direcci&oacute;n en texto <span style="text-transform:none;font-weight:400;">&mdash; el esquema viejo</span></label>
+										<input type="text" id="direccion" name="direccion" class="form-control" placeholder="Direccion" maxlength="30">
+									</div>
+									<div class="form-group col-md-4 marca" style="padding-top:18px;">
+										<label><input type="checkbox" id="validaDir" value="siValidaDir" checked> Validar direcci&oacute;n</label>
+									</div>
+								</div>
+								<div class="form-row">
+									<div class="form-group col-md-5" id="encZona">
+										<label for="zona">Complemento</label>
+										<input type="text" id="zona" name="zona" class="form-control" placeholder="Zona" maxlength="30">
+									</div>
+									<div class="form-group col-md-7" id="encObservacion">
+										<label for="observacionDir">Observaci&oacute;n</label>
+										<input type="text" id="observacionDir" name="observacionDir" class="form-control" placeholder="Observacion">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 
-
-							
-						</tbody>
-					</table>
+					<div class="col-md-5">
+						<div class="bloque-crm">
+							<h5>3 &middot; La direcci&oacute;n en el mapa</h5>
+							<div class="interior">
+								<!-- Verificar la direccion que el central ya tiene guardada del cliente, sin
+								     depender de lo que este escrito en los campos de arriba. -->
+								<p class="nota-crm">
+									<button type="button" class="btn btn-secondary btn-sm" onclick="ubicarClienteEnMapa()">Ver la direcci&oacute;n guardada del cliente</button>
+								</p>
+								<!-- El mapa es el de ArcGIS, el mismo de la pantalla de pedidos. arcgis.js espera
+								     que el contenedor se llame "map", y lee los mismos campos que ya tiene esta
+								     pantalla: #direccion, #descDireccion y #validaDir. -->
+								<div id="map" style="width:100%; height:430px; text-align:center; margin-bottom:12px;">
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 							<!-- ESTO ES PARA LA VISUALIZACIÓN DE ÚLTIMOS PEDIDOS -->
 							
 								
@@ -322,10 +383,9 @@
 
 
 					
-					<input type="button" class="btn btn-danger btn-sm" id="limpiar" name="limpiar" value="Limpiar Selección Cliente" onclick="limpiarSeleccionCliente()"/>
-					<input type="button" class="btn btn-primary btn-sm" id="ultimospedidos" name="ultimospedidos" value="Últimos Pedidos" onclick="consultarUltimosPedidos()"/>
-					<input type="button" class="btn btn-primary btn-sm" id="actualizarcliente" name="actualizarcliente" value="Actualizar/Crear Cliente" onclick="actualizarCliente()"/>
 
+					<h5 style="color:#102F6F;font-size:14px;font-weight:700;margin-top:6px;">Clientes encontrados</h5>
+					<p class="nota-crm">Toque una fila para traer sus datos a los bloques de arriba.</p>
 					<table id="grid-clientes" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
 									        <thead>
 									            <tr>
@@ -358,20 +418,13 @@
 									      			
 									      	</tbody>
 					</table>
-				<!-- Verificar la direccion que el central ya tiene guardada del cliente, sin
-				     depender de lo que este escrito en los campos de arriba. -->
-				<p style="margin-top:8px;">
-					<button type="button" class="btn btn-default btn-sm" onclick="ubicarClienteEnMapa()">Ver en el mapa la direcci&oacute;n guardada del cliente</button>
+				<h5 style="color:#102F6F;font-size:14px;font-weight:700;margin-top:18px;">Ofertas de este cliente</h5>
+				<p class="nota-crm">
+					Todas las que se le han asignado, incluidas las de ofertas ya deshabilitadas. La
+					columna <b>Aviso al cliente</b> dice si se le mand&oacute; el correo con el c&oacute;digo, y deja
+					reenviarlo.
 				</p>
-				<!-- El mapa es el de ArcGIS, el mismo de la pantalla de pedidos. arcgis.js espera
-				     que el contenedor se llame "map", y lee los mismos campos que ya tiene esta
-				     pantalla: #direccion, #descDireccion y #validaDir. -->
-				<div class="container" id="map" style="width:900px; height:450px; text-align:center">
-				
-				</div>
-
-				<p></p>
-				<button class="btn btn-primary" type="button" id="agregarOferta" name="agregarOferta" data-toggle="modal" data-target="#addData">Crear Nueva Oferta para el Cliente</button>
+				<button class="btn btn-primary" type="button" style="background-color:#102F6F;border-color:#102F6F;" id="agregarOferta" name="agregarOferta" data-toggle="modal" data-target="#addData">Crear nueva oferta para el cliente</button>
 					
 					<table id="grid-ofertascliente" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
 									        <thead>
