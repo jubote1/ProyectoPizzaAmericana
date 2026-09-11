@@ -56,81 +56,243 @@
 			    	$('#usuariologin').html(usuario);
 		</script>
 
-	<div class="container">
-		<p></p>
-		<button class="btn btn-primary" data-toggle="modal" data-target="#addData">Crear Nueva Oferta</button>
-			
+		<style>
+			.bloque-oferta { border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 14px; background: #fff; }
+			.bloque-oferta > h5 {
+				margin: 0; padding: 9px 14px; background: #f5f7fa; border-bottom: 1px solid #e6e9ef;
+				font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+				color: #465067; border-radius: 6px 6px 0 0;
+			}
+			.bloque-oferta > .interior { padding: 13px 14px 4px; }
+			.bloque-oferta label { font-size: 11px; font-weight: 700; color: #6c7482; text-transform: uppercase; margin-bottom: 3px; }
+			.resumen-oferta { border: 1px solid #b9c6e4; border-radius: 6px; background: #fff; margin-bottom: 14px; }
+			.resumen-oferta > h5 { background: #edf1fa; color: #102F6F; }
+			.resumen-oferta .interior { font-size: 13.5px; color: #35405a; line-height: 1.6; }
+			.aviso-oferta { border: 1px solid #f0ce55; border-radius: 6px; background: #fff9e8; padding: 11px 14px; font-size: 12.5px; color: #7a5a00; margin-bottom: 14px; }
+			.sello-of { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 700; }
+			.sello-of.si { background: #e4f1eb; color: #14714e; }
+			.sello-of.no { background: #f1f2f4; color: #6c7482; }
+			#grid-oferta { font-size: 12.5px; }
+		</style>
 
-			<!-- ESTO ES PARA LA ADICIÓN -->
-		<div class="modal fade" id="addData" tabindex="-1" role="dialog" aria-labelledby="addLabel">
-			 <div class="modal-dialog" role="document">
-			    <div class="modal-content">
-			      <div class="modal-header">
-			        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-			        <h4 class="modal-title" id="addLabel">Insertar Información</h4>
-			      </div>
-			      <form>
-				      <div class="modal-body">
-				       		 <div class="form-group">
-							    <label for="labelNombre">Nombre Oferta</label>
-							    <input type="text" class="form-control" id="nombre" placeholder="Nombre Oferta">
-							  </div>
-							 <div class="form-group">
-							    <label for="labelExcepcion">Excepción de Precio</label>
-							    <select id="selectExcepcion" class="form-control"> </select>
-							 </div>
+		<div class="container-fluid">
+			<div class="row" style="margin-top:14px;">
+				<div class="col-md-8">
+					<h3 style="color:#102F6F;margin-bottom:2px;">Ofertas</h3>
+					<p style="font-size:13px;color:#6c7482;margin-bottom:10px;">
+						Aqu&iacute; se define la oferta completa. Antes solo se pod&iacute;an poner el nombre y la
+						excepci&oacute;n de precio, y el resto tocaba dejarlo en la base de datos; ahora entra todo
+						desde esta pantalla.
+					</p>
+				</div>
+				<div class="col-md-4" style="text-align:right;padding-top:22px;">
+					<button type="button" class="btn btn-secondary btn-sm" onclick="limpiarOferta()">Nueva oferta</button>
+					<button type="button" class="btn btn-primary btn-sm" style="background-color:#102F6F;border-color:#102F6F;" onclick="guardarOferta()">Guardar oferta</button>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-8">
+					<input type="hidden" id="idoferta" value="0" />
+
+					<div class="bloque-oferta">
+						<h5>1 &middot; Identificaci&oacute;n</h5>
+						<div class="interior">
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label for="nombre">Nombre de la oferta</label>
+									<input type="text" class="form-control" id="nombre" maxlength="100" placeholder="Como la van a reconocer en la operaci&oacute;n" />
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-6">
+									<label for="selectExcepcion">Excepci&oacute;n de precio</label>
+									<select id="selectExcepcion" class="form-control"></select>
+								</div>
+								<div class="form-group col-md-3">
+									<label for="tipooferta">Tipo de oferta</label>
+									<select id="tipooferta" class="form-control">
+										<option value="C">Cliente</option>
+										<option value="G">General</option>
+									</select>
+								</div>
+								<div class="form-group col-md-3">
+									<label for="habilitado">Habilitada</label>
+									<select id="habilitado" class="form-control">
+										<option value="S">S&iacute;, se puede asignar</option>
+										<option value="N">No</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-6">
+									<label for="contact">Solo contact center</label>
+									<select id="contact" class="form-control">
+										<option value="N">No, cualquiera la asigna</option>
+										<option value="S">S&iacute;, solo el contact center</option>
+									</select>
+								</div>
+							</div>
 						</div>
-					      <div class="modal-footer">
-					        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
-					        <button type="button" onClick="guardarOferta()" class="btn btn-primary">Guardar Cambios</button>
-					      </div>
-			      </form>
-			    </div>
+					</div>
+
+					<div class="bloque-oferta">
+						<h5>2 &middot; Qu&eacute; descuenta</h5>
+						<div class="interior">
+							<div class="form-row">
+								<div class="form-group col-md-4">
+									<label for="descuentofijovalor">Valor fijo</label>
+									<input type="number" min="0" step="100" class="form-control" id="descuentofijovalor" value="0" />
+								</div>
+								<div class="form-group col-md-4">
+									<label for="descuentofijoporcentaje">Porcentaje</label>
+									<input type="number" min="0" max="100" class="form-control" id="descuentofijoporcentaje" value="0" />
+								</div>
+								<div class="form-group col-md-4">
+									<label for="descuentoporcentajefuturo">Porcentaje a futuro</label>
+									<input type="number" min="0" max="100" class="form-control" id="descuentoporcentajefuturo" value="0" />
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-4">
+									<label for="codigopromocional">C&oacute;digo promocional</label>
+									<select id="codigopromocional" class="form-control">
+										<option value="S">S&iacute;, uno por cliente</option>
+										<option value="N">No</option>
+									</select>
+								</div>
+								<div class="form-group col-md-4">
+									<label for="redparcial">Redenci&oacute;n parcial</label>
+									<select id="redparcial" class="form-control">
+										<option value="N">No</option>
+										<option value="S">S&iacute;, deja saldo</option>
+									</select>
+								</div>
+								<div class="form-group col-md-4">
+									<label for="reintegro">Reintegro</label>
+									<select id="reintegro" class="form-control">
+										<option value="N">No</option>
+										<option value="S">S&iacute;</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label for="codigogeneral">C&oacute;digo general <span style="text-transform:none;font-weight:400;">&mdash; solo si no genera uno por cliente</span></label>
+									<input type="text" class="form-control" id="codigogeneral" maxlength="20" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="bloque-oferta">
+						<h5>3 &middot; Cu&aacute;ndo vale</h5>
+						<div class="interior">
+							<div class="form-row">
+								<div class="form-group col-md-4">
+									<label for="fechadesde">Vigente desde</label>
+									<input type="date" class="form-control" id="fechadesde" />
+								</div>
+								<div class="form-group col-md-4">
+									<label for="fechahasta">Vigente hasta</label>
+									<input type="date" class="form-control" id="fechahasta" />
+								</div>
+								<div class="form-group col-md-4">
+									<label for="diascaducidad">D&iacute;as de caducidad</label>
+									<input type="number" min="0" class="form-control" id="diascaducidad" value="0" />
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-4">
+									<label for="tipocaducidad">Tipo de caducidad</label>
+									<select id="tipocaducidad" class="form-control">
+										<option value="P">Por d&iacute;as</option>
+										<option value="F">Fecha fija</option>
+									</select>
+								</div>
+								<div class="form-group col-md-3">
+									<label for="controlahora">Controla hora</label>
+									<select id="controlahora" class="form-control">
+										<option value="N">No</option>
+										<option value="S">S&iacute;</option>
+									</select>
+								</div>
+								<div class="form-group col-md-2">
+									<label for="horainicio">Desde (h)</label>
+									<input type="number" min="0" max="23" class="form-control" id="horainicio" value="0" />
+								</div>
+								<div class="form-group col-md-2">
+									<label for="horafin">Hasta (h)</label>
+									<input type="number" min="0" max="23" class="form-control" id="horafin" value="0" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="bloque-oferta">
+						<h5>4 &middot; Qu&eacute; se le dice al cliente</h5>
+						<div class="interior">
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label for="mensaje1">Mensaje principal <span style="text-transform:none;font-weight:400;">&mdash; es el titular del correo</span></label>
+									<input type="text" class="form-control" id="mensaje1" maxlength="500" />
+								</div>
+							</div>
+							<div class="form-row">
+								<div class="form-group col-md-12">
+									<label for="mensaje2">Mensaje secundario <span style="text-transform:none;font-weight:400;">&mdash; es la letra menuda</span></label>
+									<input type="text" class="form-control" id="mensaje2" maxlength="500" />
+								</div>
+							</div>
+							<p style="font-size:12px;color:#6c7482;">
+								Estos dos son los que arman el correo que se le manda al cliente cuando se le asigna
+								la oferta.
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-4">
+					<div class="bloque-oferta resumen-oferta">
+						<h5>As&iacute; queda la oferta</h5>
+						<div class="interior" id="resumenOferta" style="padding:13px 14px;">
+							Llene los campos y aqu&iacute; va a ver la oferta explicada en palabras.
+						</div>
+					</div>
+					<div id="avisosOferta"></div>
+					<div class="bloque-oferta">
+						<h5>C&oacute;mo va</h5>
+						<div class="interior" id="comoVaOferta" style="padding:13px 14px;font-size:13px;color:#6c7482;">
+							Escoja una oferta de la lista para ver c&oacute;mo viene funcionando.
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row" style="margin-top:8px;">
+				<div class="col-md-12">
+					<h5 style="color:#102F6F;font-size:14px;font-weight:700;">Ofertas creadas</h5>
+					<table id="grid-oferta" class="table table-condensed table-hover table-striped table-bordered" cellspacing="0" width="100%">
+						<thead>
+							<tr>
+								<th>Id</th>
+								<th>Nombre</th>
+								<th>Excepci&oacute;n</th>
+								<th>Descuento</th>
+								<th>Caducidad</th>
+								<th>Horario</th>
+								<th>Habilitada</th>
+								<th>Asignadas</th>
+								<th>Usadas</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
 			</div>
 		</div>
-
-<!-- ESTO ES PARA LA EDICIÓN -->
-<form id="userForm" method="get" class="form-horizontal" style="display: none;">
-    <div class="form-group">
-        <label class="col-xs-3 control-label">Id Oferta</label>
-        <div class="col-xs-3">
-            <input type="text" class="form-control" name="idofertaedit" disabled="disabled" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label class="col-xs-3 control-label">Nombre Oferta</label>
-        <div class="col-xs-5">
-            <input type="text" class="form-control" name="nombreedit" />
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label class="col-xs-3 control-label">Excepcion Precio</label>
-        <div class="col-xs-5">
-         	<select id="selectExcepcionedit" class="form-control"></select>
-        </div>
-    </div>
-       <div class="form-group">
-        <div class="col-xs-5 col-xs-offset-3">
-            <button type="submit" onClick="confirmarEditarOferta()" class="btn btn-default">Guardar</button>
-        </div>
-    </div>
-</form>
-
-		<table id="grid-oferta" class="table table-condensed table-hover table-striped table-bordered" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="idoferta">Id Oferta</th>
-								                <th data-column-id="nombre">Nombre Oferta</th>
-								                <th data-column-id="idexcepcion">Id Excepcion</th>
-								                <th data-column-id="nombreexcepcion">Nombre Excepcion</th>
-								                <th width="120">Editar/Eliminar</th>
-								            </tr>
-								        </thead>
-								      	
-								</table>
-	</div>
 	</body>
-			<script src="js/oferta.js" type="text/javascript"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
-	</html>
+	<script src="js/oferta.js" type="text/javascript"></script>
+	<script src="js/jquery-confirm.min.js"></script>
+</html>

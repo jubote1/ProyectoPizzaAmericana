@@ -51,26 +51,17 @@ public class CRUDOferta extends HttpServlet {
 		}
 		if (operacion ==1)
 		{
-			String nombreOferta = request.getParameter("nombreoferta");
-			int idExcepcion = 0;
-			try{
-				idExcepcion = Integer.parseInt(request.getParameter("idexcepcion"));
-			}catch(Exception e){
-				idExcepcion = 0;
-			}
-			Oferta ofer = new Oferta(0,nombreOferta, idExcepcion);
+			Oferta ofer = CRUDOferta.leerOferta(request, 0);
 			respuesta = PromoCtrl.insertarOferta(ofer);
 		}else if (operacion ==2)
 		{
-			int idOferta = Integer.parseInt(request.getParameter("idoferta"));
-			String nombreOferta = request.getParameter("nombreoferta");
-			int idExcepcion = 0;
+			int idOferta = 0;
 			try{
-				idExcepcion = Integer.parseInt(request.getParameter("idexcepcion"));
+				idOferta = Integer.parseInt(request.getParameter("idoferta"));
 			}catch(Exception e){
-				idExcepcion = 0;
+				idOferta = 0;
 			}
-			Oferta ofer = new Oferta(idOferta,nombreOferta, idExcepcion);
+			Oferta ofer = CRUDOferta.leerOferta(request, idOferta);
 			respuesta = PromoCtrl.editarOferta(ofer);
 		}else if (operacion ==3 )
 		{
@@ -89,6 +80,11 @@ public class CRUDOferta extends HttpServlet {
 		}else if(operacion == 7)
 		{
 			respuesta = PromoCtrl.obtenerOfertasGridContact();
+		}else if(operacion == 8)
+		{
+			//La pantalla de administracion: TODAS las ofertas, tambien las
+			//deshabilitadas, porque para volver a habilitar una hay que verla.
+			respuesta = PromoCtrl.obtenerOfertasAdministracion();
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();
@@ -103,4 +99,74 @@ public class CRUDOferta extends HttpServlet {
 		doGet(request, response);
 	}
 
+
+	/**
+	 * Arma la oferta con TODO lo que mando la pantalla.
+	 *
+	 * Antes el servlet solo leia el nombre y la excepcion de precio; los otros
+	 * veintiun parametros de la tabla oferta tocaba ponerlos a mano en la base de
+	 * datos. Este metodo los lee todos, y lo usan por igual el crear y el editar
+	 * para que no se puedan desincronizar.
+	 *
+	 * Lo que no venga se queda en el valor por defecto que el DAO le ponga; no se
+	 * inventa nada aca.
+	 */
+	private static Oferta leerOferta(HttpServletRequest request, int idOferta)
+	{
+		Oferta ofer = new Oferta(idOferta, CRUDOferta.texto(request, "nombreoferta"),
+				CRUDOferta.entero(request, "idexcepcion"));
+		ofer.setCodigoPromocional(CRUDOferta.texto(request, "codigopromocional"));
+		ofer.setDescuentoFijoPorcentaje(CRUDOferta.decimal(request, "descuentofijoporcentaje"));
+		ofer.setDescuentoPorcentajeFuturo(CRUDOferta.decimal(request, "descuentoporcentajefuturo"));
+		ofer.setDescuentoFijoValor(CRUDOferta.decimal(request, "descuentofijovalor"));
+		ofer.setMensaje1(CRUDOferta.texto(request, "mensaje1"));
+		ofer.setMensaje2(CRUDOferta.texto(request, "mensaje2"));
+		ofer.setDiasCaducidad(CRUDOferta.entero(request, "diascaducidad"));
+		ofer.setTipoCaducidad(CRUDOferta.texto(request, "tipocaducidad"));
+		ofer.setControlaHora(CRUDOferta.texto(request, "controlahora"));
+		ofer.setHoraInicio(CRUDOferta.texto(request, "horainicio"));
+		ofer.setHoraFin(CRUDOferta.texto(request, "horafin"));
+		ofer.setTipoOferta(CRUDOferta.texto(request, "tipooferta"));
+		ofer.setFechaDesde(CRUDOferta.texto(request, "fechadesde"));
+		ofer.setFechaHasta(CRUDOferta.texto(request, "fechahasta"));
+		ofer.setCodigoGeneral(CRUDOferta.texto(request, "codigogeneral"));
+		ofer.setContact(CRUDOferta.texto(request, "contact"));
+		ofer.setRedParcial(CRUDOferta.texto(request, "redparcial"));
+		ofer.setReintegro(CRUDOferta.texto(request, "reintegro"));
+		ofer.setHabilitado(CRUDOferta.texto(request, "habilitado"));
+		return (ofer);
+	}
+
+	/** Un parametro de texto, nunca nulo. */
+	private static String texto(HttpServletRequest request, String nombre)
+	{
+		String valor = request.getParameter(nombre);
+		return ((valor == null) ? "" : valor.trim());
+	}
+
+	/** Un parametro entero; 0 si no vino o no es un numero. */
+	private static int entero(HttpServletRequest request, String nombre)
+	{
+		try
+		{
+			return (Integer.parseInt(CRUDOferta.texto(request, nombre)));
+		}
+		catch (Exception e)
+		{
+			return (0);
+		}
+	}
+
+	/** Un parametro con decimales; 0 si no vino o no es un numero. */
+	private static double decimal(HttpServletRequest request, String nombre)
+	{
+		try
+		{
+			return (Double.parseDouble(CRUDOferta.texto(request, nombre)));
+		}
+		catch (Exception e)
+		{
+			return (0);
+		}
+	}
 }

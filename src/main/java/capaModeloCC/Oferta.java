@@ -22,6 +22,14 @@ private String fechaHasta;
 private String codigoGeneral;
 private String redParcial;
 private String reintegro;
+/** S = la oferta solo se puede asignar desde el contact center. */
+private String contact;
+/** S = la oferta se puede seguir asignando. N = queda guardada pero no se usa. */
+private String habilitado;
+/** Cuantas veces se ha asignado. Solo para mostrar, no se guarda. */
+private int asignadas;
+/** De esas, cuantas se usaron. Solo para mostrar. */
+private int usadas;
 
 
 public double getDescuentoPorcentajeFuturo() {
@@ -171,4 +179,28 @@ public Oferta(int idOferta, String controlaHora, String horaInicio, String horaF
 
 
 	
+public String getContact() {
+	return contact;
+}
+public void setContact(String contact) {
+	this.contact = contact;
+}
+public String getHabilitado() {
+	return habilitado;
+}
+public void setHabilitado(String habilitado) {
+	this.habilitado = habilitado;
+}
+public int getAsignadas() {
+	return asignadas;
+}
+public void setAsignadas(int asignadas) {
+	this.asignadas = asignadas;
+}
+public int getUsadas() {
+	return usadas;
+}
+public void setUsadas(int usadas) {
+	this.usadas = usadas;
+}
 }
