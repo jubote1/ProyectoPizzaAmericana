@@ -6944,7 +6944,7 @@ function mostrarAvisoPuntos(correo) {
         return;
     }
     $.ajax({
-        url: server + 'Fidelizacion?idoperacion=4&correo=' + encodeURIComponent(correo),
+        url: server + 'ServiciosClienteFidelizacion?idoperacion=10&correo=' + encodeURIComponent(correo),
         dataType: 'json',
         success: function (r) {
             if (!r || !r.respuesta) {

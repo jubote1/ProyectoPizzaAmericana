@@ -113,6 +113,12 @@ public class ServiciosClienteFidelizacion extends HttpServlet {
 		}else if(operacion == 9)//Validar si existe ClienteNoFidelizcion
 		{
 			respuesta = fideCtrl.validarExistenciaClienteNoFidelizacion(correo);
+		}else if(operacion == 10)//Puntos del cliente y cuales se le vencen pronto
+		{
+			//OJO con el numero: en este servlet la operacion 4 DESACTIVA al cliente del
+			//plan. En el servlet Fidelizacion -el publico, detras del filtro JWT- la 4 si
+			//es esta consulta. Son dos numeraciones distintas y no hay que mezclarlas.
+			respuesta = fideCtrl.ConsultarPuntosPorVencerWb(correo, 0);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();
