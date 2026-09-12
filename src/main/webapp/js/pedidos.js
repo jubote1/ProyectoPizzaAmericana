@@ -3172,7 +3172,7 @@ function ReiniciarPedido()
 																	$("#estadopedido").val('');
 																	$('#telefono').val('');
                                                                     $('#telcelular').val('');
-                                                                    .val('');
+                                                                    $('#email').val('');
                                                                     //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
                                                                     pintarAvisoFidelizacion('');
                                                                     $('#email').css("background-color","#FFFFFF");
@@ -3737,7 +3737,7 @@ function ConfirmarPedido()
 									$("#estadopedido").val('');
 									$('#telefono').val('');
                                     $('#telcelular').val('');
-                                    .val('');
+                                    $('#email').val('');
                                     //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
                                     pintarAvisoFidelizacion('');
                                     $('#email').css("background-color","#FFFFFF");
@@ -5554,7 +5554,7 @@ function limpiarSeleccionCliente()
 {
 		$('#telefono').val("");
         $('#telcelular').val('');
-        .val('');
+        $('#email').val('');
         //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
         pintarAvisoFidelizacion('');
         $('#email').css("background-color","#FFFFFF");
