@@ -97,6 +97,11 @@ public class Fidelizacion extends HttpServlet {
             case 2:
                 respuesta = fideCtrl.ConsultarClienteFidelizacionWb(correo);
                 break;
+            case 4:
+                //Los puntos del cliente y cuantos se le vencen pronto, para el aviso
+                //que se le muestra a quien lo atiende.
+                respuesta = fideCtrl.ConsultarPuntosPorVencerWb(correo, 0);
+                break;
             case 3:
                 respuesta = fideCtrl.activarClienteFidelizacion(correo);
                 break;

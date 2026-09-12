@@ -706,4 +706,51 @@ public class FidelizacionCtrl {
 		return(respuesta.toJSONString());
 	}
 	
+
+	/** Ventana por defecto del aviso de vencimiento, en dias. */
+	public static final int DIAS_AVISO_VENCIMIENTO = 60;
+
+	/**
+	 * El aviso de puntos para mostrarle a quien atiende al cliente.
+	 *
+	 * Es lo que responde la queja de los clientes: se enteran de que tenian
+	 * puntos cuando ya se les vencieron. Con esto, quien contesta el telefono o
+	 * atiende en caja lo ve al traer la ficha y se lo puede decir.
+	 *
+	 * Devuelve siempre respuesta = true si el cliente esta en el programa,
+	 * aunque no tenga nada por vencer: la pantalla decide si muestra el aviso o
+	 * no, y asi tambien puede mostrar el saldo a secas.
+	 */
+	public String ConsultarPuntosPorVencerWb(String correo, int dias) {
+		JSONObject respuesta = new JSONObject();
+		try {
+			if (correo == null || correo.trim().isEmpty()) {
+				respuesta.put("respuesta", false);
+				respuesta.put("mensaje", "sin_correo");
+				return respuesta.toJSONString();
+			}
+			ClienteFidelizacion clienteF = ClienteFidelizacionDAO.obtenerClienteFidelizacion(correo);
+			if (clienteF == null || !"S".equals(clienteF.getActivo())) {
+				//No esta en el programa o esta inactivo: no hay nada que avisar y
+				//la pantalla no debe mostrar banner.
+				respuesta.put("respuesta", false);
+				respuesta.put("mensaje", clienteF == null ? "no_registrado" : "no_activo");
+				return respuesta.toJSONString();
+			}
+			int ventana = (dias > 0 ? dias : DIAS_AVISO_VENCIMIENTO);
+			FidelizacionTransaccionDAO.ResumenPuntos resumen =
+					FidelizacionTransaccionDAO.obtenerResumenPuntos(correo, ventana);
+			respuesta.put("respuesta", true);
+			respuesta.put("mensaje", "registrado");
+			respuesta.put("puntos", resumen.puntosTotales);
+			respuesta.put("porvencer", resumen.puntosPorVencer);
+			respuesta.put("vence", resumen.fechaMasProxima);
+			respuesta.put("dias", ventana);
+		} catch (Exception e) {
+			respuesta.put("respuesta", false);
+			respuesta.put("mensaje", "error");
+			System.out.println("ConsultarPuntosPorVencerWb: " + e.toString());
+		}
+		return respuesta.toJSONString();
+	}
 }

@@ -406,7 +406,10 @@ $("#fechapedido").change(function(){
                         success: function(dataResp){ 
                             if(dataResp.respuesta)
                             {
-                                $.alert('El cliente ya existe en el programa de fidelizacion.');
+                                //La alerta decia solo que el cliente estaba en el programa, que no le sirve
+                                //a quien atiende. En su lugar se le muestran los puntos y cuales se
+                                //vencen pronto, que es lo que le puede decir al cliente.
+                                mostrarAvisoPuntos(datos.email);
                                 $('#email').css("background-color","#00FF00");
                             }else
                             {
@@ -6885,3 +6888,64 @@ function noDeseaFidelizacion()
 }
 
 $('#email').on('input', validate);
+
+/**
+ * Muestra los puntos del cliente y cuales se le vencen pronto.
+ *
+ * Los clientes se quejan de que se enteran de que tenian puntos cuando ya se
+ * les vencieron. Este aviso se lo pone delante a quien lo esta atendiendo, en
+ * el momento en que trae la ficha, que es cuando se lo puede decir.
+ *
+ * Va asincrono a proposito, al contrario de las otras llamadas de fidelizacion
+ * de esta pantalla: es informativo, y no tiene por que hacer esperar a quien
+ * esta tomando el pedido.
+ */
+function mostrarAvisoPuntos(correo) {
+    var aviso = $('#avisoPuntos');
+    aviso.hide();
+    if (!correo) {
+        return;
+    }
+    $.ajax({
+        url: server + 'Fidelizacion?idoperacion=4&correo=' + encodeURIComponent(correo),
+        dataType: 'json',
+        success: function (r) {
+            if (!r || !r.respuesta) {
+                return;
+            }
+            var puntos = Math.round(r.puntos || 0);
+            var porVencer = Math.round(r.porvencer || 0);
+            var dias = r.dias || 60;
+            if (puntos <= 0) {
+                return;
+            }
+            if (porVencer > 0) {
+                //Lo urgente primero: es lo que hay que alcanzar a decirle antes
+                //de que cuelgue.
+                aviso.text('Tiene ' + puntos + ' puntos, y ' + porVencer
+                        + ' se le vencen en los proximos ' + dias + ' dias'
+                        + (r.vence ? ' (desde el ' + fechaVenceLegible(r.vence) + ')' : ''));
+                aviso.css({ 'background-color': '#FDC806', 'color': '#3A2C00' });
+            } else {
+                aviso.text('Tiene ' + puntos + ' puntos disponibles');
+                aviso.css({ 'background-color': '#E4F1EB', 'color': '#14714E' });
+            }
+            aviso.show();
+        }
+    });
+}
+
+/** De "2026-11-20" saca "20 de noviembre". */
+function fechaVenceLegible(fecha) {
+    if (!fecha || fecha.length < 10) {
+        return '';
+    }
+    var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var mes = parseInt(fecha.substring(5, 7), 10);
+    var dia = parseInt(fecha.substring(8, 10), 10);
+    if (isNaN(mes) || isNaN(dia) || mes < 1 || mes > 12) {
+        return '';
+    }
+    return dia + ' de ' + meses[mes - 1];
+}
