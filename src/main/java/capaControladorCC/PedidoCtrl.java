@@ -11789,6 +11789,7 @@ public class PedidoCtrl {
 			pedResTemp.put("idcliente", pedTemp.getIdCliente());
 			pedResTemp.put("idformapago", pedTemp.getIdFormaPago());
 			pedResTemp.put("origen", pedTemp.getOrigen());
+			pedResTemp.put("codigoestado", pedTemp.getCodigoEstado());
 			pedResTemp.put("estado", pedTemp.getEstado());
 			pedResTemp.put("nivel", pedTemp.getNivel());
 			pedResTemp.put("eventos", pedTemp.getEventos());

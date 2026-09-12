@@ -36,6 +36,14 @@ public class PedidoMonitoreoPagoVirtual {
 	private int avisos;
 	/** Cuantas observaciones de gestion tiene el pedido. */
 	private int gestiones;
+	/**
+	 * El codigo del estado: no cambia con el caso, sirve para filtrar.
+	 *
+	 * El texto de abajo si cambia -"RECHAZADO 2 VECES", "SE VENCE EN 8 MIN"- porque
+	 * esta escrito para que lo lea una persona.
+	 */
+	private String codigoEstado = "";
+
 	/** El estado en palabras, ya resuelto: PAGADO, RECHAZADO, CANCELADO SIN PAGO... */
 	private String estado = "";
 	/** 1 pagado, 2 en tiempo, 3 paso el aviso, 4 por vencerse o rechazado, 5 perdido. */
@@ -63,6 +71,8 @@ public class PedidoMonitoreoPagoVirtual {
 	public void setAvisos(int avisos) { this.avisos = avisos; }
 	public int getGestiones() { return gestiones; }
 	public void setGestiones(int gestiones) { this.gestiones = gestiones; }
+	public String getCodigoEstado() { return codigoEstado; }
+	public void setCodigoEstado(String codigoEstado) { this.codigoEstado = codigoEstado; }
 	public String getEstado() { return estado; }
 	public void setEstado(String estado) { this.estado = estado; }
 	public int getNivel() { return nivel; }
