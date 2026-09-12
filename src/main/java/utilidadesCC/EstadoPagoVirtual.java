@@ -40,6 +40,26 @@ public final class EstadoPagoVirtual {
 	/** Cuantos minutos antes de la cancelacion se considera urgente. */
 	private static final int MINUTOS_ULTIMO_LLAMADO = 10;
 
+
+	/*
+	 * Los codigos de estado.
+	 *
+	 * Existen aparte del texto porque el texto cambia con el caso -"RECHAZADO 2
+	 * VECES", "SE VENCE EN 8 MIN"- y sobre algo asi no se puede filtrar. El codigo
+	 * es lo que viaja al filtro de la pantalla; el texto es lo que lee la persona.
+	 */
+	public static final String COD_PAGADO = "PAGADO";
+	public static final String COD_PAGADO_TRAS_CANCELAR = "PAGADO_TRAS_CANCELAR";
+	public static final String COD_CANCELADO_SIN_PAGO = "CANCELADO_SIN_PAGO";
+	public static final String COD_SIN_LINK = "SIN_LINK";
+	public static final String COD_RECHAZADO = "RECHAZADO";
+	public static final String COD_FALLA_PASARELA = "FALLA_PASARELA";
+	public static final String COD_EN_PROCESO = "EN_PROCESO";
+	public static final String COD_ESPERANDO = "ESPERANDO";
+	public static final String COD_RECORDADO = "RECORDADO";
+	public static final String COD_POR_VENCERSE = "POR_VENCERSE";
+	public static final String COD_VENCIDO = "VENCIDO";
+	public static final String COD_OTRO = "OTRO";
 	private EstadoPagoVirtual() {
 		super();
 	}
@@ -75,46 +95,72 @@ public final class EstadoPagoVirtual {
 			//El cliente pago despues de que se le cancelo el pedido. Es el caso mas
 			//delicado de todos: hay plata recibida y no hay pedido que entregar, y
 			//nadie se entera porque el pedido ya no sale en ninguna pantalla.
-			marcar(pedido, "PAGO DESPUES DE CANCELAR", NIVEL_URGENTE);
+			marcar(pedido, COD_PAGADO_TRAS_CANCELAR, "PAGO DESPUES DE CANCELAR", NIVEL_URGENTE);
 			return;
 		}
 		if (pago) {
-			marcar(pedido, "PAGADO", NIVEL_PAGADO);
+			marcar(pedido, COD_PAGADO, "PAGADO", NIVEL_PAGADO);
 			return;
 		}
 		if (cancelado) {
-			marcar(pedido, "CANCELADO SIN PAGO", NIVEL_PERDIDO);
+			marcar(pedido, COD_CANCELADO_SIN_PAGO, "CANCELADO SIN PAGO", NIVEL_PERDIDO);
 			return;
 		}
 		if (!tiene(pedido.getIdLink())) {
 			//Sin link el cliente no tiene por donde pagar. Le corre el reloj igual y
 			//se le va a cancelar sin haber tenido la oportunidad.
-			marcar(pedido, "SIN LINK DE PAGO", NIVEL_URGENTE);
+			marcar(pedido, COD_SIN_LINK, "SIN LINK DE PAGO", NIVEL_URGENTE);
 			return;
 		}
 		if ("DECLINED".equals(ultimo)) {
 			final int intentos = pedido.getRechazos();
-			marcar(pedido, intentos > 1 ? "RECHAZADO " + intentos + " VECES" : "PAGO RECHAZADO", NIVEL_URGENTE);
+			marcar(pedido, COD_RECHAZADO,
+					intentos > 1 ? "RECHAZADO " + intentos + " VECES" : "PAGO RECHAZADO", NIVEL_URGENTE);
 			return;
 		}
 		if ("VOIDED".equals(ultimo) || "ERROR".equals(ultimo)) {
-			marcar(pedido, "FALLA EN LA PASARELA", NIVEL_URGENTE);
+			marcar(pedido, COD_FALLA_PASARELA, "FALLA EN LA PASARELA", NIVEL_URGENTE);
 			return;
 		}
 		if ("PENDING".equals(ultimo)) {
 			//El cliente si esta intentando pagar: no es lo mismo que no hacer nada.
-			marcar(pedido, "PAGO EN PROCESO", NIVEL_AVISADO);
+			marcar(pedido, COD_EN_PROCESO, "PAGO EN PROCESO", NIVEL_AVISADO);
 			return;
 		}
 		if (pedido.getIdEstadoPedido() != PEDIDO_ESPERANDO_PAGO) {
 			//Ya no esta esperando el pago y no se pago ni se cancelo: es otro flujo.
 			//Se muestra lo que diga el catalogo en vez de inventarle un estado.
-			marcar(pedido, tiene(pedido.getEstadoPedido()) ? pedido.getEstadoPedido() : "OTRO ESTADO",
+			marcar(pedido, COD_OTRO,
+					tiene(pedido.getEstadoPedido()) ? pedido.getEstadoPedido() : "OTRO ESTADO",
 					NIVEL_EN_TIEMPO);
 			return;
 		}
-		marcar(pedido, textoEsperando(pedido, minutosCancela),
+		marcar(pedido, codigoEsperando(pedido, minutosAviso, minutosCancela),
+				textoEsperando(pedido, minutosCancela),
 				nivelEsperando(pedido, minutosAviso, minutosCancela));
+	}
+
+
+	/**
+	 * El codigo de los que siguen esperando el pago.
+	 *
+	 * Va aparte de textoEsperando porque el texto le dice a la persona cuantos
+	 * minutos faltan -"SE VENCE EN 8 MIN"- y eso cambia cada minuto. El codigo
+	 * tiene que quedarse quieto para que el filtro funcione.
+	 */
+	private static String codigoEsperando(final PedidoMonitoreoPagoVirtual pedido, final int aviso,
+			final int cancela) {
+		final int minutos = pedido.getMinutos();
+		if (minutos >= cancela) {
+			return (COD_VENCIDO);
+		}
+		if (minutos >= cancela - MINUTOS_ULTIMO_LLAMADO) {
+			return (COD_POR_VENCERSE);
+		}
+		if (pedido.getAvisos() > 1) {
+			return (COD_RECORDADO);
+		}
+		return (COD_ESPERANDO);
 	}
 
 	/** Para los que siguen esperando: que tan cerca estan de perderse. */
@@ -153,7 +199,9 @@ public final class EstadoPagoVirtual {
 		return ("ESPERANDO PAGO");
 	}
 
-	private static void marcar(final PedidoMonitoreoPagoVirtual pedido, final String estado, final int nivel) {
+	private static void marcar(final PedidoMonitoreoPagoVirtual pedido, final String codigo,
+			final String estado, final int nivel) {
+		pedido.setCodigoEstado(codigo);
 		pedido.setEstado(estado);
 		pedido.setNivel(nivel);
 	}

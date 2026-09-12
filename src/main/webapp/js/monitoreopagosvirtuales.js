@@ -33,7 +33,39 @@ var datosPedidos = [];
 /** El pedido seleccionado. Se conserva entre refrescos. */
 var pedidoSel = null;
 
-var filtroActual = 'TODOS';
+/**
+ * Los estados del pago, agrupados como los piensa quien atiende.
+ *
+ * El codigo tiene que coincidir con utilidadesCC.EstadoPagoVirtual: es lo que
+ * manda el servidor en codigoestado. Si se agrega un estado alla, hay que
+ * agregarlo aqui o no aparece en el filtro.
+ *
+ * pordefecto marca los que salen tildados al abrir la pantalla: todo lo que no
+ * quedo cerrado bien, que es lo que hay que revisar todos los dias.
+ */
+var GRUPOS_ESTADO = [
+	{ titulo: 'Pendientes de pago', estados: [
+		{ codigo: 'ESPERANDO',      nombre: 'Esperando pago',       pordefecto: true },
+		{ codigo: 'RECORDADO',      nombre: 'Recordado, sin pagar', pordefecto: true },
+		{ codigo: 'EN_PROCESO',     nombre: 'Pago en proceso',      pordefecto: true },
+		{ codigo: 'POR_VENCERSE',   nombre: 'Por vencerse',         pordefecto: true },
+		{ codigo: 'VENCIDO',        nombre: 'Vencido sin pago',     pordefecto: true }
+	] },
+	{ titulo: 'No pudieron pagar', estados: [
+		{ codigo: 'RECHAZADO',      nombre: 'Pago rechazado',       pordefecto: true },
+		{ codigo: 'SIN_LINK',       nombre: 'Sin link de pago',     pordefecto: true },
+		{ codigo: 'FALLA_PASARELA', nombre: 'Falla en la pasarela', pordefecto: true }
+	] },
+	{ titulo: 'Cerrados', estados: [
+		{ codigo: 'CANCELADO_SIN_PAGO',   nombre: 'Cancelado sin pago',   pordefecto: true },
+		{ codigo: 'PAGADO_TRAS_CANCELAR', nombre: 'Pago tras cancelar',   pordefecto: true },
+		{ codigo: 'PAGADO',               nombre: 'Pagado',               pordefecto: false },
+		{ codigo: 'OTRO',                 nombre: 'Otro estado',          pordefecto: false }
+	] }
+];
+
+/** Que estados estan marcados en este momento. */
+var estadosMarcados = {};
 
 /** Cada cuanto se vuelve a consultar solo, en milisegundos. */
 var MILIS_REFRESCO = 60000;
@@ -109,6 +141,7 @@ $(document).ready(function() {
 		}
 	});
 
+	armarFiltroEstados();
 	refrescarPagosVirtuales();
 	setInterval(validarVigenciaLogueo, 600000);
 	setInterval(refrescoAutomatico, MILIS_REFRESCO);
@@ -126,9 +159,10 @@ function refrescarPagosVirtuales() {
 			+ '&fechafin=' + encodeURIComponent(hasta), function(datos) {
 		datosPedidos = datos.pedidos || [];
 		pintarResumen(datos.resumen || {});
+		pintarConteosEstado();
 		pintarTabla();
-		$("#ultimaconsulta").html('Consultado a las ' + horaActual() + '. '
-				+ datosPedidos.length + ' pago(s) virtual(es) en el periodo.');
+		$("#ultimaconsulta").html("Consultado a las " + horaActual() + ". "
+				+ datosPedidos.length + " pago(s) virtual(es) en el periodo.");
 		//Si el pedido que estaba abierto sigue en la lista, se refresca su ficha:
 		//puede haber pagado o haberle llegado un evento mientras se miraba.
 		if (pedidoSel != null) {
@@ -182,28 +216,124 @@ function pintarTabla() {
 	//Un solo draw al final. Antes se llamaba draw() por cada fila, o sea que la
 	//tabla se repintaba entera tantas veces como pedidos hubiera.
 	table.rows.add(filas).draw();
-}
-
-/**
- * Los filtros son los que usa quien atiende, no los estados tecnicos:
- * "para atender ya" es lo que hay que salvar en este momento.
- */
-function pasaFiltro(pedido) {
-	switch (filtroActual) {
-		case 'ATENDER':  return (pedido.nivel == 4);
-		case 'SINPAGAR': return (pedido.nivel != 1 && pedido.nivel != 5);
-		case 'RECHAZO':  return (pedido.rechazos > 0);
-		case 'PERDIDOS': return (pedido.nivel == 5);
-		case 'PAGADOS':  return (pedido.nivel == 1);
-		default:         return true;
+	//Que se vea cuantos escondio el filtro: si no, uno cree que el periodo solo
+	//tiene lo que esta viendo.
+	if (filas.length < datosPedidos.length) {
+		$("#filtrados").html('Mostrando ' + filas.length + ' de ' + datosPedidos.length
+				+ ' por el filtro de estados.');
+	} else {
+		$("#filtrados").html('');
 	}
 }
 
-function filtrar(cual) {
-	filtroActual = cual;
-	$(".pv-filtros .btn").removeClass('btn-primary').addClass('btn-default');
-	$("#f-" + cual).removeClass('btn-default').addClass('btn-primary');
+/*
+ * El filtro por estado del pago.
+ *
+ * Se pueden marcar varios estados a la vez. El filtro va contra el CODIGO del
+ * estado y no contra el texto: el texto cambia con el caso -"RECHAZADO 2 VECES",
+ * "SE VENCE EN 8 MIN"- y sobre eso no se puede filtrar.
+ *
+ * Los tres grupos son los que usa quien atiende: lo que todavia se puede
+ * salvar, lo que ya se perdio, y lo que quedo cerrado.
+ */
+function pasaFiltro(pedido) {
+	//Sin ningun estado marcado no se muestra nada, que es lo que se pidio.
+	//Mostrarlo todo seria contradecir lo que la persona acaba de destildar.
+	return (estadosMarcados[pedido.codigoestado] === true);
+}
+
+/** Arma las casillas una sola vez, al cargar la pantalla. */
+function armarFiltroEstados() {
+	var html = '';
+	for (var g = 0; g < GRUPOS_ESTADO.length; g++) {
+		var grupo = GRUPOS_ESTADO[g];
+		html += '<div class="col-md-4">';
+		html += '<div class="pv-grupo" onclick="marcarGrupo(' + g + ')" title="Marcar o desmarcar todo el grupo">'
+				+ grupo.titulo + '</div>';
+		for (var i = 0; i < grupo.estados.length; i++) {
+			var e = grupo.estados[i];
+			html += '<label class="pv-casilla">'
+					+ '<input type="checkbox" id="fe-' + e.codigo + '" value="' + e.codigo + '"'
+					+ ' onchange="cambioFiltroEstado()">'
+					+ e.nombre + ' <span class="pv-conteo" id="fc-' + e.codigo + '"></span>'
+					+ '</label>';
+		}
+		html += '</div>';
+	}
+	$("#pv-filtro-estados").html(html);
+	volverAlFiltroPorDefecto();
+}
+
+function cambioFiltroEstado() {
+	estadosMarcados = {};
+	for (var g = 0; g < GRUPOS_ESTADO.length; g++) {
+		for (var i = 0; i < GRUPOS_ESTADO[g].estados.length; i++) {
+			var codigo = GRUPOS_ESTADO[g].estados[i].codigo;
+			estadosMarcados[codigo] = $("#fe-" + codigo).is(':checked');
+		}
+	}
 	pintarTabla();
+}
+
+function marcarTodosLosEstados(marcar) {
+	$("#pv-filtro-estados input[type=checkbox]").prop('checked', marcar);
+	cambioFiltroEstado();
+}
+
+/** Marca o desmarca un grupo entero: si ya estaba todo marcado, lo apaga. */
+function marcarGrupo(indice) {
+	var grupo = GRUPOS_ESTADO[indice];
+	var todosMarcados = true;
+	var i;
+	for (i = 0; i < grupo.estados.length; i++) {
+		if (!$("#fe-" + grupo.estados[i].codigo).is(':checked')) {
+			todosMarcados = false;
+		}
+	}
+	for (i = 0; i < grupo.estados.length; i++) {
+		$("#fe-" + grupo.estados[i].codigo).prop('checked', !todosMarcados);
+	}
+	cambioFiltroEstado();
+}
+
+/**
+ * El filtro con el que se abre la pantalla: lo cancelado sin pagar, lo que se
+ * pago despues de cancelar, y todo lo que sigue pendiente de pago. O sea, todo
+ * menos lo que ya quedo cerrado bien. Es lo que hay que mirar todos los dias.
+ */
+function volverAlFiltroPorDefecto() {
+	for (var g = 0; g < GRUPOS_ESTADO.length; g++) {
+		for (var i = 0; i < GRUPOS_ESTADO[g].estados.length; i++) {
+			var e = GRUPOS_ESTADO[g].estados[i];
+			$("#fe-" + e.codigo).prop('checked', e.pordefecto === true);
+		}
+	}
+	cambioFiltroEstado();
+}
+
+/**
+ * Le pone a cada estado cuantos pedidos hay.
+ *
+ * El conteo es sobre TODO lo que trajo la consulta, no sobre lo que quedo en
+ * pantalla: de otro modo un estado destildado mostraria cero y no se sabria que
+ * hay algo escondido ahi.
+ */
+function pintarConteosEstado() {
+	var conteo = {};
+	var i;
+	for (i = 0; i < datosPedidos.length; i++) {
+		var c = datosPedidos[i].codigoestado;
+		conteo[c] = (conteo[c] || 0) + 1;
+	}
+	for (var g = 0; g < GRUPOS_ESTADO.length; g++) {
+		for (i = 0; i < GRUPOS_ESTADO[g].estados.length; i++) {
+			var codigo = GRUPOS_ESTADO[g].estados[i].codigo;
+			var n = conteo[codigo] || 0;
+			var celda = $("#fc-" + codigo);
+			celda.text('(' + n + ')');
+			if (n === 0) { celda.addClass('pv-cero'); } else { celda.removeClass('pv-cero'); }
+		}
+	}
 }
 
 function buscarPedido(idPedido) {
