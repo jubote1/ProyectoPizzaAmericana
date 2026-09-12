@@ -5510,69 +5510,219 @@ public class PedidoDAO {
 		}
 		return(consultaPedido);
 	}
-	
+	/**
+	 * El cuerpo de la consulta de monitoreo de pagos virtuales, sin el WHERE.
+	 *
+	 * Lo usan la consulta del listado -por rango de fechas- y la de un solo
+	 * pedido. Es la misma informacion vista de dos maneras y tenerla escrita dos
+	 * veces era la forma segura de que una de las dos se quedara atras.
+	 *
+	 * El COLLATE de idlink no sobra: pedido.idlink es utf8mb3_general_ci y
+	 * log_evento_wompi.id_link es utf8mb3_unicode_ci. Comparando las dos columnas
+	 * sin el, MySQL responde "Illegal mix of collations" y la consulta no corre.
+	 * Va sobre a.idlink para que el indice de log_evento_wompi.id_link se siga
+	 * pudiendo usar.
+	 */
+	private static final String SELECT_MONITOREO_PAGO_VIRTUAL =
+			"SELECT a.idpedido, b.nombre AS tienda,"
+			+ " CONCAT(c.nombre,' ',c.apellido) AS nombre,"
+			+ " IFNULL(c.telefono,'') AS telefono,"
+			+ " IFNULL(c.telefono_celular,'') AS telefono_celular,"
+			+ " IFNULL(c.email,'') AS email, a.total_neto,"
+			+ " IFNULL(a.idlink,'') AS idlink, a.fechainsercion, a.fechapedido,"
+			+ " IFNULL(a.fechapagovirtual,'') AS fechapagovirtual,"
+			+ " IFNULL(TIMESTAMPDIFF(MINUTE, a.fechainsercion, NOW()), 0) AS minutos,"
+			+ " a.idcliente, d.idforma_pago, IFNULL(a.origen,'') AS origen,"
+			+ " IFNULL(a.idestadopedido,0) AS idestadopedido,"
+			+ " IFNULL(f.descripcion,'') AS estadopedido,"
+			+ " (SELECT COUNT(*) FROM log_evento_wompi w"
+			+ "   WHERE a.idlink <> '' AND w.id_link = a.idlink COLLATE utf8mb3_unicode_ci) AS eventos,"
+			+ " (SELECT COUNT(*) FROM log_evento_wompi w"
+			+ "   WHERE a.idlink <> '' AND w.id_link = a.idlink COLLATE utf8mb3_unicode_ci"
+			+ "     AND w.estado = 'DECLINED') AS rechazos,"
+			+ " IFNULL((SELECT w.estado FROM log_evento_wompi w"
+			+ "   WHERE a.idlink <> '' AND w.id_link = a.idlink COLLATE utf8mb3_unicode_ci"
+			+ "   ORDER BY w.fecha_hora DESC, w.idlog_evento_wompi DESC LIMIT 1),'') AS ultimoestado,"
+			+ " IFNULL((SELECT w.fecha_hora FROM log_evento_wompi w"
+			+ "   WHERE a.idlink <> '' AND w.id_link = a.idlink COLLATE utf8mb3_unicode_ci"
+			+ "   ORDER BY w.fecha_hora DESC, w.idlog_evento_wompi DESC LIMIT 1),'') AS ultimoevento,"
+			+ " (SELECT COUNT(*) FROM pedido_pago_virtual p WHERE p.idpedido = a.idpedido) AS avisos,"
+			+ " (SELECT COUNT(*) FROM pedido_gestion_link g WHERE g.idpedido = a.idpedido) AS gestiones"
+			+ " FROM pedido a"
+			+ " JOIN tienda b ON a.idtienda = b.idtienda"
+			+ " JOIN cliente c ON a.idcliente = c.idcliente"
+			+ " JOIN pedido_forma_pago d ON d.idpedido = a.idpedido"
+			+ " JOIN forma_pago e ON e.idforma_pago = d.idforma_pago"
+			+ " LEFT JOIN estado_pedido f ON f.idestadopedido = a.idestadopedido"
+			+ " WHERE ";
+
 	
 	/**
-	 * M�todo que retorna un ArrayList con objetos de tipo Pedido Pago virtual monitoreo con el fin de saber el estado de los pagos virtuales
-	 * @return
+	 * Los pagos virtuales de un rango de fechas, con el rastro de que paso.
+	 *
+	 * La version anterior traia solo los pedidos que en ESE segundo estaban
+	 * esperando el pago -idestadopedido = 2 y enviadopixel = 2, de hoy-. Eso hacia
+	 * que un pedido se viera durante los cincuenta minutos de espera y despues
+	 * desapareciera para siempre, pagado o perdido, y que despues de medianoche la
+	 * pantalla quedara vacia. No habia como revisar el dia.
+	 *
+	 * Ahora trae todos los pedidos con forma de pago virtual del rango, en
+	 * cualquier desenlace, y de una vez cuenta los eventos de Wompi, los avisos que
+	 * se le mandaron al cliente y la gestion que se le hizo. Con eso el controlador
+	 * puede decir el estado en palabras sin volver a la base por cada fila.
+	 *
+	 * @param fechaIni fecha inicial en formato yyyy-MM-dd
+	 * @param fechaFin fecha final en formato yyyy-MM-dd
 	 */
-	public static ArrayList<PedidoMonitoreoPagoVirtual> obtenerPedidosMonitoreoPagoVirtual()
+	public static ArrayList<PedidoMonitoreoPagoVirtual> obtenerPedidosMonitoreoPagoVirtual(String fechaIni,
+			String fechaFin)
 	{
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList<PedidoMonitoreoPagoVirtual> pedidosMonitoreo = new ArrayList();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
+		PreparedStatement pst = null;
+		ResultSet rs = null;
 		try
 		{
-			Statement stm = con1.createStatement();
-			String consulta = "SELECT a.idpedido, b.nombre AS tienda, concat(c.nombre,' ', c.apellido) AS nombre, c.telefono, c.telefono_celular, c.email, a.total_neto, a.idlink, a.fechainsercion,TIMESTAMPDIFF(MINUTE,a.fechainsercion,CURTIME()) AS minutos, a.idcliente, d.idforma_pago FROM pedido a, tienda b, cliente c, pedido_forma_pago d WHERE a.idtienda = b.idtienda AND a.idcliente = c.idcliente and a.idpedido = d.idpedido and a.fechapedido = CURDATE() AND a.idestadopedido = 2 AND a.enviadopixel = 2 ";
+			String consulta = SELECT_MONITOREO_PAGO_VIRTUAL
+					+ " a.fechapedido BETWEEN ? AND ? AND e.virtual = 'S'"
+					+ " ORDER BY a.fechainsercion DESC";
 			logger.info(consulta);
-			ResultSet rs = stm.executeQuery(consulta);
-			int idPedido;
-			String tienda;
-			String nombre;
-			String telefono;
-			String telefonoCelular;
-			String email;
-			String totalNeto;
-			String idLink;
-			String fechaInsercion;
-			int minutos;
-			int idCliente;
-			int idFormaPago;
-			PedidoMonitoreoPagoVirtual pedTemp;
-			while(rs.next()){
-				idPedido = rs.getInt("idpedido");
-				tienda = rs.getString("tienda");
-				nombre = rs.getString("nombre");
-				telefono = rs.getString("telefono");
-				telefonoCelular = rs.getString("telefono_celular");
-				email = rs.getString("email");
-				totalNeto = rs.getString("total_neto");
-				idLink = rs.getString("idlink");
-				fechaInsercion = rs.getString("fechainsercion");
-				minutos = rs.getInt("minutos");
-				idCliente = rs.getInt("idcliente");
-				idFormaPago = rs.getInt("idforma_pago");
-				pedTemp = new PedidoMonitoreoPagoVirtual(idPedido,tienda, nombre, telefono, telefonoCelular, email, totalNeto, idLink,fechaInsercion,minutos,idFormaPago, idCliente);
-				pedidosMonitoreo.add(pedTemp);
+			pst = con1.prepareStatement(consulta);
+			pst.setString(1, fechaIni);
+			pst.setString(2, fechaFin);
+			rs = pst.executeQuery();
+			while(rs.next())
+			{
+				pedidosMonitoreo.add(armarPedidoMonitoreo(rs));
 			}
-			rs.close();
-			stm.close();
-			con1.close();
-		}catch (Exception e){
-			logger.info(e.toString());
-			System.out.println("falle lanzando la consulta de domicilios.com " + e.toString());
+		}
+		catch (Exception e){
+			logger.error("obtenerPedidosMonitoreoPagoVirtual: " + e.toString());
+			System.out.println("falle lanzando la consulta de monitoreo de pagos virtuales " + e.toString());
+		}
+		finally
+		{
 			try
 			{
+				if(rs != null) { rs.close(); }
+				if(pst != null) { pst.close(); }
 				con1.close();
 			}catch(Exception e1)
 			{
 				logger.info(e1.toString());
-				System.out.println("falle cerrando la conexion");
 			}
 		}
 		return(pedidosMonitoreo);
+	}
+
+	/**
+	 * Un solo pago virtual, con el mismo detalle que el listado.
+	 *
+	 * Va sin filtro de fecha a proposito. ConsultaPedido, que era lo que habia,
+	 * pide fechapedido = CURDATE(): un pedido tomado a las 11:50 de la noche y
+	 * todavia sin pagar a las 12:10 no aparecia, que es justo cuando hay que poder
+	 * recrearle el link o reenviarle el correo.
+	 */
+	public static PedidoMonitoreoPagoVirtual obtenerPedidoMonitoreoPagoVirtual(int idPedido)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		PedidoMonitoreoPagoVirtual pedido = null;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		try
+		{
+			//El LIMIT 1 no sobra: un pedido puede tener mas de una forma de pago y el
+			//join las traeria todas.
+			String consulta = SELECT_MONITOREO_PAGO_VIRTUAL + " a.idpedido = ? LIMIT 1";
+			pst = con1.prepareStatement(consulta);
+			pst.setInt(1, idPedido);
+			rs = pst.executeQuery();
+			if(rs.next())
+			{
+				pedido = armarPedidoMonitoreo(rs);
+			}
+		}
+		catch (Exception e){
+			logger.error("obtenerPedidoMonitoreoPagoVirtual(" + idPedido + "): " + e.toString());
+		}
+		finally
+		{
+			try
+			{
+				if(rs != null) { rs.close(); }
+				if(pst != null) { pst.close(); }
+				con1.close();
+			}catch(Exception e1)
+			{
+				logger.info(e1.toString());
+			}
+		}
+		return(pedido);
+	}
+
+	/** Arma una fila del monitoreo. Lo usan la consulta del listado y la de uno solo. */
+	private static PedidoMonitoreoPagoVirtual armarPedidoMonitoreo(ResultSet rs) throws java.sql.SQLException
+	{
+		PedidoMonitoreoPagoVirtual pedTemp = new PedidoMonitoreoPagoVirtual(rs.getInt("idpedido"),
+				rs.getString("tienda"), rs.getString("nombre"), rs.getString("telefono"),
+				rs.getString("telefono_celular"), rs.getString("email"), rs.getString("total_neto"),
+				rs.getString("idlink"), rs.getString("fechainsercion"), rs.getInt("minutos"),
+				rs.getInt("idforma_pago"), rs.getInt("idcliente"));
+		pedTemp.setFechaPedido(rs.getString("fechapedido"));
+		pedTemp.setFechaPago(rs.getString("fechapagovirtual"));
+		pedTemp.setOrigen(rs.getString("origen"));
+		pedTemp.setIdEstadoPedido(rs.getInt("idestadopedido"));
+		pedTemp.setEstadoPedido(rs.getString("estadopedido"));
+		pedTemp.setEventos(rs.getInt("eventos"));
+		pedTemp.setRechazos(rs.getInt("rechazos"));
+		pedTemp.setUltimoEstado(rs.getString("ultimoestado"));
+		pedTemp.setUltimoEvento(rs.getString("ultimoevento"));
+		pedTemp.setAvisos(rs.getInt("avisos"));
+		pedTemp.setGestiones(rs.getInt("gestiones"));
+		return(pedTemp);
+	}
+
+	/**
+	 * Le cambia el correo al cliente desde el monitoreo de pagos virtuales.
+	 *
+	 * Cuando el link de pago rebota porque el correo esta malo, quien atiende lo
+	 * corrige en el momento: si no se guarda ahi mismo, el proximo pedido del
+	 * mismo cliente vuelve a fallar por lo mismo.
+	 */
+	public static boolean actualizarCorreoCliente(int idCliente, String correo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		boolean resultado = false;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		PreparedStatement pst = null;
+		try
+		{
+			pst = con1.prepareStatement("update cliente set email = ? where idcliente = ?");
+			pst.setString(1, correo);
+			pst.setInt(2, idCliente);
+			pst.executeUpdate();
+			resultado = true;
+		}
+		catch (Exception e){
+			logger.error("actualizarCorreoCliente(" + idCliente + "): " + e.toString());
+		}
+		finally
+		{
+			try
+			{
+				if(pst != null) { pst.close(); }
+				con1.close();
+			}catch(Exception e1)
+			{
+				logger.info(e1.toString());
+			}
+		}
+		return(resultado);
 	}
 	
 	public static boolean marcarPedidoEmpresarial(int idpedido)

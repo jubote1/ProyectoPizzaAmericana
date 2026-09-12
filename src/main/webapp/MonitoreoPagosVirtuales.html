@@ -1,15 +1,40 @@
 <!DOCTYPE html>
 <html lang="es">
 	<head>
-		<title>MONITOREO PLATAFORMAS DOMICILIOS</title>
+		<title>MONITOREO PAGOS VIRTUALES</title>
 		<meta charset="utf-8" />
 		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
 		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
-		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
 		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
 		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
-		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+		  <link rel="stylesheet" href="css/jquery-confirm.min.css">
+		  <style type="text/css">
+			/* Los colores van por nivel de urgencia y no por minutos sueltos, para que
+			   lo que se ve rojo sea de verdad lo que hay que atender. */
+			.pv-n1 td { background-color:#E8F6EC !important; }
+			.pv-n2 td { background-color:#FFFFFF !important; }
+			.pv-n3 td { background-color:#FFF6DC !important; }
+			.pv-n4 td { background-color:#FFE2C2 !important; }
+			.pv-n5 td { background-color:#FADBDB !important; }
+			.pv-sel td { box-shadow: inset 0 0 0 9999px rgba(16,47,111,.10); }
+			.pv-estado { font-weight:bold; white-space:nowrap; }
+			.pv-tarjeta { border:1px solid #E2E6EC; border-radius:6px; padding:10px 12px;
+				margin-bottom:10px; background-color:#FFFFFF; }
+			.pv-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.04em; }
+			.pv-cifra { font-size:24px; font-weight:bold; color:#102F6F; line-height:1.15; }
+			.pv-pie { font-size:12px; color:#6C7482; }
+			.pv-alerta .pv-cifra { color:#C21C1F; }
+			.pv-bien .pv-cifra { color:#1B8A4B; }
+			.pv-filtros { margin:6px 0 12px; }
+			.pv-filtros .btn { margin-right:6px; margin-bottom:6px; }
+			#grid-pedidos tbody tr { cursor:pointer; }
+			.pv-cabecera-pedido { font-size:15px; color:#1F2430; margin-bottom:8px; }
+			.pv-AVISO { color:#102F6F; font-weight:bold; }
+			.pv-WOMPI { color:#7A5A00; font-weight:bold; }
+			.pv-GESTION { color:#1B8A4B; font-weight:bold; }
+		  </style>
 	</head>
 	<body>
 
@@ -52,74 +77,143 @@
 			    	$('#usuariologin').html(usuario);
 		</script>
 
-		<div class="container">
-			<form>
-				<h1>MONITOREO PAGOS VIRTUALES</h1>
-				
-						<input type="button" class="btn btn-primary btn-lg" value="REFRESCAR" onclick="refrescarPagosVirtuales()">
+		<div class="container-fluid">
+			<h1>MONITOREO PAGOS VIRTUALES</h1>
 
-				
-			</form>
-		</div>
-				<div class="container">
-					<div>
-        				<table id="grid-pedidos" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="idpedido">Id Pedido</th>
-								                <th data-column-id="tienda">Tienda</th>
-								                <th data-column-id="nombre">Nombre Cliente</th>
-								                <th data-column-id="telefono">Telefono</th>
-								                <th data-column-id="telefonocelular">Celular</th>
-								                <th data-column-id="email">Correo</th>
-								                <th data-column-id="totalneto">Total Pedido</th>
-								                <th data-column-id="idlink">idLink</th>
-								                <th data-column-id="fechainsercion">Fecha pedidos</th>
-								                <th data-column-id="minutos">Minutos</th>
-								                <th data-column-id="idcliente">id Cliente</th>
-								                <th data-column-id="idformapago">Forma Pago</th>
-								            </tr>
-								        </thead>
-								      	<tbody>
-								      			
-								      	</tbody>
-								</table>
-						</div>
-						<table class="table table-bordered">
-							<tbody>
-								<tr>
-										<td class="active">Número de Pedido </td>
-										<td><input type="text" id="numeropedido" name="numeropedido" class="form-control" placeholder="Número de Pedido"></td>
-								</tr>
-							</tbody>
-						</table>
-						<input type="button" class="btn btn-success btn-lg" id="reenviarNotificacion" name="reenviarNotificacion" value="Reenviar Notificacion Cliente" onclick="reenviarNotificacion()" disabled>
-						<input type="button" class="btn btn-warning btn-lg" id="recrearLink" name="recrearLink" value="Recrear Link" onclick="recrearLink()" disabled>
-
-						<table id="grid-detalleWompi" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="idlink">IdLink</th>
-								                <th data-column-id="fechahora">Fecha Hora</th>
-								                <th data-column-id="evento">Evento</th>
-								                <th data-column-id="estado">Estado</th>
-								            </tr>
-								        </thead>
-								      	<tbody>
-								      			
-								      	</tbody>
-						</table>
-
-						Observacion
-						<input type="text" id="observacion" name="observacion" class="form-control" placeholder="Observacion"></td>
-						<input type="button" class="btn btn-warning btn-lg" id="obsGestion" name="obsGestion" value="Observación Gestion Link" onclick="obsGestionLink()" disabled>
+			<!-- El rango de fechas es lo que convierte esta pantalla en algo que se puede
+			     revisar: antes solo mostraba lo que estuviera esperando el pago en ese
+			     segundo, y despues de medianoche quedaba en blanco. -->
+			<div class="row">
+				<div class="col-md-2">
+					<label for="fechainicial">Desde</label>
+					<input type="text" id="fechainicial" name="fechainicial" class="form-control" placeholder="Fecha Inicial">
 				</div>
-				
-		
-	</body>
-	<script src="js/monitoreopagosvirtuales.js" type="text/javascript"></script>
-	<script src="js/jquery-confirm.min.js"></script>
-	</script>
+				<div class="col-md-2">
+					<label for="fechafinal">Hasta</label>
+					<input type="text" id="fechafinal" name="fechafinal" class="form-control" placeholder="Fecha Final">
+				</div>
+				<div class="col-md-4">
+					<label>&nbsp;</label><br/>
+					<input type="button" class="btn btn-primary" value="CONSULTAR" onclick="refrescarPagosVirtuales()">
+					<label style="font-weight:normal;margin-left:10px;">
+						<input type="checkbox" id="autorefresco" checked> refrescar solo
+					</label>
+				</div>
+				<div class="col-md-4">
+					<label>&nbsp;</label><br/>
+					<span id="ultimaconsulta" style="color:#6C7482;"></span>
+				</div>
+			</div>
+
+			<div class="row" style="margin-top:12px;">
+				<div class="col-md-2"><div class="pv-tarjeta"><div class="pv-rotulo">Links del periodo</div><div class="pv-cifra" id="res-total">0</div><div class="pv-pie" id="res-tiempos">&nbsp;</div></div></div>
+				<div class="col-md-2"><div class="pv-tarjeta pv-bien"><div class="pv-rotulo">Pagados</div><div class="pv-cifra" id="res-pagados">0</div><div class="pv-pie" id="res-valorpagado">&nbsp;</div></div></div>
+				<div class="col-md-2"><div class="pv-tarjeta"><div class="pv-rotulo">Sin pagar</div><div class="pv-cifra" id="res-sinpagar">0</div><div class="pv-pie" id="res-valorriesgo">&nbsp;</div></div></div>
+				<div class="col-md-2"><div class="pv-tarjeta pv-alerta"><div class="pv-rotulo">Cancelados sin pago</div><div class="pv-cifra" id="res-cancelados">0</div><div class="pv-pie" id="res-valorperdido">&nbsp;</div></div></div>
+				<div class="col-md-2"><div class="pv-tarjeta pv-alerta"><div class="pv-rotulo">Para atender ya</div><div class="pv-cifra" id="res-poratender">0</div><div class="pv-pie">rechazados, sin link o por vencerse</div></div></div>
+				<div class="col-md-2"><div class="pv-tarjeta"><div class="pv-rotulo">Con pago rechazado</div><div class="pv-cifra" id="res-conrechazo">0</div><div class="pv-pie">la tarjeta no paso</div></div></div>
+			</div>
+
+			<div class="pv-filtros">
+				<input type="button" class="btn btn-primary btn-sm" id="f-TODOS"    value="Todos"               onclick="filtrar('TODOS')">
+				<input type="button" class="btn btn-default btn-sm" id="f-ATENDER"  value="Para atender ya"     onclick="filtrar('ATENDER')">
+				<input type="button" class="btn btn-default btn-sm" id="f-SINPAGAR" value="Sin pagar"           onclick="filtrar('SINPAGAR')">
+				<input type="button" class="btn btn-default btn-sm" id="f-RECHAZO"  value="Con rechazo"         onclick="filtrar('RECHAZO')">
+				<input type="button" class="btn btn-default btn-sm" id="f-PERDIDOS" value="Cancelados sin pago" onclick="filtrar('PERDIDOS')">
+				<input type="button" class="btn btn-default btn-sm" id="f-PAGADOS"  value="Pagados"             onclick="filtrar('PAGADOS')">
+			</div>
+
+			<table id="grid-pedidos" class="table table-condensed table-hover" cellspacing="0" width="100%">
+				<thead>
+					<tr>
+						<th data-column-id="idpedido">Pedido</th>
+						<th data-column-id="tienda">Tienda</th>
+						<th data-column-id="estado">Estado</th>
+						<th data-column-id="minutos">Min</th>
+						<th data-column-id="nombre">Cliente</th>
+						<th data-column-id="telefonocelular">Celular</th>
+						<th data-column-id="telefono">Telefono</th>
+						<th data-column-id="email">Correo</th>
+						<th data-column-id="totalneto">Total</th>
+						<th data-column-id="eventos">Intentos</th>
+						<th data-column-id="avisos">Avisos</th>
+						<th data-column-id="gestiones">Gestion</th>
+						<th data-column-id="fechainsercion">Fecha y hora</th>
+						<th data-column-id="origen">Origen</th>
+						<th data-column-id="idlink">idLink</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+
+			<hr/>
+
+			<div class="row">
+				<div class="col-md-6">
+					<div class="pv-cabecera-pedido" id="pv-pedido-titulo">Seleccione un pedido de la lista.</div>
+					<div class="pv-cabecera-pedido" id="pv-pedido-detalle" style="color:#6C7482;"></div>
+
+					<div class="pv-tarjeta">
+						<div class="pv-rotulo" style="margin-bottom:6px;">Reenviar el link al cliente</div>
+						<input type="button" class="btn btn-success" id="reenviarNotificacion" name="reenviarNotificacion"
+							value="Reenviar correo y mensaje" onclick="reenviarNotificacion()" disabled>
+						<input type="button" class="btn btn-warning" id="recrearLink" name="recrearLink"
+							value="Recrear link de pago" onclick="recrearLink()" disabled>
+					</div>
+
+					<!-- Reenvio solo por correo, con la posibilidad de mandarlo a otra
+					     direccion: el "no me llego" casi siempre es un correo mal escrito. -->
+					<div class="pv-tarjeta">
+						<div class="pv-rotulo" style="margin-bottom:6px;">Reenviar solo el correo</div>
+						<div class="row">
+							<div class="col-md-8">
+								<input type="text" id="correoenvio" name="correoenvio" class="form-control"
+									placeholder="Correo del cliente" disabled>
+							</div>
+							<div class="col-md-4">
+								<input type="button" class="btn btn-primary" id="reenviarCorreo" name="reenviarCorreo"
+									value="Reenviar correo" onclick="reenviarCorreo()" disabled>
+							</div>
+						</div>
+						<div class="pv-pie" style="margin-top:6px;">
+							Si el correo esta malo, escriba aqui el correcto. Antes de enviarlo se le
+							pregunta si ademas quiere dejarlo en la ficha del cliente.
+						</div>
+					</div>
+
+					<div class="pv-tarjeta">
+						<div class="pv-rotulo" style="margin-bottom:6px;">Dejar constancia de la gestion</div>
+						<input type="text" id="observacion" name="observacion" class="form-control"
+							placeholder="Que se hizo con este pedido" disabled>
+						<input type="button" class="btn btn-default" id="obsGestion" name="obsGestion"
+							value="Guardar gestion" onclick="obsGestionLink()" disabled style="margin-top:6px;">
+					</div>
+				</div>
+
+				<div class="col-md-6">
+					<div class="pv-rotulo" style="margin-bottom:6px;">Que ha pasado con este pago</div>
+					<table id="grid-traza" class="table table-condensed table-striped" cellspacing="0" width="100%">
+						<thead>
+							<tr>
+								<th data-column-id="fechahora">Fecha y hora</th>
+								<th data-column-id="fuente">Origen</th>
+								<th data-column-id="detalle">Que paso</th>
+								<th data-column-id="estado">Estado</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div style="height:40px;"></div>
+		</div>
+
 	<script src="js/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script src="js/jquery-confirm.min.js"></script>
+	<script src="js/monitoreopagosvirtuales.js" type="text/javascript"></script>
+	</body>
 </html>
