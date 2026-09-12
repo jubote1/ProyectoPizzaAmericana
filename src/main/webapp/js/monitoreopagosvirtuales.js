@@ -1,313 +1,497 @@
-	
+/*
+ * Monitoreo de pagos virtuales.
+ *
+ * Que cambio y por que:
+ *
+ * - La pantalla mostraba solo los pedidos que en ESE segundo estaban esperando
+ *   el pago, de hoy. Un pedido se veia durante los cincuenta minutos de espera
+ *   y despues desaparecia para siempre -pagado o perdido-, y despues de
+ *   medianoche quedaba vacia. Ahora se consulta por rango de fechas y se ve el
+ *   desenlace de cada uno.
+ *
+ * - No habia columna de estado, que es el nombre de la pantalla. Un pedido de
+ *   treinta minutos podia ser uno al que le rechazaron la tarjeta dos veces,
+ *   uno que nunca recibio el link, o uno que ya pago: se veian iguales. El
+ *   estado sale ahora de los eventos que devuelve Wompi, que ya se venian
+ *   guardando y nunca se leian.
+ *
+ * - La clave PRIVADA de Wompi se bajaba al navegador para poder crear el link
+ *   desde aqui. Ya no: recrear el link es una llamada al servidor.
+ *
+ * - El boton de reenviar preguntaba por un campo #idlink que no existe en el
+ *   HTML, asi que la validacion nunca detenia nada y al cliente le podia llegar
+ *   un link roto.
+ */
 
 var server;
-var tiendas;
-var dtestadopedido ;
 var table;
-var idPedido;
-var idLink;
-var tienda;
-var idFormaPago;
-var idCliente;
-var totalNeto;
-var dtLogWompi;
-//Debemos traer la información de WOMPI
-var wompiClavePublica = "";
-var wompiClavePrivada = "";
-var wompiAmbiente = "";
-var wompiEndPoint = "";
+var dtTraza;
+
+/** Lo ultimo que devolvio el servidor, para poder filtrar sin volver a consultar. */
+var datosPedidos = [];
+
+/** El pedido seleccionado. Se conserva entre refrescos. */
+var pedidoSel = null;
+
+var filtroActual = 'TODOS';
+
+/** Cada cuanto se vuelve a consultar solo, en milisegundos. */
+var MILIS_REFRESCO = 60000;
 
 $(document).ready(function() {
 
-	//Obtenemos el valor de la variable server
 	var loc = window.location;
 	var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
 	server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-	
 
-	//Definimos el datatable en el cual recibiremos la información de los estados pedido de la tineda
-	//Definimos los colores de la fila de acuerdo al valor del campo estatus.
-    table = $('#grid-pedidos').DataTable( {
-    		"aoColumns": [
-    		{ "mData": "idpedido" },
-            { "mData": "tienda" },
-            { "mData": "nombre" },
-            { "mData": "telefono" },
-            { "mData": "telefonocelular" },
-            { "mData": "email" },
-            { "mData": "totalneto" },
-            { "mData": "idlink" },
-            { "mData": "fechainsercion" },
-            { "mData": "minutos" },
-            { "mData": "idcliente"  , "visible": false },
-            { "mData": "idformapago"  , "visible": false }
-        ],
-                	"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-                if(aData.minutos <= 12)
-                {
-                	$(nRow).css('background-color', '#008000');
-                }else
-                {
-                	$(nRow).css('background-color', '#FF0000');
-                }
-    		}
+	$("#fechainicial").datepicker($.datepicker.regional["es"]);
+	$("#fechainicial").datepicker('setDate', new Date());
+	$("#fechafinal").datepicker($.datepicker.regional["es"]);
+	$("#fechafinal").datepicker('setDate', new Date());
 
-    	} );
-
-    
-	} );
-
-	dtLogWompi = $('#grid-detalleWompi').DataTable( {
-    		"aoColumns": [
-    		{ "mData": "idlink" },
-            { "mData": "fechahora" },
-            { "mData": "evento" },
-            { "mData": "estado" }
-        ]
-    	} );
-
-	$('#grid-pedidos').on('click', 'tr', function () {
-        datospedido = table.row( this ).data();
-        idPedido = datospedido.idpedido;
-        idLink = datospedido.idlink;
-        totalNeto = datospedido.totalneto;
-        tienda = datospedido.tienda;
-        idFormaPago = datospedido.idformapago;
-        idCliente = datospedido.idcliente;
-        $('#numeropedido').val(idPedido);
-        $('#recrearLink').attr('disabled', false);
-        $('#reenviarNotificacion').attr('disabled', false);
-        if ( $.fn.dataTable.isDataTable( '#grid-detalleWompi' ) ) {
-    		dtLogWompi = $('#grid-detalleWompi').DataTable();
-    	}
-        $.getJSON(server + 'ConsultarLogEventoWompi?idlink=' + idLink, function(data1){
-	                		dtLogWompi.clear().draw();
-	                		for(var i = 0; i < data1.length;i++){
-								dtLogWompi.row.add(data1[i]).draw();
-							}
-	                		
-							
-					});
-        if(datospedido.minutos > 10)
-        {
-        	$('#obsGestion').attr('disabled', false);
-        	console.log("intentando activar el boton");
-        }
-    });
-
-
-$(function(){
-	refrescarPagosVirtuales();
-	obtenerParametrosWOMPI();
-	setInterval('validarVigenciaLogueo()',600000);
-	setInterval('refrescarPagosVirtuales()',60000);
-});
-
-
-function validarVigenciaLogueo()
-{
-	var d = new Date();
-	
-	var respuesta ='';
-	$.ajax({ 
-	   	url: server + 'ValidarUsuarioAplicacion', 
-	   	dataType: 'json',
-	   	type: 'post', 
-	   	async: false, 
-	   	success: function(data){
-			    respuesta =  data[0].respuesta;		
-		} 
-	});
-	switch(respuesta)
-	{
-		case 'OK':
-				break;
-		case 'OKA':
-				break;	
-		default:
-				location.href = server +"Index.html";
-		    	break;
-	}
-		    		
-}
-
-
-//Método para consultar los estados de pedidos de las tiendas, toma la tienda seleccionada
-//Consume un servicio para obtener la url de la tienda y el dsn de la tienda, posteriormente invoca el servicio en el sistema
-// de la tienda y se encarga del resultado recibido en formato json, formatearlo en un datatable para su presentación.
-function refrescarPagosVirtuales() 
-{
-
-	// Si pasa a este punto es porque paso las validaciones
-	if ( $.fn.dataTable.isDataTable( '#grid-pedidos' ) ) {
-    		table = $('#grid-pedidos').DataTable();
-    }
-	$.getJSON(server + 'ObtenerPedidosMonitoreoPagoVirtual' , function(data1){
-	                		
-	                		table.clear().draw();
-							for(var i = 0; i < data1.length;i++){
-								table.row.add(data1[i]).draw();
-							}
-							
-					});
-
-
-}
-
-
-function reenviarNotificacion()
-{
-	if($('#idlink').val() != '')
-	{
-		$.confirm({
-			'title'		: 'Confirmacion de Reenvío de información de Link de Pagos',
-			'content'	: 'Desea confirmar que se envíe de nuevo la información para el pago del Pedido Número ' + idPedido + '?<br> Se enviaría mensaje de texto y correo en caso de tenerlo.',
-			'type': 'dark',
-				'typeAnimated': true,
-			'buttons'	: {
-				'Si'	: {
-					'class'	: 'blue',
-					'action': function(){
-						enviarNotificacionWompi(idLink, idCliente, "https://checkout.wompi.co/l/"+idLink, idFormaPago, idPedido);
-					}
-				},
-				'No'	: {
-					'class'	: 'gray',
-					'action': function(){}	// Nothing to do in this case. You can as well omit the action property.
-				}
-			}
-		});
-	}else
-	{
-		$.alert("CUIDADO! No hay idLink generado para enviar, por lo cual se debería primero recrear el Link de Pagos, por lo tanto no se ha enviado ninguna información.");
-	}
-	
-}
-
-function recrearLink()
-{
-    $.confirm({
-		'title'		: 'Confirmacion de Recreación de Link de Pagos',
-		'content'	: 'Desea confirmar que se recree un nuevo Link de Pagos para el Pedido Número ' + idPedido + '<br> El anterior Link ya no deberá ser usado',
-		'type': 'dark',
-			'typeAnimated': true,
-		'buttons'	: {
-			'Si'	: {
-				'class'	: 'blue',
-				'action': function()
-				{
-					//Como habrá uso de WOMPI traemos las variables
-					//Generamos el JSON con los valores para consumir el servicio
-			        var dateExp = new Date();
-			        dateExp.setDate(dateExp.getDate() + 1);
-			        var expMes = dateExp.getMonth()+1;
-			        if(expMes < 10)
-			        {
-			            expMes = "0" + expMes;
-			        }
-			        var expDia = dateExp.getDate();
-			        if(expDia  < 10)
-			        {
-			            expDia = "0" + expDia;
-			        }
-			        var strFechaExp = dateExp.getFullYear() + "-" + expMes + "-" + expDia;
-			        var jsonLinkPago = '{' +
-			              '"amount_in_cents": ' + (totalNeto*100) +','+
-			              '"currency": "COP",' + 
-			              '"name": "Pizza Americana ' + tienda.toUpperCase() + ' ",'+
-			              '"description": "Pedido #' + idPedido + '",'+
-			              '"expires_at": "' + strFechaExp + 'T23:00:00.000Z",'+
-			              '"redirect_url": "https://pizzaamericana.co/wompi/",'+
-			              '"single_use": true,'+
-			              '"sku": "' + idPedido + '",'+
-			              '"collect_shipping": false'+
-			            '}';
-			        //Lanzamos la creación de la transacción
-			        $.ajax({
-			                url: wompiEndPoint + "payment_links",
-			                headers: {'Authorization': "Bearer " + wompiClavePrivada},
-			                dataType: 'json', 
-			                type: 'post',
-			                data: jsonLinkPago, 
-			                contentType: "application/json; charset=utf-8",
-			                async: false, 
-			                success: function(dataLink){
-			                    //Recuperaremos el valor del id para el envío del link al cliente
-			                    var idLink = dataLink.data.id;
-			                    $('#idlink').val(idLink);
-			                    $('#linkparapago').val('https://checkout.wompi.co/l/' + idLink);
-			                    //Vamos a refrescar el ikLink en el campo de texto
-			                    enviarNotificacionWompi(idLink, idCliente, "https://checkout.wompi.co/l/"+idLink, idFormaPago, idPedido);
-			                },
-			                error: function(dataLinkError){
-			                    alert('SE PRODUJO UN ERROR');
-			                    console.log(dataLinkError);
-			                    //process the JSON data etc
-			                }
-			        });
-				}
-			},
-			'No'	: {
-				'class'	: 'gray',
-				'action': function(){}	// Nothing to do in this case. You can as well omit the action property.
+	table = $('#grid-pedidos').DataTable({
+		"columns": [
+			{ "data": "idpedido" },
+			{ "data": "tienda" },
+			{ "data": "estado", "render": function(dato, tipo, fila) {
+					if (tipo !== 'display') { return dato; }
+					return '<span class="pv-estado">' + dato + '</span>';
+				} },
+			{ "data": "minutos" },
+			{ "data": "nombre" },
+			{ "data": "telefonocelular" },
+			{ "data": "telefono" },
+			{ "data": "email" },
+			{ "data": "totalneto", "render": function(dato, tipo) {
+					if (tipo !== 'display') { return dato; }
+					return pesos(dato);
+				} },
+			{ "data": "eventos" },
+			{ "data": "avisos" },
+			{ "data": "gestiones" },
+			{ "data": "fechainsercion" },
+			{ "data": "origen" },
+			{ "data": "idlink" }
+		],
+		"order": [[ 3, "desc" ]],
+		"pageLength": 25,
+		"language": { "emptyTable": "No hay pagos virtuales en el periodo consultado." },
+		"createdRow": function(fila, datos) {
+			$(fila).addClass('pv-n' + datos.nivel);
+			if (pedidoSel != null && datos.idpedido == pedidoSel.idpedido) {
+				$(fila).addClass('pv-sel');
 			}
 		}
 	});
-    
+
+	dtTraza = $('#grid-traza').DataTable({
+		"columns": [
+			{ "data": "fechahora" },
+			{ "data": "fuente", "render": function(dato, tipo) {
+					if (tipo !== 'display') { return dato; }
+					return '<span class="pv-' + dato + '">' + dato + '</span>';
+				} },
+			{ "data": "detalle" },
+			{ "data": "estado" }
+		],
+		"order": [],
+		"paging": false,
+		"searching": false,
+		"info": false,
+		"language": { "emptyTable": "Sin movimientos registrados." }
+	});
+
+	//Delegado sobre el tbody: las filas se vuelven a crear en cada refresco.
+	$('#grid-pedidos tbody').on('click', 'tr', function() {
+		var datos = table.row(this).data();
+		if (datos) {
+			seleccionarPedido(datos);
+		}
+	});
+
+	refrescarPagosVirtuales();
+	setInterval(validarVigenciaLogueo, 600000);
+	setInterval(refrescoAutomatico, MILIS_REFRESCO);
+});
+
+
+/*
+ * Consulta y pintado
+ */
+
+function refrescarPagosVirtuales() {
+	var desde = $("#fechainicial").val();
+	var hasta = $("#fechafinal").val();
+	$.getJSON(server + 'ObtenerPedidosMonitoreoPagoVirtual?fechaini=' + encodeURIComponent(desde)
+			+ '&fechafin=' + encodeURIComponent(hasta), function(datos) {
+		datosPedidos = datos.pedidos || [];
+		pintarResumen(datos.resumen || {});
+		pintarTabla();
+		$("#ultimaconsulta").html('Consultado a las ' + horaActual() + '. '
+				+ datosPedidos.length + ' pago(s) virtual(es) en el periodo.');
+		//Si el pedido que estaba abierto sigue en la lista, se refresca su ficha:
+		//puede haber pagado o haberle llegado un evento mientras se miraba.
+		if (pedidoSel != null) {
+			var vigente = buscarPedido(pedidoSel.idpedido);
+			if (vigente != null) {
+				pedidoSel = vigente;
+				pintarFichaPedido(vigente);
+			}
+		}
+	});
 }
 
-function obtenerParametrosWOMPI()
-{
-
-    $.getJSON(server + 'GetParametro?parametro=WOMPIAMBIENTE' , function(data2){
-        wompiAmbiente = data2.valortexto;
-        if(wompiAmbiente == 'P')
-        {
-            $.getJSON(server + 'GetParametro?parametro=WOMPIPRODUCCIONPUB' , function(data3){
-                wompiClavePublica = data3.valortexto;
-            });
-
-            $.getJSON(server + 'GetParametro?parametro=WOMPIPRODUCCIONPRI' , function(data4){
-                wompiClavePrivada = data4.valortexto;
-            });
-
-            $.getJSON(server + 'GetParametro?parametro=WOMPIENDPOINTP' , function(data5){
-                wompiEndPoint = data5.valortexto;
-            });
-
-
-
-
-        }else if(wompiAmbiente == 'C')
-        {
-            $.getJSON(server + 'GetParametro?parametro=WOMPISANDBOXPUB' , function(data3){
-                wompiClavePublica = data3.valortexto;
-            });
-
-            $.getJSON(server + 'GetParametro?parametro=WOMPISANDBOXPRI' , function(data4){
-                wompiClavePrivada = data4.valortexto;
-            });
-
-            $.getJSON(server + 'GetParametro?parametro=WOMPIENDPOINTC' , function(data5){
-                wompiEndPoint = data5.valortexto;
-            });
-        }
-    });
-
+/**
+ * El refresco solo no puede pisarle el trabajo a quien esta atendiendo: si
+ * desmarco la casilla, o esta escribiendo la observacion, no se refresca.
+ */
+function refrescoAutomatico() {
+	if (!$("#autorefresco").is(':checked')) {
+		return;
+	}
+	if ($("#observacion").is(':focus') || $("#correoenvio").is(':focus')) {
+		return;
+	}
+	refrescarPagosVirtuales();
 }
 
-function enviarNotificacionWompi(idLink, idCliNoti, linkPago, idFormaPago, idPed)
-{
-    $.getJSON(server + 'RealizarNotificacionWompi?idlink='+ idLink +'&idcliente='+ idCliNoti + '&linkpago=' + linkPago + '&idformapago=' + idFormaPago + '&idpedido=' + idPed , function(data1){
-        var respuesta = data1[0].respuesta;
-    });
+function pintarResumen(r) {
+	$("#res-total").html(r.total || 0);
+	$("#res-pagados").html(r.pagados || 0);
+	$("#res-sinpagar").html(r.sinpagar || 0);
+	$("#res-cancelados").html(r.cancelados || 0);
+	$("#res-poratender").html(r.poratender || 0);
+	$("#res-conrechazo").html(r.conrechazo || 0);
+	$("#res-valorpagado").html(pesos(r.valorpagado) + ' recibidos');
+	$("#res-valorriesgo").html(pesos(r.valorenriesgo) + ' en riesgo');
+	$("#res-valorperdido").html(pesos(r.valorperdido) + ' perdidos');
+	//Los tiempos salen de los parametros, no de un numero escrito aqui: si se
+	//cambian, la pantalla dice los nuevos.
+	$("#res-tiempos").html('Se recuerda a los ' + (r.minutosaviso || 0)
+			+ ' min y se cancela a los ' + (r.minutoscancela || 0) + ' min');
 }
 
-function obsGestionLink()
-{
-	var observacion =  encodeURIComponent($("#observacion").val());
-	$.getJSON(server + 'IngresarObsGestionLink?idpedido='+ idPedido +'&observacion='+ observacion , function(data1){
-        $("#observacion").val("");
-        $.alert("Se ha ingresado la observación de la situación del pedido # " + idPedido);
-    });
+function pintarTabla() {
+	table.clear();
+	var filas = [];
+	for (var i = 0; i < datosPedidos.length; i++) {
+		if (pasaFiltro(datosPedidos[i])) {
+			filas.push(datosPedidos[i]);
+		}
+	}
+	//Un solo draw al final. Antes se llamaba draw() por cada fila, o sea que la
+	//tabla se repintaba entera tantas veces como pedidos hubiera.
+	table.rows.add(filas).draw();
+}
+
+/**
+ * Los filtros son los que usa quien atiende, no los estados tecnicos:
+ * "para atender ya" es lo que hay que salvar en este momento.
+ */
+function pasaFiltro(pedido) {
+	switch (filtroActual) {
+		case 'ATENDER':  return (pedido.nivel == 4);
+		case 'SINPAGAR': return (pedido.nivel != 1 && pedido.nivel != 5);
+		case 'RECHAZO':  return (pedido.rechazos > 0);
+		case 'PERDIDOS': return (pedido.nivel == 5);
+		case 'PAGADOS':  return (pedido.nivel == 1);
+		default:         return true;
+	}
+}
+
+function filtrar(cual) {
+	filtroActual = cual;
+	$(".pv-filtros .btn").removeClass('btn-primary').addClass('btn-default');
+	$("#f-" + cual).removeClass('btn-default').addClass('btn-primary');
+	pintarTabla();
+}
+
+function buscarPedido(idPedido) {
+	for (var i = 0; i < datosPedidos.length; i++) {
+		if (datosPedidos[i].idpedido == idPedido) {
+			return datosPedidos[i];
+		}
+	}
+	return null;
+}
+
+
+/*
+ * El pedido seleccionado
+ */
+
+function seleccionarPedido(datos) {
+	pedidoSel = datos;
+	$("#grid-pedidos tbody tr").removeClass('pv-sel');
+	pintarFichaPedido(datos);
+	cargarTraza(datos.idpedido);
+	//Se vuelve a marcar la fila despues de pintar, porque pintarFichaPedido no
+	//toca la tabla pero cargarTraza si puede tardar.
+	table.rows().every(function() {
+		if (this.data().idpedido == datos.idpedido) {
+			$(this.node()).addClass('pv-sel');
+		}
+	});
+}
+
+function pintarFichaPedido(p) {
+	$("#pv-pedido-titulo").html('Pedido <b>#' + p.idpedido + '</b> &nbsp;&middot;&nbsp; ' + p.tienda
+			+ ' &nbsp;&middot;&nbsp; ' + pesos(p.totalneto)
+			+ ' &nbsp;&middot;&nbsp; <span class="pv-estado">' + p.estado + '</span>');
+	$("#pv-pedido-detalle").html(p.nombre + ' &nbsp;&middot;&nbsp; cel ' + (p.telefonocelular || '-')
+			+ ' &nbsp;&middot;&nbsp; tel ' + (p.telefono || '-')
+			+ '<br/>Tomado ' + p.fechainsercion + ' (' + p.minutos + ' min)'
+			+ (p.fechapago ? ' &nbsp;&middot;&nbsp; pagado ' + p.fechapago : '')
+			+ '<br/>Link: ' + (p.idlink ? p.idlink : '<b>sin link</b>'));
+
+	$("#correoenvio").val(p.email || '').prop('disabled', false);
+	$("#observacion").prop('disabled', false);
+	$("#obsGestion").prop('disabled', false);
+	$("#reenviarCorreo").prop('disabled', false);
+
+	//Un pedido ya pagado no se vuelve a notificar ni se le recrea el link: seria
+	//pedirle al cliente que pague algo que ya pago.
+	var pagado = (p.fechapago && p.fechapago.length > 0);
+	$("#reenviarNotificacion").prop('disabled', pagado || !p.idlink);
+	$("#recrearLink").prop('disabled', pagado);
+	$("#reenviarCorreo").prop('disabled', pagado || !p.idlink);
+}
+
+function cargarTraza(idPedido) {
+	$.getJSON(server + 'ConsultarTrazaPagoVirtual?idpedido=' + idPedido, function(filas) {
+		dtTraza.clear();
+		dtTraza.rows.add(filas || []).draw();
+	});
+}
+
+function limpiarSeleccion() {
+	pedidoSel = null;
+	$("#grid-pedidos tbody tr").removeClass('pv-sel');
+	$("#pv-pedido-titulo").html('Seleccione un pedido de la lista.');
+	$("#pv-pedido-detalle").html('');
+	$("#correoenvio").val('').prop('disabled', true);
+	$("#observacion").val('').prop('disabled', true);
+	$("#obsGestion").prop('disabled', true);
+	$("#reenviarNotificacion").prop('disabled', true);
+	$("#reenviarCorreo").prop('disabled', true);
+	$("#recrearLink").prop('disabled', true);
+	dtTraza.clear().draw();
+}
+
+
+/*
+ * Acciones sobre el pedido
+ */
+
+function reenviarNotificacion() {
+	if (pedidoSel == null) { return; }
+	//La validacion mira el link del pedido y no un campo del formulario. La
+	//version anterior preguntaba por #idlink, que no existe en el HTML: nunca
+	//detenia nada y el cliente recibia la direccion de pago vacia.
+	if (!pedidoSel.idlink) {
+		$.alert("Este pedido no tiene link de pago. Primero hay que recrearlo.");
+		return;
+	}
+	$.confirm({
+		'title': 'Reenviar el link de pago',
+		'content': 'Se le vuelve a enviar el link del pedido #' + pedidoSel.idpedido
+				+ ' a ' + pedidoSel.nombre + '.<br>Se envia mensaje de texto y correo, si tiene.',
+		'type': 'dark',
+		'typeAnimated': true,
+		'buttons': {
+			'Si': { 'class': 'blue', 'action': function() {
+					var p = pedidoSel;
+					$.getJSON(server + 'RealizarNotificacionWompi?idlink=' + p.idlink
+							+ '&idcliente=' + p.idcliente
+							+ '&linkpago=' + encodeURIComponent('https://checkout.wompi.co/l/' + p.idlink)
+							+ '&idformapago=' + p.idformapago + '&idpedido=' + p.idpedido, function() {
+						$.alert("Se reenvio la notificacion del pedido #" + p.idpedido + ".");
+						cargarTraza(p.idpedido);
+					});
+				} },
+			'No': { 'class': 'gray', 'action': function() {} }
+		}
+	});
+}
+
+
+/**
+ * Reenvia el correo, con la opcion de mandarlo a otra direccion.
+ *
+ * Si el correo escrito es distinto al que tiene la ficha, se pregunta si ademas
+ * hay que dejarselo al cliente. No se guarda solo: un correo dictado por
+ * telefono se entiende mal con frecuencia, y el que esta en la ficha puede ser
+ * el bueno.
+ */
+function reenviarCorreo() {
+	if (pedidoSel == null) { return; }
+	var p = pedidoSel;
+	var destino = $.trim($("#correoenvio").val());
+	if (destino.length == 0) {
+		$.alert("Escriba el correo al que se le va a enviar el link.");
+		return;
+	}
+	if (!correoValido(destino)) {
+		$.alert("El correo '" + destino + "' no parece valido. Revise antes de enviarlo.");
+		return;
+	}
+	var actual = $.trim(p.email || '');
+	var esOtro = (destino.toLowerCase() !== actual.toLowerCase());
+
+	if (!esOtro) {
+		enviarCorreoLink(p, '', 'N');
+		return;
+	}
+	$.confirm({
+		'title': 'El correo es distinto al de la ficha',
+		'content': 'En la ficha del cliente esta <b>' + (actual.length > 0 ? actual : 'sin correo')
+				+ '</b> y se va a enviar a <b>' + destino + '</b>.'
+				+ '<br><br>Desea ademas dejar este correo en la ficha del cliente?',
+		'type': 'dark',
+		'typeAnimated': true,
+		'buttons': {
+			'Enviar y actualizar': { 'class': 'blue', 'action': function() {
+					enviarCorreoLink(p, destino, 'S');
+				} },
+			'Solo enviar': { 'class': 'green', 'action': function() {
+					enviarCorreoLink(p, destino, 'N');
+				} },
+			'Cancelar': { 'class': 'gray', 'action': function() {} }
+		}
+	});
+}
+
+function enviarCorreoLink(p, correo, actualizar) {
+	$("#reenviarCorreo").prop('disabled', true);
+	$.getJSON(server + 'ReenviarCorreoLinkPago?idpedido=' + p.idpedido
+			+ '&correo=' + encodeURIComponent(correo)
+			+ '&actualizar=' + actualizar, function(resp) {
+		$("#reenviarCorreo").prop('disabled', false);
+		$.alert(resp.mensaje);
+		if (resp.resultado == 'OK') {
+			cargarTraza(p.idpedido);
+			if (resp.actualizado) {
+				//Que la reja muestre el correo nuevo sin tener que volver a consultar.
+				p.email = $.trim($("#correoenvio").val());
+				pintarTabla();
+			}
+		}
+	}).fail(function() {
+		$("#reenviarCorreo").prop('disabled', false);
+		$.alert("No se pudo reenviar el correo. Revise la sesion y vuelva a intentar.");
+	});
+}
+
+/**
+ * Recrea el link de pago.
+ *
+ * Es una llamada al servidor. Antes se armaba aqui mismo el POST a Wompi con la
+ * clave PRIVADA bajada al navegador, y con el monto tomado de la reja.
+ */
+function recrearLink() {
+	if (pedidoSel == null) { return; }
+	$.confirm({
+		'title': 'Recrear el link de pago',
+		'content': 'Se crea un link nuevo para el pedido #' + pedidoSel.idpedido
+				+ ' y se le envia al cliente.<br>El link anterior ya no se debe usar.',
+		'type': 'dark',
+		'typeAnimated': true,
+		'buttons': {
+			'Si': { 'class': 'blue', 'action': function() {
+					var p = pedidoSel;
+					$("#recrearLink").prop('disabled', true);
+					$.getJSON(server + 'RecrearLinkPagoWompi?idpedido=' + p.idpedido, function(resp) {
+						$("#recrearLink").prop('disabled', false);
+						$.alert(resp.mensaje);
+						if (resp.resultado == 'OK') {
+							p.idlink = resp.idlink;
+							pintarFichaPedido(p);
+							pintarTabla();
+							cargarTraza(p.idpedido);
+						}
+					}).fail(function() {
+						$("#recrearLink").prop('disabled', false);
+						$.alert("No se pudo recrear el link. Revise la sesion y vuelva a intentar.");
+					});
+				} },
+			'No': { 'class': 'gray', 'action': function() {} }
+		}
+	});
+}
+
+
+function obsGestionLink() {
+	if (pedidoSel == null) { return; }
+	var observacion = $.trim($("#observacion").val());
+	if (observacion.length == 0) {
+		$.alert("Escriba que se hizo con el pedido antes de guardar.");
+		return;
+	}
+	var p = pedidoSel;
+	$.getJSON(server + 'IngresarObsGestionLink?idpedido=' + p.idpedido
+			+ '&observacion=' + encodeURIComponent(observacion), function(resp) {
+		if (resp && resp.resultado == 'ERROR') {
+			$.alert(resp.mensaje);
+			return;
+		}
+		$("#observacion").val("");
+		//La gestion ya no se escribe a ciegas: aparece de una vez en la historia
+		//del pedido, con su hora y con el usuario que la dejo.
+		cargarTraza(p.idpedido);
+		p.gestiones = (p.gestiones || 0) + 1;
+		pintarTabla();
+	});
+}
+
+
+/*
+ * Utilidades
+ */
+
+function validarVigenciaLogueo() {
+	var respuesta = '';
+	$.ajax({
+		url: server + 'ValidarUsuarioAplicacion',
+		dataType: 'json',
+		type: 'post',
+		async: false,
+		success: function(data) {
+			respuesta = data[0].respuesta;
+		}
+	});
+	switch (respuesta) {
+		case 'OK':
+			break;
+		case 'OKA':
+			break;
+		default:
+			location.href = server + "Index.html";
+			break;
+	}
+}
+
+/** Revision minima: una arroba, un punto despues y sin espacios. */
+function correoValido(correo) {
+	var valor = $.trim(correo);
+	var arroba = valor.indexOf('@');
+	var punto = valor.lastIndexOf('.');
+	return (valor.length >= 6 && arroba > 0 && punto > arroba + 1 && punto < valor.length - 1
+			&& valor.indexOf(' ') < 0 && valor.indexOf('@', arroba + 1) < 0);
+}
+
+function pesos(valor) {
+	var numero = parseFloat(valor);
+	if (isNaN(numero)) {
+		return '$0';
+	}
+	return '$' + Math.round(numero).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function horaActual() {
+	var d = new Date();
+	return dosDigitos(d.getHours()) + ':' + dosDigitos(d.getMinutes()) + ':' + dosDigitos(d.getSeconds());
+}
+
+function dosDigitos(n) {
+	return (n < 10 ? '0' + n : '' + n);
 }

@@ -11720,13 +11720,59 @@ public class PedidoCtrl {
 
 	}
 
-	public String obtenerPedidosMonitoreoPagoVirtual() {
+	/**
+	 * El listado del monitoreo de pagos virtuales de un rango de fechas.
+	 *
+	 * Devuelve dos cosas: el resumen del periodo y las filas. El resumen va aqui y
+	 * no en el navegador porque es la cifra por la que se abre la pantalla -cuanta
+	 * plata se esta perdiendo por pagos que no entran- y tiene que ser la misma
+	 * para todo el que la mire, no el resultado de sumar lo que quedo en pantalla.
+	 *
+	 * @param fechaIni fecha inicial yyyy-MM-dd
+	 * @param fechaFin fecha final yyyy-MM-dd
+	 */
+	public String obtenerPedidosMonitoreoPagoVirtual(String fechaIni, String fechaFin) {
+		ArrayList<PedidoMonitoreoPagoVirtual> pedidosMonitoreo = PedidoDAO
+				.obtenerPedidosMonitoreoPagoVirtual(fechaIni, fechaFin);
+		//Los dos tiempos se leen una sola vez para todo el listado: adentro del
+		//ciclo serian dos consultas a parametros por cada pedido de la pantalla.
+		int minutosAviso = utilidadesCC.TiemposPagoVirtual.minutosAviso();
+		int minutosCancela = utilidadesCC.TiemposPagoVirtual.minutosCancela();
+
 		JSONArray pedRespuesta = new JSONArray();
-		JSONObject pedResTemp = new JSONObject();
-		ArrayList<PedidoMonitoreoPagoVirtual> pedidosMonitoreo = PedidoDAO.obtenerPedidosMonitoreoPagoVirtual();
+		JSONObject pedResTemp;
 		PedidoMonitoreoPagoVirtual pedTemp;
+		int pagados = 0;
+		int sinPagar = 0;
+		int cancelados = 0;
+		int conRechazo = 0;
+		int porAtender = 0;
+		double valorPagado = 0;
+		double valorEnRiesgo = 0;
+		double valorPerdido = 0;
+
 		for (int i = 0; i < pedidosMonitoreo.size(); i++) {
 			pedTemp = pedidosMonitoreo.get(i);
+			utilidadesCC.EstadoPagoVirtual.resolver(pedTemp, minutosAviso, minutosCancela);
+			double valor = aNumero(pedTemp.getTotalNeto());
+
+			if (pedTemp.getNivel() == utilidadesCC.EstadoPagoVirtual.NIVEL_PAGADO) {
+				pagados++;
+				valorPagado = valorPagado + valor;
+			} else if (pedTemp.getNivel() == utilidadesCC.EstadoPagoVirtual.NIVEL_PERDIDO) {
+				cancelados++;
+				valorPerdido = valorPerdido + valor;
+			} else {
+				sinPagar++;
+				valorEnRiesgo = valorEnRiesgo + valor;
+			}
+			if (pedTemp.getNivel() == utilidadesCC.EstadoPagoVirtual.NIVEL_URGENTE) {
+				porAtender++;
+			}
+			if (pedTemp.getRechazos() > 0) {
+				conRechazo++;
+			}
+
 			pedResTemp = new JSONObject();
 			pedResTemp.put("idpedido", pedTemp.getIdPedido());
 			pedResTemp.put("tienda", pedTemp.getTienda());
@@ -11737,13 +11783,51 @@ public class PedidoCtrl {
 			pedResTemp.put("totalneto", pedTemp.getTotalNeto());
 			pedResTemp.put("idlink", pedTemp.getIdLink());
 			pedResTemp.put("fechainsercion", pedTemp.getFechaInsercion());
+			pedResTemp.put("fechapedido", pedTemp.getFechaPedido());
+			pedResTemp.put("fechapago", pedTemp.getFechaPago());
 			pedResTemp.put("minutos", pedTemp.getMinutos());
 			pedResTemp.put("idcliente", pedTemp.getIdCliente());
 			pedResTemp.put("idformapago", pedTemp.getIdFormaPago());
+			pedResTemp.put("origen", pedTemp.getOrigen());
+			pedResTemp.put("estado", pedTemp.getEstado());
+			pedResTemp.put("nivel", pedTemp.getNivel());
+			pedResTemp.put("eventos", pedTemp.getEventos());
+			pedResTemp.put("rechazos", pedTemp.getRechazos());
+			pedResTemp.put("ultimoestado", pedTemp.getUltimoEstado());
+			pedResTemp.put("ultimoevento", pedTemp.getUltimoEvento());
+			pedResTemp.put("avisos", pedTemp.getAvisos());
+			pedResTemp.put("gestiones", pedTemp.getGestiones());
 			pedRespuesta.add(pedResTemp);
 		}
 
-		return (pedRespuesta.toJSONString());
+		JSONObject resumen = new JSONObject();
+		resumen.put("total", pedidosMonitoreo.size());
+		resumen.put("pagados", pagados);
+		resumen.put("sinpagar", sinPagar);
+		resumen.put("cancelados", cancelados);
+		resumen.put("conrechazo", conRechazo);
+		resumen.put("poratender", porAtender);
+		resumen.put("valorpagado", valorPagado);
+		resumen.put("valorenriesgo", valorEnRiesgo);
+		resumen.put("valorperdido", valorPerdido);
+		resumen.put("minutosaviso", minutosAviso);
+		resumen.put("minutoscancela", minutosCancela);
+		resumen.put("fechaini", fechaIni);
+		resumen.put("fechafin", fechaFin);
+
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("resumen", resumen);
+		respuesta.put("pedidos", pedRespuesta);
+		return (respuesta.toJSONString());
+	}
+
+	/** El total viene de la base como texto; un pedido raro no puede tumbar el resumen. */
+	private double aNumero(String valor) {
+		try {
+			return (Double.parseDouble(valor));
+		} catch (Exception e) {
+			return (0);
+		}
 	}
 
 	public String consultarLogEventoWompi(String idLink) {
@@ -11763,11 +11847,261 @@ public class PedidoCtrl {
 		return (eventosJSON.toJSONString());
 	}
 
+	/**
+	 * La historia completa de un pago virtual, en orden.
+	 *
+	 * Junta lo que se le mando al cliente, lo que contesto Wompi y lo que hizo
+	 * quien lo gestiono. Las tres cosas ya se venian guardando -343.000 avisos,
+	 * 258.000 eventos y 1.084 gestiones- y ninguna se podia ver.
+	 */
+	public String consultarTrazaPagoVirtual(int idPedido) {
+		JSONArray trazaJSON = new JSONArray();
+		JSONObject filaJSON;
+		PedidoMonitoreoPagoVirtual pedido = PedidoDAO.obtenerPedidoMonitoreoPagoVirtual(idPedido);
+		String idLink = (pedido == null) ? "" : pedido.getIdLink();
+		ArrayList<capaModeloCC.TrazaPagoVirtual> traza = capaDAOCC.TrazaPagoVirtualDAO.obtenerTraza(idPedido,
+				idLink);
+		for (int i = 0; i < traza.size(); i++) {
+			capaModeloCC.TrazaPagoVirtual fila = traza.get(i);
+			filaJSON = new JSONObject();
+			filaJSON.put("fuente", fila.getFuente());
+			filaJSON.put("fechahora", fila.getFechaHora());
+			filaJSON.put("detalle", fila.getDetalle());
+			filaJSON.put("estado", fila.getEstado());
+			trazaJSON.add(filaJSON);
+		}
+		return (trazaJSON.toJSONString());
+	}
+
 	public String ingresarObsGestionLink(int idPedido, String observacion) {
-		PedidoGestionLinkDAO.ingresarObsGestionLink(idPedido, observacion);
+		return (ingresarObsGestionLink(idPedido, observacion, ""));
+	}
+
+	/**
+	 * Guarda la gestion que se le hizo a un link que no se ha pagado.
+	 *
+	 * El usuario se guarda desde este cambio: antes la observacion quedaba sin
+	 * fecha y sin autor, asi que no habia forma de saber si a un pedido lo habian
+	 * llamado ni quien.
+	 */
+	public String ingresarObsGestionLink(int idPedido, String observacion, String usuario) {
+		PedidoGestionLinkDAO.ingresarObsGestionLink(idPedido, observacion, usuario);
 		JSONObject res = new JSONObject();
 		res.put("resultado", "OK");
 		return (res.toJSONString());
+	}
+
+	/**
+	 * Vuelve a crear el link de pago de un pedido, desde el servidor.
+	 *
+	 * Antes esto lo hacia el navegador: la pantalla de monitoreo se bajaba la
+	 * clave PRIVADA de Wompi con GetParametro y armaba el POST desde JavaScript.
+	 * La clave quedaba en una variable a la vista de cualquiera que abriera la
+	 * consola, y ademas el monto del link salia de la reja, o sea de algo que se
+	 * puede modificar antes de enviarlo.
+	 *
+	 * Ahora la clave no sale del servidor y el monto se lee de la base.
+	 */
+	public String recrearLinkPagoWompi(int idPedido) {
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("resultado", "ERROR");
+		respuesta.put("mensaje", "");
+		respuesta.put("idlink", "");
+
+		PedidoMonitoreoPagoVirtual pedido = PedidoDAO.obtenerPedidoMonitoreoPagoVirtual(idPedido);
+		if (pedido == null) {
+			respuesta.put("mensaje", "No se encontro el pedido " + idPedido + ".");
+			return (respuesta.toJSONString());
+		}
+		if (pedido.getFechaPago() != null && pedido.getFechaPago().trim().length() > 0) {
+			//Recrearle el link a un pedido ya pagado es la forma de que el cliente
+			//pague dos veces.
+			respuesta.put("mensaje", "El pedido " + idPedido + " ya esta pagado. No se recrea el link.");
+			return (respuesta.toJSONString());
+		}
+		double total = aNumero(pedido.getTotalNeto());
+		if (total <= 0) {
+			respuesta.put("mensaje", "El pedido " + idPedido + " no tiene valor. No se recrea el link.");
+			return (respuesta.toJSONString());
+		}
+
+		String ambiente = ParametrosDAO.retornarValorAlfanumerico("WOMPIAMBIENTE");
+		boolean produccion = !"C".equals(ambiente);
+		String token = ParametrosDAO
+				.retornarValorAlfanumerico(produccion ? "WOMPIPRODUCCIONPRI" : "WOMPISANDBOXPRI");
+		String wompiEndPoint = ParametrosDAO
+				.retornarValorAlfanumerico(produccion ? "WOMPIENDPOINTP" : "WOMPIENDPOINTC");
+		String wompiUrl = ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+
+		Calendar calendarioActual = Calendar.getInstance();
+		calendarioActual.add(Calendar.DAY_OF_YEAR, 1);
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		String strFechaExt = dateFormat.format(calendarioActual.getTime());
+
+		String jsonLinkPago = "{" + "\"amount_in_cents\":" + ((long) (total * 100)) + ","
+				+ "\"currency\": \"COP\"," + "\"name\": \"Pizza Americana "
+				+ escaparJSON(pedido.getTienda()) + "\"," + "\"description\": \"Pedido #" + idPedido + "\","
+				+ "\"expires_at\": \"" + strFechaExt + "T23:00:00.000Z\","
+				+ "\"redirect_url\": \"https://pizzaamericana.co/wompi/\"," + "\"single_use\": true,"
+				+ "\"sku\": \"" + idPedido + "\"," + "\"collect_shipping\": false" + "}";
+
+		try {
+			HttpClient client = utilidadesCC.ClientesHttp.apache();
+			HttpPost request = new HttpPost(wompiEndPoint + "payment_links");
+			request.setHeader("Authorization", "Bearer " + token);
+			request.setHeader("Accept", "application/json");
+			request.setHeader("Content-type", "application/json");
+			request.setEntity(new ByteArrayEntity(jsonLinkPago.getBytes("UTF-8")));
+			HttpResponse respWompi = client.execute(request);
+			String datosJSON = "";
+			try {
+				if (respWompi.getEntity() != null) {
+					datosJSON = EntityUtils.toString(respWompi.getEntity(), StandardCharsets.UTF_8);
+				}
+			} finally {
+				EntityUtils.consumeQuietly(respWompi.getEntity());
+			}
+			JSONParser parser = new JSONParser();
+			JSONObject jsonGeneral = (JSONObject) parser.parse(datosJSON);
+			JSONObject jsonData = (JSONObject) parser.parse(jsonGeneral.get("data").toString());
+			String idLinkNuevo = (String) jsonData.get("id");
+			if (idLinkNuevo == null || idLinkNuevo.trim().length() == 0) {
+				respuesta.put("mensaje", "Wompi no devolvio un link nuevo.");
+				return (respuesta.toJSONString());
+			}
+			//La notificacion guarda el link nuevo en el pedido y deja el rastro en
+			//pedido_pago_virtual.
+			realizarNotificacionWompi(idLinkNuevo, pedido.getIdCliente(), wompiUrl + idLinkNuevo,
+					pedido.getIdFormaPago(), idPedido);
+			respuesta.put("resultado", "OK");
+			respuesta.put("idlink", idLinkNuevo);
+			respuesta.put("mensaje", "Se creo el link nuevo y se le notifico al cliente.");
+		} catch (Exception e) {
+			//Que quien esta atendiendo sepa que no salio, en vez de creer que si.
+			respuesta.put("mensaje", "No se pudo crear el link: " + e.toString());
+			System.out.println("recrearLinkPagoWompi(" + idPedido + "): " + e.toString());
+		}
+		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * Le reenvia al cliente el correo con el link de pago.
+	 *
+	 * Existe aparte del reenvio completo por una razon concreta: el caso mas comun
+	 * de "no me llego" es que el correo que tenemos este malo. Aqui se puede
+	 * escribir otro correo para este envio y, si el cliente confirma que ese es el
+	 * suyo, dejarselo en la ficha para que el proximo pedido no falle por lo mismo.
+	 *
+	 * El correo alterno no se guarda solo: quien atiende decide. Un correo dictado
+	 * por telefono se entiende mal con frecuencia y el que esta en la ficha puede
+	 * ser el bueno.
+	 *
+	 * @param idPedido          pedido al que se le reenvia el link
+	 * @param correoAlterno     correo al que enviar; vacio para usar el del cliente
+	 * @param actualizarCliente "S" para ademas dejarlo como correo del cliente
+	 */
+	public String reenviarCorreoLinkPago(int idPedido, String correoAlterno, String actualizarCliente) {
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("resultado", "ERROR");
+		respuesta.put("mensaje", "");
+		respuesta.put("actualizado", Boolean.FALSE);
+
+		PedidoMonitoreoPagoVirtual pedido = PedidoDAO.obtenerPedidoMonitoreoPagoVirtual(idPedido);
+		if (pedido == null) {
+			respuesta.put("mensaje", "No se encontro el pedido " + idPedido + ".");
+			return (respuesta.toJSONString());
+		}
+		String idLink = pedido.getIdLink();
+		if (idLink == null || idLink.trim().length() == 0) {
+			//Sin link el correo llevaria una direccion de pago vacia. Era el error de
+			//la pantalla vieja: validaba un campo que no existia en el HTML, asi que
+			//siempre pasaba, y al cliente le llegaba un link roto.
+			respuesta.put("mensaje", "El pedido no tiene link de pago. Primero hay que recrearlo.");
+			return (respuesta.toJSONString());
+		}
+		String destino = (correoAlterno == null) ? "" : correoAlterno.trim();
+		boolean esAlterno = (destino.length() > 0);
+		if (!esAlterno) {
+			destino = (pedido.getEmail() == null) ? "" : pedido.getEmail().trim();
+		}
+		if (!correoValido(destino)) {
+			respuesta.put("mensaje", "El correo indicado no es valido: " + destino);
+			return (respuesta.toJSONString());
+		}
+
+		boolean actualizado = false;
+		if (esAlterno && "S".equalsIgnoreCase(actualizarCliente)) {
+			actualizado = PedidoDAO.actualizarCorreoCliente(pedido.getIdCliente(), destino);
+		}
+
+		try {
+			Cliente clienteNoti = ClienteDAO.obtenerClienteporID(pedido.getIdCliente());
+			String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
+			String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
+			String wompiUrl = ParametrosDAO.retornarValorAlfanumerico("WOMPIURL");
+			String linkPago = wompiUrl + idLink;
+			//Las mismas imagenes del envio original: el cliente tiene que reconocer el
+			//correo como el que ya le habia llegado, no como uno nuevo y distinto.
+			String urlLogo = ParametrosDAO.retornarValorAlfanumerico("IMAGENLOGOCORREO");
+			String imagenPago = ParametrosDAO.retornarValorAlfanumerico("IMAGENPAGOWOMPI");
+			String nombre = (clienteNoti == null) ? ""
+					: (clienteNoti.getNombres() + " " + clienteNoti.getApellidos());
+
+			Correo correo = new Correo();
+			correo.setAsunto("Pizza Americana - link de pago de tu pedido #" + idPedido);
+			correo.setContrasena(claveCorreo);
+			correo.setUsuarioCorreo(cuentaCorreo);
+			correo.setMensaje(utilidadesCC.PlantillaCorreoLinkPago.cuerpo(nombre, idPedido, linkPago,
+					"Te reenviamos el link para que puedas pagar tu pedido.", urlLogo, imagenPago));
+			ArrayList correos = new ArrayList();
+			correos.add(destino);
+			ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
+			contro.enviarCorreo();
+
+			//Queda el rastro de a que correo se reenvio: cuando el cliente vuelva a
+			//decir que no le llego, se puede mirar a donde se mando de verdad.
+			String observacionLog = "REENVIO MANUAL de correo a " + destino
+					+ (actualizado ? " (actualizado en la ficha del cliente)" : "");
+			PedidoPagoVirtual pedPagVirtual = new PedidoPagoVirtual(idPedido, destino,
+					pedido.getTelefonoCelular(), observacionLog);
+			PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(pedPagVirtual);
+
+			respuesta.put("resultado", "OK");
+			respuesta.put("actualizado", Boolean.valueOf(actualizado));
+			respuesta.put("mensaje", "Se reenvio el correo a " + destino
+					+ (actualizado ? " y se actualizo en la ficha del cliente." : "."));
+		} catch (Exception e) {
+			respuesta.put("mensaje", "No se pudo reenviar el correo: " + e.toString());
+			System.out.println("reenviarCorreoLinkPago(" + idPedido + "): " + e.toString());
+		}
+		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * Revision minima del correo: que tenga una sola arroba, un punto despues y
+	 * ningun espacio. No se pretende saber si existe, solo no mandar a la nada un
+	 * correo que se dicto por telefono.
+	 */
+	private boolean correoValido(String correo) {
+		if (correo == null) {
+			return (false);
+		}
+		String valor = correo.trim();
+		int arroba = valor.indexOf(64);
+		int punto = valor.lastIndexOf(46);
+		if (arroba <= 0 || valor.length() < 6) {
+			return (false);
+		}
+		return (punto > arroba + 1 && punto < valor.length() - 1 && valor.indexOf(32) < 0
+				&& valor.indexOf(64, arroba + 1) < 0);
+	}
+
+	/** Un nombre de tienda con comillas romperia el JSON que se le manda a Wompi. */
+	private String escaparJSON(String valor) {
+		if (valor == null) {
+			return ("");
+		}
+		return (valor.replace("\\", "\\\\").replace("\"", "\\\""));
 	}
 
 	public String marcarPedidoEmpresarial(int idpedido) {
