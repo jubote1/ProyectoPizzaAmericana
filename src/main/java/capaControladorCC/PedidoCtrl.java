@@ -1918,7 +1918,12 @@ public class PedidoCtrl {
 		// Obtenemos la forma de pago
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		// Procesamos los mensajes de texto y correo electrónico
-		String mensajeTexto = "Querido Cliente han pasado 20 minutos y no registramos tu pago, tendras 20 minutos mas o tu pedido sera cancelado. Tu link es "
+		//El tiempo sale del parametro, no de un numero en medio de la frase: antes
+		//aqui decia 20, en el correo 10, y el pedido se cancelaba a los 30. Tres
+		//cifras distintas para el mismo cliente.
+		int minutosRestantes = utilidadesCC.TiemposPagoVirtual.minutosRestantes();
+		String mensajeTexto = "Pizza Americana: aun no registramos el pago de tu pedido #" + idPedido
+				+ ". Te quedan " + minutosRestantes + " minutos para pagarlo aqui: "
 				+ linkPago;
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
 		// Envío del mensaje de Texto
@@ -1961,22 +1966,26 @@ public class PedidoCtrl {
 				observacionLog = observacionLog + " Se tiene email para enviar.";
 				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENWOMPI20MINUTOS");
-				String mensajeCorreo = "Querido Cliente han pasado 20 minutos y no registramos tu pago, tendrás 10 minutos más o tu pedido será cancelado. Tu link es "
-						+ linkPago;
+				String urlLogo = ParametrosDAO.retornarValorAlfanumerico("URLLOGOCORREO");
+				String imagenPago = ParametrosDAO.retornarValorAlfanumerico("IMAGENMEDIOSPAGO");
+				//El recordatorio usa la misma plantilla del primer correo del link.
+				//Antes se armaba a mano y lo unico en que se podia hacer clic era una
+				//IMAGEN: Gmail bloquea las imagenes remotas por defecto, asi que al
+				//cliente le llegaba un correo sin nada donde pulsar, justo cuando lo
+				//que se le esta pidiendo es que pague.
+				String mensajeIntro = "Todavia no hemos registrado el pago de tu pedido. Te quedan "
+						+ minutosRestantes + " minutos para completarlo y que empecemos a prepararlo.";
 				Correo correo = new Correo();
-				correo.setAsunto("No hemos registrado tu pago Pedido # " + idPedido);
+				correo.setAsunto("Tu pedido #" + idPedido + " esta esperando el pago");
 				ArrayList correos = new ArrayList();
 				String correoEle = clienteNoti.getEmail();
 				emailEnvio = correoEle;
 				correos.add(correoEle);
 				correo.setContrasena(claveCorreo);
 				correo.setUsuarioCorreo(cuentaCorreo);
-				String mensajeCuerpoCorreo = "Cordiar Saludo " + clienteNoti.getNombres() + clienteNoti.getApellidos()
-						+ " ." + mensajeCorreo + "\n" + "<body><a href=\"" + linkPago
-						+ "\"><img align=\" center \" src=\"" + imagenWompi + "\"></a></body>";
-				;
-				correo.setMensaje(mensajeCuerpoCorreo);
+				correo.setMensaje(utilidadesCC.PlantillaCorreoLinkPago.cuerpo(
+						clienteNoti.getNombres() + " " + clienteNoti.getApellidos(),
+						idPedido, linkPago, mensajeIntro, urlLogo, imagenPago));
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				// Agregamos control para que verifique con que método debe hacer el envío
 				if (cuentaCorreo.contains("@gmail.com")) {
@@ -2011,8 +2020,14 @@ public class PedidoCtrl {
 		// Obtenemos la forma de pago
 		PromocionesCtrl promoCtrl = new PromocionesCtrl();
 		// Procesamos los mensajes de texto y correo electrónico
-		String mensajeTexto = "Querido Cliente han pasado mas de 40 minutos y no registramos tu pago, tu pedido # "
-				+ idPedido + " fue cancelado.";
+		//El tiempo sale del parametro: antes decia 40 y el pedido se cancelaba a
+		//los 50. Al cliente se le daba una cifra que no era.
+		int minutosEspera = utilidadesCC.TiemposPagoVirtual.minutosCancela();
+		//El mensaje corto tambien invita a recuperar el pedido. Antes solo avisaba
+		//que se habia cancelado: cerraba la puerta en el mismo momento en que la
+		//venta se estaba perdiendo.
+		String mensajeTexto = "Pizza Americana: no alcanzamos a recibir el pago de tu pedido #" + idPedido
+				+ ". Tu pedido sigue guardado, llamanos al 604 4444553 y lo reactivamos.";
 		String telefonoCelular = clienteNoti.getTelefonoCelular();
 		// Envío del mensaje de Texto
 		promoCtrl.ejecutarPHPEnvioMensaje("57" + telefonoCelular, mensajeTexto);
@@ -2024,23 +2039,16 @@ public class PedidoCtrl {
 				observacionLog = observacionLog + " Se tiene email para enviar.";
 				String cuentaCorreo = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
 				String claveCorreo = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-				String imagenWompi = ParametrosDAO.retornarValorAlfanumerico("IMAGENCANCELACIONWOMPI");
-				String mensajeCorreo = "Querido Cliente han pasado más de 40 minutos y no registramos tu pago, tu pedido # "
-						+ idPedido
-						+ " fue cancelado. Si deseas podrás llamar de nuevo a nuestro Contact Center y reactivar tu pedido.";
 				Correo correo = new Correo();
-				correo.setAsunto("Cancelación de tu pago Pedido # " + idPedido);
+				correo.setAsunto(utilidadesCC.PlantillaCorreoPedidoCancelado.asunto(idPedido));
 				ArrayList correos = new ArrayList();
 				String correoEle = clienteNoti.getEmail();
 				emailEnvio = correoEle;
 				correos.add(correoEle);
 				correo.setContrasena(claveCorreo);
 				correo.setUsuarioCorreo(cuentaCorreo);
-				String mensajeCuerpoCorreo = "Cordiar Saludo " + clienteNoti.getNombres() + clienteNoti.getApellidos()
-						+ " ." + mensajeCorreo + "\n" + "<body><img align=\" center \" src=\"" + imagenWompi
-						+ "\"></a></body>";
-				;
-				correo.setMensaje(mensajeCuerpoCorreo);
+				correo.setMensaje(utilidadesCC.PlantillaCorreoPedidoCancelado.cuerpo(
+						clienteNoti.getNombres() + " " + clienteNoti.getApellidos(), idPedido, minutosEspera));
 				ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 				// Agregamos control para que verifique con que método debe hacer el envío
 				if (cuentaCorreo.contains("@gmail.com")) {
