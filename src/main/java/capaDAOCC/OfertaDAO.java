@@ -1,7 +1,9 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -148,44 +150,151 @@ public class OfertaDAO {
 	}
 	
 		
+	/** Las 22 columnas que se pueden definir desde la pantalla, sin el idoferta. */
+	private static final String COLUMNAS_OFERTA =
+			"nombre_oferta, idexcepcion, codigo_promocional, descuento_fijo_porcentaje, "
+			+ "descuento_porcentaje_futuro, descuento_fijo_valor, mensaje1, mensaje2, "
+			+ "dias_caducidad, tipo_caducidad, controla_hora, hora_inicio, hora_fin, "
+			+ "tipo_oferta, fecha_desde, fecha_hasta, codigo_general, contact, "
+			+ "red_parcial, reintegro, habilitado";
+
 	/**
-	 * M�todo que se encarga de realizar la inserci�n de una ferta con base en la informaci�n recibida como 
-	 * par�metro.
-	 * @param Exc Recibe como par�metro un objeto de Modelo EOferta con base en el cual se realiza la inserci�n
-	 * de la informaci�n.
-	 * @return Se retorna un n�mero entero con el idoferta retornado en la inserci�n a la base de datos.
+	 * Pone en el PreparedStatement los 21 valores de la oferta, en el orden de
+	 * COLUMNAS_OFERTA. Lo usan el insert y el update, para que no se puedan
+	 * desincronizar.
+	 *
+	 * Las fechas de vigencia van como NULL cuando vienen vacias: una cadena vacia
+	 * en una columna date la guarda como 0000-00-00 y despues no hay forma de
+	 * distinguir "sin vigencia" de "vigente desde el ano cero".
+	 *
+	 * @return el siguiente indice libre, para que el update ponga ahi el idoferta
 	 */
-	public static int insertarOferta(Oferta ofer)
-	{
+	private static int ponerValoresOferta(PreparedStatement pstmt, Oferta ofer) throws SQLException {
+		int i = 1;
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getNombreOferta()));
+		pstmt.setInt(i++, ofer.getIdExcepcion());
+		pstmt.setString(i++, OfertaDAO.siNo(ofer.getCodigoPromocional()));
+		pstmt.setDouble(i++, ofer.getDescuentoFijoPorcentaje());
+		pstmt.setDouble(i++, ofer.getDescuentoPorcentajeFuturo());
+		pstmt.setDouble(i++, ofer.getDescuentoFijoValor());
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getMensaje1()));
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getMensaje2()));
+		pstmt.setInt(i++, ofer.getDiasCaducidad());
+		pstmt.setString(i++, OfertaDAO.conDefecto(ofer.getTipoCaducidad(), "P"));
+		pstmt.setString(i++, OfertaDAO.siNo(ofer.getControlaHora()));
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getHoraInicio()));
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getHoraFin()));
+		pstmt.setString(i++, OfertaDAO.conDefecto(ofer.getTipoOferta(), "C"));
+		OfertaDAO.ponerFecha(pstmt, i++, ofer.getFechaDesde());
+		OfertaDAO.ponerFecha(pstmt, i++, ofer.getFechaHasta());
+		pstmt.setString(i++, OfertaDAO.texto(ofer.getCodigoGeneral()));
+		pstmt.setString(i++, OfertaDAO.siNo(ofer.getContact()));
+		pstmt.setString(i++, OfertaDAO.siNo(ofer.getRedParcial()));
+		pstmt.setString(i++, OfertaDAO.siNo(ofer.getReintegro()));
+		pstmt.setString(i++, OfertaDAO.conDefecto(ofer.getHabilitado(), "S"));
+		return (i);
+	}
+
+	/** Cadena vacia en vez de nulo. */
+	private static String texto(String valor) {
+		return ((valor == null) ? "" : valor.trim());
+	}
+
+	/** Las banderas de la tabla son S o N, nunca vacio ni nulo. */
+	private static String siNo(String valor) {
+		return ("S".equalsIgnoreCase(OfertaDAO.texto(valor)) ? "S" : "N");
+	}
+
+	/** Un valor de un solo caracter con su valor por defecto si viene vacio. */
+	private static String conDefecto(String valor, String porDefecto) {
+		String limpio = OfertaDAO.texto(valor);
+		return ((limpio.length() == 0) ? porDefecto : limpio.substring(0, 1).toUpperCase());
+	}
+
+	/**
+	 * Una fecha de vigencia, o NULL si viene vacia o mal escrita.
+	 *
+	 * Nunca se guarda cadena vacia: MySQL la convierte en 0000-00-00 y despues no
+	 * se puede distinguir de una vigencia de verdad.
+	 */
+	private static void ponerFecha(PreparedStatement pstmt, int indice, String fecha) throws SQLException {
+		String limpia = OfertaDAO.texto(fecha);
+		if (limpia.length() < 10) {
+			pstmt.setNull(indice, java.sql.Types.DATE);
+			return;
+		}
+		try {
+			pstmt.setDate(indice, java.sql.Date.valueOf(limpia.substring(0, 10)));
+		} catch (Exception e) {
+			pstmt.setNull(indice, java.sql.Types.DATE);
+		}
+	}
+
+	/**
+	 * Crea la oferta con TODA su definicion.
+	 *
+	 * Antes esto escribia dos columnas -el nombre y la excepcion de precio- y las
+	 * otras veintiuna tocaba ponerlas a mano en la base de datos. Ahora entran
+	 * todas desde la pantalla.
+	 *
+	 * Se pasa a PreparedStatement y no por gusto: el nombre de la oferta se
+	 * concatenaba dentro del SQL, asi que un nombre con apostrofe -"Promo del mes
+	 * de mama's"- rompia la consulta, y cualquier cosa peor tambien entraba.
+	 *
+	 * @return el idoferta creado, o 0 si fallo
+	 */
+	public static int insertarOferta(Oferta ofer) {
 		Logger logger = Logger.getLogger("log_file");
-		int idOfertaIns = 0;
+		int idGenerado = 0;
+		String insert = "INSERT INTO oferta (" + OfertaDAO.COLUMNAS_OFERTA + ") "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		try
-		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into oferta (nombre_oferta,idexcepcion) values ('" + ofer.getNombreOferta() + "' ," + ofer.getIdExcepcion() +")"; 
-			logger.info(insert);
-			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs = stm.getGeneratedKeys();
-			if (rs.next()){
-				idOfertaIns = rs.getInt(1);
-				logger.info("idOferta insertado es " + idOfertaIns);
-	        }
-			stm.close();
-			con1.close();
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
+		try (Connection con1 = con.obtenerConexionBDPrincipal();
+				PreparedStatement pstmt = con1.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS)) {
+			OfertaDAO.ponerValoresOferta(pstmt, ofer);
+			pstmt.executeUpdate();
+			try (ResultSet rs = pstmt.getGeneratedKeys()) {
+				if (rs.next()) {
+					idGenerado = rs.getInt(1);
+				}
 			}
-			return(0);
+		} catch (Exception e) {
+			logger.error("insertarOferta: " + e.toString());
+			System.out.println("insertarOferta: " + e.toString());
 		}
-		return(idOfertaIns);
+		return (idGenerado);
+	}
+
+	/**
+	 * Actualiza TODA la definicion de la oferta.
+	 *
+	 * Misma historia que el insert: antes solo cambiaba el nombre y la excepcion.
+	 *
+	 * @return "exitoso" o el motivo del fallo
+	 */
+	public static String editarOferta(Oferta ofertaEdi) {
+		Logger logger = Logger.getLogger("log_file");
+		StringBuilder sets = new StringBuilder();
+		String[] columnas = OfertaDAO.COLUMNAS_OFERTA.split(",");
+		for (int i = 0; i < columnas.length; i++) {
+			if (i > 0) {
+				sets.append(", ");
+			}
+			sets.append(columnas[i].trim()).append(" = ?");
+		}
+		String update = "UPDATE oferta SET " + sets.toString() + " WHERE idoferta = ?";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDPrincipal();
+				PreparedStatement pstmt = con1.prepareStatement(update)) {
+			int siguiente = OfertaDAO.ponerValoresOferta(pstmt, ofertaEdi);
+			pstmt.setInt(siguiente, ofertaEdi.getIdOferta());
+			pstmt.executeUpdate();
+			return ("exitoso");
+		} catch (Exception e) {
+			logger.error("editarOferta " + ofertaEdi.getIdOferta() + ": " + e.toString());
+			System.out.println("editarOferta " + ofertaEdi.getIdOferta() + ": " + e.toString());
+			return ("No se pudo guardar la oferta: " + e.toString());
+		}
 	}
 
 	/**
@@ -242,6 +351,11 @@ public class OfertaDAO {
 			double descuentoFijoPorcentaje = 0, descuentoFijoValor = 0, descuentoPorcentajeFuturo = 0; 
 			String codigoPromocional = "";
 			String redParcial = "";
+			//El resto de la definicion, que antes no se leia: la pantalla de ofertas
+			//la necesita completa para poder editarla sin perder nada.
+			String mensaje1 = "", mensaje2 = "", controlaHora = "N", horaInicio = "", horaFin = "";
+			String tipoOferta = "C", fechaDesde = "", fechaHasta = "", codigoGeneral = "";
+			String contact = "N", reintegro = "N", habilitado = "S";
 			while(rs.next()){
 				nombreOferta = rs.getString("nombre_oferta");
 				idExcepcion = rs.getInt("idexcepcion");
@@ -258,6 +372,18 @@ public class OfertaDAO {
 				tipoCaducidad = rs.getString("tipo_caducidad");
 				codigoPromocional = rs.getString("codigo_promocional");
 				redParcial = rs.getString("red_parcial");
+				mensaje1 = OfertaDAO.texto(rs.getString("mensaje1"));
+				mensaje2 = OfertaDAO.texto(rs.getString("mensaje2"));
+				controlaHora = OfertaDAO.texto(rs.getString("controla_hora"));
+				horaInicio = OfertaDAO.texto(rs.getString("hora_inicio"));
+				horaFin = OfertaDAO.texto(rs.getString("hora_fin"));
+				tipoOferta = OfertaDAO.texto(rs.getString("tipo_oferta"));
+				fechaDesde = OfertaDAO.texto(rs.getString("fecha_desde"));
+				fechaHasta = OfertaDAO.texto(rs.getString("fecha_hasta"));
+				codigoGeneral = OfertaDAO.texto(rs.getString("codigo_general"));
+				contact = OfertaDAO.texto(rs.getString("contact"));
+				reintegro = OfertaDAO.texto(rs.getString("reintegro"));
+				habilitado = OfertaDAO.texto(rs.getString("habilitado"));
 				break;
 			}
 			ofertaTemp = new Oferta(idOferta, nombreOferta, idExcepcion);
@@ -268,6 +394,18 @@ public class OfertaDAO {
 			ofertaTemp.setCodigoPromocional(codigoPromocional);
 			ofertaTemp.setRedParcial(redParcial);
 			ofertaTemp.setDescuentoPorcentajeFuturo(descuentoPorcentajeFuturo);
+			ofertaTemp.setMensaje1(mensaje1);
+			ofertaTemp.setMensaje2(mensaje2);
+			ofertaTemp.setControlaHora(controlaHora);
+			ofertaTemp.setHoraInicio(horaInicio);
+			ofertaTemp.setHoraFin(horaFin);
+			ofertaTemp.setTipoOferta(tipoOferta);
+			ofertaTemp.setFechaDesde(fechaDesde);
+			ofertaTemp.setFechaHasta(fechaHasta);
+			ofertaTemp.setCodigoGeneral(codigoGeneral);
+			ofertaTemp.setContact(contact);
+			ofertaTemp.setReintegro(reintegro);
+			ofertaTemp.setHabilitado(habilitado);
 			rs.close();
 			stm.close();
 			con1.close();
@@ -331,40 +469,6 @@ public class OfertaDAO {
 		return(ofertaTemp);
 	}
 
-	/**
-	 * M�todo que permite editar una excepci�n Precio con base en la informaci�n enviada como par�metro.
-	 * @param Esc Recibe como par�metro un objeto Modelo ExcepcionPrecio con base en el cual se realiza la edici�n.
-	 * @return Retorna un string con el resultado del proceso de edici�n.
-	 */
-	public static String editarOferta(Oferta ofertaEdi)
-	{
-		Logger logger = Logger.getLogger("log_file");
-		ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection con1 = con.obtenerConexionBDPrincipal();
-		String resultado = "";
-		try
-		{
-			Statement stm = con1.createStatement();
-			String update = "update oferta set nombre_oferta = '"+ ofertaEdi.getNombreOferta() +"' , idexcepcion =" + ofertaEdi.getIdExcepcion() + "  where idoferta = " + ofertaEdi.getIdOferta(); 
-			logger.info(update);
-			stm.executeUpdate(update);
-			resultado = "exitoso";
-			stm.close();
-			con1.close();
-			
-		}
-		catch (Exception e){
-			logger.error(e.toString());
-			try
-			{
-				con1.close();
-			}catch(Exception e1)
-			{
-			}
-			resultado = "error";
-		}
-		return(resultado);
-	}
 	
 	public static boolean manejaCodigoOferta(int idOferta)
 	{
@@ -444,4 +548,64 @@ public class OfertaDAO {
 	}
 
 
+
+	/**
+	 * Todas las ofertas con su definicion completa, para la pantalla que las
+	 * administra.
+	 *
+	 * Es distinto de obtenerOfertasGrid a proposito y NO lo reemplaza: aquel
+	 * filtra habilitado = 'S' porque alimenta el desplegable desde el que se le
+	 * asigna una oferta a un cliente, y ahi solo deben salir las vigentes. Aqui
+	 * salen las 41, porque para volver a habilitar una hay que poder verla.
+	 *
+	 * Trae tambien cuantas veces se ha asignado y cuantas se ha usado, que es lo
+	 * que dice si la oferta esta funcionando o no.
+	 */
+	public static ArrayList<Oferta> obtenerOfertasAdministracion() {
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList<Oferta> ofertas = new ArrayList<Oferta>();
+		String consulta = "SELECT a.*, b.descripcion, "
+				+ "  (SELECT COUNT(*) FROM oferta_cliente oc WHERE oc.idoferta = a.idoferta) AS asignadas, "
+				+ "  (SELECT COUNT(*) FROM oferta_cliente oc WHERE oc.idoferta = a.idoferta "
+				+ "     AND oc.utilizada = 'S') AS usadas "
+				+ " FROM oferta a "
+				+ " LEFT OUTER JOIN excepcion_precio b ON a.idexcepcion = b.idexcepcion "
+				+ " ORDER BY a.habilitado DESC, a.idoferta DESC";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDPrincipal();
+				Statement stm = con1.createStatement();
+				ResultSet rs = stm.executeQuery(consulta)) {
+			while (rs.next()) {
+				Oferta ofer = new Oferta(rs.getInt("idoferta"),
+						OfertaDAO.texto(rs.getString("nombre_oferta")), rs.getInt("idexcepcion"));
+				ofer.setNombreExcepcion(OfertaDAO.texto(rs.getString("descripcion")));
+				ofer.setCodigoPromocional(OfertaDAO.texto(rs.getString("codigo_promocional")));
+				ofer.setDescuentoFijoPorcentaje(rs.getDouble("descuento_fijo_porcentaje"));
+				ofer.setDescuentoPorcentajeFuturo(rs.getDouble("descuento_porcentaje_futuro"));
+				ofer.setDescuentoFijoValor(rs.getDouble("descuento_fijo_valor"));
+				ofer.setMensaje1(OfertaDAO.texto(rs.getString("mensaje1")));
+				ofer.setMensaje2(OfertaDAO.texto(rs.getString("mensaje2")));
+				ofer.setDiasCaducidad(rs.getInt("dias_caducidad"));
+				ofer.setTipoCaducidad(OfertaDAO.texto(rs.getString("tipo_caducidad")));
+				ofer.setControlaHora(OfertaDAO.texto(rs.getString("controla_hora")));
+				ofer.setHoraInicio(OfertaDAO.texto(rs.getString("hora_inicio")));
+				ofer.setHoraFin(OfertaDAO.texto(rs.getString("hora_fin")));
+				ofer.setTipoOferta(OfertaDAO.texto(rs.getString("tipo_oferta")));
+				ofer.setFechaDesde(OfertaDAO.texto(rs.getString("fecha_desde")));
+				ofer.setFechaHasta(OfertaDAO.texto(rs.getString("fecha_hasta")));
+				ofer.setCodigoGeneral(OfertaDAO.texto(rs.getString("codigo_general")));
+				ofer.setContact(OfertaDAO.texto(rs.getString("contact")));
+				ofer.setRedParcial(OfertaDAO.texto(rs.getString("red_parcial")));
+				ofer.setReintegro(OfertaDAO.texto(rs.getString("reintegro")));
+				ofer.setHabilitado(OfertaDAO.texto(rs.getString("habilitado")));
+				ofer.setAsignadas(rs.getInt("asignadas"));
+				ofer.setUsadas(rs.getInt("usadas"));
+				ofertas.add(ofer);
+			}
+		} catch (Exception e) {
+			logger.error("obtenerOfertasAdministracion: " + e.toString());
+			System.out.println("obtenerOfertasAdministracion: " + e.toString());
+		}
+		return (ofertas);
+	}
 }

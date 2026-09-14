@@ -38,7 +38,10 @@ public class OfertaClienteDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente + " and b.habilitado ='S'";
+			String consulta = "select a.*, b.nombre_oferta from oferta_cliente a, oferta b where a.idoferta = b.idoferta and a.idcliente = " + idCliente;
+			//Sin filtrar por b.habilitado: deshabilitar una oferta no puede borrar del
+			//historial del cliente las que ya se le asignaron. Esta consulta es para ver,
+			//no para escoger.
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			int idOfertaCliente;
@@ -63,6 +66,12 @@ public class OfertaClienteDAO {
 				usuarioIngreso = rs.getString("usuario_ingreso");
 				ofertaTemp = new OfertaCliente(idOfertaCliente, idOferta, idCliente, utilizada, PQRS,ingresoOferta, usoOferta, observacion, usuarioIngreso);
 				ofertaTemp.setNombreOferta(nombreOferta);
+				//Lo que el CRM necesita mostrar y antes no se leia: el codigo que se le dio
+				//al cliente, cuando vence, cuanto saldo le queda y si ya se le aviso.
+				ofertaTemp.setCodigoPromocion(OfertaClienteDAO.textoSeguro(rs.getString("codigo_promocion")));
+				ofertaTemp.setFechaCaducidad(OfertaClienteDAO.textoSeguro(rs.getString("fecha_caducidad")));
+				ofertaTemp.setFechaMensaje(OfertaClienteDAO.textoSeguro(rs.getString("fecha_mensaje")));
+				ofertaTemp.setSaldo(rs.getDouble("saldo"));
 				ofertas.add(ofertaTemp);
 			}
 			rs.close();
@@ -742,8 +751,14 @@ public class OfertaClienteDAO {
 	 */
 	public static class DatosCorreoOferta {
 		public String nombreCliente = "";
+		/* Nombre y apellido tambien por separado, porque los mensajes de la oferta
+		 * traen los comodines #NOMBRECLIENTE y #APELLIDOCLIENTE y hay que poder
+		 * reemplazar cada uno por lo suyo. */
+		public String soloNombre = "";
+		public String soloApellido = "";
 		public String correoCliente = "";
 		public String politicaDatos = "N";
+		public int idCliente = 0;
 		public String correoCorrecto = "S";
 		public String nombreTienda = "";
 		public String nombreOferta = "";
@@ -772,9 +787,12 @@ public class OfertaClienteDAO {
 			if (!"S".equals(this.politicaDatos)) {
 				return (false);
 			}
-			if ("N".equals(this.correoCorrecto)) {
-				return (false);
-			}
+			//OJO: NO se bloquea por email_correcto = N. Esa marca no es confiable: hasta
+			//el arreglo de septiembre de 2026 se ponia ante cualquier fallo del envio, asi
+			//que cinco segundos de lentitud de Gmail dejaban marcado como malo el correo de
+			//un cliente que estaba perfecto. Hoy hay 500 marcados y 403 tienen formato
+			//valido. Quien envia valida el formato y deja que el resultado del envio
+			//decida, que ademas corrige la marca en la direccion correcta.
 			return (true);
 		}
 
@@ -785,9 +803,6 @@ public class OfertaClienteDAO {
 			}
 			if (!"S".equals(this.politicaDatos)) {
 				return ("el cliente no acepto la politica de datos");
-			}
-			if ("N".equals(this.correoCorrecto)) {
-				return ("el correo del cliente esta marcado como incorrecto");
 			}
 			return ("");
 		}
@@ -803,7 +818,7 @@ public class OfertaClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		DatosCorreoOferta datos = new DatosCorreoOferta();
 		String consulta = "SELECT c.nombre, c.apellido, c.email, c.politica_datos, c.email_correcto, "
-				+ "  t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
+				+ "  oc.idcliente, t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
 				+ "  o.nombre_oferta, o.mensaje1, o.mensaje2, o.descuento_fijo_valor, "
 				+ "  o.descuento_fijo_porcentaje, o.controla_hora, o.hora_inicio, o.hora_fin, o.red_parcial "
 				+ " FROM oferta_cliente oc "
@@ -820,8 +835,11 @@ public class OfertaClienteDAO {
 					String nombre = OfertaClienteDAO.textoSeguro(rs.getString("nombre"));
 					String apellido = OfertaClienteDAO.textoSeguro(rs.getString("apellido"));
 					datos.nombreCliente = (nombre + " " + apellido).trim();
+					datos.soloNombre = nombre;
+					datos.soloApellido = apellido;
 					datos.correoCliente = OfertaClienteDAO.textoSeguro(rs.getString("email"));
 					datos.politicaDatos = OfertaClienteDAO.textoSeguro(rs.getString("politica_datos"));
+					datos.idCliente = rs.getInt("idcliente");
 					datos.correoCorrecto = OfertaClienteDAO.textoSeguro(rs.getString("email_correcto")).trim();
 					datos.nombreTienda = OfertaClienteDAO.textoSeguro(rs.getString("nombretienda"));
 					datos.nombreOferta = OfertaClienteDAO.textoSeguro(rs.getString("nombre_oferta"));

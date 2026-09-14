@@ -398,40 +398,11 @@ $("#fechapedido").change(function(){
 		$('#num3').val(limpiarValorFormulario(datos.num3));
         $('#telcelular').val(datos.telefonocelular);
         $('#email').val(datos.email);
-        //En esta parte del email validaremos si está en un plan de fidelizacion
-        $.ajax({ 
-                        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo='+ datos.email, 
-                        dataType: 'json', 
-                        async: false, 
-                        success: function(dataResp){ 
-                            if(dataResp.respuesta)
-                            {
-                                $.alert('El cliente ya existe en el programa de fidelizacion.');
-                                $('#email').css("background-color","#00FF00");
-                            }else
-                            {
-                                $('#email').css("background-color","#FFFFFF");
-                                //Realizamos validación si el cliente esta marcado para no pertenecer al plan de fidelizacion
-                                $.ajax({ 
-                                        url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo='+ datos.email, 
-                                        dataType: 'json', 
-                                        async: false, 
-                                        success: function(dataResp2){
-                                            if(dataResp2.respuesta)
-                                            {
-                                                $.alert('CUIDADO! El cliente manifestó no querer pertenecer al plan de fidelización.');
-                                            }
-                                            else
-                                            {
-                                                $('#nodeseafidelizacion').attr('disabled', false);
-                                            }
-                                        } 
-                                });
-                                
-                            }
-                            
-                        } 
-            });
+        //Toda la revision de fidelizacion, en una sola funcion y asincrona: antes
+        //eran dos consultas al central anidadas y las dos con async:false, o sea
+        //dos esperas seguidas con el navegador congelado cada vez que se escoge un
+        //cliente. Nada de lo que sigue depende de su resultado.
+        revisarFidelizacionCliente(datos.email);
         //Agregamos los campos de facturación electronica
         if(datos.clientesiniden == 'N')
         {
@@ -3224,6 +3195,8 @@ function ReiniciarPedido()
 																	$('#telefono').val('');
                                                                     $('#telcelular').val('');
                                                                     $('#email').val('');
+                                                                    //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
+                                                                    pintarAvisoFidelizacion('');
                                                                     $('#email').css("background-color","#FFFFFF");
                                                                     $('#clientesinidentificar').prop('checked', true);
                                                                     $('#emailfact').val('');
@@ -3787,6 +3760,8 @@ function ConfirmarPedido()
 									$('#telefono').val('');
                                     $('#telcelular').val('');
                                     $('#email').val('');
+                                    //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
+                                    pintarAvisoFidelizacion('');
                                     $('#email').css("background-color","#FFFFFF");
                                     $('#clientesinidentificar').prop('checked', true);
                                     $('#emailfact').val('');
@@ -5602,6 +5577,8 @@ function limpiarSeleccionCliente()
 		$('#telefono').val("");
         $('#telcelular').val('');
         $('#email').val('');
+        //La franja de fidelizacion hablaba del cliente anterior: se limpia con el.
+        pintarAvisoFidelizacion('');
         $('#email').css("background-color","#FFFFFF");
         $('#clientesinidentificar').prop('checked', true);
         $('#emailfact').val('');
@@ -6907,3 +6884,126 @@ function noDeseaFidelizacion()
 }
 
 $('#email').on('input', validate);
+
+/**
+ * Pinta la franja de fidelizacion del cliente.
+ *
+ * Una sola franja para las dos cosas que se le pueden decir a quien atiende
+ * -los puntos, o la advertencia de que el cliente no quiere el plan-, porque
+ * son excluyentes: o esta en el plan o no esta.
+ */
+function pintarAvisoFidelizacion(texto, fondo, color) {
+    var aviso = $('#avisoPuntos');
+    if (!texto) {
+        aviso.hide();
+        return;
+    }
+    aviso.text(texto);
+    aviso.css({ 'background-color': fondo, 'color': color });
+    aviso.show();
+}
+
+/**
+ * Revisa la situacion del cliente en el plan de fidelizacion.
+ *
+ * Va asincrona. Antes eran dos consultas al central anidadas, las dos con
+ * async:false, asi que el navegador se congelaba dos veces seguidas cada vez
+ * que alguien escogia un cliente. Nada de lo que sigue en la pantalla depende
+ * del resultado, asi que no hay razon para hacer esperar a quien esta tomando
+ * el pedido.
+ *
+ * El correo se recibe por parametro y no se lee de la variable global datos:
+ * con la consulta asincrona, para cuando responde el central el usuario ya
+ * pudo haber escogido otro cliente, y el aviso quedaria hablando del anterior.
+ */
+function revisarFidelizacionCliente(correo) {
+    pintarAvisoFidelizacion('');
+    if (!correo) {
+        $('#email').css('background-color', '#FFFFFF');
+        return;
+    }
+    $.ajax({
+        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo=' + encodeURIComponent(correo),
+        dataType: 'json',
+        success: function (dataResp) {
+            if (dataResp && dataResp.respuesta) {
+                //Esta en el plan: se le muestran los puntos y los que se le vencen.
+                $('#email').css('background-color', '#00FF00');
+                mostrarAvisoPuntos(correo);
+                return;
+            }
+            $('#email').css('background-color', '#FFFFFF');
+            //No esta en el plan: hay que ver si fue porque dijo que no queria.
+            $.ajax({
+                url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo=' + encodeURIComponent(correo),
+                dataType: 'json',
+                success: function (dataResp2) {
+                    if (dataResp2 && dataResp2.respuesta) {
+                        //Antes era una alerta que habia que cerrar con un clic en medio
+                        //de la toma del pedido. Es una advertencia de verdad, asi que se
+                        //ve en rojo, pero sin frenar a nadie.
+                        pintarAvisoFidelizacion(
+                            'CUIDADO: el cliente manifesto NO querer pertenecer al plan de fidelizacion.',
+                            '#FDE3E3', '#C21C1F');
+                    } else {
+                        $('#nodeseafidelizacion').attr('disabled', false);
+                    }
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Muestra los puntos del cliente y cuales se le vencen pronto.
+ *
+ * Los clientes se quejan de que se enteran de que tenian puntos cuando ya se
+ * les vencieron. Este aviso se lo pone delante a quien lo esta atendiendo, en
+ * el momento en que trae la ficha, que es cuando se lo puede decir.
+ */
+function mostrarAvisoPuntos(correo) {
+    if (!correo) {
+        return;
+    }
+    $.ajax({
+        url: server + 'ServiciosClienteFidelizacion?idoperacion=10&correo=' + encodeURIComponent(correo),
+        dataType: 'json',
+        success: function (r) {
+            if (!r || !r.respuesta) {
+                return;
+            }
+            var puntos = Math.round(r.puntos || 0);
+            var porVencer = Math.round(r.porvencer || 0);
+            var dias = r.dias || 60;
+            if (puntos <= 0) {
+                return;
+            }
+            if (porVencer > 0) {
+                //Lo urgente primero: es lo que hay que alcanzar a decirle antes
+                //de que cuelgue.
+                pintarAvisoFidelizacion('Tiene ' + puntos + ' puntos, y ' + porVencer
+                        + ' se le vencen en los proximos ' + dias + ' dias'
+                        + (r.vence ? ' (desde el ' + fechaVenceLegible(r.vence) + ')' : ''),
+                        '#FDC806', '#3A2C00');
+            } else {
+                pintarAvisoFidelizacion('Tiene ' + puntos + ' puntos disponibles',
+                        '#E4F1EB', '#14714E');
+            }
+        }
+    });
+}
+
+/** De "2026-11-20" saca "20 de noviembre". */
+function fechaVenceLegible(fecha) {
+    if (!fecha || fecha.length < 10) {
+        return '';
+    }
+    var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var mes = parseInt(fecha.substring(5, 7), 10);
+    var dia = parseInt(fecha.substring(8, 10), 10);
+    if (isNaN(mes) || isNaN(dia) || mes < 1 || mes > 12) {
+        return '';
+    }
+    return dia + ' de ' + meses[mes - 1];
+}

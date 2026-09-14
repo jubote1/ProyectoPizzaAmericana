@@ -454,4 +454,87 @@ public class FidelizacionTransaccionDAO {
 		}
 		return(respuesta);
 	}
+
+	/**
+	 * Lo que hay que decirle al cliente de sus puntos cuando se le consulta.
+	 */
+	public static class ResumenPuntos {
+
+		/** Todos los puntos que tiene disponibles hoy. */
+		public double puntosTotales = 0;
+
+		/** De esos, cuantos se le vencen dentro de la ventana consultada. */
+		public double puntosPorVencer = 0;
+
+		/** La fecha del primero que se vence. Vacia si no se le vence nada. */
+		public String fechaMasProxima = "";
+
+		/** Si hay algo que valga la pena avisarle. */
+		public boolean hayQueAvisar() {
+			return (this.puntosPorVencer > 0);
+		}
+	}
+
+	/**
+	 * Los puntos de un cliente y cuantos se le vencen pronto.
+	 *
+	 * Es la version puntual de obtenerClientesParaAviso: aquella barre a todos
+	 * los que hay que avisar por correo esta noche, esta responde por uno solo
+	 * mientras el cliente esta al telefono. Se suma sobre las transacciones y no
+	 * se lee cliente_fidelizacion.puntos_vigentes para el total, porque ese
+	 * acumulado no sabe cuales puntos son viejos y cuales recientes: el
+	 * vencimiento vive en cada transaccion.
+	 *
+	 * Los que ya estan marcados como vencidos no cuentan, y de cada transaccion
+	 * se toma lo que queda sin redimir.
+	 *
+	 * @param correo el correo del cliente, que es la llave del programa
+	 * @param dias   la ventana del aviso, por ejemplo 60
+	 */
+	public static ResumenPuntos obtenerResumenPuntos(String correo, int dias)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ResumenPuntos resumen = new ResumenPuntos();
+		if(correo == null || correo.trim().isEmpty())
+		{
+			return(resumen);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if(con1 == null)
+		{
+			return(resumen);
+		}
+		String consulta = "select"
+				+ " SUM(t.puntos - t.puntos_redimidos) as total,"
+				+ " SUM(case when t.fecha_vencimiento between CURDATE() and DATE_ADD(CURDATE(), INTERVAL ? DAY)"
+				+ "          then t.puntos - t.puntos_redimidos else 0 end) as por_vencer,"
+				+ " MIN(case when t.fecha_vencimiento between CURDATE() and DATE_ADD(CURDATE(), INTERVAL ? DAY)"
+				+ "          then t.fecha_vencimiento else null end) as vence"
+				+ " from fidelizacion_transaccion t"
+				+ " where t.correo = ? and t.vencidos = 'N' and t.puntos > t.puntos_redimidos";
+		try(PreparedStatement pst = con1.prepareStatement(consulta))
+		{
+			pst.setInt(1, dias);
+			pst.setInt(2, dias);
+			pst.setString(3, correo.trim());
+			try(ResultSet rs = pst.executeQuery())
+			{
+				if(rs.next())
+				{
+					resumen.puntosTotales = rs.getDouble("total");
+					resumen.puntosPorVencer = rs.getDouble("por_vencer");
+					resumen.fechaMasProxima = rs.getString("vence") == null ? "" : rs.getString("vence");
+				}
+			}
+			con1.close();
+		}
+		catch(Exception e)
+		{
+			logger.error("obtenerResumenPuntos: " + e.toString());
+			System.out.println("obtenerResumenPuntos: " + e.toString());
+			try { con1.close(); } catch(Exception e1) { }
+		}
+		return(resumen);
+	}
 }

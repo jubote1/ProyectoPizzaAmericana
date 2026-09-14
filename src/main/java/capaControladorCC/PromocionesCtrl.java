@@ -70,6 +70,10 @@ public class PromocionesCtrl {
 			cadaOfertaJSON.put("usooferta", ofer.getUsoOferta());
 			cadaOfertaJSON.put("observacion", ofer.getObservacion());
 			cadaOfertaJSON.put("pqrs", ofer.getPQRS());
+			cadaOfertaJSON.put("codigopromocion", ofer.getCodigoPromocion());
+			cadaOfertaJSON.put("fechacaducidad", ofer.getFechaCaducidad());
+			cadaOfertaJSON.put("fechamensaje", ofer.getFechaMensaje());
+			cadaOfertaJSON.put("saldo", ofer.getSaldo());
 			listJSON.add(cadaOfertaJSON);
 		}
 		return(listJSON.toJSONString());
@@ -91,6 +95,10 @@ public class PromocionesCtrl {
 			cadaOfertaJSON.put("usooferta", ofer.getUsoOferta());
 			cadaOfertaJSON.put("observacion", ofer.getObservacion());
 			cadaOfertaJSON.put("pqrs", ofer.getPQRS());
+			cadaOfertaJSON.put("codigopromocion", ofer.getCodigoPromocion());
+			cadaOfertaJSON.put("fechacaducidad", ofer.getFechaCaducidad());
+			cadaOfertaJSON.put("fechamensaje", ofer.getFechaMensaje());
+			cadaOfertaJSON.put("saldo", ofer.getSaldo());
 			listJSON.add(cadaOfertaJSON);
 		}
 		return(listJSON.toJSONString());
@@ -1145,6 +1153,15 @@ public class PromocionesCtrl {
 			System.out.println(aviso);
 			return (aviso);
 		}
+		//Se valida el formato con la misma regla que usa el resto del sistema. Intentar
+		//enviarle a una direccion mal escrita gasta una conexion SMTP y termina en una
+		//alarma de la que no hay nada que aprender.
+		if (!ControladorEnvioCorreo.esDireccionValida(datos.correoCliente.trim())) {
+			String aviso = "No se envia el correo de la oferta " + idOfertaCliente
+					+ ": la direccion del cliente no tiene formato valido.";
+			System.out.println(aviso);
+			return (aviso);
+		}
 		try {
 			CorreoElectronico credenciales = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 					"CLAVECORREOREPORTE");
@@ -1159,16 +1176,33 @@ public class PromocionesCtrl {
 			//En hilo aparte: el que asigna la oferta no tiene por que esperar al SMTP.
 			//Y fecha_mensaje se marca solo si el envio funciono, para que la pantalla
 			//no diga "enviado" cuando no salio.
+			//
+			//Se usa enviarConReintentos y no un solo intento porque un timeout no es
+			//una direccion mala. Y el resultado es el que decide que hacer con la marca
+			//email_correcto del cliente: se pone en N solo cuando el servidor rechaza
+			//de verdad la direccion. Asi la marca se corrige sola en vez de quedar como
+			//una lista negra permanente, que es lo que la volvio inservible antes.
 			Thread hilo = new Thread(new Runnable() {
 				public void run() {
 					try {
-						if (envio.enviarCorreo()) {
+						final ControladorEnvioCorreo.ResultadoEnvio resultado = envio.enviarConReintentos();
+						if (resultado == ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
 							OfertaClienteDAO.marcarCorreoEnviado(idOfertaCliente);
 							System.out.println("Correo de oferta " + idOfertaCliente + " enviado a "
 									+ datos.correoCliente);
-						} else {
-							System.out.println("No se pudo enviar el correo de la oferta " + idOfertaCliente);
+							return;
 						}
+						if (resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
+							ClienteDAO.marcarCorreoIncorrecto(datos.idCliente);
+							System.out.println("Correo de oferta " + idOfertaCliente + ": el servidor rechazo la "
+									+ "direccion " + datos.correoCliente + ", se marca el cliente "
+									+ datos.idCliente);
+							return;
+						}
+						//Transitorio: no se toca al cliente ni se marca fecha_mensaje. La
+						//pantalla va a mostrar "sin enviar" y se puede reenviar.
+						System.out.println("Correo de oferta " + idOfertaCliente + ": no salio por algo pasajero ("
+								+ resultado + "). Se puede reenviar.");
 					} catch (Exception e) {
 						//Que falle el correo no puede tumbar la asignacion, que ya quedo hecha.
 						System.out.println("Fallo el correo de la oferta " + idOfertaCliente + ": " + e.toString());
@@ -1198,5 +1232,46 @@ public class PromocionesCtrl {
 			return ("SMS por Brevo apagado por el parametro " + PromocionesCtrl.PARAM_SMS_BREVO + ".");
 		}
 		return (this.enviarMensajesOfertaBrevo(idOferta));
+	}
+
+	/**
+	 * Todas las ofertas con su definicion completa, para la pantalla que las
+	 * administra. Incluye las deshabilitadas, a diferencia de obtenerOfertasGrid.
+	 */
+	public String obtenerOfertasAdministracion()
+	{
+		ArrayList<Oferta> ofertas = OfertaDAO.obtenerOfertasAdministracion();
+		JSONArray listJSON = new JSONArray();
+		for (Oferta ofer : ofertas)
+		{
+			JSONObject cada = new JSONObject();
+			cada.put("idoferta", ofer.getIdOferta());
+			cada.put("nombreoferta", ofer.getNombreOferta());
+			cada.put("idexcepcion", ofer.getIdExcepcion());
+			cada.put("nombreexcepcion", ofer.getNombreExcepcion());
+			cada.put("codigopromocional", ofer.getCodigoPromocional());
+			cada.put("descuentofijoporcentaje", ofer.getDescuentoFijoPorcentaje());
+			cada.put("descuentoporcentajefuturo", ofer.getDescuentoPorcentajeFuturo());
+			cada.put("descuentofijovalor", ofer.getDescuentoFijoValor());
+			cada.put("mensaje1", ofer.getMensaje1());
+			cada.put("mensaje2", ofer.getMensaje2());
+			cada.put("diascaducidad", ofer.getDiasCaducidad());
+			cada.put("tipocaducidad", ofer.getTipoCaducidad());
+			cada.put("controlahora", ofer.getControlaHora());
+			cada.put("horainicio", ofer.getHoraInicio());
+			cada.put("horafin", ofer.getHoraFin());
+			cada.put("tipooferta", ofer.getTipoOferta());
+			cada.put("fechadesde", ofer.getFechaDesde());
+			cada.put("fechahasta", ofer.getFechaHasta());
+			cada.put("codigogeneral", ofer.getCodigoGeneral());
+			cada.put("contact", ofer.getContact());
+			cada.put("redparcial", ofer.getRedParcial());
+			cada.put("reintegro", ofer.getReintegro());
+			cada.put("habilitado", ofer.getHabilitado());
+			cada.put("asignadas", ofer.getAsignadas());
+			cada.put("usadas", ofer.getUsadas());
+			listJSON.add(cada);
+		}
+		return (listJSON.toJSONString());
 	}
 }
