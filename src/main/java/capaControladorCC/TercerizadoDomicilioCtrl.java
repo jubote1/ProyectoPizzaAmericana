@@ -267,10 +267,14 @@ public class TercerizadoDomicilioCtrl {
 	}
 	
 	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader) {
-	    return crearOrdenRappiCargo(idpedido, idtienda, numposheader, 0.0, 0.0);
+	    return crearOrdenRappiCargo(idpedido, idtienda, numposheader, 0.0, 0.0, null);
 	}
 
 	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader, double latitud, double longitud) {
+	    return crearOrdenRappiCargo(idpedido, idtienda, numposheader, latitud, longitud, null);
+	}
+
+	public String crearOrdenRappiCargo(int idpedido , int idtienda ,int numposheader, double latitud, double longitud, String nuevaDireccion) {
 
 	    JSONArray listJSON = new JSONArray();
 	    JSONObject respuestaJSON = new JSONObject();
@@ -320,21 +324,45 @@ public class TercerizadoDomicilioCtrl {
 	            return listJSON.toJSONString();
 	        }
 
+	        // Si se recibe una nueva dirección modificada por el operador
+	        boolean direccionModificada = false;
+	        if (nuevaDireccion != null && !nuevaDireccion.trim().isEmpty()) {
+	            String dirLimpia = nuevaDireccion.trim();
+	            String dirActual = (orden.getAddress() != null) ? orden.getAddress().trim() : "";
+	            if (!dirLimpia.equalsIgnoreCase(dirActual)) {
+	                orden.setAddress(dirLimpia);
+	                direccionModificada = true;
+	            }
+	        }
+
 	        // Si se reciben coordenadas válidas verificadas/ajustadas por el operador en el mapa
+	        boolean coordenadasModificadas = false;
 	        if (latitud != 0 && longitud != 0 && coordenadaValidaParaRappiCargo(latitud, longitud)) {
 	            orden.setLat(latitud);
 	            orden.setLng(longitud);
-	            if (orden.getIdcliente() > 0) {
-	                try {
+	            coordenadasModificadas = true;
+	        }
+
+	        // Actualizar datos del cliente en la Base de Datos Principal
+	        if (orden.getIdcliente() > 0) {
+	            try {
+	                if (direccionModificada) {
+	                    new ClienteCtrl().actualizarClienteDireccionYCoordenadas(
+	                            orden.getIdcliente(),
+	                            orden.getAddress(),
+	                            (float) orden.getLat(),
+	                            (float) orden.getLng()
+	                    );
+	                } else if (coordenadasModificadas) {
 	                    new ClienteCtrl().actualizarClienteCoordenadas(
 	                            orden.getIdcliente(),
 	                            (float) latitud,
 	                            (float) longitud,
 	                            orden.getAddress()
 	                    );
-	                } catch (Exception eCoord) {
-	                    System.out.println("Error actualizando coordenadas verificadas cliente: " + eCoord.getMessage());
 	                }
+	            } catch (Exception eCoord) {
+	                System.out.println("Error actualizando datos de cliente en BD Principal: " + eCoord.getMessage());
 	            }
 	        }
 
@@ -525,6 +553,11 @@ public class TercerizadoDomicilioCtrl {
 
 	                respuestaJSON.put("mensajeMarcacionTienda",
 	                        respuestaMarcacionTienda.get("mensaje"));
+	            }
+
+	            // Sincronizar datos corregidos del cliente con la tienda de despacho
+	            if (idtienda > 0 && (direccionModificada || coordenadasModificadas)) {
+	                sincronizarClienteConTienda(idtienda, orden, orden.getLat(), orden.getLng(), orden.getAddress());
 	            }
 
 
@@ -1006,7 +1039,58 @@ public class TercerizadoDomicilioCtrl {
 	        json.put("mensaje", "Error llamando servicio local de tienda: " + e.getMessage());
 	    }
 
-	    return json;
+	    		return json;
+	}
+	
+	/**
+	 * Sincroniza las coordenadas y/o dirección verificadas del cliente con la
+	 * base de datos local de la tienda de despacho a través de su servicio web.
+	 */
+	private void sincronizarClienteConTienda(int idtienda, RappiCargoOrden orden, double latitud, double longitud, String direccionFinal) {
+	    try {
+	        TiendaCtrl tiendaCtrl = new TiendaCtrl();
+	        String respuestaTienda = tiendaCtrl.obtenerUrlTienda(idtienda);
+	        JSONParser parser = new JSONParser();
+	        JSONArray array = (JSONArray) parser.parse(respuestaTienda);
+	        if (array == null || array.isEmpty()) return;
+
+	        JSONObject tienda = (JSONObject) array.get(0);
+	        String urlTienda = String.valueOf(tienda.get("urltienda"));
+	        String dsnodbc = String.valueOf(tienda.get("dsnodbc"));
+	        String pos = String.valueOf(tienda.get("pos"));
+
+	        if (urlTienda == null || urlTienda.trim().isEmpty()) return;
+
+	        String separador = urlTienda.endsWith("/") ? "" : "/";
+	        String dirAEnviar = (direccionFinal != null && !direccionFinal.trim().isEmpty()) ? direccionFinal.trim() : orden.getAddress();
+
+	        StringBuilder sb = new StringBuilder();
+	        sb.append(urlTienda).append(separador).append("ActualizarCliente?");
+	        sb.append("telefono=").append(java.net.URLEncoder.encode(orden.getPhone() != null ? orden.getPhone() : "", "UTF-8"));
+	        sb.append("&nombres=").append(java.net.URLEncoder.encode(orden.getFirstName() != null ? orden.getFirstName() : "", "UTF-8"));
+	        sb.append("&apellidos=").append(java.net.URLEncoder.encode(orden.getLastName() != null ? orden.getLastName() : "", "UTF-8"));
+	        sb.append("&nombreCompania=");
+	        sb.append("&direccion=").append(java.net.URLEncoder.encode(dirAEnviar != null ? dirAEnviar : "", "UTF-8"));
+	        sb.append("&tienda=").append(idtienda);
+	        sb.append("&zona=");
+	        sb.append("&observacion=").append(java.net.URLEncoder.encode(orden.getComments() != null ? orden.getComments() : "", "UTF-8"));
+	        sb.append("&municipio=").append(java.net.URLEncoder.encode(orden.getCity() != null ? orden.getCity() : "", "UTF-8"));
+	        sb.append("&longitud=").append(longitud);
+	        sb.append("&latitud=").append(latitud);
+	        sb.append("&memcode=0&idcliente=0&idnomenclatura=0&numnomenclatura1=&numnomenclatura2=&num3=");
+	        sb.append("&dsnodbc=").append(java.net.URLEncoder.encode(dsnodbc != null && !"null".equals(dsnodbc) ? dsnodbc : "", "UTF-8"));
+	        sb.append("&pos=").append(java.net.URLEncoder.encode(pos != null && !"null".equals(pos) ? pos : "", "UTF-8"));
+	        sb.append("&idmunicipio=0");
+	        sb.append("&idtienda=").append(idtienda);
+
+	        HttpClient client = utilidadesCC.ClientesHttp.apache();
+	        HttpGet get = new HttpGet(sb.toString());
+	        HttpResponse resp = client.execute(get);
+	        EntityUtils.consumeQuietly(resp.getEntity());
+	        System.out.println("Sincronización con tienda " + idtienda + " exitosa: " + dirAEnviar + " [" + latitud + ", " + longitud + "]");
+	    } catch (Exception e) {
+	        System.err.println("Error en sincronizarClienteConTienda: " + e.getMessage());
+	    }
 	}
 	
 	/**

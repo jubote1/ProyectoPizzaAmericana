@@ -36,11 +36,17 @@ public class GeocodificarDireccion extends HttpServlet {
     	            barrio == null ? "" : barrio
     	    );
 
-    	    out.print(String.format(
-    	            "{\"latitud\":%s,\"longitud\":%s}",
-    	            ubicacion.getLatitud(),
-    	            ubicacion.getLongitud()
-    	    ));
+    	    String dirSalida = ubicacion.getDireccion();
+    	    if (dirSalida == null || dirSalida.trim().isEmpty()) {
+    	        dirSalida = direccion.trim();
+    	    }
+
+    	    com.google.gson.JsonObject jsonResp = new com.google.gson.JsonObject();
+    	    jsonResp.addProperty("latitud", ubicacion.getLatitud());
+    	    jsonResp.addProperty("longitud", ubicacion.getLongitud());
+    	    jsonResp.addProperty("direccion", dirSalida);
+
+    	    out.print(jsonResp.toString());
 
     	} catch (Exception e) {
     	    out.print("{\"error\":\"" + String.valueOf(e.getMessage()).replace("\"", "'") + "\"}");

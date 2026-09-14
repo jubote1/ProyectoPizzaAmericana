@@ -24,6 +24,7 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		request.setCharacterEncoding("UTF-8");
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("application/json;charset=UTF-8");
@@ -76,6 +77,14 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 		    longitud = 0.0;
 		}
 
+		String direccion = request.getParameter("direccion");
+		if (direccion != null) {
+			direccion = direccion.trim();
+			if (direccion.isEmpty()) {
+				direccion = null;
+			}
+		}
+
 		TercerizadoDomicilioCtrl terceridadoCtrl =
 		        new TercerizadoDomicilioCtrl();
 
@@ -84,7 +93,8 @@ public class CrearOrdenRappiCargo extends HttpServlet {
 		        idtienda,
 		        numposheader,
 		        latitud,
-		        longitud
+		        longitud,
+		        direccion
 		);
 
 		PrintWriter out = response.getWriter();

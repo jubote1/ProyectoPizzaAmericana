@@ -1,0 +1,149 @@
+					<!-- TARJETA 1: BÚSQUEDA Y CONTACTO (CONSULTA SEPARADA) -->
+					<div class="card-moderna">
+						<div class="card-moderna-header">
+							<span><i class="fas fa-search"></i> Búsqueda y Contacto</span>
+							<span style="font-size: 11px; font-weight: 600; color: #64748b;">
+								<i class="fas fa-phone-alt"></i> Ingrese teléfono para consultar
+							</span>
+						</div>
+
+						<!-- Fila de consulta por teléfono -->
+						<div class="form-row-flex" style="align-items: flex-end;">
+							<div class="form-group-item" id="encTelefono" style="flex: 1; min-width: 130px;">
+								<label for="telefono" class="label-moderno">Teléfono</label>
+								<input type="text" id="telefono" name="telefono" class="form-control"
+									placeholder="Teléfono fijo o móvil" onchange="validarTelefono();" maxlength="10">
+							</div>
+							<div class="form-group-item" style="flex: 1; min-width: 130px;">
+								<label for="telcelular" class="label-moderno">Teléfono Celular</label>
+								<input type="text" id="telcelular" name="telcelular" class="form-control"
+									placeholder="Teléfono Celular" maxlength="10">
+							</div>
+							<div class="form-group-item" style="padding-bottom: 7px;">
+								<label style="font-size: 11.5px; font-weight: 600; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 6px; user-select: none;">
+									<input name="politicadatos" id="politicadatos" type="checkbox" style="margin: 0;" /> Acepta Política Datos
+								</label>
+							</div>
+						</div>
+
+						<!-- Tabla de Clientes encontrados -->
+						<div class="grid-clientes-wrapper" style="max-height: 130px; margin-top: 6px;">
+							<table id="grid-clientes" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+								<thead>
+									<tr>
+										<th data-column-id="idCliente">idCliente</th>
+										<th data-column-id="tienda">Tienda</th>
+										<th data-column-id="nombre">Nombres</th>
+										<th data-column-id="apellido">Apellidos</th>
+										<th data-column-id="nombrecompania">Nom-Compañia</th>
+										<th data-column-id="direccion">Dirección</th>
+										<th data-column-id="zona">Zona</th>
+										<th data-column-id="observacion">Observacion</th>
+										<th data-column-id="telefono">Telefono</th>
+										<th data-column-id="memcode">Memcode</th>
+										<th data-column-id="latitud">latitud</th>
+										<th data-column-id="longitud">longitud</th>
+										<th data-column-id="distanciatienda">Distancia</th>
+									</tr>
+								</thead>
+								<tbody></tbody>
+							</table>
+						</div>
+
+						<!-- Botonera de Acciones de Cliente Limpia y Moderna -->
+						<div class="btn-toolbar-cliente">
+							<button type="button" class="btn btn-sm" id="limpiar" name="limpiar" onclick="limpiarSeleccionCliente()">
+								<i class="fas fa-eraser"></i> Limpiar Selección
+							</button>
+							<button type="button" class="btn btn-sm" id="ultimospedidos" name="ultimospedidos" onclick="consultarUltimosPedidos()">
+								<i class="fas fa-history"></i> Últimos Pedidos
+							</button>
+							<button type="button" class="btn btn-sm" id="transferircliente" name="transferircliente" onclick="mostrarTransferirCliente()">
+								<i class="fas fa-exchange-alt"></i> Transferir Cliente
+							</button>
+							<button type="button" class="btn btn-sm" id="notificaciones" name="notificaciones" onclick="mostrarNotificaciones()">
+								<i class="fas fa-bell"></i> Notificaciones
+							</button>
+						</div>
+					</div>
+
+					<!-- TARJETA 2: DATOS PERSONALES & FIDELIZACIÓN (SEPARADA) -->
+					<div class="card-moderna">
+						<div class="card-moderna-header">
+							<span><i class="fas fa-user-check"></i> Datos Personales & Fidelización</span>
+						</div>
+
+						<div class="form-row-2col">
+							<div class="form-group-item">
+								<label for="nombres" class="label-moderno">Nombres</label>
+								<input type="text" id="nombres" name="nombres" class="form-control" placeholder="Nombres" maxlength="20">
+							</div>
+							<div class="form-group-item">
+								<label for="apellidos" class="label-moderno">Apellidos</label>
+								<input type="text" id="apellidos" name="apellidos" class="form-control" placeholder="Apellidos" maxlength="20">
+							</div>
+						</div>
+
+						<div class="form-row-2col">
+							<div class="form-group-item" id="encNombreCompania">
+								<label for="nombreCompania" class="label-moderno">Nombre Compañía</label>
+								<input type="text" id="nombreCompania" name="nombreCompania" class="form-control" placeholder="Nombre Compañía" maxlength="50">
+							</div>
+							<div class="form-group-item">
+								<label for="fechanaci" class="label-moderno">Fecha Nacimiento</label>
+								<input type="text" id="fechanaci" name="fechanaci" class="form-control" placeholder="MM-dd">
+							</div>
+						</div>
+
+						<!-- Botones de Fidelización Limpios y Elegantes -->
+						<div class="fidelizacion-actions" style="margin-top: 6px;">
+							<button type="button" class="btn btn-fidelizacion-incluir" onclick="incluirFidelizacion()" title="Incluir al Club Pizza Americana">
+								<i class="fas fa-crown"></i> Incluir Club Pizza Americana
+							</button>
+							<button type="button" class="btn btn-fidelizacion-no" id="nodeseafidelizacion" onclick="noDeseaFidelizacion()" disabled title="No desea plan de fidelización">
+								<i class="fas fa-ban"></i> No Desea Plan Fidelización
+							</button>
+						</div>
+					</div>
+
+					<!-- TARJETA 3: FACTURACIÓN ELECTRÓNICA (SEPARADA) -->
+					<div class="card-moderna">
+						<div class="card-moderna-header">
+							<span><i class="fas fa-file-invoice-dollar"></i> Facturación Electrónica</span>
+							<label style="font-size: 11.5px; font-weight: 600; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 6px; user-select: none;">
+								<input name="clientesinidentificar" id="clientesinidentificar" type="checkbox" checked style="margin: 0;" />
+								Facturar a cliente sin identificar
+							</label>
+						</div>
+
+						<div class="form-row-2col">
+							<div class="form-group-item" id="encEmail">
+								<label for="email" class="label-moderno">Email Cliente</label>
+								<input type="text" id="email" name="email" class="form-control" placeholder="Email cliente" maxlength="50">
+							</div>
+							<div class="form-group-item">
+								<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+									<label for="emailfact" class="label-moderno" style="margin: 0;">Email Facturación</label>
+									<label style="font-size: 10.5px; font-weight: 600; cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 3px; color: #2563eb; user-select: none;">
+										<input name="copiarEmail" id="copiarEmail" type="checkbox" style="margin: 0;" /> Copiar email
+									</label>
+								</div>
+								<input type="text" id="emailfact" name="emailfact" class="form-control" placeholder="Email Facturación" maxlength="50" disabled>
+							</div>
+						</div>
+
+						<div class="form-row-2col">
+							<div class="form-group-item">
+								<label for="selectTipoPersona" class="label-moderno">Tipo de Persona</label>
+								<select id="selectTipoPersona" class="form-control" disabled>
+									<option selected value="2" id="natural">Natural</option>
+									<option value="1" id="juridica">Jurídica</option>
+								</select>
+							</div>
+							<div class="form-group-item">
+								<label for="identificacion" class="label-moderno">Número Identificación / NIT</label>
+								<input type="text" id="identificacion" name="identificacion" class="form-control"
+									onchange="validarIdentificacion();" placeholder="Número Identificación" maxlength="20" disabled>
+							</div>
+						</div>
+					</div>

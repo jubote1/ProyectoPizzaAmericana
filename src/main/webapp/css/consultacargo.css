@@ -902,26 +902,20 @@ table.dataTable.no-footer {
     color: #dc2626;
 }
 
-/* Info grid */
+/* Info grid (2 arriba, 2 abajo) */
 .coord-info-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1.3fr 0.8fr 1fr;
-    gap: 10px 14px;
-    margin-bottom: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 14px;
+    margin-bottom: 14px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
 }
 
-@media (max-width: 991px) {
-    .coord-info-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 600px) {
+@media (max-width: 680px) {
     .coord-info-grid {
         grid-template-columns: 1fr;
     }
@@ -930,38 +924,55 @@ table.dataTable.no-footer {
 .coord-info-item {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    justify-content: center;
+    min-height: 64px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    gap: 5px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.coord-info-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .coord-info-label {
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 700;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .coord-info-val {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     color: #1e293b;
     word-break: break-word;
 }
 
 .coord-item-detectada {
-    background-color: #f8fafc;
-    border-radius: 6px;
-    padding: 2px 8px;
-    border-left: 3px solid #3b82f6;
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #3b82f6;
+}
+
+.coord-item-detectada:hover {
+    border-color: #93c5fd;
+    border-left-color: #2563eb;
 }
 
 .coord-val-detectada {
     color: #1e40af;
     font-weight: 600;
-    font-size: 12.5px;
+    font-size: 13px;
 }
 
 .coord-badges-wrap {
@@ -1096,5 +1107,100 @@ table.dataTable.no-footer {
     cursor: not-allowed;
     opacity: 0.65;
 }
+
+/* Caja de dirección editable en modal */
+.coord-entrega-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+.coord-entrega-box:focus-within {
+    border-color: #3b82f6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.coord-entrega-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.coord-entrega-label {
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.coord-entrega-hint {
+    font-weight: 400;
+    color: #64748b;
+    font-size: 11px;
+}
+
+.btn-restaurar-dir {
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    color: #475569 !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.btn-restaurar-dir:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+.btn-copiar-detectada {
+    font-size: 11.5px !important;
+    padding: 3px 10px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    background: #059669 !important;
+    border: 1px solid #047857 !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25);
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+}
+
+.btn-copiar-detectada:hover {
+    background: #047857 !important;
+    border-color: #047857 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+}
+
+.input-direccion-entrega {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+.msg-cambio-dir {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: #b45309;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
 
 
