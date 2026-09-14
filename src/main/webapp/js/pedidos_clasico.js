@@ -398,40 +398,8 @@ $("#fechapedido").change(function(){
 		$('#num3').val(limpiarValorFormulario(datos.num3));
         $('#telcelular').val(datos.telefonocelular);
         $('#email').val(datos.email);
-        //En esta parte del email validaremos si está en un plan de fidelizacion
-        $.ajax({ 
-                        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo='+ datos.email, 
-                        dataType: 'json', 
-                        async: false, 
-                        success: function(dataResp){ 
-                            if(dataResp.respuesta)
-                            {
-                                $.alert('El cliente ya existe en el programa de fidelizacion.');
-                                $('#email').css("background-color","#00FF00");
-                            }else
-                            {
-                                $('#email').css("background-color","#FFFFFF");
-                                //Realizamos validación si el cliente esta marcado para no pertenecer al plan de fidelizacion
-                                $.ajax({ 
-                                        url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo='+ datos.email, 
-                                        dataType: 'json', 
-                                        async: false, 
-                                        success: function(dataResp2){
-                                            if(dataResp2.respuesta)
-                                            {
-                                                $.alert('CUIDADO! El cliente manifestó no querer pertenecer al plan de fidelización.');
-                                            }
-                                            else
-                                            {
-                                                $('#nodeseafidelizacion').attr('disabled', false);
-                                            }
-                                        } 
-                                });
-                                
-                            }
-                            
-                        } 
-            });
+        //Toda la revision de fidelizacion, en una sola funcion y asincrona
+        revisarFidelizacionCliente(datos.email);
         //Agregamos los campos de facturación electronica
         if(datos.clientesiniden == 'N')
         {
@@ -3224,6 +3192,7 @@ function ReiniciarPedido()
 																	$('#telefono').val('');
                                                                     $('#telcelular').val('');
                                                                     $('#email').val('');
+                                                                    pintarAvisoFidelizacion('');
                                                                     $('#email').css("background-color","#FFFFFF");
                                                                     $('#clientesinidentificar').prop('checked', true);
                                                                     $('#emailfact').val('');
@@ -3787,6 +3756,7 @@ function ConfirmarPedido()
 									$('#telefono').val('');
                                     $('#telcelular').val('');
                                     $('#email').val('');
+                                    pintarAvisoFidelizacion('');
                                     $('#email').css("background-color","#FFFFFF");
                                     $('#clientesinidentificar').prop('checked', true);
                                     $('#emailfact').val('');
@@ -5602,6 +5572,7 @@ function limpiarSeleccionCliente()
 		$('#telefono').val("");
         $('#telcelular').val('');
         $('#email').val('');
+        pintarAvisoFidelizacion('');
         $('#email').css("background-color","#FFFFFF");
         $('#clientesinidentificar').prop('checked', true);
         $('#emailfact').val('');
@@ -6907,3 +6878,139 @@ function noDeseaFidelizacion()
 }
 
 $('#email').on('input', validate);
+
+/**
+ * Pinta la franja de fidelizacion del cliente.
+ */
+function pintarAvisoFidelizacion(texto, fondo, color) {
+    var aviso = $('#avisoPuntos');
+    if (!texto) {
+        aviso.hide();
+        if (aviso.is('input')) {
+            aviso.val('');
+        }
+        return;
+    }
+    if (aviso.is('input')) {
+        aviso.val($('<div>').html(texto).text());
+    } else {
+        aviso.html(texto);
+    }
+    aviso.css({ 'background-color': fondo, 'color': color });
+    aviso.show();
+}
+
+/**
+ * Revisa la situacion del cliente en el plan de fidelizacion de manera asincrona.
+ */
+function revisarFidelizacionCliente(correo) {
+    pintarAvisoFidelizacion('');
+    if (!correo) {
+        $('#email').css('background-color', '#FFFFFF');
+        return;
+    }
+    $.ajax({
+        url: server + 'ServiciosClienteFidelizacion?idoperacion=1&correo=' + encodeURIComponent(correo),
+        dataType: 'json',
+        success: function (dataResp) {
+            if (dataResp && dataResp.respuesta) {
+                $('#email').css('background-color', '#00FF00');
+                mostrarAvisoPuntos(correo);
+                return;
+            }
+            $('#email').css('background-color', '#FFFFFF');
+            $.ajax({
+                url: server + 'ServiciosClienteFidelizacion?idoperacion=9&correo=' + encodeURIComponent(correo),
+                dataType: 'json',
+                success: function (dataResp2) {
+                    if (dataResp2 && dataResp2.respuesta) {
+                        var msgCuidado = 'CUIDADO: el cliente manifestó NO querer pertenecer al plan de fidelización.';
+                        pintarAvisoFidelizacion(
+                            '<i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> ' + msgCuidado,
+                            '#FDE3E3', '#C21C1F');
+                        if (typeof $.alert === 'function') {
+                            $.alert({
+                                title: 'Plan de Fidelización',
+                                content: msgCuidado,
+                                type: 'red',
+                                buttons: {
+                                    entendido: {
+                                        text: 'Enterado',
+                                        btnClass: 'btn-danger'
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        $('#nodeseafidelizacion').attr('disabled', false);
+                    }
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Muestra los puntos del cliente y cuales se le vencen pronto.
+ */
+function mostrarAvisoPuntos(correo) {
+    if (!correo) {
+        return;
+    }
+    $.ajax({
+        url: server + 'ServiciosClienteFidelizacion?idoperacion=10&correo=' + encodeURIComponent(correo),
+        dataType: 'json',
+        success: function (r) {
+            if (!r || !r.respuesta) {
+                return;
+            }
+            var puntos = Math.round(r.puntos || 0);
+            var porVencer = Math.round(r.porvencer || 0);
+            var dias = r.dias || 60;
+            if (puntos <= 0) {
+                return;
+            }
+            if (porVencer > 0) {
+                var textoVence = 'Tiene ' + puntos + ' puntos, y ' + porVencer
+                        + ' se le vencen en los proximos ' + dias + ' dias'
+                        + (r.vence ? ' (desde el ' + fechaVenceLegible(r.vence) + ')' : '');
+                pintarAvisoFidelizacion(
+                        '<i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> ' + textoVence,
+                        '#FDC806', '#3A2C00');
+                if (typeof $.alert === 'function') {
+                    $.alert({
+                        title: 'Puntos de Fidelización por Vencer',
+                        content: textoVence + '.<br><br><b>¡Recuérdale al cliente que puede redimirlos en este pedido!</b>',
+                        type: 'orange',
+                        buttons: {
+                            entendido: {
+                                text: 'Enterado',
+                                btnClass: 'btn-warning'
+                            }
+                        }
+                    });
+                }
+            } else {
+                var textoDisp = 'Tiene ' + puntos + ' puntos disponibles';
+                pintarAvisoFidelizacion(
+                        '<i class="fas fa-check-circle" style="margin-right:6px;"></i> ' + textoDisp,
+                        '#E4F1EB', '#14714E');
+            }
+        }
+    });
+}
+
+/** De "2026-11-20" saca "20 de noviembre". */
+function fechaVenceLegible(fecha) {
+    if (!fecha || fecha.length < 10) {
+        return '';
+    }
+    var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var mes = parseInt(fecha.substring(5, 7), 10);
+    var dia = parseInt(fecha.substring(8, 10), 10);
+    if (isNaN(mes) || isNaN(dia) || mes < 1 || mes > 12) {
+        return '';
+    }
+    return dia + ' de ' + meses[mes - 1];
+}

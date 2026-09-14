@@ -6896,9 +6896,16 @@ function pintarAvisoFidelizacion(texto, fondo, color) {
     var aviso = $('#avisoPuntos');
     if (!texto) {
         aviso.hide();
+        if (aviso.is('input')) {
+            aviso.val('');
+        }
         return;
     }
-    aviso.text(texto);
+    if (aviso.is('input')) {
+        aviso.val($('<div>').html(texto).text());
+    } else {
+        aviso.html(texto);
+    }
     aviso.css({ 'background-color': fondo, 'color': color });
     aviso.show();
 }
@@ -6939,12 +6946,23 @@ function revisarFidelizacionCliente(correo) {
                 dataType: 'json',
                 success: function (dataResp2) {
                     if (dataResp2 && dataResp2.respuesta) {
-                        //Antes era una alerta que habia que cerrar con un clic en medio
-                        //de la toma del pedido. Es una advertencia de verdad, asi que se
-                        //ve en rojo, pero sin frenar a nadie.
+                        var msgCuidado = 'CUIDADO: el cliente manifestó NO querer pertenecer al plan de fidelización.';
                         pintarAvisoFidelizacion(
-                            'CUIDADO: el cliente manifesto NO querer pertenecer al plan de fidelizacion.',
+                            '<i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> ' + msgCuidado,
                             '#FDE3E3', '#C21C1F');
+                        if (typeof $.alert === 'function') {
+                            $.alert({
+                                title: 'Plan de Fidelización',
+                                content: msgCuidado,
+                                type: 'red',
+                                buttons: {
+                                    entendido: {
+                                        text: 'Enterado',
+                                        btnClass: 'btn-danger'
+                                    }
+                                }
+                            });
+                        }
                     } else {
                         $('#nodeseafidelizacion').attr('disabled', false);
                     }
@@ -6981,12 +6999,29 @@ function mostrarAvisoPuntos(correo) {
             if (porVencer > 0) {
                 //Lo urgente primero: es lo que hay que alcanzar a decirle antes
                 //de que cuelgue.
-                pintarAvisoFidelizacion('Tiene ' + puntos + ' puntos, y ' + porVencer
+                var textoVence = 'Tiene ' + puntos + ' puntos, y ' + porVencer
                         + ' se le vencen en los proximos ' + dias + ' dias'
-                        + (r.vence ? ' (desde el ' + fechaVenceLegible(r.vence) + ')' : ''),
+                        + (r.vence ? ' (desde el ' + fechaVenceLegible(r.vence) + ')' : '');
+                pintarAvisoFidelizacion(
+                        '<i class="fas fa-exclamation-circle" style="margin-right:6px;"></i> ' + textoVence,
                         '#FDC806', '#3A2C00');
+                if (typeof $.alert === 'function') {
+                    $.alert({
+                        title: 'Puntos de Fidelización por Vencer',
+                        content: textoVence + '.<br><br><b>¡Recuérdale al cliente que puede redimirlos en este pedido!</b>',
+                        type: 'orange',
+                        buttons: {
+                            entendido: {
+                                text: 'Enterado',
+                                btnClass: 'btn-warning'
+                            }
+                        }
+                    });
+                }
             } else {
-                pintarAvisoFidelizacion('Tiene ' + puntos + ' puntos disponibles',
+                var textoDisp = 'Tiene ' + puntos + ' puntos disponibles';
+                pintarAvisoFidelizacion(
+                        '<i class="fas fa-check-circle" style="margin-right:6px;"></i> ' + textoDisp,
                         '#E4F1EB', '#14714E');
             }
         }
