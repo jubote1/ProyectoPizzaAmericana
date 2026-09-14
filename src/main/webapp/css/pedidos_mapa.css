@@ -1,6 +1,103 @@
 /* ==========================================================================
    Panel de Asistencia y Controles del Mapa de Toma de Pedidos (Pedidos.html)
    ========================================================================== */
+:root {
+	--rc-red: rgb(16, 122, 209);
+	--rc-red-dark: rgb(0, 128, 255);
+	--rc-ink: #1c1f24;
+	--rc-ink-soft: #5b6270;
+	--rc-bg: #f3f4f7;
+	--rc-card: #ffffff;
+	--rc-line: #e7e9ee;
+	--rc-line-soft: #f0f1f4;
+	--rc-warn: #ffb020;
+	--radius: 14px;
+}
+
+.card-moderna-header h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--rc-ink);
+}
+
+.card-moderna-header h2 i {
+	color: var(--rc-red);
+	margin-right: 8px;
+}
+
+.layout {
+	margin: 0 auto;
+	padding: 20px 20px 20px;
+}
+
+
+.topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 14px;
+	background: linear-gradient(135deg, #1c1f24 0%, #2c3038 100%);
+	color: #fff;
+	padding: 22px 26px;
+	border-radius: var(--radius);
+	margin-bottom: 22px;
+	box-shadow: 0 8px 24px rgba(20, 20, 25, .18);
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.brand .logo {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 46px;
+	height: 46px;
+	border-radius: 12px;
+	background: var(--rc-red);
+	color: #fff;
+	font-weight: 800;
+	font-size: 16px;
+	letter-spacing: .5px;
+	box-shadow: 0 4px 10px rgb(0, 92, 185);
+}
+
+.brand-txt h1 {
+	margin: 0;
+	font-size: 19px;
+	font-weight: 700;
+}
+
+.brand-txt p {
+	margin: 2px 0 0;
+	font-size: 13px;
+	color: #aeb3bd;
+}
+
+.user-chip {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: rgba(255, 255, 255, .08);
+	padding: 8px 14px;
+	border-radius: 999px;
+	font-size: 13px;
+	color: #dfe1e6;
+}
+
+.user-chip .dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #3ddc84;
+	display: inline-block;
+}
+
 
 .panel-mapa-contenedor {
     max-width: 950px;
@@ -14,14 +111,20 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
     padding: 16px 20px;
     margin-bottom: 14px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .panel-mapa-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 12px;
     margin-bottom: 14px;
+}
+
+@media (max-width: 768px) {
+    .panel-mapa-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .panel-mapa-item {
@@ -187,7 +290,7 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
     border-radius: 10px !important;
     border: 1px solid #e2e8f0 !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .swal2-popup.swal2-toast .swal2-title {
@@ -202,4 +305,1512 @@
 /* Evitar outline azul predeterminado en mapa */
 #map:focus, #map canvas:focus {
     outline: none !important;
+}
+
+/* Modos de Dirección (Libre vs Nomenclatura) */
+.fila-modo-direccion {
+    transition: background-color 0.25s ease, opacity 0.25s ease, border 0.25s ease;
+}
+
+.fila-modo-direccion.modo-inactivo {
+    background-color: #f8fafc !important;
+}
+
+.fila-modo-direccion.modo-inactivo td:first-child {
+    border-left: 4px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+}
+
+.fila-modo-direccion.modo-inactivo label,
+.fila-modo-direccion.modo-inactivo p.form-control-static {
+    color: #64748b;
+}
+
+.fila-modo-direccion.modo-inactivo input:not(#validaDir),
+.fila-modo-direccion.modo-inactivo select {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.fila-modo-direccion.modo-activo {
+    opacity: 1;
+    background-color: #ffffff !important;
+}
+
+.fila-modo-direccion.modo-activo > td:first-child {
+    border-left: 4px solid #2563eb !important;
+    background-color: #eff6ff !important;
+    color: #1e3a8a !important;
+}
+
+.badge-modo-dir {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+/* Alineación limpia de cabeceras de tarjeta y badges sin desniveles ni quiebres */
+.panel-mapa-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    min-height: 24px;
+}
+
+.panel-mapa-item-header .panel-mapa-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.badge-similitud-dir {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.badge-origen-dir,
+.badge-similitud-dir .label {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    font-size: 10.5px !important;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Botones Buscar con azul vivo, brillante y 100% activos */
+#buscarmapa, #btnBuscarDirLibre, .btn-buscar-global {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 16px;
+    border-radius: 4px;
+    opacity: 1 !important;
+    filter: none !important;
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    background-color: #2563eb !important;
+    border: 1px solid #1d4ed8 !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.45) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+#buscarmapa:hover, #buscarmapa:focus, #buscarmapa:active,
+#btnBuscarDirLibre:hover, #btnBuscarDirLibre:focus, #btnBuscarDirLibre:active,
+.btn-buscar-global:hover, .btn-buscar-global:focus, .btn-buscar-global:active {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    background-color: #1d4ed8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.6) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* El botón Buscar aparece EXCLUSIVAMENTE en la fila activa */
+.fila-modo-direccion.modo-inactivo #buscarmapa,
+.fila-modo-direccion.modo-inactivo #btnBuscarDirLibre,
+.fila-modo-direccion.modo-inactivo .btn-buscar-global {
+    display: none !important;
+}
+
+.fila-modo-direccion.modo-activo #buscarmapa,
+.fila-modo-direccion.modo-activo #btnBuscarDirLibre,
+.fila-modo-direccion.modo-activo .btn-buscar-global {
+    display: inline-flex !important;
+}
+
+
+
+
+
+/* ==========================================================================
+   ARQUITECTURA FULL-WIDTH Y SISTEMA DE ESPACIADO ERGONÓMICO (Pedidos.html)
+   ========================================================================== */
+
+html, body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    background-color: #f8fafc !important;
+    
+}
+
+/* Anular límites fijos de Bootstrap para ocupar el 100% del ancho de pantalla */
+.container,
+.container-fluid,
+.pedidos-fullwidth-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.pedidos-dashboard-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Grillas de 2 columnas amplias y fluidas */
+.pedidos-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 22px;
+}
+
+.pedidos-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 1200px) {
+    .pedidos-layout-grid,
+    .pedidos-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   TARJETAS MODERNAS CON MÁRGENES Y ESPACIADO LIMPIO (NO APEÑUSCADO)
+   ========================================================================== */
+
+.card-moderna {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-moderna:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.06);
+}
+
+.card-moderna-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 2px solid #f1f5f9;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.2px;
+}
+
+.card-moderna-header i {
+    color: #2563eb;
+    margin-right: 8px;
+}
+
+/* Grillas internas de formularios con separación cómoda */
+.form-row-4col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 1440px) {
+    .form-row-4col {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+}
+
+.form-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row-nomenclatura {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 24px 1fr 24px 1fr 1.2fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.form-group-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.label-moderno {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #475569;
+    margin-bottom: 7px;
+    display: block;
+}
+
+/* Inputs ergonómicos con altura cómoda y bordes limpios */
+.card-moderna .form-control {
+    height: 38px;
+    border-radius: 7px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 13px;
+    padding: 6px 12px;
+    color: #1e293b;
+    box-shadow: none;
+    transition: all 0.2s ease;
+}
+
+.card-moderna .form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14);
+}
+
+.card-moderna .form-control[disabled],
+.card-moderna .form-control[readonly] {
+    background-color: #f8fafc;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+/* ==========================================================================
+   RESALTADO Y SELECCIÓN DESTACADA DE DIRECCIONES (NOMENCLATURA VS LIBRE)
+   ========================================================================== */
+
+div.fila-modo-direccion {
+    border: 1.5px solid #e2e8f0;
+    border-left: 5px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    background-color: #ffffff;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+/* Modo Activo: Resaltado azul suave con borde izquierdo vibrante y sombra elegante */
+div.fila-modo-direccion.modo-activo {
+    background-color: #f0f7ff !important;
+    border-color: #93c5fd !important;
+    border-left: 5px solid #2563eb !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12) !important;
+}
+
+div.fila-modo-direccion.modo-activo .dir-modo-titulo {
+    color: #1e3a8a !important;
+    font-weight: 800 !important;
+    font-size: 13.5px !important;
+}
+
+div.fila-modo-direccion.modo-activo .dir-modo-titulo i {
+    color: #2563eb !important;
+}
+
+div.fila-modo-direccion.modo-activo .badge-modo-dir {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+
+/* Modo Inactivo: Atenuado suave, inputs deshabilitados visualmente */
+div.fila-modo-direccion.modo-inactivo {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    border-left: 5px solid #cbd5e1 !important;
+    opacity: 0.65 !important;
+    box-shadow: none !important;
+}
+
+div.fila-modo-direccion.modo-inactivo .dir-modo-titulo {
+    color: #64748b !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
+div.fila-modo-direccion.modo-inactivo .badge-modo-dir {
+    display: none !important;
+}
+
+div.fila-modo-direccion.modo-inactivo input:not(#validaDir),
+div.fila-modo-direccion.modo-inactivo select {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed;
+}
+
+div.fila-modo-direccion.modo-inactivo .btn-buscar-global {
+    display: none !important;
+}
+
+div.fila-modo-direccion.modo-activo .btn-buscar-global {
+    display: inline-flex !important;
+}
+
+/* Header del modo de dirección */
+.dir-modo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.dir-modo-titulo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ==========================================================================
+   SISTEMA DE BOTONES MODERNOS, SUAVES Y LIMPIOS
+   ========================================================================== */
+
+/* Barra de acciones rápidas de cliente */
+.btn-toolbar-cliente {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    margin-bottom: 6px;
+}
+
+#limpiar {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+#limpiar:hover {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    transform: translateY(-1px);
+}
+
+#ultimospedidos {
+    background: #eff6ff !important;
+    border: 1px solid #bfdbfe !important;
+    color: #1d4ed8 !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+#ultimospedidos:hover {
+    background: #dbeafe !important;
+    border-color: #93c5fd !important;
+    transform: translateY(-1px);
+}
+
+#transferircliente {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    color: #b45309 !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+#transferircliente:hover {
+    background: #fef3c7 !important;
+    border-color: #fcd34d !important;
+    transform: translateY(-1px);
+}
+
+#notificaciones {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #15803d !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+#notificaciones:hover {
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    transform: translateY(-1px);
+}
+
+/* Botones Club Fidelización */
+.btn-fidelizacion-incluir {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-fidelizacion-incluir:hover {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    transform: translateY(-1px);
+}
+
+.btn-fidelizacion-no {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-fidelizacion-no:hover:not(:disabled) {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    transform: translateY(-1px);
+}
+.btn-fidelizacion-no:disabled {
+    opacity: 0.45 !important;
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+/* Botones Ofertas y Promociones */
+.btn-oferta-agregar {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+}
+.btn-oferta-agregar:hover {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    transform: translateY(-1px);
+}
+
+.btn-oferta-eliminar {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+}
+.btn-oferta-eliminar:hover {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    transform: translateY(-1px);
+}
+
+/* Selección ergonómica de división de pizza */
+.pizza-division-group {
+    display: flex;
+    gap: 14px;
+    margin: 8px 0 14px 0;
+}
+
+.radio-card-division {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12.5px;
+    color: #1e293b;
+    user-select: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.radio-card-division:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+.radio-card-division input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Adiciones y Modificadores */
+.adiciones-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.adiciones-radios {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.adiciones-radios label {
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+.modificadores-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.btn-modificador-con {
+    flex: 1;
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #065f46 !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    padding: 9px 12px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-modificador-con:hover {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+}
+
+.btn-modificador-sin {
+    flex: 1;
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    color: #92400e !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    padding: 9px 12px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-modificador-sin:hover {
+    background: #fef3c7 !important;
+    border-color: #fcd34d !important;
+}
+
+/* Botón Destacado Agregar al Pedido */
+.btn-agregar-pedido-main {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    border: 1px solid #1d4ed8 !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
+    transition: all 0.2s ease !important;
+    margin-top: 10px;
+    cursor: pointer !important;
+}
+.btn-agregar-pedido-main:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* ==========================================================================
+   SECCIÓN INFERIOR: MENÚ Y DETALLE DE PEDIDO / CIERRE
+   ========================================================================== */
+
+.pedido-meta-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+}
+
+.pedido-meta-item label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.pedido-meta-item input {
+    height: 32px;
+    font-size: 12.5px;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    padding: 2px 10px;
+    font-weight: 700;
+}
+
+/* Botón Descuentos del Día */
+.btn-descuentos-dia {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 7px 14px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-descuentos-dia:hover {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    transform: translateY(-1px);
+}
+
+/* Botón Redimir Puntos */
+.btn-redimir-puntos {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 6px 14px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-redimir-puntos:hover {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    transform: translateY(-1px);
+}
+
+/* Box Total Pedido Destacado */
+.total-destacado-box {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1.5px solid #6ee7b7;
+    border-radius: 9px;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.total-destacado-label {
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #065f46;
+}
+
+.total-destacado-input {
+    background: transparent !important;
+    border: none !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    color: #047857 !important;
+    text-align: right;
+    width: 60% !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.cierre-grid-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.cierre-acciones-footer {
+    display: grid;
+    grid-template-columns: 1fr 1.9fr;
+    gap: 20px;
+    margin-top: 16px;
+}
+
+.btn-reiniciar-pedido-destacado {
+    background: #fee2e2 !important;
+    border: 1px solid #fca5a5 !important;
+    color: #b91c1c !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    padding: 11px 18px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-reiniciar-pedido-destacado:hover {
+    background: #fecaca !important;
+    color: #991b1b !important;
+    transform: translateY(-1px);
+}
+
+.btn-confirmar-pedido-destacado {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+    border: 1px solid #047857 !important;
+    color: #ffffff !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    padding: 12px 26px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+.btn-confirmar-pedido-destacado:hover {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55) !important;
+    transform: translateY(-1px) !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   ESTILOS MODERNOS DE TABLAS Y DATATABLES (Referencia Rappi Cargo)
+   ========================================================================== */
+
+.grid-clientes-wrapper {
+    overflow-x: auto;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    background: #ffffff;
+    margin: 12px 0 14px 0;
+}
+
+.dataTables_wrapper {
+    padding: 8px 10px 12px;
+    font-size: 12.5px;
+    color: #475569;
+}
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    margin: 8px 0;
+    font-size: 12px;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #1e293b;
+    background: #fff;
+    margin-left: 6px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus,
+.dataTables_wrapper .dataTables_length select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
+}
+
+.dataTables_wrapper .dataTables_info {
+    font-size: 12px;
+    color: #64748b;
+    padding-top: 10px;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 8px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: 1px solid #e2e8f0 !important;
+    background: #fff !important;
+    color: #1e293b !important;
+    border-radius: 6px !important;
+    padding: 5px 10px !important;
+    margin-left: 4px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #fff !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.28) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+table.dataTable {
+    border-collapse: separate !important;
+    border-spacing: 0;
+    width: 100% !important;
+    border: none !important;
+    margin: 6px 0 !important;
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .04em;
+    font-weight: 700;
+    padding: 9px 12px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+table.dataTable tbody td {
+    padding: 8px 12px !important;
+    font-size: 12.5px;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    vertical-align: middle !important;
+}
+
+table.dataTable tbody tr:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Marcaciones y dinámicos */
+#frmMarcaciones {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 10px 14px;
+    margin-top: 10px;
+}
+
+#frmMarcaciones h2 {
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #475569 !important;
+    margin: 0 0 8px 0 !important;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+#frmMarcaciones table.table-bordered {
+    border: none !important;
+    margin-bottom: 0 !important;
+}
+
+#frmMarcaciones table.table-bordered td {
+    padding: 6px 8px !important;
+    border: 1px solid #f1f5f9 !important;
+    font-size: 12px !important;
+}
+
+#frmMarcaciones input[type="text"] {
+    height: 28px !important;
+    border-radius: 4px !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    margin-left: 4px;
+}
+
+#FormTamanoPizza label, #especialidades label, #otrosproductos label, #frmgaseosas label {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+    cursor: pointer;
+    margin: 3px 6px 3px 0;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+
+#FormTamanoPizza label:hover, #especialidades label:hover, #otrosproductos label:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+#FormTamanoPizza input[type="radio"], #especialidades input[type="radio"], #otrosproductos input[type="radio"], #frmgaseosas input[type="radio"] {
+    margin: 0;
+}
+
+/* Altura simétrica del mapa */
+#map { height: 410px !important; }
+
+
+/* ==========================================================================
+   LAYOUT NUEVO: BUSCADOR FULLWIDTH (100%) + DIRECCIÓN Y MAPA EN 2 COLUMNAS (50%/50%)
+   ========================================================================== */
+
+.card-cliente-fullwidth {
+    width: 100% !important;
+    margin-bottom: 22px !important;
+}
+
+.pedidos-middle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: stretch;
+    width: 100%;
+    margin-bottom: 22px;
+}
+
+@media (max-width: 1200px) {
+    .pedidos-middle-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card-direccion-middle,
+.card-mapa-middle,
+.card-tamaño-middle,
+.card-detalle-middle{
+    margin-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-mapa-middle .panel-mapa-contenedor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ELIMINAR COMPLETAMENTE EL BORDE NEGRO DE ENFOQUE DEL MAPA */
+#map,
+#map:focus,
+#map:focus-visible,
+#map:focus-within,
+#map canvas,
+#map div,
+#map svg,
+#map *:focus,
+#map *:focus-visible,
+.esri-view,
+.esri-view:focus,
+.esri-view-surface,
+.esri-view-surface:focus,
+.esri-view-surface--touch:focus,
+.esri-display-object:focus {
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+}
+
+#map {
+    width: 100% !important;
+    height: 410px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    background-color: #f8fafc;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s ease;
+}
+
+#map:hover {
+    border-color: #cbd5e1 !important;
+}
+
+/* Espaciado generoso para que nada se vea apeñuscado */
+.seccion-subtitulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 8px;
+    margin: 30px 0 14px 0;
+    border-bottom: 1.5px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.seccion-subtitulo i {
+    color: #2563eb;
+}
+
+.btn-toolbar-cliente {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.btn-toolbar-cliente .btn {
+    padding: 7px 16px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+}
+
+
+/* ==========================================================================
+   ESTILOS MODERNOS PARA FORMULARIO DE TAMAÑOS DE PIZZA (#FormTamanoPizza)
+   ========================================================================== */
+
+#FormTamanoPizza {
+    display: block !important;
+    width: 100% !important;
+}
+
+#FormTamanoPizza table, 
+#FormTamanoPizza table.table-bordered {
+    border: none !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    background: transparent !important;
+}
+
+#FormTamanoPizza table td {
+    border: none !important;
+    padding: 4px 6px !important;
+    vertical-align: middle !important;
+    width: 50% !important;
+}
+
+#FormTamanoPizza label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 14px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    user-select: none !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+}
+
+#FormTamanoPizza label:hover {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+}
+
+#FormTamanoPizza input[type="radio"] {
+    margin: 0 !important;
+    transform: scale(1.15) !important;
+    cursor: pointer !important;
+}
+
+/* ==========================================================================
+   MODERNIZACIÓN DE DIÁLOGOS DE CONFIRMACIÓN Y ALERTAS ($.confirm / jconfirm)
+   ========================================================================== */
+
+.jconfirm .jconfirm-bg {
+    background-color: rgba(15, 23, 42, 0.55) !important;
+    backdrop-filter: blur(4px) !important;
+    opacity: 1 !important;
+}
+
+.jconfirm .jconfirm-box {
+    border-radius: 14px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 22px 24px 18px 24px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.jconfirm .jconfirm-box div.jconfirm-title-c {
+    padding-bottom: 8px !important;
+}
+
+.jconfirm .jconfirm-box div.jconfirm-title-c .jconfirm-title {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    letter-spacing: -0.2px !important;
+    padding-bottom: 4px !important;
+}
+
+.jconfirm .jconfirm-box div.jconfirm-content-pane {
+    margin-bottom: 16px !important;
+}
+
+.jconfirm .jconfirm-box div.jconfirm-content-pane .jconfirm-content {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+    color: #334155 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons {
+    padding-top: 14px !important;
+    padding-bottom: 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    border-top: 1px solid #f1f5f9 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button {
+    border-radius: 7px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    padding: 8px 18px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.15s ease !important;
+    text-transform: none !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-default {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-default:hover {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-blue,
+.jconfirm .jconfirm-box .jconfirm-buttons button.blue {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-blue:hover,
+.jconfirm .jconfirm-box .jconfirm-buttons button.blue:hover {
+    background-color: #1d4ed8 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-red,
+.jconfirm .jconfirm-box .jconfirm-buttons button.red {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    border: 1px solid #dc2626 !important;
+}
+
+.jconfirm .jconfirm-box .jconfirm-buttons button.btn-red:hover,
+.jconfirm .jconfirm-box .jconfirm-buttons button.red:hover {
+    background-color: #dc2626 !important;
+}
+
+
+/* ==========================================================================
+   SCROLL COMPACTO PARA ESPECIALIDADES, OTROS PRODUCTOS Y GASEOSAS
+   ========================================================================== */
+
+#especialidades,
+#otrosproductos,
+#frmgaseosas {
+    max-height: 270px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 9px !important;
+    padding: 8px !important;
+    background: #ffffff !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+    margin-top: 8px !important;
+}
+
+#especialidades::-webkit-scrollbar,
+#otrosproductos::-webkit-scrollbar,
+#frmgaseosas::-webkit-scrollbar {
+    width: 6px;
+}
+
+#especialidades::-webkit-scrollbar-thumb,
+#otrosproductos::-webkit-scrollbar-thumb,
+#frmgaseosas::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+#especialidades::-webkit-scrollbar-thumb:hover,
+#otrosproductos::-webkit-scrollbar-thumb:hover,
+#frmgaseosas::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+#especialidades table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 4px !important;
+}
+
+#especialidades table th {
+    position: sticky !important;
+    top: 0 !important;
+    background: #f8fafc !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #475569 !important;
+    padding: 6px 10px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    z-index: 2 !important;
+}
+
+#especialidades table td {
+    padding: 2px 4px !important;
+    border: none !important;
+    width: 50% !important;
+}
+
+#especialidades label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 5px 10px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+}
+
+#especialidades label:hover {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+}
+
+#especialidades input[type="radio"] {
+    margin: 0 !important;
+    transform: scale(1.1) !important;
+    cursor: pointer !important;
+}
+
+/* ==========================================================================
+   ICONOS Y BOTONES COMPACTOS Y ESTÉTICOS EN TABLA DEL PEDIDO (#grid-pedido)
+   ========================================================================== */
+
+#grid-pedido .btn,
+#grid-pedido button,
+#grid-pedido .btn-danger,
+#grid-pedido .btn-warning {
+    padding: 0 !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+    border: none !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+#grid-pedido .btn:hover,
+#grid-pedido button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.12) !important;
+}
+
+#grid-pedido .btn-danger {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+#grid-pedido .btn-danger:hover {
+    background-color: #dc2626 !important;
+}
+
+#grid-pedido .btn-warning {
+    background-color: #f59e0b !important;
+    color: #ffffff !important;
+}
+
+#grid-pedido .btn-warning:hover {
+    background-color: #d97706 !important;
+}
+
+#grid-pedido .btn i,
+#grid-pedido button i,
+#grid-pedido .btn-danger i.fa-2x,
+#grid-pedido .btn-warning i.fa-2x {
+    font-size: 14px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+}
+
+/* ==========================================================================
+   ESTILOS PARA MODAL DE AGREGAR DOMICILIO (#modalCostoDomicilio)
+   ========================================================================== */
+
+.radio-card-domicilio {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    background: #f8fafc !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    user-select: none !important;
+    transition: all 0.15s ease !important;
+}
+
+.radio-card-domicilio:hover {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+}
+
+.radio-card-domicilio input[type="radio"] {
+    margin: 0 !important;
+    transform: scale(1.2) !important;
+    cursor: pointer !important;
 }

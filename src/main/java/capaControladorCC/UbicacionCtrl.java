@@ -507,7 +507,7 @@ public class UbicacionCtrl {
 
 		resultado.setLatitud(lat);
 		resultado.setLongitud(lng);
-		resultado.setDireccion(direccion != null && !direccion.isBlank() ? direccion : address);
+		resultado.setDireccion(address);
 		resultado.setDireccionCorregida(address);
 		
 		if (coords.has("Proveedor")) {
@@ -567,15 +567,23 @@ public class UbicacionCtrl {
 	}
 
 	
-	private static void inicializarApiKey() throws Exception {
-	    Parametro parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
-	    API_KEY_ARCGIS = parametro.getValorTexto();
-
-	    parametro = ParametrosDAO.obtenerParametro("APIHEREMAPS");
-	    API_KEY_HERE = parametro.getValorTexto();
-
-	    parametro = ParametrosDAO.obtenerParametro("APIGOOGLE");
-	    API_KEY_GOOGLE = parametro.getValorTexto();
+	private static void inicializarApiKey() {
+		try {
+			Parametro parametro = ParametrosDAO.obtenerParametro("APIARCGIS");
+			if (parametro != null && parametro.getValorTexto() != null) {
+				API_KEY_ARCGIS = parametro.getValorTexto();
+			}
+			parametro = ParametrosDAO.obtenerParametro("APIHEREMAPS");
+			if (parametro != null && parametro.getValorTexto() != null) {
+				API_KEY_HERE = parametro.getValorTexto();
+			}
+			parametro = ParametrosDAO.obtenerParametro("APIGOOGLE");
+			if (parametro != null && parametro.getValorTexto() != null) {
+				API_KEY_GOOGLE = parametro.getValorTexto();
+			}
+		} catch (Exception e) {
+			System.out.println("inicializarApiKey: " + e.getMessage());
+		}
 	}
 
 	private static JsonObject obtenerCoordenadasDesdeArcGIS(String direccion, String municipioPedido) throws Exception {
@@ -793,6 +801,18 @@ public class UbicacionCtrl {
 			if (esCoordenadaValida(coords)) {
 				ubicacion.setLatitud(coords.get("Latitud").getAsDouble());
 				ubicacion.setLongitud(coords.get("Longitud").getAsDouble());
+
+				String dirResultado = "";
+				if (coords.has("Direccion") && !coords.get("Direccion").getAsString().isBlank()) {
+					dirResultado = coords.get("Direccion").getAsString();
+				} else if (direccionNormalizada != null && direccionNormalizada.direccionEntrega != null && !direccionNormalizada.direccionEntrega.isBlank()) {
+					dirResultado = direccionNormalizada.direccionEntrega;
+				} else if (direccionNormalizada != null && direccionNormalizada.direccionGeocoder != null && !direccionNormalizada.direccionGeocoder.isBlank()) {
+					dirResultado = direccionNormalizada.direccionGeocoder;
+				} else {
+					dirResultado = direccion;
+				}
+				ubicacion.setDireccion(dirResultado);
 				return ubicacion;
 			}
 
@@ -831,36 +851,6 @@ public class UbicacionCtrl {
 
 		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
 		contro.enviarCorreo();
-	}
-
-	public static void main(String[] args) {
-
-		CoberturaRequest coberturaRequest = new CoberturaRequest();
-		coberturaRequest.setTelefono("3004577639");
-		ClienteCtrl clienteCtrl = new ClienteCtrl();
-		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3004577639").getClienteRecurrente());
-
-		
-		/*ClienteCtrl clienteCtrl = new ClienteCtrl();
-		PedidoCtrl pedd =  new PedidoCtrl();
-		System.out.println( clienteCtrl.ValidarExistenciaClienteCRM("3185020068").getClienteRecurrente());
-		pedd.actualizarClienteRecurrenteCRMBOT("29739849", clienteCtrl.ValidarExistenciaClienteCRM("3185020068"), "informacion");*/
-
-//		Resultado resultado = ubicarDireccionEnTienda(coberturaRequest);
-//		System.out.println(resultado.getResultado());
-//		System.out.println(resultado.getEstadoTienda());
-//		System.out.println(resultado.getInfoAdicional());
-//		System.out.println(resultado.isSuccess());
-//		System.out.println("Latitud: " + resultado.getLatitud());
-//		System.out.println("Longitud: " + resultado.getLongitud());
-//		System.out.println("Proveedor: " + resultado.getProveedorGeocodificacion());
-//		System.out.println("Correccion aplicada: " + resultado.getCorreccionAplicada());
-//		System.out.println("Municipio original: " + resultado.getMunicipioOriginal());
-//		System.out.println("Municipio corregido: " + resultado.getMunicipioCorregido());
-//		System.out.println("Direccion original normalizada: " + resultado.getDireccionOriginalNormalizada());
-//		System.out.println("Direccion corregida: " + resultado.getDireccionCorregida());
-//		System.out.println("Direccion proveedor: " + resultado.getDireccion());
-//		System.out.println("Barrio: " + resultado.getBarrio());
 	}
 
 
@@ -1182,6 +1172,14 @@ public class UbicacionCtrl {
 		return sb.toString();
 	}
 
+	/**
+	 * @deprecated NO USAR EN PRODUCCIÓN.
+	 * UbicacionCtrl utiliza como geocodificador primario ArcGIS (obtenerCoordenadasDesdeArcGIS),
+	 * secundario HERE Maps (HereGeocode) y respaldo Google (GoogleGeocode / GooglePlacesTextSearch).
+	 * Este método hacia Nominatim/OSM se mantiene solo con fines históricos y NO debe ser invocado
+	 * en el pipeline de cobertura para no perder exactitud.
+	 */
+	@Deprecated
 	public static JsonObject OsmGeocode(String direccion, String municipioPedido) {
 		JsonObject coords = crearCoordsVacias();
 		String direccionLimpia = quitarSufijoPais(direccion);
@@ -2331,6 +2329,40 @@ public class UbicacionCtrl {
 	    return texto.replaceAll("\\s+", " ").trim();
 	}
 	
+	public static void main(String[] args) {
+		System.out.println("=================================================");
+		System.out.println("   PRUEBA DE GEOCODIFICACION EN UBICACIONCTRL    ");
+		System.out.println("=================================================");
+
+		String direccionPrueba = "Carrera 38 # 38 Sur – 20 Barrio Mesa Envigado, Envigado";
+		String municipioPrueba = "Envigado";
+		String barrioPrueba = "";
+
+		CoberturaRequest request = new CoberturaRequest();
+		request.setDireccion(direccionPrueba);
+		request.setMunicipio(municipioPrueba);
+		request.setBarrio(barrioPrueba);
+		request.setTipoCliente("domicilio");
+
+		System.out.println("\n[1] Consultando direccion: " + direccionPrueba);
+		System.out.println("    Municipio digitado:    " + municipioPrueba);
+		System.out.println("    Barrio digitado:       " + barrioPrueba);
+
+		Resultado resultado = ubicarDireccionEnTienda(request);
+
+		System.out.println("\n================ RESULTADO ================");
+		System.out.println("Exito (Success):          " + resultado.isSuccess());
+		System.out.println("Direccion devuelta:       " + resultado.getDireccion());
+		System.out.println("Direccion corregida:      " + resultado.getDireccionCorregida());
+		System.out.println("Municipio original:       " + resultado.getMunicipioOriginal());
+		System.out.println("Municipio corregido:      " + resultado.getMunicipioCorregido());
+		System.out.println("Tienda asignada:          " + resultado.getInfoAdicional());
+		System.out.println("Latitud:                  " + resultado.getLatitud());
+		System.out.println("Longitud:                 " + resultado.getLongitud());
+		System.out.println("Proveedor que respondio:  " + resultado.getProveedorGeocodificacion());
+		System.out.println("Mensaje del sistema:      " + resultado.getResultado());
+		System.out.println("===========================================\n");
+	}
 	
 	
 }

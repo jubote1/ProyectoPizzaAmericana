@@ -28,6 +28,7 @@ var wompiAmbiente = "";
 var wompiEndPoint = "";
 var idMarcacionSel = 0;
 var tableEnviadosTiendaRappiCargo;
+var ARCGIS_API_KEY = window.ARCGIS_API_KEY || "AAPK211b4727a21c467cab976021a4014485adqFPyZ19VbYqn4_ZnjeAgaKts7YkcKdGxdFqB_ZcyEJasSP102byhIk3tVtW_IO";
 
 
 $(document).ready(function() {
@@ -1623,6 +1624,8 @@ var validacionCargoActual = null;
 var estadoAnteriorCargoActual = null;
 var vieneSinCoordenadas = false;
 var coordenadasModificadas = false;
+var direccionOriginalCargo = '';
+var ultimaDireccionDetectadaCargo = '';
 
 function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
@@ -1666,6 +1669,48 @@ function abrirModalVerificarCoordenadasRappiCargo(datospedido, validacion, estad
     $('#lblCoordDireccion').text(datospedido.direccion || validacion.direccionCliente || 'Sin dirección');
     $('#lblCoordTienda').text(validacion.nombreTienda || ('Tienda ' + datospedido.idtienda));
     $('#lblCoordDireccionDetectada').html('<i class="fas fa-spinner fa-spin text-muted"></i> Consultando ubicación en mapa...');
+
+    // Inicializar campo editable de dirección de entrega
+    direccionOriginalCargo = (datospedido.direccion || validacion.direccionCliente || '').trim();
+    ultimaDireccionDetectadaCargo = '';
+    $('#btnCopiarDireccionDetectada').hide();
+    $('#txtDireccionEntregaCargo').val(direccionOriginalCargo);
+    $('#msgCambioDireccion').hide();
+
+    // Eventos de la dirección editable
+    $('#txtDireccionEntregaCargo').off('input').on('input', function () {
+        var textoActual = ($(this).val() || '').trim();
+        if (textoActual.toLowerCase() !== direccionOriginalCargo.toLowerCase()) {
+            $('#msgCambioDireccion').slideDown(150);
+        } else {
+            $('#msgCambioDireccion').slideUp(150);
+        }
+    });
+
+    $('#btnRestaurarDireccionOriginal').off('click').on('click', function () {
+        $('#txtDireccionEntregaCargo').val(direccionOriginalCargo).trigger('input');
+    });
+
+    $('#btnCopiarDireccionDetectada').off('click').on('click', function () {
+        if (ultimaDireccionDetectadaCargo) {
+            $('#txtDireccionEntregaCargo').val(ultimaDireccionDetectadaCargo).trigger('input');
+            Swal.fire({
+                icon: 'info',
+                title: 'Dirección copiada',
+                text: 'Se copió la dirección detectada al campo de entrega editable.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    });
+
+    $('#btnUbicarDireccionEntrega').off('click').on('click', function () {
+        var dirEntrega = ($('#txtDireccionEntregaCargo').val() || '').trim();
+        if (dirEntrega) {
+            $('#txtBuscarDireccionMapa').val(dirEntrega);
+            buscarDireccionEnMapa();
+        }
+    });
 
     // Llenar buscador con la dirección registrada para fácil búsqueda
     var dirBusqueda = (datospedido.direccion || validacion.direccionCliente || '').trim();
@@ -1764,7 +1809,7 @@ function abrirModalVerificarCoordenadasRappiCargo(datospedido, validacion, estad
         cambiarCapaMapa('satelite');
     });
 
-    // Configurar evento de confirmación
+    // Configurar evento de confirmación con los 3 escenarios inteligentes
     $('#btnConfirmarCrearOrdenCargo').off('click').on('click', function () {
         if (vieneSinCoordenadas && !coordenadasModificadas) {
             Swal.fire({
@@ -1781,8 +1826,98 @@ function abrirModalVerificarCoordenadasRappiCargo(datospedido, validacion, estad
         }
 
         var posFinal = markerClienteCargo.getLatLng();
+        var direccionFinal = ($('#txtDireccionEntregaCargo').val() || '').trim();
+
+        if (!direccionFinal) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Dirección requerida',
+                text: 'La dirección de entrega no puede estar vacía.',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        var direccionCambiada = (direccionFinal.toLowerCase() !== direccionOriginalCargo.toLowerCase());
+        var coordenadasCambiadas = (coordenadasModificadas || vieneSinCoordenadas);
+
+        // Escenario 3: La dirección fue modificada por el operador
+        if (direccionCambiada) {
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Registrar cambio de dirección?',
+                html: `
+                    <div style="text-align:left; font-size:13px; line-height:1.6;">
+                        <p style="margin-bottom:8px; color:#475569;">Se detectó una modificación en la dirección de entrega del cliente:</p>
+                        <div style="background:#fee2e2; border-left:4px solid #ef4444; padding:8px 12px; margin-bottom:8px; border-radius:4px;">
+                            <span style="font-size:10.5px; color:#991b1b; font-weight:700; text-transform:uppercase;">Dirección anterior:</span><br>
+                            <b style="color:#b91c1c;">${direccionOriginalCargo || 'Sin registrar'}</b>
+                        </div>
+                        <div style="background:#dcfce7; border-left:4px solid #22c55e; padding:8px 12px; margin-bottom:10px; border-radius:4px;">
+                            <span style="font-size:10.5px; color:#166534; font-weight:700; text-transform:uppercase;">Nueva dirección a registrar:</span><br>
+                            <b style="color:#15803d;">${direccionFinal}</b>
+                        </div>
+                        <div style="background:#f1f5f9; padding:7px 12px; border-radius:4px; font-size:11.5px; color:#334155; margin-bottom:10px;">
+                            <i class="fas fa-map-marker-alt text-danger"></i> <b>Coordenadas:</b> ${posFinal.lat.toFixed(6)}, ${posFinal.lng.toFixed(6)}
+                        </div>
+                        <p style="margin:0; font-weight:600; color:#1e293b;">¿Desea registrar esta nueva dirección y sus coordenadas en el sistema (Call Center y Tienda) y crear la orden en Rappi Cargo?</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, registrar y crear orden',
+                cancelButtonText: '<i class="fas fa-arrow-left"></i> Cancelar y revisar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#modalVerificarCoordenadasRappiCargo').modal('hide');
+                    crearOrdenRappiCargoCandidatoTienda(pedidoCargoActual, posFinal.lat, posFinal.lng, direccionFinal);
+                }
+            });
+            return;
+        }
+
+        // Escenario 2: Solo se modificaron las coordenadas (pin arrastrado o búsqueda)
+        if (coordenadasCambiadas) {
+            Swal.fire({
+                icon: 'question',
+                title: '¿Confirmar ubicación en el mapa?',
+                html: `
+                    <div style="text-align:left; font-size:13px; line-height:1.6;">
+                        <p style="margin-bottom:8px; color:#475569;">¿Confirma que el punto marcado en el mapa es la ubicación exacta de entrega?</p>
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:9px 12px; border-radius:6px; margin-bottom:10px;">
+                            <div style="margin-bottom:5px;">
+                                <i class="fas fa-home text-primary"></i> <b>Dirección:</b> ${direccionFinal}
+                            </div>
+                            <div style="margin-bottom:5px;">
+                                <i class="fas fa-map-marker-alt text-danger"></i> <b>Coordenadas:</b> ${posFinal.lat.toFixed(6)}, ${posFinal.lng.toFixed(6)}
+                            </div>
+                            <div>
+                                <i class="fas fa-route text-success"></i> <b>Distancia calculada:</b> ${$('#lblCoordDistancia').text()}
+                            </div>
+                        </div>
+                        <p style="margin:0; font-size:11.5px; color:#64748b;">Se guardarán estas coordenadas en el sistema (Call Center y Tienda) y se despachará la orden con Rappi Cargo.</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-motorcycle"></i> Sí, confirmar y crear orden',
+                cancelButtonText: '<i class="fas fa-map"></i> Revisar en el mapa',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#modalVerificarCoordenadasRappiCargo').modal('hide');
+                    crearOrdenRappiCargoCandidatoTienda(pedidoCargoActual, posFinal.lat, posFinal.lng, direccionFinal);
+                }
+            });
+            return;
+        }
+
+        // Escenario 1: Sin cambios en dirección ni en coordenadas
         $('#modalVerificarCoordenadasRappiCargo').modal('hide');
-        crearOrdenRappiCargoCandidatoTienda(pedidoCargoActual, posFinal.lat, posFinal.lng);
+        crearOrdenRappiCargoCandidatoTienda(pedidoCargoActual, posFinal.lat, posFinal.lng, direccionFinal);
     });
 
     // Abrir modal y renderizar mapa
@@ -1917,48 +2052,107 @@ function actualizarDatosPosicionCliente(lat, lng, latTienda, lngTienda) {
     }
 }
 
+function formatearDireccionColombianaArcGIS(addr) {
+    if (!addr) return { texto: '', direccionBase: '', road: '', houseNumber: '', barrio: '', municipio: '' };
+
+    var rawAddress = (addr.Address || addr.ShortLabel || '').trim();
+    var matchAddr = (addr.Match_addr || '').trim();
+    var addNum = (addr.AddNum || '').trim();
+    var barrio = (addr.Neighborhood || addr.District || addr.Subregion || '').trim();
+    var municipio = (addr.City || 'Medellín').trim();
+    var road = '';
+    var houseNumber = '';
+    var direccionFormateada = '';
+
+    if (addr.Addr_type === 'POI' && (addr.PlaceName || addr.ShortLabel)) {
+        direccionFormateada = (addr.PlaceName || addr.ShortLabel).trim();
+        road = direccionFormateada;
+    } else if (rawAddress) {
+        if (rawAddress.includes('#') || rawAddress.includes('-')) {
+            direccionFormateada = rawAddress;
+        } else if (addNum && rawAddress.endsWith(addNum)) {
+            var resto = rawAddress.substring(0, rawAddress.length - addNum.length).trim();
+            var ultEspacio = resto.lastIndexOf(' ');
+            if (ultEspacio > 0) {
+                road = resto.substring(0, ultEspacio).trim();
+                var cruce = resto.substring(ultEspacio + 1).trim();
+                houseNumber = cruce + '-' + addNum;
+                direccionFormateada = road + ' # ' + cruce + '-' + addNum;
+            } else {
+                road = resto;
+                houseNumber = addNum;
+                direccionFormateada = road + ' # ' + addNum;
+            }
+        } else {
+            var matchNomen = rawAddress.match(/^((?:calle|carrera|cra|cr|cl|avenida|av|diagonal|diag|dg|transversal|trans|tv|circular|autopista)\s*\d+[a-z]?)\s+(\d+[a-z]?)\s+(\d+[a-z]?)$/i);
+            if (matchNomen) {
+                road = matchNomen[1];
+                houseNumber = matchNomen[2] + '-' + matchNomen[3];
+                direccionFormateada = road + ' # ' + houseNumber;
+            } else {
+                direccionFormateada = rawAddress;
+                road = rawAddress;
+            }
+        }
+    } else if (matchAddr) {
+        direccionFormateada = matchAddr.split(',')[0].trim();
+        road = direccionFormateada;
+    }
+
+    var textoCompleto = direccionFormateada;
+    if (barrio && textoCompleto.indexOf(barrio) === -1) {
+        textoCompleto += ', ' + barrio;
+    }
+    if (municipio && textoCompleto.indexOf(municipio) === -1) {
+        textoCompleto += ', ' + municipio;
+    }
+
+    return {
+        texto: textoCompleto,
+        direccionBase: direccionFormateada,
+        road: road,
+        houseNumber: houseNumber,
+        barrio: barrio,
+        municipio: municipio
+    };
+}
+
 function consultarDireccionInversa(lat, lng) {
     if (!lat || !lng || (lat === 0 && lng === 0)) return;
 
-    $('#lblCoordDireccionDetectada').html('<i class="fas fa-spinner fa-spin text-muted"></i> Identificando dirección...');
+    $('#lblCoordDireccionDetectada').html('<i class="fas fa-spinner fa-spin text-muted"></i> Identificando dirección con ArcGIS...');
 
     if (timerGeocodificacionInversa) {
         clearTimeout(timerGeocodificacionInversa);
     }
 
     timerGeocodificacionInversa = setTimeout(function () {
+        var urlArcGIS = 'https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode';
         $.ajax({
-            url: 'https://nominatim.openstreetmap.org/reverse',
+            url: urlArcGIS,
             type: 'GET',
             dataType: 'json',
             data: {
-                format: 'json',
-                lat: lat,
-                lon: lng,
-                zoom: 18,
-                addressdetails: 1
+                location: lng + ',' + lat,
+                f: 'json',
+                token: ARCGIS_API_KEY
             },
             success: function (data) {
                 if (data && data.address) {
-                    var addr = data.address;
-                    var via = addr.road || addr.pedestrian || addr.cycleway || addr.path || '';
-                    var numero = addr.house_number ? (' #' + addr.house_number) : '';
-                    var barrio = addr.neighbourhood || addr.suburb || addr.residential || '';
-                    var ciudad = addr.city || addr.town || addr.municipality || '';
+                    var info = formatearDireccionColombianaArcGIS(data.address);
+                    var direccionFinal = info.texto || data.address.Match_addr || '';
 
-                    var partes = [];
-                    if (via) partes.push(via + numero);
-                    if (barrio && barrio !== via) partes.push(barrio);
-                    if (ciudad && ciudad !== barrio) partes.push(ciudad);
-
-                    var direccionFinal = partes.join(', ');
-                    if (!direccionFinal && data.display_name) {
-                        direccionFinal = data.display_name.split(',').slice(0, 3).join(',');
-                    }
+                    ultimaDireccionDetectadaCargo = direccionFinal;
 
                     $('#lblCoordDireccionDetectada').html(
                         '<i class="fas fa-check text-success"></i> <b>' + (direccionFinal || 'Vía identificada') + '</b>'
                     );
+
+                    if (ultimaDireccionDetectadaCargo) {
+                        $('#btnCopiarDireccionDetectada').show();
+                    } else {
+                        $('#btnCopiarDireccionDetectada').hide();
+                    }
 
                     if (markerClienteCargo) {
                         markerClienteCargo.setPopupContent(
@@ -1968,6 +2162,8 @@ function consultarDireccionInversa(lat, lng) {
                         );
                     }
                 } else {
+                    ultimaDireccionDetectadaCargo = '';
+                    $('#btnCopiarDireccionDetectada').hide();
                     $('#lblCoordDireccionDetectada').html('<span class="text-muted">No fue posible identificar nombre de vía</span>');
                 }
             },
@@ -1979,8 +2175,8 @@ function consultarDireccionInversa(lat, lng) {
 }
 
 function buscarDireccionEnMapa() {
-    var query = $('#txtBuscarDireccionMapa').val();
-    if (!query || query.trim().length < 3) {
+    var query = ($('#txtBuscarDireccionMapa').val() || '').trim();
+    if (!query || query.length < 3) {
         Swal.fire({
             icon: 'info',
             title: 'Dirección requerida',
@@ -1990,13 +2186,17 @@ function buscarDireccionEnMapa() {
         return;
     }
 
-    var consultaCompleta = query.trim();
-    if (!consultaCompleta.toLowerCase().includes('colombia')) {
-        consultaCompleta += ', Colombia';
+    var municipio = '';
+    if (pedidoCargoActual && pedidoCargoActual.municipio) {
+        municipio = pedidoCargoActual.municipio;
+    } else if (pedidoCargoActual && pedidoCargoActual.ciudad) {
+        municipio = pedidoCargoActual.ciudad;
+    } else if (validacionCargoActual && validacionCargoActual.municipio) {
+        municipio = validacionCargoActual.municipio;
     }
 
     Swal.fire({
-        title: 'Buscando en el mapa...',
+        title: 'Buscando con Ubicación Ctrl...',
         text: query,
         allowOutsideClick: false,
         didOpen: () => {
@@ -2004,23 +2204,109 @@ function buscarDireccionEnMapa() {
         }
     });
 
+    var urlServicio = (server || '') + 'GeocodificarDireccion';
+
     $.ajax({
-        url: 'https://nominatim.openstreetmap.org/search',
+        url: urlServicio,
         type: 'GET',
         dataType: 'json',
         data: {
-            format: 'json',
-            q: consultaCompleta,
-            limit: 1,
-            addressdetails: 1
+            direccion: query,
+            municipio: municipio
+        },
+        success: function (data) {
+            if (data && data.latitud && data.longitud && !data.error) {
+                var newLat = parseFloat(data.latitud);
+                var newLng = parseFloat(data.longitud);
+
+                if (newLat !== 0 || newLng !== 0) {
+                    Swal.close();
+
+                    if (markerClienteCargo) {
+                        markerClienteCargo.setLatLng([newLat, newLng]);
+                    }
+                    if (mapaVerificacionCargo) {
+                        mapaVerificacionCargo.setView([newLat, newLng], 17);
+                    }
+
+                    var latTienda = parseFloat(validacionCargoActual.latitudTienda) || 0;
+                    var lngTienda = parseFloat(validacionCargoActual.longitudTienda) || 0;
+
+                    coordenadasModificadas = true;
+                    actualizarDatosPosicionCliente(newLat, newLng, latTienda, lngTienda);
+
+                    // Asignar dirección detectada directamente desde UbicacionCtrl
+                    var dirDetectada = data.direccion || query;
+                    ultimaDireccionDetectadaCargo = dirDetectada;
+
+                    $('#lblCoordDireccionDetectada').html(
+                        '<i class="fas fa-check-circle text-success"></i> <b>' + dirDetectada + '</b>'
+                    );
+                    $('#btnCopiarDireccionDetectada').show();
+
+                    if (markerClienteCargo) {
+                        markerClienteCargo.setPopupContent(
+                            '<b>Punto de Entrega</b><br>' +
+                            '<b>Registrada:</b> ' + ($('#lblCoordDireccion').text() || '') + '<br>' +
+                            '<span style="color:#059669;"><b>Ubicación Ctrl:</b> ' + dirDetectada + '</span>'
+                        ).openPopup();
+                    }
+
+                    $('#btnAbrirGoogleMaps').attr('href', 'https://www.google.com/maps/search/?api=1&query=' + newLat + ',' + newLng);
+
+                    $('#btnConfirmarCrearOrdenCargo')
+                        .prop('disabled', false)
+                        .html('<i class="fas fa-motorcycle"></i> Confirmar y Crear Orden');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Dirección ubicada con exactitud',
+                        text: dirDetectada,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    return;
+                }
+            }
+
+            // Fallback a ArcGIS si UbicacionCtrl no obtuvo coordenadas
+            buscarEnMapaArcGISFallback(query);
+        },
+        error: function () {
+            // Fallback a ArcGIS si hubo error de conexión con el servlet local
+            buscarEnMapaArcGISFallback(query);
+        }
+    });
+}
+
+function buscarEnMapaArcGISFallback(query) {
+    var consultaCompleta = query.trim();
+    if (!consultaCompleta.toLowerCase().includes('colombia')) {
+        consultaCompleta += ', Colombia';
+    }
+
+    var urlArcGIS = 'https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates';
+
+    $.ajax({
+        url: urlArcGIS,
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            singleLine: consultaCompleta,
+            f: 'json',
+            countryCode: 'COL',
+            maxLocations: 1,
+            outFields: '*',
+            token: ARCGIS_API_KEY
         },
         success: function (data) {
             Swal.close();
 
-            if (data && data.length > 0) {
-                var res = data[0];
-                var newLat = parseFloat(res.lat);
-                var newLng = parseFloat(res.lon);
+            if (data && data.candidates && data.candidates.length > 0) {
+                var candidate = data.candidates[0];
+                var newLat = parseFloat(candidate.location.y);
+                var newLng = parseFloat(candidate.location.x);
+                var nombreDir = candidate.address || (candidate.attributes ? candidate.attributes.Match_addr : query);
 
                 if (markerClienteCargo) {
                     markerClienteCargo.setLatLng([newLat, newLng]);
@@ -2042,8 +2328,8 @@ function buscarDireccionEnMapa() {
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Dirección ubicada',
-                    text: 'El marcador se ubicó en: ' + res.display_name,
+                    title: 'Dirección ubicada con ArcGIS',
+                    text: nombreDir,
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -2061,12 +2347,17 @@ function buscarDireccionEnMapa() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de búsqueda',
-                text: 'No fue posible conectar con el servicio de búsqueda de mapa.',
+                text: 'No fue posible conectar con el servicio de mapas de ArcGIS.',
                 confirmButtonColor: '#2563eb'
             });
         }
     });
 }
+
+function buscarEnMapaNominatimFallback(query) {
+    return buscarEnMapaArcGISFallback(query);
+}
+
 
 function cambiarCapaMapa(tipo) {
     if (!mapaVerificacionCargo) return;
@@ -2102,7 +2393,111 @@ function cambiarCapaMapa(tipo) {
     }
 }
 
-function crearOrdenRappiCargoCandidatoTienda(datospedido, latitud, longitud) {
+function simularPedidoRappiCargoParaMapa() {
+    Swal.fire({
+        title: '🧪 Probar Mapa Rappi Cargo (Simulación)',
+        html: `
+            <div style="text-align:left; font-size:13px; line-height:1.5;">
+                <p style="color:#475569;">Elija un escenario para probar la interacción con el mapa y la geocodificación ArcGIS sin guardar nada en la base de datos:</p>
+                <div style="margin-bottom:8px;">
+                    <b>1. Con coordenadas iniciales:</b> Carga un punto en Laureles. Podrá arrastrar el pin para ver cómo ArcGIS detecta la dirección exacta.
+                </div>
+                <div>
+                    <b>2. Sin coordenadas iniciales:</b> El pin inicia en la tienda y debe arrastrarse al destino del cliente para habilitar el despacho.
+                </div>
+            </div>
+        `,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-map-marked-alt"></i> 1. Laureles (Con coords)',
+        cancelButtonText: 'Cancelar',
+        showDenyButton: true,
+        denyButtonText: '<i class="fas fa-hand-pointer"></i> 2. Poblado (Sin coords)',
+        confirmButtonColor: '#2563eb',
+        denyButtonColor: '#d97706',
+        cancelButtonColor: '#64748b'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            iniciarSimulacionModalCargo({
+                idpedidotienda: 'SIM-LAURELES-01',
+                nombreCompleto: 'Juan Pérez (Cliente Simulado)',
+                direccion: 'Circular 4 # 73-45, Laureles',
+                idtienda: 1,
+                telefono: '3001234567',
+                latitud: 6.2443,
+                longitud: -75.5925,
+                tiendaLat: 6.2425,
+                tiendaLng: -75.5901,
+                nombreTienda: 'Tienda Laureles'
+            });
+        } else if (result.isDenied) {
+            iniciarSimulacionModalCargo({
+                idpedidotienda: 'SIM-POBLADO-02',
+                nombreCompleto: 'María Gómez (Cliente Simulado)',
+                direccion: 'Calle 10 # 40-20, El Poblado',
+                idtienda: 2,
+                telefono: '3109876543',
+                latitud: 0,
+                longitud: 0,
+                tiendaLat: 6.2085,
+                tiendaLng: -75.5680,
+                nombreTienda: 'Tienda Poblado'
+            });
+        }
+    });
+}
+
+function iniciarSimulacionModalCargo(datos) {
+    var pedidoSimulado = {
+        idpedidotienda: datos.idpedidotienda,
+        nombreCompleto: datos.nombreCompleto,
+        direccion: datos.direccion,
+        idtienda: datos.idtienda,
+        telefono: datos.telefono,
+        latitud: datos.latitud,
+        longitud: datos.longitud,
+        esSimulacion: true
+    };
+
+    var validacionSimulada = {
+        aplicable: true,
+        distanciaKm: datos.latitud ? 1.35 : 0,
+        validacionDistancia: true,
+        latitudTienda: datos.tiendaLat,
+        longitudTienda: datos.tiendaLng,
+        latitudCliente: datos.latitud,
+        longitudCliente: datos.longitud,
+        direccionCliente: datos.direccion,
+        nombreTienda: datos.nombreTienda
+    };
+
+    abrirModalVerificarCoordenadasRappiCargo(pedidoSimulado, validacionSimulada, null);
+}
+
+function crearOrdenRappiCargoCandidatoTienda(datospedido, latitud, longitud, direccion) {
+    if (datospedido && datospedido.esSimulacion) {
+        Swal.fire({
+            icon: 'success',
+            title: '¡Simulación Completada!',
+            html: `
+                <div style="text-align:left; font-size:13px; line-height:1.6;">
+                    <p style="color:#15803d; font-weight:700; margin-bottom:8px;">✅ El mapa y ArcGIS funcionaron correctamente</p>
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:10px 12px; border-radius:6px; margin-bottom:10px;">
+                        <div><i class="fas fa-map-marker-alt text-danger"></i> <b>Dirección confirmada:</b> ${direccion || datospedido.direccion}</div>
+                        <div><i class="fas fa-location-arrow text-primary"></i> <b>Coordenadas:</b> ${latitud ? latitud.toFixed(6) : '0'}, ${longitud ? longitud.toFixed(6) : '0'}</div>
+                        <div><i class="fas fa-route text-success"></i> <b>Distancia calculada:</b> ${$('#lblCoordDistancia').text()}</div>
+                        <div><i class="fas fa-satellite text-info"></i> <b>Servicio:</b> ArcGIS World Geocoding Service</div>
+                    </div>
+                    <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:8px 12px; border-radius:4px; font-size:12px; color:#1e40af;">
+                        <i class="fas fa-shield-alt"></i> <b>Seguridad garantizada:</b> Esta fue una simulación; NO se crearon pedidos en la base de datos ni se llamó a Rappi Cargo.
+                    </div>
+                </div>
+            `,
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
     var payload = {
         numposheader: datospedido.idpedidotienda,
         idtienda: datospedido.idtienda
@@ -2111,6 +2506,10 @@ function crearOrdenRappiCargoCandidatoTienda(datospedido, latitud, longitud) {
     if (latitud && longitud) {
         payload.latitud = latitud;
         payload.longitud = longitud;
+    }
+
+    if (direccion) {
+        payload.direccion = direccion;
     }
 
     Swal.fire({

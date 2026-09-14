@@ -887,6 +887,11 @@ public String obtenerNotificacionesCliente(int idCliente)
 	{
 		ClienteDAO.actualizarClienteCoordenas(idCliente, latitud, longitud ,direccionProveedor);
 	}
+	
+	public void actualizarClienteDireccionYCoordenadas(int idCliente, String direccion, float latitud, float longitud)
+	{
+		ClienteDAO.actualizarClienteDireccionYCoordenadas(idCliente, direccion, latitud, longitud);
+	}
 
 	public String actualizarClienteDireccion(int idCliente, String direccion, String municipio, float latitud, float longitud, String zona,  String observacion, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3 )
 	{

@@ -1435,6 +1435,40 @@ public class ClienteDAO {
 	    }
 	}
 	
+	public static void actualizarClienteDireccionYCoordenadas(int idCliente, String direccion, float latitud, float longitud)
+	{
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection con1 = con.obtenerConexionBDPrincipal();
+	    ContextoAuditoria.marcar(con1);
+
+	    try
+	    {
+	        if(idCliente > 0 && direccion != null && !direccion.trim().isEmpty())
+	        {
+	            String update = "UPDATE cliente SET direccion = '" + direccion.trim().replace("'", "''") + "'" +
+	                            ", latitud = " + latitud +
+	                            ", longitud = " + longitud +
+	                            " WHERE idcliente = " + idCliente;
+
+	            logger.info(update);
+	            Statement stm = con1.createStatement();
+	            stm.executeUpdate(update);
+	            stm.close();
+	        }
+	        con1.close();
+	    }
+	    catch (Exception e)
+	    {
+	        logger.error("Error en actualizarClienteDireccionYCoordenadas: " + e.toString());
+	        try
+	        {
+	            if(con1 != null) con1.close();
+	        }
+	        catch(Exception ignored) {}
+	    }
+	}
+	
 	public static boolean actualizarClienteDireccion(int idCliente, String direccion, int idMunicipio, float latitud, float longitud, String zona,  String observacion, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3)
 	{
 		Logger logger = Logger.getLogger("log_file");
