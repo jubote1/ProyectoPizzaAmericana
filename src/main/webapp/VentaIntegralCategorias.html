@@ -12,6 +12,15 @@
 		  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/bootstrapValidator.min.js'></script>
     	  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-validator/0.5.3/js/language/es_ES.min.js'></script>
 		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">
+		  <style type="text/css">
+			/* Mismo lenguaje visual que MonitoreoPagosVirtuales.html / VentaIntegral.html. */
+			.vi-tarjeta { border:1px solid #E2E6EC; border-radius:6px; padding:10px 12px;
+				margin-bottom:14px; background-color:#FFFFFF; }
+			.vi-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.04em; }
+			.vi-cifra { font-size:24px; font-weight:bold; color:#102F6F; line-height:1.15; }
+			.vi-pie { font-size:12px; color:#6C7482; }
+			.vi-bien .vi-cifra { color:#1B8A4B; }
+		  </style>
 	</head>
 	<body>
 
@@ -54,13 +63,19 @@
 		</script>
 
 
-	<div class="container">
-		<p></p>
-		<h3>Venta Integral &mdash; Categorias</h3>
-		<p style="color:#777">Categorias que se miden cada semana (adiciones, deditos, especialidades premium...), con
+	<div class="container-fluid">
+		<h1>VENTA INTEGRAL &mdash; CATEGORIAS</h1>
+		<p class="vi-pie">Categorias que se miden cada semana (adiciones, deditos, especialidades premium...), con
 		la forma en que se cuentan en tienda y en contact center. El proceso de Servicios que corre los domingos usa
 		este catalogo, no valores fijos en el codigo.</p>
+
+		<div class="row">
+			<div class="col-md-3"><div class="vi-tarjeta vi-bien"><div class="vi-rotulo">Categorias activas</div><div class="vi-cifra" id="res-activas">0</div><div class="vi-pie">las usa el cierre semanal</div></div></div>
+			<div class="col-md-3"><div class="vi-tarjeta"><div class="vi-rotulo">Categorias inactivas</div><div class="vi-cifra" id="res-inactivas">0</div><div class="vi-pie">desactivadas, no se calculan</div></div></div>
+		</div>
+
 		<button class="btn btn-primary" data-toggle="modal" data-target="#addData">Crear Nueva Categoria</button>
+		<p></p>
 
 			<!-- ESTO ES PARA LA ADICIÓN -->
 				<div class="modal fade" id="addData" tabindex="-1" role="dialog" aria-labelledby="addLabel">

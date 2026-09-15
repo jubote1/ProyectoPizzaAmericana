@@ -55,7 +55,9 @@ function pintarCategorias()
 {
 	$.getJSON(server + 'GetVentaIntegralCategorias' , function(data1){
 			table.clear().draw();
+			var activas = 0, inactivas = 0;
 			for(var i = 0; i < data1.length;i++){
+				if (data1[i].activo == 'S') { activas++; } else { inactivas++; }
 				table.row.add({
 					"idcategoria": data1[i].idcategoria,
 					"nombre": data1[i].nombre,
@@ -66,6 +68,8 @@ function pintarCategorias()
 					"accion":'<input type="button" class="btn btn-default btn-xs" onclick="eliminarCategoria(' +data1[i].idcategoria + ')" value="Eliminar"></button> <input type="button" onclick="editarCategoria('+data1[i].idcategoria +')" class="btn btn-default btn-xs" value="Edicion"></button>'
 				}).draw();
 			}
+			$('#res-activas').text(activas);
+			$('#res-inactivas').text(inactivas);
 		});
 }
 

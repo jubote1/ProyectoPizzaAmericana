@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 	<head>
-		<title>Venta Integral</title>
+		<title>VENTA INTEGRAL</title>
 		<meta charset="utf-8" />
 		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
@@ -9,6 +9,24 @@
 		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
 		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
 		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.min.js"></script>
+		  <style type="text/css">
+			/* Mismo lenguaje visual que MonitoreoPagosVirtuales.html: tarjetas de
+			   indicador arriba, caja de filtros, semaforo por color en vez de solo
+			   numeros sueltos. */
+			.vi-tarjeta { border:1px solid #E2E6EC; border-radius:6px; padding:10px 12px;
+				margin-bottom:10px; background-color:#FFFFFF; }
+			.vi-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.04em; }
+			.vi-cifra { font-size:24px; font-weight:bold; color:#102F6F; line-height:1.15; }
+			.vi-pie { font-size:12px; color:#6C7482; }
+			.vi-alerta .vi-cifra { color:#C21C1F; }
+			.vi-bien .vi-cifra { color:#1B8A4B; }
+			.vi-filtros { margin:6px 0 16px; border:1px solid #E2E6EC; border-radius:6px;
+				padding:10px 12px; background-color:#FBFCFD; }
+			.vi-n1 td { background-color:#E8F6EC !important; }
+			.vi-n2 td { background-color:#FFF6DC !important; }
+			.vi-n3 td { background-color:#FADBDB !important; }
+			.vi-cv { font-weight:bold; white-space:nowrap; }
+		  </style>
 	</head>
 	<body>
 
@@ -47,35 +65,46 @@
 			    	$('#usuariologin').html(usuario);
 		</script>
 
-		<div class="container">
-			<h3>Venta Integral</h3>
-			<p style="color:#777">Solo muestra semanas (lunes a domingo) ya cerradas por el proceso semanal de
+		<div class="container-fluid">
+			<h1>VENTA INTEGRAL</h1>
+			<p class="vi-pie">Solo muestra semanas (lunes a domingo) ya cerradas por el proceso semanal de
 			Servicios. No incluye venta por tienda virtual / app, solo venta fisica en tienda y contact center.</p>
-			<form>
-				<table class="table table-bordered">
-					<tbody>
-						<tr>
-								<td class="active">Semana / Fecha Inicial</td>
-								<td><input type="text" id="fechainicial" name="fechainicial" class="form-control" placeholder="Fecha Inicial (lunes)"></td>
-								<td class="active">Fecha Final</td>
-								<td><input type="text" id="fechafinal" name="fechafinal" class="form-control" placeholder="Fecha Final (domingo)"></td>
-								<td class="active">Tienda</td>
-								<td><select id="idtienda" class="form-control"><option value="0">Todas las tiendas</option></select></td>
-						</tr>
-					</tbody>
-				</table>
-					<input type="button" class="btn btn-primary btn-lg" value="Consultar" onclick="consultar()">
-			</form>
-		</div>
 
-		<div class="container">
+			<div class="vi-filtros">
+				<div class="row">
+					<div class="col-md-2">
+						<label for="fechainicial">Semana / Fecha Inicial</label>
+						<input type="text" id="fechainicial" name="fechainicial" class="form-control" placeholder="Lunes">
+					</div>
+					<div class="col-md-2">
+						<label for="fechafinal">Fecha Final</label>
+						<input type="text" id="fechafinal" name="fechafinal" class="form-control" placeholder="Domingo">
+					</div>
+					<div class="col-md-3">
+						<label for="idtienda">Tienda</label>
+						<select id="idtienda" class="form-control"><option value="0">Todas las tiendas</option></select>
+					</div>
+					<div class="col-md-2">
+						<label>&nbsp;</label><br/>
+						<input type="button" class="btn btn-primary" value="CONSULTAR" onclick="consultar()">
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-3"><div class="vi-tarjeta"><div class="vi-rotulo">Semanas en el rango</div><div class="vi-cifra" id="res-semanas">0</div><div class="vi-pie">&nbsp;</div></div></div>
+				<div class="col-md-3"><div class="vi-tarjeta"><div class="vi-rotulo">Tiendas con datos</div><div class="vi-cifra" id="res-tiendas">0</div><div class="vi-pie">&nbsp;</div></div></div>
+				<div class="col-md-3"><div class="vi-tarjeta vi-bien"><div class="vi-rotulo">Total Venta Integral</div><div class="vi-cifra" id="res-total">0</div><div class="vi-pie">unidades, tienda + contact center</div></div></div>
+				<div class="col-md-3"><div class="vi-tarjeta" id="tarjeta-cv"><div class="vi-rotulo">CV promedio de la red</div><div class="vi-cifra" id="res-cv">&mdash;</div><div class="vi-pie">que tan pareja es la red entre categorias</div></div></div>
+			</div>
+
 			<h4>Que tan pareja es cada tienda entre categorias</h4>
-			<p style="color:#777">Por categoria se compara la tienda contra el promedio de la red en el mismo rango
+			<p class="vi-pie">Por categoria se compara la tienda contra el promedio de la red en el mismo rango
 			(1.0 = promedio). El coeficiente de variacion (CV) mide que tan parejos son esos indices entre las
-			categorias de la tienda: <span style="color:#3c763d">bajo (&lt; 0.15)</span> es desempeno parejo,
-			<span style="color:#8a6d3b">medio (0.15 - 0.35)</span> destaca en algunas mas que en otras,
-			<span style="color:#a94442">alto (&gt; 0.35)</span> esta muy concentrado en pocas categorias.</p>
-			<table id="grid-dispersion" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+			categorias de la tienda: <b style="color:#1B8A4B">bajo (&lt; 0.15)</b> es desempeno parejo,
+			<b style="color:#8a6d3b">medio (0.15 - 0.35)</b> destaca en algunas mas que en otras,
+			<b style="color:#C21C1F">alto (&gt; 0.35)</b> esta muy concentrado en pocas categorias.</p>
+			<table id="grid-dispersion" class="table table-condensed table-hover" cellspacing="0" width="100%">
 				<thead>
 					<tr>
 						<th data-column-id="nombretienda">Tienda</th>
@@ -85,10 +114,8 @@
 				</thead>
 				<tbody></tbody>
 			</table>
-		</div>
 
-		<div class="container">
-			<h4>Detalle por tienda y categoria</h4>
+			<h4 style="margin-top:24px;">Detalle por tienda y categoria</h4>
 			<table id="grid-detalle" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
 				<thead>
 					<tr>
@@ -102,6 +129,8 @@
 				</thead>
 				<tbody></tbody>
 			</table>
+
+			<div style="height:40px;"></div>
 		</div>
 	</body>
 	<script src="js/ventaIntegral.js" type="text/javascript"></script>
