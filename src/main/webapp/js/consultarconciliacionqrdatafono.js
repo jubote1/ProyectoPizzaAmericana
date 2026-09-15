@@ -1,274 +1,399 @@
-	
+/*
+ * Diferencias de conciliacion de QR y datafono.
+ *
+ * La pantalla era de SOLO LECTURA: se hacia clic en una fila y se llenaba un
+ * formulario deshabilitado. No habia forma de cerrar una diferencia desde el
+ * sistema, asi que el estado se cambiaba a mano en la base de datos. Al
+ * 2026-09-15 habia 122 diferencias PENDIENTE por $5.852.232 y la mas vieja
+ * llevaba 422 dias.
+ *
+ * Y tenia un defecto que la volvia inservible para lo mas comun: al escoger
+ * TODAS en el selector de tienda no devolvia NADA. Mandaba idtienda=TODAS, el
+ * servlet no lo podia convertir a numero y lo dejaba en 0, asi que la consulta
+ * quedaba "where idtienda = 0" -que no es ninguna tienda- y la pantalla decia
+ * "No data available in table" sin explicar nada.
+ */
 
 var server;
-var tiendas;
 var table;
-var productos;
-var excepciones;
-var idPedido = 0;
-var idPedidoTienda = 0;
-var valorPago = 0;
-var idTienda = 0;
-var fechaPedido = "";
-var tienda = "";
-var idCliente = 0;
-var idEstadoPedido = 0;
-var longitud = 0;
-var latitud = 0;
-var urlTienda ="";
-var idformapago = 0;
-var totalpedido;
-var valorformapago;
-var stringPixel;
-var administrador = "N";
-//Debemos traer la información de WOMPI
-var wompiClavePublica = "";
-var wompiClavePrivada = "";
-var wompiAmbiente = "";
-var wompiEndPoint = "";
-var dtSolicitudes;
+var solicitudes = [];
+var solicitudSel = null;
 
-
-$(document).ready(function() {
-
-	//Obtenemos el valor de la variable server
+$(document).ready(function () {
 	var loc = window.location;
 	var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
 	server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-	
-	//Marcamos si es administrador para tomar ciertas acciones
-	if(respuesta == 'OKA')
-    {
-        administrador = 'S';
-    }else if(respuesta == 'OK')
-    {
-        administrador = 'N';
-    }
 
- 
-
-	} );
-
-
-$(function(){
-
-	dtSolicitudes = $('#grid-solicitudes').DataTable( {
-    		"aoColumns": [
-    		{ "mData": "idsolicitud" },
-            { "mData": "fecha" },
-            { "mData": "origen" },
-            { "mData": "idpedidotienda" },
-            { "mData": "estado" },
-            { "mData": "categoria" },
-            { "mData": "valor_analizar" },
-            { "mData": "valor_final" },
-            { "mData": "telefono" },
-            { "mData": "descripcion" }  
-        ]
-    	} );
-
-	$('#grid-solicitudes').on('click', 'tr', function () {
-		datosSolicitud = table.row( this ).data();
-		$('#fechatransaccion').val(datosSolicitud.fecha);
-		$('#origen').val(datosSolicitud.origen);
-		$('#tienda').val($("#selectTiendas").val());
-		$('#numeropedido').val(datosSolicitud.idpedidotienda);
-		$('#categoria').val(datosSolicitud.categoria);
-		$('#valoranalizar').val(datosSolicitud.valor_analizar);
-		$('#telefono').val(datosSolicitud.telefono);
-		$('#descripcion').val(datosSolicitud.descripcion);
-		$('#valorfinal').val(datosSolicitud.valor_final);
+	table = $('#grid-solicitudes').DataTable({
+		"data": [],
+		"columns": [
+			{ "data": "idsolicitud" },
+			{ "data": "fecha" },
+			{ "data": "dias", "render": pintarDias },
+			{ "data": "nombretienda" },
+			{ "data": "idpedidotienda" },
+			{ "data": "categoria", "render": pintarCategoria },
+			{ "data": "valor_analizar", "render": pintarValor, "className": "cc-num" },
+			{ "data": "estado", "render": pintarEstado }
+		],
+		"order": [],
+		"pageLength": 25,
+		"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "Todas"]],
+		"language": {
+			"emptyTable": "No hay diferencias con ese filtro",
+			"zeroRecords": "Ninguna coincide con la busqueda",
+			"info": "_START_ a _END_ de _TOTAL_",
+			"infoEmpty": "Sin diferencias",
+			"infoFiltered": "(de _MAX_)",
+			"lengthMenu": "Ver _MENU_",
+			"search": "Buscar:",
+			"paginate": { "first": "Primera", "last": "Ultima", "next": "Siguiente", "previous": "Anterior" }
+		},
+		"createdRow": function (fila, datos) {
+			$(fila).attr('data-id', datos.idsolicitud);
+		}
 	});
-	
+
+	$('#grid-solicitudes tbody').on('click', 'tr', function () {
+		var datos = table.row(this).data();
+		if (datos) {
+			seleccionar(datos.idsolicitud);
+		}
+	});
+
+	//Si cambia el estado a PROCESADO la observacion pasa a ser obligatoria, y se
+	//le dice antes de que toque Guardar y no despues.
+	$('#selectEstadoDetalle').on('change', function () {
+		refrescarBotonGuardar();
+	});
+	$('#observacion').on('input', refrescarBotonGuardar);
+
 	getListaTiendas();
-	setInterval('validarVigenciaLogueo()',600000);
-	
+	setInterval(validarVigenciaLogueo, 600000);
 });
 
+/* ============================ PINTADO ============================ */
 
-
-function validarVigenciaLogueo()
-{
-	var d = new Date();
-	
-	var respuesta ='';
-	$.ajax({ 
-	   	url: server + 'ValidarUsuarioAplicacion', 
-	   	dataType: 'json',
-	   	type: 'post', 
-	   	async: false, 
-	   	success: function(data){
-			    respuesta =  data[0].respuesta;		
-		} 
-	});
-	switch(respuesta)
-	{
-		case 'OK':
-				break;
-		case 'OKA':
-				break;
-		case 'OKP':
-				break;	
-		default:
-				location.href = server +"Index.html";
-		    	break;
+function pintarDias(dias) {
+	if (dias === null || dias === undefined) {
+		return '';
 	}
-		    		
+	//Un mes es mucho para una diferencia de plata sin resolver.
+	if (dias > 30) {
+		return '<span class="cc-dias-alto">' + dias + '</span>';
+	}
+	return dias;
 }
 
-function getListaTiendas(){
-	$.getJSON(server + 'GetTiendas', function(data){
-		tiendas = data;
-		var str = '';
-		for(var i = 0; i < data.length;i++){
-			var cadaTienda  = data[i];
-			str +='<option value="'+ cadaTienda.nombre +'" id ="'+ cadaTienda.id +'">' + cadaTienda.nombre +'</option>';
+function pintarCategoria(categoria) {
+	var c = (categoria || '').toUpperCase();
+	if (c === 'FALTANTE') {
+		return '<span class="cc-etiqueta cc-cat-falta">FALTANTE</span>';
+	}
+	if (c === 'SOBRANTE') {
+		return '<span class="cc-etiqueta cc-cat-sobra">SOBRANTE</span>';
+	}
+	//Hay una fila con categoria 'PROCESADO', que no es una categoria. Se muestra
+	//tal como esta en vez de esconderla: es un dato sucio que hay que corregir.
+	return categoria || '';
+}
+
+function pintarEstado(estado) {
+	var e = (estado || '').toUpperCase();
+	if (e === 'PENDIENTE') {
+		return '<span class="cc-etiqueta cc-pend">PENDIENTE</span>';
+	}
+	if (e === 'PROCESADO') {
+		return '<span class="cc-etiqueta cc-proc">PROCESADO</span>';
+	}
+	//'PROCESASO' existe en una fila: error de digitacion que se deja visible.
+	return '<span class="cc-etiqueta cc-pend">' + (estado || '') + '</span>';
+}
+
+function pintarValor(valor) {
+	return pesos(valor);
+}
+
+/** 4466736 -> "$ 4.466.736". Sin decimales: no se manejan centavos. */
+function pesos(valor) {
+	var n = Math.round(Math.abs(Number(valor) || 0));
+	var texto = String(n);
+	var conPuntos = '';
+	for (var i = 0; i < texto.length; i++) {
+		if (i > 0 && (texto.length - i) % 3 === 0) {
+			conPuntos += '.';
 		}
-		str +='<option value="'+ 'TODAS' +'" id ="'+ 'TODAS' +'">' + 'TODAS' +'</option>';
-		$('#selectTiendas').html(str);
+		conPuntos += texto.charAt(i);
+	}
+	return '$ ' + conPuntos;
+}
+
+/* ============================ CONSULTA ============================ */
+
+function consultarSolicitudes() {
+	var fecha = $('#fecha').val();
+	var fechaHasta = $('#fechahasta').val();
+	var idtienda = $('#selectTiendas').val();
+	var estado = $('#selectEstado').val();
+
+	if (!fecha) {
+		avisar('Escoja la fecha desde.', false);
+		return;
+	}
+	if (!validarFecha(fecha)) {
+		avisar('La fecha desde no es una fecha valida (dd/mm/aaaa).', false);
+		return;
+	}
+	if (fechaHasta && !validarFecha(fechaHasta)) {
+		avisar('La fecha hasta no es una fecha valida (dd/mm/aaaa).', false);
+		return;
+	}
+	if (fechaHasta && aComparable(fechaHasta) < aComparable(fecha)) {
+		avisar('La fecha hasta no puede ser anterior a la fecha desde.', false);
+		return;
+	}
+
+	ocultarDetalle();
+	$.ajax({
+		url: server + 'ConsultarSolicitudConciliacion',
+		data: { fecha: fecha, fechahasta: fechaHasta, idtienda: idtienda, estado: estado },
+		dataType: 'json',
+		success: function (datos) {
+			solicitudes = (datos && datos.solicitudes) ? datos.solicitudes : [];
+			pintarResumen((datos && datos.resumen) ? datos.resumen : {});
+			table.clear();
+			table.rows.add(solicitudes).draw();
+			$('#ultimaconsulta').html('Consultado a las ' + horaActual() + '. '
+					+ solicitudes.length + ' diferencia(s).');
+			esconderAviso();
+		},
+		error: function () {
+			//Antes un fallo del servicio se veia igual que "no hay datos", y eso
+			//fue lo que escondio durante meses que TODAS no funcionaba.
+			avisar('No se pudo consultar. Revise la conexion e intente de nuevo.', false);
+		}
 	});
 }
 
+function pintarResumen(r) {
+	$('#res-val-faltante').html(pesos(r.val_faltante || 0));
+	$('#res-num-faltante').html(r.pend_faltante || 0);
+	$('#res-val-sobrante').html(pesos(r.val_sobrante || 0));
+	$('#res-num-sobrante').html(r.pend_sobrante || 0);
+	$('#res-dias').html(r.dias_mas_vieja ? r.dias_mas_vieja : '—');
+	$('#res-total').html(r.total || 0);
+}
 
+/* ============================ DETALLE ============================ */
 
-
-function consultarSolicitudes() 
-{
-
-	var fecha = $("#fecha").val();
-	var tienda = $("#selectTiendas").val();
-	var idtienda = $("#selectTiendas option:selected").attr('id');
-	if(fecha == '' || fecha == null)
-	{
-		alert ('La fecha debe ser diferente a vacía');
+function seleccionar(idSolicitud) {
+	var s = buscar(idSolicitud);
+	if (!s) {
 		return;
 	}
-	if(existeFecha(fecha))
-	{
+	solicitudSel = s;
+
+	$('#grid-solicitudes tbody tr').removeClass('cc-sel');
+	$('#grid-solicitudes tbody tr[data-id="' + idSolicitud + '"]').addClass('cc-sel');
+
+	$('#detalle-titulo').html('Diferencia #' + s.idsolicitud);
+	$('#fechatransaccion').val(s.fecha);
+	$('#origen').val(s.origen);
+	//El nombre de la tienda viene del servicio. Antes se tomaba del selector, asi
+	//que con TODAS escogido decia "TODAS" como si fuera el nombre de la tienda.
+	$('#tienda').val(s.nombretienda);
+	$('#numeropedido').val(s.idpedidotienda);
+	$('#categoria').val(s.categoria);
+	$('#telefono').val(s.telefono);
+	$('#valoranalizar').val(pesos(s.valor_analizar));
+	//El valor final arranca con el valor a analizar cuando todavia no se ha
+	//puesto: es lo que casi siempre va, y ahorra digitarlo.
+	$('#valorfinal').val(Number(s.valor_final) > 0 ? Math.round(s.valor_final) : Math.round(s.valor_analizar));
+	$('#descripcion').val(s.descripcion);
+	$('#observacion').val(s.observacion_cierre || '');
+	$('#selectEstadoDetalle').val((s.estado || '').toUpperCase() === 'PROCESADO' ? 'PROCESADO' : 'PENDIENTE');
+
+	if (s.usuario_procesa) {
+		$('#quien-proceso').html('Procesada por <b>' + s.usuario_procesa + '</b> el ' + s.fecha_procesa + '.');
+	} else {
+		$('#quien-proceso').html('');
 	}
-	else
-	{
-		alert ('La fecha no es correcta');
+
+	$('#detalle-vacio').hide();
+	$('#detalle-cuerpo').show();
+	esconderAviso();
+	refrescarBotonGuardar();
+}
+
+function ocultarDetalle() {
+	solicitudSel = null;
+	$('#detalle-cuerpo').hide();
+	$('#detalle-vacio').show();
+	$('#detalle-titulo').html('Detalle');
+	$('#quien-proceso').html('');
+}
+
+function refrescarBotonGuardar() {
+	var estado = $('#selectEstadoDetalle').val();
+	var obs = ($('#observacion').val() || '').trim();
+	if (estado === 'PROCESADO' && obs.length < 10) {
+		$('#btnGuardar').prop('disabled', true)
+			.val('Escriba qué se hizo (mín. 10 letras)');
+	} else {
+		$('#btnGuardar').prop('disabled', false).val('Guardar');
+	}
+}
+
+function guardarSolicitud() {
+	if (!solicitudSel) {
+		return;
+	}
+	var estado = $('#selectEstadoDetalle').val();
+	var valorFinal = ($('#valorfinal').val() || '').trim();
+	var observacion = ($('#observacion').val() || '').trim();
+
+	if (!/^[0-9.,]+$/.test(valorFinal)) {
+		avisar('El valor final debe ser un numero.', false);
+		return;
+	}
+	if (estado === 'PROCESADO' && observacion.length < 10) {
+		avisar('Para marcarla como procesada hay que decir qué se hizo con la diferencia.', false);
 		return;
 	}
 
-	if (tienda == '' || tienda == null)
-	{
+	var pregunta = (estado === 'PROCESADO')
+		? 'Se va a marcar la diferencia #' + solicitudSel.idsolicitud + ' como PROCESADA por '
+			+ pesos(valorFinal) + '.<br><br>Queda registrada a su nombre. ¿Confirma?'
+		: 'Se va a guardar la diferencia #' + solicitudSel.idsolicitud
+			+ ' dejándola PENDIENTE.<br><br>¿Confirma?';
 
-		alert ('La tienda no puede estar vacía');
-		return;
+	$.confirm({
+		'title': 'Confirmar',
+		'content': pregunta,
+		'type': 'dark',
+		'typeAnimated': true,
+		'buttons': {
+			'Si': {
+				'class': 'blue',
+				'action': function () { enviarGuardado(estado, valorFinal, observacion); }
+			},
+			'No': { 'class': 'gray', 'action': function () {} }
+		}
+	});
+}
+
+function enviarGuardado(estado, valorFinal, observacion) {
+	$.ajax({
+		url: server + 'ActualizarSolicitudConciliacion',
+		type: 'post',
+		data: {
+			idsolicitud: solicitudSel.idsolicitud,
+			valorfinal: valorFinal,
+			estado: estado,
+			observacion: observacion
+		},
+		dataType: 'json',
+		success: function (r) {
+			var res = (r && r.respuesta) ? r.respuesta : 'ERROR';
+			if (res === 'OK') {
+				avisar('Diferencia #' + solicitudSel.idsolicitud + ' guardada.', true);
+				//Se vuelve a consultar para que el resumen y la lista queden al dia:
+				//si se marco como procesada, sale del filtro de pendientes.
+				consultarSolicitudes();
+				return;
+			}
+			if (res === 'SINSESION') {
+				avisar('Su sesion se vencio. Vuelva a entrar.', false);
+				return;
+			}
+			if (res === 'FALTAOBSERVACION') {
+				avisar('Hay que decir qué se hizo con la diferencia.', false);
+				return;
+			}
+			if (res === 'DATOSMALOS' || res === 'ESTADOMALO') {
+				avisar('Los datos enviados no son validos.', false);
+				return;
+			}
+			avisar('No se pudo guardar.', false);
+		},
+		error: function () {
+			avisar('No se pudo guardar. Revise la conexion.', false);
+		}
+	});
+}
+
+function buscar(idSolicitud) {
+	for (var i = 0; i < solicitudes.length; i++) {
+		if (String(solicitudes[i].idsolicitud) === String(idSolicitud)) {
+			return solicitudes[i];
+		}
 	}
-	// Si pasa a este punto es porque paso las validaciones
-	if ( $.fn.dataTable.isDataTable( '#grid-solicitudes' ) ) {
-    		table = $('#grid-solicitudes').DataTable();
-    }
-	$.ajax({ 
-                 url: server + 'ConsultarSolicitudConciliacion?fecha=' + fecha  + "&idtienda=" + idtienda , 
-                 dataType: 'json', 
-                 async: false, 
-                 success: function(data2){ 
-                    table.clear().draw();
-					for(var i = 0; i < data2.length;i++){
-						var cadaSolicitud  = data2[i];
-						table.row.add(data2[i]).draw();
-					}
-                } 
-            });
+	return null;
 }
 
+/* ============================ VARIOS ============================ */
 
-function existeFecha(fecha){
-      var fechaf = fecha.split("/");
-      var day = fechaf[0];
-      var month = fechaf[1];
-      var year = fechaf[2];
-      var date = new Date(year,month,'0');
-      if((day-0)>(date.getDate()-0)){
-            return false;
-      }
-      return true;
+function avisar(texto, bien) {
+	$('#cc-aviso').html(texto)
+		.removeClass('cc-aviso-ok cc-aviso-mal')
+		.addClass(bien ? 'cc-aviso-ok' : 'cc-aviso-mal')
+		.show();
 }
 
-function validarFechaMenorActual(date1, date2){
-      var fechaini = new Date();
-      var fechafin = new Date();
-      var fecha1 = date1.split("/");
-      var fecha2 = date2.split("/");
-      fechaini.setFullYear(fecha1[2],fecha1[1]-1,fecha1[0]);
-      fechafin.setFullYear(fecha2[2],fecha2[1]-1,fecha2[0]);
-      
-      if (fechaini > fechafin)
-        return false;
-      else
-        return true;
+function esconderAviso() {
+	$('#cc-aviso').hide();
 }
 
-function validarDiferenciaFechas(date1, date2){
-      var fechaini = new Date();
-      var fechafin = new Date();
-      var fecha1 = date1.split("/");
-      var fecha2 = date2.split("/");
-      fechaini.setFullYear(fecha1[2],fecha1[1]-1,fecha1[0]);
-      fechafin.setFullYear(fecha2[2],fecha2[1]-1,fecha2[0]);
-      var diferencia = fechafin - fechaini;
-      var dias = diferencia/(1000*60*60*24);
-      if(dias > 3)
-      {
-      	return(false);
-      }else
-      {
-      	return(true);
-      }
+function horaActual() {
+	var d = new Date();
+	return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
 }
 
-
-
-function validarFechaPedido()
-{
-	var fecha = new Date()
-	var dia = fecha.getDate();
-	if(dia < 10)
-	{
-		dia = "0" + dia;
+/** dd/mm/aaaa, validando de verdad que el dia exista en ese mes. */
+function validarFecha(texto) {
+	if (!/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+		return false;
 	}
-	var mes = fecha.getMonth()+1;
-	if(mes < 10)
-	{
-		mes = "0" + mes;
+	var partes = texto.split('/');
+	var dia = parseInt(partes[0], 10);
+	var mes = parseInt(partes[1], 10);
+	var ano = parseInt(partes[2], 10);
+	if (mes < 1 || mes > 12 || dia < 1) {
+		return false;
 	}
-	var fechaActual = fecha.getFullYear()+"-"+mes+"-" + dia;
-	console.log(fechaActual);
-	if(fechaActual == fechaPedido)
-	{
-		return(true);
-	}else
-	{
-		return(false);
-	}
+	var d = new Date(ano, mes - 1, dia);
+	return (d.getFullYear() === ano && d.getMonth() === mes - 1 && d.getDate() === dia);
 }
 
-
-function formatearFecha(date) {
-    var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
-
-    if (month.length < 2) 
-        month = '0' + month;
-    if (day.length < 2) 
-        day = '0' + day;
-
-    return [year, month, day].join('-');
+/** dd/mm/aaaa -> aaaammdd, para poder comparar dos fechas como numeros. */
+function aComparable(texto) {
+	var p = texto.split('/');
+	return parseInt(p[2] + p[1] + p[0], 10);
 }
 
-function limpiarFormulario()
-{
-		$('#selectOrigen').val("");
-        $('#selectTiendas').val('');
-        $('#numeropedido').val('');
-        $('#descripcion').val('');
-        $('#selectCategoria').val('');
-        $('#valoranalizar').val('');
-        $('#telefono').val('');
+function getListaTiendas() {
+	$.getJSON(server + 'GetTiendas', function (datos) {
+		//TODAS va de primera y con valor 0, que es lo que el servicio entiende
+		//como "todas las tiendas". Antes mandaba el texto TODAS, que no es un
+		//numero, y la consulta terminaba buscando la tienda 0.
+		var html = '<option value="0" selected>TODAS las tiendas</option>';
+		for (var i = 0; i < datos.length; i++) {
+			html += '<option value="' + datos[i].id + '">' + datos[i].nombre + '</option>';
+		}
+		$('#selectTiendas').html(html);
+	});
+}
+
+function validarVigenciaLogueo() {
+	$.ajax({
+		url: server + 'ValidarUsuarioAplicacion',
+		dataType: 'json',
+		type: 'post',
+		success: function (data) {
+			var r = data[0].respuesta;
+			if (r !== 'OK' && r !== 'OKA') {
+				location.href = server + 'Index.html';
+			}
+		}
+	});
 }
