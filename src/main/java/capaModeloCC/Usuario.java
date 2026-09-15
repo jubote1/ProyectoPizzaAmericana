@@ -1,18 +1,34 @@
 package capaModeloCC;
 
+import java.util.ArrayList;
+
 /**
  * Clase que implementa la entidad Usuario.
  * @author JuanDavid
  *
  */
 public class Usuario {
-	
+
 	private int id;
 	public int getId() {
 		return id;
 	}
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	/**
+	 * Roles resueltos desde usuario_rol (ver capaDAOCC.UsuarioRolDAO). Se llenan
+	 * al loguear, junto con id, para que quede disponible en sesion sin volver a
+	 * consultar la base en cada request. Vacio para sesiones viejas o mientras
+	 * no se haya migrado el usuario a la tabla usuario_rol.
+	 */
+	private ArrayList<String> roles = new ArrayList<>();
+	public ArrayList<String> getRoles() {
+		return roles;
+	}
+	public void setRoles(ArrayList<String> roles) {
+		this.roles = roles;
 	}
 
 	private String nombreUsuario;
