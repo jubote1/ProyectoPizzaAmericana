@@ -17,7 +17,6 @@
 	<body>
 		<audio id="notificationSound" src="img/tono.mpeg"></audio>
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label></p>
 		<script type="text/javascript">
 			
 			var getImport; 
@@ -42,17 +41,16 @@
 			switch(respuesta)
 		    		{
 		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html");
+		    				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				break;
 		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html");
+		    				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				break;	
 		    			default:
 		    				location.href = server +"Index.html";
 		    				break;
 		    		}
 		    		
-			    	$('#usuariologin').html(usuario);
 		</script>
 
 		<div class="container">

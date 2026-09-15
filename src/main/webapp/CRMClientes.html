@@ -16,7 +16,6 @@
 	<body>
 
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label></p>
 		<script type="text/javascript">
 			var esAdministrador;
 			var getImport; 
@@ -41,11 +40,11 @@
 			switch(respuesta)
 		    		{
 		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html");
+		    				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				esAdministrador = "N";
 		    				break;
 		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html");
+		    				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				esAdministrador = "S";
 		    				break;	
 		    			default:
@@ -53,7 +52,6 @@
 		    				break;
 		    		}
 
-			    	$('#usuariologin').html(usuario);
 		</script>
 
 		<div class="container">

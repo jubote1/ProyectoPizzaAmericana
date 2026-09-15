@@ -11,7 +11,6 @@
 	<body>
 
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label></p>
 		<script type="text/javascript">
 			var loc = window.location;
 			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
@@ -25,11 +24,10 @@
 			});
 			switch(respuesta)
 		    		{
-		    			case 'OK': $('#cargarMenu').load("Menu.html"); break;
-		    			case 'OKA': $('#cargarMenu').load("MenuAdm.html"); break;
+		    			case 'OK': $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); break;
+		    			case 'OKA': $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); break;
 		    			default: location.href = server +"Index.html"; break;
 		    		}
-			    	$('#usuariologin').html(usuario);
 		</script>
 
 	<div class="container">

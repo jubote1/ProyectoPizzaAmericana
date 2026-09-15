@@ -60,7 +60,6 @@
 	</head>
 	<body>
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label>
 		<script type="text/javascript">
 			//Obtenemos el valor de la variable server, con base en la URL digitada
 			var loc = window.location;
@@ -83,19 +82,18 @@
 			switch(respuesta)
 			{
 				case 'OK':
-					$('#cargarMenu').load("Menu.html");
+					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 					break;
 				case 'OKA':
-					$('#cargarMenu').load("MenuAdm.html");
+					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 					break;
 				case 'OKP':
-					$('#cargarMenu').load("MenuPQRS.html");
+					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 					break;
 				default:
 					location.href = server + "Index.html";
 					break;
 			}
-			$('#usuariologin').html(usuario);
 		</script>
 		<div class="container-fluid">
 			<div class="row" style="margin-top:14px;">
