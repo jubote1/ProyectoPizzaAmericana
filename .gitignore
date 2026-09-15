@@ -7,3 +7,6 @@ bin/
 # de 100 MB por archivo de GitHub: nunca puede entrar al repositorio. Cada quien
 # lo genera desde ProyectoTiendaAmericanaCliente.
 libs/*.jar
+
+# Los .class no van al repositorio: los genera la compilacion.
+*.class
