@@ -26,6 +26,13 @@
 			.vi-n2 td { background-color:#FFF6DC !important; }
 			.vi-n3 td { background-color:#FADBDB !important; }
 			.vi-cv { font-weight:bold; white-space:nowrap; }
+			#resumen-container table { border-collapse:collapse; width:100%; }
+			#resumen-container th, #resumen-container td { padding:6px 10px; border-top:1px solid #E2E6EC; text-align:right; }
+			#resumen-container th:first-child, #resumen-container td:first-child { text-align:left; }
+			#resumen-container thead th { background:#102F6F; color:#FFFFFF; }
+			.vi-fila-cc td { font-style:italic; border-top:2px solid #102F6F !important; }
+			.vi-fila-total td { font-weight:bold; background:#F4F4F6; border-top:1px solid #E2E6EC !important; }
+			.vi-fila-sindatos td:first-child { color:#C21C1F; }
 		  </style>
 	</head>
 	<body>
@@ -94,41 +101,24 @@
 			<div class="row">
 				<div class="col-md-3"><div class="vi-tarjeta"><div class="vi-rotulo">Semanas en el rango</div><div class="vi-cifra" id="res-semanas">0</div><div class="vi-pie">&nbsp;</div></div></div>
 				<div class="col-md-3"><div class="vi-tarjeta"><div class="vi-rotulo">Tiendas con datos</div><div class="vi-cifra" id="res-tiendas">0</div><div class="vi-pie">&nbsp;</div></div></div>
-				<div class="col-md-3"><div class="vi-tarjeta vi-bien"><div class="vi-rotulo">Total Venta Integral</div><div class="vi-cifra" id="res-total">0</div><div class="vi-pie">unidades, tienda + contact center</div></div></div>
-				<div class="col-md-3"><div class="vi-tarjeta" id="tarjeta-cv"><div class="vi-rotulo">CV promedio de la red</div><div class="vi-cifra" id="res-cv">&mdash;</div><div class="vi-pie">que tan pareja es la red entre categorias</div></div></div>
+				<div class="col-md-3"><div class="vi-tarjeta vi-bien"><div class="vi-rotulo">Total Red (tienda + CC)</div><div class="vi-cifra" id="res-total">0</div><div class="vi-pie">unidades en el rango</div></div></div>
+				<div class="col-md-3"><div class="vi-tarjeta" id="tarjeta-cv"><div class="vi-rotulo">CV promedio de la red</div><div class="vi-cifra" id="res-cv">&mdash;</div><div class="vi-pie">solo tiendas, sin Contact Center</div></div></div>
 			</div>
 
-			<h4>Que tan pareja es cada tienda entre categorias</h4>
-			<p class="vi-pie">Por categoria se compara la tienda contra el promedio de la red en el mismo rango
-			(1.0 = promedio). El coeficiente de variacion (CV) mide que tan parejos son esos indices entre las
-			categorias de la tienda: <b style="color:#1B8A4B">bajo (&lt; 0.15)</b> es desempeno parejo,
+			<div id="alerta-sin-datos" style="display:none;background:#FFF6DC;border:1px solid #8a6d3b;border-radius:4px;padding:10px 12px;margin-bottom:16px;">
+				<b style="color:#8a6d3b">Aparentemente sin datos esta semana:</b> <span id="alerta-sin-datos-texto"></span>.
+				Dieron cero en todas las categorias del rango; revise si conviene un reproceso.
+			</div>
+
+			<h4>Resumen por tienda</h4>
+			<p class="vi-pie">Mismo formato que el correo del cierre semanal. Las tiendas van de mayor a menor Total,
+			para medir la mejor gestion integral. Contact Center es un canal aparte -se agrega para toda la red, sin
+			distinguir tienda- y no entra en el CV. El coeficiente de variacion (CV) mide que tan pareja es cada
+			tienda entre categorias (1.0 = promedio de la red en esa categoria):
+			<b style="color:#1B8A4B">bajo (&lt; 0.15)</b> es desempeno parejo,
 			<b style="color:#8a6d3b">medio (0.15 - 0.35)</b> destaca en algunas mas que en otras,
 			<b style="color:#C21C1F">alto (&gt; 0.35)</b> esta muy concentrado en pocas categorias.</p>
-			<table id="grid-dispersion" class="table table-condensed table-hover" cellspacing="0" width="100%">
-				<thead>
-					<tr>
-						<th data-column-id="nombretienda">Tienda</th>
-						<th data-column-id="categoriasevaluadas">Categorias evaluadas</th>
-						<th data-column-id="coeficientevariacion">CV</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-
-			<h4 style="margin-top:24px;">Detalle por tienda y categoria</h4>
-			<table id="grid-detalle" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-				<thead>
-					<tr>
-						<th data-column-id="nombretienda">Tienda</th>
-						<th data-column-id="nombrecategoria">Categoria</th>
-						<th data-column-id="cantidadtienda">Cant. Tienda</th>
-						<th data-column-id="cantidadcontactcenter">Cant. Contact Center</th>
-						<th data-column-id="cantidadtotal">Total</th>
-						<th data-column-id="indicereddecategoria">Indice vs Red</th>
-					</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
+			<div id="resumen-container" class="table-responsive"></div>
 
 			<div style="height:40px;"></div>
 		</div>

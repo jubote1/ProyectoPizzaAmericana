@@ -56,41 +56,15 @@ function consultar()
 	}
 	$.getJSON(server + 'ConsultarVentaIntegral?fechainicial=' + fechaInicial + '&fechafinal=' + fechaFinal
 			+ '&idtienda=' + idTienda, function(data){
-		pintarDetalle(data.detalle);
-		pintarDispersion(data.dispersion);
-		pintarTarjetas(data.detalle, data.dispersion, fechaInicial, fechaFinal);
+		pintarResumen(data);
+		pintarTarjetas(data, fechaInicial, fechaFinal);
+		pintarAlerta(data.alertatiendassindatos);
 	});
-}
-
-function pintarTarjetas(detalle, dispersion, fechaInicial, fechaFinal)
-{
-	var semanas = calcularSemanas(fechaInicial, fechaFinal);
-	$('#res-semanas').text(semanas);
-
-	var tiendas = {};
-	var total = 0;
-	for (var i = 0; i < detalle.length; i++) {
-		tiendas[detalle[i].nombretienda] = true;
-		total += Number(detalle[i].cantidadtotal);
-	}
-	$('#res-tiendas').text(Object.keys(tiendas).length);
-	$('#res-total').text(formatearNumero(total));
-
-	if (dispersion.length > 0) {
-		var sumaCv = 0;
-		for (var j = 0; j < dispersion.length; j++) { sumaCv += Number(dispersion[j].coeficientevariacion); }
-		var cvPromedio = sumaCv / dispersion.length;
-		$('#res-cv').text(cvPromedio.toFixed(3));
-		$('#tarjeta-cv').removeClass('vi-bien vi-alerta').addClass(cvPromedio > 0.35 ? 'vi-alerta' : (cvPromedio <= 0.15 ? 'vi-bien' : ''));
-	} else {
-		$('#res-cv').text('—');
-		$('#tarjeta-cv').removeClass('vi-bien vi-alerta');
-	}
 }
 
 function calcularSemanas(fechaInicial, fechaFinal)
 {
-	// Las fechas llegan en dd/mm/yyyy (formato del datepicker en español).
+	// Las fechas llegan en dd/mm/yyyy (formato del datepicker en espanol).
 	var partesIni = fechaInicial.split('/');
 	var partesFin = fechaFinal.split('/');
 	var ini = new Date(partesIni[2], partesIni[1] - 1, partesIni[0]);
@@ -104,46 +78,90 @@ function formatearNumero(valor)
 	return (Math.round(valor * 100) / 100).toLocaleString('es-CO');
 }
 
-function pintarDetalle(filas)
+function pintarTarjetas(data, fechaInicial, fechaFinal)
 {
-	var cuerpo = $('#grid-detalle tbody');
-	cuerpo.empty();
-	for(var i = 0; i < filas.length; i++){
-		var f = filas[i];
-		cuerpo.append('<tr>'
-			+ '<td>' + f.nombretienda + '</td>'
-			+ '<td>' + f.nombrecategoria + '</td>'
-			+ '<td>' + f.cantidadtienda + '</td>'
-			+ '<td>' + f.cantidadcontactcenter + '</td>'
-			+ '<td>' + f.cantidadtotal + '</td>'
-			+ '<td>' + Number(f.indicereddecategoria).toFixed(2) + '</td>'
-			+ '</tr>');
-	}
-	if(filas.length == 0){
-		cuerpo.append('<tr><td colspan="6" style="text-align:center;color:#777">Sin datos para el rango o la tienda seleccionada. Recuerde que solo se muestran semanas ya cerradas por el proceso de Servicios.</td></tr>');
+	$('#res-semanas').text(calcularSemanas(fechaInicial, fechaFinal));
+	$('#res-tiendas').text(data.filas.length);
+	$('#res-total').text(formatearNumero(data.grantotal.total));
+
+	if (data.filas.length > 0) {
+		var sumaCv = 0;
+		for (var i = 0; i < data.filas.length; i++) { sumaCv += Number(data.filas[i].coeficientevariacion); }
+		var cvPromedio = sumaCv / data.filas.length;
+		$('#res-cv').text(cvPromedio.toFixed(3));
+		$('#tarjeta-cv').removeClass('vi-bien vi-alerta').addClass(cvPromedio > 0.35 ? 'vi-alerta' : (cvPromedio <= 0.15 ? 'vi-bien' : ''));
+	} else {
+		$('#res-cv').text('—');
+		$('#tarjeta-cv').removeClass('vi-bien vi-alerta');
 	}
 }
 
-function pintarDispersion(filas)
+function pintarAlerta(tiendasSinDatos)
 {
-	var cuerpo = $('#grid-dispersion tbody');
-	cuerpo.empty();
-	filas.sort(function(a, b){ return a.coeficientevariacion - b.coeficientevariacion; });
-	for(var i = 0; i < filas.length; i++){
-		var f = filas[i];
-		var clase = 'vi-n1';
-		if(f.coeficientevariacion > 0.35){
-			clase = 'vi-n3';
-		}else if(f.coeficientevariacion > 0.15){
-			clase = 'vi-n2';
-		}
-		cuerpo.append('<tr class="' + clase + '">'
-			+ '<td>' + f.nombretienda + '</td>'
-			+ '<td>' + f.categoriasevaluadas + '</td>'
-			+ '<td class="vi-cv">' + Number(f.coeficientevariacion).toFixed(3) + '</td>'
-			+ '</tr>');
+	if (tiendasSinDatos && tiendasSinDatos.length > 0) {
+		$('#alerta-sin-datos-texto').text(tiendasSinDatos.join(', '));
+		$('#alerta-sin-datos').show();
+	} else {
+		$('#alerta-sin-datos').hide();
 	}
-	if(filas.length == 0){
-		cuerpo.append('<tr><td colspan="3" style="text-align:center;color:#777">Sin datos suficientes para calcular el indicador.</td></tr>');
+}
+
+/**
+ * Pinta el resumen tipo correo: una fila por tienda (ya vienen ordenadas de
+ * mayor a menor Total desde el servidor), columnas = categorias activas,
+ * mas Total y CV; luego la fila de Contact Center y la de Total Red.
+ */
+function colorCv(cv)
+{
+	if (cv > 0.35) { return '#C21C1F'; }
+	if (cv > 0.15) { return '#8a6d3b'; }
+	return '#1B8A4B';
+}
+
+function construirFilaHtml(nombre, porcategoria, categorias, total, cv, mostrarCv, claseExtra)
+{
+	var html = '<tr class="' + (claseExtra || '') + '"><td>' + nombre + '</td>';
+	for (var i = 0; i < categorias.length; i++) {
+		var valor = porcategoria[categorias[i].idcategoria] || 0;
+		html += '<td>' + formatearNumero(valor) + '</td>';
 	}
+	html += '<td>' + formatearNumero(total) + '</td>';
+	if (mostrarCv) {
+		html += '<td style="color:' + colorCv(cv) + ';font-weight:bold">' + Number(cv).toFixed(3) + '</td>';
+	} else {
+		html += '<td>&mdash;</td>';
+	}
+	html += '</tr>';
+	return html;
+}
+
+function pintarResumen(data)
+{
+	var categorias = data.categorias;
+	var contenedor = $('#resumen-container');
+
+	if (data.filas.length == 0 && data.contactcenter.total == 0) {
+		contenedor.html('<p style="text-align:center;color:#777;padding:20px 0">Sin datos para el rango o la tienda seleccionada. Recuerde que solo se muestran semanas ya cerradas por el proceso de Servicios.</p>');
+		return;
+	}
+
+	var thead = '<thead><tr><th>Tienda</th>';
+	for (var i = 0; i < categorias.length; i++) {
+		thead += '<th>' + categorias[i].nombre + '</th>';
+	}
+	thead += '<th>Total</th><th>CV</th></tr></thead>';
+
+	var tbody = '<tbody>';
+	for (var f = 0; f < data.filas.length; f++) {
+		var fila = data.filas[f];
+		tbody += construirFilaHtml(fila.nombretienda, fila.porcategoria, categorias, fila.total,
+				fila.coeficientevariacion, fila.total > 0, '');
+	}
+	tbody += construirFilaHtml('Contact Center', data.contactcenter.porcategoria, categorias,
+			data.contactcenter.total, 0, false, 'vi-fila-cc');
+	tbody += construirFilaHtml('TOTAL RED', data.grantotal.porcategoria, categorias, data.grantotal.total, 0,
+			false, 'vi-fila-total');
+	tbody += '</tbody>';
+
+	contenedor.html('<table class="table table-condensed">' + thead + tbody + '</table>');
 }
