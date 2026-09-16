@@ -223,6 +223,7 @@ function seleccionar(idSolicitud) {
 	$('#detalle-cuerpo').show();
 	esconderAviso();
 	refrescarBotonGuardar();
+	prepararPanelPagosTienda(s);
 }
 
 function ocultarDetalle() {
@@ -231,6 +232,112 @@ function ocultarDetalle() {
 	$('#detalle-vacio').show();
 	$('#detalle-titulo').html('Detalle');
 	$('#quien-proceso').html('');
+	$('#pagos-tienda-fila').hide();
+}
+
+/* ==================== PAGOS EN VIVO DE LA TIENDA ==================== */
+
+/** aaaa-mm-dd (como llega de la base) -> dd/mm/aaaa (como usa el datepicker). */
+function aFechaPantalla(fechaSql) {
+	if (!fechaSql) {
+		return '';
+	}
+	var p = String(fechaSql).split('-');
+	if (p.length !== 3) {
+		return fechaSql;
+	}
+	return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+/**
+ * Al seleccionar una diferencia, se prepara el panel (rango de fechas
+ * alrededor de la transaccion) pero no se consulta solo: es una conexion en
+ * vivo a la tienda, y disparar diez consultas mientras se navega la lista de
+ * diferencias seria lento e innecesario.
+ */
+function prepararPanelPagosTienda(s) {
+	$('#grid-pagos-tienda tbody').empty();
+	$('#pt-aviso').hide();
+	var fecha = aFechaPantalla(s.fecha);
+	$('#pt-fechadesde').val(fecha);
+	$('#pt-fechahasta').val(fecha);
+	$('#pagos-tienda-fila').show();
+}
+
+function avisarPagosTienda(texto, bien) {
+	$('#pt-aviso').html(texto)
+		.removeClass('cc-aviso-ok cc-aviso-mal')
+		.addClass(bien ? 'cc-aviso-ok' : 'cc-aviso-mal')
+		.show();
+}
+
+function consultarPagosTienda() {
+	if (!solicitudSel) {
+		return;
+	}
+	var fechaDesde = $('#pt-fechadesde').val();
+	var fechaHasta = $('#pt-fechahasta').val();
+	if (!validarFecha(fechaDesde) || !validarFecha(fechaHasta)) {
+		avisarPagosTienda('Revise las fechas (dd/mm/aaaa).', false);
+		return;
+	}
+	if (aComparable(fechaHasta) < aComparable(fechaDesde)) {
+		avisarPagosTienda('La fecha hasta no puede ser anterior a la fecha desde.', false);
+		return;
+	}
+	$('#grid-pagos-tienda tbody').empty();
+	avisarPagosTienda('Conectando con la tienda, puede tardar unos segundos si el computador esta apagado...', true);
+	$.ajax({
+		url: server + 'ConsultarPagosTiendaConciliacion',
+		data: {
+			idtienda: solicitudSel.idtienda,
+			origen: solicitudSel.origen,
+			fechadesde: fechaDesde,
+			fechahasta: fechaHasta
+		},
+		dataType: 'json',
+		success: function (datos) {
+			if (datos && datos.error) {
+				avisarPagosTienda(datos.error, false);
+				return;
+			}
+			esconderAvisoPagosTienda();
+			pintarPagosTienda((datos && datos.pagos) ? datos.pagos : []);
+		},
+		error: function () {
+			avisarPagosTienda('No se pudo consultar. Revise la conexion e intente de nuevo.', false);
+		}
+	});
+}
+
+function esconderAvisoPagosTienda() {
+	$('#pt-aviso').hide();
+}
+
+function pintarPagosTienda(pagos) {
+	var cuerpo = $('#grid-pagos-tienda tbody');
+	cuerpo.empty();
+	if (pagos.length === 0) {
+		avisarPagosTienda('La tienda respondio, pero no tiene pagos de este origen en ese rango de fechas.', false);
+		return;
+	}
+	for (var i = 0; i < pagos.length; i++) {
+		var p = pagos[i];
+		var fila = $('<tr>').css('cursor', 'default');
+		fila.append($('<td>').text(p.idpedidotienda));
+		fila.append($('<td>').text(p.fecha));
+		fila.append($('<td>').text(p.nombrecliente || ''));
+		fila.append($('<td>').text(p.telefono || ''));
+		fila.append($('<td class="cc-num">').text(pesos(p.valorformapago)));
+		fila.append($('<td class="cc-num">').text(pesos(p.totalneto)));
+		fila.append($('<td>').text(p.referenciadatafono || ''));
+		fila.append($('<td>').text(p.estacion || ''));
+		var etAnulado = p.anulado
+			? $('<span class="cc-etiqueta cc-cat-falta">').text('Si')
+			: $('<span>').text('No');
+		fila.append($('<td>').append(etAnulado));
+		cuerpo.append(fila);
+	}
 }
 
 function refrescarBotonGuardar() {

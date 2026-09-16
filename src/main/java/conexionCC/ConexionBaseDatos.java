@@ -213,6 +213,36 @@ public class ConexionBaseDatos {
 		return(con); 
 	}
 	
+	/**
+	 * Conexion en vivo a la base MySQL local de una tienda (tiendaamericana),
+	 * dado su hosbd. A diferencia de obtenerConexionBDTienda(dsn) -que es el
+	 * puente al sistema legado Pixel, por Sybase SQL Anywhere-, esta apunta al
+	 * POS actual. No existia en el central; el mismo patron ya se usaba en
+	 * Servicios (ConexionSer.ConexionBaseDatos) para procesos por lote, aqui
+	 * se necesita para consultar en vivo desde una pantalla web. Requiere que
+	 * el computador de la tienda este encendido y alcanzable en red; el
+	 * timeout de login corto evita que una tienda apagada cuelgue el request.
+	 * @param hosbd IP o host de la tienda (columna tienda.hosbd)
+	 */
+	public Connection obtenerConexionBDTiendaRemota(String hosbd){
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+		} catch (Exception e) {
+			System.out.println(e.toString());
+		}
+
+		Connection con = null;
+		try {
+			DriverManager.setLoginTimeout(10);
+			con = DriverManager.getConnection(
+		            "jdbc:mysql://" + hosbd + "/tiendaamericana?"
+		            + "user=root&password=4m32017&serverTimezone=UTC");
+		} catch (SQLException ex) {
+		    System.out.println("SQLException conectando a la tienda " + hosbd + ": " + ex.getMessage());
+		}
+		return(con);
+	}
+
 	public Connection obtenerConexionBDDatamartLocal(){
 		try {
 		    Class.forName("com.mysql.cj.jdbc.Driver").newInstance();

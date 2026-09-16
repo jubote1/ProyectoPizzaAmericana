@@ -249,6 +249,52 @@
 				</div>
 			</div>
 
+			<!-- ================= PAGOS EN VIVO DE LA TIENDA ================= -->
+			<div class="row" id="pagos-tienda-fila" style="display:none;">
+				<div class="col-md-12">
+					<div class="cc-panel">
+						<div class="cc-titulo">Pagos QR / Datáfono en la tienda</div>
+						<div class="cc-sub">
+							Se consulta en vivo el computador de la tienda -tiene que estar encendido y
+							conectado-. Compare aquí el cliente y el valor contra la diferencia que está
+							resolviendo.
+						</div>
+						<div class="row">
+							<div class="col-md-2 cc-campo">
+								<label for="pt-fechadesde">Desde</label>
+								<input type="text" id="pt-fechadesde" class="form-control" placeholder="dd/mm/aaaa">
+							</div>
+							<div class="col-md-2 cc-campo">
+								<label for="pt-fechahasta">Hasta</label>
+								<input type="text" id="pt-fechahasta" class="form-control" placeholder="dd/mm/aaaa">
+							</div>
+							<div class="col-md-3 cc-campo">
+								<label>&nbsp;</label>
+								<input type="button" class="btn btn-primary" style="width:100%;"
+									value="Consultar en la tienda" onclick="consultarPagosTienda()">
+							</div>
+						</div>
+						<div class="cc-aviso" id="pt-aviso"></div>
+						<table id="grid-pagos-tienda" class="table table-condensed table-hover" cellspacing="0" width="100%">
+							<thead>
+								<tr>
+									<th>Pedido</th>
+									<th>Fecha</th>
+									<th>Cliente</th>
+									<th>Teléfono</th>
+									<th class="cc-num">Valor forma pago</th>
+									<th class="cc-num">Total pedido</th>
+									<th>Referencia</th>
+									<th>Estación</th>
+									<th>Anulado</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
 		</div>
 
 	</body>
@@ -259,6 +305,8 @@
 	<script>
 		$("#fecha").datepicker($.datepicker.regional["es"]);
 		$("#fechahasta").datepicker($.datepicker.regional["es"]);
+		$("#pt-fechadesde").datepicker($.datepicker.regional["es"]);
+		$("#pt-fechahasta").datepicker($.datepicker.regional["es"]);
 		//Un mes hacia atras por defecto: mirar solo el dia de hoy no sirve para
 		//esto, porque una diferencia se descubre dias despues.
 		var haceUnMes = new Date();

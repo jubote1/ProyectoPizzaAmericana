@@ -108,6 +108,7 @@ import capaDAOCC.SolicitudFacturaImagenesDAO;
 import capaDAOCC.SolicitudPQRSDAO;
 import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaDAOCC.TiempoPedidoDAO;
+import capaDAOCC.ConciliacionTiendaDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
 import capaDAOPOS.EmpleadoEventoDAO;
@@ -13423,6 +13424,54 @@ public class PedidoCtrl {
 		final JSONObject r = new JSONObject();
 		r.put("respuesta", actualizo ? "OK" : "ERROR");
 		return (r.toJSONString());
+	}
+
+	/**
+	 * Pagos QR/Datafono que hay en vivo en la base local de una tienda, para
+	 * cruzarlos contra una diferencia de conciliacion. Consulta en tiempo real
+	 * el computador de la tienda -si esta apagado o inalcanzable, se distingue
+	 * de "no hay pagos" con un mensaje de error explicito, para que no se
+	 * confunda una cosa con la otra.
+	 *
+	 * @param idTienda   tienda a consultar
+	 * @param origen     "DATAFONO" o "QR"
+	 * @param fechaDesde en yyyy-MM-dd
+	 * @param fechaHasta en yyyy-MM-dd
+	 */
+	@SuppressWarnings("unchecked")
+	public static String consultarPagosTiendaConciliacion(final int idTienda, final String origen,
+			final String fechaDesde, final String fechaHasta) {
+		final JSONObject respuesta = new JSONObject();
+		final Tienda tienda = TiendaDAO.retornarTienda(idTienda);
+		if (tienda == null || tienda.getHosbd() == null || tienda.getHosbd().trim().isEmpty()) {
+			respuesta.put("error", "Esta tienda no tiene una base local configurada (hosbd vacio).");
+			respuesta.put("pagos", new JSONArray());
+			return (respuesta.toJSONString());
+		}
+		final ArrayList<capaModeloCC.PagoTiendaConciliacion> pagos = ConciliacionTiendaDAO
+				.consultarPagosTienda(tienda.getHosbd(), origen, fechaDesde, fechaHasta);
+		if (pagos == null) {
+			respuesta.put("error", "No se pudo conectar con el computador de " + tienda.getNombreTienda()
+					+ ". Verifique que este encendido y conectado a la red.");
+			respuesta.put("pagos", new JSONArray());
+			return (respuesta.toJSONString());
+		}
+		final JSONArray pagosJSON = new JSONArray();
+		for (final capaModeloCC.PagoTiendaConciliacion pago : pagos) {
+			final JSONObject p = new JSONObject();
+			p.put("idpedidotienda", pago.getIdPedidoTienda());
+			p.put("fecha", pago.getFecha());
+			p.put("nombrecliente", pago.getNombreCliente());
+			p.put("telefono", pago.getTelefono());
+			p.put("valorformapago", pago.getValorFormaPago());
+			p.put("totalneto", pago.getTotalNeto());
+			p.put("referenciadatafono", pago.getReferenciaDatafono());
+			p.put("anulado", pago.isAnulado());
+			p.put("estacion", pago.getEstacion());
+			pagosJSON.add(p);
+		}
+		respuesta.put("pagos", pagosJSON);
+		return (respuesta.toJSONString());
 	}
 
 	public String validarExistenciaProductoPedido(int idPedido, int idProducto) {
