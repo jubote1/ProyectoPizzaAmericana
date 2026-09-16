@@ -22,10 +22,14 @@ import conexionCC.ConexionBaseDatos;
  */
 public class ConciliacionTiendaDAO {
 
-	/** idforma_pago en la tabla local forma_pago. Confirmado con el usuario 2026-09-16. */
-	public static final int IDFORMAPAGO_DATAFONO = 2;
+	/**
+	 * idforma_pago en la tabla local forma_pago. Confirmado con el usuario
+	 * 2026-09-16 (datafono=2) y ampliado 2026-09-16 para incluir tambien el 8,
+	 * que el codigo del POS trata igual que el 2 en su logica de datafono.
+	 */
+	public static final int[] IDFORMAPAGO_DATAFONO = { 2, 8 };
 
-	public static final int IDFORMAPAGO_QR = 7;
+	public static final int[] IDFORMAPAGO_QR = { 7 };
 
 	/**
 	 * @param hosbd      tienda.hosbd de la tienda a consultar
@@ -37,7 +41,7 @@ public class ConciliacionTiendaDAO {
 			String fechaDesde, String fechaHasta) {
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList<PagoTiendaConciliacion> pagos = new ArrayList<>();
-		int idFormaPago = "QR".equalsIgnoreCase(origen) ? IDFORMAPAGO_QR : IDFORMAPAGO_DATAFONO;
+		int[] idsFormaPago = "QR".equalsIgnoreCase(origen) ? IDFORMAPAGO_QR : IDFORMAPAGO_DATAFONO;
 
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDTiendaRemota(hosbd);
@@ -46,19 +50,27 @@ public class ConciliacionTiendaDAO {
 			return (null);
 		}
 		try {
+			StringBuilder placeholders = new StringBuilder();
+			for (int i = 0; i < idsFormaPago.length; i++) {
+				placeholders.append(i == 0 ? "?" : ", ?");
+			}
 			String consulta = "select a.idpedidotienda, a.fechapedido, "
 					+ "concat_ws(' ', c.nombre, c.apellido) as nombrecliente, "
 					+ "c.telefono, c.telefono_celular, b.valorformapago, a.total_neto, "
 					+ "b.datafono, a.idmotivoanulacion, a.estacion "
 					+ "from pedido a, pedido_forma_pago b, cliente c "
 					+ "where a.idpedidotienda = b.idpedidotienda and a.idcliente = c.idcliente "
-					+ "and b.idforma_pago = ? and a.fechapedido >= ? and a.fechapedido <= ? "
+					+ "and b.idforma_pago in (" + placeholders + ") and a.fechapedido >= ? and a.fechapedido <= ? "
 					+ "order by a.fechapedido, a.idpedidotienda";
 			PreparedStatement ps = con1.prepareStatement(consulta);
-			ps.setInt(1, idFormaPago);
-			ps.setString(2, fechaDesde);
-			ps.setString(3, fechaHasta);
-			logger.info(consulta + " [" + idFormaPago + ", " + fechaDesde + ", " + fechaHasta + "] en " + hosbd);
+			int p = 1;
+			for (int idFormaPago : idsFormaPago) {
+				ps.setInt(p++, idFormaPago);
+			}
+			ps.setString(p++, fechaDesde);
+			ps.setString(p++, fechaHasta);
+			logger.info(consulta + " " + java.util.Arrays.toString(idsFormaPago) + " [" + fechaDesde + ", "
+					+ fechaHasta + "] en " + hosbd);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				PagoTiendaConciliacion pago = new PagoTiendaConciliacion();
