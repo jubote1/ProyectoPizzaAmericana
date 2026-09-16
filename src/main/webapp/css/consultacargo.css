@@ -1202,5 +1202,92 @@ table.dataTable.no-footer {
     gap: 5px;
 }
 
+/* ===== Dashboard Cargo: tarjetas KPI ===== */
+.cg-kpi-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	gap: 14px;
+	padding: 20px;
+}
+
+.cg-kpi-card {
+	background: #fafbfc;
+	border: 1px solid var(--rc-line);
+	border-radius: 12px;
+	padding: 14px 16px;
+	border-left: 4px solid var(--rc-red);
+}
+
+.cg-kpi-card.cg-ok { border-left-color: #1e824c; }
+.cg-kpi-card.cg-warn { border-left-color: var(--rc-warn); }
+.cg-kpi-card.cg-neutral { border-left-color: var(--rc-ink-soft); }
+
+.cg-kpi-label {
+	font-size: 11.5px;
+	font-weight: 700;
+	color: var(--rc-ink-soft);
+	text-transform: uppercase;
+	letter-spacing: .3px;
+}
+
+.cg-kpi-value {
+	font-size: 26px;
+	font-weight: 800;
+	color: var(--rc-ink);
+	margin-top: 4px;
+}
+
+.cg-kpi-value small {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--rc-ink-soft);
+}
+
+/* ===== Dashboard Cargo: estados y cumplimiento ===== */
+.cg-estado {
+	font-weight: 700;
+	font-size: 12px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	display: inline-block;
+}
+
+.cg-estado-cumplido { background: #e6f4ea; color: #1e824c; }
+.cg-estado-fueradetiempo { background: #fff4e0; color: #9a6700; }
+.cg-estado-cancelado { background: #fdeceb; color: var(--rc-red-dark); }
+.cg-estado-sincierre { background: #f0f1f4; color: var(--rc-ink-soft); }
+
+.cg-pct-wrap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 120px;
+}
+
+.cg-pct-bar {
+	flex: 1;
+	height: 8px;
+	border-radius: 999px;
+	background: #eef0f3;
+	overflow: hidden;
+}
+
+.cg-pct-bar > span {
+	display: block;
+	height: 100%;
+	background: #1e824c;
+	border-radius: 999px;
+}
+
+.cg-pct-wrap.cg-pct-baja .cg-pct-bar > span { background: var(--rc-red); }
+.cg-pct-wrap.cg-pct-media .cg-pct-bar > span { background: var(--rc-warn); }
+
+.cg-pct-texto {
+	font-weight: 700;
+	font-size: 12.5px;
+	min-width: 42px;
+	text-align: right;
+}
+
 
 
