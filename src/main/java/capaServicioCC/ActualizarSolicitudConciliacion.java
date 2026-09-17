@@ -52,10 +52,19 @@ public class ActualizarSolicitudConciliacion extends HttpServlet {
 		double valorFinal = 0;
 		try {
 			idSolicitud = Integer.parseInt(request.getParameter("idsolicitud"));
-			final String valor = request.getParameter("valorfinal");
-			//La coma es el separador decimal que se usa aca, asi que se acepta.
-			valorFinal = (valor == null || valor.trim().length() == 0) ? 0
-					: Double.parseDouble(valor.trim().replace(".", "").replace(',', '.'));
+			//Antes esto borraba TODOS los puntos, asi que "1377.5" quedaba en
+			//13775: diez veces mas. La regla vive ahora en
+			//utilidadesCC.ValorDigitado, la misma que usa el ingreso de la
+			//solicitud, porque resuelta aparte salio distinta en cada lado.
+			//Aca el vacio SI vale: una solicitud pendiente todavia no tiene
+			//valor final.
+			final Double leido = utilidadesCC.ValorDigitado.leer(
+					request.getParameter("valorfinal"), true);
+			if (leido == null) {
+				out.write("{\"respuesta\":\"DATOSMALOS\"}");
+				return;
+			}
+			valorFinal = leido.doubleValue();
 		} catch (final Exception e) {
 			out.write("{\"respuesta\":\"DATOSMALOS\"}");
 			return;
