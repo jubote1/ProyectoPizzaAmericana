@@ -22,15 +22,29 @@ import conexionCC.ConexionBaseDatos;
  * porque la URL se escribe a mano y los servicios responden JSON sin pasar por
  * la pantalla. Por eso cada servicio del CRM pregunta aqui antes de contestar.
  *
- * LA MARCA ES PROPIA Y NO EL PERFIL DE ADMINISTRADOR
+ * LA MARCA VIVE EN pizzaamericana.usuario
  *
- * general.empleado.acceso_crm es una columna aparte. Se sembro con los
- * administradores activos porque fue lo que se pidio, pero entre esos 35 hay
- * Auxiliares de Administrador de punto de venta y hasta un Pizzero marcado como
- * administrador. Teniendo marca propia se le puede quitar el CRM a alguien sin
- * quitarle el perfil de administrador, que le sirve para su trabajo.
+ * No en general.empleado. El central autentica contra la tabla usuario
+ * -capaDAOCC.UsuarioDAO consulta "FROM usuario" con obtenerConexionBDPrincipal-;
+ * general.empleado es el maestro de personal, que usa el POS, y ni siquiera
+ * tiene los mismos registros: 217 empleados contra 127 usuarios. La primera
+ * version de esta clase miraba la tabla equivocada y habria dejado a todo el
+ * mundo por fuera.
  *
- * ARRANCA CERRADO: la columna nace en 'N', asi que un empleado nuevo no queda
+ * LA MARCA ES PROPIA Y NO EL CAMPO administrador
+ *
+ * usuario.acceso_crm es una columna aparte, sembrada con los 11 administradores
+ * porque fue lo que se pidio. Teniendo marca propia se le puede quitar el CRM a
+ * alguien sin quitarle el perfil de administrador, que le sirve para otras
+ * pantallas.
+ *
+ * NO SE MIRA usuario.activo, y es a proposito: el login no lo mira tampoco
+ * -"select * from usuario where nombre = ? and password = ?"-, y hoy 8 de los
+ * 11 administradores estan en activo = 0 y entran igual. Exigirlo aqui dejaria
+ * sin CRM a quien si lo usa. Que una columna "activo" no impida entrar es un
+ * problema aparte, y esta anotado.
+ *
+ * ARRANCA CERRADO: la columna nace en 'N', asi que un usuario nuevo no queda
  * con acceso por descuido.
  */
 public class AccesoCRM {
@@ -79,9 +93,9 @@ public class AccesoCRM {
 		Connection cn = null;
 		boolean puede = false;
 		try {
-			cn = con.obtenerConexionBDGeneral();
+			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT acceso_crm FROM empleado WHERE nombre = ? AND activo = '1'");
+					"SELECT acceso_crm FROM usuario WHERE nombre = ?");
 			ps.setString(1, nombreUsuario);
 			final ResultSet rs = ps.executeQuery();
 			if (rs.next()) {

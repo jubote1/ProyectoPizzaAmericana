@@ -1,62 +1,100 @@
 -- ---------------------------------------------------------------------------
 -- QUIEN PUEDE ENTRAR AL CRM
 --
--- Se corre en el CENTRAL (172.19.0.25), base general.
+-- Se corre en el CENTRAL (172.19.0.25), base pizzaamericana.
 --
--- POR QUE UNA MARCA POR USUARIO Y NO EL PERFIL DE SIEMPRE
+-- LA TABLA CORRECTA ES pizzaamericana.usuario
+--
+-- La primera version de este script puso la columna en general.empleado y
+-- estaba MAL: el central no autentica contra esa tabla. capaDAOCC.UsuarioDAO
+-- consulta "FROM usuario" con obtenerConexionBDPrincipal(), o sea
+-- pizzaamericana.usuario. general.empleado es el maestro de personal, que usa
+-- el POS; son cosas distintas y ni siquiera tienen los mismos registros: la
+-- primera tiene 217 empleados y esta tiene 127 usuarios.
+--
+-- Este script ademas deshace esa equivocacion.
+--
+-- POR QUE UNA MARCA PROPIA Y NO EL CAMPO administrador
 --
 -- El CRM muestra datos personales de 450 mil personas: nombre, celular, correo,
--- direcciones, que compra y cuanto gasta. Eso no es lo mismo que ver la lista
--- de pedidos del dia, y no deberia abrirse con el mismo criterio.
+-- direcciones, que compran y cuanto gastan. Eso no es lo mismo que ver la lista
+-- de pedidos del dia.
 --
--- Amarrarlo a empleado.administrador = 'S' tal cual dejaria entrar a 35
--- personas, y entre ellas hay Auxiliares de Administrador de punto de venta y
--- hasta un Pizzero que quedo marcado como administrador. Por eso la marca es
--- SUYA, independiente: se arranca con los administradores porque es lo que se
--- pidio, y desde ahi se quita a quien no deba entrar sin tener que quitarle el
--- perfil de administrador, que le sirve para otras cosas.
+-- Teniendo columna propia se le puede quitar el CRM a alguien sin quitarle el
+-- perfil de administrador, que le sirve para otras pantallas. Se siembra con
+-- los administradores porque fue lo que se pidio, pero de ahi en adelante son
+-- dos cosas independientes.
 --
--- ARRANCA CERRADO
+-- POR QUE LA SIEMBRA NO FILTRA POR activo
 --
--- La columna nace en 'N'. Quien no este marcado NO entra, asi que un empleado
--- nuevo no queda con acceso por descuido. Es al reves de lo que estaba hoy,
--- donde cualquiera con sesion podia abrir la pantalla.
+-- Porque esa columna no se usa para entrar. El login es
+-- "select * from usuario where nombre = ? and password = ?", sin mirar activo
+-- (UsuarioDAO linea 36). Hoy 8 de los 11 administradores estan en activo = 0 y
+-- siguen entrando, incluido el usuario jdbotero.
 --
--- DONDE SE VALIDA DE VERDAD
+-- Filtrar por activo aqui dejaria sin CRM justo a los que lo necesitan. Queda
+-- anotado aparte que una columna "activo" que no impide entrar es un problema
+-- de seguridad por su cuenta, pero arreglarlo no es asunto de este script.
 --
--- En los servicios -BuscarPersonaCRM, ConsultarPersona360, ConsultarResumenCRM-,
--- no solo en el menu. Esconder la opcion no protege nada: la URL se puede
--- escribir a mano y los servicios responden JSON sin pasar por la pantalla.
+-- ARRANCA CERRADO: la columna nace en 'N', asi que un usuario nuevo no queda
+-- con acceso por descuido.
 --
--- ES IDEMPOTENTE, Y ESO AQUI TIENE UN MATIZ
+-- DONDE SE VALIDA DE VERDAD: en los servicios -BuscarPersonaCRM,
+-- ConsultarPersona360, ConsultarResumenCRM-, no solo en el menu. Esconder la
+-- opcion no protege nada: la URL se escribe a mano.
 --
--- El ALTER va con la guarda de siempre. El UPDATE es una SIEMBRA INICIAL y se
--- salta solo si ya hay alguien marcado: si se volviera a correr despues de que
--- usted le quite el acceso a alguien, se lo devolveria. Un permiso que revive
--- solo es la clase de error que nadie nota hasta que es tarde.
+-- ES IDEMPOTENTE, con un matiz: la siembra se salta sola si ya hay alguien
+-- marcado. Si se volviera a correr despues de que usted revoque un acceso, se
+-- lo devolveria, y un permiso que revive es la clase de error que nadie nota
+-- hasta que es tarde.
 -- ---------------------------------------------------------------------------
+
+-- ===========================================================================
+-- 1. DESHACER LA COLUMNA QUE QUEDO EN LA TABLA EQUIVOCADA
+--
+-- Se creo hoy, no la lee nadie y no guarda nada que no se pueda volver a
+-- calcular. Dejarla seria peor: una segunda marca de acceso, en otra tabla,
+-- que nadie consulta.
+-- ===========================================================================
 
 SET @existe := (SELECT COUNT(*) FROM information_schema.COLUMNS
                  WHERE TABLE_SCHEMA='general' AND TABLE_NAME='empleado'
                    AND COLUMN_NAME='acceso_crm');
-SET @sql := IF(@existe = 0,
-  'ALTER TABLE general.empleado
-     ADD COLUMN acceso_crm CHAR(1) NOT NULL DEFAULT ''N''
-       COMMENT ''S si el usuario puede entrar al area de CRM''',
-  'SELECT ''empleado ya tiene acceso_crm'' AS paso1');
+SET @sql := IF(@existe = 1,
+  'ALTER TABLE general.empleado DROP COLUMN acceso_crm',
+  'SELECT ''general.empleado ya no tiene la columna'' AS paso1');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
--- Siembra inicial: los administradores activos. Si ya hay alguien marcado es
--- que esto ya se sembro y el acceso lo esta manejando una persona, asi que no
--- se toca nada.
-SET @yaSembrado := (SELECT COUNT(*) FROM general.empleado WHERE acceso_crm = 'S');
+-- ===========================================================================
+-- 2. LA COLUMNA, DONDE SI VA
+-- ===========================================================================
 
-UPDATE general.empleado
+SET @existe := (SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA='pizzaamericana' AND TABLE_NAME='usuario'
+                   AND COLUMN_NAME='acceso_crm');
+SET @sql := IF(@existe = 0,
+  'ALTER TABLE pizzaamericana.usuario
+     ADD COLUMN acceso_crm CHAR(1) NOT NULL DEFAULT ''N''
+       COMMENT ''S si el usuario puede entrar al area de CRM''',
+  'SELECT ''usuario ya tiene acceso_crm'' AS paso2');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- ===========================================================================
+-- 3. LA SIEMBRA
+-- ===========================================================================
+
+SET @yaSembrado := (SELECT COUNT(*) FROM pizzaamericana.usuario WHERE acceso_crm = 'S');
+
+UPDATE pizzaamericana.usuario
    SET acceso_crm = 'S'
  WHERE @yaSembrado = 0
-   AND administrador = 'S'
-   AND activo = '1';
+   AND administrador = 'S';
 
--- Como quedo
-SELECT acceso_crm, COUNT(*) AS empleados, SUM(activo='1') AS activos
-  FROM general.empleado GROUP BY acceso_crm;
+-- ===========================================================================
+-- COMO QUEDO
+-- ===========================================================================
+
+SELECT acceso_crm, COUNT(*) AS usuarios FROM pizzaamericana.usuario GROUP BY acceso_crm;
+
+SELECT nombre, nombre_largo, administrador, activo
+  FROM pizzaamericana.usuario WHERE acceso_crm = 'S' ORDER BY nombre_largo;
