@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="css/nav.css" crossorigin="anonymous">
+<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+<!--
+  Menu del area de CRM.
+
+  Es area aparte y no un desplegable mas del menu principal porque lo de
+  clientes estaba repartido en los tres modulos: "Administracion de Clientes"
+  en Funciones, "Administracion de Clientes Full" en Parametrizacion, y
+  "Consulta Puntos" y "Segmentacion" en Monitoreo. Quien atiende a un cliente
+  tenia que saberse en cual de los tres estaba cada cosa.
+
+  Mismo patron de MenuPQRS.html, que ya es un area funcional separada.
+-->
+<nav class="navbar navbar-expand-lg navbar-dark" id="menuprincipal"
+     style="background-color:#102F6F;">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="CRM.html" style="gap: 10px;">
+      <img id="logo-img" src="images/logo-sin-fondo.png" alt="Logo Pizza Americana"
+        style="height: 80px; width: 80px; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));">
+      <span class="text-white font-weight-bold">CRM PIZZA AMERICANA</span>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContenido"
+      aria-controls="navbarContenido" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContenido" style="margin: 10px;">
+      <ul class="navbar-nav mr-auto">
+
+        <li class="nav-item">
+          <a class="nav-link" href="CRM.html">Inicio</a>
+        </li>
+
+        <!-- Dropdown Clientes -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCRM1" role="button"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Clientes</a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownCRM1">
+            <a class="dropdown-item" href="Persona360.html">Vista 360 de una persona</a>
+            <a class="dropdown-item" href="CRMClientesFull.html">Administraci&oacute;n de Clientes</a>
+            <a class="dropdown-item" href="CRMClientes.html">Consulta r&aacute;pida de Clientes</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="ConsultaPuntosCliente.html">Consulta Puntos Cliente</a>
+            <a class="dropdown-item" href="RevisionReversaRedencion.html">Revisi&oacute;n Devoluci&oacute;n de Puntos</a>
+          </div>
+        </li>
+
+        <!-- Dropdown Analisis -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCRM2" role="button"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">An&aacute;lisis</a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownCRM2">
+            <a class="dropdown-item" href="segmentacionCliente.html">Segmentaci&oacute;n de Clientes</a>
+            <a class="dropdown-item" href="ConsultaPedidosCRMBOT.html">Consulta Pedidos CRM BOT</a>
+          </div>
+        </li>
+
+        <!-- Dropdown Ofertas -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCRM3" role="button"
+            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Ofertas</a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownCRM3">
+            <a class="dropdown-item" href="Oferta.html">Administrar Ofertas</a>
+            <a class="dropdown-item" href="ValidarCodigo.html">Validar C&oacute;digo Promocional</a>
+          </div>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="Pedidos.html" style="color:#FDC806;">
+            <i class="fas fa-arrow-left mr-1"></i>Volver al sistema</a>
+        </li>
+
+      </ul>
+    </div>
+
+    <div id="notf" class="ml-auto d-flex align-items-center text-white">
+      <span class="font-weight-bold mr-4" style="color:#B9C4DA;">Usuario:</span>
+      <span id="usuariologin" class="font-weight-bold mr-4" style="color:white;"></span>
+      <a href="Index.html" class="text-white text-decoration-none">
+        <span class="font-weight-bold d-flex align-items-center">
+          <i class="fas fa-sign-out-alt mr-1"></i>Salir</span></a>
+    </div>
+  </div>
+</nav>
