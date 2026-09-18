@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import utilidadesCC.AccesoCRM;
 import capaControladorCC.Persona360Ctrl;
 
 /**
@@ -23,6 +24,13 @@ public class ConsultarResumenCRM extends HttpServlet {
 			throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json; charset=UTF-8");
+		//El CRM entrega datos personales de 450 mil personas. Esconder la
+		//opcion del menu no protege nada: esta URL se puede escribir a mano.
+		if (!AccesoCRM.puede(request)) {
+			PrintWriter negado = response.getWriter();
+			negado.write(AccesoCRM.negado());
+			return;
+		}
 		String respuesta = Persona360Ctrl.resumen();
 		PrintWriter out = response.getWriter();
 		out.write(respuesta);

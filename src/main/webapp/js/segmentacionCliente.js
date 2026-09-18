@@ -1,3 +1,16 @@
+// Si se llego desde el area de CRM se conserva SU menu. Salirse del area sin
+// querer, al abrir una pantalla, desorienta: uno cree que se equivoco de sitio.
+function menuDelArea(porDefecto) {
+	try {
+		if (sessionStorage.getItem('areaCRM') === 'S') {
+			return ('MenuCRM.html');
+		}
+	} catch (e) {
+		// Navegador con el almacenamiento bloqueado: menu de siempre.
+	}
+	return (porDefecto);
+}
+
 document.addEventListener("DOMContentLoaded", function() {
 	
 	// Obtener la URL base de tu proyecto "ProyectoPizzaAmericana"
@@ -32,21 +45,21 @@ document.addEventListener("DOMContentLoaded", function() {
 	// Cargar el menú o redirigir según el tipo de usuario
 	switch (respuesta) {
 	    case 'OK': // Usuario común
-	        $('#cargarMenu').load(server +"Menu.html", function () {
+	        $('#cargarMenu').load(server + menuDelArea("Menu.html"), function () {
 					    $('#usuariologin').text(usuario);
 					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
 					});
 	        break;
 
 	    case 'OKA': // Usuario administrador		
-			$('#cargarMenu').load(server + "MenuAdm.html", function () {
+			$('#cargarMenu').load(server + menuDelArea("MenuAdm.html"), function () {
 			    $('#usuariologin').text(usuario);
 			    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
 			});
 	        break;
 
 	    case 'OKP': // Usuario PQRS
-	        $('#cargarMenu').load(server +"MenuPQRS.html", function () {
+	        $('#cargarMenu').load(server + menuDelArea("MenuPQRS.html"), function () {
 					    $('#usuariologin').text(usuario);
 					    $('#logo-img').attr("src", server + "images/logo-sin-fondo.png");
 					});

@@ -108,8 +108,13 @@
 
         <!-- El CRM es un area aparte, con su propio menu: lo de clientes estaba
              repartido en los tres modulos y quien atiende a un cliente tenia que
-             saberse en cual estaba cada cosa. -->
-        <li class="nav-item">
+             saberse en cual estaba cada cosa.
+
+             La opcion arranca ESCONDIDA y solo aparece si el usuario tiene
+             acceso_crm. Esconderla no es lo que protege -los servicios validan
+             por su cuenta-, pero mostrar una opcion que va a rebotar es
+             maltratar a quien la oprime. -->
+        <li class="nav-item" id="opcion-crm" style="display:none;">
           <a class="nav-link font-weight-bold" href="CRM.html" style="color:#FDC806;">CRM</a>
         </li>
       </ul>
@@ -148,3 +153,26 @@
 
 
 
+
+<script>
+  // La opcion de CRM solo se le muestra a quien tiene acceso. Lo que de verdad
+  // protege son los servicios, que validan por su cuenta; esto es para no
+  // mostrarle a nadie una puerta que se le va a cerrar en la cara.
+  $.ajax({
+    url: 'ValidarAccesoCRM',
+    dataType: 'json',
+    success: function (d) {
+      if (d && d.acceso) {
+        $('#opcion-crm').show();
+      }
+    }
+  });
+
+  // Se esta fuera del area: si habia marca de CRM se borra, para que las
+  // pantallas compartidas vuelvan a mostrar este menu y no el del area.
+  try {
+    sessionStorage.removeItem('areaCRM');
+  } catch (e) {
+    // Almacenamiento bloqueado: no pasa nada, el menu por defecto es este.
+  }
+</script>

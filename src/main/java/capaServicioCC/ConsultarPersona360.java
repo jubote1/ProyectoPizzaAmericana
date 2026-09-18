@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
+import utilidadesCC.AccesoCRM;
 import capaControladorCC.Persona360Ctrl;
 
 /**
@@ -25,6 +26,13 @@ public class ConsultarPersona360 extends HttpServlet {
 			throws ServletException, IOException {
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json; charset=UTF-8");
+		//El CRM entrega datos personales de 450 mil personas. Esconder la
+		//opcion del menu no protege nada: esta URL se puede escribir a mano.
+		if (!AccesoCRM.puede(request)) {
+			PrintWriter negado = response.getWriter();
+			negado.write(AccesoCRM.negado());
+			return;
+		}
 		Logger logger = Logger.getLogger("log_file");
 		long idPersona = 0;
 		try {

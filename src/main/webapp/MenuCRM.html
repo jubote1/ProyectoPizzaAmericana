@@ -83,3 +83,19 @@
     </div>
   </div>
 </nav>
+
+<script>
+  // Se marca que se esta DENTRO del area. Las pantallas que se comparten con el
+  // sistema -Administracion de Clientes, Puntos, Segmentacion- miran esta marca
+  // y conservan este menu en vez de saltar al principal. Salirse del area sin
+  // querer, al abrir una pantalla, desorienta.
+  //
+  // Los menus principales la borran, asi que volver por "Volver al sistema"
+  // deja todo como estaba.
+  try {
+    sessionStorage.setItem('areaCRM', 'S');
+  } catch (e) {
+    // Almacenamiento bloqueado: se sigue viendo el menu principal en esas
+    // pantallas. Molesto, no roto.
+  }
+</script>

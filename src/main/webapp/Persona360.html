@@ -57,12 +57,43 @@
 					usuario = data[0].nombreusuario;
 				}
 			});
-			if (respuesta === 'OK' || respuesta === 'OKA' || respuesta === 'OKP') {
-				$('#cargarMenu').load("MenuCRM.html", function () {
-					$('#cargarMenu').find('#usuariologin').html(usuario);
-				});
-			} else {
+			if (respuesta !== 'OK' && respuesta !== 'OKA' && respuesta !== 'OKP') {
 				location.href = server + "Index.html";
+			} else {
+				//Tener sesion no alcanza: el CRM muestra datos personales de 450
+				//mil personas y se entra solo con la marca acceso_crm. La
+				//proteccion real esta en los servicios, que validan por su
+				//cuenta; esto es para decirlo claro y no dejar a nadie viendo
+				//una pantalla que nunca carga.
+				$.ajax({
+					url: server + 'ValidarAccesoCRM',
+					dataType: 'json',
+					async: false,
+					success: function (d) {
+						if (d && d.acceso) {
+							$('#cargarMenu').load("MenuCRM.html", function () {
+								$('#cargarMenu').find('#usuariologin').html(usuario);
+							});
+						} else {
+							document.write('<style>.container-fluid{display:none !important;}</style>' +
+								'<div style="font-family:sans-serif;max-width:620px;' +
+								'margin:80px auto;padding:26px 30px;border:1px solid #E2E6EC;' +
+								'border-radius:6px;background:#fff;">' +
+								'<h2 style="color:#102F6F;margin-top:0;font-size:21px;">' +
+								'Su usuario no tiene acceso al CRM</h2>' +
+								'<p style="color:#41495A;font-size:14px;line-height:1.5;">' +
+								'El area de CRM muestra datos personales de los clientes, y el ' +
+								'acceso se concede usuario por usuario. Si lo necesita para su ' +
+								'trabajo, solicitelo a Tecnologia.</p>' +
+								'<p><a href="Pedidos.html" style="color:#102F6F;font-weight:bold;">' +
+								'Volver al sistema</a></p></div>');
+							document.close();
+						}
+					},
+					error: function () {
+						location.href = server + "Index.html";
+					}
+				});
 			}
 
 		</script>
