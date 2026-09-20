@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>SEGMENTACION DE PERSONAS</title>
+		<meta charset="utf-8" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<style type="text/css">
+			body { background-color:#F4F6F8; }
+			.sg-panel { border:1px solid #E2E6EC; border-radius:6px; padding:14px 16px;
+				background-color:#FFFFFF; margin-bottom:14px; }
+			.sg-titulo { font-size:13px; font-weight:bold; color:#102F6F; text-transform:uppercase;
+				letter-spacing:.04em; border-bottom:2px solid #FDC806; padding-bottom:5px;
+				margin-bottom:12px; }
+			.sg-kpi { text-align:center; padding:11px 6px; border:1px solid #E5E8ED;
+				border-radius:5px; background-color:#FAFBFC; margin-bottom:10px; }
+			.sg-kpi .valor { font-size:22px; font-weight:bold; color:#102F6F; line-height:1.1; }
+			.sg-kpi .rotulo { font-size:10.5px; color:#6C7482; text-transform:uppercase; margin-top:4px; }
+			.sg-campo { margin-bottom:10px; }
+			.sg-campo label { font-size:11px; color:#6C7482; text-transform:uppercase;
+				margin-bottom:3px; display:block; font-weight:normal; }
+			.sg-campo input, .sg-campo select { font-size:13px; }
+			.sg-seg { display:block; font-size:13px; color:#41495A; margin-bottom:3px; }
+			.sg-seg input { margin-right:6px; }
+			.sg-nota { font-size:11.5px; color:#6C7482; }
+			.sg-etiqueta { font-weight:bold; padding:2px 7px; border-radius:3px; font-size:11px;
+				white-space:nowrap; }
+			.sg-NUEVO { background-color:#E8F0FB; color:#1B4A9C; }
+			.sg-ACTIVO { background-color:#E4F1EB; color:#16704F; }
+			.sg-RIESGO { background-color:#FCF2DD; color:#8A6200; }
+			.sg-DORMIDO { background-color:#EDF0F4; color:#41495A; }
+			.sg-NINGUNO { background-color:#F6F7F9; color:#8A919E; }
+			.sg-num { text-align:right; }
+			#sg-grid tbody tr { cursor:pointer; }
+			#sg-grid tbody tr:hover td { background-color:#EAF0FA; }
+			table.table { font-size:12.5px; }
+			.sg-barra { height:9px; background-color:#102F6F; border-radius:2px; display:inline-block;
+				vertical-align:middle; }
+			.sg-repartos td { padding:3px 6px; font-size:12px; border:0; }
+			.sg-aviso { background-color:#FCF2DD; border:1px solid #F0DCA8; color:#6B4E00;
+				border-radius:5px; padding:9px 12px; font-size:12.5px; margin-bottom:12px; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function (data) {
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+				}
+			});
+			if (respuesta !== 'OK' && respuesta !== 'OKA' && respuesta !== 'OKP') {
+				location.href = server + "Index.html";
+			} else {
+				//Tener sesion no alcanza: esta pantalla lista datos personales y
+				//ademas los deja descargar. La proteccion real esta en los dos
+				//servicios, que validan por su cuenta; esto es para decirlo
+				//claro y no dejar a nadie viendo una pantalla que nunca carga.
+				$.ajax({
+					url: server + 'ValidarAccesoCRM',
+					dataType: 'json',
+					async: false,
+					success: function (d) {
+						if (d && d.acceso) {
+							$('#cargarMenu').load("MenuCRM.html", function () {
+								$('#cargarMenu').find('#usuariologin').html(usuario);
+							});
+						} else {
+							document.write('<style>.container-fluid{display:none !important;}</style>' +
+								'<div style="font-family:sans-serif;max-width:620px;' +
+								'margin:80px auto;padding:26px 30px;border:1px solid #E2E6EC;' +
+								'border-radius:6px;background:#FFF;">' +
+								'<h4 style="color:#102F6F;margin-top:0;">Sin acceso al CRM</h4>' +
+								'<p style="color:#41495A;font-size:14px;">Su usuario no tiene ' +
+								'habilitado el area de CRM. Solicitelo a tecnologia.</p>' +
+								'<a href="Menu.html" style="font-size:13px;">Volver al menu</a></div>');
+						}
+					},
+					error: function () {
+						location.href = server + "Index.html";
+					}
+				});
+			}
+		</script>
+
+		<div class="container-fluid" style="padding:16px 20px;">
+
+			<div class="row">
+				<div class="col-md-12">
+					<h4 style="color:#102F6F;font-weight:bold;margin:0 0 3px 0;">Segmentaci&oacute;n de personas</h4>
+					<div class="sg-nota" id="sg-leyenda">Cargando&hellip;</div>
+					<hr style="margin:10px 0 14px 0;" />
+				</div>
+			</div>
+
+			<div class="row">
+
+				<!-- ============ FILTROS ============ -->
+				<div class="col-md-3">
+					<div class="sg-panel">
+						<div class="sg-titulo">Filtros</div>
+
+						<div class="sg-campo">
+							<label>Segmento</label>
+							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="NUEVO" />Nuevo</label>
+							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="ACTIVO" />Activo</label>
+							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="EN RIESGO" />En riesgo</label>
+							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="DORMIDO" />Dormido</label>
+							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="SIN PEDIDOS" />Sin pedidos</label>
+						</div>
+
+						<div class="sg-campo">
+							<label>Tienda habitual</label>
+							<select id="sg-tienda" class="form-control input-sm">
+								<option value="0">Todas</option>
+							</select>
+						</div>
+
+						<div class="sg-campo">
+							<label>Canal</label>
+							<select id="sg-canal" class="form-control input-sm">
+								<option value="TODOS">Cualquiera</option>
+								<option value="MOSTRADOR">Solo mostrador</option>
+								<option value="DOMICILIO">Solo domicilio</option>
+								<option value="AMBOS">Mostrador y domicilio</option>
+							</select>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 sg-campo">
+								<label>Pedidos desde</label>
+								<input type="number" id="sg-pedidosmin" class="form-control input-sm" min="0" />
+							</div>
+							<div class="col-xs-6 sg-campo">
+								<label>Compr&oacute; desde $</label>
+								<input type="text" id="sg-valormin" class="form-control input-sm" />
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 sg-campo">
+								<label>D&iacute;as sin comprar</label>
+								<input type="number" id="sg-diasmin" class="form-control input-sm" min="0" placeholder="desde" />
+							</div>
+							<div class="col-xs-6 sg-campo">
+								<label>&nbsp;</label>
+								<input type="number" id="sg-diasmax" class="form-control input-sm" min="0" placeholder="hasta" />
+							</div>
+						</div>
+
+						<div class="sg-campo">
+							<label class="sg-seg"><input type="checkbox" id="sg-concorreo" />Solo con correo</label>
+							<label class="sg-seg"><input type="checkbox" id="sg-autorizados" />Solo con pol&iacute;tica de datos en S</label>
+						</div>
+
+						<div class="sg-campo">
+							<label>Ordenar por</label>
+							<select id="sg-orden" class="form-control input-sm">
+								<option value="VALOR">Lo que ha comprado</option>
+								<option value="RECIENTE">&Uacute;ltimo pedido</option>
+								<option value="PEDIDOS">Cantidad de pedidos</option>
+							</select>
+						</div>
+
+						<button id="sg-consultar" class="btn btn-primary btn-sm btn-block"
+							style="background-color:#102F6F;border-color:#102F6F;">Consultar</button>
+						<button id="sg-limpiar" class="btn btn-default btn-sm btn-block">Limpiar</button>
+						<hr style="margin:12px 0;" />
+						<button id="sg-descargar" class="btn btn-default btn-sm btn-block" disabled>
+							Descargar la lista (CSV)</button>
+						<div class="sg-nota" style="margin-top:6px;">
+							Queda registrado qui&eacute;n descarga y con qu&eacute; filtros.
+						</div>
+					</div>
+				</div>
+
+				<!-- ============ RESULTADO ============ -->
+				<div class="col-md-9">
+
+					<div id="sg-avisotope" class="sg-aviso" style="display:none;"></div>
+
+					<div class="sg-panel">
+						<div class="sg-titulo">Lo que hay ah&iacute;</div>
+						<div class="row">
+							<div class="col-md-2 col-xs-4"><div class="sg-kpi">
+								<div class="valor" id="sg-k-personas">-</div><div class="rotulo">Personas</div></div></div>
+							<div class="col-md-2 col-xs-4"><div class="sg-kpi">
+								<div class="valor" id="sg-k-pedidos">-</div><div class="rotulo">Pedidos</div></div></div>
+							<div class="col-md-3 col-xs-4"><div class="sg-kpi">
+								<div class="valor" id="sg-k-valor">-</div><div class="rotulo">Han comprado</div></div></div>
+							<div class="col-md-2 col-xs-6"><div class="sg-kpi">
+								<div class="valor" id="sg-k-correo">-</div><div class="rotulo">Con correo</div></div></div>
+							<div class="col-md-3 col-xs-6"><div class="sg-kpi">
+								<div class="valor" id="sg-k-autorizados">-</div><div class="rotulo">Autorizaron datos</div></div></div>
+						</div>
+						<div id="sg-repartowrap" style="display:none;">
+							<div class="sg-nota" style="margin-bottom:5px;">
+								C&oacute;mo se reparte por segmento, con los dem&aacute;s filtros aplicados:
+							</div>
+							<table class="sg-repartos" style="width:100%;"><tbody id="sg-reparto"></tbody></table>
+						</div>
+					</div>
+
+					<div class="sg-panel">
+						<div class="sg-titulo">Personas</div>
+						<div class="table-responsive">
+							<table class="table table-condensed table-hover" id="sg-grid">
+								<thead>
+									<tr>
+										<th>Persona</th>
+										<th>Celular</th>
+										<th>Correo</th>
+										<th>Segmento</th>
+										<th class="sg-num">Pedidos</th>
+										<th class="sg-num">Dom.</th>
+										<th class="sg-num">Most.</th>
+										<th class="sg-num">Ha comprado</th>
+										<th class="sg-num">Ticket</th>
+										<th>&Uacute;ltimo</th>
+										<th class="sg-num">D&iacute;as</th>
+										<th class="sg-num">Cada</th>
+									</tr>
+								</thead>
+								<tbody id="sg-cuerpo">
+									<tr><td colspan="12" class="text-center" style="color:#8A919E;padding:24px;">
+										Escoja los filtros y oprima Consultar.</td></tr>
+								</tbody>
+							</table>
+						</div>
+						<div class="row" style="margin-top:6px;">
+							<div class="col-xs-6 sg-nota" id="sg-pagina"></div>
+							<div class="col-xs-6 text-right">
+								<button id="sg-anterior" class="btn btn-default btn-xs" disabled>Anterior</button>
+								<button id="sg-siguiente" class="btn btn-default btn-xs" disabled>Siguiente</button>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="js/segmentacionpersona.js"></script>
+	</body>
+</html>
