@@ -46,12 +46,26 @@
 -- subir mostrador al central-, el doble conteo se ve comparando las dos
 -- columnas contra el total, en vez de quedar escondido en una sola suma.
 --
--- LOS ALIAS SE RESUELVEN AL AGRUPAR
+-- LOS ALIAS SE RESUELVEN ANTES DE AGRUPAR, Y EN CADENA
 --
--- Una persona repetida apunta a la principal por idpersona_principal. Se agrupa
--- por COALESCE(idpersona_principal, idpersona), asi que los pedidos de un alias
--- suman a la persona real. La tabla final solo lleva personas reales:
--- activa = 'S' y sin principal.
+-- Una persona repetida apunta a la principal por idpersona_principal, pero esa
+-- principal puede ser a su vez un alias: hoy hay 6 casos de dos saltos. Por eso
+-- lo primero que hace el procedimiento es armar un mapa de persona a persona
+-- real, resolviendo la cadena completa con un bucle.
+--
+-- Un COALESCE de un solo salto -que fue la primera version- dejaba esos pedidos
+-- colgados de una fila intermedia que despues queda por fuera de la tabla final.
+-- Se perdian sin aviso: 23 pedidos y 1,2 millones que no cuadraban contra
+-- pizzaamericana.pedido. La comprobacion que lo encontro vale la pena repetirla
+-- cuando se cambie algo aca:
+--
+--   SELECT SUM(pedidos_central) FROM crm.persona_resumen;
+--   SELECT COUNT(*) FROM pizzaamericana.pedido pe
+--     JOIN pizzaamericana.cliente c ON c.idcliente = pe.idcliente
+--    WHERE pe.fecha_cancelacion IS NULL AND c.idpersona IS NOT NULL;
+--
+-- Los dos numeros tienen que ser iguales. La tabla final solo lleva personas
+-- reales: activa = 'S' y sin principal.
 -- ---------------------------------------------------------------------------
 
 DROP PROCEDURE IF EXISTS crm.pr_recalcular_persona_resumen;
@@ -60,12 +74,47 @@ DELIMITER $$
 
 CREATE PROCEDURE crm.pr_recalcular_persona_resumen()
 BEGIN
-  DECLARE v_activo INT DEFAULT 60;
-  DECLARE v_riesgo INT DEFAULT 120;
+  DECLARE v_activo  INT DEFAULT 60;
+  DECLARE v_riesgo  INT DEFAULT 120;
+  DECLARE v_cambios INT DEFAULT 0;
+  DECLARE v_vueltas INT DEFAULT 0;
 
   -- Los umbrales viven en tabla para que mercadeo los mueva sin tocar codigo.
   SELECT valor INTO v_activo FROM crm.parametro_segmento WHERE nombre = 'DIAS_ACTIVO';
   SELECT valor INTO v_riesgo FROM crm.parametro_segmento WHERE nombre = 'DIAS_RIESGO';
+
+  -- =========================================================================
+  -- 0. DE CADA PERSONA A LA PERSONA REAL
+  --
+  -- Una persona repetida apunta a la principal por idpersona_principal. Pero
+  -- ESA principal puede ser a su vez un alias: hoy hay 6 casos de dos saltos.
+  -- Resolver un solo salto dejaba los pedidos colgados de una fila intermedia
+  -- que despues queda por fuera de la tabla final, y se perdian sin aviso: 23
+  -- pedidos y 1,2 millones que no cuadraban contra pizzaamericana.pedido.
+  --
+  -- Por eso el bucle y no un COALESCE: cada noche se unen personas nuevas y
+  -- una cadena de tres puede aparecer cualquier dia. El tope de 10 vueltas es
+  -- un seguro contra un ciclo -A apunta a B y B a A-, que no deberia existir
+  -- pero dejaria el proceso dando vueltas para siempre.
+  -- =========================================================================
+  DROP TEMPORARY TABLE IF EXISTS tmp_real;
+  CREATE TEMPORARY TABLE tmp_real (
+    idpersona BIGINT NOT NULL,
+    idreal    BIGINT NOT NULL,
+    PRIMARY KEY (idpersona)
+  ) ENGINE=InnoDB;
+
+  INSERT INTO tmp_real (idpersona, idreal)
+  SELECT idpersona, COALESCE(idpersona_principal, idpersona) FROM crm.persona;
+
+  REPEAT
+    UPDATE tmp_real r
+      JOIN crm.persona p ON p.idpersona = r.idreal
+       SET r.idreal = p.idpersona_principal
+     WHERE p.idpersona_principal IS NOT NULL;
+    SET v_cambios = ROW_COUNT();
+    SET v_vueltas = v_vueltas + 1;
+  UNTIL v_cambios = 0 OR v_vueltas >= 10 END REPEAT;
 
   -- =========================================================================
   -- 1. PEDIDOS POR PERSONA Y TIENDA, DE LOS DOS ORIGENES
@@ -84,11 +133,11 @@ BEGIN
 
   -- El central: domicilio y virtual recoger. Esta es la unica lectura pesada.
   INSERT INTO tmp_pt (idpersona, idtienda, origen, pedidos, valor, primero, ultimo)
-  SELECT COALESCE(pr.idpersona_principal, pr.idpersona), pe.idtienda, 'C',
+  SELECT r.idreal, pe.idtienda, 'C',
          COUNT(*), IFNULL(SUM(pe.total_neto), 0),
          MIN(pe.fechapedido), MAX(pe.fechapedido)
     FROM pizzaamericana.cliente c
-    JOIN crm.persona pr           ON pr.idpersona = c.idpersona
+    JOIN tmp_real r               ON r.idpersona = c.idpersona
     JOIN pizzaamericana.pedido pe ON pe.idcliente = c.idcliente
    WHERE pe.fecha_cancelacion IS NULL
    GROUP BY 1, 2;
@@ -101,11 +150,11 @@ BEGIN
   -- filas de personas distintas pueden colapsar en una sola si una es alias de
   -- la otra, y sin agrupar el INSERT chocaria contra la llave.
   INSERT INTO tmp_pt (idpersona, idtienda, origen, pedidos, valor, primero, ultimo)
-  SELECT COALESCE(pr.idpersona_principal, pr.idpersona), s.idtienda, 'T',
+  SELECT r.idreal, s.idtienda, 'T',
          SUM(s.pedidos), SUM(s.valor),
          MIN(s.primer_pedido), MAX(s.ultimo_pedido)
     FROM crm.stage_pedido_tienda s
-    JOIN crm.persona pr ON pr.idpersona = s.idpersona
+    JOIN tmp_real r ON r.idpersona = s.idpersona
    GROUP BY 1, 2;
 
   -- =========================================================================
@@ -212,6 +261,7 @@ BEGIN
                crm.persona_resumen_nueva TO crm.persona_resumen;
   DROP TABLE crm.persona_resumen_vieja;
 
+  DROP TEMPORARY TABLE IF EXISTS tmp_real;
   DROP TEMPORARY TABLE IF EXISTS tmp_pt;
   DROP TEMPORARY TABLE IF EXISTS tmp_persona;
   DROP TEMPORARY TABLE IF EXISTS tmp_habitual;
