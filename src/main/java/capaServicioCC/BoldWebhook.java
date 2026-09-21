@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import capaControladorCC.BoldEntregaTiendaCtrl;
 import capaDAOCC.IntegracionCRMDAO;
 import capaDAOCC.LogEventoBoldDAO;
 import capaModeloCC.IntegracionCRM;
@@ -90,6 +91,11 @@ public class BoldWebhook extends HttpServlet {
 		}
 		logger.info("BoldWebhook: " + evento.getTipoEvento() + " payment_id=" + evento.getPaymentId() + " firma="
 				+ motivoFirma + (resultado == LogEventoBoldDAO.DUPLICADO ? " (reintento, ya estaba)" : ""));
+		// A la tienda se le entrega en otro hilo: Bold espera el 200 en 2 segundos y la tienda puede tardar o estar apagada.
+		// Si no se logra, queda pendiente y lo recoge el reintento de Servicios.
+		if (resultado == LogEventoBoldDAO.GUARDADO && evento.isFirmaValida() && evento.getIdLog() > 0) {
+			BoldEntregaTiendaCtrl.entregarAsync(evento.getIdLog());
+		}
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.getWriter().write("{\"ok\":true}");
 	}
@@ -117,6 +123,9 @@ public class BoldWebhook extends HttpServlet {
 			evento.setReferencia(texto(data.path("metadata").path("reference")));
 			evento.setTerminalId(texto(data.path("card").path("terminal_id")));
 			evento.setFechaEvento(texto(data.path("created_at")));
+			// El usuario de Bold de la sede (y su datafono): con esto se sabe la tienda.
+			evento.setSellerEmail(texto(data.path("seller").path("email")));
+			evento.setBoldUserId(texto(data.path("user_id")));
 		} catch (final Exception e) {
 			Logger.getLogger("log_file").warn("BoldWebhook: el cuerpo no es un JSON legible: " + e.toString());
 		}

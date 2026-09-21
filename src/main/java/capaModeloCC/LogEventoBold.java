@@ -16,6 +16,11 @@ public class LogEventoBold {
 	private String fechaEvento;
 	private boolean firmaValida;
 	private String motivoFirma;
+	private String sellerEmail;
+	private String boldUserId;
+	private long idLog;
+	private int idTienda;
+	private boolean entregadoTienda;
 	private String ipOrigen;
 	private String jsonEvento;
 
@@ -129,6 +134,46 @@ public class LogEventoBold {
 
 	public void setIpOrigen(String ipOrigen) {
 		this.ipOrigen = ipOrigen;
+	}
+
+	public String getSellerEmail() {
+		return sellerEmail;
+	}
+
+	public void setSellerEmail(String sellerEmail) {
+		this.sellerEmail = sellerEmail;
+	}
+
+	public String getBoldUserId() {
+		return boldUserId;
+	}
+
+	public void setBoldUserId(String boldUserId) {
+		this.boldUserId = boldUserId;
+	}
+
+	public long getIdLog() {
+		return idLog;
+	}
+
+	public void setIdLog(long idLog) {
+		this.idLog = idLog;
+	}
+
+	public int getIdTienda() {
+		return idTienda;
+	}
+
+	public void setIdTienda(int idTienda) {
+		this.idTienda = idTienda;
+	}
+
+	public boolean isEntregadoTienda() {
+		return entregadoTienda;
+	}
+
+	public void setEntregadoTienda(boolean entregadoTienda) {
+		this.entregadoTienda = entregadoTienda;
 	}
 
 	public String getJsonEvento() {
