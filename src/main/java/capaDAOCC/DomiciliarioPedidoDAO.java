@@ -8,7 +8,9 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -105,23 +107,29 @@ public class DomiciliarioPedidoDAO {
 	    Connection con1 = con.obtenerConexionBDPrincipal();
 
 	    try {
-	        sql.append("WITH UbicacionesConRow AS ( ")
-	           .append("    SELECT ubi.clave_dom, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
-	           .append("           COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, ")
-	           .append("           ROW_NUMBER() OVER (PARTITION BY ubi.clave_dom ORDER BY ubi.fecha DESC) AS rn ")
-	           .append("    FROM ubicacion_domiciliario ubi ")
-	           .append("    LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
-	           .append("    LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
-	           .append("    LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
-	           .append("    WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ");
+	        // Consulta directa optimizada con tabla derivada para eventos biométricos de hoy (ejecuta en ~300ms)
+	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
+	           .append("       COALESCE(ubi.estado, 'EN_TIENDA') AS estado, ubi.bateria, ubi.velocidad, ")
+	           .append("       COALESCE(ubi.pedidos_activos, 0) AS pedidos_activos, ubi.pedidos_detalle, ")
+	           .append("       COALESCE(e.nombre_largo, et.nombre, ubi.nombre_usuario, 'Domiciliario') AS nombre_largo, ")
+	           .append("       CASE ")
+	           .append("           WHEN et.identificacion IS NOT NULL THEN 'TEMPORAL' ")
+	           .append("           WHEN e.claverapida IS NOT NULL THEN 'DIRECTO' ")
+	           .append("           ELSE 'OTRO' ")
+	           .append("       END AS tipo_repartidor, ")
+	           .append("       COALESCE(et.empresa, '') AS empresa_temporal, ")
+	           .append("       CASE WHEN ev.id IS NOT NULL THEN 1 ELSE 0 END AS en_turno_biometria ")
+	           .append("FROM domiciliario_ubicacion_actual ubi ")
+	           .append("LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
+	           .append("LEFT JOIN general.empleado e ON ubi.clave_dom COLLATE utf8mb4_unicode_ci = e.claverapida COLLATE utf8mb4_unicode_ci ")
+	           .append("LEFT JOIN general.empleado_temporal et ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
+	           .append("LEFT JOIN (SELECT DISTINCT id FROM general.empleado_evento WHERE fecha = CURDATE()) ev ON (ev.id = e.id OR ev.id = CAST(RIGHT(TRIM(et.identificacion), 6) AS UNSIGNED) OR ev.id = CAST(TRIM(et.identificacion) AS UNSIGNED)) ")
+	           .append("WHERE ubi.fecha >= CURDATE() ");
 
 	        if (id != 0) {
 	            sql.append("AND ubi.idtienda = ").append(id).append(" ");
 	        }
-
-	        sql.append("AND DATE(ubi.fecha) = CURRENT_DATE ")
-	           .append(") ")
-	           .append("SELECT clave_dom, tienda, idtienda, latitud, longitud, fecha, nombre_largo FROM UbicacionesConRow WHERE rn = 1");
+	        sql.append("ORDER BY ubi.fecha DESC");
 
 	        try (PreparedStatement statement = con1.prepareStatement(sql.toString());
 	             ResultSet rs = statement.executeQuery()) {
@@ -135,6 +143,14 @@ public class DomiciliarioPedidoDAO {
 	                js.put("longitud", rs.getString("longitud"));
 	                js.put("fecha", rs.getString("fecha"));
 	                js.put("nombre_usuario", rs.getString("nombre_largo"));
+	                js.put("tipo_repartidor", rs.getString("tipo_repartidor"));
+	                js.put("empresa_temporal", rs.getString("empresa_temporal"));
+	                js.put("en_turno_biometria", rs.getInt("en_turno_biometria") == 1);
+	                js.put("estado", rs.getString("estado"));
+	                js.put("bateria", rs.getObject("bateria") != null ? rs.getInt("bateria") : null);
+	                js.put("velocidad", rs.getInt("velocidad"));
+	                js.put("pedidos_activos", rs.getInt("pedidos_activos"));
+	                js.put("pedidos_detalle", rs.getString("pedidos_detalle"));
 	                lista.add(js);
 	            }
 	        }
@@ -151,26 +167,40 @@ public class DomiciliarioPedidoDAO {
 	public static List<JSONObject> HistorialUsuariosPorFecha(int idTienda, String fechaInicio, String fechaFin) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
 	    StringBuilder sql = new StringBuilder();
-	    sql.append("WITH UbicacionesConRow AS ( ")
-	       .append("  SELECT ubi.clave_dom, COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, DATE(ubi.fecha) AS fecha, ")
-	       .append("         ti.nombre AS tienda, ubi.idtienda, ")
-	       .append("         ROW_NUMBER() OVER (PARTITION BY ubi.clave_dom, DATE(ubi.fecha) ORDER BY ubi.fecha DESC) AS rn ")
-	       .append("  FROM ubicacion_domiciliario ubi ")
-	       .append("  LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
-	       .append("  LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
-	       .append("  LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
-	       .append("  WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ");
+	    sql.append("SELECT u.clave_dom, ")
+	       .append("       COALESCE(e.nombre_largo, et.nombre, act.nombre_usuario, u.clave_dom) AS nombre_largo, ")
+	       .append("       u.fecha_dia AS fecha, ")
+	       .append("       ti.nombre AS tienda, ")
+	       .append("       u.idtienda, ")
+	       .append("       CASE ")
+	       .append("           WHEN et.identificacion IS NOT NULL THEN 'TEMPORAL' ")
+	       .append("           WHEN e.claverapida IS NOT NULL THEN 'DIRECTO' ")
+	       .append("           ELSE 'OTRO' ")
+	       .append("       END AS tipo_repartidor, ")
+	       .append("       COALESCE(et.empresa, '') AS empresa_temporal ")
+	       .append("FROM ( ")
+	       .append("    SELECT clave_dom, ")
+	       .append("           DATE(fecha) AS fecha_dia, ")
+	       .append("           SUBSTRING_INDEX(GROUP_CONCAT(idtienda ORDER BY fecha DESC), ',', 1) AS idtienda ")
+	       .append("    FROM ubicacion_domiciliario ")
+	       .append("    WHERE 1=1 ");
 
 	    if (idTienda != 0) {
-	        sql.append("AND ubi.idtienda = ? ");
+	        sql.append("    AND idtienda = ? ");
 	    }
 	    if (fechaInicio != null && !fechaInicio.isEmpty() && fechaFin != null && !fechaFin.isEmpty()) {
-	        sql.append("AND DATE(ubi.fecha) BETWEEN ? AND ? ");
+	        sql.append("    AND fecha >= ? AND fecha < DATE_ADD(?, INTERVAL 1 DAY) ");
 	    } else {
 	        return lista;
 	    }
 
-	    sql.append(") SELECT clave_dom, nombre_largo, fecha, tienda, idtienda FROM UbicacionesConRow WHERE rn = 1 ORDER BY fecha, nombre_largo");
+	    sql.append("    GROUP BY clave_dom, DATE(fecha) ")
+	       .append(") u ")
+	       .append("LEFT JOIN tienda ti ON ti.idtienda = u.idtienda ")
+	       .append("LEFT JOIN domiciliario_ubicacion_actual act ON u.clave_dom COLLATE utf8mb4_unicode_ci = act.clave_dom COLLATE utf8mb4_unicode_ci ")
+	       .append("LEFT JOIN general.empleado e ON u.clave_dom COLLATE utf8mb4_unicode_ci = e.claverapida COLLATE utf8mb4_unicode_ci ")
+	       .append("LEFT JOIN general.empleado_temporal et ON (u.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR u.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
+	       .append("ORDER BY u.fecha_dia DESC, nombre_largo");
 
 	    try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 	         PreparedStatement statement = con1.prepareStatement(sql.toString())) {
@@ -188,6 +218,8 @@ public class DomiciliarioPedidoDAO {
 	                js.put("fecha", rs.getString("fecha"));
 	                js.put("tienda", rs.getString("tienda"));
 	                js.put("idtienda", rs.getString("idtienda"));
+	                js.put("tipo_repartidor", rs.getString("tipo_repartidor"));
+	                js.put("empresa_temporal", rs.getString("empresa_temporal"));
 	                lista.add(js);
 	            }
 	        }
@@ -199,23 +231,36 @@ public class DomiciliarioPedidoDAO {
 	public static List<JSONObject> DetalleHistorialUsuariosPorFecha(int idTienda, String fecha, String claveRapida) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
 	    StringBuilder sql = new StringBuilder();
-	    sql.append("SELECT ubi.clave_dom, COALESCE(e.nombre_largo, et.nombre) AS nombre_largo, ")
-	       .append("       ubi.fecha, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud ")
+	    sql.append("SELECT ubi.clave_dom, ")
+	       .append("       COALESCE(e.nombre_largo, et.nombre, act.nombre_usuario, ubi.clave_dom) AS nombre_largo, ")
+	       .append("       ubi.fecha, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ")
+	       .append("       CASE ")
+	       .append("           WHEN et.identificacion IS NOT NULL THEN 'TEMPORAL' ")
+	       .append("           WHEN e.claverapida IS NOT NULL THEN 'DIRECTO' ")
+	       .append("           ELSE 'OTRO' ")
+	       .append("       END AS tipo_repartidor, ")
+	       .append("       COALESCE(et.empresa, '') AS empresa_temporal ")
 	       .append("FROM ubicacion_domiciliario ubi ")
-	       .append("LEFT JOIN general.empleado e ON ubi.clave_dom = e.claverapida ")
-	       .append("LEFT JOIN general.empleado_temporal et ON ubi.clave_dom = RIGHT(et.identificacion, 6) ")
+	       .append("LEFT JOIN domiciliario_ubicacion_actual act ON ubi.clave_dom COLLATE utf8mb4_unicode_ci = act.clave_dom COLLATE utf8mb4_unicode_ci ")
+	       .append("LEFT JOIN general.empleado e ON ubi.clave_dom COLLATE utf8mb4_unicode_ci = e.claverapida COLLATE utf8mb4_unicode_ci ")
+	       .append("LEFT JOIN general.empleado_temporal et ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
 	       .append("LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
-	       .append("WHERE (e.claverapida IS NOT NULL OR et.identificacion IS NOT NULL) ")
-	       .append("AND ubi.idtienda = ? AND DATE(ubi.fecha) = ? AND ubi.clave_dom = ? ")
-	       .append("ORDER BY ubi.fecha DESC, nombre_largo");
+	       .append("WHERE ubi.clave_dom = ? ");
+
+	    if (idTienda != 0) {
+	        sql.append("AND ubi.idtienda = ? ");
+	    }
+	    sql.append("AND ubi.fecha >= ? AND ubi.fecha < DATE_ADD(?, INTERVAL 1 DAY) ")
+	       .append("ORDER BY ubi.fecha ASC");
 
 	    try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 	         PreparedStatement statement = con1.prepareStatement(sql.toString())) {
 
 	        int paramIndex = 1;
-	        statement.setInt(paramIndex++, idTienda);
-	        statement.setString(paramIndex++, fecha);
 	        statement.setString(paramIndex++, claveRapida);
+	        if (idTienda != 0) statement.setInt(paramIndex++, idTienda);
+	        statement.setString(paramIndex++, fecha);
+	        statement.setString(paramIndex++, fecha);
 
 	        try (ResultSet rs = statement.executeQuery()) {
 	            while (rs.next()) {
@@ -227,9 +272,51 @@ public class DomiciliarioPedidoDAO {
 	                js.put("idtienda", rs.getString("idtienda"));
 	                js.put("latitud", rs.getDouble("latitud"));
 	                js.put("longitud", rs.getDouble("longitud"));
+	                js.put("tipo_repartidor", rs.getString("tipo_repartidor"));
+	                js.put("empresa_temporal", rs.getString("empresa_temporal"));
 	                lista.add(js);
 	            }
 	        }
+	    }
+	    return lista;
+	}
+
+	public static List<JSONObject> ObtenerDespachosHistorial(String fecha, String claveRapida) throws SQLException {
+	    List<JSONObject> lista = new ArrayList<>();
+	    String sql = "SELECT dr.id AS despacho_id, dr.idtienda, ti.nombre AS nombre_tienda, " +
+	                 "       dr.hora_salida, dr.hora_regreso, drd.id_pedido, drd.orden_planificada, drd.hora_entrega " +
+	                 "FROM datamart.despacho_real dr " +
+	                 "LEFT JOIN datamart.despacho_real_det drd ON dr.id = drd.despacho_real_id AND dr.idtienda = drd.idtienda " +
+	                 "LEFT JOIN tienda ti ON dr.idtienda = ti.idtienda " +
+	                 "LEFT JOIN general.empleado e ON dr.id_domiciliario = e.id " +
+	                 "LEFT JOIN general.empleado_temporal et ON dr.id_domiciliario = et.id " +
+	                 "WHERE dr.fecha = ? " +
+	                 "  AND (e.claverapida = ? OR et.identificacion LIKE CONCAT('%', ?) OR CAST(dr.id_domiciliario AS CHAR) = ?) " +
+	                 "ORDER BY dr.hora_salida ASC, drd.orden_planificada ASC";
+
+	    try (Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+	         PreparedStatement ps = con1.prepareStatement(sql)) {
+	        ps.setString(1, fecha);
+	        ps.setString(2, claveRapida);
+	        ps.setString(3, claveRapida);
+	        ps.setString(4, claveRapida);
+
+	        try (ResultSet rs = ps.executeQuery()) {
+	            while (rs.next()) {
+	                JSONObject js = new JSONObject();
+	                js.put("despacho_id", rs.getInt("despacho_id"));
+	                js.put("idtienda", rs.getInt("idtienda"));
+	                js.put("tienda", rs.getString("nombre_tienda"));
+	                js.put("hora_salida", rs.getString("hora_salida"));
+	                js.put("hora_regreso", rs.getString("hora_regreso"));
+	                js.put("id_pedido", rs.getObject("id_pedido") != null ? rs.getInt("id_pedido") : null);
+	                js.put("orden_planificada", rs.getObject("orden_planificada") != null ? rs.getInt("orden_planificada") : null);
+	                js.put("hora_entrega", rs.getString("hora_entrega"));
+	                lista.add(js);
+	            }
+	        }
+	    } catch (Exception e) {
+	        System.out.println("Error ObtenerDespachosHistorial: " + e);
 	    }
 	    return lista;
 	}

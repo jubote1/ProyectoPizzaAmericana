@@ -54,6 +54,9 @@ public class HistorialUbicacion extends HttpServlet {
             } else if ("detalle".equals(action)) {
             	 List<JSONObject> detalle_historial = DomiciliarioPedidoDAO.DetalleHistorialUsuariosPorFecha(tiendaId, startDate, claveRapida);
                  jsonResponse.addAll(detalle_historial);
+            } else if ("despachos_historial".equals(action)) {
+            	 List<JSONObject> despachos = DomiciliarioPedidoDAO.ObtenerDespachosHistorial(startDate, claveRapida);
+                 jsonResponse.addAll(despachos);
             }
 
             response.setContentType("application/json");

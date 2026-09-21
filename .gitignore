@@ -7,3 +7,7 @@ bin/
 # de 100 MB por archivo de GitHub: nunca puede entrar al repositorio. Cada quien
 # lo genera desde ProyectoTiendaAmericanaCliente.
 libs/*.jar
+
+# Pruebas temporales, benchmarks y respaldos locales
+scratch/
+backups_rastreo/
