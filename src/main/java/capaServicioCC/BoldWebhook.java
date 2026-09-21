@@ -81,6 +81,9 @@ public class BoldWebhook extends HttpServlet {
 		evento.setFirmaValida(FirmaBold.esValida(motivoFirma));
 		evento.setMotivoFirma(motivoFirma);
 		evento.setIpOrigen(origen(request));
+		// Lo que Bold mando, tal cual: la firma y el tipo de contenido. Sirven para analizar por que una firma no coincide.
+		evento.setFirmaRecibida(request.getHeader("x-bold-signature"));
+		evento.setContentType(request.getContentType());
 		extraerCampos(evento);
 
 		final int resultado = LogEventoBoldDAO.insertar(evento);

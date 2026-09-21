@@ -22,6 +22,8 @@ public class LogEventoBold {
 	private int idTienda;
 	private boolean entregadoTienda;
 	private String ipOrigen;
+	private String firmaRecibida;
+	private String contentType;
 	private String jsonEvento;
 
 	public String getHashCuerpo() {
@@ -174,6 +176,22 @@ public class LogEventoBold {
 
 	public void setEntregadoTienda(boolean entregadoTienda) {
 		this.entregadoTienda = entregadoTienda;
+	}
+
+	public String getFirmaRecibida() {
+		return firmaRecibida;
+	}
+
+	public void setFirmaRecibida(String firmaRecibida) {
+		this.firmaRecibida = firmaRecibida;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 
 	public String getJsonEvento() {

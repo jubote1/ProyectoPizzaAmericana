@@ -33,6 +33,8 @@ public class FirmaBold {
 	public static final String OK_CUERPO_CRUDO = "OK_CUERPO_CRUDO";
 	public static final String OK_JSON_COMPACTO_B64 = "OK_JSON_COMPACTO_B64";
 	public static final String OK_JSON_COMPACTO = "OK_JSON_COMPACTO";
+	/** Se agrega al final cuando la firma coincidio usando la llave secreta decodificada de Base64 en vez de su texto. */
+	public static final String SUFIJO_LLAVE_B64 = "_LLAVE_B64";
 	public static final String NO_COINCIDE = "NO_COINCIDE";
 	public static final String SIN_FIRMA = "SIN_FIRMA";
 	/** No hay llave secreta configurada: no se puede validar nada. */
@@ -117,6 +119,14 @@ public class FirmaBold {
 					return (String) c[0];
 				}
 			}
+			// La llave secreta de Bold parece Base64 (22 caracteres = 16 bytes): tambien se prueba decodificada.
+			for (final byte[] decodificada : llavesDecodificadas(llaveSecreta.trim())) {
+				for (final Object[] c : candidatos) {
+					if (coincide(firma, hmac((byte[]) c[1], decodificada))) {
+						return c[0] + SUFIJO_LLAVE_B64;
+					}
+				}
+			}
 			// Nada coincidio con la llave guardada: se mira si es por una llave equivocada.
 			for (final Object[] c : candidatos) {
 				if (coincide(firma, hmac((byte[]) c[1], new byte[0]))) {
@@ -137,10 +147,31 @@ public class FirmaBold {
 		}
 	}
 
-	/** Solo las variantes que exigieron la llave secreta son validas. */
+	/** La llave decodificada de Base64 estandar y de Base64 URL, las que se puedan (sin relleno tambien). */
+	private static List<byte[]> llavesDecodificadas(final String llave) {
+		final List<byte[]> lista = new ArrayList<byte[]>();
+		try {
+			final byte[] estandar = Base64.getDecoder().decode(llave);
+			if (estandar.length > 0) {
+				lista.add(estandar);
+			}
+		} catch (final IllegalArgumentException noEs) {
+			// no es Base64 estandar
+		}
+		try {
+			final byte[] url = Base64.getUrlDecoder().decode(llave);
+			if (url.length > 0 && (lista.isEmpty() || !java.util.Arrays.equals(url, lista.get(0)))) {
+				lista.add(url);
+			}
+		} catch (final IllegalArgumentException noEs) {
+			// no es Base64 URL
+		}
+		return lista;
+	}
+
+	/** Solo las variantes que exigieron la llave secreta son validas (todas empiezan por OK; los diagnosticos no). */
 	public static boolean esValida(final String resultado) {
-		return OK.equals(resultado) || OK_CUERPO_CRUDO.equals(resultado) || OK_JSON_COMPACTO_B64.equals(resultado)
-				|| OK_JSON_COMPACTO.equals(resultado);
+		return resultado != null && resultado.startsWith("OK");
 	}
 
 	/** SHA-256 hexadecimal del cuerpo: identifica de forma unica un evento, para no guardar dos veces un reintento. */

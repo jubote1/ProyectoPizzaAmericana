@@ -37,8 +37,8 @@ public class LogEventoBoldDAO {
 			final PreparedStatement ps = con1.prepareStatement(
 					"insert into log_evento_bold (hash_cuerpo, id_notificacion, tipo_evento, payment_id, merchant_id,"
 							+ " payment_method, monto_total, moneda, referencia, terminal_id, seller_email, bold_user_id,"
-							+ " fecha_evento, firma_valida, motivo_firma, ip_origen, json_evento)"
-							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+							+ " fecha_evento, firma_valida, motivo_firma, firma_recibida, content_type, ip_origen, json_evento)"
+							+ " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, e.getHashCuerpo());
 			ps.setString(2, recortar(e.getIdNotificacion(), 80));
@@ -55,8 +55,10 @@ public class LogEventoBoldDAO {
 			ps.setString(13, recortar(e.getFechaEvento(), 60));
 			ps.setBoolean(14, e.isFirmaValida());
 			ps.setString(15, recortar(e.getMotivoFirma(), 40));
-			ps.setString(16, recortar(e.getIpOrigen(), 60));
-			ps.setString(17, e.getJsonEvento());
+			ps.setString(16, recortar(e.getFirmaRecibida(), 300));
+			ps.setString(17, recortar(e.getContentType(), 100));
+			ps.setString(18, recortar(e.getIpOrigen(), 60));
+			ps.setString(19, e.getJsonEvento());
 			ps.executeUpdate();
 			final ResultSet llaves = ps.getGeneratedKeys();
 			if (llaves.next()) {
