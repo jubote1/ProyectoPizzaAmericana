@@ -96,7 +96,8 @@ public class BoldWebhook extends HttpServlet {
 				+ motivoFirma + (resultado == LogEventoBoldDAO.DUPLICADO ? " (reintento, ya estaba)" : ""));
 		// A la tienda se le entrega en otro hilo: Bold espera el 200 en 2 segundos y la tienda puede tardar o estar apagada.
 		// Si no se logra, queda pendiente y lo recoge el reintento de Servicios.
-		if (resultado == LogEventoBoldDAO.GUARDADO && evento.isFirmaValida() && evento.getIdLog() > 0) {
+		// (entregar() decide si un evento sin firma valida pasa: solo con BOLDENTREGASINFIRMA = 'S'.)
+		if (resultado == LogEventoBoldDAO.GUARDADO && evento.getIdLog() > 0) {
 			BoldEntregaTiendaCtrl.entregarAsync(evento.getIdLog());
 		}
 		response.setStatus(HttpServletResponse.SC_OK);

@@ -165,7 +165,8 @@ public class LogEventoBoldDAO {
 	 * llegaron antes de que su sede estuviera en bold_sede_tienda. Solo los de
 	 * los ultimos dias y con un tope de intentos, para no insistir para siempre.
 	 */
-	public static ArrayList<Long> pendientesDeEntrega(final int maxIntentos, final int diasAtras, final int limite) {
+	public static ArrayList<Long> pendientesDeEntrega(final int maxIntentos, final int diasAtras, final int limite,
+			final boolean incluirSinFirmaValida) {
 		final Logger logger = Logger.getLogger("log_file");
 		final ArrayList<Long> ids = new ArrayList<Long>();
 		final Connection con1 = new ConexionBaseDatos().obtenerConexionBDPrincipal();
@@ -174,12 +175,13 @@ public class LogEventoBoldDAO {
 		}
 		try {
 			final PreparedStatement ps = con1.prepareStatement(
-					"select idlog_evento_bold from log_evento_bold where firma_valida = 1 and entregado_tienda = 0"
+					"select idlog_evento_bold from log_evento_bold where (firma_valida = 1 or ?) and entregado_tienda = 0"
 							+ " and intentos_entrega < ? and fecha_recepcion >= date_sub(now(), interval ? day)"
 							+ " order by idlog_evento_bold limit ?");
-			ps.setInt(1, maxIntentos);
-			ps.setInt(2, diasAtras);
-			ps.setInt(3, limite);
+			ps.setBoolean(1, incluirSinFirmaValida);
+			ps.setInt(2, maxIntentos);
+			ps.setInt(3, diasAtras);
+			ps.setInt(4, limite);
 			final ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				ids.add(Long.valueOf(rs.getLong(1)));

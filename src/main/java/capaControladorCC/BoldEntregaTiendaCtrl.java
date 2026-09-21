@@ -49,6 +49,7 @@ public class BoldEntregaTiendaCtrl {
 
 	private static final String SERVICIO_TIENDA = "RegistrarMovimientoBold";
 	private static final String PARAMETRO_TOKEN = "TOKENEVENTOSBOLD";
+	private static final String PARAMETRO_SIN_FIRMA = "BOLDENTREGASINFIRMA";
 
 	private static final int MAX_INTENTOS = 1000;
 	private static final int DIAS_ATRAS = 3;
@@ -70,13 +71,38 @@ public class BoldEntregaTiendaCtrl {
 		EJECUTOR.submit(() -> entregar(idLog));
 	}
 
+	/**
+	 * MODO TEMPORAL, bajo responsabilidad de quien lo prende: con
+	 * general.parametros.BOLDENTREGASINFIRMA = 'S' los eventos se entregan a la
+	 * tienda aunque su firma no coincida. Existe porque, con eventos reales, la
+	 * firma de Bold no se ha podido reproducir con la llave secreta del panel
+	 * (ver motivo_firma / firma_recibida en log_evento_bold) y hay que probar el
+	 * flujo. La firma se sigue calculando y guardando; solo cambia que ya no
+	 * frena la entrega. Sin el parametro, o con otro valor, se exige firma valida.
+	 *
+	 * Sin firma, el endpoint publico del webhook acepta cualquier cuerpo: quien
+	 * conozca la URL puede inventar un evento. Por eso debe apagarse en cuanto
+	 * Bold aclare como se calcula la firma.
+	 */
+	public static boolean aceptaSinFirma() {
+		final String valor = ParametrosDAO.retornarValorAlfanumerico(PARAMETRO_SIN_FIRMA);
+		return valor != null && valor.trim().equalsIgnoreCase("S");
+	}
+
 	/** @return true si el evento quedo guardado en la tienda. */
 	public static boolean entregar(final long idLog) {
 		final Logger logger = Logger.getLogger("log_file");
 		try {
 			final LogEventoBold evento = LogEventoBoldDAO.obtenerParaEntrega(idLog);
-			if (evento == null || !evento.isFirmaValida()) {
+			if (evento == null) {
 				return false;
+			}
+			if (!evento.isFirmaValida()) {
+				if (!aceptaSinFirma()) {
+					return false;
+				}
+				logger.warn("BoldEntregaTiendaCtrl: se entrega el evento " + idLog
+						+ " SIN firma valida (BOLDENTREGASINFIRMA = S)");
 			}
 			if (evento.isEntregadoTienda()) {
 				return true;
@@ -107,7 +133,7 @@ public class BoldEntregaTiendaCtrl {
 	/** Reintenta los eventos pendientes. Devuelve cuantos se entregaron. Lo invoca Servicios. */
 	public static int reintentarPendientes() {
 		final ArrayList<Long> ids = LogEventoBoldDAO.pendientesDeEntrega(MAX_INTENTOS, DIAS_ATRAS,
-				LIMITE_POR_CORRIDA);
+				LIMITE_POR_CORRIDA, aceptaSinFirma());
 		int entregados = 0;
 		for (final Long id : ids) {
 			if (entregar(id.longValue())) {
