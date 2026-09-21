@@ -73,7 +73,7 @@ public class BoldWebhook extends HttpServlet {
 
 		final IntegracionCRM integracion = IntegracionCRMDAO.obtenerInformacionIntegracion(CRM_SONOQR);
 		final String motivoFirma = FirmaBold.validar(cuerpo, request.getHeader("x-bold-signature"),
-				integracion.getFreshToken());
+				integracion.getFreshToken(), integracion.getAccessToken());
 
 		final LogEventoBold evento = new LogEventoBold();
 		evento.setHashCuerpo(FirmaBold.sha256Hex(cuerpo));
