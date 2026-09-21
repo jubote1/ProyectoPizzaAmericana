@@ -48,7 +48,7 @@ public class GetIngresarAplicacion extends HttpServlet {
         boolean resultado = aut.autenticarUsuario(user, pass);
         PrintWriter out = response.getWriter();
         if (resultado){
-        		Usuario usuario = new Usuario(user);
+        		Usuario usuario = aut.obtenerUsuarioParaSesion(user);
         		sesion.setAttribute("usuario", usuario);
         		sesion.setMaxInactiveInterval(60*20);
         		logger.info("El logueo del usuario " + user + " ha sido satisfactorio");

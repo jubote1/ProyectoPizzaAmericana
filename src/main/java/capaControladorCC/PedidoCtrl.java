@@ -108,6 +108,7 @@ import capaDAOCC.SolicitudFacturaImagenesDAO;
 import capaDAOCC.SolicitudPQRSDAO;
 import capaDAOCC.TercerizadoDomicilioEventoDAO;
 import capaDAOCC.TiempoPedidoDAO;
+import capaDAOCC.ConciliacionTiendaDAO;
 import capaDAOCC.TiendaDAO;
 import capaDAOCC.TmpPedidosPoligonoDAO;
 import capaDAOPOS.EmpleadoEventoDAO;
@@ -13348,28 +13349,129 @@ public class PedidoCtrl {
 		return (respuestaJSON.toJSONString());
 	}
 
-	public static String consultarSolicitudConciliacion(int idTienda, String fechaConsulta) {
-		ArrayList<SolicitudConciliacion> solicitudes = SolicitudConciliacionDAO.consultarSolicitudConciliacion(idTienda,
-				fechaConsulta);
-		JSONArray listJSON = new JSONArray();
-		JSONObject cadaSolTemp = new JSONObject();
-		SolicitudConciliacion solTemp = new SolicitudConciliacion();
+	/**
+	 * Las solicitudes de conciliacion, con su resumen.
+	 *
+	 * Se devuelve tambien el resumen -cuantas y por cuanto, separando FALTANTE de
+	 * SOBRANTE- para que la pantalla no tenga que sumarlo en el navegador y para
+	 * que se vea el tamano del pendiente antes de mirar el detalle.
+	 *
+	 * @param idTienda 0 = todas
+	 */
+	public static String consultarSolicitudConciliacion(final int idTienda, final String fechaDesde,
+			final String fechaHasta, final String estado) {
+		final ArrayList<SolicitudConciliacion> solicitudes =
+				SolicitudConciliacionDAO.consultarSolicitudes(idTienda, fechaDesde, fechaHasta, estado);
+		final JSONArray filas = new JSONArray();
+		int pendFaltante = 0;
+		int pendSobrante = 0;
+		double valFaltante = 0;
+		double valSobrante = 0;
+		int diasMasVieja = 0;
 		for (int i = 0; i < solicitudes.size(); i++) {
-			solTemp = solicitudes.get(i);
-			cadaSolTemp = new JSONObject();
-			cadaSolTemp.put("idsolicitud", solTemp.getIdSolicitud());
-			cadaSolTemp.put("fecha", solTemp.getFecha());
-			cadaSolTemp.put("origen", solTemp.getOrigen());
-			cadaSolTemp.put("descripcion", solTemp.getDescripcion());
-			cadaSolTemp.put("categoria", solTemp.getCategoria());
-			cadaSolTemp.put("valor_analizar", solTemp.getValorAnalizar());
-			cadaSolTemp.put("estado", solTemp.getEstado());
-			cadaSolTemp.put("valor_final", solTemp.getValorFinal());
-			cadaSolTemp.put("telefono", solTemp.getTelefono());
-			cadaSolTemp.put("idpedidotienda", solTemp.getIdPedidoTienda());
-			listJSON.add(cadaSolTemp);
+			final SolicitudConciliacion s = solicitudes.get(i);
+			final JSONObject f = new JSONObject();
+			f.put("idsolicitud", s.getIdSolicitud());
+			f.put("fecha", s.getFecha());
+			f.put("origen", s.getOrigen());
+			f.put("descripcion", s.getDescripcion());
+			f.put("idtienda", s.getIdTienda());
+			f.put("nombretienda", s.getNombreTienda());
+			f.put("categoria", s.getCategoria());
+			f.put("valor_analizar", s.getValorAnalizar());
+			f.put("estado", s.getEstado());
+			f.put("valor_final", s.getValorFinal());
+			f.put("telefono", s.getTelefono());
+			f.put("idpedidotienda", s.getIdPedidoTienda());
+			f.put("dias", s.getDias());
+			f.put("usuario_procesa", s.getUsuarioProcesa());
+			f.put("fecha_procesa", s.getFechaProcesa());
+			f.put("observacion_cierre", s.getObservacionCierre());
+			filas.add(f);
+
+			if ("PENDIENTE".equalsIgnoreCase(s.getEstado())) {
+				if ("FALTANTE".equalsIgnoreCase(s.getCategoria())) {
+					pendFaltante++;
+					valFaltante = valFaltante + s.getValorAnalizar();
+				} else if ("SOBRANTE".equalsIgnoreCase(s.getCategoria())) {
+					pendSobrante++;
+					valSobrante = valSobrante + s.getValorAnalizar();
+				}
+				if (s.getDias() > diasMasVieja) {
+					diasMasVieja = s.getDias();
+				}
+			}
 		}
-		return (listJSON.toJSONString());
+		final JSONObject resumen = new JSONObject();
+		resumen.put("pend_faltante", pendFaltante);
+		resumen.put("pend_sobrante", pendSobrante);
+		resumen.put("val_faltante", valFaltante);
+		resumen.put("val_sobrante", valSobrante);
+		resumen.put("dias_mas_vieja", diasMasVieja);
+		resumen.put("total", solicitudes.size());
+
+		final JSONObject respuesta = new JSONObject();
+		respuesta.put("solicitudes", filas);
+		respuesta.put("resumen", resumen);
+		return (respuesta.toJSONString());
+	}
+
+	/** Guarda la resolucion de una diferencia de conciliacion. */
+	public static String actualizarSolicitudConciliacion(final int idSolicitud, final double valorFinal,
+			final String estado, final String observacion, final String usuario) {
+		final boolean actualizo = SolicitudConciliacionDAO.actualizarSolicitud(idSolicitud, valorFinal,
+				estado, observacion, usuario);
+		final JSONObject r = new JSONObject();
+		r.put("respuesta", actualizo ? "OK" : "ERROR");
+		return (r.toJSONString());
+	}
+
+	/**
+	 * Pagos QR/Datafono que hay en vivo en la base local de una tienda, para
+	 * cruzarlos contra una diferencia de conciliacion. Consulta en tiempo real
+	 * el computador de la tienda -si esta apagado o inalcanzable, se distingue
+	 * de "no hay pagos" con un mensaje de error explicito, para que no se
+	 * confunda una cosa con la otra.
+	 *
+	 * @param idTienda   tienda a consultar
+	 * @param origen     "DATAFONO" o "QR"
+	 * @param fechaDesde en yyyy-MM-dd
+	 * @param fechaHasta en yyyy-MM-dd
+	 */
+	@SuppressWarnings("unchecked")
+	public static String consultarPagosTiendaConciliacion(final int idTienda, final String origen,
+			final String fechaDesde, final String fechaHasta) {
+		final JSONObject respuesta = new JSONObject();
+		final Tienda tienda = TiendaDAO.retornarTienda(idTienda);
+		if (tienda == null || tienda.getHosbd() == null || tienda.getHosbd().trim().isEmpty()) {
+			respuesta.put("error", "Esta tienda no tiene una base local configurada (hosbd vacio).");
+			respuesta.put("pagos", new JSONArray());
+			return (respuesta.toJSONString());
+		}
+		final ArrayList<capaModeloCC.PagoTiendaConciliacion> pagos = ConciliacionTiendaDAO
+				.consultarPagosTienda(tienda.getHosbd(), origen, fechaDesde, fechaHasta);
+		if (pagos == null) {
+			respuesta.put("error", "No se pudo conectar con el computador de " + tienda.getNombreTienda()
+					+ ". Verifique que este encendido y conectado a la red.");
+			respuesta.put("pagos", new JSONArray());
+			return (respuesta.toJSONString());
+		}
+		final JSONArray pagosJSON = new JSONArray();
+		for (final capaModeloCC.PagoTiendaConciliacion pago : pagos) {
+			final JSONObject p = new JSONObject();
+			p.put("idpedidotienda", pago.getIdPedidoTienda());
+			p.put("fecha", pago.getFecha());
+			p.put("nombrecliente", pago.getNombreCliente());
+			p.put("telefono", pago.getTelefono());
+			p.put("valorformapago", pago.getValorFormaPago());
+			p.put("totalneto", pago.getTotalNeto());
+			p.put("referenciadatafono", pago.getReferenciaDatafono());
+			p.put("anulado", pago.isAnulado());
+			p.put("estacion", pago.getEstacion());
+			pagosJSON.add(p);
+		}
+		respuesta.put("pagos", pagosJSON);
+		return (respuesta.toJSONString());
 	}
 
 	public String validarExistenciaProductoPedido(int idPedido, int idProducto) {

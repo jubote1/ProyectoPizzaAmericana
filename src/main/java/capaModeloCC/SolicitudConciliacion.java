@@ -107,6 +107,62 @@ public class SolicitudConciliacion {
 		this.telefono = telefono;
 		this.idPedidoTienda = idPedidoTienda;
 	}
+
+	/*
+	 * Lo que la pantalla necesita mostrar y que no estaba en la tabla.
+	 *
+	 * nombreTienda para no obligar a la pantalla a cruzar el id contra el
+	 * selector, y dias para que se vea de una cuanto lleva la diferencia sin
+	 * resolver: al 2026-09-15 la mas vieja llevaba 422 dias.
+	 */
+	private String nombreTienda = "";
+	private int dias = 0;
+
+	/** Quien la cerro y cuando. Antes no se guardaba. */
+	private String usuarioProcesa = "";
+	private String fechaProcesa = "";
+	private String observacionCierre = "";
+
+	public String getNombreTienda() {
+		return this.nombreTienda;
+	}
+
+	public void setNombreTienda(final String nombreTienda) {
+		this.nombreTienda = nombreTienda;
+	}
+
+	public int getDias() {
+		return this.dias;
+	}
+
+	public void setDias(final int dias) {
+		this.dias = dias;
+	}
+
+	public String getUsuarioProcesa() {
+		return this.usuarioProcesa;
+	}
+
+	public void setUsuarioProcesa(final String usuarioProcesa) {
+		this.usuarioProcesa = usuarioProcesa;
+	}
+
+	public String getFechaProcesa() {
+		return this.fechaProcesa;
+	}
+
+	public void setFechaProcesa(final String fechaProcesa) {
+		this.fechaProcesa = fechaProcesa;
+	}
+
+	public String getObservacionCierre() {
+		return this.observacionCierre;
+	}
+
+	public void setObservacionCierre(final String observacionCierre) {
+		this.observacionCierre = observacionCierre;
+	}
+
 	public SolicitudConciliacion() {
 		super();
 	}

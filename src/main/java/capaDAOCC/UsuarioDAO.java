@@ -32,17 +32,30 @@ public class UsuarioDAO {
 		boolean respuesta = false;
 		try
 		{
-			Statement stm = con1.createStatement();
-			String consulta = "select * from usuario where nombre = '" + usuario.getNombreUsuario() + "' and password = '" + usuario.getContrasena()+"'";
-			logger.info(consulta);
-			ResultSet rs = stm.executeQuery(consulta);
+			//Dos cosas cambiaron aqui, y las dos importan.
+			//
+			//1. Se exige activo = 1. Antes esta consulta no miraba esa columna,
+			//   asi que un usuario "desactivado" seguia entrando como si nada:
+			//   quien se iba de la empresa conservaba la entrada al central.
+			//
+			//2. Se pasa a PreparedStatement. Concatenando el nombre, escribir
+			//   jdbotero' -- como usuario dejaba entrar con CUALQUIER clave: el
+			//   -- comenta el resto y la validacion de la contrasena desaparece.
+			//   Probado contra la base el 2026-09-18: devolvia la fila.
+			String consulta = "select id from usuario where nombre = ? and password = ? and activo = 1";
+			logger.info(consulta + " [" + usuario.getNombreUsuario() + "]");
+			PreparedStatement ps = con1.prepareStatement(consulta);
+			ps.setString(1, usuario.getNombreUsuario());
+			ps.setString(2, usuario.getContrasena());
+			ResultSet rs = ps.executeQuery();
+
 			while(rs.next())
 			{
 				respuesta = true;
 				break;
 			}
 				rs.close();
-				stm.close();
+				ps.close();
 				con1.close();
 		}
 		catch(Exception e){
@@ -69,16 +82,24 @@ public class UsuarioDAO {
 	    Connection con1 = con.obtenerConexionBDPrincipal();
 	    String resultado = "";
 	    Statement stm = null;
+	    PreparedStatement psRev = null;
 	    ResultSet rs = null;
 
 	    try {
-	        stm = con1.createStatement();
-	        String consulta = "SELECT administrador, nombre_largo, plataforma FROM usuario WHERE nombre = '" + usuario.getNombreUsuario() + "'";
-	        rs = stm.executeQuery(consulta);
+	        //Tambien exige activo = 1: esta consulta es la que corre en CADA
+	        //pantalla, asi que apagar a alguien lo saca en la siguiente que
+	        //abra, no cuando vuelva a entrar manana. Y va con parametro por la
+	        //misma razon que el login.
+	        String consulta = "SELECT id, administrador, nombre_largo, plataforma FROM usuario WHERE nombre = ? AND activo = 1";
+
+	        psRev = con1.prepareStatement(consulta);
+	        psRev.setString(1, usuario.getNombreUsuario());
+	        rs = psRev.executeQuery();
 
 	        while (rs.next()) {
 	            try {
 	                resultado = rs.getString("administrador");
+	                usuario.setId(rs.getInt("id"));
 	                usuario.setNombreLargo(rs.getString("nombre_largo"));
 	                usuario.setPlataforma(rs.getString("plataforma"));
 	            } catch (Exception e) {
@@ -91,6 +112,7 @@ public class UsuarioDAO {
 	    } finally {
 	        try {
 	            if (rs != null) rs.close();
+	            if (psRev != null) psRev.close();
 	            if (stm != null) stm.close();
 	            if (con1 != null) con1.close();
 	        } catch (Exception e) {

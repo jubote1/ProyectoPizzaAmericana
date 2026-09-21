@@ -54,6 +54,26 @@
 	</filter-mapping>
 
 	<!--
+		Filtro de roles/pantallas (ver sql/seguridad_roles_catalogo.sql y
+		capaSeguridad/filtro/SeguridadFilter.java). A proposito con url-pattern
+		/*, a diferencia de los filtros de arriba que listan cada URL a mano: un
+		filtro de seguridad debe ser seguro por defecto. El filtro mismo solo
+		actua sobre las URLs que esten mapeadas en pantalla_servlet -el resto
+		(la mayoria de los servlets, consumidos por POS/tablet sin sesion de
+		navegador) pasa de largo sin tocarse- y arranca en modo LOG (solo
+		audita, nunca bloquea) hasta que ese mapeo este completo.
+	-->
+	<filter>
+		<filter-name>SeguridadFilter</filter-name>
+		<filter-class>capaSeguridad.filtro.SeguridadFilter</filter-class>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>SeguridadFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<!--
 		Tiempo de vida de las sesiones HTTP, en minutos.
 
 		Antes no estaba definido, asi que Tomcat aplicaba su valor por defecto de 30
