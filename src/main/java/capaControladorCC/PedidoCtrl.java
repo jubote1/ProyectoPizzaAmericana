@@ -582,9 +582,42 @@ public class PedidoCtrl {
 	 * @return Se retorna un string en formato JSON con todos los valores que se
 	 *         pasarán al servicio tienda para la creación del pedido en la tienda.
 	 */
+	/**
+	 * La respuesta cuando NO se deja mandar el pedido a la tienda.
+	 *
+	 * Sale con la misma forma que la respuesta buena -un arreglo con un objeto-
+	 * porque las ocho pantallas hacen data[0] sin preguntar, y cambiarles la
+	 * forma las dejaria reventando en vez de mostrando el motivo.
+	 *
+	 * Va SIN el campo url a proposito: si una pantalla vieja no llegara a mirar
+	 * el campo bloqueado, se queda sin a donde mandar y el pedido no se duplica
+	 * igual. El control no depende de que las ocho esten al dia.
+	 */
+	@SuppressWarnings("unchecked")
+	private String respuestaEnvioBloqueado(capaDAOCC.EnvioTiendaDAO.Turno turno) {
+		JSONArray lista = new JSONArray();
+		JSONObject o = new JSONObject();
+		o.put("bloqueado", true);
+		o.put("motivo", turno.motivo);
+		o.put("mensaje", turno.mensaje);
+		o.put("numpedidotienda", turno.numeroTienda);
+		lista.add(o);
+		org.apache.log4j.Logger.getLogger("log_file").info("Envio a tienda bloqueado: "
+				+ turno.motivo + " - " + turno.mensaje);
+		return (lista.toJSONString());
+	}
+
 	public String FinalizarPedido(int idpedido, int idformapago, double valorformapago, double valortotal,
 			int idcliente, int insertado, double tiempopedido, String validaDir, double descuento,
 			String motivoDescuento, String esProgramado, String programado) {
+		//EL TURNO VA PRIMERO QUE TODO. Ver EnvioTiendaDAO: si otro ya esta
+		//mandando este pedido, o si la tienda ya lo tiene con numero, aqui se
+		//corta y no se arma nada. Es el unico paso por donde pasan las ocho
+		//pantallas con boton de reenviar y los tres procesos de Servicios.
+		capaDAOCC.EnvioTiendaDAO.Turno turno = capaDAOCC.EnvioTiendaDAO.tomarTurno(idpedido);
+		if (!turno.permitido) {
+			return (respuestaEnvioBloqueado(turno));
+		}
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
 		String tiendaPixel = tienda.getUrl();
 		// Capturamos el parámetro de para que POS irá el destino del pedido, con base
@@ -760,6 +793,16 @@ public class PedidoCtrl {
 	public String FinalizarPedidoReenvio(int idpedido, int idformapago, double valorformapago, double valortotal,
 			int idcliente, int insertado, double tiempoPedido, String userReenvio, boolean enviarTienda) {
 
+		//Solo se pide turno cuando de verdad se va a mandar a la tienda.
+		//Con enviarTienda en false esto solo finaliza el pedido en el central y
+		//no hay nada que duplicar; bloquearlo ahi seria impedir algo que nunca
+		//fue el problema.
+		if (enviarTienda) {
+			capaDAOCC.EnvioTiendaDAO.Turno turno = capaDAOCC.EnvioTiendaDAO.tomarTurno(idpedido);
+			if (!turno.permitido) {
+				return (respuestaEnvioBloqueado(turno));
+			}
+		}
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
 		// Hacemos una validación si el tiempo llegó en cero
 		if (tiempoPedido == 0) {

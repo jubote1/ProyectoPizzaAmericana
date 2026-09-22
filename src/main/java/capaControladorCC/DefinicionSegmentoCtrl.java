@@ -62,6 +62,7 @@ public class DefinicionSegmentoCtrl {
 			j.put("color", d.color);
 			j.put("activo", d.activo);
 			j.put("personas", Integer.valueOf(d.personas));
+			j.put("contactables", Integer.valueOf(d.contactables));
 			j.put("valor", Double.valueOf(d.valor));
 			final JSONArray reglas = new JSONArray();
 			for (int k = 0; k < d.reglas.size(); k++) {
@@ -77,6 +78,16 @@ public class DefinicionSegmentoCtrl {
 		}
 		o.put("segmentos", segmentos);
 		o.put("sin_clasificar", Integer.valueOf(DefinicionSegmentoDAO.sinClasificar()));
+
+		final double[] t = DefinicionSegmentoDAO.totales();
+		o.put("total_personas", Integer.valueOf((int) t[0]));
+		o.put("total_contactables", Integer.valueOf((int) t[1]));
+		o.put("total_valor", Double.valueOf(t[2]));
+		//Cuando se calculo persona_resumen. El tablero lo muestra porque los
+		//numeros son del corte de anoche y no de este momento: sin esa linea,
+		//quien vea "8.480 oro" va a creer que el sistema esta malo cuando no le
+		//cuadre con un pedido de hace una hora.
+		o.put("calculado_en", capaDAOCC.SegmentacionPersonaDAO.umbrales()[2]);
 		return (o.toJSONString());
 	}
 
