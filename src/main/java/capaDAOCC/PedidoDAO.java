@@ -942,7 +942,10 @@ public class PedidoDAO {
 		{
 			Statement stm = con1.createStatement();
 			// Actualizamos la tabla pedido con el numero pedido pixel y le ponemos estado al pedido = 1, indicando que ya fue enviado a la tienda.
-			String update = "update pedido set numposheader = " + numPedidoPixel + " , enviadoPixel = 1, fechaenviotienda = CURRENT_TIMESTAMP() where idpedido = "+ idpedido;
+			//Se suelta el turno de envio al confirmar: el pedido ya llego, y de
+			//aqui en adelante quien lo bloquea es enviadoPixel = 1 con numero.
+			//Ver EnvioTiendaDAO.
+			String update = "update pedido set numposheader = " + numPedidoPixel + " , enviadoPixel = 1, fechaenviotienda = CURRENT_TIMESTAMP(), envio_tienda_en_curso = NULL where idpedido = "+ idpedido;
 			logger.info(update);
 			stm.executeUpdate(update);
 			stm.close();
