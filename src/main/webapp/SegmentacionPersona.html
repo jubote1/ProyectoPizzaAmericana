@@ -115,11 +115,10 @@
 
 						<div class="sg-campo">
 							<label>Segmento</label>
-							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="NUEVO" />Nuevo</label>
-							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="ACTIVO" />Activo</label>
-							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="EN RIESGO" />En riesgo</label>
-							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="DORMIDO" />Dormido</label>
-							<label class="sg-seg"><input type="checkbox" class="sg-chk-seg" value="SIN PEDIDOS" />Sin pedidos</label>
+							<!-- Las casillas se arman con los segmentos que existan: ver
+							     sgLlenarSegmentos en el js. Antes estaban escritas aqui y
+							     un segmento nuevo quedaba sin forma de filtrarse. -->
+							<div id="sg-segmentos"><span class="sg-nota">Cargando&hellip;</span></div>
 						</div>
 
 						<div class="sg-campo">

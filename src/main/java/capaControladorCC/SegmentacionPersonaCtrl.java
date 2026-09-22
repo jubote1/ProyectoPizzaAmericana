@@ -116,6 +116,21 @@ public class SegmentacionPersonaCtrl {
 		}
 		o.put("tiendas", tiendas);
 
+		//Los segmentos que existen, para que la pantalla arme sus casillas sola.
+		//Antes estaban escritas en el HTML: crear un segmento nuevo obligaba a
+		//tocar tres archivos y, si a uno se le olvidaba este, el segmento
+		//quedaba sin forma de filtrarse.
+		final JSONArray definidos = new JSONArray();
+		for (final capaDAOCC.DefinicionSegmentoDAO.Definicion d : capaDAOCC.DefinicionSegmentoDAO.listar()) {
+			final JSONObject j = new JSONObject();
+			j.put("nombre", d.nombre);
+			j.put("descripcion", d.descripcion);
+			j.put("color", d.color);
+			j.put("activo", d.activo);
+			definidos.add(j);
+		}
+		o.put("segmentos_definidos", definidos);
+
 		final String[] u = SegmentacionPersonaDAO.umbrales();
 		o.put("dias_activo", u[0]);
 		o.put("dias_riesgo", u[1]);
