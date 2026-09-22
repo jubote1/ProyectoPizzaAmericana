@@ -81,6 +81,7 @@ function sgConsultar() {
 
 function sgPintar(d) {
 	sgLlenarTiendas(d.tiendas);
+	sgLlenarSegmentos(d.segmentos_definidos);
 
 	$('#sg-leyenda').html(
 		'Activo es haber comprado en los &uacute;ltimos <b>' + sgEsc(d.dias_activo) +
@@ -148,7 +149,32 @@ function sgFila(p) {
 	return (tr);
 }
 
+/** El color de cada segmento, tal como quedo definido. Se llena al consultar. */
+var sgColores = {};
+
+/**
+ * La etiqueta de colores de un segmento.
+ *
+ * El color sale de la definicion y no de una clase de CSS escrita a mano: si
+ * estuviera en el CSS, un segmento nuevo saldria gris hasta que alguien se
+ * acordara de tocar la hoja de estilos. Las clases sg-NUEVO y compania siguen
+ * ahi como respaldo para los cinco de siempre, por si a alguno le borran el
+ * color.
+ *
+ * El color se usa en la letra y diluido en el fondo, no como fondo lleno: son
+ * etiquetas pequenas dentro de una tabla larga, y once fondos fuertes
+ * convierten la lista en un semaforo donde ya no se lee nada.
+ */
 function sgEtiqueta(s) {
+	var color = sgColores[s];
+	if (color) {
+		var r = parseInt(color.substr(1, 2), 16);
+		var g = parseInt(color.substr(3, 2), 16);
+		var b = parseInt(color.substr(5, 2), 16);
+		return ('<span class="sg-etiqueta" style="color:' + color +
+			';background-color:rgba(' + r + ',' + g + ',' + b + ',.13);">' +
+			sgEsc(s) + '</span>');
+	}
 	var clase = 'sg-NINGUNO';
 	if (s === 'NUEVO') { clase = 'sg-NUEVO'; }
 	else if (s === 'ACTIVO') { clase = 'sg-ACTIVO'; }
@@ -193,6 +219,59 @@ function sgLlenarTiendas(lista) {
 		sel.append($('<option></option>').attr('value', lista[i].idtienda).text(lista[i].nombre));
 	}
 	sel.data('llena', true);
+}
+
+/**
+ * Las casillas de segmento se arman con los que existan de verdad.
+ *
+ * Antes estaban escritas en el HTML, y eso significaba que un segmento creado
+ * desde la pantalla de definiciones se podia clasificar pero no filtrar: esta
+ * pantalla lo descartaba en silencio. Igual que las tiendas, se llenan una sola
+ * vez para no borrar lo que el usuario acaba de marcar.
+ *
+ * Los apagados tambien se muestran: la gente que los tenia sigue teniendolos
+ * hasta la siguiente clasificacion, y hay que poder buscarla.
+ */
+function sgLlenarSegmentos(lista) {
+	var caja = $('#sg-segmentos');
+	if (!lista) {
+		return;
+	}
+	//Los colores se refrescan en cada consulta aunque las casillas no: son para
+	//pintar la tabla, no un control que el usuario pueda tener a medio llenar.
+	for (var c = 0; c < lista.length; c++) {
+		if (/^#[0-9A-Fa-f]{6}$/.test(lista[c].color || '')) {
+			sgColores[lista[c].nombre] = lista[c].color;
+		}
+	}
+	if (caja.data('llena')) {
+		return;
+	}
+	caja.empty();
+	for (var i = 0; i < lista.length; i++) {
+		var s = lista[i];
+		var etiqueta = $('<label class="sg-seg"></label>');
+		etiqueta.append($('<input type="checkbox" class="sg-chk-seg" />').attr('value', s.nombre));
+		etiqueta.append(document.createTextNode(
+			sgBonito(s.nombre) + (s.activo === 'N' ? ' (apagado)' : '')));
+		if (s.descripcion) {
+			etiqueta.attr('title', s.descripcion);
+		}
+		caja.append(etiqueta);
+	}
+	//Siempre va al final, aunque no sea una definicion: es donde cae quien no
+	//cumple ninguna, y es justo a esa gente a la que hay que poder mirarle.
+	var sin = $('<label class="sg-seg"></label>');
+	sin.append($('<input type="checkbox" class="sg-chk-seg" value="SIN CLASIFICAR" />'));
+	sin.append(document.createTextNode('Sin clasificar'));
+	caja.append(sin);
+	caja.data('llena', true);
+}
+
+/** CAMPEON -> Campeon. Los nombres se guardan en mayuscula sostenida. */
+function sgBonito(nombre) {
+	if (!nombre) { return ''; }
+	return nombre.charAt(0) + nombre.substring(1).toLowerCase();
 }
 
 function sgLimpiar() {

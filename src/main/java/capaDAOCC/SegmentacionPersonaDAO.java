@@ -49,9 +49,16 @@ public class SegmentacionPersonaDAO {
 	 */
 	public static final int TOPE_DESCARGA = 50000;
 
-	/** Los unicos segmentos que existen. Lo que no este aqui no se consulta. */
-	private static final String[] SEGMENTOS_VALIDOS = {
-		"NUEVO", "ACTIVO", "EN RIESGO", "DORMIDO", "SIN PEDIDOS" };
+	/*
+	 * Los segmentos validos YA NO ESTAN ESCRITOS AQUI.
+	 *
+	 * Desde que se pueden definir desde una pantalla, tenerlos en un arreglo
+	 * significaba que un segmento nuevo se podia crear y clasificar pero no
+	 * filtrar: esta pantalla lo habria descartado en silencio y el usuario se
+	 * habria quedado mirando una lista vacia sin saber por que. Salen de
+	 * DefinicionSegmentoDAO.nombresValidos(), que lee la tabla y, si no puede,
+	 * cae a los cinco de siempre en vez de abrir el filtro a cualquier cosa.
+	 */
 
 	// =======================================================================
 	// Lo que entra
@@ -229,15 +236,13 @@ public class SegmentacionPersonaDAO {
 		if (f.pagina < 1) {
 			f.pagina = 1;
 		}
+		final ArrayList<String> validos = DefinicionSegmentoDAO.nombresValidos();
 		final ArrayList<String> limpios = new ArrayList<String>();
 		if (f.segmentos != null) {
 			for (int i = 0; i < f.segmentos.size(); i++) {
 				final String s = f.segmentos.get(i);
-				for (int j = 0; j < SEGMENTOS_VALIDOS.length; j++) {
-					if (SEGMENTOS_VALIDOS[j].equals(s)) {
-						limpios.add(s);
-						break;
-					}
+				if (validos.contains(s)) {
+					limpios.add(s);
 				}
 			}
 		}
