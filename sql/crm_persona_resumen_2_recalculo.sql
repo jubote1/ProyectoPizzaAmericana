@@ -246,12 +246,23 @@ BEGIN
          dias_entre_pedidos = CASE WHEN pedidos > 1
               THEN GREATEST(DATEDIFF(ultimo_pedido, primer_pedido) DIV (pedidos - 1), 0)
               ELSE NULL END,
-         segmento = CASE
-              WHEN pedidos = 0 THEN 'SIN PEDIDOS'
-              WHEN DATEDIFF(CURDATE(), ultimo_pedido) <= v_activo AND pedidos = 1 THEN 'NUEVO'
-              WHEN DATEDIFF(CURDATE(), ultimo_pedido) <= v_activo THEN 'ACTIVO'
-              WHEN DATEDIFF(CURDATE(), ultimo_pedido) <= v_riesgo THEN 'EN RIESGO'
-              ELSE 'DORMIDO' END;
+         dias_sin_comprar = DATEDIFF(CURDATE(), ultimo_pedido);
+
+  /*
+   * El segmento ya no se decide aqui.
+   *
+   * Estaba escrito en este CASE, asi que crear uno nuevo -"los de ticket alto",
+   * "los que solo compran en mostrador"- obligaba a tocar el procedimiento.
+   * Ahora vive en crm.segmento_definicion y sus reglas, y esto solo lo aplica.
+   *
+   * Va DESPUES del UPDATE de arriba porque las reglas se escriben sobre
+   * dias_sin_comprar, que se acaba de calcular.
+   *
+   * Se comprobo el 2026-09-22 que da exactamente lo mismo que daba el CASE:
+   * 263.921 dormidos, 135.385 sin pedidos, 22.639 en riesgo, 21.062 activos y
+   * 7.774 nuevos, los cinco numeros iguales.
+   */
+  CALL crm.pr_clasificar_segmentos('persona_resumen_nueva');
 
   -- =========================================================================
   -- 4. Y SE CAMBIA DE NOMBRE, QUE ES LO UNICO QUE VE EL QUE ESTA LEYENDO
