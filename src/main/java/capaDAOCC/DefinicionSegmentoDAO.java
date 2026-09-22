@@ -89,6 +89,8 @@ public class DefinicionSegmentoDAO {
 		public ArrayList<Regla> reglas = new ArrayList<Regla>();
 		/** Cuanta gente tiene HOY ese segmento en persona_resumen. */
 		public int personas;
+		/** De esos, a cuantos se les puede escribir. */
+		public int contactables;
 		public double valor;
 	}
 
@@ -176,13 +178,20 @@ public class DefinicionSegmentoDAO {
 			//alguien edito una definicion y todavia no ha clasificado, el numero
 			//va a estar viejo, y por eso la pantalla avisa.
 			final HashMap<String, Integer> conteos = new HashMap<String, Integer>();
+			final HashMap<String, Integer> contactables = new HashMap<String, Integer>();
 			final HashMap<String, Double> valores = new HashMap<String, Double>();
 			final PreparedStatement psC = cn.prepareStatement(
-					"SELECT segmento, COUNT(*) personas, IFNULL(SUM(valor),0) valor"
+					"SELECT segmento, COUNT(*) personas, IFNULL(SUM(valor),0) valor,"
+					//A cuantos se les puede escribir. Va junto al conteo y no
+					//aparte porque un segmento sin gente contactable no sirve
+					//para una campana por mas grande que sea, y esas dos cifras
+					//hay que verlas al tiempo o no se entiende nada.
+					+ " IFNULL(SUM(politica_datos='S'),0) contactables"
 					+ " FROM crm.persona_resumen GROUP BY segmento");
 			final ResultSet rsC = psC.executeQuery();
 			while (rsC.next()) {
 				conteos.put(rsC.getString("segmento"), Integer.valueOf(rsC.getInt("personas")));
+				contactables.put(rsC.getString("segmento"), Integer.valueOf(rsC.getInt("contactables")));
 				valores.put(rsC.getString("segmento"), Double.valueOf(rsC.getDouble("valor")));
 			}
 			rsC.close();
@@ -191,8 +200,10 @@ public class DefinicionSegmentoDAO {
 			for (int i = 0; i < lista.size(); i++) {
 				final Definicion d = lista.get(i);
 				final Integer n = conteos.get(d.nombre);
+				final Integer c = contactables.get(d.nombre);
 				final Double v = valores.get(d.nombre);
 				d.personas = (n == null ? 0 : n.intValue());
+				d.contactables = (c == null ? 0 : c.intValue());
 				d.valor = (v == null ? 0 : v.doubleValue());
 			}
 		} catch (final Exception e) {
@@ -201,6 +212,40 @@ public class DefinicionSegmentoDAO {
 			cerrar(cn);
 		}
 		return (lista);
+	}
+
+	/**
+	 * El universo completo, para poder sacar porcentajes.
+	 *
+	 * Se consulta y no se suma lo de cada segmento: si alguien quedo en un
+	 * segmento que ya no existe, o en SIN CLASIFICAR, la suma de los segmentos
+	 * daria menos que la base y los porcentajes no cerrarian en 100.
+	 *
+	 * @return {personas, contactables, valor}
+	 */
+	public static double[] totales() {
+		final double[] t = new double[3];
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT COUNT(*) personas, IFNULL(SUM(politica_datos='S'),0) contactables,"
+					+ " IFNULL(SUM(valor),0) valor FROM crm.persona_resumen");
+			final ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				t[0] = rs.getInt("personas");
+				t[1] = rs.getInt("contactables");
+				t[2] = rs.getDouble("valor");
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("DefinicionSegmentoDAO.totales: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (t);
 	}
 
 	/** Cuanta gente quedo SIN CLASIFICAR: son los casos que a las reglas les faltan. */

@@ -15,6 +15,21 @@
 var sgUltimo = null;
 var sgPagina = 1;
 
+/*
+ * Se puede llegar aqui con ?segmento=ORO, que es como el tablero manda a ver
+ * una lista.
+ *
+ * No se puede marcar la casilla de una porque las casillas todavia no existen:
+ * se arman con la respuesta de la primera consulta. Por eso el nombre se guarda
+ * y se aplica cuando ya estan, con una bandera para que eso pase UNA sola vez y
+ * no quede consultando en circulo.
+ */
+var sgSegmentoUrl = (function () {
+	var m = window.location.search.match(/[?&]segmento=([^&]*)/);
+	return (m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '');
+})();
+var sgSegmentoAplicado = false;
+
 $(function () {
 	$('#sg-consultar').click(function () { sgPagina = 1; sgConsultar(); });
 	$('#sg-limpiar').click(sgLimpiar);
@@ -266,6 +281,17 @@ function sgLlenarSegmentos(lista) {
 	sin.append(document.createTextNode('Sin clasificar'));
 	caja.append(sin);
 	caja.data('llena', true);
+
+	//Ahora si existe la casilla que pidio la URL.
+	if (sgSegmentoUrl && !sgSegmentoAplicado) {
+		sgSegmentoAplicado = true;
+		var marcada = caja.find('.sg-chk-seg[value="' + sgSegmentoUrl.replace(/"/g, '') + '"]');
+		if (marcada.length) {
+			marcada.prop('checked', true);
+			sgPagina = 1;
+			sgConsultar();
+		}
+	}
 }
 
 /** POR RECUPERAR -> Por recuperar. Los nombres se guardan en mayuscula sostenida. */

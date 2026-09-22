@@ -99,38 +99,59 @@ UPDATE IGNORE crm.segmento_definicion SET nombre = 'ORO'          WHERE nombre =
 -- Los colores se escogieron para que se lean en blanco encima. El amarillo de
 -- la marca -#FDC806- no sirve para ORO: con letra blanca encima no se lee, y
 -- de letra sobre fondo claro tampoco. De ahi el dorado oscuro.
+--
+-- Y SIN PEDIDOS quedo en morado y no en gris, aunque gris fuera lo obvio:
+-- junto con PERDIDO son el 73% de la base, y en la cinta del tablero dos
+-- grises seguidos se ven como un solo bloque. Ademas no son lo mismo -uno
+-- nunca compro, el otro dejo de comprar-, asi que un color de otra familia
+-- dice mejor que son cosas distintas.
+--
+-- Las descripciones SI van con tilde: no son comentarios, son lo que lee
+-- mercadeo en el tablero. "un ano" en pantalla no da risa, da pena.
 -- ===========================================================================
 
 INSERT IGNORE INTO crm.segmento_definicion (nombre, descripcion, orden, color, activo) VALUES
- ('SIN PEDIDOS',   'Esta en la base pero nunca le hemos registrado una compra',   10, '#737B8A', 'S'),
- ('NUEVO',         'Compro por primera vez hace poco',                            20, '#1B4A9C', 'S'),
- ('ORO',           'Compra seguido y compro hace poco: lo mejor que tenemos',     30, '#97700F', 'S'),
- ('FIEL',          'Vuelve, y volvio hace poco',                                  40, '#16704F', 'S'),
- ('ACTIVO',        'Compro dentro de los ultimos 60 dias',                        50, '#267653', 'S'),
- ('EN RIESGO',     'Lleva entre 61 y 120 dias sin comprar',                       60, '#A85100', 'S'),
- ('POR RECUPERAR', 'Compraba seguido y lleva meses sin volver: vale perseguirlo', 70, '#B03A1A', 'S'),
- ('CASI PERDIDO',  'Lleva entre 121 dias y un ano sin comprar',                   80, '#41495A', 'S'),
- ('PERDIDO',       'Lleva mas de un ano sin comprar',                             90, '#6C7482', 'S');
+ ('SIN PEDIDOS',   'Está en la base pero nunca le hemos registrado una compra',   10, '#5D4E78', 'S'),
+ ('NUEVO',         'Compró por primera vez hace poco',                            20, '#1B4A9C', 'S'),
+ ('ORO',           'Compra seguido y compró hace poco: lo mejor que tenemos',     30, '#97700F', 'S'),
+ ('FIEL',          'Vuelve, y volvió hace poco',                                  40, '#16704F', 'S'),
+ ('ACTIVO',        'Compró dentro de los últimos 60 días',                        50, '#267653', 'S'),
+ ('EN RIESGO',     'Lleva entre 61 y 120 días sin comprar',                       60, '#A85100', 'S'),
+ ('POR RECUPERAR', 'Compraba seguido y lleva meses sin volver: vale la pena perseguirlo', 70, '#B03A1A', 'S'),
+ ('CASI PERDIDO',  'Lleva entre 121 días y un año sin comprar',                   80, '#41495A', 'S'),
+ ('PERDIDO',       'Lleva más de un año sin comprar',                             90, '#6C7482', 'S');
 
--- Y se ajusta lo que ya existia, que INSERT IGNORE no toca.
-UPDATE crm.segmento_definicion SET orden = 10, color = '#737B8A', activo = 'S',
-       descripcion = 'Esta en la base pero nunca le hemos registrado una compra'
+-- Y se ajusta lo de TODOS, porque INSERT IGNORE no toca una fila que ya exista.
+-- Van los nueve y no solo los cinco viejos: la segunda vez que se corra esto,
+-- los cuatro nuevos tambien existen ya, y sin su UPDATE se quedarian con la
+-- descripcion de la primera vez.
+UPDATE crm.segmento_definicion SET orden = 10, color = '#5D4E78', activo = 'S',
+       descripcion = 'Está en la base pero nunca le hemos registrado una compra'
  WHERE nombre = 'SIN PEDIDOS';
 UPDATE crm.segmento_definicion SET orden = 20, color = '#1B4A9C', activo = 'S',
-       descripcion = 'Compro por primera vez hace poco'
+       descripcion = 'Compró por primera vez hace poco'
  WHERE nombre = 'NUEVO';
 UPDATE crm.segmento_definicion SET orden = 30, color = '#97700F', activo = 'S',
-       descripcion = 'Compra seguido y compro hace poco: lo mejor que tenemos'
+       descripcion = 'Compra seguido y compró hace poco: lo mejor que tenemos'
  WHERE nombre = 'ORO';
 UPDATE crm.segmento_definicion SET orden = 50, color = '#267653', activo = 'S',
-       descripcion = 'Compro dentro de los ultimos 60 dias'
+       descripcion = 'Compró dentro de los últimos 60 días'
  WHERE nombre = 'ACTIVO';
 UPDATE crm.segmento_definicion SET orden = 60, color = '#A85100', activo = 'S',
-       descripcion = 'Lleva entre 61 y 120 dias sin comprar'
+       descripcion = 'Lleva entre 61 y 120 días sin comprar'
  WHERE nombre = 'EN RIESGO';
+UPDATE crm.segmento_definicion SET orden = 40, color = '#16704F', activo = 'S',
+       descripcion = 'Vuelve, y volvió hace poco'
+ WHERE nombre = 'FIEL';
+UPDATE crm.segmento_definicion SET orden = 70, color = '#B03A1A', activo = 'S',
+       descripcion = 'Compraba seguido y lleva meses sin volver: vale la pena perseguirlo'
+ WHERE nombre = 'POR RECUPERAR';
 UPDATE crm.segmento_definicion SET orden = 80, color = '#41495A', activo = 'S',
-       descripcion = 'Lleva entre 121 dias y un ano sin comprar'
+       descripcion = 'Lleva entre 121 días y un año sin comprar'
  WHERE nombre = 'CASI PERDIDO';
+UPDATE crm.segmento_definicion SET orden = 90, color = '#6C7482', activo = 'S',
+       descripcion = 'Lleva más de un año sin comprar'
+ WHERE nombre = 'PERDIDO';
 
 -- ===========================================================================
 -- 3. LAS REGLAS
