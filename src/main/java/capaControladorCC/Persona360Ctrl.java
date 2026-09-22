@@ -172,6 +172,23 @@ public class Persona360Ctrl {
 		}
 		respuesta.put("pqrs", pqrs);
 
+		//Lo que se le ha enviado por Brevo. Hasta el 2026-09-22 esto no se
+		//guardaba en ninguna parte: salian correos y WhatsApp todos los dias sin
+		//dejar rastro, asi que ante un reclamo no habia que responder.
+		final JSONArray envios = new JSONArray();
+		for (final capaDAOCC.EnvioBrevoDAO.Envio e : capaDAOCC.EnvioBrevoDAO.deLaPersona(d.idPersona)) {
+			final JSONObject o = new JSONObject();
+			o.put("canal", e.canal);
+			o.put("destino", e.destino);
+			o.put("asunto", e.asunto);
+			o.put("plantilla", e.plantilla);
+			o.put("idplantilla", Integer.valueOf(e.idPlantilla));
+			o.put("resultado", e.resultado);
+			o.put("cuando", e.cuando);
+			envios.add(o);
+		}
+		respuesta.put("envios", envios);
+
 		return (respuesta.toJSONString());
 	}
 }
