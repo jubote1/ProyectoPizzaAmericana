@@ -225,14 +225,49 @@ public class Persona360DAO {
 		Connection cn = null;
 		try {
 			cn = con.obtenerConexionBDPrincipal();
-			//La vista resuelve el alias: si se consulta por una persona que
-			//resulto ser la misma que otra, responde lo de la principal.
+
+			/*
+			 * EL ALIAS SE RESUELVE EN DOS CONSULTAS, NO DENTRO DEL WHERE.
+			 *
+			 * Antes esto era una sola consulta con
+			 *   WHERE idpersona = IFNULL((SELECT idpersona_principal ...), ?)
+			 * y tardaba CUATRO MINUTOS Y MEDIO. Medido el 2026-09-22 contra la
+			 * persona 150416: 4m39s asi, y 0,141 s con el id puesto como valor.
+			 * Dos mil veces.
+			 *
+			 * La razon: con una subconsulta ahi, MySQL no puede tratar idpersona
+			 * como una constante y deja de usar la llave primaria de crm.persona.
+			 * Recorre las 457 mil filas y evalua en CADA UNA las quince
+			 * subconsultas correlacionadas de la vista -pedidos, ofertas, PQRS,
+			 * encuestas, ruleta, puntos-. Cada subconsulta por separado responde
+			 * en milesimas; el problema nunca fue una de ellas sino cuantas veces
+			 * se corrian.
+			 *
+			 * Se nota mas en las personas con muchas filas de cliente, que son
+			 * justo las que uno quiere mirar en el CRM: la 150416 tiene 20 filas
+			 * en el central y 73 en tiendas.
+			 *
+			 * Resolviendo el alias antes, el valor llega como parametro y la
+			 * vista vuelve a responder en milesimas. Es una consulta mas, de
+			 * llave primaria, que no se siente.
+			 */
+			long idReal = idPersona;
+			final PreparedStatement psAlias = cn.prepareStatement(
+					"SELECT idpersona_principal FROM crm.persona WHERE idpersona = ?");
+			psAlias.setLong(1, idPersona);
+			final ResultSet rsAlias = psAlias.executeQuery();
+			if (rsAlias.next()) {
+				final long principal = rsAlias.getLong(1);
+				if (!rsAlias.wasNull() && principal > 0) {
+					idReal = principal;
+				}
+			}
+			rsAlias.close();
+			psAlias.close();
+
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT * FROM crm.v_persona_360 WHERE idpersona ="
-					+ " IFNULL((SELECT x.idpersona_principal FROM crm.persona x"
-					+ "          WHERE x.idpersona = ?), ?)");
-			ps.setLong(1, idPersona);
-			ps.setLong(2, idPersona);
+					"SELECT * FROM crm.v_persona_360 WHERE idpersona = ?");
+			ps.setLong(1, idReal);
 			final ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				d = new Detalle();
