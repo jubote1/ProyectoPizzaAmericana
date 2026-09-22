@@ -226,6 +226,7 @@ function p3Pintar(d) {
 	p3PintarPedidos(d.pedidos || []);
 	p3PintarOfertas(d.ofertas || []);
 	p3PintarPqrs(d.pqrs || []);
+	p3PintarEnvios(d.envios || []);
 	p3PintarCaras(d.caras || []);
 
 	$('#p3-resultado').show();
@@ -297,6 +298,37 @@ function p3PintarPqrs(pqrs) {
 		fila.append($('<td>').text(q.tipo || ''));
 		fila.append($('<td>').text(q.estado || ''));
 		fila.append($('<td>').text(q.comentario || ''));
+		cuerpo.append(fila);
+	}
+}
+
+/**
+ * Los envios de Brevo.
+ *
+ * El mensaje de "no le hemos enviado nada" dice ademas desde cuando se guarda.
+ * Sin eso, un cliente de hace anos que si recibio promociones apareceria como
+ * si nunca le hubieramos escrito, y quien mire la pantalla lo creeria.
+ */
+function p3PintarEnvios(envios) {
+	var cuerpo = $('#grid-envios tbody');
+	cuerpo.empty();
+	if (envios.length === 0) {
+		cuerpo.html(p3Vacio(6, 'No se le ha enviado nada desde que se registra (22 de septiembre de 2026).'));
+		return;
+	}
+	for (var i = 0; i < envios.length; i++) {
+		var e = envios[i];
+		var fila = $('<tr>');
+		fila.append($('<td>').text(String(e.cuando || '').substring(0, 16)));
+		fila.append($('<td>').text(e.canal === 'W' ? 'WhatsApp' : 'Correo'));
+		fila.append($('<td>').text(e.plantilla || (e.idplantilla ? '#' + e.idplantilla : '')));
+		fila.append($('<td>').text(e.asunto || ''));
+		fila.append($('<td>').text(e.destino || ''));
+		//El resultado es si BREVO lo acepto, no si llego ni si lo leyeron. Eso
+		//Brevo lo sabe y nosotros no, y prometerlo aca seria mentir.
+		fila.append($('<td>').html(e.resultado === 'ERROR'
+			? '<span class="p3-etiqueta p3-no">No salio</span>'
+			: '<span class="p3-etiqueta p3-si">Aceptado</span>'));
 		cuerpo.append(fila);
 	}
 }

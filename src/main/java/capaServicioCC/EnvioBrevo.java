@@ -76,6 +76,7 @@ public class EnvioBrevo extends HttpServlet {
                                 .map(element -> element.getAsJsonObject()).collect(Collectors.toList());
                
                         jsonResponse = SegCtrl.envioCorreoBrevo(correos, asunto, idplantilla, paramsDefault);
+                        registrarEnvio("C", correos, "email", idplantilla, asunto, request, jsonResponse);
                         response.setStatus(HttpServletResponse.SC_OK);
                     }
             	}else {
@@ -87,6 +88,7 @@ public class EnvioBrevo extends HttpServlet {
                         List<JsonObject> telefonos = StreamSupport.stream(telefonosArray.spliterator(), false)
                                 .map(element -> element.getAsJsonObject()).collect(Collectors.toList());
                         jsonResponse = SegCtrl.envioWhatsappBrevo(telefonos, asunto, idplantilla, paramsDefault);
+                        registrarEnvio("W", telefonos, "telefono", idplantilla, asunto, request, jsonResponse);
                         response.setStatus(HttpServletResponse.SC_OK);
                     	
                     }
@@ -103,6 +105,49 @@ public class EnvioBrevo extends HttpServlet {
         } finally {
             out.print(gson.toJson(jsonResponse));
             out.flush();
+        }
+    }
+
+    /**
+     * Deja constancia de a quien se le acabo de enviar.
+     *
+     * Va DESPUES del envio y no antes: lo que interesa registrar es lo que de
+     * verdad salio, y de paso se puede guardar si Brevo lo acepto o no.
+     *
+     * Se traga cualquier error. Perder la evidencia de un envio es malo; que
+     * falle el envio a tres mil personas porque el registro reviento es mucho
+     * peor, y ademas a esta altura Brevo ya lo mando.
+     *
+     * @param campo "email" o "telefono", que es como viene el destinatario
+     */
+    private void registrarEnvio(String canal, java.util.List<JsonObject> destinatarios,
+            String campo, int idplantilla, String asunto, HttpServletRequest request,
+            JsonObject respuestaBrevo) {
+        try {
+            java.util.ArrayList<capaDAOCC.EnvioBrevoDAO.Destino> lista =
+                    new java.util.ArrayList<capaDAOCC.EnvioBrevoDAO.Destino>();
+            for (JsonObject o : destinatarios) {
+                if (o == null || !o.has(campo) || o.get(campo).isJsonNull()) {
+                    continue;
+                }
+                capaDAOCC.EnvioBrevoDAO.Destino d = new capaDAOCC.EnvioBrevoDAO.Destino();
+                d.destino = o.get(campo).getAsString();
+                d.nombre = (o.has("name") && !o.get("name").isJsonNull())
+                        ? o.get("name").getAsString() : "";
+                lista.add(d);
+            }
+            boolean bien = respuestaBrevo != null && respuestaBrevo.has("success")
+                    && respuestaBrevo.get("success").getAsBoolean();
+            String detalle = null;
+            if (!bien && respuestaBrevo != null && respuestaBrevo.has("message")) {
+                detalle = respuestaBrevo.get("message").getAsString();
+            }
+            capaDAOCC.EnvioBrevoDAO.registrar(canal, lista, idplantilla, asunto,
+                    utilidadesCC.AccesoCRM.usuarioEnSesion(request),
+                    bien ? "OK" : "ERROR", detalle);
+        } catch (Exception e) {
+            org.apache.log4j.Logger.getLogger("log_file").error(
+                    "EnvioBrevo: no se pudo registrar el envio, " + e.toString());
         }
     }
 
