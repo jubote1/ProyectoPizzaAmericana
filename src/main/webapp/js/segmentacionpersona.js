@@ -268,7 +268,7 @@ function sgLlenarSegmentos(lista) {
 	caja.data('llena', true);
 }
 
-/** CAMPEON -> Campeon. Los nombres se guardan en mayuscula sostenida. */
+/** POR RECUPERAR -> Por recuperar. Los nombres se guardan en mayuscula sostenida. */
 function sgBonito(nombre) {
 	if (!nombre) { return ''; }
 	return nombre.charAt(0) + nombre.substring(1).toLowerCase();

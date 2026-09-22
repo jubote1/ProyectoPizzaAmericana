@@ -58,7 +58,8 @@ public class DefinicionSegmentoDAO {
 	 * ella dejaria la pantalla de consulta sin filtro de segmento.
 	 */
 	private static final String[] RESPALDO = {
-		"NUEVO", "ACTIVO", "EN RIESGO", "DORMIDO", "SIN PEDIDOS" };
+		"SIN PEDIDOS", "NUEVO", "ORO", "FIEL", "ACTIVO",
+		"EN RIESGO", "POR RECUPERAR", "CASI PERDIDO", "PERDIDO" };
 
 	// =======================================================================
 	// Lo que se mueve
