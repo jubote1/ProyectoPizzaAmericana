@@ -69,13 +69,23 @@ public class InsertarSolicitudConciliacion extends HttpServlet {
 		}
 		String descripcion = request.getParameter("descripcion");
 		String categoria = request.getParameter("categoria");
-		double valorAnalizar;
-		try{
-			valorAnalizar = Double.parseDouble(request.getParameter("valoranalizar"));
-		}catch(Exception e)
-		{
-			valorAnalizar = 0;
+		//Antes esto era un Double.parseDouble suelto cuyo catch dejaba el valor
+		//en CERO. O sea que escribir "150.000" no daba error: guardaba 150, mil
+		//veces menos, y escribir "150,000" guardaba cero. Ninguno de los dos
+		//avisaba. En la tabla quedaron seis solicitudes asi -135,25 por
+		//135.250; 457,5 por 457.500- y las seis siguen PENDIENTE.
+		//
+		//La regla de lectura vive en utilidadesCC.ValorDigitado, junto con la
+		//del valor final, porque resuelta aparte salio distinta en cada lado.
+		//Si no se entiende NO se guarda: es preferible que la pantalla diga
+		//"revise el valor" a que la solicitud nazca con una cifra que no es.
+		Double valorLeido = utilidadesCC.ValorDigitado.leer(request.getParameter("valoranalizar"), false);
+		if (valorLeido == null || valorLeido.doubleValue() <= 0) {
+			PrintWriter outMal = response.getWriter();
+			outMal.write("{\"respuesta\":false,\"error\":\"VALORMALO\"}");
+			return;
 		}
+		double valorAnalizar = valorLeido.doubleValue();
 		String telefono = request.getParameter("telefono");
 		PedidoCtrl pedCtrl = new PedidoCtrl();
 		SolicitudConciliacion solicitud = new SolicitudConciliacion(fechaFinal, origen, descripcion, idTienda, categoria,

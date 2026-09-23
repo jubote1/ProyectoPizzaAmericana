@@ -673,6 +673,16 @@ function enviarPedidoTienda(enviarTienda){
 								    				success: function(data){ 
 
 															resultado = data[0];
+
+															//El central puede negarse a mandar el pedido: o ya esta en la tienda,
+															//o alguien mas lo esta mandando en este mismo momento. Ver
+															//EnvioTiendaDAO. Sin esto la pantalla seguiria derecho y la persona
+															//no sabria por que no paso nada.
+															if (resultado && resultado.bloqueado)
+															{
+																alert(resultado.mensaje);
+																return;
+															}
 															var resJSON = JSON.stringify(resultado);
 															var urlTienda = resultado.url;
 															var memcodeMar = resultado.cliente.memcode;

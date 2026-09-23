@@ -33,6 +33,7 @@
             <a class="dropdown-item" href="ConsultaPedidosDomicom.html">Consulta Plataforma Domicilios</a>
             <a class="dropdown-item" href="ConsultaPedidosCRMBOT.html">Consulta Pedidos CRM BOT</a>
             <a class="dropdown-item" href="ConsultaCARGO.html">RAPPI CARGO</a>
+            <a class="dropdown-item" href="DashboardCargo.html">Dashboard Cargo</a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item" href="PQRS.html">Registrar PQRS</a>
             <a class="dropdown-item" href="ConsultaPQRS.html">Consulta PQRS</a>
@@ -48,6 +49,7 @@
             <a class="dropdown-item" href="ConsultaEncuestaMercadeo.html">Encuestas de Mercadeo (POS)</a>
             <a class="dropdown-item" href="DispersionPremiosRuleta.html">Dispersión Premios Ruleta</a>
             <a class="dropdown-item" href="NovedadesBiometria.html">Novedades de Biometría</a>
+            <a class="dropdown-item" href="DesempenoDomiciliario.html">Desempeño de Domiciliarios</a>
             <a class="dropdown-item" href="RevisionReversaRedencion.html">Revisión Devolución de Puntos</a>
             <a class="dropdown-item" href="EstadosHistorialPedido.html">Historial de Estado de un Pedido</a>
             <a class="dropdown-item" href="ConsultaSolicitudFacturaElectronica.html">Consultar Solicitudes Fact Electrónicas</a>
@@ -78,6 +80,10 @@
             <a class="dropdown-item" href="mapa.jsp">Consultar Ubicacion Domiciliario</a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item" href="ModificarGeneralPedido.html">Modificación General Pedido</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="Rol.html">Roles de Seguridad</a>
+            <a class="dropdown-item" href="AsignarPantallasRol.html">Asignar Pantallas a Rol</a>
+            <a class="dropdown-item" href="AsignarRolUsuario.html">Asignar Rol a Usuario</a>
           </div>
         </li>
 
@@ -94,8 +100,22 @@
             <a class="dropdown-item" href="segmentacionCliente.html">Segmentacion Cliente</a>
             <a class="dropdown-item" href="ConciliacionQRDATAFONO.html">Ingresar Solicitud Conciliacion</a>
             <a class="dropdown-item" href="ConsultarConciliacionQRDATAFONO.html">Consultar Solicitudes Conciliacion</a>
-            <a class="dropdown-item" href="ConsultaVentasAsesor.html">Consulta Ventas Asesor</a>  
+            <a class="dropdown-item" href="ConsultaVentasAsesor.html">Consulta Ventas Asesor</a>
+            <a class="dropdown-item" href="VentaIntegral.html">Venta Integral</a>
+            <a class="dropdown-item" href="VentaIntegralCategorias.html">Venta Integral - Categorias</a>
           </div>
+        </li>
+
+        <!-- El CRM es un area aparte, con su propio menu: lo de clientes estaba
+             repartido en los tres modulos y quien atiende a un cliente tenia que
+             saberse en cual estaba cada cosa.
+
+             La opcion arranca ESCONDIDA y solo aparece si el usuario tiene
+             acceso_crm. Esconderla no es lo que protege -los servicios validan
+             por su cuenta-, pero mostrar una opcion que va a rebotar es
+             maltratar a quien la oprime. -->
+        <li class="nav-item" id="opcion-crm" style="display:none;">
+          <a class="nav-link font-weight-bold" href="CRM.html" style="color:#FDC806;">CRM</a>
         </li>
       </ul>
 
@@ -133,3 +153,26 @@
 
 
 
+
+<script>
+  // La opcion de CRM solo se le muestra a quien tiene acceso. Lo que de verdad
+  // protege son los servicios, que validan por su cuenta; esto es para no
+  // mostrarle a nadie una puerta que se le va a cerrar en la cara.
+  $.ajax({
+    url: 'ValidarAccesoCRM',
+    dataType: 'json',
+    success: function (d) {
+      if (d && d.acceso) {
+        $('#opcion-crm').show();
+      }
+    }
+  });
+
+  // Se esta fuera del area: si habia marca de CRM se borra, para que las
+  // pantallas compartidas vuelvan a mostrar este menu y no el del area.
+  try {
+    sessionStorage.removeItem('areaCRM');
+  } catch (e) {
+    // Almacenamiento bloqueado: no pasa nada, el menu por defecto es este.
+  }
+</script>

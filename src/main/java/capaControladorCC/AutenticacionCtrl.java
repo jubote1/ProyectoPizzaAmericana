@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import capaDAOCC.AuthKunoDAO;
 import capaDAOCC.PermisosGrupoDAO;
 import capaDAOCC.UsuarioDAO;
+import capaDAOCC.UsuarioRolDAO;
 import capaModeloCC.PermisosGrupo;
 import capaModeloCC.Usuario;
 
@@ -44,6 +45,20 @@ public class AutenticacionCtrl {
 		Usuario usu = new Usuario(usuario, contrasena, "");
 		boolean resultado = UsuarioDAO.validarUsuario(usu);
 		return(resultado);
+	}
+
+	/**
+	 * Arma el objeto Usuario completo (id, nombre largo, plataforma y roles) que
+	 * GetIngresarAplicacion deja en sesion tras un login exitoso. Antes la
+	 * sesion solo guardaba el nombre de usuario -ni el id ni el rol quedaban
+	 * disponibles para SeguridadFilter sin volver a consultar la base en cada
+	 * request.
+	 */
+	public Usuario obtenerUsuarioParaSesion(String nombreUsuario) {
+		Usuario usu = new Usuario(nombreUsuario);
+		UsuarioDAO.validarAutenticacion(usu);
+		usu.setRoles(UsuarioRolDAO.listarNombresRolPorUsuario(usu.getId()));
+		return (usu);
 	}
 	
 	public String autenticarUsuarioInventario(String usuario, String contrasena){
@@ -98,6 +113,11 @@ public class AutenticacionCtrl {
 		Respuesta.put("nombreusuario", usu.getNombreLargo());
 		Respuesta.put("plataforma", usu.getPlataforma());
 		Respuesta.put("usu", usu.getNombreUsuario());
+		JSONArray rolesJSON = new JSONArray();
+		for (String nombreRol : UsuarioRolDAO.listarNombresRolPorUsuario(usu.getId())) {
+			rolesJSON.add(nombreRol);
+		}
+		Respuesta.put("roles", rolesJSON);
 		listJSON.add(Respuesta);
 		return(listJSON.toJSONString());
 	}

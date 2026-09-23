@@ -29,7 +29,6 @@
 	<body>
 
 		<div id="cargarMenu"></div>
-		<label id="usuariologin" style="color:black;"></label></p>
 		<script type="text/javascript">
 			
 			var getImport; 
@@ -51,23 +50,35 @@
 						    
 				} 
 			});
+						//Si se llego desde el area de CRM se conserva SU menu. Salirse del
+			//area sin querer, al abrir una pantalla, desorienta: uno cree que
+			//se equivoco de sitio. El area marca su paso en sessionStorage.
+			function menuDelArea(porDefecto) {
+				try {
+					if (sessionStorage.getItem('areaCRM') === 'S') {
+						return ('MenuCRM.html');
+					}
+				} catch (e) {
+					//Navegador con el almacenamiento bloqueado: menu de siempre.
+				}
+				return (porDefecto);
+			}
 			switch(respuesta)
 		    		{
 		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html");
+		    				$('#cargarMenu').load(menuDelArea("Menu.html"), function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				break;
 		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html");
+		    				$('#cargarMenu').load(menuDelArea("MenuAdm.html"), function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				break;
 		    			case 'OKP':
-		    				$('#cargarMenu').load("MenuPQRS.html");
+		    				$('#cargarMenu').load(menuDelArea("MenuPQRS.html"), function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 		    				break;
 		    			default:
 		    				location.href = server +"Index.html";
 		    				break;
 		    		}
 		    		
-			    	$('#usuariologin').html(usuario);
 		</script>
 
 		<div class="container">

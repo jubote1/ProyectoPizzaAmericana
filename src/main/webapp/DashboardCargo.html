@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<title>Dashboard Cargo - Pizza Americana</title>
+<meta charset="utf-8" />
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+<link rel="stylesheet" href="css/consultacargo.css?v=2">
+
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
+<link rel="icon" href="images/favicon-pz.ico" type="image/x-icon">
+
+</head>
+<body>
+	<div id="cargarMenu"></div>
+
+	<main class="layout">
+
+		<!-- ================= TOPBAR ================= -->
+		<header class="topbar">
+			<div class="brand">
+				<span class="logo">DC</span>
+				<div class="brand-txt">
+					<h1><i class="fas fa-chart-line"></i> Dashboard · Rappi Cargo</h1>
+					<p>Cumplimiento, tiempos de entrega y asignaciones canceladas</p>
+				</div>
+			</div>
+			<div class="user-chip">
+				<span class="dot"></span> <span>Usuario en sesión: <b id="usuarioenpantalla"></b></span>
+			</div>
+		</header>
+
+		<!-- ================= FILTROS ================= -->
+		<section class="card-info">
+			<div class="card-head">
+				<h2><i class="fas fa-filter"></i> Filtros</h2>
+			</div>
+			<form>
+				<div class="filtros-grid">
+					<label class="field"><span>Fecha Desde</span>
+						<input type="text" id="fechadesde" name="fechadesde" placeholder="Fecha Desde">
+					</label>
+					<label class="field"><span>Fecha Hasta</span>
+						<input type="text" id="fechahasta" name="fechahasta" placeholder="Fecha Hasta">
+					</label>
+					<label class="field"><span>Tienda</span>
+						<select id="selectTiendas"></select>
+					</label>
+					<div class="field field-action">
+						<span>&nbsp;</span>
+						<button type="button" class="btn btn-primary" onclick="consultarDashboard()">
+							<i class="fas fa-search"></i> Consultar
+						</button>
+					</div>
+				</div>
+			</form>
+		</section>
+
+		<!-- ================= KPIs ================= -->
+		<section class="card-info">
+			<div class="card-head">
+				<h2><i class="fas fa-tachometer-alt"></i> Resumen del periodo</h2>
+				<span class="legend" id="lblMetaMinutos"></span>
+			</div>
+			<div class="cg-kpi-grid" id="kpiGrid">
+				<div class="cg-kpi-card cg-neutral">
+					<div class="cg-kpi-label">Pedidos por Cargo</div>
+					<div class="cg-kpi-value" id="kpiTotal">-</div>
+				</div>
+				<div class="cg-kpi-card cg-ok">
+					<div class="cg-kpi-label">Cumplidos</div>
+					<div class="cg-kpi-value" id="kpiCumplidos">-</div>
+				</div>
+				<div class="cg-kpi-card cg-warn">
+					<div class="cg-kpi-label">Fuera de tiempo</div>
+					<div class="cg-kpi-value" id="kpiFueraDeTiempo">-</div>
+				</div>
+				<div class="cg-kpi-card">
+					<div class="cg-kpi-label">Cancelados</div>
+					<div class="cg-kpi-value" id="kpiCancelados">-</div>
+				</div>
+				<div class="cg-kpi-card cg-neutral">
+					<div class="cg-kpi-label">Sin cierre</div>
+					<div class="cg-kpi-value" id="kpiSinCierre">-</div>
+				</div>
+				<div class="cg-kpi-card cg-ok">
+					<div class="cg-kpi-label">% Cumplimiento</div>
+					<div class="cg-kpi-value" id="kpiCumplimiento">-</div>
+				</div>
+				<div class="cg-kpi-card cg-neutral">
+					<div class="cg-kpi-label">Tiempo promedio total</div>
+					<div class="cg-kpi-value" id="kpiTiempoTotal">-</div>
+				</div>
+				<div class="cg-kpi-card cg-warn">
+					<div class="cg-kpi-label">Asignaciones canceladas</div>
+					<div class="cg-kpi-value" id="kpiAsigCanceladas">-</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ================= RANKING POR TIENDA ================= -->
+		<section class="card">
+			<div class="card-head">
+				<h2><i class="fas fa-store"></i> Cumplimiento por tienda</h2>
+				<span class="legend">De mejor a peor manejo de Cargo</span>
+			</div>
+			<div class="table-wrap">
+				<table id="grid-por-tienda" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+					<thead>
+						<tr>
+							<th>Tienda</th>
+							<th>Pedidos</th>
+							<th>Cumplidos</th>
+							<th>Fuera de tiempo</th>
+							<th>Cancelados</th>
+							<th>Sin cierre</th>
+							<th>% Cumplimiento</th>
+							<th>Tiempo promedio total</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+
+		<!-- ================= DETALLE DE PEDIDOS ================= -->
+		<section class="card">
+			<div class="card-head">
+				<h2><i class="fas fa-list-alt"></i> Pedidos llevados por Cargo</h2>
+				<span class="legend" id="lblMetaMinutosPedidos"></span>
+			</div>
+			<div class="table-wrap tall">
+				<table id="grid-pedidos-cargo" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+					<thead>
+						<tr>
+							<th>Pedido</th>
+							<th>Tienda</th>
+							<th>Pedido tienda</th>
+							<th>Fecha pedido</th>
+							<th>Tomado</th>
+							<th>Entregado</th>
+							<th>Estado</th>
+							<th>Tiempo total</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+
+		<!-- ================= ASIGNACIONES CANCELADAS ================= -->
+		<section class="card">
+			<div class="card-head">
+				<h2><i class="fas fa-ban"></i> Asignaciones a Cargo canceladas</h2>
+				<span class="legend"><i class="sw-warn"></i> Pedidos que se alcanzaron a asignar a Cargo pero la asignación no quedó en firme</span>
+			</div>
+			<div class="table-wrap">
+				<table id="grid-asignaciones-canceladas" class="tbl table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+					<thead>
+						<tr>
+							<th>Pedido</th>
+							<th>Tienda</th>
+							<th>Pedido tienda</th>
+							<th>Fecha pedido</th>
+							<th>Proveedor</th>
+							<th>Último estado Cargo</th>
+							<th>Asignado</th>
+							<th>Cancelado</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+			<div class="advertencia">
+				Un pedido aparece aquí cuando Cargo tiene registrado un evento de asignación para él, pero el pedido
+				ya no tiene el domicilio marcado como tercerizado: la asignación se canceló o se revirtió antes de completarse.
+			</div>
+		</section>
+
+	</main>
+
+	<script src="js/dashboardcargo.js?v=1" type="text/javascript"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechadesde").datepicker($.datepicker.regional["es"]);
+		$("#fechahasta").datepicker($.datepicker.regional["es"]);
+	</script>
+</body>
+
+</html>

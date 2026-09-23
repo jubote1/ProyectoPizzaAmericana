@@ -121,14 +121,18 @@ function actualizarNombreUsuario(u) {
 
 switch (respuesta) {
 	case 'OK':
-		$('#cargarMenu').load("Menu.html", function() {
-			actualizarNombreUsuario(usuario);
+
+		$('#cargarMenu').load("Menu.html", function () {
+			mostrarUsuarioEnPantalla(usuario);
+
 		});
 		break;
 
 	case 'OKA':
 		$('#cargarMenu').load("MenuAdm.html", function () {
-			actualizarNombreUsuario(usuario);
+
+			mostrarUsuarioEnPantalla(usuario);
+
 		});
 		break;
 
@@ -7045,3 +7049,21 @@ function fechaVenceLegible(fecha) {
     }
     return dia + ' de ' + meses[mes - 1];
 }
+
+/**
+ * Pone el nombre del usuario donde va.
+ *
+ * Son dos sitios: el de la barra del menu -que Menu.html trae con
+ * id usuariologin- y el de la barra de esta pantalla. Antes los dos usaban el
+ * MISMO id, asi que jQuery solo llenaba el primero que encontraba y el otro
+ * quedaba vacio; ahora el de la pantalla es usuarioenpantalla.
+ *
+ * Se llama desde el callback del load y no antes: el menu entra de forma
+ * asincrona, y llenarlo antes de que exista era lo que dejaba el nombre por
+ * fuera de la barra en el resto de las pantallas.
+ */
+function mostrarUsuarioEnPantalla(nombre) {
+    $('#cargarMenu').find('#usuariologin').html(nombre);
+    $('#usuarioenpantalla').html(nombre);
+}
+
