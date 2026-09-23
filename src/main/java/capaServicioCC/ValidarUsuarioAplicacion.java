@@ -38,30 +38,28 @@ public class ValidarUsuarioAplicacion extends HttpServlet {
 	 * y OK si es un usuario normal
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-				response.addHeader("Access-Control-Allow-Origin", "*");
-				Logger logger = Logger.getLogger("log_file");
-				HttpSession miSesion = (HttpSession) request.getSession();
-				Usuario usuario = (Usuario) miSesion.getAttribute("usuario");
-				String resultado ="" ;
-				//Al no existir el usuario logueado es posible que produza una excepcion
-				try
-				{
-					String user = usuario.getNombreUsuario();
-					logger.info("Validando validez de autenticacion de usuario " + user);
-					//Debemos de validar la existencia del usuario
-					AutenticacionCtrl aut = new AutenticacionCtrl();
-					resultado = aut.validarAutenticacion(user);
-					logger.info("resultado de validación de autenticación de usuario " + user + " " + resultado);
-				}catch(Exception e)
-				{
-					logger.error(e.toString());
-					
-				}
-		        PrintWriter out = response.getWriter();
-		        out.write(resultado);
-		        
-		        	
+		response.addHeader("Access-Control-Allow-Origin", "*");
+		response.setContentType("application/json;charset=UTF-8");
+		Logger logger = Logger.getLogger("log_file");
+		HttpSession miSesion = request.getSession(false);
+		Usuario usuario = (miSesion != null) ? (Usuario) miSesion.getAttribute("usuario") : null;
+		String resultado = "[{\"respuesta\":\"NOK\",\"nombreusuario\":\"\",\"plataforma\":\"\"}]";
+
+		try {
+			if (usuario != null && usuario.getNombreUsuario() != null) {
+				String user = usuario.getNombreUsuario();
+				logger.info("Validando validez de autenticacion de usuario " + user);
+				AutenticacionCtrl aut = new AutenticacionCtrl();
+				resultado = aut.validarAutenticacion(user);
+				logger.info("resultado de validación de autenticación de usuario " + user + " " + resultado);
+			} else {
+				logger.info("No hay usuario autenticado en la sesión actual.");
+			}
+		} catch(Exception e) {
+			logger.error("Error validando usuario en aplicación: " + e.toString(), e);
+		}
+		PrintWriter out = response.getWriter();
+		out.write(resultado);
 	}
 
 	/**

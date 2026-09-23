@@ -109,9 +109,9 @@ function actualizarNombreUsuario(u) {
 	}
 	if (!u) return;
 	usuario = u;
-	$('#usuariologintopbar, #usuariologin, .user-chip b, label#usuariologin').html(u);
+	$('#usuarioenpantalla, #usuariologintopbar, #usuariologin, .user-chip b, label#usuariologin').html(u);
 	$('#cargarMenu').find('#usuariologin').html(u);
-	var topbarUser = document.getElementById('usuariologintopbar');
+	var topbarUser = document.getElementById('usuarioenpantalla') || document.getElementById('usuariologintopbar');
 	if (topbarUser) topbarUser.textContent = u;
 	var userChips = document.querySelectorAll('.user-chip b');
 	for (var i = 0; i < userChips.length; i++) {
@@ -176,6 +176,25 @@ $(document).ready(function() {
 		if ($modal.length) {
 			$modal.modal('hide');
 		}
+	});
+
+	// Sincronización y marcado instantáneo en modal de agregar domicilio
+	$(document).on('click', '.radio-card-domicilio', function(e) {
+		seleccionarOpcionDomicilio(this, e);
+	});
+
+	$(document).on('change', 'input[name="costodomicilio"]', function() {
+		$('.radio-card-domicilio').removeClass('active');
+		if (this.checked) {
+			$(this).closest('.radio-card-domicilio').addClass('active');
+		}
+	});
+
+	$('#modalCostoDomicilio').on('show.bs.modal shown.bs.modal', function() {
+		$('#modalCostoDomicilio .radio-card-domicilio').each(function() {
+			var isChecked = $(this).find('input[type="radio"]').is(':checked');
+			$(this).toggleClass('active', isChecked);
+		});
 	});
 
 			
@@ -312,11 +331,15 @@ $("#fechapedido").change(function(){
             {
                 "mData": "accion",
                 className: "center",
+                "bSortable": false,
+                "orderable": false,
                 defaultContent: '<input type="button" class="btn btn-default btn-xs" onclick="eliminarDetallePedido()" value="Eliminar"></button>'
             },
             {
                 "mData": "accion2",
                 className: "center",
+                "bSortable": false,
+                "orderable": false,
                 defaultContent: '<input type="button" class="btn btn-default btn-xs" onclick="duplicarDetallePedido()" value="Duplicar"></button>'
             }
         ],
@@ -6505,23 +6528,52 @@ function fijarCoordenadasManualmente(lat, lon)
     longitud = lon;
 }
 
+function seleccionarOpcionDomicilio(el, e) {
+    if (!el) return;
+    var radio = el.querySelector('input[type="radio"]');
+    if (!radio) return;
+
+    var evt = e || window.event;
+    if (evt && evt.target === radio) {
+        // el radio ya fue marcado por clic directo
+    } else {
+        radio.checked = true;
+    }
+
+    var form = el.closest('form') || el.parentNode;
+    if (form) {
+        var cards = form.querySelectorAll('.radio-card-domicilio');
+        for (var i = 0; i < cards.length; i++) {
+            cards[i].classList.remove('active');
+        }
+    }
+    el.classList.add('active');
+    $(radio).trigger('change');
+}
+
 function validarCostoDomicilio()
 {
+    var valorSeleccionado = $("input:radio[name=costodomicilio]:checked").val();
+    if (valorSeleccionado === undefined || valorSeleccionado === null || valorSeleccionado === "")
+    {
+        alert("Por favor seleccione una opción de domicilio (o 'No agregar') para continuar.");
+        return;
+    }
+
     var indicador = false;
     var codProdDomi = 0;
     var idDetallePedDomi = 0;
-    if ($("input:radio[name=costodomicilio]:checked").val() == "0")
+    if (valorSeleccionado == "0")
     {
         $('#modalCostoDomicilio').modal('hide');
-    }else if ($("input:radio[name=costodomicilio]:checked").val() == "246")
+    }else if (valorSeleccionado == "246")
     {
         indicador = true;
         codProdDomi = 246;
-    }else if ($("input:radio[name=costodomicilio]:checked").val() == "247")
+    }else if (valorSeleccionado == "247")
     {
         indicador = true;
         codProdDomi = 247;
-
     }
     if(indicador)
     {
