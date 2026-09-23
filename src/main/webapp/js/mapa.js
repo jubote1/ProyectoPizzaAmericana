@@ -668,9 +668,13 @@ $(document).ready(function() {
 		let finalVelocidad = velocidad;
 		let finalPedidosActivos = parseInt(pedidos_activos || 0, 10);
 		let finalPedidosDetalle = pedidos_detalle;
+		let finalIdTienda = parseInt(idtienda, 10) || 0;
 
 		if (mapaConductores.has(claveStr)) {
 			const regExistente = mapaConductores.get(claveStr);
+			if ((!finalIdTienda || finalIdTienda === 0) && regExistente.idtienda) {
+				finalIdTienda = parseInt(regExistente.idtienda, 10) || 0;
+			}
 			if (!finalTipo) finalTipo = regExistente.tipo_repartidor;
 			if (!finalEmpresa) finalEmpresa = regExistente.empresa_temporal;
 			if (finalBiometria === undefined) finalBiometria = regExistente.en_turno_biometria;
@@ -685,13 +689,13 @@ $(document).ready(function() {
 		if (finalVelocidad === null || finalVelocidad === undefined) finalVelocidad = 0;
 
 		// Cálculo dinámico y certero de geocerca contra la tienda asignada y pedidos activos
-		const finalEstado = determinarEstadoPorTiendaAsignada(lat, lng, idtienda, finalPedidosActivos);
+		const finalEstado = determinarEstadoPorTiendaAsignada(lat, lng, finalIdTienda, finalPedidosActivos);
 
 		// Detección de inactividad (> 2 horas sin señal GPS)
 		const minutosInactividad = calcularMinutosDesdeUltimoReporte(fecha_hora);
 		const esInactivo = (minutosInactividad > 120);
 
-		const nombreTienda = tiendaMap[idtienda] || (idtienda ? `Tienda ${idtienda}` : "Tienda desconocida");
+		const nombreTienda = tiendaMap[finalIdTienda] || (finalIdTienda ? `Tienda ${finalIdTienda}` : "Tienda desconocida");
 		const horaSolo = fecha_hora ? (fecha_hora.includes(' ') ? fecha_hora.split(' ')[1] : fecha_hora) : "--:--:--";
 		const badgeTipoHtml = generarBadgeTipoRepartidor(finalTipo, finalEmpresa);
 		const badgeEstadoHtml = generarBadgeEstadoOperativo(finalEstado, finalPedidosActivos);
@@ -727,7 +731,7 @@ $(document).ready(function() {
 			reg.longitud = lng;
 			reg.fecha_hora = fecha_hora;
 			reg.nombre_usuario = nombre_usuario;
-			reg.idtienda = idtienda;
+			reg.idtienda = finalIdTienda;
 			reg.nombreTienda = nombreTienda;
 			reg.tipo_repartidor = finalTipo;
 			reg.empresa_temporal = finalEmpresa;
@@ -1316,7 +1320,7 @@ $(document).ready(function() {
 	}
 
 	// Variables para ajuste de ruta a las calles reales (OSRM Map Matching / Routing)
-	let rutaAjustadaACalles = false;
+	let rutaAjustadaACalles = true;
 	let latLngsDirectos = [];
 	let latLngsCalles = [];
 	let puntosActualesDetalle = [];
@@ -1543,15 +1547,16 @@ $(document).ready(function() {
 		markerMotoSimulacion = null;
 		markerInicio = null;
 		markerFin = null;
-		rutaAjustadaACalles = false;
+		rutaAjustadaACalles = true;
+		despachoActivoId = null;
 		latLngsDirectos = [];
 		latLngsCalles = [];
 		puntosActualesDetalle = [];
 		$('#btnAjustarCalles')
 			.prop('disabled', false)
-			.removeClass('btn-primary btn-success btn-outline-info')
-			.addClass('btn-outline-primary')
-			.html('<i class="fas fa-road mr-1"></i> Ajustar a Calles');
+			.removeClass('btn-primary btn-outline-primary btn-outline-info')
+			.addClass('btn-success')
+			.html('<i class="fas fa-road mr-1"></i> Calles (Activo)');
 	}
 
 	function cargarDetalleHistorico(datos, usuarioNombre, tiendaNombre, fechaDia) {
@@ -1725,7 +1730,7 @@ $(document).ready(function() {
 					}
 
 					htmlCards += `
-						<div class="card-despacho-item mb-2 p-2 border rounded shadow-sm">
+						<div class="card-despacho-item mb-2 p-2 border rounded shadow-sm" id="card-despacho-${despacho.despacho_id}" data-despacho-id="${despacho.despacho_id}">
 							<div class="d-flex align-items-center justify-content-between mb-1">
 								<strong class="text-primary small"><i class="fas fa-shipping-fast mr-1"></i>Despacho #${despacho.despacho_id} ${alertaDespacho}</strong>
 								<span class="badge badge-light border small text-muted">${despacho.tienda}</span>
@@ -1733,6 +1738,16 @@ $(document).ready(function() {
 							<div class="d-flex align-items-center justify-content-between text-muted small mb-2">
 								<span><i class="far fa-clock mr-1 text-info"></i>Salida: <b>${String(despacho.hora_salida).replace('.0', '')}</b></span>
 								${estadoRegreso}
+							</div>
+							<div class="d-flex align-items-center justify-content-between mb-2">
+								<button type="button" class="btn btn-sm btn-outline-primary btn-ver-ruta-despacho" 
+										data-id="${despacho.despacho_id}" 
+										data-salida="${despacho.hora_salida || ''}" 
+										data-regreso="${despacho.hora_regreso || ''}"
+										title="Trazar y ver en el mapa únicamente el recorrido de este despacho">
+									<i class="fas fa-route mr-1"></i> Ver Ruta
+								</button>
+								<span class="text-muted small font-weight-bold"><i class="fas fa-box mr-1 text-secondary"></i>${despacho.pedidos.length} pedido(s)</span>
 							</div>
 							<div class="pedidos-despacho-lista">
 								${pedidosHtml}
@@ -2015,11 +2030,11 @@ $(document).ready(function() {
 		latLngsDirectos = bloquesDirectos.length === 1 ? bloquesDirectos[0] : bloquesDirectos;
 		latLngsCalles = [];
 		puntosActualesDetalle = puntosLimpios;
-		rutaAjustadaACalles = false;
+		rutaAjustadaACalles = true;
 		$('#btnAjustarCalles')
-			.removeClass('btn-primary btn-success')
-			.addClass('btn-outline-primary')
-			.html('<i class="fas fa-road mr-1"></i> Ajustar a Calles');
+			.removeClass('btn-outline-primary btn-primary')
+			.addClass('btn-success')
+			.html('<i class="fas fa-road mr-1"></i> Calles (Activo)');
 
 		polylineGlow = L.polyline(latLngsDirectos, {
 			color: '#60a5fa',
@@ -2067,8 +2082,10 @@ $(document).ready(function() {
 			polylinesSaltos.forEach(p => p.addTo(map_detalle));
 		}
 
-		// Iniciar de forma automática e inmediata el trazado sobre las calles de cada bloque continuo
-		traerRutaAjustadaACalles(puntosLimpios);
+		// Iniciar trazado de calles únicamente si el usuario tiene el modo activo explícitamente
+		if (rutaAjustadaACalles) {
+			traerRutaAjustadaACalles(puntosLimpios);
+		}
 
 		// Ajustar vista del mapa a los límites de la ruta
 		try {
@@ -2334,6 +2351,121 @@ $(document).ready(function() {
 	});
 
 	$('#btnRestablecerHoras').click(function() {
+		restablecerVistaCompletaDespachos();
+	});
+
+	let despachoActivoId = null;
+
+	$(document).on('click', '.btn-ver-ruta-despacho', function(e) {
+		e.stopPropagation();
+		const dId = $(this).data('id');
+		const strSalida = $(this).data('salida');
+		const strRegreso = $(this).data('regreso');
+
+		// Si ya está activo este despacho, al darle clic de nuevo se restablece la vista completa del día
+		if (despachoActivoId === dId) {
+			restablecerVistaCompletaDespachos();
+			return;
+		}
+
+		filtrarRecorridoPorDespacho(dId, strSalida, strRegreso);
+	});
+
+	function filtrarRecorridoPorDespacho(dId, strSalida, strRegreso) {
+		if (!puntosHistorico || puntosHistorico.length === 0) {
+			Swal.fire({ icon: 'info', text: 'No hay puntos GPS registrados para este día.' });
+			return;
+		}
+
+		if (!strSalida) {
+			Swal.fire({ icon: 'warning', text: 'El despacho no cuenta con hora de salida registrada.' });
+			return;
+		}
+
+		// Obtener timestamp de salida (con holgura de 1 min antes)
+		let tSalidaMs = NaN;
+		let hSalidaCorta = "00:00";
+		if (String(strSalida).includes(' ')) {
+			const partesS = String(strSalida).split(' ');
+			hSalidaCorta = partesS[1].substring(0, 5);
+			tSalidaMs = new Date(String(strSalida).replace('.0', '').replace(' ', 'T')).getTime() - 60000;
+		} else {
+			hSalidaCorta = String(strSalida).substring(0, 5);
+			const fBase = puntosHistorico[0].fecha.split(' ')[0];
+			tSalidaMs = new Date(`${fBase}T${strSalida}`).getTime() - 60000;
+		}
+
+		// Obtener timestamp de regreso (con holgura de 1 min después)
+		let tRegresoMs = NaN;
+		let hRegresoCorta = "23:59";
+		if (strRegreso && String(strRegreso) !== 'null') {
+			if (String(strRegreso).includes(' ')) {
+				const partesR = String(strRegreso).split(' ');
+				hRegresoCorta = partesR[1].substring(0, 5);
+				tRegresoMs = new Date(String(strRegreso).replace('.0', '').replace(' ', 'T')).getTime() + 60000;
+			} else {
+				hRegresoCorta = String(strRegreso).substring(0, 5);
+				const fBase = puntosHistorico[0].fecha.split(' ')[0];
+				tRegresoMs = new Date(`${fBase}T${strRegreso}`).getTime() + 60000;
+			}
+		} else {
+			// Si no tiene hora de regreso registrada, tomar 90 minutos posteriores a la salida
+			tRegresoMs = tSalidaMs + (90 * 60 * 1000);
+			const dTmp = new Date(tRegresoMs);
+			hRegresoCorta = `${String(dTmp.getHours()).padStart(2, '0')}:${String(dTmp.getMinutes()).padStart(2, '0')}`;
+		}
+
+		// Filtrar puntos satelitales dentro del lapso de este despacho
+		const puntosDespacho = puntosHistorico.filter(p => {
+			if (!p.fecha) return false;
+			const tPt = new Date(p.fecha.replace(' ', 'T')).getTime();
+			return !isNaN(tPt) && tPt >= tSalidaMs && tPt <= tRegresoMs;
+		});
+
+		if (puntosDespacho.length === 0) {
+			Swal.fire({
+				icon: 'info',
+				title: `Despacho #${dId}`,
+				text: `No se encontraron puntos satelitales entre las ${hSalidaCorta} y las ${hRegresoCorta}. Es posible que el dispositivo haya estado fuera de cobertura o apagado durante este despacho.`
+			});
+			return;
+		}
+
+		despachoActivoId = dId;
+		puntosFiltrados = puntosDespacho;
+
+		// Actualizar aspecto de las tarjetas de despacho
+		$('.card-despacho-item').removeClass('despacho-activo');
+		$(`#card-despacho-${dId}`).addClass('despacho-activo');
+		$('.btn-ver-ruta-despacho')
+			.removeClass('btn-success')
+			.addClass('btn-outline-primary')
+			.html('<i class="fas fa-route mr-1"></i> Ver Ruta');
+		$(`#card-despacho-${dId} .btn-ver-ruta-despacho`)
+			.removeClass('btn-outline-primary')
+			.addClass('btn-success')
+			.html('<i class="fas fa-check-circle mr-1"></i> Viendo Ruta');
+
+		// Actualizar inputs de tiempo y resumen
+		$('#filtroHoraDesde').val(hSalidaCorta);
+		$('#filtroHoraHasta').val(hRegresoCorta);
+		$('#resumenFiltroHoras').html(`
+			<span class="badge badge-primary mr-1"><i class="fas fa-shipping-fast mr-1"></i>Despacho #${dId}</span>
+			Tramo: <b>${hSalidaCorta} a ${hRegresoCorta}</b> (${puntosDespacho.length} puntos)
+		`);
+
+		// Trazar únicamente el recorrido de este despacho en el mapa
+		renderizarRecorrido(puntosFiltrados);
+	}
+
+	function restablecerVistaCompletaDespachos() {
+		despachoActivoId = null;
+		$('.card-despacho-item').removeClass('despacho-activo');
+		$('.btn-ver-ruta-despacho')
+			.removeClass('btn-success')
+			.addClass('btn-outline-primary')
+			.html('<i class="fas fa-route mr-1"></i> Ver Ruta');
+
 		puntosFiltrados = [...puntosHistorico];
 		if (puntosHistorico.length) {
 			const h1 = puntosHistorico[0].fecha.split(' ')[1]?.substring(0, 5) || "00:00";
@@ -2343,7 +2475,7 @@ $(document).ready(function() {
 			$('#resumenFiltroHoras').text(`Jornada completa: ${h1} a ${h2}`);
 		}
 		renderizarRecorrido(puntosFiltrados);
-	});
+	}
 
 	// Eventos del modal
 	$('#modalDetalles').on('shown.bs.modal', function() {

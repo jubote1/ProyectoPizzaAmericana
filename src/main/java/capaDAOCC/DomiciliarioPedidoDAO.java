@@ -108,7 +108,7 @@ public class DomiciliarioPedidoDAO {
 
 	    try {
 	        // Consulta directa optimizada con tabla derivada para eventos biométricos de hoy (ejecuta en ~300ms)
-	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, ubi.idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
+	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, COALESCE(ev.idtienda, ubi.idtienda, 0) AS idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
 	           .append("       COALESCE(ubi.estado, 'EN_TIENDA') AS estado, ubi.bateria, ubi.velocidad, ")
 	           .append("       COALESCE(ubi.pedidos_activos, 0) AS pedidos_activos, ubi.pedidos_detalle, ")
 	           .append("       COALESCE(e.nombre_largo, et.nombre, ubi.nombre_usuario, 'Domiciliario') AS nombre_largo, ")
@@ -120,14 +120,20 @@ public class DomiciliarioPedidoDAO {
 	           .append("       COALESCE(et.empresa, '') AS empresa_temporal, ")
 	           .append("       CASE WHEN ev.id IS NOT NULL THEN 1 ELSE 0 END AS en_turno_biometria ")
 	           .append("FROM domiciliario_ubicacion_actual ubi ")
-	           .append("LEFT JOIN tienda ti ON ti.idtienda = ubi.idtienda ")
 	           .append("LEFT JOIN general.empleado e ON ubi.clave_dom COLLATE utf8mb4_unicode_ci = e.claverapida COLLATE utf8mb4_unicode_ci ")
 	           .append("LEFT JOIN general.empleado_temporal et ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
-	           .append("LEFT JOIN (SELECT DISTINCT id FROM general.empleado_evento WHERE fecha = CURDATE()) ev ON (ev.id = e.id OR ev.id = CAST(RIGHT(TRIM(et.identificacion), 6) AS UNSIGNED) OR ev.id = CAST(TRIM(et.identificacion) AS UNSIGNED)) ")
+	           .append("LEFT JOIN ( ")
+	           .append("    SELECT id, idtienda FROM ( ")
+	           .append("        SELECT id, idtienda, ROW_NUMBER() OVER(PARTITION BY id ORDER BY fecha_hora_log DESC) as rn ")
+	           .append("        FROM general.empleado_evento ")
+	           .append("        WHERE fecha = CURDATE() ")
+	           .append("    ) sub WHERE rn = 1 ")
+	           .append(") ev ON (ev.id = e.id OR ev.id = CAST(RIGHT(TRIM(et.identificacion), 6) AS UNSIGNED) OR ev.id = CAST(TRIM(et.identificacion) AS UNSIGNED)) ")
+	           .append("LEFT JOIN tienda ti ON ti.idtienda = COALESCE(ev.idtienda, ubi.idtienda) ")
 	           .append("WHERE ubi.fecha >= CURDATE() ");
 
 	        if (id != 0) {
-	            sql.append("AND ubi.idtienda = ").append(id).append(" ");
+	            sql.append("AND COALESCE(ev.idtienda, ubi.idtienda) = ").append(id).append(" ");
 	        }
 	        sql.append("ORDER BY ubi.fecha DESC");
 

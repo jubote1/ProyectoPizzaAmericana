@@ -34,6 +34,9 @@ var marcadorAdicionales = 0;
 var marcadorGaseosas = 0;
 var marcardorProductoCon = 0;
 var marcardorProductoSin = 0;
+var cacheModConKey = "";
+var cacheModSinKey = "";
+var cacheAdicionesKey = "";
 var canvas;
 var ctx;
 var totalpedido = 0;
@@ -100,21 +103,43 @@ $.ajax({
 });
 
 
+function actualizarNombreUsuario(u) {
+	if (!u) {
+		u = $('#cargarMenu #usuariologin').text().trim() || $('#usuariologin').text().trim() || usuario;
+	}
+	if (!u) return;
+	usuario = u;
+	$('#usuariologintopbar, #usuariologin, .user-chip b, label#usuariologin').html(u);
+	$('#cargarMenu').find('#usuariologin').html(u);
+	var topbarUser = document.getElementById('usuariologintopbar');
+	if (topbarUser) topbarUser.textContent = u;
+	var userChips = document.querySelectorAll('.user-chip b');
+	for (var i = 0; i < userChips.length; i++) {
+		userChips[i].textContent = u;
+	}
+}
+
 switch (respuesta) {
 	case 'OK':
+
 		$('#cargarMenu').load("Menu.html", function () {
 			mostrarUsuarioEnPantalla(usuario);
+
 		});
 		break;
 
 	case 'OKA':
 		$('#cargarMenu').load("MenuAdm.html", function () {
+
 			mostrarUsuarioEnPantalla(usuario);
+
 		});
 		break;
 
 	case 'OKP':
-		$('#cargarMenu').load("MenuPQRS.html");
+		$('#cargarMenu').load("MenuPQRS.html", function() {
+			actualizarNombreUsuario(usuario);
+		});
 		location.href = server +"ConsultaPQRS.html";
 		break;
 
@@ -122,6 +147,7 @@ switch (respuesta) {
 		location.href = server + "Index.html";
 		break;
 }
+actualizarNombreUsuario(usuario);
 
 function limpiarValorFormulario(valor) {
 	if (
@@ -139,6 +165,18 @@ function limpiarValorFormulario(valor) {
 
 // A continuación  la ejecucion luego de cargada la pagina
 $(document).ready(function() {
+	actualizarNombreUsuario(usuario);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 300);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 1000);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 2500);
+
+	// Cierre garantizado para botones de cerrar y cancelar en todos los modales
+	$(document).on('click', '[data-dismiss="modal"]', function(e) {
+		var $modal = $(this).closest('.modal');
+		if ($modal.length) {
+			$modal.modal('hide');
+		}
+	});
 
 			
 
@@ -210,6 +248,11 @@ $("#fechapedido").change(function(){
 	$("#valorpago").change(function(){
 			$("#valordevolver").val($("#valorpago").val() - $("#totalpedido").val() );
             
+	});
+
+	// Sincronización en tiempo real entre Teléfono Celular y el campo tradicional
+	$('#telcelular').on('input change', function() {
+		$('#telefono').val($(this).val());
 	});
 
 	// Se realiza la creación del DATATABLE DE CLIENTES
@@ -366,9 +409,13 @@ $("#fechapedido").change(function(){
     //dirección. 
 
     $('#grid-clientes tbody').on('click', 'tr', function () {
+        // Resaltar visualmente la fila seleccionada para saber cuál cliente se escogió
+        $('#grid-clientes tbody tr').removeClass('cliente-fila-activa');
+        $(this).addClass('cliente-fila-activa');
         //cerramos la notificacion en caso de que esté abierta
         datos = table.row( this ).data();
-        $("#selectTiendas").val(datos.tienda);
+        var tiendaCliente = (datos.tienda || '').trim();
+        $("#selectTiendas").val(tiendaCliente);
         var idtien = $("#selectTiendas option:selected").attr('id');
         for(var i = 0; i < tiendasBloqueadas.length;i++){
     		var idtienBloq = tiendasBloqueadas[i].idtienda;
@@ -380,10 +427,13 @@ $("#fechapedido").change(function(){
     		}
 
     	}
-        //alert( 'Diste clic en  '+datos.nombre+'\'s row' );
-        if(idtien != undefined)
-        {
+        // Si el cliente tiene una tienda válida ya asignada en base de datos, protegemos el campo
+        // para evitar cambios accidentales (para cambiarla usan el botón "Transferir Cliente").
+        // Si NO tiene tienda asignada (o está vacía), HABILITAMOS el select para que el cajero pueda elegirla.
+        if (tiendaCliente !== "" && idtien !== undefined && idtien !== null) {
             $('#selectTiendas').attr('disabled', true);
+        } else {
+            $('#selectTiendas').attr('disabled', false);
         }
         $('#nombres').val(datos.nombre);
         $('#apellidos').val(datos.apellido);
@@ -397,7 +447,9 @@ $("#fechapedido").change(function(){
 		$('#numNomen').val(limpiarValorFormulario(datos.numnomenclatura1));
 		$('#numNomen2').val(limpiarValorFormulario(datos.numnomenclatura2));
 		$('#num3').val(limpiarValorFormulario(datos.num3));
-        $('#telcelular').val(datos.telefonocelular);
+        var celCliente = datos.telefonocelular || datos.telefono || '';
+        $('#telcelular').val(celCliente);
+        $('#telefono').val(celCliente);
         $('#email').val(datos.email);
         //Toda la revision de fidelizacion, en una sola funcion y asincrona: antes
         //eran dos consultas al central anidadas y las dos con async:false, o sea
@@ -461,8 +513,19 @@ $("#fechapedido").change(function(){
             if (typeof descripcionDireccion === 'function') {
                 descripcionDireccion();
             }
-        } else if (datos.direccion) {
+        } else {
             $('#validaDir').prop('checked', false);
+            if (!$("#direccion").val() && datos.direccion) {
+                $("#direccion").val(datos.direccion);
+            }
+        }
+
+        // Asegurar que tanto #direccion como #descDireccion tengan la información para que nunca se vean vacíos
+        if (!$("#direccion").val() && $("#descDireccion").val()) {
+            $("#direccion").val($("#descDireccion").val());
+        }
+        if (!$("#descDireccion").val() && $("#direccion").val()) {
+            $("#descDireccion").val($("#direccion").val());
         }
 
         if (typeof actualizarModoDireccionUI === 'function') {
@@ -582,7 +645,11 @@ $("#fechapedido").change(function(){
             }
         }
         */
-		findAddress();
+        if (idCliente && idCliente > 0) {
+            findAddress(idCliente, false);
+        } else {
+            findAddress(null, false);
+        }
         //ubicarClienteExistente(datos.latitud, datos.longitud);
 
 
@@ -736,7 +803,15 @@ $("#fechapedido").change(function(){
  	
     // Se definen los eventos para para cuando demos clic sobre los botones de forma pizza de pizza entera o pizza mitad
  	$("input[name=formapizza]:radio").click(function() { 
-                
+			marcardorProductoCon = 0;
+			marcardorProductoSin = 0;
+			marcadorAdiciones = 0;
+			cacheModConKey = "";
+			cacheModSinKey = "";
+			cacheAdicionesKey = "";
+			$('.radio-card-division').removeClass('active');
+			$(this).closest('.radio-card-division').addClass('active');
+
  			//Validamos si hay una excepcíón de precio seleccionada y si esta controla cantidad de ingredientes en cuyo caso no debe de pintar especialidades
  			if(controlaCantidadIngredientes == 'N')
  			{
@@ -748,7 +823,8 @@ $("#fechapedido").change(function(){
                         	else
                         	{
                         		alert("Debe seleccionar el tamaño de la pizza");
-                        		$("input[name=formapizza]:radio").attr('checked', false);
+                        		$("input[name=formapizza]:radio").prop('checked', false);
+								$('.radio-card-division').removeClass('active');
                         		
                         	}	
                 } else if($(this).val() == 'entera') {
@@ -758,7 +834,8 @@ $("#fechapedido").change(function(){
                         	else
                         	{
                         		alert("Debe seleccionar el tamaño de la pizza");
-                        		$("input[name=formapizza]:radio").attr('checked', false);
+                        		$("input[name=formapizza]:radio").prop('checked', false);
+								$('.radio-card-division').removeClass('active');
                         	}	
 
                 } 
@@ -920,29 +997,27 @@ function validarTelefono(){
 	var existCliente = false;
 	//Incluimos validación del logueo dado que es un punto crítico para retomar los pedidos
 	validarVigenciaLogueo();
-	// Validamos el tema de la longitud del pedido
-	var lngTel = $("#telefono").val().length;
+	// Validamos el teléfono celular ingresado y sincronizamos el campo tradicional
+	var telVal = ($("#telcelular").val() || $("#telefono").val() || "").trim();
+	$("#telcelular").val(telVal);
+	$("#telefono").val(telVal);
+
+	var lngTel = telVal.length;
 	if (lngTel < 10)
 	{
-		alert("Tenga precaución el teléfono tiene una lontitud menor a 10");
-	}else if(lngTel == 10)
-    {
-        if($("#telefono").val().substr(0,1) == '3')
-        {
-            $("#telcelular").val($("#telefono").val());
-        }
-    }
+		alert("Tenga precaución el teléfono celular tiene una longitud menor a 10");
+	}
 
-	if (!/^([0-9])*$/.test($("#telefono").val()))
+	if (!/^([0-9])*$/.test(telVal))
 	{
-      alert("El valor " + $("#telefono").val() + " no es un número");
+		alert("El valor " + telVal + " no es un número");
 	}
 	// Validamos que sean solo números
 	if ( $.fn.dataTable.isDataTable( '#grid-clientes' ) ) {
     	table = $('#grid-clientes').DataTable();
     }
 	
-	$.getJSON(server + 'GetCliente?telefono=' + telefono.value, function(data1){
+	$.getJSON(server + 'GetCliente?telefono=' + telVal, function(data1){
 			table.clear().draw();
 			for(var i = 0; i < data1.length;i++){
 				existCliente = true;
@@ -951,35 +1026,42 @@ function validarTelefono(){
 			}
 		});
     //Realizar validacion posibles pedidos
-    $.getJSON(server + 'ObtenerMercadeoCliente?telefono=' + telefono.value, function(data2){
+    $.getJSON(server + 'ObtenerMercadeoCliente?telefono=' + telVal, function(data2){
             if(existCliente)
             {
-                var mensajeComercial = "<br>";
-                mensajeComercial = mensajeComercial  + "Fecha Último Pedido: " + data2.fechaultimopedido + "<br>";
-				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 30 días: " + data2.cantidadpedidos30 + "<br>";
-				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 90 días: " + data2.cantidadpedidos90 + "<br>";
-				mensajeComercial = mensajeComercial  + "Cantidad Pedidos 180 días: " + data2.cantidadpedidos180 + "<br>";
-				mensajeComercial = mensajeComercial  + "Cantidad PQRS: " + data2.cantidadpqrs + "<br>";
-				mensajeComercial = mensajeComercial  + "Especialidades que Pide: " + data2.especialidades + "<br>";
-                    $.confirm(
-                    {
-                            'title'     : 'Datos comerciales del CLIENTE',
-                            'content'   : 'El cliente tiene la siguiente informacion comercial: ' + mensajeComercial + '.',
-                            'buttons'   : {
-                                'Enterado'  : {
-                                    'class' : 'blue',
-                                    'action': function()
-                                    {
-                                    }
-                                }
+                var espTexto = (data2.especialidades || '').trim();
+                var mensajeComercial = '<div class="info-comercial-modal">';
+                mensajeComercial += '<div class="info-comercial-row"><span class="ic-lbl"><i class="fas fa-calendar-check text-primary"></i> Último Pedido:</span> <span class="ic-val">' + (data2.fechaultimopedido || 'Ninguno') + '</span></div>';
+                mensajeComercial += '<div class="info-comercial-grid">';
+                mensajeComercial += '  <div class="ic-chip"><span class="ic-chip-lbl">30 DÍAS</span><span class="ic-chip-val">' + (data2.cantidadpedidos30 || 0) + '</span></div>';
+                mensajeComercial += '  <div class="ic-chip"><span class="ic-chip-lbl">90 DÍAS</span><span class="ic-chip-val">' + (data2.cantidadpedidos90 || 0) + '</span></div>';
+                mensajeComercial += '  <div class="ic-chip"><span class="ic-chip-lbl">180 DÍAS</span><span class="ic-chip-val">' + (data2.cantidadpedidos180 || 0) + '</span></div>';
+                mensajeComercial += '  <div class="ic-chip ' + (Number(data2.cantidadpqrs) > 0 ? 'ic-chip-pqrs' : '') + '"><span class="ic-chip-lbl">PQRS</span><span class="ic-chip-val">' + (data2.cantidadpqrs || 0) + '</span></div>';
+                mensajeComercial += '</div>';
+                if(espTexto) {
+                    mensajeComercial += '<div class="info-comercial-row" style="margin-top: 10px; margin-bottom: 4px;"><span class="ic-lbl"><i class="fas fa-pizza-slice text-warning"></i> Especialidades que pide:</span></div>';
+                    mensajeComercial += '<div class="info-comercial-esp">' + espTexto.replace(/\n/g, '<br>') + '</div>';
+                }
+                mensajeComercial += '</div>';
+
+                $.confirm({
+                    'title'     : '<i class="fas fa-user-tag text-primary"></i> Datos comerciales del CLIENTE',
+                    'content'   : mensajeComercial,
+                    'buttons'   : {
+                        'Enterado'  : {
+                            'class' : 'blue',
+                            'action': function()
+                            {
                             }
-                    });
+                        }
+                    }
+                });
             }
         });
 
     //Realizamos la validación del teléfono para ver si hay pedidos registrados con este número y alertar
-    validarTelefonoPedidos(telefono.value);
-    obtenerClienteAlerta(telefono.value);
+    validarTelefonoPedidos(telVal);
+    obtenerClienteAlerta(telVal);
 		
 }
 
@@ -1380,30 +1462,27 @@ function getMarcaciones(){
                 var cadaMarcacion  = marcaciones[i];
                 str +='<tr> ';
                 str +='<td> ';
-                str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaMarcacion.nombremarcacion + '" id=checkMarca"' + cadaMarcacion.idmarcacion + '" name= "checkMarca">'  + cadaMarcacion.nombremarcacion +'</label>';
+                str += '<label class="lbl-marcacion"><input type="radio" aria-label="..." value="'+ cadaMarcacion.nombremarcacion + '" id="checkMarca' + cadaMarcacion.idmarcacion + '" name="checkMarca"> <span>' + cadaMarcacion.nombremarcacion + '</span></label>';
                 str += '</td>';
                 str +='<td> ';
-                str += '<label><input type="text" ' + '" id="txtObsMarcacion' + cadaMarcacion.idmarcacion + '" name= "txtObsMarcacion' + cadaMarcacion.idmarcacion +'" maxlength="50">'  +'</label>';
+                str += '<label class="lbl-marcacion"><input type="text" class="form-control input-obs-marcacion" id="txtObsMarcacion' + cadaMarcacion.idmarcacion + '" name="txtObsMarcacion' + cadaMarcacion.idmarcacion +'" maxlength="50" placeholder="Observación"></label>';
                 str += '</td>';
                 //Agregaremos dos columnas con el fin tener el descuento
                 str +='<td> ';
-                str += '<label>Descuento<input type="text" ' + '" id="txtDescuento' + cadaMarcacion.idmarcacion + '" onchange="validarDescuento(this.value);" name= "txtDescuento' + cadaMarcacion.idmarcacion +'" maxlength="7">'  +'</label>';
+                str += '<label class="lbl-marcacion"><span>Descuento</span> <input type="text" class="form-control input-descuento-marcacion" id="txtDescuento' + cadaMarcacion.idmarcacion + '" onchange="validarDescuento(this.value);" name="txtDescuento' + cadaMarcacion.idmarcacion +'" maxlength="7" placeholder="$0"></label>';
                 str += '</td>';
                 str +='<td> ';
-                 str += '<label><input type="checkbox" aria-label="..."' + '  value="'+ cadaMarcacion.idmarcacion + '" id=checkDescuentoAsumido"' + cadaMarcacion.idmarcacion + '" name= "checkDescuentoAsumido' + cadaMarcacion.idmarcacion  +'">Descuento Asumido</label>';
-                //str += '<select id="selectMotivo' + cadaMarcacion.idmarcacion +  '" onchange="validarMotivoDescuento(this);"  class="form-control">';
-                //str += '<option value="vacio" id ="0"></option><option value="Descuento propio de Domicilios" id ="1">Descuento propio de Domicilios</option><option value="Descuento de Franquicias" id ="2">Descuento de Franquicias</option>';
-                //str += '</select>';
+                str += '<label class="lbl-marcacion"><input type="checkbox" aria-label="..." value="'+ cadaMarcacion.idmarcacion + '" id="checkDescuentoAsumido' + cadaMarcacion.idmarcacion + '" name="checkDescuentoAsumido' + cadaMarcacion.idmarcacion  +'"> <span>Descuento Asumido</span></label>';
                 str += '</td>';
                 if(cadaMarcacion.marketplace == "S")
                 {
                     str +='<td> ';
-                    str += '<label><input type="checkbox" aria-label="..."' + '  value="'+ cadaMarcacion.nombremarcacion + '" id=checkMarcaMarketplace"' + cadaMarcacion.idmarcacion + '" name= "checkMarcaMarketplace' + cadaMarcacion.idmarcacion  +'" checked>Domi Propio</label>';
+                    str += '<label class="lbl-marcacion"><input type="checkbox" aria-label="..." value="'+ cadaMarcacion.nombremarcacion + '" id="checkMarcaMarketplace' + cadaMarcacion.idmarcacion + '" name="checkMarcaMarketplace' + cadaMarcacion.idmarcacion  +'" checked> <span>Domi Propio</span></label>';
                     str += '</td>';
                 }else
                 {
                     str +='<td> ';
-                    str += '<label><input type="checkbox" aria-label="..."' + '  value="'+ cadaMarcacion.nombremarcacion + '" id=checkMarcaMarketplace"' + cadaMarcacion.idmarcacion + '" name= "checkMarcaMarketplace' + cadaMarcacion.idmarcacion  +'">Domi Propio</label>';
+                    str += '<label class="lbl-marcacion"><input type="checkbox" aria-label="..." value="'+ cadaMarcacion.nombremarcacion + '" id="checkMarcaMarketplace' + cadaMarcacion.idmarcacion + '" name="checkMarcaMarketplace' + cadaMarcacion.idmarcacion  +'"> <span>Domi Propio</span></label>';
                     str += '</td>';
                 }
                 str += '</tr>';
@@ -1858,46 +1937,7 @@ function getExcepcionesPrecios(){
                     });
                 }
                 $.getJSON(server + 'GetSaboresLiquidoExcepcion?idExcepcion=' + selExcepcion +"&idtienda=" + idtien, function(data1){             
-                        var strGas='';
-                        var indfila = 1;
-                        var strGas = '<h2>Gaseosa</h2>';
-                        strGas += '<table class="table table-bordered">';
-                        strGas += '<tbody>';
-                        gaseosas = data1;
-                        for(var i = 0; i < data1.length;i++){
-                            var cadaLiq  = data1[i];
-                            for(var j = 0; j < gaseosaHomologadaTienda.length; j++ )
-                            {
-                                if(gaseosaHomologadaTienda[j].idtienda == $("#selectTiendas option:selected").attr('id') &&  gaseosaHomologadaTienda[j].idsabortipoliquido == cadaLiq.idSaborTipoLiquido)
-                                {
-                                    if(indfila == 1)
-                                    {
-                                        strGas +='<tr> ';
-                                        strGas +='<td> ';
-                                        strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-                                        strGas += '</td>';
-                                    }else if(indfila == 2)
-                                    {
-                                        strGas +='<td> ';
-                                        strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-                                        strGas += '</td>';
-                                    }else if(indfila == 3)
-                                    {
-                                        strGas +='<td> ';
-                                        strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-                                        strGas += '</td> </tr>';
-                                    }
-                                    indfila = indfila + 1;
-                                    if (indfila == 4)
-                                    {
-                                        indfila = 1;
-                                    }
-                                }
-                            }
-                            
-                        }
-                        strGas += '</tbody> </table>';
-                        $('#frmgaseosas').html(strGas);
+                    renderGaseosasIncluidas(data1);
                 });
 			}
 		}
@@ -1923,46 +1963,7 @@ function getExcepcionesPrecios(){
 				else
 				{
 					$.getJSON(server + 'GetSaboresLiquidoExcepcion?idExcepcion=' + selExcepcion + "&idtienda=" + idtien, function(data1){
-	                		
-	                		var strGas='';
-	                		var indfila = 1;
-	                		strGas = '<h2>Gaseosa</h2>';
-	                		strGas += '<table class="table table-bordered">';
-                			strGas += '<tbody>';
-                            gaseosas = data1;
-							for(var i = 0; i < data1.length;i++){
-								var cadaLiq  = data1[i];
-								for(var j = 0; j < gaseosaHomologadaTienda.length; j++ )
-								{
-									if(gaseosaHomologadaTienda[j].idtienda == $("#selectTiendas option:selected").attr('id') &&  gaseosaHomologadaTienda[j].idsabortipoliquido == cadaLiq.idSaborTipoLiquido)
-									{
-										if(indfila == 1)
-										{
-											strGas +='<tr>';
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionLiquido + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 2)
-										{
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionLiquido + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 3)
-										{
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionLiquido + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td> </tr>';
-										}
-										indfila = indfila + 1;
-										if (indfila == 4)
-										{
-											indfila = 1;
-										}
-									}	
-								}
-							}
-							strGas += '</tbody> </table>';
-	                		$('#frmgaseosas').html(strGas);
+						renderGaseosasIncluidas(data1);
 					});
 				}
 			}
@@ -1990,19 +1991,30 @@ function getEspecilidadesMitad(){
         obtEspecialidades = server + 'GetEspecialidades';
     }
 	$.getJSON(obtEspecialidades, function(data){
+		if (data && data.length) {
+			data.sort(function(a, b){
+				return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+			});
+		}
 		especialidades = data;
+		marcardorProductoCon = 0;
+		marcardorProductoSin = 0;
+		marcadorAdiciones = 0;
+		cacheModConKey = "";
+		cacheModSinKey = "";
+		cacheAdicionesKey = "";
 		var str = '';
 		str += '<table class="table table-bordered">';
-		str += '<thead><tr><td>MITAD 1</td><td>MITAD 2</td></tr></thead>';
+		str += '<thead><tr><th>MITAD 1</th><th>MITAD 2</th></tr></thead>';
 		str += "<tbody>";
 		for(var i = 0; i < data.length;i++){
 			var cadaEspe  = data[i];
 			str +='<tr> ';
-			str +='<td onclick="cambiaColorCeldaEspMitad1(this);"> ';
-			str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad1">' + cadaEspe.nombre + '</label>';
+			str +='<td onclick="cambiaColorCeldaEspMitad1(this, event);"> ';
+			str += '<label><input type="radio" aria-label="..." value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad1"> <span>' + cadaEspe.nombre + '</span></label>';
 			str += '</td>';
-			str += '<td onclick="cambiaColorCeldaEspMitad2(this);">';
-			str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad2">' + cadaEspe.nombre + '</label>';
+			str += '<td onclick="cambiaColorCeldaEspMitad2(this, event);">';
+			str += '<label><input type="radio" aria-label="..." value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad2"> <span>' + cadaEspe.nombre + '</span></label>';
 			str += '</td> </tr>';
 
 		}
@@ -2031,42 +2043,86 @@ function getEspecilidadesEntera(){
         obtEspecialidades = server + 'GetEspecialidades';
     }
 	$.getJSON(obtEspecialidades , function(data){
+		if (data && data.length) {
+			data.sort(function(a, b){
+				return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+			});
+		}
 		especialidades = data;
+		marcardorProductoCon = 0;
+		marcardorProductoSin = 0;
+		marcadorAdiciones = 0;
+		cacheModConKey = "";
+		cacheModSinKey = "";
+		cacheAdicionesKey = "";
 		var str = '';
-		var indfila = 1;
 		str += '<table class="table table-bordered">';
-		str += '<thead><tr><td>PIZZA ENTERA</td></tr></thead>';
+		str += '<thead><tr><th colspan="2">PIZZA ENTERA</th></tr></thead>';
 		str += "<tbody>";
-		for(var i = 0; i < data.length;i++){
-			var cadaEspe  = data[i];
-			if(indfila == 1)
-			{
-				str +='<tr"> ';
-				str +='<td onclick="cambiaColorCeldaEspMitad1(this);">';
-				str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad1">' + cadaEspe.nombre + '</label>';
+		for(var i = 0; i < data.length; i += 2){
+			var cadaEspe1  = data[i];
+			str +='<tr>';
+			str +='<td onclick="cambiaColorCeldaEspMitad1(this, event);">';
+			str += '<label><input type="radio" aria-label="..." value="'+ cadaEspe1.idespecialidad + '" id="' + cadaEspe1.nombre + '" name="mitad1"> <span>' + cadaEspe1.nombre + '</span></label>';
+			str += '</td>';
+			if(i + 1 < data.length){
+				var cadaEspe2  = data[i + 1];
+				str +='<td onclick="cambiaColorCeldaEspMitad1(this, event);">';
+				str += '<label><input type="radio" aria-label="..." value="'+ cadaEspe2.idespecialidad + '" id="' + cadaEspe2.nombre + '" name="mitad1"> <span>' + cadaEspe2.nombre + '</span></label>';
 				str += '</td>';
-			}else if(indfila == 2)
-			{
-				str +='<td onclick="cambiaColorCeldaEspMitad1(this);">';
-				str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad1">' + cadaEspe.nombre + '</label>';
-				str += '</td>';
-			}else
-			{
-				str +='<td onclick="cambiaColorCeldaEspMitad1(this);">';
-				str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaEspe.idespecialidad + '" id="' + cadaEspe.nombre + '" name="mitad1">' + cadaEspe.nombre + '</label>';
-				str += '</td>';
-				str += "</tr>";
+			} else {
+				str +='<td style="border:none;"></td>';
 			}
-			indfila = indfila + 1;
-			if (indfila == 4)
-			{
-				indfila = 1;
-			}
+			str += '</tr>';
 		}
 		str += "</tbody> </table>";
 		$('#especialidades').html(str);
 	});
 	
+}
+
+// Función para renderizar las gaseosas incluidas de forma moderna y en 2 columnas alfabéticas
+function renderGaseosasIncluidas(data1) {
+    gaseosas = data1;
+    var idTiendaSel = $("#selectTiendas option:selected").attr('id');
+    var validGaseosas = [];
+    if (data1 && data1.length && typeof gaseosaHomologadaTienda !== 'undefined' && gaseosaHomologadaTienda.length) {
+        for(var i = 0; i < data1.length; i++){
+            var cadaLiq = data1[i];
+            for(var j = 0; j < gaseosaHomologadaTienda.length; j++){
+                if(gaseosaHomologadaTienda[j].idtienda == idTiendaSel && gaseosaHomologadaTienda[j].idsabortipoliquido == cadaLiq.idSaborTipoLiquido){
+                    validGaseosas.push(cadaLiq);
+                    break;
+                }
+            }
+        }
+    }
+    if(!validGaseosas || validGaseosas.length === 0){
+        $('#frmgaseosas').html('').hide();
+        return;
+    }
+    validGaseosas.sort(function(a, b){
+        return (a.descripcionSabor || '').localeCompare(b.descripcionSabor || '', 'es', { sensitivity: 'base' });
+    });
+    var strGas = '<div class="gaseosa-box-header"><i class="fas fa-wine-bottle" style="color: #0284c7; margin-right: 6px;"></i> Gaseosa Incluida</div>';
+    strGas += '<table class="table table-bordered"><tbody>';
+    for(var k = 0; k < validGaseosas.length; k += 2){
+        var g1 = validGaseosas[k];
+        strGas += '<tr><td>';
+        strGas += '<label><input type="radio" aria-label="..." value="'+ g1.idSaborTipoLiquido + '" id="' + g1.descripcionSabor + '" name="liquido">' + g1.descripcionSabor + '</label>';
+        strGas += '</td>';
+        if(k + 1 < validGaseosas.length){
+            var g2 = validGaseosas[k+1];
+            strGas += '<td>';
+            strGas += '<label><input type="radio" aria-label="..." value="'+ g2.idSaborTipoLiquido + '" id="' + g2.descripcionSabor + '" name="liquido">' + g2.descripcionSabor + '</label>';
+            strGas += '</td>';
+        } else {
+            strGas += '<td style="border:none;"></td>';
+        }
+        strGas += '</tr>';
+    }
+    strGas += '</tbody></table>';
+    $('#frmgaseosas').html(strGas).show();
 }
 
 //Métodos para obtener todos los productos y con esto se realizan todas las validaciones de producto dentro de la capa de presentación.
@@ -2147,6 +2203,12 @@ function getPizzas()
 			}
 
 				var tamanoPizza = $("input:radio[name=tamanoPizza]:checked").val();
+				marcardorProductoCon = 0;
+				marcardorProductoSin = 0;
+				marcadorAdiciones = 0;
+				cacheModConKey = "";
+				cacheModSinKey = "";
+				cacheAdicionesKey = "";
 				
 				switch($(this).val())
 				{
@@ -2190,51 +2252,37 @@ function getPizzas()
                         }
                     	$('#otrosproductos').html('');
 	                	$.getJSON(server + 'GetSaboresLiquidoProducto?idProducto=' + tamanoPizza + "&idtienda=" + idtien, function(data1){
-	                		
-	                		var strGas='';
-	                		var indfila = 1;
-	                		var strGas = '<h2>Gaseosa</h2>';
-	                		strGas += '<table class="table table-bordered">';
-	                		strGas += '<tbody>';
-                            gaseosas = data1;
-							for(var i = 0; i < data1.length;i++){
-								var cadaLiq  = data1[i];
-								for(var j = 0; j < gaseosaHomologadaTienda.length; j++ )
-								{
-									if(gaseosaHomologadaTienda[j].idtienda == $("#selectTiendas option:selected").attr('id') &&  gaseosaHomologadaTienda[j].idsabortipoliquido == cadaLiq.idSaborTipoLiquido)
-									{
-										if(indfila == 1)
-										{
-											strGas +='<tr> ';
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 2)
-										{
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 3)
-										{
-											strGas +='<td>';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">' + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td> </tr>';
-										}
-										indfila = indfila + 1;
-										if (indfila == 4)
-										{
-											indfila = 1;
-										}
-									}
-								}		
-							}
-							strGas += '</tbody> </table>';
-	                		$('#frmgaseosas').html(strGas);
+	                		renderGaseosasIncluidas(data1);
 						});
+						// Si ya se habia seleccionado forma de pizza (mitad o entera), refrescar las especialidades segun el nuevo tamano
+						if($("input[name=formapizza]:radio").is(':checked') && controlaCantidadIngredientes == 'N') {
+							var formaPizzaSel = $("input:radio[name=formapizza]:checked").val();
+							if(formaPizzaSel == 'mitad') {
+								getEspecilidadesMitad();
+							} else if(formaPizzaSel == 'entera') {
+								getEspecilidadesEntera();
+							}
+						}
                     	break;
 				}
 
         });
+}
+
+function seleccionarOtroProducto(td, e) {
+	if (!td) return;
+	var evt = e || window.event;
+	var radio = td.querySelector('input[type="radio"]');
+	if (!radio) return;
+	if (evt && evt.target !== radio) {
+		if (evt.preventDefault) evt.preventDefault();
+		radio.checked = true;
+	}
+	$('#otrosproductos td').removeClass('celda-activa').css('background-color', '');
+	$('#otrosproductos label').removeClass('activa');
+	$(td).addClass('celda-activa');
+	$(td).find('label').addClass('activa');
+	$(radio).trigger('click');
 }
 
 // Método que se encarga de pintar otros productos cuando es seleccionado.
@@ -2245,81 +2293,45 @@ function getOtrosProductos()
 	str += '<table class="table table-bordered">';
     str += '<tbody>';
     var idtien = $("#selectTiendas option:selected").attr('id');
-	for(var i = 0; i < productos.length;i++){
-			var cadaProdu  = productos[i];
-			if (cadaProdu.tipo == "OTROS" )
+	for(var i = 0; i < productos.length; i++){
+		var cadaProdu  = productos[i];
+		if (cadaProdu.tipo == "OTROS" )
+		{
+			if(indfila == 1)
 			{
-				if(indfila == 1)
-				{
-					str +='<tr> ';
-					str +='<td>';
-					str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaProdu.nombre +'" id="' + cadaProdu.idproducto + '" name="otros">' + cadaProdu.nombre +'</label>';
-					str += '</td>';
-				}else if(indfila == 2)
-				{
-					str +='<td>';
-					str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaProdu.nombre +'" id="' + cadaProdu.idproducto + '" name="otros">' + cadaProdu.nombre +'</label>';
-					str += '</td>';
-				}else if(indfila == 3)
-				{
-					str +='<td>';
-					str += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaProdu.nombre +'" id="' + cadaProdu.idproducto + '" name="otros">' + cadaProdu.nombre +'</label>';
-					str += '</td> </tr>';
-				}
-				indfila = indfila + 1;
-				if (indfila == 4)
-				{
-					indfila = 1;
-				}
+				str +='<tr> ';
+				str +='<td onclick="seleccionarOtroProducto(this, event);" class="td-otro-producto">';
+				str += '<label><input type="radio" aria-label="..." value="'+ cadaProdu.nombre +'" id="' + cadaProdu.idproducto + '" name="otros"> <span>' + cadaProdu.nombre +'</span></label>';
+				str += '</td>';
+				indfila = 2;
+			}
+			else
+			{
+				str +='<td onclick="seleccionarOtroProducto(this, event);" class="td-otro-producto">';
+				str += '<label><input type="radio" aria-label="..." value="'+ cadaProdu.nombre +'" id="' + cadaProdu.idproducto + '" name="otros"> <span>' + cadaProdu.nombre +'</span></label>';
+				str += '</td> </tr>';
+				indfila = 1;
 			}
 		}
-		str += '</tbody> </table>';
-		$('#otrosproductos').html(str);
-		$("input[name=otros]:radio").click(function() { 
-			var idProductoOtros = $("input:radio[name=otros]:checked").attr('id');
-			$.getJSON(server + 'GetSaboresLiquidoProducto?idProducto=' + idProductoOtros + "&idtienda=" + idtien, function(data1){
-                		//console.log("gaseosa para otros productos " + data1);
-                		var strGas='';
-                		indfila = 1;
-                		var strGas = '<h2>Gaseosa</h2>';
-                		strGas += '<table class="table table-bordered">';
-                		strGas += '<tbody>';
-                        gaseosas = data1;
-						for(var i = 0; i < data1.length;i++){
-							var cadaLiq  = data1[i];
-							for(var j = 0; j < gaseosaHomologadaTienda.length; j++ )
-								{
-									if(gaseosaHomologadaTienda[j].idtienda == $("#selectTiendas option:selected").attr('id') &&  gaseosaHomologadaTienda[j].idsabortipoliquido == cadaLiq.idSaborTipoLiquido)
-									{
-										if(indfila == 1)
-										{
-											strGas +='<tr> ';
-											strGas +='<td> ';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 2)
-										{
-											strGas +='<td> ';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td>';
-										}else if(indfila == 3)
-										{
-											strGas +='<td> ';
-											strGas += '<label><input type="radio" aria-label="..."' + '  value="'+ cadaLiq.idSaborTipoLiquido + '" id="' + cadaLiq.descripcionSabor + '" name="liquido">'  + cadaLiq.descripcionSabor +'</label>';
-											strGas += '</td> </tr>';
-										}
-										indfila = indfila + 1;
-										if (indfila == 4)
-										{
-											indfila = 1;
-										}
-									}
-								}		
-						}
-						strGas += '</tbody> </table>';
-                		$('#frmgaseosas').html(strGas);
-			});
+	}
+	if (indfila == 2) {
+		str += '<td style="border:none; width:50%;"></td></tr>';
+	}
+	str += '</tbody> </table>';
+	$('#otrosproductos').html(str);
+	$("input[name=otros]:radio").click(function(e) { 
+		var idProductoOtros = $("input:radio[name=otros]:checked").attr('id');
+		var td = $(this).closest('td')[0];
+		if (td) {
+			$('#otrosproductos td').removeClass('celda-activa').css('background-color', '');
+			$('#otrosproductos label').removeClass('activa');
+			$(td).addClass('celda-activa');
+			$(td).find('label').addClass('activa');
+		}
+		$.getJSON(server + 'GetSaboresLiquidoProducto?idProducto=' + idProductoOtros + "&idtienda=" + idtien, function(data1){
+			renderGaseosasIncluidas(data1);
 		});
+	});
 }
 
 //Método qeu se encarga de responder al evento de selección de MODIFICADORES CON
@@ -2330,60 +2342,50 @@ function ProductoCon()
 		var resValidacionEsp = validaSeleccionEspecilidad();
 		if ((resValidacionEsp == 1 )|| (controlaCantidadIngredientes == "S"))
 		{
-			if(marcardorProductoCon == 0)
+			var tamapizza = $("input:radio[name=tamanoPizza]:checked").val() || "";
+			var formaPizzaVal = $("input:radio[name=formapizza]:checked").val();
+			var tieneMitad2 = ($("input:radio[name=mitad2]:checked").length > 0) || ($('#especialidades input[name="mitad2"]').length > 0);
+			var esMitad = (formaPizzaVal === 'mitad') || (formaPizzaVal !== 'entera' && tieneMitad2) || ($("input:radio[name=mitad2]:checked").val() !== undefined && $("input:radio[name=mitad2]:checked").val() !== "");
+
+			var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id') || "";
+			var especialidad2 = $("input:radio[name=mitad2]:checked").attr('id') || "";
+
+			var currentKey = tamapizza + "|" + (esMitad ? "mitad" : "entera") + "|" + especialidad1 + "|" + especialidad2;
+
+			if(marcardorProductoCon == 0 || cacheModConKey !== currentKey)
 			{
-				var str = '';
+				var str = '<div class="modal-table-scroll">';
 				var marcadorMitad = 0;
 				str += '<table class="table table-bordered">';
-				if ($("input:radio[name=formapizza]:checked").val() == 'mitad')
+				if (esMitad)
 				{
-					var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id');
-					var especialidad2 = $("input:radio[name=mitad2]:checked").attr('id');
-					if(especialidad1 == undefined)
-					{
-						especialidad1 = "";
-					}
-					if(especialidad2 == undefined)
-					{
-						especialidad2 = "";
-					}
 					marcadorMitad = 1;
-					str += '<thead><tr><td><h3>MITAD 1 - '+ especialidad1 +'</h3></td><td><h3>MITAD 2 - ' + especialidad2 +  '</h3></td></tr></thead>';
+					str += '<thead><tr><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 1: <span>'+ especialidad1 +'</span></div></td><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 2: <span>' + especialidad2 +  '</span></div></td></tr></thead>';
 				}
 				else
 				{
-					if(especialidad1 == undefined)
-					{
-						especialidad1 = "";
-					}
-					if(especialidad2 == undefined)
-					{
-						especialidad2 = "";
-					}
-					var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id');
-					str += '<thead><tr><td><h3>PIZZA ENTERA - ' + '</h3></td><td><h3>' + especialidad1 +'</h3></td></tr></thead>';
+					str += '<thead><tr><td colspan="2"><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> PIZZA ENTERA: <span>' + especialidad1 +'</span></div></td></tr></thead>';
 				}
-				var indfila =1;
+				var indfila = 1;
 				
 			    str += '<tbody>';
 				for(var i = 0; i < productos.length;i++){
 						var cadaModificador  = productos[i];
-						var tamapizza = $("input:radio[name=tamanoPizza]:checked").val();
 						
 						if ((cadaModificador.tipo == "MODIFICADOR CON") && (cadaModificador.productoasociaadicion == tamapizza ))
 						{
 							if (marcadorMitad == 1)
 							{
 								str +='<tr> ';
-								str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-								str += '<div class="col-md-4"> ';
-								str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodcon1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
-								str += '</div>'
+								str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+								str += '<div class="adicion-card-inner"> ';
+								str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodcon1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
+								str += '</div>';
 								str += '</td>';
-								str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-								str += '<div class="col-md-4"> ';
-								str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodcon2' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
-								str += '</div>'
+								str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+								str += '<div class="adicion-card-inner"> ';
+								str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodcon2' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
+								str += '</div>';
 								str += '</td> </tr>';
 							}
 							else
@@ -2391,17 +2393,17 @@ function ProductoCon()
 								if (indfila == 1)
 								{
 									str +='<tr> ';
-									str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-									str += '<div class="col-md-4"> ';
-									str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodcon1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
+									str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+									str += '<div class="adicion-card-inner"> ';
+									str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodcon1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
 									str += '</div>';
 									str += '</td>';
 								}
 								else
 								{
-									str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-									str += '<div class="col-md-4"> ';
-									str += '<label><input type="checkbox"' + '  value="'+ cadaModificador.nombre +'" name="' +'mitmodcon1' +  cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
+									str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+									str += '<div class="adicion-card-inner"> ';
+									str += '<label class="adicion-card-label"><input type="checkbox" value="'+ cadaModificador.nombre + '" name="mitmodcon1' +  cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
 									str += '</div>';
 									str += '</td> </tr>';
 								}
@@ -2410,23 +2412,22 @@ function ProductoCon()
 								{
 									indfila = 1;
 								}
-
-								
 							}
 						}	
 					}
+					if (marcadorMitad == 0 && indfila == 2) {
+						str += '<td style="border:none; background:transparent;"></td></tr>';
+					}
 					str += '</tbody> </table>';
+					str += '</div>';
 					str += '<div class="modal-footer">';
 					str += '<button type="button" onClick="cerrarModalModCon()" class="btn btn-default" data-dismiss="modal">Eliminar lo Seleccionado</button>';
 					str += '<button type="button" onClick="ocultarModalModCon()" data-dismiss="modal" class="btn btn-primary">Guardar Modificadores Con</button>';
 					str += '</div>	';
 					$('#pintarCon').html(str);
-					$('div').click( function( e ) {
-		    			e.stopPropagation();
-		    			// ...
-					});
 					$('#conProducto').modal('show');
 					marcardorProductoCon = 1;
+					cacheModConKey = currentKey;
 			}
 			else
 			{
@@ -2447,6 +2448,9 @@ function ProductoCon()
 function cerrarModalModCon()
 {
 	marcardorProductoCon = 0;
+	cacheModConKey = "";
+	$('#pintarCon input[type="checkbox"]').prop('checked', false);
+	$('#pintarCon td').removeClass('celda-activa').css('background-color', '');
 	$('#conProducto').modal('hide');
 }
 
@@ -2467,44 +2471,50 @@ function ProductoSin()
 		var resValidacionEsp = validaSeleccionEspecilidad();
 		if (resValidacionEsp == 1)
 		{
-			if(marcardorProductoSin == 0)
+			var tamapizza = $("input:radio[name=tamanoPizza]:checked").val() || "";
+			var formaPizzaVal = $("input:radio[name=formapizza]:checked").val();
+			var tieneMitad2 = ($("input:radio[name=mitad2]:checked").length > 0) || ($('#especialidades input[name="mitad2"]').length > 0);
+			var esMitad = (formaPizzaVal === 'mitad') || (formaPizzaVal !== 'entera' && tieneMitad2) || ($("input:radio[name=mitad2]:checked").val() !== undefined && $("input:radio[name=mitad2]:checked").val() !== "");
+
+			var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id') || "";
+			var especialidad2 = $("input:radio[name=mitad2]:checked").attr('id') || "";
+
+			var currentKey = tamapizza + "|" + (esMitad ? "mitad" : "entera") + "|" + especialidad1 + "|" + especialidad2;
+
+			if(marcardorProductoSin == 0 || cacheModSinKey !== currentKey)
 			{
-				var str = '';
+				var str = '<div class="modal-table-scroll">';
 				var marcadorMitad = 0;
 				str += '<table class="table table-bordered">';
-				if ($("input:radio[name=formapizza]:checked").val() == 'mitad')
+				if (esMitad)
 				{
-					var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id');
-					var especialidad2 = $("input:radio[name=mitad2]:checked").attr('id');
 					marcadorMitad = 1;
-					str += '<thead><tr><td><h3>MITAD 1 - '+ especialidad1 +'</h3></td><td><h3>MITAD 2 - ' + especialidad2 +  '</h3></td></tr></thead>';
+					str += '<thead><tr><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 1: <span>'+ especialidad1 +'</span></div></td><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 2: <span>' + especialidad2 +  '</span></div></td></tr></thead>';
 				}
 				else
 				{
-					var especialidad1 = $("input:radio[name=mitad1]:checked").attr('id');
-					str += '<thead><tr><td><h3>PIZZA ENTERA - ' + especialidad1 +'</h3></td><td></td></tr></thead>';
+					str += '<thead><tr><td colspan="2"><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> PIZZA ENTERA: <span>' + especialidad1 +'</span></div></td></tr></thead>';
 				}
 				var indfila =1;
 				
 			    str += '<tbody>';
 				for(var i = 0; i < productos.length;i++){
 						var cadaModificador  = productos[i];
-						var tamapizza = $("input:radio[name=tamanoPizza]:checked").val();
 						
 						if ((cadaModificador.tipo == "MODIFICADOR SIN") && (cadaModificador.productoasociaadicion == tamapizza ))
 						{
 							if (marcadorMitad == 1)
 							{
 								str +='<tr> ';
-								str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-								str += '<div class="col-md-4"> ';
-								str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodsin1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
-								str += '</div>'
+								str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+								str += '<div class="adicion-card-inner"> ';
+								str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodsin1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
+								str += '</div>';
 								str += '</td>';
-								str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-								str += '<div class="col-md-4"> ';
-								str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodsin2' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
-								str += '</div>'
+								str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+								str += '<div class="adicion-card-inner"> ';
+								str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodsin2' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
+								str += '</div>';
 								str += '</td> </tr>';
 							}
 							else
@@ -2512,17 +2522,17 @@ function ProductoSin()
 								if (indfila == 1)
 								{
 									str +='<tr> ';
-									str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-									str += '<div class="col-md-4"> ';
-									str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodsin1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
+									str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+									str += '<div class="adicion-card-inner"> ';
+									str += '<label class="adicion-card-label"><input type="checkbox" value="' + cadaModificador.nombre + '" name="mitmodsin1' + cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
 									str += '</div>';
 									str += '</td>';
 								}
 								else
 								{
-									str +='<td onclick="cambiaColorCeldaModSin(this);"> ';
-									str += '<div class="col-md-4"> ';
-									str += '<label><input type="checkbox"' + '  value="' + cadaModificador.nombre +'" name="' +'mitmodsin1' +  cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this)">' + cadaModificador.nombre +'</label>';
+									str +='<td onclick="cambiaColorCeldaModSin(this, event);" class="td-adicion-card"> ';
+									str += '<div class="adicion-card-inner"> ';
+									str += '<label class="adicion-card-label"><input type="checkbox" value="'+ cadaModificador.nombre + '" name="mitmodsin1' +  cadaModificador.idproducto + '" onclick="revisarMarcacionModSin(this, event);"> <span>' + cadaModificador.nombre + '</span></label>';
 									str += '</div>';
 									str += '</td> </tr>';
 								}
@@ -2531,23 +2541,22 @@ function ProductoSin()
 								{
 									indfila = 1;
 								}
-
-								
 							}
 						}	
 					}
+					if (marcadorMitad == 0 && indfila == 2) {
+						str += '<td style="border:none; background:transparent;"></td></tr>';
+					}
 					str += '</tbody> </table>';
+					str += '</div>';
 					str += '<div class="modal-footer">';
 					str += '<button type="button" onClick="cerrarModalModSin()" class="btn btn-default" data-dismiss="modal">Eliminar lo Seleccionado</button>';
 					str += '<button type="button" onClick="ocultarModalModSin()" data-dismiss="modal" class="btn btn-primary">Guardar Modificadores Sin</button>';
 					str += '</div>	';
 					$('#pintarSin').html(str);
-					$('div').click( function( e ) {
-		    			e.stopPropagation();
-		    			// ...
-					});
 					$('#sinProducto').modal('show');
 					marcardorProductoSin = 1;
+					cacheModSinKey = currentKey;
 			}
 			else
 			{
@@ -2568,6 +2577,9 @@ function ProductoSin()
 function cerrarModalModSin()
 {
 	marcardorProductoSin = 0;
+	cacheModSinKey = "";
+	$('#pintarSin input[type="checkbox"]').prop('checked', false);
+	$('#pintarSin td').removeClass('celda-activa').css('background-color', '');
 	$('#sinProducto').modal('hide');
 }
 
@@ -2580,11 +2592,16 @@ function getOtrosGaseosa()
 {
 	if (marcadorGaseosas == 0)
 	{
-		var str = '';
+		var str = '<div class="modal-table-scroll">';
 		
 		str += '<table class="table table-bordered">';
 		var indfila =1;
 		
+		if (productoGaseosaHomologadaTienda && productoGaseosaHomologadaTienda.length) {
+			productoGaseosaHomologadaTienda.sort(function(a, b){
+				return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
+			});
+		}
 	    str += '<tbody>';
 		for(var i = 0; i < productoGaseosaHomologadaTienda.length;i++){
 				var cadaGaseosa  = productoGaseosaHomologadaTienda[i];
@@ -2594,45 +2611,26 @@ function getOtrosGaseosa()
                     continue;
                 }
 
+				var cellClass = "";
+				if(cadaGaseosa.nombre.includes("DIDI")) {
+					cellClass = "celda-didi";
+				} else if(cadaGaseosa.nombre.includes("MIT")) {
+					cellClass = "celda-mit";
+				} else if(cadaGaseosa.nombre.includes("Puntos")) {
+					cellClass = "celda-puntos";
+				}
+
 				if (indfila == 1)
 				{
 					str +='<tr> ';
-                    if(cadaGaseosa.nombre.includes("DIDI"))
-                    {
-                        str +='<td style="background-color:salmon" onclick="cambiaColorCelda(this);"> ';
-                    }else if(cadaGaseosa.nombre.includes("MIT"))
-                    {
-                        str +='<td style="background-color:lightblue" onclick="cambiaColorCelda(this);"> ';
-                    }else if(cadaGaseosa.nombre.includes("Puntos"))
-                    {
-                        str +='<td style="background-color:yellow" onclick="cambiaColorCelda(this);"> ';
-                    }else
-                    {
-                        str +='<td onclick="cambiaColorCelda(this);"> ';
-                    }
-					str += '<div class="col-md-7"> ';
-					str += '<label><input type="checkbox"' + '  value="'+ "GA" + cadaGaseosa.idproducto + '-' + cadaGaseosa.nombre +'" name="' + "GA" + cadaGaseosa.idproducto + '" onclick="revisarMarcacion(this)">' + cadaGaseosa.nombre + " $" + cadaGaseosa.preciogeneral +'</label>';
-					str += '</div>'
+					str +='<td class="' + cellClass + '" onclick="cambiaColorCelda(this);"> ';
+					str += '<label><input type="checkbox" value="GA' + cadaGaseosa.idproducto + '-' + cadaGaseosa.nombre +'" name="GA' + cadaGaseosa.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaGaseosa.nombre + ' <strong>$' + cadaGaseosa.preciogeneral +'</strong></span></label>';
 					str += '</td>';
 				}
 				else
 				{
-					if(cadaGaseosa.nombre.includes("DIDI"))
-                    {
-                        str +='<td style="background-color:salmon" onclick="cambiaColorCelda(this);"> ';
-                    }else if(cadaGaseosa.nombre.includes("MIT"))
-                    {
-                        str +='<td style="background-color:lightblue" onclick="cambiaColorCelda(this);"> ';
-                    }else if(cadaGaseosa.nombre.includes("Puntos"))
-                    {
-                        str +='<td style="background-color:yellow" onclick="cambiaColorCelda(this);"> ';
-                    }else
-                    {
-                        str +='<td onclick="cambiaColorCelda(this);"> ';
-                    }
-					str += '<div class="col-md-7"> ';
-					str += '<label><input type="checkbox"' + '  value="'+ "GA" + cadaGaseosa.idproducto + '-' + cadaGaseosa.nombre +'" name="' + "GA" + cadaGaseosa.idproducto + '" onclick="revisarMarcacion(this)">' + cadaGaseosa.nombre + " $" + cadaGaseosa.preciogeneral +'</label>';
-					str += '</div>'
+					str +='<td class="' + cellClass + '" onclick="cambiaColorCelda(this);"> ';
+					str += '<label><input type="checkbox" value="GA' + cadaGaseosa.idproducto + '-' + cadaGaseosa.nombre +'" name="GA' + cadaGaseosa.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaGaseosa.nombre + ' <strong>$' + cadaGaseosa.preciogeneral +'</strong></span></label>';
 					str += '</td> </tr>';
 				}
 				indfila = indfila +1;
@@ -2642,15 +2640,12 @@ function getOtrosGaseosa()
 				}
 			}
 			str += '</tbody> </table>';
+			str += '</div>';
 			str += '<div class="modal-footer">';
 			str += '<button type="button" onClick="cerrarModalGaseosa()" class="btn btn-default" data-dismiss="modal">Eliminar lo Seleccionado</button>';
-			str += '<button type="button" onClick="agregarGaseosa()" data-dismiss="modal" class="btn btn-primary">Agregar Gaseosas</button>';
+			str += '<button type="button" onClick="agregarGaseosa()" data-dismiss="modal" class="btn btn-primary"><i class="fas fa-plus"></i> Agregar Gaseosas</button>';
 			str += '</div>	';
 			$('#pintarGaseosa').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addGaseosa').modal('show');
 			//marcadorGaseosas = 1;
 	}
@@ -2741,13 +2736,13 @@ function getOtrosAdicionales()
 {
 	if (marcadorAdicionales == 0)
 	{
-		var str = '';
+		var str = '<div class="modal-table-scroll">';
 		
 		str += '<table class="table table-bordered">';
-		var indfila =1;
+		var indfila = 1;
 		
 	    str += '<tbody>';
-		for(var i = 0; i < productos.length;i++){
+		for(var i = 0; i < productos.length; i++){
 				var cadaAdicional  = productos[i];
 								
 				if (cadaAdicional.tipo == "ADICIONALES")
@@ -2755,53 +2750,61 @@ function getOtrosAdicionales()
 						if (indfila == 1)
 						{
 							str +='<tr> ';
-							str +='<td onclick="cambiaColorCelda(this);"> ';
-							str += '<div class="col-md-7"> ';
-							str += '<label><input type="checkbox"' + '  value="'+ "ADI" +cadaAdicional.idproducto + '-' + cadaAdicional.nombre +'" name="' + "ADI" + cadaAdicional.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicional.nombre + " $" + cadaAdicional.preciogeneral ;
-							if (cadaAdicional.manejacantidad = 'S')
+							str +='<td onclick="cambiaColorCelda(this, event);" class="td-adicion-card td-adicional-card"> ';
+							str += '<div class="adicion-card-inner"> ';
+							str += '<label class="adicion-card-label"><input type="checkbox" value="'+ "ADI" +cadaAdicional.idproducto + '-' + cadaAdicional.nombre +'" name="' + "ADI" + cadaAdicional.idproducto + '" onclick="revisarMarcacion(this, event);">';
+							str += '<span class="adicional-nombre">' + cadaAdicional.nombre + '</span>';
+							str += '<span class="adicional-precio">$' + cadaAdicional.preciogeneral + '</span>';
+							str += '</label>';
+							str += '<div class="adicion-card-portion">';
+							if (cadaAdicional.manejacantidad == 'S')
 							{
-								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" maxlength="4" size="4">';
+								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" class="form-control select-porcion input-cantidad-adicional" maxlength="4" size="4" onclick="event.stopPropagation();" onfocus="this.select();">';
+							} else {
+								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" class="form-control select-porcion input-cantidad-adicional" maxlength="4" size="4" onclick="event.stopPropagation();" onfocus="this.select();">';
 							}
-							str +=  '</label>';
+							str += '</div>';
 							str += '</div>';
 							str += '</td>';
 						}
 						else
 						{
-							str +='<td onclick="cambiaColorCelda(this);"> ';
-							str += '<div class="col-md-7"> ';
-							str += '<label><input type="checkbox"' + '  value="'+ "ADI" +cadaAdicional.idproducto + '-' + cadaAdicional.nombre +'" name="' + "ADI" + cadaAdicional.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicional.nombre + " $" + cadaAdicional.preciogeneral ;
-							if (cadaAdicional.manejacantidad = 'S')
+							str +='<td onclick="cambiaColorCelda(this, event);" class="td-adicion-card td-adicional-card"> ';
+							str += '<div class="adicion-card-inner"> ';
+							str += '<label class="adicion-card-label"><input type="checkbox" value="'+ "ADI" +cadaAdicional.idproducto + '-' + cadaAdicional.nombre +'" name="' + "ADI" + cadaAdicional.idproducto + '" onclick="revisarMarcacion(this, event);">';
+							str += '<span class="adicional-nombre">' + cadaAdicional.nombre + '</span>';
+							str += '<span class="adicional-precio">$' + cadaAdicional.preciogeneral + '</span>';
+							str += '</label>';
+							str += '<div class="adicion-card-portion">';
+							if (cadaAdicional.manejacantidad == 'S')
 							{
-								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" maxlength="4" size="4">';
+								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" class="form-control select-porcion input-cantidad-adicional" maxlength="4" size="4" onclick="event.stopPropagation();" onfocus="this.select();">';
+							} else {
+								str += '<input type="text" value="1" name="'+ "CADI" + cadaAdicional.idproducto +'" class="form-control select-porcion input-cantidad-adicional" maxlength="4" size="4" onclick="event.stopPropagation();" onfocus="this.select();">';
 							}
-							str +=  '</label>';
+							str += '</div>';
 							str += '</div>';
 							str += '</td> </tr>';
 						}
-						indfila = indfila +1;
-						if(indfila ==3)
+						indfila = indfila + 1;
+						if(indfila == 3)
 						{
 							indfila = 1;
 						}
-
-						
-					
 				}	
 			}
+			if (indfila == 2) {
+				str += '<td style="border:none; background:transparent;"></td></tr>';
+			}
 			str += '</tbody> </table>';
+			str += '</div>';
 			str += '<div class="modal-footer">';
 			str += '<button type="button" onClick="cerrarModalAdicionales()" class="btn btn-default" data-dismiss="modal">Eliminar lo Seleccionado</button>';
 			str += '<button type="button" onClick="AgregarAdicionales()" data-dismiss="modal" class="btn btn-primary">Agregar Adicionales</button>';
 			str += '</div>	';
 			$('#pintarAdicionales').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addAdicionales').modal('show');
 			marcadorAdicionales = 1;
-			
 	}
 	else
 	{
@@ -2812,6 +2815,8 @@ function getOtrosAdicionales()
 function cerrarModalAdicionales()
 {
 	marcadorAdicionales = 0;
+	$('#pintarAdicionales input[type="checkbox"]').prop('checked', false);
+	$('#pintarAdicionales td').removeClass('celda-activa').css('background-color', '');
 	$('#addAdicionales').modal('hide');
 }
 
@@ -2948,7 +2953,7 @@ function getAdicionProductos()
 	
 	if (marcadorAdiciones == 0)
 	{
-		var str = '';
+		var str = '<div class="modal-table-scroll">';
 		var marcadorMitad = 0;
 		var excepcionPrecio = $("#selectExcepcion option:selected").val();
 		str += '<table class="table table-bordered">';
@@ -2962,7 +2967,7 @@ function getAdicionProductos()
 				return;
 			}
 			marcadorMitad = 1;
-			str += '<thead><tr><td><h3>MITAD 1 - '+ especialidad1 +'</h3></td><td><h3>MITAD 2 - ' + especialidad2 +  '</h3></td></tr></thead>';
+			str += '<thead><tr><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 1: <span>'+ especialidad1 +'</span></div></td><td><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> MITAD 2: <span>' + especialidad2 +  '</span></div></td></tr></thead>';
 		}
 		else if ($("input:radio[name=formapizza]:checked").val() == 'entera')
 		{
@@ -2973,7 +2978,7 @@ function getAdicionProductos()
 				alert("Debe seleccionar primero la especialidad");
 				return;
 			}
-			str += '<thead><tr><td><h3>PIZZA ENTERA - ' + especialidad1 +'</h3></td></tr></thead>';
+			str += '<thead><tr><td colspan="2"><div class="adicion-header-badge"><i class="fas fa-pizza-slice"></i> PIZZA ENTERA: <span>' + especialidad1 +'</span></div></td></tr></thead>';
 		} else
 		{
 			alert("Debe seleccionar primero entre mitad y mitad / entera");
@@ -2991,23 +2996,19 @@ function getAdicionProductos()
 					if (marcadorMitad == 1)
 					{
 						str +='<tr> ';
-						str +='<td onclick="cambiaColorCelda(this);"> ';
-						str += '<div class="col-md-3"> ';
-						str += '<label><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicion.nombre +'</label>';
-						str += '</div>'
-						str += '<div class="col-md-1"> ';
-						str += '<select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control">';
-						str += '<option selected value="0.5" id ="medio">0.5</option> <option value="1" id ="entero">1.0</option> </select>'
-						str += '</div>'
+						str +='<td onclick="cambiaColorCelda(this);" class="td-adicion-card"> ';
+						str += '<div class="adicion-card-inner"> ';
+						str += '<label class="adicion-card-label"><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaAdicion.nombre +'</span></label>';
+						str += '<div class="adicion-card-portion"><select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control select-porcion" onclick="event.stopPropagation();">';
+						str += '<option selected value="0.5" id ="medio">0.5</option> <option value="1" id ="entero">1.0</option> </select></div>';
+						str += '</div>';
 						str += '</td>';
-						str +='<td onclick="cambiaColorCelda(this);"> ';
-						str += '<div class="col-md-3"> ';
-						str += '<label><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit2' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicion.nombre +'</label>';
-						str += '</div>'
-						str += '<div class="col-md-1"> ';
-						str += '<select name="'+ 'c2' + cadaAdicion.idproducto +'" class="form-control">';
-						str += '<option selected value="0.5" id ="medio">0.5</option> <option value="1" id ="entero">1.0</option> </select>';
-						str += '</div>'
+						str +='<td onclick="cambiaColorCelda(this);" class="td-adicion-card"> ';
+						str += '<div class="adicion-card-inner"> ';
+						str += '<label class="adicion-card-label"><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit2' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaAdicion.nombre +'</span></label>';
+						str += '<div class="adicion-card-portion"><select name="'+ 'c2' + cadaAdicion.idproducto +'" class="form-control select-porcion" onclick="event.stopPropagation();">';
+						str += '<option selected value="0.5" id ="medio">0.5</option> <option value="1" id ="entero">1.0</option> </select></div>';
+						str += '</div>';
 						str += '</td> </tr>';
 					}
 					else
@@ -3015,25 +3016,21 @@ function getAdicionProductos()
 						if (indfila == 1)
 						{
 							str +='<tr> ';
-							str +='<td onclick="cambiaColorCelda(this);"> ';
-							str += '<div class="col-md-7"> ';
-							str += '<label><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicion.nombre +'</label>';
-							str += '</div>'
-							str += '<div class="col-md-3"> ';
-							str += '<select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control">';
-							str += '<option value="0.5" id ="medio">0.5</option> <option selected value="1" id ="entero">1.0</option> </select>';
+							str +='<td onclick="cambiaColorCelda(this);" class="td-adicion-card"> ';
+							str += '<div class="adicion-card-inner"> ';
+							str += '<label class="adicion-card-label"><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' + cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaAdicion.nombre +'</span></label>';
+							str += '<div class="adicion-card-portion"><select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control select-porcion" onclick="event.stopPropagation();">';
+							str += '<option value="0.5" id ="medio">0.5</option> <option selected value="1" id ="entero">1.0</option> </select></div>';
 							str += '</div>';
 							str += '</td>';
 						}
 						else
 						{
-							str +='<td onclick="cambiaColorCelda(this);"> ';
-							str += '<div class="col-md-7"> ';
-							str += '<label><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' +  cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)">' + cadaAdicion.nombre +'</label>';
-							str += '</div>'
-							str += '<div class="col-md-3"> ';
-							str += '<select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control">';
-							str += '<option value="0.5" id ="medio">0.5</option> <option selected value="1" id ="1">1.0</option> </select>';
+							str +='<td onclick="cambiaColorCelda(this);" class="td-adicion-card"> ';
+							str += '<div class="adicion-card-inner"> ';
+							str += '<label class="adicion-card-label"><input type="checkbox"' + '  value="'+ cadaAdicion.idproducto + '-' + cadaAdicion.nombre +'" name="' +'mit1' +  cadaAdicion.idproducto + '" onclick="revisarMarcacion(this)"> <span>' + cadaAdicion.nombre +'</span></label>';
+							str += '<div class="adicion-card-portion"><select name="'+ 'c1' + cadaAdicion.idproducto +'" class="form-control select-porcion" onclick="event.stopPropagation();">';
+							str += '<option value="0.5" id ="medio">0.5</option> <option selected value="1" id ="1">1.0</option> </select></div>';
 							str += '</div>';
 							str += '</td> </tr>';
 						}
@@ -3042,21 +3039,16 @@ function getAdicionProductos()
 						{
 							indfila = 1;
 						}
-
-						
 					}
 				}	
 			}
 			str += '</tbody> </table>';
+			str += '</div>';
 			str += '<div class="modal-footer">';
 			str += '<button type="button" onClick="cerrarModalAdiciones()" class="btn btn-default" data-dismiss="modal">Eliminar lo Seleccionado</button>';
 			str += '<button type="button" onClick="ocultarModalAdiciones()" data-dismiss="modal" class="btn btn-primary">Guardar Adiciones</button>';
 			str += '</div>	';
 			$('#pintarAdiciones').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addAdicion').modal('show');
 			marcadorAdiciones = 1;
 	}
@@ -3456,7 +3448,8 @@ function ConfirmarPedido()
 							var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
 							var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
 							var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
-                            var telCelular = $("#telcelular").val();
+							var telCelular = ($("#telcelular").val() || $("#telefono").val() || "").trim();
+							$("#telefono").val(telCelular);
                             var email = $("#email").val();
                             var politicaDatos = "N";
                             if($('#politicadatos').is(':checked'))
@@ -3871,11 +3864,13 @@ function ConfirmarPedido()
 
 function ValidacionesDatosNoPizzas()
 {
-	//validamos campo de telefono
-	var tele =  telefono.value;
+	//validamos campo de telefono celular
+	var tele = ($("#telcelular").val() || $("#telefono").val() || "").trim();
+	$("#telefono").val(tele);
+	$("#telcelular").val(tele);
 	if (tele == '' || tele == null)
 	{
-		alert ('Debe ingresar un telefono para el cliente');
+		alert ('Debe ingresar un teléfono celular para el cliente');
 		return;
 	}
 
@@ -3985,11 +3980,13 @@ function ValidacionesDatosNoPizzas()
 
 function ValidacionesDatos()
 {
-	//validamos campo de telefono
-	var tele =  telefono.value;
+	//validamos campo de telefono celular
+	var tele = ($("#telcelular").val() || $("#telefono").val() || "").trim();
+	$("#telefono").val(tele);
+	$("#telcelular").val(tele);
 	if (tele == '' || tele == null)
 	{
-		alert ('Debe ingresar un telefono para el cliente');
+		alert ('Debe ingresar un teléfono celular para el cliente');
 		return;
 	}
 
@@ -4285,7 +4282,8 @@ function agregarEncabezadoPedido()
 		var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
 		var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
 		var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
-        var telCelular = $("#telcelular").val();
+        var telCelular = ($("#telcelular").val() || $("#telefono").val() || "").trim();
+        $("#telefono").val(telCelular);
         var email = $("#email").val();
         var politicaDatos = "N";
         //Validamos los campos relacionados con la programación del pedido
@@ -5417,138 +5415,148 @@ function geocodeSinServicio(lat, long)
 	});
 }
 
-function cambiaColorCelda(elemento)
+function sincronizarCeldaCard(td, isChecked) {
+	if (!td) return;
+	if (isChecked) {
+		$(td).addClass("celda-activa");
+		td.style.backgroundColor = "teal";
+		var lbl = td.querySelector("label");
+		if (lbl) lbl.style.backgroundColor = "transparent";
+	} else {
+		$(td).removeClass("celda-activa");
+		td.style.backgroundColor = td.getAttribute('data-bg-orig') || "";
+		var lbl = td.querySelector("label");
+		if (lbl) lbl.style.backgroundColor = "transparent";
+	}
+}
+
+function toggleCardCheckbox(td, e) {
+	if (!td) return;
+	var evt = e || window.event;
+	if (evt && evt.target) {
+		var tag = evt.target.tagName.toLowerCase();
+		if (tag === 'select' || tag === 'option' || (tag === 'input' && evt.target.type !== 'checkbox' && evt.target.type !== 'radio')) {
+			return;
+		}
+	}
+
+	var chk = td.querySelector('input[type="checkbox"], input[type="radio"]');
+	if (!chk) return;
+
+	if (evt && evt.target === chk) {
+		sincronizarCeldaCard(td, chk.checked);
+		if (evt.stopPropagation) evt.stopPropagation();
+		return;
+	}
+
+	if (evt && evt.preventDefault) {
+		evt.preventDefault();
+	}
+	chk.checked = !chk.checked;
+	sincronizarCeldaCard(td, chk.checked);
+	$(chk).trigger('change');
+}
+
+function cambiaColorCelda(elemento, e)
 {
-	radio = elemento.getElementsByTagName('input')[0];
-	label = elemento.getElementsByTagName('label')[0];
-	if(elemento.style.backgroundColor=="teal")
-	{
-		elemento.style.backgroundColor="white";
-		label.style.backgroundColor="white";
-		radio.checked = false;
-	}else
-	{
-		elemento.style.backgroundColor="teal";
-		label.style.backgroundColor="teal";
+	toggleCardCheckbox(elemento, e);
+}
+
+function cambiaColorCeldaModSin(elemento, e)
+{
+	toggleCardCheckbox(elemento, e);
+}
+
+function revisarMarcacionModSin(check, e)
+{
+	var evt = e || window.event;
+	if (evt && evt.stopPropagation) evt.stopPropagation();
+	var td = $(check).closest('td')[0];
+	if (td) {
+		sincronizarCeldaCard(td, check.checked);
+	}
+}
+
+function revisarMarcacion(check, e)
+{
+	var evt = e || window.event;
+	if (evt && evt.stopPropagation) evt.stopPropagation();
+	var td = $(check).closest('td')[0];
+	if (td) {
+		sincronizarCeldaCard(td, check.checked);
+	}
+}
+
+function cambiaColorCeldaEspMitad1(elemento, e)
+{
+	var evt = e || window.event;
+	var radio = elemento.querySelector('input[type="radio"]');
+	if (!radio) return;
+	if (evt && evt.target === radio) {
+		// Click directo en el radio
+	} else if (evt) {
+		evt.preventDefault();
+		radio.checked = true;
+	} else {
 		radio.checked = true;
 	}
-	
+	$('#especialidades input[name="mitad1"]').each(function() {
+		var td = $(this).closest('td')[0];
+		if (this.checked) {
+			if (td) {
+				td.style.backgroundColor = "teal";
+				$(td).addClass("celda-activa");
+			}
+		} else {
+			if (td) {
+				td.style.backgroundColor = "white";
+				$(td).removeClass("celda-activa");
+			}
+		}
+	});
+	radioEsp1 = radio;
+	marcardorProductoCon = 0;
+	marcardorProductoSin = 0;
+	marcadorAdiciones = 0;
+	cacheModConKey = "";
+	cacheModSinKey = "";
+	cacheAdicionesKey = "";
 }
 
-function cambiaColorCeldaModSin(elemento)
+function cambiaColorCeldaEspMitad2(elemento, e)
 {
-	radio = elemento.getElementsByTagName('input')[0];
-	label = elemento.getElementsByTagName('label')[0];
-	if(elemento.style.backgroundColor=="teal")
-	{
-		elemento.style.backgroundColor="white";
-		label.style.backgroundColor="white";
-		radio.checked = false;
-	}else
-	{
-		elemento.style.backgroundColor="teal";
-		label.style.backgroundColor="teal";
+	var evt = e || window.event;
+	var radio = elemento.querySelector('input[type="radio"]');
+	if (!radio) return;
+	if (evt && evt.target === radio) {
+		// Click directo en el radio
+	} else if (evt) {
+		evt.preventDefault();
+		radio.checked = true;
+	} else {
 		radio.checked = true;
 	}
-	
-}
-
-function revisarMarcacionModSin(check)
-{
-	var label;
-	var tempTable;
-	var table;
-	if(check.checked)
-	{
-		label = check.parentNode;
-		label.style.backgroundColor="teal";
-		tempTable = label.parentNode;
-		table = tempTable.parentNode;
-		table.style.backgroundColor="teal";
-	}
-	else
-	{
-		label = check.parentNode;
-		label.style.backgroundColor="white";
-		tempTable = label.parentNode;
-		table = tempTable.parentNode;
-		table.style.backgroundColor="white";
-	}
-}
-
-function revisarMarcacion(check)
-{
-	var label;
-	var tempTable;
-	var table;
-	if(check.checked)
-	{
-		label = check.parentNode;
-		label.style.backgroundColor="teal";
-		tempTable = label.parentNode;
-		table = tempTable.parentNode;
-		table.style.backgroundColor="teal";
-	}
-	else
-	{
-		label = check.parentNode;
-		label.style.backgroundColor="white";
-		tempTable = label.parentNode;
-		table = tempTable.parentNode;
-		table.style.backgroundColor="white";
-	}
-}
-
-function cambiaColorCeldaEspMitad1(elemento)
-{
-	var elementoAnterior; 
-	radioEsp1Ant = radioEsp1;
-	radioEsp1 = elemento.getElementsByTagName('input')[0];
-	if(elemento.style.backgroundColor=="teal")
-	{
-		elemento.style.backgroundColor="white";
-		radioEsp1.checked = false;
-	}else
-	{
-		elemento.style.backgroundColor="teal";
-		radioEsp1.style.backgroundColor="teal";
-		radioEsp1.checked = true;
-	}
-	
-	if (radioEsp1Ant != 0)
-	{
-		elementoAnterior = radioEsp1Ant.parentNode;
-		elementoAnterior.style.backgroundColor="white";
-		elementoAnterior = elementoAnterior.parentNode;
-		elementoAnterior.style.backgroundColor="white";
-	}
-	
-}
-
-function cambiaColorCeldaEspMitad2(elemento)
-{
-	var elementoAnterior; 
-	radioEsp2Ant = radioEsp2;
-	radioEsp2 = elemento.getElementsByTagName('input')[0];
-	if(elemento.style.backgroundColor=="teal")
-	{
-		elemento.style.backgroundColor="white";
-		radioEsp2.checked = false;
-	}else
-	{
-		elemento.style.backgroundColor="teal";
-		radioEsp2.style.backgroundColor="teal";
-		radioEsp2.checked = true;
-	}
-	
-	if (radioEsp2Ant != 0)
-	{
-		elementoAnterior = radioEsp2Ant.parentNode;
-		elementoAnterior.style.backgroundColor="white";
-		elementoAnterior = elementoAnterior.parentNode;
-		elementoAnterior.style.backgroundColor="white";
-	}
-	
+	$('#especialidades input[name="mitad2"]').each(function() {
+		var td = $(this).closest('td')[0];
+		if (this.checked) {
+			if (td) {
+				td.style.backgroundColor = "teal";
+				$(td).addClass("celda-activa");
+			}
+		} else {
+			if (td) {
+				td.style.backgroundColor = "white";
+				$(td).removeClass("celda-activa");
+			}
+		}
+	});
+	radioEsp2 = radio;
+	marcardorProductoCon = 0;
+	marcardorProductoSin = 0;
+	marcadorAdiciones = 0;
+	cacheModConKey = "";
+	cacheModSinKey = "";
+	cacheAdicionesKey = "";
 }
 
 
@@ -5627,6 +5635,7 @@ function limpiarSeleccionCliente()
 			table = $('#grid-clientes').DataTable();
 			table.clear().draw();
 		}
+        $('#grid-clientes tbody tr').removeClass('cliente-fila-activa');
 }
 
 function existeFecha(fecha){
@@ -5736,9 +5745,6 @@ function consultarUltimosPedidos()
 							}
 							
 					});
-	$('div').click( function( e ) {
-		e.stopPropagation();
-	});
 	$('#ultimosPedidosCliente').modal('show');
 }
 
@@ -5755,9 +5761,6 @@ function mostrarNotificaciones()
             $('#idultimopedido').val(data2.idpedido);
             $('#formapagoultpedido').val(data2.formapago);
         }
-    });
-    $('div').click( function( e ) {
-        e.stopPropagation();
     });
     $('#modalNotificaciones').modal('show');
 }
@@ -5802,7 +5805,9 @@ function transferirCliente()
 	var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
 	var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
 	var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
-    var telCelular = $("#telcelular").val();
+    var telCelular = ($("#telcelular").val() || $("#telefono").val() || telef || "").trim();
+    $("#telefono").val(telCelular);
+    telef = telCelular;
     var email = $("#email").val();
     var politicaDatos = "N";
     if($('#politicadatos').is(':checked'))
@@ -5864,7 +5869,8 @@ function transferirCliente()
                                 } 
                             }); 
     limpiarSeleccionCliente();
-     $('#telefono').val(telef);
+    $('#telefono').val(telef);
+    $('#telcelular').val(telef);
     validarTelefono(); 
 	$("#selectTiendasTrasladar").val('');
 	$('#transferircliente').attr('disabled', true);

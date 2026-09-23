@@ -100,20 +100,39 @@ $.ajax({
 });
 
 
+function actualizarNombreUsuario(u) {
+	if (!u) {
+		u = $('#cargarMenu #usuariologin').text().trim() || $('#usuariologin').text().trim() || usuario;
+	}
+	if (!u) return;
+	usuario = u;
+	$('#usuariologintopbar, #usuariologin, .user-chip b, label#usuariologin').html(u);
+	$('#cargarMenu').find('#usuariologin').html(u);
+	var topbarUser = document.getElementById('usuariologintopbar');
+	if (topbarUser) topbarUser.textContent = u;
+	var userChips = document.querySelectorAll('.user-chip b');
+	for (var i = 0; i < userChips.length; i++) {
+		userChips[i].textContent = u;
+	}
+}
+
 switch (respuesta) {
 	case 'OK':
-		$('#cargarMenu').load("Menu.html");
+		$('#cargarMenu').load("Menu.html", function() {
+			actualizarNombreUsuario(usuario);
+		});
 		break;
 
 	case 'OKA':
 		$('#cargarMenu').load("MenuAdm.html", function () {
-
-			$('#cargarMenu').find('#usuariologin').html(usuario);
+			actualizarNombreUsuario(usuario);
 		});
 		break;
 
 	case 'OKP':
-		$('#cargarMenu').load("MenuPQRS.html");
+		$('#cargarMenu').load("MenuPQRS.html", function() {
+			actualizarNombreUsuario(usuario);
+		});
 		location.href = server +"ConsultaPQRS.html";
 		break;
 
@@ -121,6 +140,7 @@ switch (respuesta) {
 		location.href = server + "Index.html";
 		break;
 }
+actualizarNombreUsuario(usuario);
 
 function limpiarValorFormulario(valor) {
 	if (
@@ -138,6 +158,10 @@ function limpiarValorFormulario(valor) {
 
 // A continuación  la ejecucion luego de cargada la pagina
 $(document).ready(function() {
+	actualizarNombreUsuario(usuario);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 300);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 1000);
+	setTimeout(function() { actualizarNombreUsuario(usuario); }, 2500);
 
 			
 
@@ -2417,10 +2441,6 @@ function ProductoCon()
 					str += '<button type="button" onClick="ocultarModalModCon()" data-dismiss="modal" class="btn btn-primary">Guardar Modificadores Con</button>';
 					str += '</div>	';
 					$('#pintarCon').html(str);
-					$('div').click( function( e ) {
-		    			e.stopPropagation();
-		    			// ...
-					});
 					$('#conProducto').modal('show');
 					marcardorProductoCon = 1;
 			}
@@ -2538,10 +2558,6 @@ function ProductoSin()
 					str += '<button type="button" onClick="ocultarModalModSin()" data-dismiss="modal" class="btn btn-primary">Guardar Modificadores Sin</button>';
 					str += '</div>	';
 					$('#pintarSin').html(str);
-					$('div').click( function( e ) {
-		    			e.stopPropagation();
-		    			// ...
-					});
 					$('#sinProducto').modal('show');
 					marcardorProductoSin = 1;
 			}
@@ -2643,10 +2659,6 @@ function getOtrosGaseosa()
 			str += '<button type="button" onClick="agregarGaseosa()" data-dismiss="modal" class="btn btn-primary">Agregar Gaseosas</button>';
 			str += '</div>	';
 			$('#pintarGaseosa').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addGaseosa').modal('show');
 			//marcadorGaseosas = 1;
 	}
@@ -2791,10 +2803,6 @@ function getOtrosAdicionales()
 			str += '<button type="button" onClick="AgregarAdicionales()" data-dismiss="modal" class="btn btn-primary">Agregar Adicionales</button>';
 			str += '</div>	';
 			$('#pintarAdicionales').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addAdicionales').modal('show');
 			marcadorAdicionales = 1;
 			
@@ -3049,10 +3057,6 @@ function getAdicionProductos()
 			str += '<button type="button" onClick="ocultarModalAdiciones()" data-dismiss="modal" class="btn btn-primary">Guardar Adiciones</button>';
 			str += '</div>	';
 			$('#pintarAdiciones').html(str);
-			$('div').click( function( e ) {
-    			e.stopPropagation();
-    			// ...
-			});
 			$('#addAdicion').modal('show');
 			marcadorAdiciones = 1;
 	}
@@ -5729,9 +5733,6 @@ function consultarUltimosPedidos()
 							}
 							
 					});
-	$('div').click( function( e ) {
-		e.stopPropagation();
-	});
 	$('#ultimosPedidosCliente').modal('show');
 }
 
@@ -5748,9 +5749,6 @@ function mostrarNotificaciones()
             $('#idultimopedido').val(data2.idpedido);
             $('#formapagoultpedido').val(data2.formapago);
         }
-    });
-    $('div').click( function( e ) {
-        e.stopPropagation();
     });
     $('#modalNotificaciones').modal('show');
 }

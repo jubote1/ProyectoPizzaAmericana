@@ -66,13 +66,9 @@ require([
     }
   });
 
-  const graphicsLayer = new GraphicsLayer();
-
-  const markerSymbol = new PictureMarkerSymbol({
-    url: "pz.png",
-    width: 20,
-    height: 20
-  });
+  const zonasLayer = new GraphicsLayer({ id: "zonasLayer", title: "Zonas" });
+  const tiendasLayer = new GraphicsLayer({ id: "tiendasLayer", title: "Tiendas" });
+  const graphicsLayer = zonasLayer;
 
   const markerClient = new PictureMarkerSymbol({
     url: "markerClient.png",
@@ -83,51 +79,62 @@ require([
   });
   markerClientNormal = markerClient;
 
-  const textTienda = {
-    type: "text",
-    color: "white",
-    haloColor: "black",
-    haloSize: "1px",
-    text: "",
-    xoffset: 3,
-    yoffset: 3,
-    font: {
-      size: 8,
-      family: "Orbitron",
-      weight: "bold"
-    }
-  };
-
   marker = new Graphic({
     geometry: CENTRO_MAPA,
     symbol: markerClient
   });
 
   view.graphics.add(marker);
-  map.add(graphicsLayer);
+  map.add(zonasLayer);
+  map.add(tiendasLayer);
 
-  cargarZonas(map, FeatureLayer, graphicsLayer, Graphic);
-  cargarTiendas(graphicsLayer, Graphic, markerSymbol, textTienda);
+  // Paleta de colores oficiales extraída directamente de Google My Maps de Pizza Americana
+  function getZonaColor(nombre) {
+    if (!nombre) return [65, 105, 225, 0.35];
+    var n = nombre.toLowerCase().trim();
+    if (n.includes('bello') || n.includes('cabaña') || n.includes('cabana')) return [249, 168, 37, 0.35];
+    if (n.includes('niquia') || n.includes('niquía')) return [2, 136, 209, 0.35];
+    if (n.includes('calasanz')) return [0, 96, 100, 0.35];
+    if (n.includes('mota')) return [2, 136, 209, 0.35];
+    if (n.includes('america') || n.includes('américa')) return [230, 81, 0, 0.35];
+    if (n.includes('envigado')) return [129, 119, 23, 0.35];
+    if (n.includes('pilarica')) return [156, 39, 176, 0.35];
+    if (n.includes('san antonio')) return [26, 35, 126, 0.35];
+    if (n.includes('itagui') || n.includes('itaguí')) return [255, 82, 82, 0.35];
+    if (n.includes('piloto')) return [57, 73, 171, 0.35];
+    if (n.includes('manrique')) return [165, 39, 20, 0.35];
+    if (n.includes('poblado')) return [159, 5, 63, 0.35];
+    return [65, 105, 225, 0.35];
+  }
+
+  // Generador de íconos circulares tipo Google Maps con silueta de pizza (idéntico al mapa moderno)
+  function crearIconoTiendaSVG(nombre) {
+    var col = getZonaColor(nombre);
+    var hexColor = "#" + ((1 << 24) + (col[0] << 16) + (col[1] << 8) + col[2]).toString(16).slice(1);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">' +
+      '<defs>' +
+        '<filter id="poiShadow" x="-25%" y="-25%" width="150%" height="150%">' +
+          '<feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.45"/>' +
+        '</filter>' +
+      '</defs>' +
+      '<circle cx="16" cy="16" r="13.5" fill="' + hexColor + '" stroke="#ffffff" stroke-width="2.5" filter="url(#poiShadow)"/>' +
+      '<path d="M 9.8 11.8 C 13.5 10 18.5 10 22.2 11.8 L 16 23.2 Z" fill="#ffffff"/>' +
+      '<circle cx="16" cy="13.6" r="1.15" fill="' + hexColor + '"/>' +
+      '<circle cx="13.9" cy="16.5" r="0.95" fill="' + hexColor + '"/>' +
+      '<circle cx="18.1" cy="16.5" r="0.95" fill="' + hexColor + '"/>' +
+      '<circle cx="16" cy="19.4" r="0.8" fill="' + hexColor + '"/>' +
+    '</svg>';
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+
+  cargarZonas(map, FeatureLayer, zonasLayer, Graphic);
+  cargarTiendas(tiendasLayer, Graphic);
   configurarPopup();
   configurarEventosMapa();
   configurarEventosFormulario();
 
 
-  function cargarZonas(map, FeatureLayer, graphicsLayer, Graphic) {
-    const palette = [
-      [255, 99, 71, 0.22],
-      [60, 179, 113, 0.22],
-      [65, 105, 225, 0.22],
-      [238, 130, 238, 0.22],
-      [255, 165, 0, 0.22],
-      [100, 149, 237, 0.22],
-      [154, 205, 50, 0.22],
-      [220, 20, 60, 0.22],
-      [30, 144, 255, 0.22],
-      [127, 255, 212, 0.22],
-      [218, 112, 214, 0.22]
-    ];
-
+  function cargarZonas(map, FeatureLayer, zonasLayer, Graphic) {
     var zonasCargadas = false;
 
     function cargarPoligonosLocales() {
@@ -138,7 +145,8 @@ require([
           var data = JSON.parse(text);
           for (var i = 0; i < data.length; i++) {
             var points = data[i]["coordinates"];
-            var color = data[i]["color"] || [65, 105, 225, 0.22];
+            var idZona = data[i]["id"] || "";
+            var color = data[i]["color"] || getZonaColor(idZona);
             var polygon = {
               type: "polygon",
               rings: points
@@ -147,15 +155,18 @@ require([
               type: "simple-fill",
               color: color,
               outline: {
-                color: [160, 160, 160],
-                width: 1
+                color: [color[0], color[1], color[2], 0.95],
+                width: 1.5
               }
             };
             var polygonGraphic = new Graphic({
               geometry: polygon,
               symbol: simpleFillSymbol
             });
-            graphicsLayer.add(polygonGraphic);
+            zonasLayer.add(polygonGraphic);
+          }
+          if (tiendasLayer && map.layers.includes(tiendasLayer)) {
+            map.reorder(tiendasLayer, map.layers.length - 1);
           }
         } catch (e) {
           console.error("Error parseando poligonos2.json local:", e);
@@ -164,13 +175,13 @@ require([
     }
 
     try {
-      const zonasLayer = new FeatureLayer({
+      const zonasFeatureLayer = new FeatureLayer({
         url: "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0",
         outFields: ["nombre"],
         popupEnabled: false
       });
 
-      zonasLayer.queryFeatures({
+      zonasFeatureLayer.queryFeatures({
         where: "1=1",
         outFields: ["nombre"],
         returnGeometry: false
@@ -188,28 +199,32 @@ require([
 
         const nombresUnicos = Array.from(new Set(nombres));
 
-        const uniqueValueInfos = nombresUnicos.map(function (nombre, index) {
+        const uniqueValueInfos = nombresUnicos.map(function (nombre) {
+          const col = getZonaColor(nombre);
           return {
             value: nombre,
             label: nombre,
             symbol: {
               type: "simple-fill",
-              color: palette[index % palette.length],
+              color: col,
               outline: {
-                color: [160, 160, 160],
-                width: 1
+                color: [col[0], col[1], col[2], 0.95],
+                width: 1.5
               }
             }
           };
         });
 
-        zonasLayer.renderer = {
+        zonasFeatureLayer.renderer = {
           type: "unique-value",
           field: "nombre",
           uniqueValueInfos: uniqueValueInfos
         };
 
-        map.add(zonasLayer);
+        map.add(zonasFeatureLayer, 0);
+        if (tiendasLayer && map.layers.includes(tiendasLayer)) {
+          map.reorder(tiendasLayer, map.layers.length - 1);
+        }
         zonasCargadas = true;
       }).catch(function (error) {
         console.warn("FeatureLayer de zonas no disponible, cargando poligonos2.json local:", error);
@@ -221,15 +236,14 @@ require([
     }
   }
 
-  function cargarTiendas(graphicsLayer, Graphic, markerSymbol, textTienda) {
+  function cargarTiendas(tiendasLayer, Graphic) {
     readTextFile("tiendas.json", function (text) {
       const tiendas = JSON.parse(text);
 
       tiendas.forEach(function (tienda) {
         const coordenadasTienda = tienda.coordinates;
-        const coordenadasTexto = tienda.lugar_cercano;
 
-        if (!coordenadasTienda || !coordenadasTexto) {
+        if (!coordenadasTienda) {
           return;
         }
 
@@ -239,33 +253,33 @@ require([
           latitude: coordenadasTienda.lat
         };
 
+        const storeSymbol = new PictureMarkerSymbol({
+          url: crearIconoTiendaSVG(tienda.zona || tienda.title),
+          width: 26,
+          height: 26,
+          xoffset: 0,
+          yoffset: 0
+        });
+
         const markerGraphic = new Graphic({
           geometry: markerGeometry,
-          symbol: markerSymbol,
+          symbol: storeSymbol,
+          attributes: {
+            tipo: "tienda",
+            title: tienda.title,
+            zona: tienda.zona
+          },
           popupTemplate: {
-            title: tienda.title
+            title: "🍕 Tienda Pizza Americana - " + tienda.title,
+            content: "<b>Zona de cobertura:</b> " + (tienda.zona || tienda.title)
           }
         });
 
-        graphicsLayer.add(markerGraphic);
-
-        const textoGeometry = {
-          type: "point",
-          longitude: coordenadasTexto.lng,
-          latitude: coordenadasTexto.lat
-        };
-
-        const textoSymbol = Object.assign({}, textTienda, {
-          text: tienda.zona || ""
-        });
-
-        const textoGraphic = new Graphic({
-          geometry: textoGeometry,
-          symbol: textoSymbol
-        });
-
-        view.graphics.add(textoGraphic);
+        tiendasLayer.add(markerGraphic);
       });
+      if (tiendasLayer && map.layers.includes(tiendasLayer)) {
+        map.reorder(tiendasLayer, map.layers.length - 1);
+      }
     });
   }
 
@@ -289,7 +303,7 @@ require([
 
         // 1. Ignorar clics sobre iconos de tiendas
         const markerTiendaSeleccionado = graphics.some(function (graphic) {
-          return graphic.symbol && graphic.symbol.type === "picture-marker" && graphic !== marker;
+          return (graphic.layer === tiendasLayer || graphic.layer === zonasLayer) && graphic.attributes && graphic.attributes.tipo === "tienda";
         });
 
         if (markerTiendaSeleccionado) {

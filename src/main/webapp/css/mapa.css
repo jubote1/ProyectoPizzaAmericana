@@ -1226,6 +1226,33 @@
     background-color: #fffbeb !important;
 }
 
+/* Tarjetas de despachos y selección de ruta por despacho */
+.card-despacho-item {
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.card-despacho-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12) !important;
+}
+
+.card-despacho-item.despacho-activo {
+    border: 2px solid #2563eb !important;
+    background: #eff6ff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18) !important;
+}
+
+.btn-ver-ruta-despacho {
+    font-size: 11px !important;
+    padding: 3px 9px !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px;
+    transition: all 0.15s ease;
+}
+
 
 
 

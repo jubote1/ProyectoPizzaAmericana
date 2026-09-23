@@ -330,8 +330,8 @@
 								<button id="btnToggleRuta" class="btn btn-outline-primary btn-sm font-weight-bold mr-2 mb-1" title="Mostrar u ocultar el trazo del recorrido en el mapa">
 									<i class="fas fa-eye-slash mr-1"></i> Ocultar Ruta
 								</button>
-								<button id="btnAjustarCalles" class="btn btn-outline-primary btn-sm font-weight-bold mr-2 mb-1" title="Ajustar y trazar el recorrido sobre las calles y carriles reales de la ciudad (vía OSRM)">
-									<i class="fas fa-road mr-1"></i> Ajustar a Calles
+								<button id="btnAjustarCalles" class="btn btn-success btn-sm font-weight-bold mr-2 mb-1" title="Ajustar y trazar el recorrido sobre las calles y carriles reales de la ciudad (vía OSRM)">
+									<i class="fas fa-road mr-1"></i> Calles (Activo)
 								</button>
 								<button id="btnToggleEntregas" class="btn btn-outline-success btn-sm font-weight-bold mr-2 mb-1" title="Mostrar u ocultar los marcadores de pedidos en el mapa">
 									<i class="fas fa-box mr-1"></i> Pedidos (Activo)
