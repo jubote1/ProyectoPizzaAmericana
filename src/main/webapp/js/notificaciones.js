@@ -112,12 +112,25 @@ if (!window.notificacionesCentralInicializado) {
 	}
 
 
+	window.cerrarAvisoPermisoNotificaciones = function () {
+	    try {
+	        sessionStorage.setItem('avisoPermisoNotificacionesCerrado', 'true');
+	    } catch (e) {}
+	    var el = document.getElementById('avisoPermisoNotificaciones');
+	    if (el) {
+	        el.remove();
+	    }
+	    if (typeof $ !== 'undefined') {
+	        $('#avisoPermisoNotificaciones').remove();
+	    }
+	};
+
 	$(document).on('click', '#btnComoActivarNotificaciones', function () {
 	    mostrarModalPermisoNotificaciones();
 	});
 	
-	$(document).on('click', '#btnCerrarAvisoNotificaciones', function () {
-	    $('#avisoPermisoNotificaciones').remove();
+	$(document).on('click', '#btnCerrarAvisoNotificaciones, #btnCerrarCruzAvisoNotif', function () {
+	    cerrarAvisoPermisoNotificaciones();
 	});
 
 	
@@ -126,6 +139,12 @@ if (!window.notificacionesCentralInicializado) {
 	        return;
 	    }
 
+	    try {
+	        if (sessionStorage.getItem('avisoPermisoNotificacionesCerrado') === 'true') {
+	            return;
+	        }
+	    } catch (e) {}
+
 	    if (Notification.permission === "denied") {
 	        mostrarAvisoPermisoNotificaciones();
 	    }
@@ -133,7 +152,13 @@ if (!window.notificacionesCentralInicializado) {
 
 	function mostrarAvisoPermisoNotificaciones() {
 
-	    if ($('#avisoPermisoNotificaciones').length > 0) {
+	    try {
+	        if (sessionStorage.getItem('avisoPermisoNotificacionesCerrado') === 'true') {
+	            return;
+	        }
+	    } catch (e) {}
+
+	    if ($('#avisoPermisoNotificaciones').length > 0 || document.getElementById('avisoPermisoNotificaciones')) {
 	        return;
 	    }
 
@@ -143,7 +168,7 @@ if (!window.notificacionesCentralInicializado) {
 	        'position:fixed;' +
 	        'right:18px;' +
 	        'bottom:18px;' +
-	        'z-index:99999;' +
+	        'z-index:999999;' +
 	        'width:320px;' +
 	        'background:#fcfdff;border:1px solid #e7ebf0;' +
 	        'border-radius:14px;' +
@@ -151,6 +176,14 @@ if (!window.notificacionesCentralInicializado) {
 	        'padding:14px 15px;' +
 	        'font-family:Sans-Serif;' +
 	        '">' +
+
+	        '<button type="button" id="btnCerrarCruzAvisoNotif" onclick="cerrarAvisoPermisoNotificaciones();" ' +
+	        'style="' +
+	        'position:absolute;top:8px;right:10px;' +
+	        'background:transparent;border:0;' +
+	        'color:#94a3b8;font-size:18px;line-height:1;' +
+	        'cursor:pointer;padding:4px;border-radius:4px;' +
+	        '" title="Cerrar aviso">&times;</button>' +
 
 	        '<div style="display:flex;align-items:flex-start;">' +
 
@@ -168,7 +201,7 @@ if (!window.notificacionesCentralInicializado) {
 	        '<i class="fas fa-bell-slash" style="color:#d9a600;font-size:15px;"></i>' +
 	        '</div>' +
 
-	        '<div style="flex:1;">' +
+	        '<div style="flex:1;padding-right:12px;">' +
 
 	        '<div style="' +
 	        'font-size:14px;' +
@@ -203,7 +236,7 @@ if (!window.notificacionesCentralInicializado) {
 	        'Ver como' +
 	        '</button>' +
 
-	        '<button type="button" id="btnCerrarAvisoNotificaciones" ' +
+	        '<button type="button" id="btnCerrarAvisoNotificaciones" onclick="cerrarAvisoPermisoNotificaciones();" ' +
 	        'style="' +
 	        'border:0;' +
 	        'background:#eef1f4;' +

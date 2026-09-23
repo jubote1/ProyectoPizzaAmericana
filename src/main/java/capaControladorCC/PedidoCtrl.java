@@ -5189,6 +5189,36 @@ public class PedidoCtrl {
 		return (respuesta);
 	}
 
+	public String consultarConteoPedidosDomiciliario(int idTienda, String claveUsuario) {
+		String respuesta = "";
+		HttpClient client = utilidadesCC.ClientesHttp.apache();
+		Tienda tienda = TiendaDAO.obtenerTienda(idTienda);
+		if (tienda != null) {
+			String rutaURL = tienda.getUrl() + "ConsultarConteoPedidosDomiciliario?claveusuario=" + claveUsuario
+					+ "&idtienda=" + idTienda;
+			HttpGet request = new HttpGet(rutaURL);
+			try {
+				HttpResponse responseFinPed = client.execute(request);
+				try {
+					if (responseFinPed.getEntity() != null) {
+						respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
+					}
+				} finally {
+					EntityUtils.consumeQuietly(responseFinPed.getEntity());
+				}
+			} catch (Exception e) {
+				System.out.println("Error consultarConteoPedidosDomiciliario: " + e.toString());
+			}
+		}
+		if (respuesta.equals("")) {
+			JSONObject resultado = new JSONObject();
+			resultado.put("resultado", "error");
+			resultado.put("tipo_error", "error servicio tienda");
+			return resultado.toJSONString();
+		}
+		return (respuesta);
+	}
+
 	public void insertarDomiciliarioPedido(DomiciliarioPedido domPedido) {
 		DomiciliarioPedidoDAO.insertarDomiciliarioPedido(domPedido);
 	}
