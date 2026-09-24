@@ -141,7 +141,7 @@ public class SegmentacionPersonaDAO {
 	 *                    por uno: asi la pantalla puede mostrar donde esta el
 	 *                    resto y no solo lo que ya escogio.
 	 */
-	private static String armarWhere(final Filtro f, final ArrayList<Object> valores,
+	static String armarWhere(final Filtro f, final ArrayList<Object> valores,
 			final boolean conSegmento) {
 		final StringBuilder w = new StringBuilder(" WHERE 1 = 1");
 
@@ -211,7 +211,7 @@ public class SegmentacionPersonaDAO {
 		return (" ORDER BY valor DESC, idpersona");
 	}
 
-	private static void ponerValores(final PreparedStatement ps, final ArrayList<Object> valores)
+	static void ponerValores(final PreparedStatement ps, final ArrayList<Object> valores)
 			throws Exception {
 		for (int i = 0; i < valores.size(); i++) {
 			final Object v = valores.get(i);
@@ -226,7 +226,7 @@ public class SegmentacionPersonaDAO {
 	}
 
 	/** Deja el filtro dentro de lo razonable antes de tocar la base. */
-	private static void sanear(final Filtro f) {
+	static void sanear(final Filtro f) {
 		if (f.porPagina < 1) {
 			f.porPagina = 50;
 		}
