@@ -48,7 +48,8 @@ public class EnvioPublicidad extends HttpServlet {
 				? "" : request.getParameter("accion").trim();
 
 		if ("alcance".equals(accion)) {
-			out.write(EnvioPublicidadCtrl.alcance(SegmentacionPersonaCtrl.filtroDe(request)));
+			out.write(EnvioPublicidadCtrl.alcance(SegmentacionPersonaCtrl.filtroDe(request),
+					extraDe(request)));
 
 		} else if ("enviar".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.crearYEnviar(
@@ -59,6 +60,7 @@ public class EnvioPublicidad extends HttpServlet {
 					request.getParameter("cuerpo"),
 					resumenDeFiltros(request),
 					SegmentacionPersonaCtrl.filtroDe(request),
+					extraDe(request),
 					AccesoCRM.usuarioEnSesion(request)));
 
 		} else if ("avance".equals(accion)) {
@@ -118,6 +120,60 @@ public class EnvioPublicidad extends HttpServlet {
 			}
 		}
 		return (t.length() == 0 ? "todo el CRM" : t.toString());
+	}
+
+	/**
+	 * Los filtros que venian de la pantalla anterior.
+	 *
+	 * Van aparte del filtro de segmento porque salen a buscar a cliente y a
+	 * pedido, mientras el otro se resuelve dentro del resumen por persona.
+	 * Tenerlos separados deja a la vista cuales son los caros.
+	 */
+	private capaDAOCC.CampanaDAO.FiltroExtra extraDe(final HttpServletRequest request) {
+		final capaDAOCC.CampanaDAO.FiltroExtra e = new capaDAOCC.CampanaDAO.FiltroExtra();
+		e.diasSinPublicidad = entero(request.getParameter("diassinpublicidad"));
+		e.excluirPlataformas = "S".equals(request.getParameter("excluirplataformas"));
+		e.pedidosMax = entero(request.getParameter("pedidosmax"));
+		e.puntosMin = entero(request.getParameter("puntosmin"));
+		e.soloMiembrosClub = "S".equals(request.getParameter("soloclub"));
+		e.correoContiene = texto(request.getParameter("correo"));
+		e.compraDesde = texto(request.getParameter("comprodesde"));
+		e.compraHasta = texto(request.getParameter("comprohasta"));
+		llenarTexto(e.tiposCliente, request.getParameter("tiposcliente"));
+		llenarEntero(e.productos, request.getParameter("productos"));
+		llenarEntero(e.especialidades, request.getParameter("especialidades"));
+		llenarEntero(e.excepciones, request.getParameter("promociones"));
+		return (e);
+	}
+
+	/** Las listas llegan separadas por coma, como en el resto de la pantalla. */
+	private void llenarEntero(final java.util.ArrayList<Integer> destino, final String valor) {
+		if (valor == null || valor.trim().length() == 0) {
+			return;
+		}
+		final String[] partes = valor.split(",");
+		for (int i = 0; i < partes.length; i++) {
+			final int n = entero(partes[i]);
+			if (n > 0) {
+				destino.add(Integer.valueOf(n));
+			}
+		}
+	}
+
+	private void llenarTexto(final java.util.ArrayList<String> destino, final String valor) {
+		if (valor == null || valor.trim().length() == 0) {
+			return;
+		}
+		final String[] partes = valor.split(",");
+		for (int i = 0; i < partes.length; i++) {
+			if (partes[i].trim().length() > 0) {
+				destino.add(partes[i].trim());
+			}
+		}
+	}
+
+	private String texto(final String valor) {
+		return (valor == null ? "" : valor.trim());
 	}
 
 	private int entero(final String valor) {
