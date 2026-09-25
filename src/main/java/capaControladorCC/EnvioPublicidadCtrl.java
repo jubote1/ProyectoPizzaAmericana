@@ -9,6 +9,7 @@ import org.json.simple.JSONObject;
 import com.google.gson.JsonObject;
 
 import capaDAOCC.CampanaDAO;
+import capaDAOCC.DefinicionSegmentoDAO;
 import capaDAOCC.SegmentacionPersonaDAO;
 import utilidadesCC.ControladorEnvioCorreo;
 import utilidadesCC.EnviadorPublicidadDirecta;
@@ -71,6 +72,29 @@ public class EnvioPublicidadCtrl {
 		}
 		final JSONObject r = new JSONObject();
 		r.put("tiendas", lista);
+		return (r.toJSONString());
+	}
+
+	/**
+	 * Los segmentos, leidos de crm.segmento_definicion.
+	 *
+	 * Estaban escritos a mano en el javascript de la pantalla y la lista quedo
+	 * vieja: le faltaban ORO -7.971 personas, el mejor publico que hay- y CASI
+	 * PERDIDO, y ofrecia UNICA COMPRA, que no existe. Un filtro que no ofrece un
+	 * segmento no falla ni avisa: simplemente no se puede escoger, y nadie se
+	 * entera de que le esta faltando.
+	 *
+	 * La definicion la mantiene la pantalla de Definicion de Segmentos, asi que
+	 * aqui se lee y no se repite.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String segmentos() {
+		final JSONArray lista = new JSONArray();
+		for (final String nombre : DefinicionSegmentoDAO.nombresValidos()) {
+			lista.add(nombre);
+		}
+		final JSONObject r = new JSONObject();
+		r.put("segmentos", lista);
 		return (r.toJSONString());
 	}
 
