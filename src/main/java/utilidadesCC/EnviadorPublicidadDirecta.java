@@ -48,8 +48,8 @@ public class EnviadorPublicidadDirecta {
 	/** Uno solo para toda la aplicacion: dos relojes mandando a la vez romperian la espera. */
 	private static ScheduledExecutorService reloj = null;
 
-	/** La campana que se esta soltando ahora. Cero si no hay ninguna. */
-	private static long campanaEnCurso = 0;
+	/** La tanda que se esta soltando ahora. Cero si no hay ninguna. */
+	private static long envioEnCurso = 0;
 
 	private EnviadorPublicidadDirecta() {
 	}
@@ -89,13 +89,13 @@ public class EnviadorPublicidadDirecta {
 	 *
 	 * @return "" si arranco, o el motivo por el que no
 	 */
-	public static synchronized String arrancar(final long idCampana) {
-		if (campanaEnCurso != 0 && campanaEnCurso != idCampana) {
-			return ("Ya hay una campana de correo directo en curso, la " + campanaEnCurso
+	public static synchronized String arrancar(final long idEnvio) {
+		if (envioEnCurso != 0 && envioEnCurso != idEnvio) {
+			return ("Ya hay un envio de correo directo en curso, el " + envioEnCurso
 					+ ". Espere a que termine.");
 		}
-		campanaEnCurso = idCampana;
-		CampanaDAO.cambiarEstado(idCampana, "ENVIANDO");
+		envioEnCurso = idEnvio;
+		CampanaDAO.cambiarEstado(idEnvio, "ENVIANDO");
 
 		if (reloj == null || reloj.isShutdown()) {
 			reloj = Executors.newSingleThreadScheduledExecutor();
@@ -122,14 +122,14 @@ public class EnviadorPublicidadDirecta {
 
 	/** Detiene la campana en curso. Lo ya enviado queda enviado. */
 	public static synchronized void detener() {
-		if (campanaEnCurso != 0) {
-			CampanaDAO.cambiarEstado(campanaEnCurso, "CANCELADA");
-			campanaEnCurso = 0;
+		if (envioEnCurso != 0) {
+			CampanaDAO.cambiarEstado(envioEnCurso, "CANCELADA");
+			envioEnCurso = 0;
 		}
 	}
 
 	public static long enCurso() {
-		return (campanaEnCurso);
+		return (envioEnCurso);
 	}
 
 	/**
@@ -140,22 +140,22 @@ public class EnviadorPublicidadDirecta {
 	 * escribir a gente que ya recibio.
 	 */
 	private static synchronized void soltarUno() {
-		if (campanaEnCurso == 0) {
+		if (envioEnCurso == 0) {
 			return;
 		}
 		final Logger logger = Logger.getLogger("log_file");
 		final ArrayList<CampanaDAO.Destinatario> uno =
-				CampanaDAO.pendientes(campanaEnCurso, 1);
+				CampanaDAO.pendientes(envioEnCurso, 1);
 
 		if (uno.isEmpty()) {
-			logger.info("EnviadorPublicidadDirecta: campana " + campanaEnCurso + " terminada.");
-			campanaEnCurso = 0;
+			logger.info("EnviadorPublicidadDirecta: envio " + envioEnCurso + " terminado.");
+			envioEnCurso = 0;
 			return;
 		}
 
-		final CampanaDAO.Campana campana = CampanaDAO.obtener(campanaEnCurso);
-		if (campana == null) {
-			campanaEnCurso = 0;
+		final CampanaDAO.Envio tanda = CampanaDAO.obtener(envioEnCurso);
+		if (tanda == null) {
+			envioEnCurso = 0;
 			return;
 		}
 
@@ -164,7 +164,7 @@ public class EnviadorPublicidadDirecta {
 			if (!ControladorEnvioCorreo.esDireccionValida(d.destino)) {
 				//Una direccion mal escrita gasta una conexion SMTP y se demora;
 				//se descarta antes de intentarlo.
-				CampanaDAO.marcar(campana.idCampana, d.idPersona, "FALLIDO",
+				CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO",
 						"La direccion no es valida");
 				return;
 			}
@@ -172,10 +172,10 @@ public class EnviadorPublicidadDirecta {
 			final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo(
 					"CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
 			final Correo correo = new Correo();
-			correo.setAsunto(campana.asunto);
+			correo.setAsunto(tanda.asunto);
 			correo.setUsuarioCorreo(cuenta.getCuentaCorreo());
 			correo.setContrasena(cuenta.getClaveCorreo());
-			correo.setMensaje(personalizar(campana.cuerpo, d.nombre));
+			correo.setMensaje(personalizar(tanda.cuerpo, d.nombre));
 
 			final ArrayList<String> destinos = new ArrayList<String>();
 			destinos.add(d.destino);
@@ -184,14 +184,14 @@ public class EnviadorPublicidadDirecta {
 			final ControladorEnvioCorreo.ResultadoEnvio resultado = envio.enviarCorreoClasificado();
 
 			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
-				CampanaDAO.marcar(campana.idCampana, d.idPersona, "ENVIADO", "");
+				CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "ENVIADO", "");
 			} else {
-				CampanaDAO.marcar(campana.idCampana, d.idPersona, "FALLIDO",
+				CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO",
 						String.valueOf(resultado));
 			}
 		} catch (final Exception e) {
 			logger.error("EnviadorPublicidadDirecta: " + d.destino + ", " + e.toString());
-			CampanaDAO.marcar(campana.idCampana, d.idPersona, "FALLIDO", e.toString());
+			CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO", e.toString());
 		}
 	}
 

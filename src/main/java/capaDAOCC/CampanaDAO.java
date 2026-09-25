@@ -67,6 +67,13 @@ public class CampanaDAO {
 	// Lo que se devuelve
 	// =======================================================================
 
+	/**
+	 * El maestro: la idea de campana, que se reusa.
+	 *
+	 * COMBO FUTBOLERO es una campana; lo que se mando el 24 de septiembre es un
+	 * Envio de esa campana. Tenerlos separados es lo que permite preguntar "como
+	 * le va al COMBO FUTBOLERO" y no solo "como le fue el 24".
+	 */
 	public static class Campana {
 		public long idCampana;
 		public String nombre = "";
@@ -75,14 +82,42 @@ public class CampanaDAO {
 		public String asunto = "";
 		/** Solo lo usa el correo directo: Brevo trae su plantilla. */
 		public String cuerpo = "";
+		public String filtros = "";
+		/** Con cuantos dias de descanso se arma por defecto cada tanda. */
+		public int diasSinPublicidad;
+		/** Cuantos por tanda; 0 es sin tope. */
+		public int tope;
+		/** Acumulados de TODAS las tandas. */
+		public int publico;
+		public int enviados;
+		public int fallidos;
+		public int envios;
+		public String estado = "";
+		public String usuario = "";
+		public String creadaEn = "";
+		public String ultimoEnvioEn = "";
+	}
+
+	/** Una disparada concreta de una campana. */
+	public static class Envio {
+		public long idEnvio;
+		public long idCampana;
+		public String campana = "";
+		public int consecutivo;
+		public String canal = "";
+		public int idPlantilla;
+		public String asunto = "";
+		public String cuerpo = "";
+		public int tope;
+		public int diasSinPublicidad;
 		public int publico;
 		public int enviados;
 		public int fallidos;
 		public int pendientes;
 		public String estado = "";
 		public String usuario = "";
-		public String creadaEn = "";
-		public String terminadaEn = "";
+		public String creadoEn = "";
+		public String terminadoEn = "";
 	}
 
 	/** Una persona a la que hay que escribirle. */
@@ -168,8 +203,38 @@ public class CampanaDAO {
 	// Crear la campana y cargarle la gente
 	// =======================================================================
 
+	/**
+	 * Los dias que debe descansar una persona entre un envio y el siguiente.
+	 *
+	 * Es lo que evita que las tandas se pisen. La carga ordena por valor DESC,
+	 * asi que sin este descanso los 200 de manana serian los mismos 200 de hoy
+	 * -los de mas valor- y el resto del segmento no recibiria nunca.
+	 *
+	 * Vive en general.parametros porque es justo lo que mercadeo va a querer
+	 * mover cuando vea como responde la gente.
+	 */
+	public static int diasMinimosPorDefecto() {
+		int dias = 30;
+		try {
+			final int valor = ParametrosDAO.retornarValorNumerico("PUBLICIDADDIASMINIMOS");
+			if (valor > 0) {
+				dias = valor;
+			}
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.diasMinimos: " + e.toString());
+		}
+		return (dias);
+	}
+
+	/**
+	 * Crea el maestro de campana, o devuelve el que ya existe con ese nombre.
+	 *
+	 * El nombre es unico a proposito: dos campanas llamadas igual son un error
+	 * de dedo, y el dia que se comparen desempenos no se sabria cual es cual.
+	 */
 	public static long crear(final String nombre, final String canal, final int idPlantilla,
-			final String asunto, final String cuerpo, final String filtros, final String usuario) {
+			final String asunto, final String cuerpo, final String filtros,
+			final int diasSinPublicidad, final int tope, final String usuario) {
 		long id = 0;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -177,7 +242,8 @@ public class CampanaDAO {
 			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
 					"INSERT INTO crm.campana (nombre, canal, idplantilla, asunto, cuerpo, filtros,"
-					+ " estado, usuario, creada_en) VALUES (?,?,?,?,?,?, 'BORRADOR', ?, NOW())",
+					+ " dias_sin_publicidad, tope, estado, usuario, creada_en)"
+					+ " VALUES (?,?,?,?,?,?,?,?, 'ACTIVA', ?, NOW())",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, nombre);
 			ps.setString(2, canal);
@@ -185,7 +251,9 @@ public class CampanaDAO {
 			ps.setString(4, asunto);
 			ps.setString(5, cuerpo);
 			ps.setString(6, recortar(filtros, 2000));
-			ps.setString(7, usuario);
+			ps.setInt(7, diasSinPublicidad);
+			ps.setInt(8, tope);
+			ps.setString(9, usuario);
 			ps.executeUpdate();
 			final ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next()) {
@@ -201,6 +269,115 @@ public class CampanaDAO {
 		return (id);
 	}
 
+	/** El maestro con ese nombre, o 0 si no existe. */
+	public static long buscarPorNombre(final String nombre) {
+		long id = 0;
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT idcampana FROM crm.campana WHERE nombre = ?");
+			ps.setString(1, nombre);
+			final ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				id = rs.getLong("idcampana");
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.buscarPorNombre: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (id);
+	}
+
+	/**
+	 * Deja en el maestro lo ultimo que se uso.
+	 *
+	 * Asi, al escoger la campana en el desplegable, vuelven el canal, la
+	 * plantilla, el asunto y el tope con los que se mando la vez pasada. Es lo
+	 * que hace que reusar una campana sea un clic y no volver a armarla.
+	 */
+	public static void actualizarMaestro(final long idCampana, final String canal,
+			final int idPlantilla, final String asunto, final String cuerpo, final String filtros,
+			final int diasSinPublicidad, final int tope) {
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"UPDATE crm.campana SET canal = ?, idplantilla = ?, asunto = ?, cuerpo = ?,"
+					+ " filtros = ?, dias_sin_publicidad = ?, tope = ? WHERE idcampana = ?");
+			ps.setString(1, canal);
+			ps.setInt(2, idPlantilla);
+			ps.setString(3, asunto);
+			ps.setString(4, cuerpo);
+			ps.setString(5, recortar(filtros, 2000));
+			ps.setInt(6, diasSinPublicidad);
+			ps.setInt(7, tope);
+			ps.setLong(8, idCampana);
+			ps.executeUpdate();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.actualizarMaestro: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	/**
+	 * Abre una tanda nueva de una campana.
+	 *
+	 * El consecutivo se calcula aqui dentro y no lo manda la pantalla: dos
+	 * personas disparando la misma campana a la vez se pisarian el numero.
+	 *
+	 * Canal, plantilla y asunto se copian a la tanda y no se dejan solo en el
+	 * maestro porque el maestro cambia: si el mes entrante se usa otra
+	 * plantilla, el historial tiene que seguir diciendo con cual se mando en
+	 * septiembre. Sin eso, comparar tandas compara cosas distintas creyendo que
+	 * son la misma.
+	 */
+	public static long crearEnvio(final long idCampana, final String canal, final int idPlantilla,
+			final String asunto, final String cuerpo, final String filtros, final int tope,
+			final int diasSinPublicidad, final String usuario) {
+		long id = 0;
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"INSERT INTO crm.campana_envio (idcampana, consecutivo, canal, idplantilla,"
+					+ " asunto, cuerpo, filtros, tope, dias_sin_publicidad, estado, usuario, creado_en)"
+					+ " SELECT ?, IFNULL(MAX(e.consecutivo),0) + 1, ?,?,?,?,?,?,?, 'BORRADOR', ?, NOW()"
+					+ "   FROM crm.campana_envio e WHERE e.idcampana = ?",
+					Statement.RETURN_GENERATED_KEYS);
+			ps.setLong(1, idCampana);
+			ps.setString(2, canal);
+			ps.setInt(3, idPlantilla);
+			ps.setString(4, asunto);
+			ps.setString(5, cuerpo);
+			ps.setString(6, recortar(filtros, 2000));
+			ps.setInt(7, tope);
+			ps.setInt(8, diasSinPublicidad);
+			ps.setString(9, usuario);
+			ps.setLong(10, idCampana);
+			ps.executeUpdate();
+			final ResultSet rs = ps.getGeneratedKeys();
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.crearEnvio: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (id);
+	}
+
 	/**
 	 * Mete en la campana a todas las personas que cumplen el filtro Y tienen
 	 * por donde recibir ese canal.
@@ -210,11 +387,19 @@ public class CampanaDAO {
 	 * mover megas por la red para nada, y ademas deja una ventana en la que la
 	 * lista ya no es la que se conto.
 	 *
-	 * @param tope 0 para sin tope; se usa para el correo directo
+	 * EL ORDEN ES LO QUE HACE POSIBLE ENVIAR POR TANDAS
+	 *
+	 * Se ordena por valor DESC: si solo caben 500, que sean los 500 que mas
+	 * valen. Y como el filtro de dias sin publicidad deja por fuera a quien ya
+	 * recibio, la tanda de manana toma LOS SIGUIENTES, no los mismos. Sin ese
+	 * filtro, "hoy 500 y manana 200" le escribiria dos veces a los mismos 200.
+	 *
+	 * @param tope 0 para sin tope
 	 * @return cuanta gente quedo
 	 */
-	public static int cargarDestinatarios(final long idCampana, final String canal,
-			final SegmentacionPersonaDAO.Filtro filtro, final FiltroExtra extra, final int tope) {
+	public static int cargarDestinatarios(final long idEnvio, final long idCampana,
+			final String canal, final SegmentacionPersonaDAO.Filtro filtro,
+			final FiltroExtra extra, final int tope) {
 		int cuantos = 0;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -234,31 +419,32 @@ public class CampanaDAO {
 
 			final StringBuilder sql = new StringBuilder();
 			sql.append("INSERT IGNORE INTO crm.campana_destinatario")
-				.append(" (idcampana, idpersona, destino, nombre, estado)")
-				.append(" SELECT ?, idpersona, ").append(columnaDestino).append(",")
+				.append(" (idenvio, idcampana, idpersona, destino, nombre, estado)")
+				.append(" SELECT ?, ?, idpersona, ").append(columnaDestino).append(",")
 				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
 				.append(" FROM crm.persona_resumen").append(where).append(CONSENTIMIENTO)
 				.append(" AND ").append(columnaDestino).append(" IS NOT NULL")
 				.append(" AND TRIM(").append(columnaDestino).append(") <> ''");
-			//Para el correo directo el orden importa: si solo caben 50, que
-			//sean los 50 que mas valen, no los primeros que salgan.
+			//El orden importa: si solo caben 500, que sean los 500 que mas
+			//valen, no los primeros que salgan.
 			sql.append(" ORDER BY valor DESC");
 			if (tope > 0) {
 				sql.append(" LIMIT ").append(tope);
 			}
 
 			final PreparedStatement ps = cn.prepareStatement(sql.toString());
-			ps.setLong(1, idCampana);
+			ps.setLong(1, idEnvio);
+			ps.setLong(2, idCampana);
 			final ArrayList<Object> todos = new ArrayList<Object>();
 			todos.addAll(valores);
-			ponerDesde(ps, 2, todos);
+			ponerDesde(ps, 3, todos);
 			cuantos = ps.executeUpdate();
 			ps.close();
 
 			final PreparedStatement psUp = cn.prepareStatement(
-					"UPDATE crm.campana SET publico = ? WHERE idcampana = ?");
+					"UPDATE crm.campana_envio SET publico = ? WHERE idenvio = ?");
 			psUp.setInt(1, cuantos);
-			psUp.setLong(2, idCampana);
+			psUp.setLong(2, idEnvio);
 			psUp.executeUpdate();
 			psUp.close();
 		} catch (final Exception e) {
@@ -274,7 +460,7 @@ public class CampanaDAO {
 	// =======================================================================
 
 	/** Los que faltan por enviar, de a poquitos. */
-	public static ArrayList<Destinatario> pendientes(final long idCampana, final int limite) {
+	public static ArrayList<Destinatario> pendientes(final long idEnvio, final int limite) {
 		final ArrayList<Destinatario> lista = new ArrayList<Destinatario>();
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -283,9 +469,9 @@ public class CampanaDAO {
 			final PreparedStatement ps = cn.prepareStatement(
 					"SELECT idpersona, destino, IFNULL(nombre,'') AS nombre"
 					+ " FROM crm.campana_destinatario"
-					+ " WHERE idcampana = ? AND estado = 'PENDIENTE'"
+					+ " WHERE idenvio = ? AND estado = 'PENDIENTE'"
 					+ " ORDER BY idpersona LIMIT ?");
-			ps.setLong(1, idCampana);
+			ps.setLong(1, idEnvio);
 			ps.setInt(2, limite);
 			final ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -313,7 +499,7 @@ public class CampanaDAO {
 	 * reanudar no se le vuelve a escribir a nadie. Repetirle un correo a un
 	 * cliente es de las pocas cosas que de verdad molestan.
 	 */
-	public static void marcar(final long idCampana, final long idPersona, final String estado,
+	public static void marcar(final long idEnvio, final long idPersona, final String estado,
 			final String detalle) {
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -321,14 +507,18 @@ public class CampanaDAO {
 			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
 					"UPDATE crm.campana_destinatario SET estado = ?, detalle = ?, enviado_en = NOW()"
-					+ " WHERE idcampana = ? AND idpersona = ?");
+					+ " WHERE idenvio = ? AND idpersona = ?");
 			ps.setString(1, estado);
 			ps.setString(2, recortar(detalle, 300));
-			ps.setLong(3, idCampana);
+			ps.setLong(3, idEnvio);
 			ps.setLong(4, idPersona);
 			ps.executeUpdate();
 			ps.close();
-			recalcular(cn, idCampana);
+
+			if ("ENVIADO".equals(estado)) {
+				sellarPublicidad(cn, idPersona);
+			}
+			recalcular(cn, idEnvio);
 		} catch (final Exception e) {
 			Logger.getLogger("log_file").error("CampanaDAO.marcar: " + e.toString());
 		} finally {
@@ -336,27 +526,106 @@ public class CampanaDAO {
 		}
 	}
 
-	/** Pone la campana en el estado que le corresponde segun lo que falte. */
-	private static void recalcular(final Connection cn, final long idCampana) throws Exception {
+	/**
+	 * Deja constancia de que a esta persona ya se le escribio hoy.
+	 *
+	 * ESTO ES LO QUE HACE QUE EL TOPE POR TANDAS SIRVA. El filtro de "dias sin
+	 * publicidad" se apoya en cliente.ultima_fecha_publicidad, y esa columna la
+	 * escribia unicamente la pantalla vieja de segmentacion: esta leia la marca
+	 * pero nunca la ponia. Resultado, el filtro estaba ciego a sus propios
+	 * envios y la tanda de manana volvia a tomar a los mismos de hoy.
+	 *
+	 * Se sella por PERSONA, en todas sus filas de cliente, porque el filtro
+	 * tambien pregunta por persona. Sellar solo la fila por la que salio el
+	 * correo dejaria a las otras filas de la misma persona viendose como si no
+	 * hubieran recibido nada.
+	 *
+	 * Solo se sella lo ENVIADO: a quien le fallo el envio no le llego nada y no
+	 * tiene por que descansar.
+	 */
+	private static void sellarPublicidad(final Connection cn, final long idPersona)
+			throws Exception {
 		final PreparedStatement ps = cn.prepareStatement(
-				"UPDATE crm.campana c SET"
-				+ " c.enviados = (SELECT COUNT(*) FROM crm.campana_destinatario d"
-				+ "                WHERE d.idcampana = c.idcampana AND d.estado = 'ENVIADO'),"
-				+ " c.fallidos = (SELECT COUNT(*) FROM crm.campana_destinatario d"
-				+ "                WHERE d.idcampana = c.idcampana AND d.estado = 'FALLIDO'),"
-				+ " c.estado = IF((SELECT COUNT(*) FROM crm.campana_destinatario d"
-				+ "                 WHERE d.idcampana = c.idcampana AND d.estado = 'PENDIENTE') = 0,"
-				+ "               'TERMINADA', c.estado),"
-				+ " c.terminada_en = IF((SELECT COUNT(*) FROM crm.campana_destinatario d"
-				+ "                       WHERE d.idcampana = c.idcampana AND d.estado = 'PENDIENTE') = 0,"
-				+ "                     NOW(), c.terminada_en)"
-				+ " WHERE c.idcampana = ?");
-		ps.setLong(1, idCampana);
+				"UPDATE pizzaamericana.cliente SET ultima_fecha_publicidad = CURRENT_DATE"
+				+ " WHERE idpersona = ?");
+		ps.setLong(1, idPersona);
 		ps.executeUpdate();
 		ps.close();
 	}
 
-	public static void cambiarEstado(final long idCampana, final String estado) {
+	/**
+	 * Pone la tanda en el estado que le corresponde y sube los totales al
+	 * maestro.
+	 *
+	 * Los acumulados de la campana se recalculan desde las tandas y no se van
+	 * sumando: sumar deja el total mal para siempre en cuanto una tanda se
+	 * cancele o se reintente, y nadie vuelve a saber cual de los dos numeros
+	 * creer.
+	 */
+	private static void recalcular(final Connection cn, final long idEnvio) throws Exception {
+		final PreparedStatement ps = cn.prepareStatement(
+				"UPDATE crm.campana_envio e SET"
+				+ " e.enviados = (SELECT COUNT(*) FROM crm.campana_destinatario d"
+				+ "                WHERE d.idenvio = e.idenvio AND d.estado = 'ENVIADO'),"
+				+ " e.fallidos = (SELECT COUNT(*) FROM crm.campana_destinatario d"
+				+ "                WHERE d.idenvio = e.idenvio AND d.estado = 'FALLIDO'),"
+				+ " e.estado = IF((SELECT COUNT(*) FROM crm.campana_destinatario d"
+				+ "                 WHERE d.idenvio = e.idenvio AND d.estado = 'PENDIENTE') = 0,"
+				+ "               'TERMINADA', e.estado),"
+				+ " e.terminado_en = IF((SELECT COUNT(*) FROM crm.campana_destinatario d"
+				+ "                       WHERE d.idenvio = e.idenvio AND d.estado = 'PENDIENTE') = 0,"
+				+ "                     NOW(), e.terminado_en)"
+				+ " WHERE e.idenvio = ?");
+		ps.setLong(1, idEnvio);
+		ps.executeUpdate();
+		ps.close();
+
+		totalizar(cn, idEnvio);
+	}
+
+	/** Sube al maestro la suma de sus tandas. */
+	private static void totalizar(final Connection cn, final long idEnvio) throws Exception {
+		final PreparedStatement ps = cn.prepareStatement(
+				"UPDATE crm.campana c"
+				+ "  JOIN crm.campana_envio x ON x.idcampana = c.idcampana"
+				+ "   SET c.publico = (SELECT IFNULL(SUM(e.publico),0) FROM crm.campana_envio e"
+				+ "                     WHERE e.idcampana = c.idcampana),"
+				+ "       c.enviados = (SELECT IFNULL(SUM(e.enviados),0) FROM crm.campana_envio e"
+				+ "                      WHERE e.idcampana = c.idcampana),"
+				+ "       c.fallidos = (SELECT IFNULL(SUM(e.fallidos),0) FROM crm.campana_envio e"
+				+ "                      WHERE e.idcampana = c.idcampana),"
+				+ "       c.envios = (SELECT COUNT(*) FROM crm.campana_envio e"
+				+ "                    WHERE e.idcampana = c.idcampana),"
+				+ "       c.ultimo_envio_en = (SELECT MAX(e.creado_en) FROM crm.campana_envio e"
+				+ "                             WHERE e.idcampana = c.idcampana)"
+				+ " WHERE x.idenvio = ?");
+		ps.setLong(1, idEnvio);
+		ps.executeUpdate();
+		ps.close();
+	}
+
+	/** Cambia el estado de una TANDA. */
+	public static void cambiarEstado(final long idEnvio, final String estado) {
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"UPDATE crm.campana_envio SET estado = ? WHERE idenvio = ?");
+			ps.setString(1, estado);
+			ps.setLong(2, idEnvio);
+			ps.executeUpdate();
+			ps.close();
+			totalizar(cn, idEnvio);
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.cambiarEstado: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	/** Jubila o revive una campana del maestro. */
+	public static void cambiarEstadoCampana(final long idCampana, final String estado) {
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
 		try {
@@ -368,7 +637,7 @@ public class CampanaDAO {
 			ps.executeUpdate();
 			ps.close();
 		} catch (final Exception e) {
-			Logger.getLogger("log_file").error("CampanaDAO.cambiarEstado: " + e.toString());
+			Logger.getLogger("log_file").error("CampanaDAO.cambiarEstadoCampana: " + e.toString());
 		} finally {
 			cerrar(cn);
 		}
@@ -378,47 +647,53 @@ public class CampanaDAO {
 	// Consultar
 	// =======================================================================
 
-	public static Campana obtener(final long idCampana) {
-		Campana c = null;
+	/** Una tanda con lo suyo y el nombre de su campana. */
+	public static Envio obtener(final long idEnvio) {
+		Envio e = null;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
 		try {
 			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT c.*, (SELECT COUNT(*) FROM crm.campana_destinatario d"
-					+ "            WHERE d.idcampana = c.idcampana AND d.estado = 'PENDIENTE')"
-					+ "           AS pendientes"
-					+ " FROM crm.campana c WHERE c.idcampana = ?");
-			ps.setLong(1, idCampana);
+					"SELECT e.*, c.nombre AS campana,"
+					+ "       (SELECT COUNT(*) FROM crm.campana_destinatario d"
+					+ "         WHERE d.idenvio = e.idenvio AND d.estado = 'PENDIENTE') AS pendientes"
+					+ "  FROM crm.campana_envio e"
+					+ "  JOIN crm.campana c ON c.idcampana = e.idcampana"
+					+ " WHERE e.idenvio = ?");
+			ps.setLong(1, idEnvio);
 			final ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				c = leer(rs);
+				e = leerEnvio(rs);
 			}
 			rs.close();
 			ps.close();
-		} catch (final Exception e) {
-			Logger.getLogger("log_file").error("CampanaDAO.obtener: " + e.toString());
+		} catch (final Exception ex) {
+			Logger.getLogger("log_file").error("CampanaDAO.obtener: " + ex.toString());
 		} finally {
 			cerrar(cn);
 		}
-		return (c);
+		return (e);
 	}
 
-	public static ArrayList<Campana> ultimas(final int cuantas) {
-		final ArrayList<Campana> lista = new ArrayList<Campana>();
+	/** Las ultimas tandas, de todas las campanas: es el historial de la pantalla. */
+	public static ArrayList<Envio> ultimas(final int cuantas) {
+		final ArrayList<Envio> lista = new ArrayList<Envio>();
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
 		try {
 			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT c.*, (SELECT COUNT(*) FROM crm.campana_destinatario d"
-					+ "            WHERE d.idcampana = c.idcampana AND d.estado = 'PENDIENTE')"
-					+ "           AS pendientes"
-					+ " FROM crm.campana c ORDER BY c.idcampana DESC LIMIT ?");
+					"SELECT e.*, c.nombre AS campana,"
+					+ "       (SELECT COUNT(*) FROM crm.campana_destinatario d"
+					+ "         WHERE d.idenvio = e.idenvio AND d.estado = 'PENDIENTE') AS pendientes"
+					+ "  FROM crm.campana_envio e"
+					+ "  JOIN crm.campana c ON c.idcampana = e.idcampana"
+					+ " ORDER BY e.idenvio DESC LIMIT ?");
 			ps.setInt(1, cuantas);
 			final ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				lista.add(leer(rs));
+				lista.add(leerEnvio(rs));
 			}
 			rs.close();
 			ps.close();
@@ -430,8 +705,39 @@ public class CampanaDAO {
 		return (lista);
 	}
 
-	/** La campana de correo directo que este a medio camino, si hay alguna. */
-	public static long campanaDirectaEnCurso() {
+	/**
+	 * El maestro, para el desplegable.
+	 *
+	 * Van primero las que se usaron hace poco: quien entra a mandar algo casi
+	 * siempre viene a repetir lo de la semana pasada, no a buscar lo del ano
+	 * pasado.
+	 */
+	public static ArrayList<Campana> campanas(final boolean soloActivas) {
+		final ArrayList<Campana> lista = new ArrayList<Campana>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT c.* FROM crm.campana c"
+					+ (soloActivas ? " WHERE c.estado = 'ACTIVA'" : "")
+					+ " ORDER BY IFNULL(c.ultimo_envio_en, c.creada_en) DESC, c.idcampana DESC");
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				lista.add(leer(rs));
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.campanas: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (lista);
+	}
+
+	/** La tanda de correo directo que este a medio camino, si hay alguna. */
+	public static long envioDirectoEnCurso() {
 		long id = 0;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -439,16 +745,16 @@ public class CampanaDAO {
 			cn = con.obtenerConexionBDPrincipal();
 			final Statement stm = cn.createStatement();
 			final ResultSet rs = stm.executeQuery(
-					"SELECT idcampana FROM crm.campana"
+					"SELECT idenvio FROM crm.campana_envio"
 					+ " WHERE canal = 'D' AND estado = 'ENVIANDO'"
-					+ " ORDER BY idcampana LIMIT 1");
+					+ " ORDER BY idenvio LIMIT 1");
 			if (rs.next()) {
-				id = rs.getLong("idcampana");
+				id = rs.getLong("idenvio");
 			}
 			rs.close();
 			stm.close();
 		} catch (final Exception e) {
-			Logger.getLogger("log_file").error("CampanaDAO.campanaDirectaEnCurso: " + e.toString());
+			Logger.getLogger("log_file").error("CampanaDAO.envioDirectoEnCurso: " + e.toString());
 		} finally {
 			cerrar(cn);
 		}
@@ -481,7 +787,22 @@ public class CampanaDAO {
 	 * parecida que no lo recibio. Sirve para comparar campanas entre si, que ya
 	 * es bastante.
 	 */
-	public static Resultado resultado(final long idCampana, final int horas) {
+	/** Como le fue a UNA tanda. */
+	public static Resultado resultado(final long idEnvio, final int horas) {
+		return (medir("d.idenvio = ?", idEnvio, horas));
+	}
+
+	/**
+	 * Como le va a la campana completa, sumando todas sus tandas.
+	 *
+	 * Es la pregunta que solo se puede responder desde que campana y disparada
+	 * estan separadas: "sirve el COMBO FUTBOLERO", no "sirvio el envio del 24".
+	 */
+	public static Resultado resultadoCampana(final long idCampana, final int horas) {
+		return (medir("d.idcampana = ?", idCampana, horas));
+	}
+
+	private static Resultado medir(final String condicion, final long id, final int horas) {
 		final Resultado r = new Resultado();
 		r.horas = horas;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
@@ -510,10 +831,10 @@ public class CampanaDAO {
 					+ "               AND pe.fechainsercion <= DATE_ADD(d.enviado_en, INTERVAL ? HOUR))),0)"
 					+ "     AS valor"
 					+ " FROM crm.campana_destinatario d"
-					+ " WHERE d.idcampana = ? AND d.estado = 'ENVIADO'");
+					+ " WHERE " + condicion + " AND d.estado = 'ENVIADO'");
 			ps.setInt(1, horas);
 			ps.setInt(2, horas);
-			ps.setLong(3, idCampana);
+			ps.setLong(3, id);
 			final ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				r.enviados = rs.getInt("enviados");
@@ -734,15 +1055,41 @@ public class CampanaDAO {
 		c.idPlantilla = rs.getInt("idplantilla");
 		c.asunto = texto(rs.getString("asunto"));
 		c.cuerpo = texto(rs.getString("cuerpo"));
+		c.filtros = texto(rs.getString("filtros"));
+		c.diasSinPublicidad = rs.getInt("dias_sin_publicidad");
+		c.tope = rs.getInt("tope");
 		c.publico = rs.getInt("publico");
 		c.enviados = rs.getInt("enviados");
 		c.fallidos = rs.getInt("fallidos");
-		c.pendientes = rs.getInt("pendientes");
+		c.envios = rs.getInt("envios");
 		c.estado = texto(rs.getString("estado"));
 		c.usuario = texto(rs.getString("usuario"));
 		c.creadaEn = texto(rs.getString("creada_en"));
-		c.terminadaEn = texto(rs.getString("terminada_en"));
+		c.ultimoEnvioEn = texto(rs.getString("ultimo_envio_en"));
 		return (c);
+	}
+
+	private static Envio leerEnvio(final ResultSet rs) throws Exception {
+		final Envio e = new Envio();
+		e.idEnvio = rs.getLong("idenvio");
+		e.idCampana = rs.getLong("idcampana");
+		e.campana = texto(rs.getString("campana"));
+		e.consecutivo = rs.getInt("consecutivo");
+		e.canal = texto(rs.getString("canal"));
+		e.idPlantilla = rs.getInt("idplantilla");
+		e.asunto = texto(rs.getString("asunto"));
+		e.cuerpo = texto(rs.getString("cuerpo"));
+		e.tope = rs.getInt("tope");
+		e.diasSinPublicidad = rs.getInt("dias_sin_publicidad");
+		e.publico = rs.getInt("publico");
+		e.enviados = rs.getInt("enviados");
+		e.fallidos = rs.getInt("fallidos");
+		e.pendientes = rs.getInt("pendientes");
+		e.estado = texto(rs.getString("estado"));
+		e.usuario = texto(rs.getString("usuario"));
+		e.creadoEn = texto(rs.getString("creado_en"));
+		e.terminadoEn = texto(rs.getString("terminado_en"));
+		return (e);
 	}
 
 	private static void ponerDesde(final PreparedStatement ps, final int desde,
