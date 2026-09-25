@@ -11,16 +11,31 @@
 
 var epCanal = 'C';
 var epAlcance = null;
-var epCampana = 0;
+var epEnvio = 0;
 var epReloj = null;
+var epCampanas = [];
 
 $(document).ready(function () {
 
 	epCargarTiendas();
 	epCargarSegmentos();
 	epCargarPlantillas();
+	epCargarCampanas();
 	epCargarHistorial();
 	epCargarCatalogos();
+
+	//Crear campana nueva o volver a la lista. Son dos modos y no dos campos
+	//sueltos: con los dos a la vista, nadie sabe cual manda.
+	$('#ep-nuevacampana').click(function (e) {
+		e.preventDefault();
+		epModoNueva(true);
+	});
+	$('#ep-volvercampana').click(function (e) {
+		e.preventDefault();
+		epModoNueva(false);
+	});
+
+	$('#ep-campana').change(epTraerCampana);
 
 	$('#ep-masfiltros').click(function (e) {
 		e.preventDefault();
@@ -45,6 +60,10 @@ $(document).ready(function () {
 	$('#ep-enviar').click(epEnviar);
 	$('#ep-probar').click(epProbar);
 	$('#ep-detener').click(epDetener);
+
+	//El tope no cambia el publico, solo cuantos salen hoy: no invalida la
+	//cuenta, se repinta y ya.
+	$('#ep-tope').on('change keyup', epPintarAlcance);
 
 	//Cualquier cambio de filtro invalida la cuenta: no se puede enviar contra
 	//un numero que ya no corresponde a lo que esta en pantalla.
@@ -201,6 +220,99 @@ function epPrimero(obj, nombres) {
 	return ('');
 }
 
+/*
+ * El maestro de campanas, para el desplegable.
+ *
+ * De paso trae los dias de descanso por defecto -el parametro
+ * PUBLICIDADDIASMINIMOS- y lo deja puesto en el filtro. Que venga puesto es lo
+ * que hace que el caso normal -no volverle a escribir al que acaba de recibir-
+ * no dependa de que alguien se acuerde de escribirlo.
+ */
+function epCargarCampanas(seleccionar) {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'campanas' }, function (d) {
+		epCampanas = (d && d.campanas) ? d.campanas : [];
+		var html = '<option value="">-- escoja una campa&ntilde;a --</option>';
+		for (var i = 0; i < epCampanas.length; i++) {
+			var c = epCampanas[i];
+			var detalle = c.envios > 0
+				? (' (' + c.envios + (c.envios === 1 ? ' env&iacute;o' : ' env&iacute;os') + ')')
+				: ' (sin enviar)';
+			html += '<option value="' + c.idcampana + '">' + epEscapar(c.nombre) + detalle + '</option>';
+		}
+		$('#ep-campana').html(html);
+
+		if ($('#ep-diassinpublicidad').val() === '') {
+			$('#ep-diassinpublicidad').val(d && d.dias_defecto ? d.dias_defecto : 30);
+		}
+		//Recien creada una campana, se deja escogida: la tanda de manana sale
+		//sin volver a escribir el nombre, que es de lo que se trata.
+		if (seleccionar) {
+			epModoNueva(false);
+			$('#ep-campana').val(String(seleccionar));
+			epTraerCampana();
+		} else if (epCampanas.length === 0) {
+			//Sin ninguna campana todavia, se arranca directo en modo nueva: no
+			//tiene sentido mostrar una lista vacia y pedir que escoja de ella.
+			epModoNueva(true);
+		}
+	}).fail(function () {
+		$('#ep-campana').html('<option value="">No se pudieron cargar</option>');
+		epModoNueva(true);
+	});
+}
+
+/* Alterna entre escoger del maestro y crear una campana nueva. */
+function epModoNueva(nueva) {
+	$('#ep-caja-nombre').toggle(nueva);
+	$('#ep-campana').closest('.ep-campo').toggle(!nueva);
+	if (nueva) {
+		$('#ep-campana').val('');
+		$('#ep-nombre').focus();
+	} else {
+		$('#ep-nombre').val('');
+	}
+}
+
+/*
+ * Al escoger una campana, vuelve puesto lo de la vez pasada.
+ *
+ * Es lo que hace que reusar sea un clic y no volver a armarlo todo. Los filtros
+ * NO se restauran: quedaron guardados como texto para poder leerlos, pero
+ * reconstruirlos a medias seria peor que no hacerlo, porque nadie sabria cuales
+ * quedaron puestos de verdad.
+ */
+function epTraerCampana() {
+	var id = $('#ep-campana').val();
+	if (!id) { return; }
+	var c = null;
+	for (var i = 0; i < epCampanas.length; i++) {
+		if (String(epCampanas[i].idcampana) === String(id)) { c = epCampanas[i]; break; }
+	}
+	if (!c) { return; }
+
+	if (c.canal) {
+		epCanal = c.canal;
+		$('#ep-canales .ep-canal').removeClass('sel');
+		$('#ep-canales .ep-canal[data-canal="' + c.canal + '"]').addClass('sel');
+		epPintarCanal();
+	}
+	if (c.idplantilla) { $('#ep-plantilla').val(c.idplantilla); }
+	if (c.asunto) { $('#ep-asunto').val(c.asunto); }
+	if (c.cuerpo) { $('#ep-cuerpo').val(c.cuerpo); }
+	if (c.tope) { $('#ep-tope').val(c.tope); }
+	if (c.dias_sin_publicidad) { $('#ep-diassinpublicidad').val(c.dias_sin_publicidad); }
+
+	var nota = 'Es la tanda n&uacute;mero ' + (Number(c.envios) + 1) + ' de esta campa&ntilde;a.';
+	if (c.filtros) {
+		nota += ' La vez pasada se mand&oacute; con: <i>' + epEscapar(c.filtros) + '</i>.';
+	}
+	$('#ep-campana-nota').html(nota + ' <a href="#" id="ep-nuevacampana2">Crear otra campa&ntilde;a</a>.');
+	$('#ep-nuevacampana2').click(function (e) { e.preventDefault(); epModoNueva(true); });
+
+	//El publico cambia con el canal, asi que la cuenta anterior ya no vale.
+	epLimpiarAlcance();
+}
+
 function epCargarPlantillas() {
 	$.getJSON(server + 'ObtenerPlantillaBrevo', function (d) {
 		var lista = d && d.plantillas ? d.plantillas : (d && d.length ? d : []);
@@ -260,19 +372,37 @@ function epPintarAlcance() {
 
 	//Cuanta gente alcanza ESTE canal. Es el numero que importa: por correo no
 	//se le llega a quien no tiene correo, por mas que cumpla el filtro.
-	var alcanza = (epCanal === 'W') ? d.con_celular : d.con_correo;
-	var tope = d.tope_directo || 50;
-	if (epCanal === 'D' && alcanza > tope) { alcanza = tope; }
+	var alcanzables = (epCanal === 'W') ? d.con_celular : d.con_correo;
+	var topeDirecto = d.tope_directo || 50;
+	var alcanza = alcanzables;
+	if (epCanal === 'D' && alcanza > topeDirecto) { alcanza = topeDirecto; }
+
+	//El tope de la tanda: cuantos salen HOY de todos los que califican.
+	var tope = parseInt($('#ep-tope').val(), 10);
+	if (!(tope > 0)) { tope = 0; }
+	if (epCanal === 'D' && (tope === 0 || tope > topeDirecto)) { tope = topeDirecto; }
+	var quedan = 0;
+	if (tope > 0 && alcanza > tope) {
+		quedan = alcanza - tope;
+		alcanza = tope;
+	}
 
 	$('#ep-det-c').html(epMiles(d.con_correo) + ' con correo');
 	$('#ep-det-w').html(epMiles(d.con_celular) + ' con celular');
-	$('#ep-det-d').html('m&aacute;ximo ' + tope + ', uno cada ' + (d.segundos_directo || 30) + ' segundos');
+	$('#ep-det-d').html('m&aacute;ximo ' + topeDirecto + ', uno cada ' + (d.segundos_directo || 30) + ' segundos');
+
+	var pie = 'El filtro encontr&oacute; ' + epMiles(d.personas) + ' personas en total.';
+	if (quedan > 0) {
+		//Se dice cuantos quedan para la proxima porque es justo lo que hace que
+		//partir el envio en tandas se entienda: no es que se pierdan, es que
+		//les toca despues.
+		pie += '<br><b>' + epMiles(quedan) + '</b> quedan para las pr&oacute;ximas tandas.';
+	}
 
 	$('#ep-cifras').html(
 		'<div class="ep-cifra"><div class="valor">' + epMiles(alcanza) + '</div>' +
 		'<div class="rotulo">personas por ' + epNombreCanal(epCanal) + '</div></div>' +
-		'<p class="ep-nota" style="text-align:center;margin:0;">' +
-		'El filtro encontr&oacute; ' + epMiles(d.personas) + ' personas en total.</p>');
+		'<p class="ep-nota" style="text-align:center;margin:0;">' + pie + '</p>');
 
 	var extra = '';
 	if (d.sin_consentimiento > 0) {
@@ -327,25 +457,38 @@ function epProbar() {
 
 function epEnviar() {
 	if (!epAlcance) { epMensaje('ep-aviso-mal', 'Cuente el p&uacute;blico primero.'); return; }
+
+	var idCampana = $('#ep-campana').val();
 	var nombre = $('#ep-nombre').val();
-	if (!nombre) { epMensaje('ep-aviso-mal', 'P&oacute;ngale nombre a la campa&ntilde;a.'); return; }
+	if (!idCampana && !nombre) {
+		epMensaje('ep-aviso-mal',
+			'Escoja una campa&ntilde;a o p&oacute;ngale nombre a la nueva.');
+		return;
+	}
+	var comoSeLlama = nombre || $('#ep-campana option:selected').text();
 
 	var alcanza = (epCanal === 'W') ? epAlcance.con_celular : epAlcance.con_correo;
-	if (epCanal === 'D' && alcanza > (epAlcance.tope_directo || 50)) {
-		alcanza = epAlcance.tope_directo || 50;
-	}
+	var topeDirecto = epAlcance.tope_directo || 50;
+	if (epCanal === 'D' && alcanza > topeDirecto) { alcanza = topeDirecto; }
+
+	var tope = parseInt($('#ep-tope').val(), 10);
+	if (!(tope > 0)) { tope = 0; }
+	if (epCanal === 'D' && (tope === 0 || tope > topeDirecto)) { tope = topeDirecto; }
+	if (tope > 0 && alcanza > tope) { alcanza = tope; }
 
 	//Confirmacion con el numero escrito: que nadie pueda decir que no sabia a
 	//cuanta gente le estaba escribiendo.
-	if (!confirm('Va a enviar "' + nombre + '" por ' + epNombreCanal(epCanal) +
+	if (!confirm('Va a enviar "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
 			' a ' + epMiles(alcanza) + ' personas.\n\nEsto no se puede deshacer. Continuar?')) {
 		return;
 	}
 
 	var datos = epFiltro();
 	datos.accion = 'enviar';
-	datos.nombre = nombre;
+	datos.idcampana = idCampana || 0;
+	datos.nombre = nombre || '';
 	datos.canal = epCanal;
+	datos.tope = tope;
 	datos.idplantilla = $('#ep-plantilla').val();
 	datos.asunto = $('#ep-asunto').val();
 	datos.cuerpo = $('#ep-cuerpo').val();
@@ -358,12 +501,15 @@ function epEnviar() {
 			epPintarAlcance();
 			return;
 		}
-		epCampana = d.idcampana;
+		epEnvio = d.idenvio;
 		epMensaje('ep-aviso-ok', epEscapar(d.mensaje));
 		$('#ep-avance').show();
 		$('#ep-detener').toggle(epCanal === 'D');
 		epSeguirAvance();
 		epCargarHistorial();
+		//La campana recien creada tiene que aparecer en el desplegable para
+		//poder mandarle la segunda tanda manana sin volver a escribir el nombre.
+		epCargarCampanas(d.idcampana);
 	}, 'json').fail(function () {
 		epMensaje('ep-aviso-mal', 'No se pudo lanzar la campa&ntilde;a.');
 		$('#ep-enviar').prop('disabled', false);
@@ -374,7 +520,7 @@ function epEnviar() {
 function epSeguirAvance() {
 	if (epReloj) { clearInterval(epReloj); }
 	epReloj = setInterval(function () {
-		$.getJSON(server + 'EnvioPublicidad', { accion: 'avance', idcampana: epCampana },
+		$.getJSON(server + 'EnvioPublicidad', { accion: 'avance', idenvio: epEnvio },
 			function (d) {
 				if (d.error) { return; }
 				var hechos = d.enviados + d.fallidos;
@@ -415,35 +561,51 @@ function epCargarHistorial() {
 		var cuerpo = $('#ep-tabla tbody');
 		cuerpo.empty();
 		if (lista.length === 0) {
-			cuerpo.html('<tr><td colspan="8" class="ep-nota">Todav&iacute;a no hay campa&ntilde;as.</td></tr>');
+			cuerpo.html('<tr><td colspan="9" class="ep-nota">Todav&iacute;a no hay env&iacute;os.</td></tr>');
 			return;
 		}
 		for (var i = 0; i < lista.length; i++) {
 			var c = lista[i];
 			var fila = $('<tr>').css('cursor', 'pointer');
-			fila.append($('<td>').text(c.idcampana));
-			fila.append($('<td>').text(c.nombre));
+			fila.append($('<td>').text(c.idenvio));
+
+			//El nombre de la campana lleva a la medicion de TODAS sus tandas;
+			//el resto del renglon, solo a la de esta.
+			var enlace = $('<a href="#">').text(c.nombre).data('idc', c.idcampana);
+			enlace.click(function (e) {
+				e.preventDefault();
+				e.stopPropagation();
+				epVerResultado(0, $(this).data('idc'));
+			});
+			fila.append($('<td>').append(enlace));
+
+			fila.append($('<td class="ep-num">').text(c.consecutivo));
 			fila.append($('<td>').text(epNombreCanal(c.canal)));
 			fila.append($('<td>').text(c.estado));
 			fila.append($('<td class="ep-num">').text(epMiles(c.publico)));
 			fila.append($('<td class="ep-num">').text(epMiles(c.enviados)));
 			fila.append($('<td class="ep-num">').text(epMiles(c.fallidos)));
 			fila.append($('<td>').text(String(c.creada_en || '').substring(0, 16)));
-			fila.data('id', c.idcampana);
-			fila.click(function () { epVerResultado($(this).data('id')); });
+			fila.data('id', c.idenvio);
+			fila.click(function () { epVerResultado($(this).data('id'), 0); });
 			cuerpo.append(fila);
 		}
 	});
 }
 
-function epVerResultado(idCampana) {
+/* Con idEnvio mide una tanda; con idCampana, la campana completa. */
+function epVerResultado(idEnvio, idCampana) {
 	$('#ep-resultado').html('<p class="ep-nota">Midiendo...</p>');
+	var titulo = idEnvio
+		? ('Env&iacute;o ' + idEnvio)
+		: ('Campa&ntilde;a completa, todas sus tandas');
 	$.getJSON(server + 'EnvioPublicidad',
-		{ accion: 'resultado', idcampana: idCampana, horas: 24 }, function (d) {
+		{ accion: 'resultado', idenvio: idEnvio || 0, idcampana: idCampana || 0, horas: 24 },
+		function (d) {
 			if (d.error) { $('#ep-resultado').html(''); return; }
 			$('#ep-resultado').html(
 				'<div class="ep-panel" style="margin-top:14px;">' +
-				'<div class="ep-titulo">Campa&ntilde;a ' + idCampana + ', primeras ' + d.horas + ' horas</div>' +
+				'<div class="ep-titulo">' + titulo + ', primeras ' + d.horas + ' horas</div>' +
 				'<div class="row">' +
 				'<div class="col-md-3"><div class="ep-cifra"><div class="valor">' +
 					epMiles(d.enviados) + '</div><div class="rotulo">recibieron</div></div></div>' +

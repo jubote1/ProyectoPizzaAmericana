@@ -92,20 +92,32 @@ public class EnvioPublicidadCtrl {
 	// Crear y mandar
 	// =======================================================================
 
+	/**
+	 * Abre una tanda de una campana y la manda.
+	 *
+	 * La campana puede venir escogida del desplegable -idCampana- o ser nueva,
+	 * en cuyo caso se crea con el nombre que se escribio. Si ya existe una con
+	 * ese nombre se reusa esa en vez de fallar: quien escribe el mismo nombre
+	 * dos veces quiere la misma campana, no un error.
+	 *
+	 * @param tope cuantos mandar en ESTA tanda; 0 es todo el publico
+	 */
 	@SuppressWarnings("unchecked")
-	public static String crearYEnviar(final String nombre, final String canal, final int idPlantilla,
-			final String asunto, final String cuerpo, final String filtrosTexto,
+	public static String crearYEnviar(final long idCampanaEscogida, final String nombre,
+			final String canal, final int idPlantilla, final String asunto, final String cuerpo,
+			final int tope, final String filtrosTexto,
 			final SegmentacionPersonaDAO.Filtro filtro, final CampanaDAO.FiltroExtra extra,
 			final String usuario) {
 		final JSONObject r = new JSONObject();
 
-		if (nombre == null || nombre.trim().length() == 0) {
-			r.put("error", "La campana necesita un nombre. Sin el no se puede medir despues.");
-			return (r.toJSONString());
-		}
 		if (!CampanaDAO.CANAL_CORREO.equals(canal) && !CampanaDAO.CANAL_WHATSAPP.equals(canal)
 				&& !CampanaDAO.CANAL_DIRECTO.equals(canal)) {
 			r.put("error", "Canal no valido.");
+			return (r.toJSONString());
+		}
+		if (idCampanaEscogida <= 0 && (nombre == null || nombre.trim().length() == 0)) {
+			r.put("error", "Escoja una campana o pongale nombre a la nueva."
+					+ " Sin campana no se puede medir despues si sirvio.");
 			return (r.toJSONString());
 		}
 		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
@@ -113,9 +125,9 @@ public class EnvioPublicidadCtrl {
 				r.put("error", "El correo directo necesita el contenido del mensaje.");
 				return (r.toJSONString());
 			}
-			final long enCurso = CampanaDAO.campanaDirectaEnCurso();
+			final long enCurso = CampanaDAO.envioDirectoEnCurso();
 			if (enCurso != 0) {
-				r.put("error", "Ya hay una campana de correo directo en curso (la " + enCurso
+				r.put("error", "Ya hay un envio de correo directo en curso (el " + enCurso
 						+ "). Espere a que termine.");
 				return (r.toJSONString());
 			}
@@ -124,40 +136,75 @@ public class EnvioPublicidadCtrl {
 			return (r.toJSONString());
 		}
 
-		final long idCampana = CampanaDAO.crear(nombre.trim(), canal, idPlantilla, asunto, cuerpo,
-				filtrosTexto, usuario);
+		//El tope del correo directo lo pone el servidor aunque la pantalla pida
+		//mas: es proteccion de la reputacion del dominio, no una preferencia.
+		int topeReal = tope < 0 ? 0 : tope;
+		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+			final int techo = EnviadorPublicidadDirecta.tope();
+			if (topeReal == 0 || topeReal > techo) {
+				topeReal = techo;
+			}
+		}
+
+		long idCampana = idCampanaEscogida;
+		if (idCampana <= 0) {
+			idCampana = CampanaDAO.buscarPorNombre(nombre.trim());
+			if (idCampana == 0) {
+				idCampana = CampanaDAO.crear(nombre.trim(), canal, idPlantilla, asunto, cuerpo,
+						filtrosTexto, extra.diasSinPublicidad, topeReal, usuario);
+			}
+		}
 		if (idCampana == 0) {
 			r.put("error", "No se pudo crear la campana.");
 			return (r.toJSONString());
 		}
 
-		//El tope solo aplica al correo directo. Los canales de Brevo van
-		//completos: ahi el limite lo pone el plan contratado, no el dominio.
-		final int tope = CampanaDAO.CANAL_DIRECTO.equals(canal)
-				? EnviadorPublicidadDirecta.tope() : 0;
-		final int cuantos = CampanaDAO.cargarDestinatarios(idCampana, canal, filtro, extra, tope);
+		//El maestro se queda con lo ultimo que se uso, para que la proxima vez
+		//que se escoja en el desplegable vuelva todo puesto.
+		CampanaDAO.actualizarMaestro(idCampana, canal, idPlantilla, asunto, cuerpo, filtrosTexto,
+				extra.diasSinPublicidad, topeReal);
+
+		final long idEnvio = CampanaDAO.crearEnvio(idCampana, canal, idPlantilla, asunto, cuerpo,
+				filtrosTexto, topeReal, extra.diasSinPublicidad, usuario);
+		if (idEnvio == 0) {
+			r.put("error", "No se pudo abrir la tanda de envio.");
+			return (r.toJSONString());
+		}
+
+		final int cuantos = CampanaDAO.cargarDestinatarios(idEnvio, idCampana, canal, filtro,
+				extra, topeReal);
 
 		if (cuantos == 0) {
-			CampanaDAO.cambiarEstado(idCampana, "CANCELADA");
-			r.put("error", "Con ese filtro no quedo nadie a quien escribirle por ese canal.");
-			r.put("idcampana", idCampana);
+			CampanaDAO.cambiarEstado(idEnvio, "CANCELADA");
+			//Se nombra el descanso explicitamente. Con 30 dias por defecto, la
+			//causa mas probable de "no quedo nadie" no es el filtro sino que a
+			//esa gente ya se le escribio, y sin decirlo la pantalla parece rota.
+			String porque = "Con ese filtro no quedo nadie a quien escribirle por ese canal.";
+			if (extra.diasSinPublicidad > 0) {
+				porque += " Ojo que esta pidiendo " + extra.diasSinPublicidad
+						+ " dias de descanso: puede que ya les haya escrito y esten descansando."
+						+ " Baje ese numero para verlos.";
+			}
+			r.put("error", porque);
+			r.put("idenvio", idEnvio);
 			return (r.toJSONString());
 		}
 
 		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
-			final String problema = EnviadorPublicidadDirecta.arrancar(idCampana);
+			final String problema = EnviadorPublicidadDirecta.arrancar(idEnvio);
 			if (problema.length() > 0) {
 				r.put("error", problema);
 				return (r.toJSONString());
 			}
 		} else {
-			arrancarBrevo(idCampana, canal, idPlantilla, asunto, usuario);
+			arrancarBrevo(idEnvio, canal, idPlantilla, asunto, usuario);
 		}
 
+		r.put("idenvio", idEnvio);
 		r.put("idcampana", idCampana);
 		r.put("publico", cuantos);
 		r.put("canal", canal);
-		r.put("mensaje", "Campana " + idCampana + " en camino a " + cuantos + " personas.");
+		r.put("mensaje", "En camino a " + cuantos + " personas.");
 		return (r.toJSONString());
 	}
 
@@ -167,9 +214,9 @@ public class EnvioPublicidadCtrl {
 	 * Se marca lote por lote y no al final: si el servidor se cae a mitad, lo
 	 * enviado queda marcado y al reanudar nadie recibe dos veces.
 	 */
-	private static void arrancarBrevo(final long idCampana, final String canal,
+	private static void arrancarBrevo(final long idEnvio, final String canal,
 			final int idPlantilla, final String asunto, final String usuario) {
-		CampanaDAO.cambiarEstado(idCampana, "ENVIANDO");
+		CampanaDAO.cambiarEstado(idEnvio, "ENVIANDO");
 		final Thread hilo = new Thread(new Runnable() {
 			public void run() {
 				final Logger logger = Logger.getLogger("log_file");
@@ -178,7 +225,7 @@ public class EnvioPublicidadCtrl {
 					final boolean porWhatsapp = CampanaDAO.CANAL_WHATSAPP.equals(canal);
 					while (true) {
 						final ArrayList<CampanaDAO.Destinatario> lote =
-								CampanaDAO.pendientes(idCampana, LOTE_BREVO);
+								CampanaDAO.pendientes(idEnvio, LOTE_BREVO);
 						if (lote.isEmpty()) {
 							break;
 						}
@@ -213,23 +260,23 @@ public class EnvioPublicidadCtrl {
 						final String detalle = (respuesta != null && respuesta.has("message"))
 								? respuesta.get("message").getAsString() : "";
 						for (int i = 0; i < lote.size(); i++) {
-							CampanaDAO.marcar(idCampana, lote.get(i).idPersona,
+							CampanaDAO.marcar(idEnvio, lote.get(i).idPersona,
 									bien ? "ENVIADO" : "FALLIDO", detalle);
 						}
 						if (!bien) {
 							logger.error("EnvioPublicidadCtrl: lote fallido en campana "
-									+ idCampana + ", " + detalle);
+									+ idEnvio + ", " + detalle);
 						}
 					}
-					logger.info("EnvioPublicidadCtrl: campana " + idCampana + " terminada.");
+					logger.info("EnvioPublicidadCtrl: campana " + idEnvio + " terminada.");
 				} catch (final Throwable t) {
-					logger.error("EnvioPublicidadCtrl: fallo la campana " + idCampana + ", "
+					logger.error("EnvioPublicidadCtrl: fallo la campana " + idEnvio + ", "
 							+ t.toString());
 				}
 			}
 		});
 		hilo.setDaemon(true);
-		hilo.setName("publicidad-" + idCampana);
+		hilo.setName("publicidad-" + idEnvio);
 		hilo.start();
 	}
 
@@ -238,23 +285,25 @@ public class EnvioPublicidadCtrl {
 	// =======================================================================
 
 	@SuppressWarnings("unchecked")
-	public static String avance(final long idCampana) {
+	public static String avance(final long idEnvio) {
 		final JSONObject o = new JSONObject();
-		final CampanaDAO.Campana c = CampanaDAO.obtener(idCampana);
+		final CampanaDAO.Envio c = CampanaDAO.obtener(idEnvio);
 		if (c == null) {
-			o.put("error", "No existe esa campana.");
+			o.put("error", "No existe ese envio.");
 			return (o.toJSONString());
 		}
+		o.put("idenvio", c.idEnvio);
 		o.put("idcampana", c.idCampana);
-		o.put("nombre", c.nombre);
+		o.put("nombre", c.campana);
+		o.put("consecutivo", c.consecutivo);
 		o.put("canal", c.canal);
 		o.put("estado", c.estado);
 		o.put("publico", c.publico);
 		o.put("enviados", c.enviados);
 		o.put("fallidos", c.fallidos);
 		o.put("pendientes", c.pendientes);
-		o.put("creada_en", c.creadaEn);
-		o.put("terminada_en", c.terminadaEn);
+		o.put("creada_en", c.creadoEn);
+		o.put("terminada_en", c.terminadoEn);
 		if (CampanaDAO.CANAL_DIRECTO.equals(c.canal) && c.pendientes > 0) {
 			//Para el correo directo el usuario necesita saber cuanto falta: con
 			//30 segundos entre uno y otro, 50 correos son 25 minutos y sin este
@@ -265,19 +314,23 @@ public class EnvioPublicidadCtrl {
 		return (o.toJSONString());
 	}
 
+	/** El historial: las ultimas tandas, con el nombre de su campana. */
 	@SuppressWarnings("unchecked")
 	public static String ultimas(final int cuantas) {
 		final JSONArray lista = new JSONArray();
-		for (final CampanaDAO.Campana c : CampanaDAO.ultimas(cuantas)) {
+		for (final CampanaDAO.Envio e : CampanaDAO.ultimas(cuantas)) {
 			final JSONObject o = new JSONObject();
-			o.put("idcampana", c.idCampana);
-			o.put("nombre", c.nombre);
-			o.put("canal", c.canal);
-			o.put("estado", c.estado);
-			o.put("publico", c.publico);
-			o.put("enviados", c.enviados);
-			o.put("fallidos", c.fallidos);
-			o.put("creada_en", c.creadaEn);
+			o.put("idenvio", e.idEnvio);
+			o.put("idcampana", e.idCampana);
+			o.put("nombre", e.campana);
+			o.put("consecutivo", e.consecutivo);
+			o.put("canal", e.canal);
+			o.put("estado", e.estado);
+			o.put("tope", e.tope);
+			o.put("publico", e.publico);
+			o.put("enviados", e.enviados);
+			o.put("fallidos", e.fallidos);
+			o.put("creada_en", e.creadoEn);
 			lista.add(o);
 		}
 		final JSONObject r = new JSONObject();
@@ -285,9 +338,44 @@ public class EnvioPublicidadCtrl {
 		return (r.toJSONString());
 	}
 
+	/**
+	 * El maestro, para el desplegable.
+	 *
+	 * Devuelve tambien lo que se uso la ultima vez -canal, plantilla, asunto,
+	 * tope, dias- para que escoger una campana deje la pantalla lista y no haya
+	 * que volver a armarla.
+	 */
 	@SuppressWarnings("unchecked")
-	public static String resultado(final long idCampana, final int horas) {
-		final CampanaDAO.Resultado res = CampanaDAO.resultado(idCampana, horas);
+	public static String campanas() {
+		final JSONArray lista = new JSONArray();
+		for (final CampanaDAO.Campana c : CampanaDAO.campanas(true)) {
+			final JSONObject o = new JSONObject();
+			o.put("idcampana", c.idCampana);
+			o.put("nombre", c.nombre);
+			o.put("canal", c.canal);
+			o.put("idplantilla", c.idPlantilla);
+			o.put("asunto", c.asunto);
+			o.put("cuerpo", c.cuerpo);
+			o.put("filtros", c.filtros);
+			o.put("dias_sin_publicidad", c.diasSinPublicidad);
+			o.put("tope", c.tope);
+			o.put("envios", c.envios);
+			o.put("publico", c.publico);
+			o.put("enviados", c.enviados);
+			o.put("ultimo_envio_en", c.ultimoEnvioEn);
+			lista.add(o);
+		}
+		final JSONObject r = new JSONObject();
+		r.put("campanas", lista);
+		r.put("dias_defecto", CampanaDAO.diasMinimosPorDefecto());
+		return (r.toJSONString());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static String resultado(final long id, final int horas, final boolean porCampana) {
+		final CampanaDAO.Resultado res = porCampana
+				? CampanaDAO.resultadoCampana(id, horas)
+				: CampanaDAO.resultado(id, horas);
 		final JSONObject o = new JSONObject();
 		o.put("enviados", res.enviados);
 		o.put("compraron", res.compraron);

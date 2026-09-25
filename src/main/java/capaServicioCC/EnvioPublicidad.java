@@ -53,27 +53,38 @@ public class EnvioPublicidad extends HttpServlet {
 
 		} else if ("enviar".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.crearYEnviar(
+					largo(request.getParameter("idcampana")),
 					request.getParameter("nombre"),
 					request.getParameter("canal"),
 					entero(request.getParameter("idplantilla")),
 					request.getParameter("asunto"),
 					request.getParameter("cuerpo"),
+					entero(request.getParameter("tope")),
 					resumenDeFiltros(request),
 					SegmentacionPersonaCtrl.filtroDe(request),
 					extraDe(request),
 					AccesoCRM.usuarioEnSesion(request)));
 
+		} else if ("campanas".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.campanas());
+
 		} else if ("avance".equals(accion)) {
-			out.write(EnvioPublicidadCtrl.avance(largo(request.getParameter("idcampana"))));
+			out.write(EnvioPublicidadCtrl.avance(largo(request.getParameter("idenvio"))));
 
 		} else if ("ultimas".equals(accion)) {
 			final int cuantas = entero(request.getParameter("cuantas"));
 			out.write(EnvioPublicidadCtrl.ultimas(cuantas > 0 ? cuantas : 20));
 
 		} else if ("resultado".equals(accion)) {
+			//Se puede medir una tanda sola o la campana completa. Son dos
+			//preguntas distintas: "como le fue al envio del 24" y "sirve el
+			//COMBO FUTBOLERO".
 			final int horas = entero(request.getParameter("horas"));
-			out.write(EnvioPublicidadCtrl.resultado(largo(request.getParameter("idcampana")),
-					horas > 0 ? horas : 24));
+			final long idCampana = largo(request.getParameter("idcampana"));
+			final long idEnvio = largo(request.getParameter("idenvio"));
+			final boolean porCampana = idEnvio == 0 && idCampana > 0;
+			out.write(EnvioPublicidadCtrl.resultado(porCampana ? idCampana : idEnvio,
+					horas > 0 ? horas : 24, porCampana));
 
 		} else if ("probar".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.probar(
@@ -109,7 +120,8 @@ public class EnvioPublicidad extends HttpServlet {
 	private String resumenDeFiltros(final HttpServletRequest request) {
 		final StringBuilder t = new StringBuilder();
 		final String[] campos = { "segmentos", "idtienda", "pedidosmin", "valormin",
-				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo" };
+				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo",
+				"diassinpublicidad", "tiposcliente", "productos" };
 		for (int i = 0; i < campos.length; i++) {
 			final String valor = request.getParameter(campos[i]);
 			if (valor != null && valor.trim().length() > 0) {
