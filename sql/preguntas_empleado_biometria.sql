@@ -14,22 +14,21 @@
 -- igual que las encuestas de mercadeo; se escribe directo en estas tablas, las
 -- mismas que ya lee el huellero (EmpleadoBiometriaDAO.obtenerPreguntaAleatoria).
 --
--- ATENCION: LAS TABLAS YA EXISTEN EN PRODUCCION
+-- LAS TABLAS YA EXISTEN EN PRODUCCION
 --
--- El huellero ya las lee desde hace tiempo ("Desafio de Cultura Empresarial"),
--- pero ningun script del repositorio las crea, asi que sus columnas se dedujeron
--- de las consultas del POS. Los CREATE TABLE de abajo son IF NOT EXISTS: si la
--- tabla ya esta, no la tocan. LO UNICO QUE SI SE MODIFICA es respuesta_empleado,
--- a la que se le agregan tres columnas si faltan:
+-- El huellero ya las lee desde hace tiempo ("Desafio de Cultura Empresarial"), pero
+-- ningun script del repositorio las creaba. Los CREATE TABLE de abajo reproducen su
+-- definicion REAL, verificada con SHOW CREATE TABLE contra el central el 2026-09-25, y
+-- son IF NOT EXISTS: si la tabla ya esta, no la tocan. LO UNICO QUE SI SE MODIFICA es
+-- respuesta_empleado (0 filas ese dia: nunca se habia guardado una respuesta), a la que
+-- se le agregan tres columnas si faltan:
 --
 --   fecha_respuesta  cuando contesto (sin esto no hay rango de fechas)
 --   correcta         si acerto, guardado AL MOMENTO de responder: si mas tarde
 --                    se edita cual era la opcion correcta, el historico no cambia
 --   idtienda         desde que tienda respondio
 --
--- ANTES DE CORRERLO, mirar como estan hoy (PASO 0). Si alguna tabla tiene
--- columnas que no aparecen aqui, o nombres distintos, avisar antes de seguir:
--- el codigo del POS y del central asume estos nombres.
+-- El PASO 0 es solo lectura y deja ver como estan las tablas antes de tocar nada.
 -- ---------------------------------------------------------------------------
 
 USE general;
@@ -47,38 +46,40 @@ CREATE TABLE IF NOT EXISTS pregunta_empleado (
   descripcion VARCHAR(500) NOT NULL,
   fecha_inicio DATE NOT NULL,
   fecha_final DATE NOT NULL,
-  activo TINYINT NOT NULL DEFAULT 1,
+  activo TINYINT NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT='Banco de preguntas que el huellero le hace al empleado al dar ingreso.';
 
 CREATE TABLE IF NOT EXISTS pregunta_empleado_tipo (
-  idpregunta INT NOT NULL,
-  idtipoempleado INT NOT NULL,
-  PRIMARY KEY (idpregunta, idtipoempleado)
+  id INT NOT NULL AUTO_INCREMENT,
+  idpregunta INT NOT NULL DEFAULT 0,
+  idtipoempleado INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT='A que tipos de empleado (cargos) se les hace cada pregunta.';
 
 CREATE TABLE IF NOT EXISTS opcion_respuesta (
   id INT NOT NULL AUTO_INCREMENT,
-  contenido VARCHAR(300) NOT NULL,
+  contenido VARCHAR(100) NOT NULL,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT='Catalogo de textos de opcion de respuesta; se reutilizan entre preguntas.';
 
 CREATE TABLE IF NOT EXISTS opcion_respuesta_pregunta (
-  idpregunta INT NOT NULL,
-  idopcion INT NOT NULL,
+  id INT NOT NULL AUTO_INCREMENT,
+  idopcion INT NOT NULL DEFAULT 0,
+  idpregunta INT NOT NULL DEFAULT 0,
   correcta TINYINT NOT NULL DEFAULT 0,
-  PRIMARY KEY (idpregunta, idopcion)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT='Las opciones de cada pregunta y cual es la correcta.';
 
 CREATE TABLE IF NOT EXISTS respuesta_empleado (
   id INT NOT NULL AUTO_INCREMENT,
-  idempleado INT NOT NULL,
-  idopcion INT NOT NULL,
-  idpregunta INT NOT NULL,
+  idempleado INT NOT NULL DEFAULT 0,
+  idpregunta INT NOT NULL DEFAULT 0,
+  idopcion INT NOT NULL DEFAULT 0,
   fecha_respuesta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   correcta TINYINT DEFAULT NULL,
   idtienda INT DEFAULT NULL,
