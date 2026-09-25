@@ -116,6 +116,12 @@ function epFiltro() {
 	if ($('#ep-valormin').val()) { d.valormin = $('#ep-valormin').val(); }
 	if ($('#ep-diasmin').val()) { d.diasmin = $('#ep-diasmin').val(); }
 	if ($('#ep-diasmax').val()) { d.diasmax = $('#ep-diasmax').val(); }
+	//OJO: "canal" aqui es POR DONDE COMPRA -mostrador o domicilio-, que es lo
+	//que espera SegmentacionPersonaCtrl.filtroDe. El canal por el que sale la
+	//campana va aparte, como canalenvio. Tuvieron el mismo nombre y el de envio
+	//le pisaba el valor a este: el 2026-09-25 la pantalla conto 53 personas de
+	//mostrador y mando a 3.135, porque al enviar el filtro de mostrador se
+	//perdia.
 	d.canal = $('#ep-canalventa').val();
 
 	//Los que venian de la pantalla anterior.
@@ -450,7 +456,7 @@ function epProbar() {
 	if (!destino) { epMensaje('ep-aviso-mal', 'Escriba a d&oacute;nde quiere la prueba.'); return; }
 	$('#ep-probar').prop('disabled', true).text('Enviando...');
 	$.getJSON(server + 'EnvioPublicidad', {
-		accion: 'probar', canal: epCanal, destino: destino,
+		accion: 'probar', canalenvio: epCanal, destino: destino,
 		idplantilla: $('#ep-plantilla').val(), asunto: $('#ep-asunto').val(),
 		cuerpo: $('#ep-cuerpo').val()
 	}, function (d) {
@@ -501,7 +507,11 @@ function epEnviar() {
 	datos.accion = 'enviar';
 	datos.idcampana = idCampana || 0;
 	datos.nombre = nombre || '';
-	datos.canal = epCanal;
+	datos.canalenvio = epCanal;
+	//Cuantos dijo la pantalla. El servidor NO envia si al cargar le salen mas:
+	//es la red contra que un filtro se pierda por el camino y el envio se vaya
+	//a mucha mas gente de la que uno aprobo.
+	datos.esperados = alcanza;
 	datos.tope = tope;
 	datos.idplantilla = $('#ep-plantilla').val();
 	datos.asunto = $('#ep-asunto').val();
