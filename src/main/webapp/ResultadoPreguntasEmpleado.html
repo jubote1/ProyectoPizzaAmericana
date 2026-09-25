@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>RESULTADO PREGUNTAS A EMPLEADOS</title>
+		<meta charset="utf-8" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+		<style type="text/css">
+			.pe-panel { background:#fff; border:1px solid #ddd; border-radius:4px; padding:15px; margin-bottom:15px; }
+			.pe-kpi { text-align:center; padding:12px 6px; border:1px solid #e5e5e5; border-radius:4px; margin-bottom:10px; background:#fafafa; }
+			.pe-kpi .valor { font-size:26px; font-weight:bold; line-height:1.1; }
+			.pe-kpi .rotulo { font-size:11px; color:#666; text-transform:uppercase; margin-top:4px; }
+			.pe-bien { color:#2e7d32; }
+			.pe-regular { color:#ef6c00; }
+			.pe-mal { color:#c62828; }
+			.pe-nada { color:#999; }
+			.pe-titulo { font-size:14px; font-weight:bold; color:#102F6F; border-bottom:2px solid #FDC806;
+				padding-bottom:5px; margin-bottom:12px; text-transform:uppercase; }
+			.pe-nota { font-size:11px; color:#777; margin-top:8px; }
+			.pe-fila { cursor:pointer; }
+			.pe-fila:hover { background:#fff8dc; }
+			.pe-fila.pe-elegida { background:#fdeeb0; }
+			.pe-barra { display:inline-block; height:10px; border-radius:2px; vertical-align:middle; }
+			#peCargando { display:none; }
+			#peDetalle { display:none; }
+			#peTablaEmpleados th { cursor:pointer; white-space:nowrap; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function(data){
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+				}
+			});
+			switch(respuesta)
+			{
+				case 'OK':
+					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKA':
+					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKP':
+					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				default:
+					location.href = server + "Index.html";
+					break;
+			}
+
+		</script>
+
+		<div class="container-fluid" style="padding:15px 25px;">
+
+			<h1 style="font-size:24px;">RESULTADO DE LAS PREGUNTAS A EMPLEADOS</h1>
+			<p class="pe-nota" style="font-size:12px;">
+				Las preguntas que el huellero del POS le hace al empleado al dar ingreso. Se listan los empleados
+				activos; haga clic en uno para ver sus preguntas y respuestas del rango.
+			</p>
+
+			<div class="pe-panel">
+				<div class="row">
+					<div class="col-md-2">
+						<label for="peDesde">Desde</label>
+						<input type="date" id="peDesde" class="form-control" />
+					</div>
+					<div class="col-md-2">
+						<label for="peHasta">Hasta</label>
+						<input type="date" id="peHasta" class="form-control" />
+					</div>
+					<div class="col-md-3">
+						<label for="peBuscar">Buscar empleado</label>
+						<input type="text" id="peBuscar" class="form-control" placeholder="Nombre o usuario" />
+					</div>
+					<div class="col-md-2">
+						<label>&nbsp;</label><br/>
+						<label style="font-weight:normal;"><input type="checkbox" id="peSoloConRespuestas" /> Solo con respuestas</label>
+					</div>
+					<div class="col-md-3">
+						<label>&nbsp;</label><br/>
+						<button type="button" id="peConsultar" class="btn btn-primary">Consultar</button>
+					</div>
+				</div>
+			</div>
+
+			<div id="peCargando" class="alert alert-info">Consultando...</div>
+			<div id="peMensaje"></div>
+
+			<div id="peResultado" style="display:none;">
+
+				<div class="row" id="peKpis"></div>
+
+				<div class="pe-panel">
+					<div class="pe-titulo">Empleados activos</div>
+					<table id="peTablaEmpleados" class="table table-bordered table-condensed">
+						<thead>
+							<tr>
+								<th data-orden="nombrelargo">Empleado</th>
+								<th data-orden="cargo">Cargo</th>
+								<th data-orden="respondidas" class="text-right">Respondidas</th>
+								<th data-orden="correctas" class="text-right">Correctas</th>
+								<th data-orden="porcentaje" class="text-right">% de acierto</th>
+								<th data-orden="ultima">Ultima respuesta</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<div class="pe-nota">
+						Verde desde 80%, naranja de 60% a 79%, rojo por debajo de 60%. "Sin respuestas" no es lo mismo
+						que 0%: es alguien que no ha ingresado en el rango, o al que no le tocaron preguntas.
+					</div>
+				</div>
+
+				<div id="peDetalle">
+					<div class="pe-panel">
+						<div class="pe-titulo" id="peDetalleTitulo">Detalle</div>
+						<div id="peDetalleMensaje"></div>
+						<h4 style="font-size:14px;">Por pregunta</h4>
+						<table id="peTablaPorPregunta" class="table table-bordered table-condensed">
+							<thead>
+								<tr>
+									<th>Pregunta</th>
+									<th>Respuesta correcta</th>
+									<th class="text-right">Veces</th>
+									<th class="text-right">Correctas</th>
+									<th class="text-right">% de acierto</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<h4 style="font-size:14px; margin-top:20px;">Respuesta por respuesta</h4>
+						<table id="peTablaRespuestas" class="table table-bordered table-condensed">
+							<thead>
+								<tr>
+									<th>Fecha</th>
+									<th>Pregunta</th>
+									<th>Contesto</th>
+									<th>Resultado</th>
+									<th class="text-right">Tienda</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<div class="pe-nota">Se muestran las 500 respuestas mas recientes del rango.</div>
+					</div>
+				</div>
+
+			</div>
+
+		</div>
+
+		<script type="text/javascript" src="js/resultadopreguntasempleado.js"></script>
+	</body>
+</html>

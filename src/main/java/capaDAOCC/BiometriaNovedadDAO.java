@@ -46,6 +46,7 @@ public class BiometriaNovedadDAO {
 		sql.append(" SELECT n.idnovedad, n.id, e.nombre_largo, n.fecha, n.idtienda, ");
 		sql.append("        n.evento_tipo, n.evento_fecha_hora_log, n.tipo_novedad, ");
 		sql.append("        n.hora_reportada, n.observacion_reporte, n.reportado_por, ");
+		sql.append("        n.reporta_biometria, ");
 		sql.append("        n.fecha_reporte, n.origen, n.estado, n.observacion_resolucion, ");
 		sql.append("        n.resuelto_por, n.fecha_resolucion, ");
 		sql.append("        (SELECT COUNT(*) FROM general.empleado_evento_log l ");
@@ -80,6 +81,8 @@ public class BiometriaNovedadDAO {
 					obj.put("horareportada", texto(rs.getString("hora_reportada")));
 					obj.put("observacion", texto(rs.getString("observacion_reporte")));
 					obj.put("reportadopor", texto(rs.getString("reportado_por")));
+					//S = se identifico con huella, N = con clave, vacio = novedad anterior a la identificacion
+					obj.put("reportabiometria", texto(rs.getString("reporta_biometria")));
 					obj.put("fechareporte", texto(rs.getString("fecha_reporte")));
 					obj.put("origen", texto(rs.getString("origen")));
 					obj.put("estado", texto(rs.getString("estado")));
