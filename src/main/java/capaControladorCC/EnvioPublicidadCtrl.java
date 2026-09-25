@@ -129,7 +129,7 @@ public class EnvioPublicidadCtrl {
 	@SuppressWarnings("unchecked")
 	public static String crearYEnviar(final long idCampanaEscogida, final String nombre,
 			final String canal, final int idPlantilla, final String asunto, final String cuerpo,
-			final int tope, final String filtrosTexto,
+			final int tope, final int esperados, final String filtrosTexto,
 			final SegmentacionPersonaDAO.Filtro filtro, final CampanaDAO.FiltroExtra extra,
 			final String usuario) {
 		final JSONObject r = new JSONObject();
@@ -210,6 +210,26 @@ public class EnvioPublicidadCtrl {
 						+ " Baje ese numero para verlos.";
 			}
 			r.put("error", porque);
+			r.put("idenvio", idEnvio);
+			return (r.toJSONString());
+		}
+
+		//LA RED. La pantalla dice a cuantos conto; si al cargar salen muchos
+		//mas, algo se perdio entre contar y enviar y NO se manda nada.
+		//
+		//No es hipotetico: el 2026-09-25 el filtro de "solo mostrador" se
+		//perdia al enviar -el canal de envio le pisaba el nombre al de venta-,
+		//la pantalla conto 53 personas y la campana salio a 3.135. Sin esta
+		//comparacion, un filtro que se pierda no se nota hasta despues.
+		//
+		//Se tolera que crezca un poco: entre contar y enviar alguien pudo
+		//comprar o cambiar de segmento. Lo que no se tolera es que se dispare.
+		if (esperados > 0 && cuantos > esperados + Math.max(25, esperados / 10)) {
+			CampanaDAO.cambiarEstado(idEnvio, "CANCELADA");
+			r.put("error", "NO SE ENVIO NADA. La pantalla conto " + esperados
+					+ " personas y al cargar la lista salieron " + cuantos
+					+ ". Como no coinciden, algo se perdio entre contar y enviar."
+					+ " Vuelva a contar y revise los filtros antes de insistir.");
 			r.put("idenvio", idEnvio);
 			return (r.toJSONString());
 		}

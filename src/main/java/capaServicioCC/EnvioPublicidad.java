@@ -55,11 +55,15 @@ public class EnvioPublicidad extends HttpServlet {
 			out.write(EnvioPublicidadCtrl.crearYEnviar(
 					largo(request.getParameter("idcampana")),
 					request.getParameter("nombre"),
-					request.getParameter("canal"),
+					//canalenvio y no canal: "canal" es POR DONDE COMPRA, que lee
+					//filtroDe. Cuando los dos se llamaban igual, el de envio le
+					//borraba el filtro de mostrador y la campana salia a todos.
+					request.getParameter("canalenvio"),
 					entero(request.getParameter("idplantilla")),
 					request.getParameter("asunto"),
 					request.getParameter("cuerpo"),
 					entero(request.getParameter("tope")),
+					entero(request.getParameter("esperados")),
 					resumenDeFiltros(request),
 					SegmentacionPersonaCtrl.filtroDe(request),
 					extraDe(request),
@@ -88,7 +92,7 @@ public class EnvioPublicidad extends HttpServlet {
 
 		} else if ("probar".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.probar(
-					request.getParameter("canal"),
+					request.getParameter("canalenvio"),
 					request.getParameter("destino"),
 					entero(request.getParameter("idplantilla")),
 					request.getParameter("asunto"),
