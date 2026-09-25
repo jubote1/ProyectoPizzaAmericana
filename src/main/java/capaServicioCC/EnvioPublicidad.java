@@ -97,6 +97,9 @@ public class EnvioPublicidad extends HttpServlet {
 		} else if ("tiendas".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.tiendas());
 
+		} else if ("segmentos".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.segmentos());
+
 		} else if ("detener".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.detener());
 

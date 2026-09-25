@@ -157,15 +157,29 @@ function epCargarTiendas() {
 	});
 }
 
+/*
+ * Los segmentos salen de crm.segmento_definicion, no de una lista escrita aqui.
+ *
+ * Estaban escritos a mano y la lista quedo vieja: faltaban ORO -el mejor
+ * publico que hay- y CASI PERDIDO, y sobraba UNICA COMPRA, que no existe. Un
+ * segmento que falta en el filtro no da error: simplemente no se puede escoger,
+ * y nadie se entera. Por eso se leen.
+ */
 function epCargarSegmentos() {
-	//Los segmentos salen de la misma definicion que usa la pantalla de
-	//segmentacion: no se inventan aqui.
-	var fijos = ['NUEVO', 'ACTIVO', 'FIEL', 'EN RIESGO', 'POR RECUPERAR', 'PERDIDO', 'UNICA COMPRA'];
-	var html = '';
-	for (var i = 0; i < fijos.length; i++) {
-		html += '<option value="' + fijos[i] + '">' + fijos[i] + '</option>';
-	}
-	$('#ep-segmentos').html(html);
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'segmentos' }, function (d) {
+		var lista = (d && d.segmentos) ? d.segmentos : [];
+		var html = '';
+		for (var i = 0; i < lista.length; i++) {
+			html += '<option value="' + epEscapar(lista[i]) + '">' + epEscapar(lista[i]) + '</option>';
+		}
+		$('#ep-segmentos').html(html);
+	}).fail(function () {
+		//Sin la lista no se puede segmentar. Se dice, en vez de dejar un
+		//desplegable vacio que parece un error de la pantalla.
+		$('#ep-segmentos').html('');
+		epMensaje('ep-aviso-mal', 'No se pudo cargar la lista de segmentos. ' +
+			'Puede enviar marcando <b>Todo el CRM</b>, o recargue la pantalla.');
+	});
 }
 
 /*
