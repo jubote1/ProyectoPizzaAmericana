@@ -253,43 +253,73 @@ public class EnvioPublicidadCtrl {
 						if (lote.isEmpty()) {
 							break;
 						}
+						//Brevo rechaza el LOTE COMPLETO si una sola direccion
+						//viene mal: catorce correos malos entre quinientos
+						//tumbaron los quinientos. Se revisa cada uno antes de
+						//meterlo, y el que no sirve se marca solo -con el motivo-
+						//sin arrastrar a los otros noventa y nueve.
+						final ArrayList<CampanaDAO.Destinatario> buenos =
+								new ArrayList<CampanaDAO.Destinatario>();
 						final java.util.List<JsonObject> destinos = new java.util.ArrayList<JsonObject>();
 						for (int i = 0; i < lote.size(); i++) {
 							final CampanaDAO.Destinatario d = lote.get(i);
+							final String destino = d.destino == null ? "" : d.destino.trim();
+							if (!sirve(destino, porWhatsapp)) {
+								CampanaDAO.marcar(idEnvio, d.idPersona, "FALLIDO",
+										(porWhatsapp ? "El celular no sirve: " : "La direccion no sirve: ")
+										+ destino);
+								continue;
+							}
 							final JsonObject j = new JsonObject();
 							if (porWhatsapp) {
-								j.addProperty("telefono", d.destino);
+								j.addProperty("telefono", destino);
 							} else {
 								j.addProperty("name", d.nombre == null || d.nombre.length() == 0
 										? "Cliente" : d.nombre);
-								j.addProperty("email", d.destino);
+								j.addProperty("email", destino);
 							}
+							buenos.add(d);
 							destinos.add(j);
 						}
 
-						JsonObject respuesta;
-						if (porWhatsapp) {
-							respuesta = brevo.envioWhatsappBrevo(destinos, asunto, idPlantilla,
-									new java.util.ArrayList<JsonObject>());
-						} else {
-							respuesta = brevo.envioCorreoBrevo(destinos, asunto, idPlantilla,
-									new java.util.ArrayList<JsonObject>());
+						//Todo el lote era malo: ya quedaron marcados, y como
+						//dejaron de estar pendientes la siguiente vuelta trae
+						//los que siguen. No se repite.
+						if (destinos.isEmpty()) {
+							continue;
 						}
 
+						final JsonObject respuesta = llamar(brevo, porWhatsapp, destinos,
+								asunto, idPlantilla);
 						//Brevo responde por lote, no por persona. Marcar cada
 						//uno por separado seria inventarse un detalle que la
 						//respuesta no trae; se marca el lote con lo que dijo.
-						final boolean bien = respuesta != null && respuesta.has("success")
-								&& respuesta.get("success").getAsBoolean();
-						final String detalle = (respuesta != null && respuesta.has("message"))
-								? respuesta.get("message").getAsString() : "";
-						for (int i = 0; i < lote.size(); i++) {
-							CampanaDAO.marcar(idEnvio, lote.get(i).idPersona,
-									bien ? "ENVIADO" : "FALLIDO", detalle);
-						}
-						if (!bien) {
-							logger.error("EnvioPublicidadCtrl: lote fallido en campana "
-									+ idEnvio + ", " + detalle);
+						final boolean bien = salioBien(respuesta);
+						final String detalle = mensajeDe(respuesta);
+
+						if (bien || buenos.size() == 1) {
+							for (int i = 0; i < buenos.size(); i++) {
+								CampanaDAO.marcar(idEnvio, buenos.get(i).idPersona,
+										bien ? "ENVIADO" : "FALLIDO", detalle);
+							}
+						} else {
+							//EL LOTE SE CAYO. Brevo lo rechaza COMPLETO por una
+							//sola direccion mala, asi que dar por perdidas a las
+							//cien seria regalar noventa y nueve clientes buenos
+							//por culpa de uno. Se reintenta de a uno: cuesta cien
+							//llamadas, pero solo cuando algo fallo, y deja dicho
+							//exactamente cual fue la mala.
+							logger.error("EnvioPublicidadCtrl: lote rechazado en el envio "
+									+ idEnvio + " (" + detalle + "). Se reintenta de a uno.");
+							for (int i = 0; i < buenos.size(); i++) {
+								final java.util.List<JsonObject> uno =
+										new java.util.ArrayList<JsonObject>();
+								uno.add(destinos.get(i));
+								final JsonObject r = llamar(brevo, porWhatsapp, uno, asunto,
+										idPlantilla);
+								CampanaDAO.marcar(idEnvio, buenos.get(i).idPersona,
+										salioBien(r) ? "ENVIADO" : "FALLIDO", mensajeDe(r));
+							}
 						}
 					}
 					logger.info("EnvioPublicidadCtrl: campana " + idEnvio + " terminada.");
@@ -302,6 +332,47 @@ public class EnvioPublicidadCtrl {
 		hilo.setDaemon(true);
 		hilo.setName("publicidad-" + idEnvio);
 		hilo.start();
+	}
+
+	private static JsonObject llamar(final SegmentacionClienteCtrl brevo, final boolean porWhatsapp,
+			final java.util.List<JsonObject> destinos, final String asunto, final int idPlantilla)
+			throws java.io.IOException {
+		if (porWhatsapp) {
+			return (brevo.envioWhatsappBrevo(destinos, asunto, idPlantilla,
+					new java.util.ArrayList<JsonObject>()));
+		}
+		return (brevo.envioCorreoBrevo(destinos, asunto, idPlantilla,
+				new java.util.ArrayList<JsonObject>()));
+	}
+
+	private static boolean salioBien(final JsonObject respuesta) {
+		return (respuesta != null && respuesta.has("success")
+				&& respuesta.get("success").getAsBoolean());
+	}
+
+	private static String mensajeDe(final JsonObject respuesta) {
+		return ((respuesta != null && respuesta.has("message"))
+				? respuesta.get("message").getAsString() : "");
+	}
+
+	/**
+	 * Si esta direccion la va a aceptar Brevo.
+	 *
+	 * La misma regla que usa CampanaDAO para cargar, repetida aqui a proposito:
+	 * la de alla evita que entren, esta evita que salgan. Una campana cargada
+	 * antes de este arreglo todavia tiene direcciones malas adentro, y sin esta
+	 * segunda revision volveria a tumbar el lote entero.
+	 *
+	 * Por celular son diez digitos pelados: el +57 lo pone el codigo de Brevo.
+	 */
+	private static boolean sirve(final String destino, final boolean porWhatsapp) {
+		if (destino == null || destino.length() == 0) {
+			return (false);
+		}
+		if (porWhatsapp) {
+			return (destino.matches(CampanaDAO.PATRON_CELULAR));
+		}
+		return (destino.matches(CampanaDAO.PATRON_CORREO));
 	}
 
 	// =======================================================================
