@@ -109,31 +109,17 @@
     table-layout: fixed;
 }
 
-#user-details,#info {
+#user-details, #info {
     background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 20px; /* Margen superior */
-    margin-bottom: 20px; /* Margen inferior */
-    padding: 16px; /* Espaciado interno */
-    font-family: 'Arial', sans-serif; /* Fuente más estilizada */
-    font-size: 14px; /* Tamaño de fuente */
-    color: #333; /* Color de texto */
-    line-height: 1.6; /* Altura de línea para mejor legibilidad */
-    width: 400px; /* Ancho fijo */
-    max-width: 90%; /* Ajusta para pantallas pequeñas */
-}
-
-#user-details h3 ,#info h3{
-    font-size: 16px; /* Tamaño del encabezado */
-    font-weight: bold; /* Encabezado más destacado */
-    margin-bottom: 12px; /* Espaciado debajo del encabezado */
-    color: #0b35a6; /* Color del encabezado */
-}
-
-#user-details p,#info p {
-    margin-bottom: 8px; /* Espaciado entre párrafos */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.6;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .contenedor-general {
@@ -219,8 +205,13 @@
     }
 }
 
-#table-container tr:hover, #table-historial tr:hover {
-    background-color: #f9f9f9;
+#table-container tbody tr, #table-historial tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+#table-container tbody tr:hover, #table-historial tbody tr:hover {
+    background-color: #f1f5f9 !important;
 }
 
 /* Estilos para las tablas */
@@ -348,7 +339,920 @@
     .modal-dialog {
         max-width: 100%; /* Permite que el modal ocupe el 100% en pantallas pequeñas */
     }
-    
-
 }
+
+/* ======================================================================
+   MARCADOR DINÁMICO DE DOMICILIARIO (ESTILO RAPPI / UBER EATS)
+   ====================================================================== */
+.custom-moto-marker {
+    background: transparent;
+    border: none;
+}
+
+.moto-marker-box {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.moto-marker-icon {
+    width: 34px;
+    height: 34px;
+    background: #e31837; /* Rojo distintivo */
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    border: 2px solid #ffffff;
+    z-index: 2;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.moto-marker-icon i {
+    font-size: 16px;
+    color: #ffffff;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+.moto-marker-box:hover .moto-marker-icon {
+    transform: scale(1.2);
+    background: #0b35a6; /* Azul corporativo al pasar el cursor */
+}
+
+.moto-marker-pulse {
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(227, 24, 55, 0.45);
+    animation: moto-pulse-anim 2s infinite ease-out;
+    z-index: 1;
+}
+
+@keyframes moto-pulse-anim {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.9;
+    }
+    70% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+}
+
+/* Estado atenuado para domiciliarios inactivos (> 2 horas sin señal) */
+.moto-marker-box.moto-inactiva {
+    opacity: 0.45;
+    filter: grayscale(85%);
+}
+
+.moto-marker-box.moto-inactiva .moto-marker-pulse {
+    display: none !important;
+}
+
+.moto-marker-box.moto-inactiva .moto-marker-icon {
+    background: #64748b !important; /* Gris pizarra */
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.badge-inactivo-tag {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 1px 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* =========================================================
+   ESTILOS CENTRO DE TELEMETRÍA Y SIMULACIÓN DE HISTORIAL
+   ========================================================= */
+
+.telemetria-modal {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.telemetria-modal .modal-header {
+    background: linear-gradient(135deg, #0b35a6 0%, #1e40af 100%);
+    color: #ffffff;
+    padding: 1rem 1.5rem;
+    border-bottom: none;
+}
+
+.avatar-domi {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #ffffff;
+}
+
+/* Tarjetas KPI */
+.kpis-telemetria .kpi-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpis-telemetria .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 12px;
+}
+
+.bg-soft-primary { background: #eff6ff; }
+.bg-soft-success { background: #ecfdf5; }
+.bg-soft-info { background: #f0f9ff; }
+.bg-soft-warning { background: #fffbeb; }
+
+.kpi-data {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.kpi-value {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+/* Reproductor de Ruta Box */
+.reproductor-ruta-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.slider-tiempo-container {
+    width: 100%;
+}
+
+.slider-tiempo-container input[type=range] {
+    cursor: pointer;
+    height: 8px;
+    accent-color: #2563eb;
+}
+
+.time-labels {
+    font-size: 12px;
+}
+
+/* Marcadores de inicio, fin y paradas en el mapa */
+.marker-inicio-fin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+    border: 2px solid #fff;
+}
+
+.marker-inicio {
+    background: #10b981; /* Verde esmeralda */
+}
+
+.marker-fin {
+    background: #ef4444; /* Rojo */
+}
+
+.marker-parada {
+    background: #f59e0b; /* Ámbar */
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+}
+
+/* Fila activa en la tabla de cronología */
+.fila-punto-activa {
+    background-color: #dbeafe !important;
+    font-weight: bold;
+}
+
+/* Tooltips estilizados para las zonas de reparto */
+.tooltip-zona-estilizada {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border: 2px solid #0b35a6 !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 4px 10px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.badge-zona-tooltip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================================================
+   MONITOREO EN TIEMPO REAL - ESTILOS PROFESIONALES DE FLOTA
+   ========================================================================== */
+.badge-live-pulse {
+    display: inline-flex;
+    align-items: center;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    margin-right: 6px;
+    box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: livePulseAnim 1.6s infinite;
+}
+
+@keyframes livePulseAnim {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.card-contador-domis {
+    border-radius: 20px !important;
+    font-size: 0.85rem;
+}
+
+.card-mapa-monitoreo, .card-tabla-monitoreo, .card-perfil-domi {
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+.card-mapa-monitoreo .card-header, .card-tabla-monitoreo .card-header {
+    background: #f8fafc !important;
+}
+
+/* Efecto de destello cuando una fila recibe una nueva coordenada en vivo */
+@keyframes flashFilaActualizada {
+    0% {
+        background-color: #bbf7d0 !important; /* Verde menta suave */
+    }
+    100% {
+        background-color: transparent !important;
+    }
+}
+
+.fila-actualizada {
+    animation: flashFilaActualizada 2.2s ease-out;
+}
+
+/* ==========================================================================
+   BARRA DE FILTROS SUPERIOR DEL MAPA (MODERNA, LIMPIA Y ESPACIOSA)
+   ========================================================================== */
+.mapa-toolbar-filtros {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.filtro-card-control {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.filtro-card-control:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.filtro-card-control:focus-within {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.filtro-icono-wrap {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.bg-primary-soft {
+    background-color: #eff6ff !important;
+}
+
+.bg-info-soft {
+    background-color: #f5f3ff !important;
+}
+
+.bg-success-soft {
+    background-color: #ecfdf5 !important;
+}
+
+.filtro-input-group {
+    flex: 1;
+    min-width: 0;
+    margin-left: 9px;
+}
+
+.filtro-label-micro {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-bottom: 1px;
+    line-height: 1;
+    display: block;
+}
+
+.filtro-select-clean {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    height: auto !important;
+    line-height: 1.3 !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    width: 100% !important;
+    outline: none !important;
+}
+
+.filtro-select-clean:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.badge-live-disconnected {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+    border-color: #fca5a5 !important;
+}
+
+.pulse-dot-disconnected {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   TABLA DE MONITOREO MODERNA Y ULTRA-LIMPIA (LINEAR / STRIPE STYLE)
+   ========================================================================== */
+#table-container {
+    border: none !important;
+    border-collapse: separate !important;
+    border-spacing: 0;
+    width: 100% !important;
+}
+
+#table-container thead th {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    padding: 10px 14px !important;
+    border-top: none !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#table-container tbody td {
+    padding: 11px 14px !important;
+    vertical-align: middle !important;
+    border-top: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+#table-container tbody tr {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+#table-container tbody tr:hover td {
+    background-color: #f8fafc !important;
+}
+
+#table-container tbody tr.fila-seleccionada td {
+    background-color: #eff6ff !important;
+}
+
+#table-container tbody tr.fila-seleccionada td:first-child {
+    border-left: 3px solid #2563eb !important;
+}
+
+/* Nombre de domiciliario en la tabla (capitalizado y limpio) */
+.domi-nombre-cell {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    text-transform: capitalize;
+    letter-spacing: 0.1px;
+}
+
+/* Badge de hora en vivo (solo HH:mm:ss sin fecha para no partirse) */
+.badge-hora-live {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+    background: #f8fafc;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    white-space: nowrap;
+}
+
+/* Insignias de tienda en la tabla (redondeadas y suaves) */
+.badge-tienda-tabla {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+    white-space: nowrap;
+}
+
+/* Controles de DataTables (Buscar, Mostrar registros y Paginador) */
+.dataTables_wrapper .dataTables_length, 
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    outline: none !important;
+    margin-left: 6px !important;
+    transition: all 0.2s ease;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 3px 6px !important;
+    font-size: 12px !important;
+}
+
+.dataTables_wrapper .pagination .page-item.active .page-link {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    border-radius: 6px !important;
+    font-weight: 700;
+}
+
+.dataTables_wrapper .pagination .page-link {
+    border-radius: 6px !important;
+    margin: 0 2px !important;
+    font-size: 12px !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* ==========================================================================
+   FICHA DE PERFIL DEL DOMICILIARIO (ALINEADA A LA IZQUIERDA Y ELEGANTE)
+   ========================================================================== */
+.card-perfil-domi {
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.avatar-domi-perfil {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 10px rgba(29, 78, 216, 0.25);
+    flex-shrink: 0;
+}
+
+#detalles-nombre {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: left !important;
+    text-transform: capitalize;
+    margin-bottom: 2px;
+}
+
+#detalles-subtitulo {
+    text-align: left !important;
+    display: block;
+}
+
+.item-dato-domi {
+    padding: 7px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.item-dato-domi:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   INSIGNIAS DE TIPO DE REPARTIDOR (DIRECTO VS TEMPORAL)
+   ========================================================================== */
+.badge-tipo-domi {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 12px;
+    line-height: 1.25;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.badge-tipo-domi.badge-directo {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-tipo-domi.badge-temporal {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.badge-tipo-domi.badge-externo {
+    background-color: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.domi-nombre-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.domi-nombre-texto {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    text-transform: capitalize;
+}
+
+.badge-biometria-turno {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11.5px;
+    color: #10b981;
+    cursor: help;
+}
+
+.badge-biometria-turno i {
+    filter: drop-shadow(0 1px 2px rgba(16, 185, 129, 0.25));
+}
+
+/* ==========================================================================
+   INSIGNIAS DE ESTADO OPERATIVO (EN TIENDA VS EN RUTA) Y TELEMETRÍA
+   ========================================================================== */
+.badge-estado-domi {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    line-height: 1.2;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.badge-estado-domi.badge-en-tienda {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-estado-domi.badge-en-tienda i {
+    color: #10b981;
+}
+
+.badge-estado-domi.badge-en-ruta {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-estado-domi.badge-en-ruta i {
+    color: #3b82f6;
+}
+
+.badge-estado-domi.badge-fuera-tienda {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.badge-estado-domi.badge-fuera-tienda i {
+    color: #f59e0b;
+}
+
+.badge-pedido-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+    letter-spacing: 0.2px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+}
+
+/* Tarjetas de Despachos en Modal de Histórico */
+.card-despacho-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.card-despacho-item:hover {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+    transform: translateY(-1px);
+}
+
+.card-despacho-item.activo {
+    background: #eff6ff;
+    border-color: #2563eb;
+    border-left-color: #2563eb;
+}
+
+.despacho-header-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.despacho-num {
+    font-weight: 800;
+    font-size: 12px;
+    color: #1e293b;
+}
+
+.despacho-horas {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.despacho-pedidos-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.item-pedido-entrega {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.item-pedido-entrega.entregado {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+}
+
+/* Marcador Pin de Entrega en Mapa Leaflet (Diseño Minimalista, Elegante y No Estorboso) */
+.custom-pin-entrega-container {
+    background: transparent !important;
+    border: none !important;
+}
+
+.pin-entrega-compacto {
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(4px);
+    color: #f8fafc;
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 1px 6px 1px 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transform-origin: center center;
+}
+
+.pin-entrega-compacto .pin-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 4px #10b981;
+    flex-shrink: 0;
+}
+
+.pin-entrega-compacto:hover,
+.pin-entrega-compacto.pin-highlighted {
+    transform: scale(1.18);
+    background: #0f172a;
+    border-color: #34d399;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    z-index: 9999 !important;
+}
+
+.marcador-entrega-pin {
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 1px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.marcador-entrega-pin:hover {
+    transform: scale(1.18);
+    background: #0f172a;
+    border-color: #34d399;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    z-index: 9999 !important;
+}
+
+/* Alertas para auditoría de pedidos sin hora de entrega */
+.pedido-alerta-sin-entrega {
+    background-color: #fffbeb !important;
+    border-left: 3.5px solid #f59e0b !important;
+}
+
+.bg-soft-warning {
+    background-color: #fffbeb !important;
+}
+
+/* Tarjetas de despachos y selección de ruta por despacho */
+.card-despacho-item {
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.card-despacho-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12) !important;
+}
+
+.card-despacho-item.despacho-activo {
+    border: 2px solid #2563eb !important;
+    background: #eff6ff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18) !important;
+}
+
+.btn-ver-ruta-despacho {
+    font-size: 11px !important;
+    padding: 3px 9px !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px;
+    transition: all 0.15s ease;
+}
+
+
+
 

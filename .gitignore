@@ -8,5 +8,10 @@ bin/
 # lo genera desde ProyectoTiendaAmericanaCliente.
 libs/*.jar
 
+
+# Pruebas temporales, benchmarks y respaldos locales
+scratch/
+backups_rastreo/
+
 # Los .class no van al repositorio: los genera la compilacion.
 *.class

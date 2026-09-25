@@ -16,7 +16,7 @@
 
 .card-moderna-header h2 {
 	margin: 0;
-	font-size: 15px;
+	font-size: 16.5px !important;
 	font-weight: 700;
 	color: var(--rc-ink);
 }
@@ -452,7 +452,7 @@ html, body {
     max-width: 100% !important;
     overflow-x: hidden !important;
     background-color: #f8fafc !important;
-    
+    font-size: 15px !important;
 }
 
 /* Anular límites fijos de Bootstrap para ocupar el 100% del ancho de pantalla */
@@ -486,18 +486,24 @@ html, body {
 }
 
 .pedidos-bottom-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-    align-items: start;
-    width: 100%;
-    margin-bottom: 30px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 22px !important;
+    align-items: start !important;
+    width: 100% !important;
+    margin-bottom: 30px !important;
+}
+
+.pedidos-bottom-grid > .card-moderna {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 @media (max-width: 1200px) {
     .pedidos-layout-grid,
     .pedidos-bottom-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -527,7 +533,7 @@ html, body {
     padding-bottom: 14px;
     margin-bottom: 18px;
     border-bottom: 2px solid #f1f5f9;
-    font-size: 15px;
+    font-size: 16.5px;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.2px;
@@ -546,10 +552,24 @@ html, body {
     margin-bottom: 16px;
 }
 
-@media (max-width: 1440px) {
-    .form-row-4col {
+.form-row-3col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 1200px) {
+    .form-row-4col,
+    .form-row-3col {
         grid-template-columns: 1fr 1fr;
         gap: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-row-3col {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -574,7 +594,7 @@ html, body {
 }
 
 .label-moderno {
-    font-size: 11.5px;
+    font-size: 13px !important;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -585,10 +605,10 @@ html, body {
 
 /* Inputs ergonómicos con altura cómoda y bordes limpios */
 .card-moderna .form-control {
-    height: 38px;
+    height: 40px;
     border-radius: 7px;
     border: 1.5px solid #cbd5e1;
-    font-size: 13px;
+    font-size: 14px !important;
     padding: 6px 12px;
     color: #1e293b;
     box-shadow: none;
@@ -901,7 +921,7 @@ div.fila-modo-direccion.modo-activo .btn-buscar-global {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 12.5px;
+    font-size: 14px !important;
     color: #1e293b;
     user-select: none;
     white-space: nowrap;
@@ -913,6 +933,14 @@ div.fila-modo-direccion.modo-activo .btn-buscar-global {
     background: #eff6ff;
     border-color: #3b82f6;
     color: #1d4ed8;
+}
+
+.radio-card-division:has(input:checked),
+.radio-card-division.active {
+    background: #eff6ff !important;
+    border-color: #0284c7 !important;
+    color: #0369a1 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.22) !important;
 }
 
 .radio-card-division input[type="radio"] {
@@ -936,7 +964,7 @@ div.fila-modo-direccion.modo-activo .btn-buscar-global {
 }
 
 .adiciones-radios label {
-    font-size: 12.5px;
+    font-size: 13.5px !important;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
@@ -1276,19 +1304,29 @@ table.dataTable thead td {
     background: #f8fafc !important;
     color: #475569 !important;
     text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: .04em;
+    font-size: 11px !important;
+    letter-spacing: .03em;
     font-weight: 700;
-    padding: 9px 12px !important;
+    padding: 7px 8px !important;
     border-bottom: 2px solid #e2e8f0 !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+}
+
+#grid-pedido thead th,
+#grid-pedido thead td {
+    font-size: 11px !important;
+    padding: 7px 8px !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
 }
 
 table.dataTable tbody td {
-    padding: 8px 12px !important;
-    font-size: 12.5px;
+    padding: 9px 12px !important;
+    font-size: 13.5px !important;
     color: #1e293b;
     border-bottom: 1px solid #f1f5f9 !important;
     border-left: none !important;
@@ -1382,17 +1420,23 @@ table.dataTable tbody tr:hover {
 }
 
 .pedidos-middle-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-    align-items: stretch;
-    width: 100%;
-    margin-bottom: 22px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 22px !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    margin-bottom: 22px !important;
+}
+
+.pedidos-middle-grid > .card-moderna {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 @media (max-width: 1200px) {
     .pedidos-middle-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -1404,6 +1448,30 @@ table.dataTable tbody tr:hover {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.card-detalle-middle {
+    overflow-x: hidden !important;
+}
+
+.card-detalle-middle .grid-clientes-wrapper {
+    overflow-x: auto !important;
+    position: relative !important;
+}
+
+#grid-pedido_wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: visible !important;
+}
+
+#grid-pedido {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
 }
 
 .card-mapa-middle .panel-mapa-contenedor {
@@ -1550,11 +1618,18 @@ table.dataTable tbody tr:hover {
     opacity: 1 !important;
 }
 
+.jconfirm .jconfirm-box-container {
+    max-width: 440px !important;
+    margin: 0 auto !important;
+}
+
 .jconfirm .jconfirm-box {
-    border-radius: 14px !important;
+    max-width: 440px !important;
+    width: 100% !important;
+    border-radius: 16px !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
     border: 1px solid #e2e8f0 !important;
-    padding: 22px 24px 18px 24px !important;
+    padding: 20px 22px 18px 22px !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
@@ -1642,109 +1717,294 @@ table.dataTable tbody tr:hover {
 #especialidades,
 #otrosproductos,
 #frmgaseosas {
-    max-height: 270px !important;
+    max-height: 280px !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    scrollbar-gutter: stable !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #94a3b8 #f1f5f9 !important;
     border: 1.5px solid #e2e8f0 !important;
     border-radius: 9px !important;
-    padding: 8px !important;
+    padding: 0 8px 8px 8px !important;
     background: #ffffff !important;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03) !important;
     margin-top: 8px !important;
 }
 
-#especialidades::-webkit-scrollbar,
-#otrosproductos::-webkit-scrollbar,
-#frmgaseosas::-webkit-scrollbar {
-    width: 6px;
+#frmgaseosas:empty {
+    display: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
 }
 
-#especialidades::-webkit-scrollbar-thumb,
-#otrosproductos::-webkit-scrollbar-thumb,
-#frmgaseosas::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
-}
-
-#especialidades::-webkit-scrollbar-thumb:hover,
-#otrosproductos::-webkit-scrollbar-thumb:hover,
-#frmgaseosas::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-#especialidades table {
-    width: 100% !important;
-    border-collapse: separate !important;
-    border-spacing: 0 4px !important;
-}
-
-#especialidades table th {
-    position: sticky !important;
-    top: 0 !important;
-    background: #f8fafc !important;
+.gaseosa-box-header {
     font-size: 11px !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
-    color: #475569 !important;
-    padding: 6px 10px !important;
-    border-bottom: 2px solid #e2e8f0 !important;
-    z-index: 2 !important;
+    color: #0369a1 !important;
+    background: #f0f9ff !important;
+    border: 1px solid #bae6fd !important;
+    border-radius: 6px !important;
+    padding: 5px 8px !important;
+    margin-bottom: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
 }
 
-#especialidades table td {
+#frmgaseosas table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 4px !important;
+    border: none !important;
+}
+
+#frmgaseosas table td {
     padding: 2px 4px !important;
     border: none !important;
     width: 50% !important;
 }
 
-#especialidades label {
+#especialidades::-webkit-scrollbar,
+#otrosproductos::-webkit-scrollbar,
+#frmgaseosas::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+#especialidades::-webkit-scrollbar-track,
+#otrosproductos::-webkit-scrollbar-track,
+#frmgaseosas::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 4px !important;
+}
+
+#especialidades::-webkit-scrollbar-thumb,
+#otrosproductos::-webkit-scrollbar-thumb,
+#frmgaseosas::-webkit-scrollbar-thumb {
+    background: #94a3b8 !important;
+    border-radius: 4px !important;
+}
+
+#especialidades::-webkit-scrollbar-thumb:hover,
+#otrosproductos::-webkit-scrollbar-thumb:hover,
+#frmgaseosas::-webkit-scrollbar-thumb:hover {
+    background: #64748b !important;
+}
+
+#especialidades table,
+#otrosproductos table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin-top: 0 !important;
+}
+
+#especialidades table th,
+#otrosproductos table th {
+    position: sticky !important;
+    top: 0 !important;
+    background: #f1f5f9 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #334155 !important;
+    padding: 8px 10px !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    z-index: 10 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+#especialidades table th:first-child,
+#otrosproductos table th:first-child {
+    border-top-left-radius: 7px !important;
+}
+
+#especialidades table th:last-child,
+#otrosproductos table th:last-child {
+    border-top-right-radius: 7px !important;
+}
+
+#especialidades table td,
+#otrosproductos table td {
+    padding: 3px 4px !important;
+    border: none !important;
+    width: 50% !important;
+}
+
+#especialidades label,
+#otrosproductos label {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    padding: 5px 10px !important;
+    gap: 8px !important;
+    padding: 7px 12px !important;
     background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    font-size: 12px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 12.5px !important;
     font-weight: 600 !important;
     color: #334155 !important;
     margin: 0 !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+    line-height: 1.3 !important;
 }
 
-#especialidades label:hover {
+#especialidades label:hover,
+#otrosproductos label:hover {
     background: #eff6ff !important;
     border-color: #3b82f6 !important;
     color: #1d4ed8 !important;
 }
 
-#especialidades input[type="radio"] {
+#especialidades input[type="radio"],
+#otrosproductos input[type="radio"] {
     margin: 0 !important;
-    transform: scale(1.1) !important;
+    transform: scale(1.15) !important;
     cursor: pointer !important;
+    flex-shrink: 0 !important;
+}
+
+#especialidades label span,
+#otrosproductos label span {
+    flex: 1 1 auto !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+}
+
+/* Estado activo para celdas seleccionadas en Especialidades y Otros Productos */
+#especialidades td.celda-activa label,
+#especialidades td[style*="teal"] label,
+#otrosproductos td.celda-activa label,
+#otrosproductos td[style*="teal"] label,
+#otrosproductos label.activa {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(2, 132, 199, 0.25) !important;
+    font-weight: 700 !important;
 }
 
 /* ==========================================================================
-   ICONOS Y BOTONES COMPACTOS Y ESTÉTICOS EN TABLA DEL PEDIDO (#grid-pedido)
+   TABLA DE PEDIDO COMPACTA Y BOTONES DE ACCIÓN FIJOS (STICKY) (#grid-pedido)
    ========================================================================== */
 
+#grid-pedido {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+}
+
+#grid-pedido thead th {
+    font-size: 11.5px !important;
+    padding: 9px 6px !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+    background-color: #f8fafc !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    color: #475569 !important;
+    text-align: left;
+}
+
+#grid-pedido tbody td {
+    padding: 10px 8px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    line-height: 1.35 !important;
+    color: #1e293b !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Alineaciones específicas */
+#grid-pedido th:nth-child(5),
+#grid-pedido td:nth-child(5) {
+    text-align: center !important;
+}
+#grid-pedido th:nth-child(11),
+#grid-pedido td:nth-child(11),
+#grid-pedido th:nth-child(12),
+#grid-pedido td:nth-child(12) {
+    text-align: right !important;
+}
+
+/* Color de fondo base en filas */
+#grid-pedido tbody tr {
+    background-color: #ffffff;
+}
+
+/* ==========================================================================
+   COLUMNAS DE ACCIÓN (ELIMINAR Y DUPLICAR) FIJADAS A LA DERECHA (STICKY)
+   ========================================================================== */
+
+/* Duplicar (última columna) */
+#grid-pedido th:last-child,
+#grid-pedido td:last-child {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 5 !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    text-align: center !important;
+    padding: 6px 4px !important;
+}
+
+/* Eliminar (penúltima columna) */
+#grid-pedido th:nth-last-child(2),
+#grid-pedido td:nth-last-child(2) {
+    position: sticky !important;
+    right: 42px !important;
+    z-index: 5 !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    text-align: center !important;
+    padding: 6px 4px !important;
+    box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Cabeceras sticky */
+#grid-pedido thead th:last-child,
+#grid-pedido thead th:nth-last-child(2) {
+    background-color: #f8fafc !important;
+    z-index: 7 !important;
+}
+
+/* Celdas del cuerpo sticky heredan el color de fondo exacto de la fila (#FF974D, #C7F94C o #ffffff) */
+#grid-pedido tbody td:last-child,
+#grid-pedido tbody td:nth-last-child(2) {
+    background-color: inherit !important;
+}
+
+#grid-pedido tbody tr:hover td:last-child,
+#grid-pedido tbody tr:hover td:nth-last-child(2) {
+    background-color: inherit !important;
+}
+
+/* Botones con excelente presencia visual */
 #grid-pedido .btn,
 #grid-pedido button,
 #grid-pedido .btn-danger,
 #grid-pedido .btn-warning {
     padding: 0 !important;
-    font-size: 12px !important;
-    border-radius: 6px !important;
+    font-size: 13px !important;
+    border-radius: 7px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     width: 32px !important;
     height: 32px !important;
     min-width: 32px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
     border: none !important;
     transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
@@ -1752,7 +2012,7 @@ table.dataTable tbody tr:hover {
 #grid-pedido .btn:hover,
 #grid-pedido button:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.12) !important;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16) !important;
 }
 
 #grid-pedido .btn-danger {
@@ -1786,31 +2046,740 @@ table.dataTable tbody tr:hover {
    ESTILOS PARA MODAL DE AGREGAR DOMICILIO (#modalCostoDomicilio)
    ========================================================================== */
 
+#modalCostoDomicilio .modal-body {
+    padding: 20px 24px !important;
+}
+
+#pintarCostoDomicilios {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin: 0 !important;
+}
+
 .radio-card-domicilio {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
-    padding: 12px 16px !important;
-    background: #f8fafc !important;
-    border: 1.5px solid #e2e8f0 !important;
-    border-radius: 8px !important;
-    font-size: 13.5px !important;
+    padding: 14px 18px !important;
+    background: #ffffff !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
     font-weight: 600 !important;
     color: #1e293b !important;
     cursor: pointer !important;
     margin: 0 !important;
     user-select: none !important;
-    transition: all 0.15s ease !important;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 
 .radio-card-domicilio:hover {
-    background: #eff6ff !important;
+    background: #f8fafc !important;
     border-color: #3b82f6 !important;
     color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.10) !important;
+}
+
+.radio-card-domicilio:has(input:checked),
+.radio-card-domicilio.active {
+    background: #eff6ff !important;
+    border-color: #0284c7 !important;
+    color: #0369a1 !important;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25), 0 4px 12px rgba(2, 132, 199, 0.12) !important;
+    font-weight: 700 !important;
 }
 
 .radio-card-domicilio input[type="radio"] {
     margin: 0 !important;
-    transform: scale(1.2) !important;
+    transform: scale(1.35) !important;
+    cursor: pointer !important;
+    accent-color: #0284c7 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   MODERNIZACIÓN INTEGRAL DE MODALES (LIMPIOS, ESPACIOSOS Y SIN TABLAS TOSCAS)
+   ========================================================================== */
+
+.modal.fade .modal-dialog {
+    transition: transform 0.22s ease-out, opacity 0.22s ease-out !important;
+}
+
+.modal-content {
+    border-radius: 14px !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+}
+
+.modal-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 16px 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.modal-header .modal-title {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.modal-header .close {
+    margin: 0 !important;
+    padding: 4px 10px !important;
+    font-size: 24px !important;
+    font-weight: 400 !important;
+    color: #64748b !important;
+    opacity: 0.7 !important;
+    transition: all 0.15s ease !important;
+    border-radius: 6px !important;
+    line-height: 1 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+.modal-header .close:hover {
+    opacity: 1 !important;
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+}
+
+.modal-body {
+    padding: 20px 24px !important;
+}
+
+.modal-footer {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 12px 20px !important;
+    border-radius: 0 0 14px 14px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.modal-footer .btn {
+    border-radius: 7px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    padding: 8px 16px !important;
+    transition: all 0.15s ease !important;
+}
+
+/* Modales específicos: Gaseosa, Adiciones, Con, Sin */
+#pintarGaseosa,
+#pintarAdiciones,
+#pintarCon,
+#pintarSin,
+#pintarAdicionales {
+    padding: 0 !important;
+    max-height: 80vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+}
+
+.modal-table-scroll {
+    max-height: calc(80vh - 65px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 16px 20px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    scrollbar-gutter: stable !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #94a3b8 #f1f5f9 !important;
+}
+
+.modal-table-scroll::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+.modal-table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 4px !important;
+}
+
+.modal-table-scroll::-webkit-scrollbar-thumb {
+    background: #94a3b8 !important;
+    border-radius: 4px !important;
+}
+
+.modal-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #64748b !important;
+}
+
+#pintarGaseosa table,
+#pintarAdiciones table,
+#pintarCon table,
+#pintarSin table,
+#pintarAdicionales table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 8px !important;
+    border: none !important;
+    margin: 0 !important;
+}
+
+#pintarGaseosa table td,
+#pintarAdiciones table td,
+#pintarCon table td,
+#pintarSin table td,
+#pintarAdicionales table td {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+#pintarGaseosa table td:hover,
+#pintarAdiciones table td:hover,
+#pintarCon table td:hover,
+#pintarSin table td:hover,
+#pintarAdicionales table td:hover {
+    border-color: #3b82f6 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Colores pastel armónicos para items especiales de Gaseosa */
+#pintarGaseosa table td.celda-puntos,
+#pintarGaseosa table td[style*="yellow"] {
+    background-color: #fef9c3 !important;
+    border-color: #fde047 !important;
+    color: #854d0e !important;
+}
+
+#pintarGaseosa table td.celda-puntos:hover,
+#pintarGaseosa table td[style*="yellow"]:hover {
+    background-color: #fef08a !important;
+    border-color: #eab308 !important;
+}
+
+#pintarGaseosa table td.celda-didi,
+#pintarGaseosa table td[style*="salmon"] {
+    background-color: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #991b1b !important;
+}
+
+#pintarGaseosa table td.celda-mit,
+#pintarGaseosa table td[style*="lightblue"] {
+    background-color: #e0f2fe !important;
+    border-color: #7dd3fc !important;
+    color: #0369a1 !important;
+}
+
+/* Estado activo/seleccionado moderno (teal compatibilidad estética) */
+#pintarGaseosa table td[style*="teal"],
+#pintarAdiciones table td[style*="teal"],
+#pintarCon table td[style*="teal"],
+#pintarSin table td[style*="teal"],
+#pintarAdicionales table td[style*="teal"] {
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(2, 132, 199, 0.28) !important;
+}
+
+#pintarGaseosa table td[style*="teal"] label,
+#pintarAdiciones table td[style*="teal"] label,
+#pintarCon table td[style*="teal"] label,
+#pintarSin table td[style*="teal"] label,
+#pintarAdicionales table td[style*="teal"] label {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+#pintarGaseosa label,
+#pintarAdiciones label,
+#pintarCon label,
+#pintarSin label,
+#pintarAdicionales label {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    color: inherit !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
     cursor: pointer !important;
 }
+
+#pintarGaseosa input[type="checkbox"],
+#pintarAdiciones input[type="checkbox"],
+#pintarCon input[type="checkbox"],
+#pintarSin input[type="checkbox"],
+#pintarAdicionales input[type="checkbox"] {
+    margin: 0 !important;
+    transform: scale(1.15) !important;
+    cursor: pointer !important;
+}
+
+/* Formulario moderno para Ingresar Oferta y Redención */
+.modal-form-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.modal-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-form-group label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #475569 !important;
+    margin: 0 !important;
+}
+
+.modal-form-group input.form-control,
+.modal-form-group select.form-control {
+    border-radius: 7px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    padding: 7px 12px !important;
+    font-size: 13px !important;
+    transition: all 0.15s ease !important;
+    height: auto !important;
+}
+
+.modal-form-group input.form-control:focus,
+.modal-form-group select.form-control:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.modal-form-group input:disabled {
+    background-color: #f8fafc !important;
+    color: #64748b !important;
+    border-color: #e2e8f0 !important;
+    cursor: not-allowed !important;
+}
+
+.input-action-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-action-group input.form-control {
+    flex: 1;
+}
+
+.input-action-group .btn {
+    border-radius: 7px !important;
+    font-weight: 600 !important;
+    padding: 7px 14px !important;
+    white-space: nowrap !important;
+}
+
+/* ==========================================================================
+   RESALTADO DE CLIENTE SELECCIONADO EN TABLA (#grid-clientes)
+   ========================================================================== */
+
+#grid-clientes tbody tr.cliente-fila-activa {
+    background-color: #dbeafe !important;
+    border-left: 5px solid #2563eb !important;
+}
+
+#grid-clientes tbody tr.cliente-fila-activa td {
+    background-color: #dbeafe !important;
+    color: #1e3a8a !important;
+    font-weight: 700 !important;
+}
+
+#grid-clientes tbody tr.cliente-fila-activa:hover td {
+    background-color: #bfdbfe !important;
+}
+
+/* ==========================================================================
+   ESTILOS PREMIUM PARA MODALES: ADICIONES, PRODUCTO CON/SIN Y ADICIONALES
+   (#pintarAdiciones, #pintarCon, #pintarSin, #pintarAdicionales)
+   ========================================================================== */
+
+#pintarAdiciones table,
+#pintarCon table,
+#pintarSin table,
+#pintarAdicionales table {
+    border-collapse: separate !important;
+    border-spacing: 10px !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+#pintarAdiciones .adicion-header-badge,
+#pintarCon .adicion-header-badge,
+#pintarSin .adicion-header-badge,
+#pintarAdicionales .adicion-header-badge {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 8px 14px !important;
+    font-size: 13.5px !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+#pintarAdiciones .adicion-header-badge span,
+#pintarCon .adicion-header-badge span,
+#pintarSin .adicion-header-badge span,
+#pintarAdicionales .adicion-header-badge span {
+    color: #2563eb !important;
+    font-weight: 700 !important;
+}
+
+#pintarAdiciones td.td-adicion-card,
+#pintarCon td.td-adicion-card,
+#pintarSin td.td-adicion-card,
+#pintarAdicionales td.td-adicion-card {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s ease-in-out !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+    vertical-align: middle !important;
+    width: 50% !important;
+    user-select: none !important;
+}
+
+#pintarAdiciones td.td-adicion-card:hover,
+#pintarCon td.td-adicion-card:hover,
+#pintarSin td.td-adicion-card:hover,
+#pintarAdicionales td.td-adicion-card:hover {
+    border-color: #3b82f6 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.08) !important;
+}
+
+#pintarAdiciones .adicion-card-inner,
+#pintarCon .adicion-card-inner,
+#pintarSin .adicion-card-inner,
+#pintarAdicionales .adicion-card-inner {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
+
+#pintarAdiciones .adicion-card-label,
+#pintarCon .adicion-card-label,
+#pintarSin .adicion-card-label,
+#pintarAdicionales .adicion-card-label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    flex: 1 1 auto !important;
+    line-height: 1.3 !important;
+}
+
+#pintarAdiciones .adicion-card-label input[type="checkbox"],
+#pintarCon .adicion-card-label input[type="checkbox"],
+#pintarSin .adicion-card-label input[type="checkbox"],
+#pintarAdicionales .adicion-card-label input[type="checkbox"] {
+    margin: 0 !important;
+    transform: scale(1.15) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+}
+
+#pintarAdiciones .adicion-card-portion,
+#pintarAdicionales .adicion-card-portion {
+    flex-shrink: 0 !important;
+    width: 58px !important;
+}
+
+#pintarAdiciones select.select-porcion,
+#pintarAdicionales .input-cantidad-adicional {
+    height: 28px !important;
+    padding: 2px 4px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    text-align: center !important;
+}
+
+#pintarAdicionales .adicional-nombre {
+    flex: 1 1 auto !important;
+}
+
+#pintarAdicionales .adicional-precio {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #0369a1 !important;
+    background: #e0f2fe !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+}
+
+/* Estado activo cuando la tarjeta está seleccionada */
+#pintarAdiciones td.td-adicion-card[style*="teal"],
+#pintarAdiciones td.td-adicion-card.celda-activa,
+#pintarCon td.td-adicion-card[style*="teal"],
+#pintarCon td.td-adicion-card.celda-activa,
+#pintarSin td.td-adicion-card[style*="teal"],
+#pintarSin td.td-adicion-card.celda-activa,
+#pintarAdicionales td.td-adicion-card[style*="teal"],
+#pintarAdicionales td.td-adicion-card.celda-activa {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.28) !important;
+}
+
+#pintarAdiciones td.td-adicion-card[style*="teal"] .adicion-card-label,
+#pintarAdiciones td.td-adicion-card.celda-activa .adicion-card-label,
+#pintarCon td.td-adicion-card[style*="teal"] .adicion-card-label,
+#pintarCon td.td-adicion-card.celda-activa .adicion-card-label,
+#pintarSin td.td-adicion-card[style*="teal"] .adicion-card-label,
+#pintarSin td.td-adicion-card.celda-activa .adicion-card-label,
+#pintarAdicionales td.td-adicion-card[style*="teal"] .adicion-card-label,
+#pintarAdicionales td.td-adicion-card.celda-activa .adicion-card-label {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+#pintarAdiciones td.td-adicion-card[style*="teal"] select.select-porcion,
+#pintarAdiciones td.td-adicion-card.celda-activa select.select-porcion,
+#pintarAdicionales td.td-adicion-card[style*="teal"] .input-cantidad-adicional,
+#pintarAdicionales td.td-adicion-card.celda-activa .input-cantidad-adicional {
+    border-color: rgba(255, 255, 255, 0.9) !important;
+    background-color: #ffffff !important;
+    color: #0369a1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+#pintarAdicionales td.td-adicion-card[style*="teal"] .adicional-precio,
+#pintarAdicionales td.td-adicion-card.celda-activa .adicional-precio {
+    color: #0284c7 !important;
+    background: #ffffff !important;
+}
+
+/* ==========================================================================
+   ESTILOS PREMIUM PARA MARCACIONES PEDIDO (#frmMarcaciones)
+   ========================================================================== */
+
+#frmMarcaciones table {
+    border-collapse: separate !important;
+    border-spacing: 0 6px !important;
+    width: 100% !important;
+}
+
+#frmMarcaciones table td {
+    padding: 6px 12px !important;
+    vertical-align: middle !important;
+    border: none !important;
+    background: #ffffff !important;
+}
+
+#frmMarcaciones table tr {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+#frmMarcaciones label.lbl-marcacion {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    line-height: 1.2 !important;
+}
+
+#frmMarcaciones input[type="radio"],
+#frmMarcaciones input[type="checkbox"] {
+    margin: 0 8px 0 0 !important;
+    cursor: pointer !important;
+    transform: scale(1.18) !important;
+    flex-shrink: 0 !important;
+}
+
+#frmMarcaciones input.input-obs-marcacion {
+    height: 32px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    width: 100% !important;
+    box-shadow: none !important;
+}
+
+#frmMarcaciones input.input-descuento-marcacion {
+    height: 32px !important;
+    width: 90px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin-left: 6px !important;
+    box-shadow: none !important;
+}
+
+#frmMarcaciones input[type="text"]:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+    outline: none !important;
+}
+
+/* ==========================================================================
+   ESTRUCTURA MODERNA PARA RESUMEN COMERCIAL FLOTANTE (Image 5)
+   ========================================================================== */
+
+.info-comercial-modal {
+    padding: 2px 0;
+    font-family: inherit;
+}
+
+.info-comercial-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.info-comercial-row .ic-lbl {
+    color: #475569;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-comercial-row .ic-val {
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.info-comercial-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.ic-chip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ic-chip .ic-chip-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.ic-chip .ic-chip-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.ic-chip.ic-chip-pqrs {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.ic-chip.ic-chip-pqrs .ic-chip-val {
+    color: #ef4444;
+}
+
+.info-comercial-esp {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #334155;
+    line-height: 1.5;
+    max-height: 130px;
+    overflow-y: auto;
+}
+
+/* Modales flotantes de SweetAlert compactos */
+.swal2-popup {
+    max-width: 380px !important;
+    border-radius: 16px !important;
+    padding: 16px 20px !important;
+    font-size: 13px !important;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.25) !important;
+}
+
+.swal2-title {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+.swal2-html-container {
+    font-size: 13px !important;
+    color: #475569 !important;
+    line-height: 1.5 !important;
+    margin: 8px 0 !important;
+}
+
