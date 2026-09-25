@@ -63,6 +63,41 @@ public class CampanaDAO {
 			+ "                  WHERE c.idpersona = crm.persona_resumen.idpersona"
 			+ "                    AND IFNULL(c.envio_publicidad,'N') <> 'S')";
 
+	/**
+	 * Un correo que Brevo va a aceptar.
+	 *
+	 * NO ES UN LUJO. Brevo rechaza el LOTE COMPLETO si una sola direccion viene
+	 * mal: el 2026-09-25 catorce correos malos entre quinientos tumbaron los
+	 * quinientos, en cinco lotes de cien, y no salio ni uno.
+	 *
+	 * Lo que hay guardado en la base incluye "no tiene", "lanene91@hotmail@com"
+	 * y "ppiedad.benitez @ gmail.com". Tambien hay correos perfectamente buenos
+	 * con un espacio al final: esos se salvan con TRIM, y por eso se guarda el
+	 * TRIM y no el valor crudo.
+	 *
+	 * Se escribe el punto como [.] y no como barra-punto a proposito: la barra
+	 * tiene que sobrevivir al literal de Java Y al literal de cadena de MySQL, y
+	 * si se pierde en el camino el punto pasa a significar "cualquier caracter".
+	 * Con eso, "lanene91@hotmail@com" se daba por bueno. [.] no necesita escape
+	 * en ninguna de las dos capas.
+	 */
+	public static final String PATRON_CORREO =
+			"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)*[.][A-Za-z]{2,}";
+
+	private static final String CORREO_VALIDO =
+			" TRIM(email) REGEXP '^" + PATRON_CORREO + "$'";
+
+	/**
+	 * Un celular al que se le puede mandar WhatsApp.
+	 *
+	 * Diez digitos y nada mas: el codigo le antepone el +57 por su cuenta, asi
+	 * que un numero con espacios, guiones o con el 57 ya puesto sale mal.
+	 */
+	public static final String PATRON_CELULAR = "[0-9]{10}";
+
+	private static final String CELULAR_VALIDO =
+			" TRIM(celular) REGEXP '^" + PATRON_CELULAR + "$'";
+
 	// =======================================================================
 	// Lo que se devuelve
 	// =======================================================================
@@ -165,9 +200,12 @@ public class CampanaDAO {
 			//La diferencia es la gente que el filtro encontraba pero a la que
 			//no se le puede escribir, y esa cifra se muestra.
 			final PreparedStatement ps = cn.prepareStatement(
+					//Se cuenta con la MISMA regla con la que despues se carga.
+					//Contando "tiene algo escrito en el correo" la pantalla
+					//prometia 5.450 y salian menos, sin que nadie supiera por que.
 					"SELECT COUNT(*) AS personas,"
-					+ " SUM(email IS NOT NULL AND TRIM(email) <> '') AS con_correo,"
-					+ " SUM(celular IS NOT NULL AND TRIM(celular) <> '') AS con_celular"
+					+ " SUM(" + CORREO_VALIDO + ") AS con_correo,"
+					+ " SUM(" + CELULAR_VALIDO + ") AS con_celular"
 					+ " FROM crm.persona_resumen" + where + CONSENTIMIENTO);
 			SegmentacionPersonaDAO.ponerValores(ps, valores);
 			final ResultSet rs = ps.executeQuery();
@@ -412,6 +450,7 @@ public class CampanaDAO {
 			//puede entrar a una campana de correo, aunque cumpla el filtro.
 			final boolean porCelular = CANAL_WHATSAPP.equals(canal);
 			final String columnaDestino = porCelular ? "celular" : "email";
+			final String destinoValido = porCelular ? CELULAR_VALIDO : CORREO_VALIDO;
 
 			final ArrayList<Object> valores = new ArrayList<Object>();
 			final String where = SegmentacionPersonaDAO.armarWhere(filtro, valores, true)
@@ -420,11 +459,12 @@ public class CampanaDAO {
 			final StringBuilder sql = new StringBuilder();
 			sql.append("INSERT IGNORE INTO crm.campana_destinatario")
 				.append(" (idenvio, idcampana, idpersona, destino, nombre, estado)")
-				.append(" SELECT ?, ?, idpersona, ").append(columnaDestino).append(",")
+				//Se guarda el TRIM y no el valor crudo: hay correos buenos con
+				//un espacio al final, y ese espacio solo los hace fallar.
+				.append(" SELECT ?, ?, idpersona, TRIM(").append(columnaDestino).append("),")
 				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
 				.append(" FROM crm.persona_resumen").append(where).append(CONSENTIMIENTO)
-				.append(" AND ").append(columnaDestino).append(" IS NOT NULL")
-				.append(" AND TRIM(").append(columnaDestino).append(") <> ''");
+				.append(" AND ").append(destinoValido);
 			//El orden importa: si solo caben 500, que sean los 500 que mas
 			//valen, no los primeros que salgan.
 			sql.append(" ORDER BY valor DESC");
