@@ -20,6 +20,12 @@ $(document).ready(function () {
 	epCargarSegmentos();
 	epCargarPlantillas();
 	epCargarHistorial();
+	epCargarCatalogos();
+
+	$('#ep-masfiltros').click(function (e) {
+		e.preventDefault();
+		$('#ep-avanzados').slideToggle();
+	});
 
 	$('#ep-canales').on('click', '.ep-canal', function () {
 		$('#ep-canales .ep-canal').removeClass('sel');
@@ -92,7 +98,27 @@ function epFiltro() {
 	if ($('#ep-diasmin').val()) { d.diasmin = $('#ep-diasmin').val(); }
 	if ($('#ep-diasmax').val()) { d.diasmax = $('#ep-diasmax').val(); }
 	d.canal = $('#ep-canalventa').val();
+
+	//Los que venian de la pantalla anterior.
+	if ($('#ep-diassinpublicidad').val()) { d.diassinpublicidad = $('#ep-diassinpublicidad').val(); }
+	if ($('#ep-excluirplataformas').is(':checked')) { d.excluirplataformas = 'S'; }
+	if ($('#ep-pedidosmax').val()) { d.pedidosmax = $('#ep-pedidosmax').val(); }
+	if ($('#ep-puntosmin').val()) { d.puntosmin = $('#ep-puntosmin').val(); }
+	if ($('#ep-soloclub').is(':checked')) { d.soloclub = 'S'; }
+	if ($('#ep-correo').val()) { d.correo = $('#ep-correo').val(); }
+	if ($('#ep-comprodesde').val()) { d.comprodesde = $('#ep-comprodesde').val(); }
+	if ($('#ep-comprohasta').val()) { d.comprohasta = $('#ep-comprohasta').val(); }
+	epLista(d, 'tiposcliente', '#ep-tiposcliente');
+	epLista(d, 'productos', '#ep-productos');
+	epLista(d, 'especialidades', '#ep-especialidades');
+	epLista(d, 'promociones', '#ep-promociones');
 	return (d);
+}
+
+/* Las listas van separadas por coma, como en el resto de la pantalla. */
+function epLista(destino, campo, selector) {
+	var v = $(selector).val();
+	if (v && v.length > 0) { destino[campo] = v.join(','); }
 }
 
 // ===========================================================================
@@ -121,6 +147,58 @@ function epCargarSegmentos() {
 		html += '<option value="' + fijos[i] + '">' + fijos[i] + '</option>';
 	}
 	$('#ep-segmentos').html(html);
+}
+
+/*
+ * Productos, especialidades y promociones para los filtros avanzados.
+ *
+ * Cada carga va por su lado y falla sola: si un catalogo no responde, ese
+ * filtro queda vacio pero la pantalla sirve igual. Son filtros opcionales y no
+ * pueden tumbar el envio.
+ */
+function epCargarCatalogos() {
+	epLlenarSelect('#ep-productos', 'GetTodosProductos',
+		['idproducto', 'id'], ['descripcion', 'nombre', 'nombreproducto']);
+	epLlenarSelect('#ep-especialidades', 'GetEspecialidades?idexcepcion=0&idproducto=0',
+		['idespecialidad', 'id'], ['descripcion', 'nombre']);
+	epLlenarSelect('#ep-promociones', 'getExcepcionesPrecio',
+		['idexcepcion', 'id'], ['descripcion', 'nombre', 'nombre_excepcion']);
+}
+
+/*
+ * Llena un desplegable de un servicio que no siempre devuelve lo mismo.
+ *
+ * Los servicios viejos del central responden a veces un arreglo pelado y a
+ * veces un objeto con la lista adentro, y los nombres de campo cambian entre
+ * uno y otro. En vez de averiguar cada caso, se prueban los nombres posibles:
+ * es codigo de pantalla, no vale la pena tocar seis servicios que ya andan.
+ */
+function epLlenarSelect(selector, url, campoId, campoNombre) {
+	$.getJSON(server + url, function (d) {
+		var lista = d;
+		if (!$.isArray(lista)) {
+			for (var k in d) {
+				if (d.hasOwnProperty(k) && $.isArray(d[k])) { lista = d[k]; break; }
+			}
+		}
+		if (!$.isArray(lista)) { return; }
+		var html = '';
+		for (var i = 0; i < lista.length; i++) {
+			var id = epPrimero(lista[i], campoId);
+			var nom = epPrimero(lista[i], campoNombre);
+			if (id) { html += '<option value="' + id + '">' + epEscapar(nom || id) + '</option>'; }
+		}
+		$(selector).html(html);
+	}).fail(function () {
+		//Sin catalogo, el filtro queda vacio. No se avisa: es opcional.
+	});
+}
+
+function epPrimero(obj, nombres) {
+	for (var i = 0; i < nombres.length; i++) {
+		if (obj[nombres[i]] !== undefined && obj[nombres[i]] !== null) { return (obj[nombres[i]]); }
+	}
+	return ('');
 }
 
 function epCargarPlantillas() {

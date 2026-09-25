@@ -99,7 +99,7 @@ function pintarNovedades(detalle) {
 			+ '<td>' + escapar(registro) + '</td>'
 			+ '<td>' + escapar(horaReal) + '</td>'
 			+ '<td>' + escapar(n.observacion) + '</td>'
-			+ '<td>' + escapar(n.reportadopor) + '</td>'
+			+ '<td>' + escapar(n.reportadopor) + marcaIdentificacion(n.reportabiometria) + '</td>'
 			+ '<td>' + etiquetaEstado(n.estado) + '</td>'
 			+ '<td>' + n.cambios + '</td>'
 			+ '<td>' + boton + '</td>'
@@ -136,7 +136,7 @@ function revisar(idNovedad) {
 		+ novedadActual.id + ' - ' + novedadActual.nombre + ' · ' + novedadActual.fecha);
 	var texto = '<strong>' + escapar(novedadActual.tiponovedad) + '</strong><br>'
 		+ escapar(novedadActual.observacion) + '<br>'
-		+ '<span style="color:#666;">Reportó ' + escapar(novedadActual.reportadopor)
+		+ '<span style="color:#666;">Reportó ' + escapar(novedadActual.reportadopor) + marcaIdentificacion(novedadActual.reportabiometria)
 		+ ' el ' + escapar(novedadActual.fechareporte);
 	if (novedadActual.eventotipo) {
 		texto += ' · señaló el registro ' + escapar(novedadActual.eventotipo) + ' de las '
@@ -395,4 +395,18 @@ function escapar(texto) {
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#39;'));
+}
+
+/**
+ * Como se identifico quien reporto: S huella, N clave rapida, vacio = novedad anterior a que el POS
+ * pidiera identificarse (el nombre lo escribio la persona a mano).
+ */
+function marcaIdentificacion(marca) {
+	if (marca === 'S') {
+		return (' <span title="Se identificó con la huella" style="color:#2e7d32;font-weight:bold;">&#10004; huella</span>');
+	}
+	if (marca === 'N') {
+		return (' <span title="Se identificó con la clave rápida, no con huella" style="color:#ef6c00;font-weight:bold;">clave</span>');
+	}
+	return (' <span title="Nombre escrito a mano, sin identificación" style="color:#999;">(sin identificar)</span>');
 }

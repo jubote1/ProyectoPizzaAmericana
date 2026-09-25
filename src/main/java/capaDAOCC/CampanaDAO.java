@@ -113,7 +113,8 @@ public class CampanaDAO {
 	 * por fuera por consentimiento, que es la cifra que nadie mira y la que
 	 * mete en problemas.
 	 */
-	public static Alcance alcance(final SegmentacionPersonaDAO.Filtro filtro) {
+	public static Alcance alcance(final SegmentacionPersonaDAO.Filtro filtro,
+			final FiltroExtra extra) {
 		final Alcance a = new Alcance();
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -122,7 +123,8 @@ public class CampanaDAO {
 			cn = con.obtenerConexionBDPrincipal();
 
 			final ArrayList<Object> valores = new ArrayList<Object>();
-			final String where = SegmentacionPersonaDAO.armarWhere(filtro, valores, true);
+			final String where = SegmentacionPersonaDAO.armarWhere(filtro, valores, true)
+					+ armarExtra(extra, valores);
 
 			//Dos consultas sobre el mismo filtro: con consentimiento y sin el.
 			//La diferencia es la gente que el filtro encontraba pero a la que
@@ -143,7 +145,8 @@ public class CampanaDAO {
 			ps.close();
 
 			final ArrayList<Object> valores2 = new ArrayList<Object>();
-			final String where2 = SegmentacionPersonaDAO.armarWhere(filtro, valores2, true);
+			final String where2 = SegmentacionPersonaDAO.armarWhere(filtro, valores2, true)
+					+ armarExtra(extra, valores2);
 			final PreparedStatement ps2 = cn.prepareStatement(
 					"SELECT COUNT(*) AS personas FROM crm.persona_resumen" + where2);
 			SegmentacionPersonaDAO.ponerValores(ps2, valores2);
@@ -211,7 +214,7 @@ public class CampanaDAO {
 	 * @return cuanta gente quedo
 	 */
 	public static int cargarDestinatarios(final long idCampana, final String canal,
-			final SegmentacionPersonaDAO.Filtro filtro, final int tope) {
+			final SegmentacionPersonaDAO.Filtro filtro, final FiltroExtra extra, final int tope) {
 		int cuantos = 0;
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -226,7 +229,8 @@ public class CampanaDAO {
 			final String columnaDestino = porCelular ? "celular" : "email";
 
 			final ArrayList<Object> valores = new ArrayList<Object>();
-			final String where = SegmentacionPersonaDAO.armarWhere(filtro, valores, true);
+			final String where = SegmentacionPersonaDAO.armarWhere(filtro, valores, true)
+					+ armarExtra(extra, valores);
 
 			final StringBuilder sql = new StringBuilder();
 			sql.append("INSERT IGNORE INTO crm.campana_destinatario")
@@ -524,6 +528,198 @@ public class CampanaDAO {
 			cerrar(cn);
 		}
 		return (r);
+	}
+
+
+	// =======================================================================
+	// Los filtros que venian de la pantalla anterior
+	// =======================================================================
+
+	/**
+	 * Lo que la pantalla vieja sabia filtrar y crm.persona_resumen no tiene.
+	 *
+	 * Van aparte del Filtro de SegmentacionPersonaDAO a proposito: ese filtra
+	 * sobre el resumen por persona, que es rapido; estos salen a buscar a
+	 * cliente y a pedido. Tenerlos separados deja a la vista cuales son los
+	 * caros.
+	 */
+	public static class FiltroExtra {
+		/** No escribirle a quien recibio publicidad en los ultimos N dias. */
+		public int diasSinPublicidad = 0;
+		/** Deja por fuera los correos de plataforma, que no son del cliente. */
+		public boolean excluirPlataformas = false;
+		/** natural, juridica. */
+		public ArrayList<String> tiposCliente = new ArrayList<String>();
+		public ArrayList<Integer> productos = new ArrayList<Integer>();
+		public ArrayList<Integer> especialidades = new ArrayList<Integer>();
+		/** Las promociones, que en la tabla son excepciones. */
+		public ArrayList<Integer> excepciones = new ArrayList<Integer>();
+		public int pedidosMax = 0;
+		public int puntosMin = 0;
+		public boolean soloMiembrosClub = false;
+		public String correoContiene = "";
+		/** yyyy-MM-dd; compro entre esas dos fechas. */
+		public String compraDesde = "";
+		public String compraHasta = "";
+	}
+
+	/**
+	 * Arma la parte del WHERE que sale del resumen.
+	 *
+	 * OJO CON PRODUCTO, ESPECIALIDAD Y PROMOCION
+	 *
+	 * Esos tres solo ven los pedidos que llegan al CENTRAL -domicilio y virtual-,
+	 * porque el detalle de lo que se vendio solo existe alli:
+	 * crm.stage_pedido_tienda trae totales por tienda, no lineas. O sea que
+	 * filtrar por "pidio Hawaiana" deja por fuera a quien la pidio en el
+	 * mostrador.
+	 *
+	 * No es algo que se rompio aqui: la pantalla anterior consultaba esa misma
+	 * tabla y tenia exactamente el mismo hueco. Pero conviene saberlo antes de
+	 * sacar conclusiones de un publico armado con esos filtros.
+	 */
+	private static String armarExtra(final FiltroExtra e, final ArrayList<Object> valores) {
+		final StringBuilder w = new StringBuilder();
+		if (e == null) {
+			return ("");
+		}
+
+		if (e.diasSinPublicidad > 0) {
+			// La regla mas restrictiva: si CUALQUIERA de sus filas de cliente
+			// recibio publicidad hace poco, la persona descansa. Al reves
+			// -exigir que todas hayan descansado- le escribiria igual a quien ya
+			// recibio, que es justo lo que este filtro viene a evitar.
+			w.append(" AND NOT EXISTS (SELECT 1 FROM pizzaamericana.cliente cp")
+				.append("                  WHERE cp.idpersona = crm.persona_resumen.idpersona")
+				.append("                    AND cp.ultima_fecha_publicidad IS NOT NULL")
+				.append("                    AND cp.ultima_fecha_publicidad > CURRENT_DATE - INTERVAL ? DAY)");
+			valores.add(Integer.valueOf(e.diasSinPublicidad));
+		}
+
+		if (e.excluirPlataformas) {
+			// Son los que encabezan cualquier conteo -"privacy protection",
+			// "CLIENTE RAPPI"- y su correo no es del cliente sino del canal.
+			w.append(" AND SUBSTRING_INDEX(LOWER(TRIM(IFNULL(email,''))), '@', -1) <> 'rappi.com'")
+				.append(" AND LOWER(TRIM(IFNULL(email,''))) NOT IN ('notengo@gmail.com','notiene@gmail.com')");
+		}
+
+		if (e.correoContiene != null && e.correoContiene.trim().length() > 0) {
+			w.append(" AND email LIKE ?");
+			valores.add("%" + e.correoContiene.trim() + "%");
+		}
+
+		if (e.pedidosMax > 0) {
+			w.append(" AND pedidos <= ?");
+			valores.add(Integer.valueOf(e.pedidosMax));
+		}
+
+		if (!e.tiposCliente.isEmpty()) {
+			// La pantalla habla de natural y juridica; la tabla guarda
+			// idtipopersona, 2 y 1. La traduccion va en un solo sitio.
+			final ArrayList<Integer> tipos = new ArrayList<Integer>();
+			for (int i = 0; i < e.tiposCliente.size(); i++) {
+				final String t = e.tiposCliente.get(i);
+				if ("natural".equalsIgnoreCase(t)) {
+					tipos.add(Integer.valueOf(2));
+				} else if ("juridica".equalsIgnoreCase(t)) {
+					tipos.add(Integer.valueOf(1));
+				}
+			}
+			if (!tipos.isEmpty()) {
+				w.append(" AND EXISTS (SELECT 1 FROM pizzaamericana.cliente ct")
+					.append("             WHERE ct.idpersona = crm.persona_resumen.idpersona")
+					.append("               AND ct.idtipopersona IN (").append(marcas(tipos.size()))
+					.append("))");
+				valores.addAll(tipos);
+			}
+		}
+
+		if (e.soloMiembrosClub || e.puntosMin > 0) {
+			// La fidelizacion se lleva por CORREO, no por idcliente. Quien no
+			// tiene correo no puede estar en el club, y por eso este filtro
+			// reduce el publico a los que si lo tienen.
+			w.append(" AND EXISTS (SELECT 1 FROM pizzaamericana.cliente_fidelizacion cf")
+				.append("             WHERE cf.correo = crm.persona_resumen.email");
+			if (e.soloMiembrosClub) {
+				w.append(" AND cf.activo = 'S'");
+			}
+			if (e.puntosMin > 0) {
+				w.append(" AND cf.puntos_vigentes >= ?");
+				valores.add(Integer.valueOf(e.puntosMin));
+			}
+			w.append(")");
+		}
+
+		// Los tres de detalle van todos contra el mismo EXISTS sobre el pedido
+		// del central. Se arman por separado para que el que no se use no
+		// cueste nada.
+		if (!e.productos.isEmpty()) {
+			w.append(existePedido(" AND d.idproducto IN (" + marcas(e.productos.size()) + ")"));
+			valores.addAll(e.productos);
+		}
+		if (!e.especialidades.isEmpty()) {
+			final String m = marcas(e.especialidades.size());
+			// La especialidad puede venir en cualquiera de los dos lados de la
+			// pizza, asi que hay que mirar las dos columnas.
+			w.append(existePedido(" AND (d.idespecialidad1 IN (" + m + ")"
+					+ " OR d.idespecialidad2 IN (" + m + "))"));
+			valores.addAll(e.especialidades);
+			valores.addAll(e.especialidades);
+		}
+		if (!e.excepciones.isEmpty()) {
+			w.append(existePedido(" AND d.idexcepcion IN (" + marcas(e.excepciones.size()) + ")"));
+			valores.addAll(e.excepciones);
+		}
+
+		if (e.compraDesde != null && e.compraDesde.length() > 0) {
+			w.append(" AND EXISTS (SELECT 1 FROM pizzaamericana.cliente cf2")
+				.append("             JOIN pizzaamericana.pedido pf ON pf.idcliente = cf2.idcliente")
+				.append("            WHERE cf2.idpersona = crm.persona_resumen.idpersona")
+				.append("              AND pf.fecha_cancelacion IS NULL")
+				.append("              AND pf.fechapedido >= ?");
+			valores.add(e.compraDesde);
+			if (e.compraHasta != null && e.compraHasta.length() > 0) {
+				w.append(" AND pf.fechapedido <= ?");
+				valores.add(e.compraHasta);
+			}
+			w.append(")");
+		}
+
+		return (w.toString());
+	}
+
+	/**
+	 * La busqueda sobre el detalle del pedido, que los tres filtros comparten.
+	 *
+	 * VA DESDE EL PRODUCTO HACIA LA PERSONA, NO AL REVES, Y ESO IMPORTA
+	 *
+	 * La forma natural seria un EXISTS correlacionado -"para esta persona,
+	 * existe un pedido con este producto"-, pero eso obliga a evaluar la
+	 * subconsulta una vez por cada una de las 450 mil personas. Medido el
+	 * 2026-09-24: 24 segundos.
+	 *
+	 * Asi, en cambio, primero se resuelve quienes compraron ese producto -que
+	 * son pocos- y despues se cruza. Con el indice idx_detalle_producto la
+	 * misma consulta baja a 0,18 segundos. Ciento treinta y cinco veces.
+	 *
+	 * Si alguien quita esos indices, esto vuelve a tardar 14 segundos y la
+	 * pantalla se siente rota.
+	 */
+	private static String existePedido(final String condicion) {
+		return (" AND idpersona IN (SELECT cd.idpersona"
+				+ "                    FROM pizzaamericana.detalle_pedido d"
+				+ "                    JOIN pizzaamericana.pedido pd ON pd.idpedido = d.idpedido"
+				+ "                    JOIN pizzaamericana.cliente cd ON cd.idcliente = pd.idcliente"
+				+ "                   WHERE pd.fecha_cancelacion IS NULL"
+				+ "                     AND cd.idpersona IS NOT NULL" + condicion + ")");
+	}
+
+	private static String marcas(final int cuantos) {
+		final StringBuilder m = new StringBuilder();
+		for (int i = 0; i < cuantos; i++) {
+			m.append(i == 0 ? "?" : ",?");
+		}
+		return (m.toString());
 	}
 
 	// =======================================================================

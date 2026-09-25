@@ -75,8 +75,9 @@ public class EnvioPublicidadCtrl {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static String alcance(final SegmentacionPersonaDAO.Filtro filtro) {
-		final CampanaDAO.Alcance a = CampanaDAO.alcance(filtro);
+	public static String alcance(final SegmentacionPersonaDAO.Filtro filtro,
+			final CampanaDAO.FiltroExtra extra) {
+		final CampanaDAO.Alcance a = CampanaDAO.alcance(filtro, extra);
 		final JSONObject o = new JSONObject();
 		o.put("personas", a.personas);
 		o.put("con_correo", a.conCorreo);
@@ -94,7 +95,8 @@ public class EnvioPublicidadCtrl {
 	@SuppressWarnings("unchecked")
 	public static String crearYEnviar(final String nombre, final String canal, final int idPlantilla,
 			final String asunto, final String cuerpo, final String filtrosTexto,
-			final SegmentacionPersonaDAO.Filtro filtro, final String usuario) {
+			final SegmentacionPersonaDAO.Filtro filtro, final CampanaDAO.FiltroExtra extra,
+			final String usuario) {
 		final JSONObject r = new JSONObject();
 
 		if (nombre == null || nombre.trim().length() == 0) {
@@ -133,7 +135,7 @@ public class EnvioPublicidadCtrl {
 		//completos: ahi el limite lo pone el plan contratado, no el dominio.
 		final int tope = CampanaDAO.CANAL_DIRECTO.equals(canal)
 				? EnviadorPublicidadDirecta.tope() : 0;
-		final int cuantos = CampanaDAO.cargarDestinatarios(idCampana, canal, filtro, tope);
+		final int cuantos = CampanaDAO.cargarDestinatarios(idCampana, canal, filtro, extra, tope);
 
 		if (cuantos == 0) {
 			CampanaDAO.cambiarEstado(idCampana, "CANCELADA");

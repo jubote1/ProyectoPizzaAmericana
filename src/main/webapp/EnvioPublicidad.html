@@ -163,6 +163,89 @@
 											<option value="AMBOS">Mostrador y domicilio</option>
 										</select>
 									</div>
+
+									<!-- El tope de frecuencia. Va arriba de los demas a proposito:
+									     es el que evita escribirle tres veces en una semana a la
+									     misma persona, que es la forma mas rapida de que se den
+									     de baja. -->
+									<div class="ep-campo" style="border-top:1px solid #E2E6EC;padding-top:10px;">
+										<label class="ep-rotulo" for="ep-diassinpublicidad">
+											No escribirle si ya recibi&oacute; hace menos de (d&iacute;as)</label>
+										<input type="number" id="ep-diassinpublicidad" class="form-control" min="0"
+											placeholder="ej: 15">
+									</div>
+
+									<div class="ep-campo">
+										<label class="ep-rotulo">
+											<input type="checkbox" id="ep-excluirplataformas" checked />
+											Excluir correos de plataforma
+										</label>
+										<div class="ep-nota">
+											Rappi y los "notengo@" &mdash; ese correo no es del cliente.
+										</div>
+									</div>
+
+									<a href="#" id="ep-masfiltros" style="font-size:12px;">M&aacute;s filtros...</a>
+
+									<div id="ep-avanzados" style="display:none;margin-top:10px;">
+										<div class="row">
+											<div class="col-xs-6 ep-campo">
+												<label class="ep-rotulo" for="ep-pedidosmax">Pedidos m&aacute;ximo</label>
+												<input type="number" id="ep-pedidosmax" class="form-control" min="0">
+											</div>
+											<div class="col-xs-6 ep-campo">
+												<label class="ep-rotulo" for="ep-puntosmin">Puntos desde</label>
+												<input type="number" id="ep-puntosmin" class="form-control" min="0">
+											</div>
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo">
+												<input type="checkbox" id="ep-soloclub" />
+												Solo miembros activos del club
+											</label>
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo" for="ep-correo">El correo contiene</label>
+											<input type="text" id="ep-correo" class="form-control"
+												placeholder="ej: gmail.com">
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo" for="ep-tiposcliente">Tipo de cliente</label>
+											<select id="ep-tiposcliente" class="form-control" multiple size="2">
+												<option value="natural">Natural</option>
+												<option value="juridica">Jur&iacute;dica</option>
+											</select>
+										</div>
+										<div class="row">
+											<div class="col-xs-6 ep-campo">
+												<label class="ep-rotulo" for="ep-comprodesde">Compr&oacute; desde</label>
+												<input type="date" id="ep-comprodesde" class="form-control">
+											</div>
+											<div class="col-xs-6 ep-campo">
+												<label class="ep-rotulo" for="ep-comprohasta">Hasta</label>
+												<input type="date" id="ep-comprohasta" class="form-control">
+											</div>
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo" for="ep-productos">Ha pedido el producto</label>
+											<select id="ep-productos" class="form-control" multiple size="5"></select>
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo" for="ep-especialidades">Ha pedido la especialidad</label>
+											<select id="ep-especialidades" class="form-control" multiple size="5"></select>
+										</div>
+										<div class="ep-campo">
+											<label class="ep-rotulo" for="ep-promociones">Us&oacute; la promoci&oacute;n</label>
+											<select id="ep-promociones" class="form-control" multiple size="4"></select>
+										</div>
+										<div class="ep-nota" style="background:#FFF3D6;color:#8A6400;
+											padding:8px 10px;border-radius:5px;">
+											Producto, especialidad y promoci&oacute;n solo ven los pedidos que
+											llegan al central &mdash; domicilio y virtual. Lo que se vende en
+											el mostrador no trae el detalle de qu&eacute; se pidi&oacute;, as&iacute; que
+											con estos filtros esa gente queda por fuera.
+										</div>
+									</div>
 								</div>
 
 								<button type="button" id="ep-contar" class="btn btn-default btn-block">
