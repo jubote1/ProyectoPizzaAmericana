@@ -202,11 +202,17 @@ public class CodigoPromoDAO {
 				if (c.fechaCaducidad.length() > 0 && c.fechaCaducidad.compareTo(hoy) < 0) {
 					return "El codigo vencio el " + c.fechaCaducidad + ".";
 				}
-				if (c.fechaDesde.length() > 0 && c.fechaDesde.compareTo(hoy) > 0) {
-					return "La oferta empieza el " + c.fechaDesde + ".";
-				}
-				if (c.fechaHasta.length() > 0 && c.fechaHasta.compareTo(hoy) < 0) {
-					return "La oferta termino el " + c.fechaHasta + ".";
+				//Las fechas desde/hasta de la OFERTA solo mandan en los codigos ABIERTOS. En un codigo personal manda
+				//la caducidad del propio codigo: esas fechas dicen hasta cuando se puede ASIGNAR la oferta, y hay ofertas
+				//viejas (2021) que se siguen asignando hoy con codigos que vencen dentro de 15 dias. El sistema anterior
+				//tampoco las miraba en codigos personales.
+				if (c.abierto) {
+					if (c.fechaDesde.length() > 0 && c.fechaDesde.compareTo(hoy) > 0) {
+						return "La oferta empieza el " + c.fechaDesde + ".";
+					}
+					if (c.fechaHasta.length() > 0 && c.fechaHasta.compareTo(hoy) < 0) {
+						return "La oferta termino el " + c.fechaHasta + ".";
+					}
 				}
 				if ("S".equals(c.controlaHora) && !(hora >= c.horaInicio && hora < c.horaFin)) {
 					return "La oferta solo sirve entre las " + c.horaInicio + ":00 y las " + c.horaFin + ":00.";
@@ -836,7 +842,7 @@ public class CodigoPromoDAO {
 					+ " o.descuento_fijo_porcentaje, o.dias_caducidad, o.max_emision, o.red_parcial,"
 					+ " (select count(*) from oferta_cliente c where c.idoferta = o.idoferta) as emitidos"
 					+ " from oferta o where o.tipo_oferta = 'C' and o.habilitado = 'S' and o.codigo_promocional = 'S'"
-					+ " and o.dias_caducidad > 0 and (o.fecha_hasta is null or o.fecha_hasta >= curdate())"
+					+ " and o.dias_caducidad > 0"
 					+ " order by o.idoferta desc");
 					ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
