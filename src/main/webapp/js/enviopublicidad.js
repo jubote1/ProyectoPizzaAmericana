@@ -75,6 +75,15 @@ $(document).ready(function () {
 	//un numero que ya no corresponde a lo que esta en pantalla.
 	$('#ep-filtros').on('change', 'input,select', epLimpiarAlcance);
 
+	//Las listas de seleccion multiple no traen forma obvia de desmarcar (hay que saber que es Ctrl+clic): un enlace debajo de cada una.
+	$('#ep-filtros select[multiple]').each(function () {
+		var lista = $(this);
+		$('<a href="#" class="ep-quitar" style="font-size:11.5px;">Quitar selecci00f3n</a>').insertAfter(lista).click(function (e) {
+			e.preventDefault();
+			lista.val([]).trigger('change');
+		});
+	});
+
 	epPintarCanal();
 });
 
