@@ -14,6 +14,7 @@ var epAlcance = null;
 var epEnvio = 0;
 var epReloj = null;
 var epCampanas = [];
+var epOfertas = [];
 
 $(document).ready(function () {
 
@@ -21,6 +22,7 @@ $(document).ready(function () {
 	epCargarSegmentos();
 	epCargarPlantillas();
 	epCargarCampanas();
+	epCargarOfertas();
 	epCargarHistorial();
 	epCargarCatalogos();
 
@@ -42,7 +44,11 @@ $(document).ready(function () {
 		$('#ep-avanzados').slideToggle();
 	});
 
+	$('#ep-oferta').change(function () { epPintarCanal(); });
+
 	$('#ep-canales').on('click', '.ep-canal', function () {
+		//Con oferta el unico canal es el correo directo: es el que lleva el correo de la oferta con su codigo.
+		if (epIdOferta() > 0) { return; }
 		$('#ep-canales .ep-canal').removeClass('sel');
 		$(this).addClass('sel');
 		epCanal = $(this).data('canal');
@@ -353,10 +359,49 @@ function epCargarPlantillas() {
 // El canal
 // ===========================================================================
 
+function epIdOferta() {
+	return (parseInt($('#ep-oferta').val(), 10) || 0);
+}
+
+function epOfertaDe(id) {
+	for (var i = 0; i < epOfertas.length; i++) {
+		if (epOfertas[i].idoferta === id) { return epOfertas[i]; }
+	}
+	return null;
+}
+
+function epCargarOfertas() {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'ofertas' }, function (d) {
+		epOfertas = d.ofertas || [];
+		var s = $('#ep-oferta');
+		for (var i = 0; i < epOfertas.length; i++) {
+			var o = epOfertas[i];
+			var beneficio = o.porcentaje > 0 ? (o.porcentaje + '%') : epPesos(o.valor);
+			s.append($('<option>').val(o.idoferta).text(o.nombre + ' (' + beneficio + ', vence a ' + o.dias + ' d\u00edas)'));
+		}
+	});
+}
+
 function epPintarCanal() {
+	var oferta = epOfertaDe(epIdOferta());
+	if (oferta) {
+		//Con oferta todo sale por correo directo, con el correo de la oferta: no hay plantilla, asunto ni contenido que escribir.
+		epCanal = 'D';
+		$('#ep-canales .ep-canal').removeClass('sel').filter('[data-canal="D"]').addClass('sel');
+		var cupo = oferta.max_emision > 0
+			? (' Quedan ' + epMiles(Math.max(0, oferta.max_emision - oferta.emitidos)) + ' de ' + epMiles(oferta.max_emision) + ' c\u00f3digos por emitir.')
+			: '';
+		$('#ep-oferta-nota').html('Cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los ' + oferta.dias +
+			' d\u00edas, dentro del correo de la oferta. Sale por correo directo: ' + (epAlcance ? (epAlcance.tope_directo || 50) : 50) +
+			' por tanda.' + cupo);
+	} else {
+		$('#ep-oferta-nota').html('Con una oferta, cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los d\u00edas que tenga la oferta, dentro del correo de la oferta.');
+	}
 	var directo = (epCanal === 'D');
 	$('#ep-caja-plantilla').toggle(!directo);
-	$('#ep-caja-cuerpo').toggle(directo);
+	$('#ep-caja-cuerpo').toggle(directo && !oferta);
+	$('#ep-caja-asunto').toggle(!oferta);
+	$('#ep-caja-prueba').toggle(!oferta);
 	epPintarAlcance();
 }
 
@@ -486,6 +531,7 @@ function epEnviar() {
 		return;
 	}
 	var comoSeLlama = nombre || $('#ep-campana option:selected').text();
+	var idOferta = epIdOferta();
 
 	var alcanza = (epCanal === 'W') ? epAlcance.con_celular : epAlcance.con_correo;
 	var topeDirecto = epAlcance.tope_directo || 50;
@@ -498,8 +544,9 @@ function epEnviar() {
 
 	//Confirmacion con el numero escrito: que nadie pueda decir que no sabia a
 	//cuanta gente le estaba escribiendo.
+	var deOferta = idOferta > 0 ? ('\n\nCada persona recibe SU codigo de la oferta "' + epOfertaDe(idOferta).nombre + '".') : '';
 	if (!confirm('Va a enviar "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
-			' a ' + epMiles(alcanza) + ' personas.\n\nEsto no se puede deshacer. Continuar?')) {
+			' a ' + epMiles(alcanza) + ' personas.' + deOferta + '\n\nEsto no se puede deshacer. Continuar?')) {
 		return;
 	}
 
@@ -516,6 +563,7 @@ function epEnviar() {
 	datos.idplantilla = $('#ep-plantilla').val();
 	datos.asunto = $('#ep-asunto').val();
 	datos.cuerpo = $('#ep-cuerpo').val();
+	datos.idoferta = idOferta;
 
 	$('#ep-enviar').prop('disabled', true).text('Enviando...');
 	$.post(server + 'EnvioPublicidad', datos, function (d) {
@@ -585,7 +633,7 @@ function epCargarHistorial() {
 		var cuerpo = $('#ep-tabla tbody');
 		cuerpo.empty();
 		if (lista.length === 0) {
-			cuerpo.html('<tr><td colspan="9" class="ep-nota">Todav&iacute;a no hay env&iacute;os.</td></tr>');
+			cuerpo.html('<tr><td colspan="10" class="ep-nota">Todav&iacute;a no hay env&iacute;os.</td></tr>');
 			return;
 		}
 		for (var i = 0; i < lista.length; i++) {
@@ -609,6 +657,8 @@ function epCargarHistorial() {
 			fila.append($('<td class="ep-num">').text(epMiles(c.publico)));
 			fila.append($('<td class="ep-num">').text(epMiles(c.enviados)));
 			fila.append($('<td class="ep-num">').text(epMiles(c.fallidos)));
+			var ofertaFila = c.idoferta > 0 ? (epOfertaDe(c.idoferta) ? epOfertaDe(c.idoferta).nombre : ('#' + c.idoferta)) : '';
+			fila.append($('<td>').text(ofertaFila));
 			fila.append($('<td>').text(String(c.creada_en || '').substring(0, 16)));
 			fila.data('id', c.idenvio);
 			fila.click(function () { epVerResultado($(this).data('id'), 0); });
@@ -640,6 +690,35 @@ function epVerResultado(idEnvio, idCampana) {
 				'<div class="col-md-3"><div class="ep-cifra"><div class="valor">' +
 					epPesos(d.valor) + '</div><div class="rotulo">vendido</div></div></div>' +
 				'</div>' +
-				'<p class="ep-nota">' + epEscapar(d.advertencia) + '</p></div>');
+				'<p class="ep-nota">' + epEscapar(d.advertencia) + '</p></div>' + epEmbudo(d.embudo, idEnvio));
 		});
+}
+
+/* El embudo de una tanda con oferta. A diferencia de las cifras de arriba, esto SI es causal: el codigo es unico por persona. */
+function epEmbudo(b, idEnvio) {
+	if (!b) { return (''); }
+	var sinUsar = b.codigos - b.usados - b.anulados;
+	return (
+		'<div class="ep-panel" style="margin-top:14px;">' +
+		'<div class="ep-titulo">Embudo de la oferta (env\u00edo ' + idEnvio + ')</div>' +
+		'<div class="row">' +
+		'<div class="col-md-2"><div class="ep-cifra"><div class="valor">' + epMiles(b.enviados) + '</div><div class="rotulo">correos entregados</div></div></div>' +
+		'<div class="col-md-2"><div class="ep-cifra"><div class="valor">' + epMiles(b.codigos) + '</div><div class="rotulo">c\u00f3digos emitidos</div></div></div>' +
+		'<div class="col-md-2"><div class="ep-cifra"><div class="valor">' + epMiles(b.usados) + '</div><div class="rotulo">c\u00f3digos usados (' + b.porcentaje_uso + '%)</div></div></div>' +
+		'<div class="col-md-3"><div class="ep-cifra"><div class="valor">' + epPesos(b.ventas) + '</div><div class="rotulo">vendido con c\u00f3digo</div></div></div>' +
+		'<div class="col-md-3"><div class="ep-cifra"><div class="valor">' + epPesos(b.descontado) + '</div><div class="rotulo">descontado</div></div></div>' +
+		'</div>' +
+		'<p class="ep-nota">' + epMiles(Math.max(0, sinUsar)) + ' c\u00f3digos siguen sin usar y ' + epMiles(b.anulados) + ' est\u00e1n anulados.</p>' +
+		(sinUsar > 0 ? '<button type="button" class="btn btn-default btn-xs" onclick="epAnularCodigos(' + idEnvio + ')">Anular los c\u00f3digos sin usar de este env\u00edo</button>' : '') +
+		'</div>');
+}
+
+function epAnularCodigos(idEnvio) {
+	if (!confirm('Se anulan TODOS los c\u00f3digos sin usar del env\u00edo ' + idEnvio + '. Los que ya se usaron no se tocan.\n\nEsto no se puede deshacer. Continuar?')) {
+		return;
+	}
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'anularcodigos', idenvio: idEnvio }, function (d) {
+		alert(d.error ? d.error : d.mensaje);
+		epVerResultado(idEnvio, 0);
+	});
 }

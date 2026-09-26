@@ -67,7 +67,15 @@ public class EnvioPublicidad extends HttpServlet {
 					resumenDeFiltros(request),
 					SegmentacionPersonaCtrl.filtroDe(request),
 					extraDe(request),
+					AccesoCRM.usuarioEnSesion(request),
+					entero(request.getParameter("idoferta"))));
+
+		} else if ("anularcodigos".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.anularCodigos(largo(request.getParameter("idenvio")),
 					AccesoCRM.usuarioEnSesion(request)));
+
+		} else if ("ofertas".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.ofertas());
 
 		} else if ("campanas".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.campanas());

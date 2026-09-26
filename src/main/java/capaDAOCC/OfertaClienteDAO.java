@@ -324,18 +324,29 @@ public class OfertaClienteDAO {
 		try
 		{
 			String update;
-			Statement stm = con1.createStatement();
+			PreparedStatement stm;
+			//Solo se consume un codigo que SIGA sin usar y sin anular, y un saldo nuevo no puede ser mayor
+			//al que ya habia: antes este servicio aceptaba cualquier saldo que le mandara la tienda.
 			if(descuentoSobrante == 0)
 			{
-				update = "update oferta_cliente set utilizada = 'S' , saldo = 0 , uso_oferta = '"+ fechaActualizar +"' , usuario_uso = '"+ usuarioUso +"' where idofertacliente = " + idOfertaCliente; 
+				update = "update oferta_cliente set utilizada = 'S' , saldo = 0 , uso_oferta = ? , usuario_uso = ? where idofertacliente = ? and utilizada = 'N' and anulada = 'N'";
+				stm = con1.prepareStatement(update);
+				stm.setString(1, fechaActualizar);
+				stm.setString(2, usuarioUso);
+				stm.setInt(3, idOfertaCliente);
 			}else
 			{
-				update = "update oferta_cliente set saldo = " + descuentoSobrante + " , uso_oferta = '"+ fechaActualizar +"' , usuario_uso = '"+ usuarioUso +"' where idofertacliente = " + idOfertaCliente; 
+				update = "update oferta_cliente set saldo = ? , uso_oferta = ? , usuario_uso = ? where idofertacliente = ? and utilizada = 'N' and anulada = 'N' and saldo >= ?";
+				stm = con1.prepareStatement(update);
+				stm.setDouble(1, descuentoSobrante);
+				stm.setString(2, fechaActualizar);
+				stm.setString(3, usuarioUso);
+				stm.setInt(4, idOfertaCliente);
+				stm.setDouble(5, descuentoSobrante);
 			}
-			
 			logger.info(update);
-			stm.executeUpdate(update);
-			resultado = "exitoso";
+			int filas = stm.executeUpdate();
+			resultado = filas > 0 ? "exitoso" : "error";
 			stm.close();
 			con1.close();
 			
@@ -491,10 +502,9 @@ public class OfertaClienteDAO {
 		boolean resultado = false;
 		try
 		{
-			Statement stm = con1.createStatement();
-			String select = "select * from oferta_cliente  where codigo_promocion = '" + codigoPromocional + "'"; 
-			logger.info(select);
-			ResultSet rs = stm.executeQuery(select);
+			PreparedStatement stm = con1.prepareStatement("select * from oferta_cliente where codigo_promocion = ?");
+			stm.setString(1, codigoPromocional);
+			ResultSet rs = stm.executeQuery();
 			while(rs.next())
 			{
 				resultado = true;
@@ -530,10 +540,10 @@ public class OfertaClienteDAO {
 				"", "", "");
 		try
 		{
-			Statement stm = con1.createStatement();
-			String select = "select * from oferta_cliente  where codigo_promocion = '" + codigoPromocional + "'"; 
-			logger.info(select);
-			ResultSet rs = stm.executeQuery(select);
+			//Parametros y no concatenacion: el codigo llega por la URL de un servicio sin autenticacion.
+			PreparedStatement stm = con1.prepareStatement("select oc.*, (oc.reservada_hasta is not null and oc.reservada_hasta > now()) as reservada_vigente from oferta_cliente oc where oc.codigo_promocion = ?");
+			stm.setString(1, codigoPromocional);
+			ResultSet rs = stm.executeQuery();
 			int idOfertaCliente;
 			int idOferta;
 			int idCliente;
@@ -551,6 +561,10 @@ public class OfertaClienteDAO {
 				idOferta = rs.getInt("idoferta");
 				idCliente = rs.getInt("idcliente");
 				utilizada = rs.getString("utilizada");
+				//Anulado a mano, o apartado por otra tienda en el flujo nuevo: para el POS viejo es como usado.
+				if ("S".equals(rs.getString("anulada")) || rs.getInt("reservada_vigente") == 1) {
+					utilizada = "S";
+				}
 				pqrs = rs.getInt("pqrs");
 				ingresoOferta = rs.getString("ingreso_oferta");
 				usoOferta = rs.getString("uso_oferta");

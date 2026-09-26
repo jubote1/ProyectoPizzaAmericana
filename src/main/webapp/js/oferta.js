@@ -248,7 +248,71 @@ function cargarOferta(idoferta) {
 		+ '<tr><td>Sin usar</td><td style="text-align:right;"><strong>' + (vencidas < 0 ? 0 : vencidas) + '</strong></td></tr>'
 		+ '</table>');
 	pintarResumen();
+	cargarReglas(o.idoferta);
+	cargarBitacora(o.idoferta);
 	$('html, body').animate({ scrollTop: 0 }, 200);
+}
+
+/* Reglas de uso del codigo y bitacora: viven en otro servicio (OfertaReglas) porque el CRUD viejo no las conoce. */
+function limpiarReglas() {
+	$('#reglaMontoMinimo').val(0);
+	$('#reglaTope').val(0);
+	$('#reglaAplicaA').val('T');
+	$('#reglaMaxUsos').val(0);
+	$('#reglaMaxEmision').val(0);
+	$('#reglaTiendas').val('');
+	$('#btnGuardarReglas').prop('disabled', true);
+	$('#bitacoraOferta').html('Escoja una oferta de la lista para ver su historial de cambios.');
+}
+
+function cargarReglas(idoferta) {
+	$.getJSON(server + 'OfertaReglas', { accion: 'obtener', idoferta: idoferta }, function (d) {
+		if (d.error) {
+			$('#reglasAviso').text(d.error);
+			$('#btnGuardarReglas').prop('disabled', true);
+			return;
+		}
+		$('#reglaMontoMinimo').val(d.monto_minimo);
+		$('#reglaTope').val(d.tope_descuento);
+		$('#reglaAplicaA').val(d.aplica_a);
+		$('#reglaMaxUsos').val(d.max_usos_cliente);
+		$('#reglaMaxEmision').val(d.max_emision);
+		$('#reglaTiendas').val(d.tiendas);
+		$('#reglasAviso').text('Son las reglas que valida el sistema cuando una tienda intenta usar un c\u00f3digo de esta oferta.');
+		$('#btnGuardarReglas').prop('disabled', false);
+	}).fail(function () {
+		$('#reglasAviso').text('No se pudieron leer las reglas. Vuelva a iniciar sesi\u00f3n.');
+	});
+}
+
+function guardarReglas() {
+	var id = parseInt($('#idoferta').val(), 10);
+	if (!(id > 0)) { $.alert('Primero abra una oferta de la lista.'); return; }
+	$.post(server + 'OfertaReglas', {
+		accion: 'guardar', idoferta: id,
+		montominimo: $('#reglaMontoMinimo').val(), topedescuento: $('#reglaTope').val(),
+		aplicaa: $('#reglaAplicaA').val(), maxusoscliente: $('#reglaMaxUsos').val(),
+		maxemision: $('#reglaMaxEmision').val(), tiendas: $('#reglaTiendas').val()
+	}, function (d) {
+		$.alert(d.error ? d.error : d.mensaje);
+		if (!d.error) { cargarBitacora(id); }
+	}, 'json').fail(function () {
+		$.alert('No se pudieron guardar las reglas. Vuelva a intentarlo.');
+	});
+}
+
+function cargarBitacora(idoferta) {
+	$.getJSON(server + 'OfertaReglas', { accion: 'bitacora', idoferta: idoferta }, function (d) {
+		var lista = d.cambios || [];
+		if (lista.length === 0) { $('#bitacoraOferta').text('Todav\u00eda no hay cambios registrados.'); return; }
+		var html = '';
+		for (var i = 0; i < lista.length; i++) {
+			var c = lista[i];
+			html += '<div style="margin-bottom:8px;"><strong>' + escaparTexto(c.accion) + '</strong> \u00b7 ' +
+				escaparTexto(c.fecha) + ' \u00b7 ' + escaparTexto(c.usuario) + '<br>' + escaparTexto(c.detalle) + '</div>';
+		}
+		$('#bitacoraOferta').html(html);
+	});
 }
 
 function limpiarOferta() {
@@ -275,6 +339,7 @@ function limpiarOferta() {
 	$('#mensaje1').val('');
 	$('#mensaje2').val('');
 	$('#comoVaOferta').html('Escoja una oferta de la lista para ver c&oacute;mo viene funcionando.');
+	limpiarReglas();
 	pintarResumen();
 }
 

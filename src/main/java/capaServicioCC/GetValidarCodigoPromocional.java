@@ -42,8 +42,19 @@ public class GetValidarCodigoPromocional extends HttpServlet {
 			String codigoPromocional = request.getParameter("codigopromocional");
 			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
+			//Este servicio no pide sesion, asi que se frena a quien prueba codigos al azar.
+			final String origen = request.getRemoteAddr() + "|legado";
+			if(utilidadesCC.LimitadorIntentos.bloqueado(origen))
+			{
+				response.getWriter().write("{\"respuesta\":\"NOK\",\"mensaje\":\"Demasiados intentos.\"}");
+				return;
+			}
 			PromocionesCtrl promoCtrl = new PromocionesCtrl();
 			String respuesta = promoCtrl.retornarOfertaCodigoPromocional(codigoPromocional);
+			if(respuesta.contains("\"respuesta\":\"NOK\""))
+			{
+				utilidadesCC.LimitadorIntentos.registrarFallo(origen);
+			}
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
 			

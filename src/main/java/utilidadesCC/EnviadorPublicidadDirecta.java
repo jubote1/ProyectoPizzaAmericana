@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 import capaDAOCC.CampanaDAO;
+import capaDAOCC.CodigoPromoDAO;
+import capaDAOCC.OfertaClienteDAO;
 import capaDAOCC.ParametrosDAO;
 import capaModeloCC.Correo;
 import capaModeloCC.CorreoElectronico;
@@ -160,6 +162,7 @@ public class EnviadorPublicidadDirecta {
 		}
 
 		final CampanaDAO.Destinatario d = uno.get(0);
+		int idOfertaCliente = 0;
 		try {
 			if (!ControladorEnvioCorreo.esDireccionValida(d.destino)) {
 				//Una direccion mal escrita gasta una conexion SMTP y se demora;
@@ -169,13 +172,49 @@ public class EnviadorPublicidadDirecta {
 				return;
 			}
 
+			String asunto = tanda.asunto;
+			String mensaje = null;
+			if (tanda.idOferta > 0) {
+				//ENVIO CON OFERTA: a cada persona se le emite SU codigo y recibe el correo de la oferta. La emision es
+				//idempotente por (envio, cliente): si el servidor se cae y se reanuda, nadie recibe dos codigos.
+				final int idCliente = CodigoPromoDAO.clienteDePersona(d.idPersona, d.destino);
+				if (idCliente <= 0) {
+					CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO",
+							"La persona no tiene un cliente al que ligarle el codigo");
+					return;
+				}
+				final CodigoPromoDAO.Emision em = CodigoPromoDAO.emitir(tanda.idOferta, idCliente, tanda.idEnvio,
+						tanda.usuario);
+				if (em.error.length() > 0) {
+					CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO", em.error);
+					//Si la oferta ya no se puede emitir (tope, deshabilitada) no tiene sentido seguir: cada uno de los
+					//que faltan fallaria igual, con media hora de espera de por medio.
+					if (CodigoPromoDAO.problemaParaEnviar(tanda.idOferta).length() > 0) {
+						logger.error("EnviadorPublicidadDirecta: se detiene el envio " + tanda.idEnvio + ": " + em.error);
+						CampanaDAO.cambiarEstado(tanda.idEnvio, "CANCELADA");
+						envioEnCurso = 0;
+					}
+					return;
+				}
+				idOfertaCliente = em.idOfertaCliente;
+				CampanaDAO.marcarCodigo(tanda.idEnvio, d.idPersona, idOfertaCliente);
+				final OfertaClienteDAO.DatosCorreoOferta datos = OfertaClienteDAO.obtenerDatosCorreoOferta(idOfertaCliente);
+				if (!datos.seLeyo) {
+					CodigoPromoDAO.anularCodigo(idOfertaCliente, "no se pudieron leer los datos del correo", tanda.usuario);
+					CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO", "No se pudieron leer los datos de la oferta");
+					return;
+				}
+				asunto = CorreoOferta.armarAsunto(datos);
+				mensaje = CorreoOferta.armarCuerpo(datos);
+			}
+
 			final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo(
 					"CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
 			final Correo correo = new Correo();
-			correo.setAsunto(tanda.asunto);
+			correo.setAsunto(asunto);
 			correo.setUsuarioCorreo(cuenta.getCuentaCorreo());
 			correo.setContrasena(cuenta.getClaveCorreo());
-			correo.setMensaje(personalizar(tanda.cuerpo, d.nombre));
+			correo.setMensaje(mensaje != null ? mensaje : personalizar(tanda.cuerpo, d.nombre));
 
 			final ArrayList<String> destinos = new ArrayList<String>();
 			destinos.add(d.destino);
@@ -184,13 +223,23 @@ public class EnviadorPublicidadDirecta {
 			final ControladorEnvioCorreo.ResultadoEnvio resultado = envio.enviarCorreoClasificado();
 
 			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
+				if (idOfertaCliente > 0) {
+					OfertaClienteDAO.marcarCorreoEnviado(idOfertaCliente);
+				}
 				CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "ENVIADO", "");
 			} else {
+				//El correo no salio: el codigo que se emitio no le sirve a nadie y ocupa cupo de la oferta.
+				if (idOfertaCliente > 0) {
+					CodigoPromoDAO.anularCodigo(idOfertaCliente, "el correo no salio (" + resultado + ")", tanda.usuario);
+				}
 				CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO",
 						String.valueOf(resultado));
 			}
 		} catch (final Exception e) {
 			logger.error("EnviadorPublicidadDirecta: " + d.destino + ", " + e.toString());
+			if (idOfertaCliente > 0) {
+				CodigoPromoDAO.anularCodigo(idOfertaCliente, "error al enviar: " + e.getMessage(), tanda.usuario);
+			}
 			CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO", e.toString());
 		}
 	}

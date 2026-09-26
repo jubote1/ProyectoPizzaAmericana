@@ -131,7 +131,7 @@ public class EnvioPublicidadCtrl {
 			final String canal, final int idPlantilla, final String asunto, final String cuerpo,
 			final int tope, final int esperados, final String filtrosTexto,
 			final SegmentacionPersonaDAO.Filtro filtro, final CampanaDAO.FiltroExtra extra,
-			final String usuario) {
+			final String usuario, final int idOferta) {
 		final JSONObject r = new JSONObject();
 
 		if (!CampanaDAO.CANAL_CORREO.equals(canal) && !CampanaDAO.CANAL_WHATSAPP.equals(canal)
@@ -144,7 +144,24 @@ public class EnvioPublicidadCtrl {
 					+ " Sin campana no se puede medir despues si sirvio.");
 			return (r.toJSONString());
 		}
-		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+		if (idOferta > 0) {
+			//Con oferta cada persona recibe su propio codigo dentro del correo de la oferta, y ese correo sale por el
+			//correo directo: Brevo con una plantilla que lleve el codigo por destinatario queda para una segunda etapa.
+			if (!CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+				r.put("error", "El envio con oferta sale por correo directo, con el correo de la oferta.");
+				return (r.toJSONString());
+			}
+			final String problemaOferta = capaDAOCC.CodigoPromoDAO.problemaParaEnviar(idOferta);
+			if (problemaOferta.length() > 0) {
+				r.put("error", problemaOferta);
+				return (r.toJSONString());
+			}
+			final long enCursoOferta = CampanaDAO.envioDirectoEnCurso();
+			if (enCursoOferta != 0) {
+				r.put("error", "Ya hay un envio de correo directo en curso (el " + enCursoOferta + "). Espere a que termine.");
+				return (r.toJSONString());
+			}
+		} else if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
 			if (cuerpo == null || cuerpo.trim().length() == 0) {
 				r.put("error", "El correo directo necesita el contenido del mensaje.");
 				return (r.toJSONString());
@@ -185,14 +202,20 @@ public class EnvioPublicidadCtrl {
 
 		//El maestro se queda con lo ultimo que se uso, para que la proxima vez
 		//que se escoja en el desplegable vuelva todo puesto.
-		CampanaDAO.actualizarMaestro(idCampana, canal, idPlantilla, asunto, cuerpo, filtrosTexto,
-				extra.diasSinPublicidad, topeReal);
+		if (idOferta <= 0) {
+			CampanaDAO.actualizarMaestro(idCampana, canal, idPlantilla, asunto, cuerpo, filtrosTexto,
+					extra.diasSinPublicidad, topeReal);
+		}
 
-		final long idEnvio = CampanaDAO.crearEnvio(idCampana, canal, idPlantilla, asunto, cuerpo,
+		final long idEnvio = CampanaDAO.crearEnvio(idCampana, canal, idPlantilla,
+				idOferta > 0 ? "Correo de la oferta " + idOferta : asunto, idOferta > 0 ? "" : cuerpo,
 				filtrosTexto, topeReal, extra.diasSinPublicidad, usuario);
 		if (idEnvio == 0) {
 			r.put("error", "No se pudo abrir la tanda de envio.");
 			return (r.toJSONString());
+		}
+		if (idOferta > 0) {
+			CampanaDAO.asignarOferta(idEnvio, idOferta);
 		}
 
 		final int cuantos = CampanaDAO.cargarDestinatarios(idEnvio, idCampana, canal, filtro,
@@ -411,6 +434,7 @@ public class EnvioPublicidadCtrl {
 		o.put("idcampana", c.idCampana);
 		o.put("nombre", c.campana);
 		o.put("consecutivo", c.consecutivo);
+		o.put("idoferta", c.idOferta);
 		o.put("canal", c.canal);
 		o.put("estado", c.estado);
 		o.put("publico", c.publico);
@@ -439,6 +463,7 @@ public class EnvioPublicidadCtrl {
 			o.put("idcampana", e.idCampana);
 			o.put("nombre", e.campana);
 			o.put("consecutivo", e.consecutivo);
+			o.put("idoferta", e.idOferta);
 			o.put("canal", e.canal);
 			o.put("estado", e.estado);
 			o.put("tope", e.tope);
@@ -502,6 +527,60 @@ public class EnvioPublicidadCtrl {
 		//compre despues de recibir no prueba que compro POR el mensaje.
 		o.put("advertencia", "Mide quien compro despues de recibir, no quien compro por recibir."
 				+ " Sirve para comparar campanas entre si.");
+		if (!porCampana) {
+			//Una tanda con oferta si se puede medir con causa: el codigo es unico por persona.
+			final CampanaDAO.Embudo b = CampanaDAO.embudo(id);
+			if (b.disponible && b.emitidos > 0) {
+				final JSONObject e = new JSONObject();
+				e.put("enviados", b.enviados);
+				e.put("codigos", b.emitidos);
+				e.put("anulados", b.anulados);
+				e.put("usados", b.usados);
+				e.put("porcentaje_uso", b.enviados > 0 ? Math.round(b.usados * 1000.0 / b.enviados) / 10.0 : 0);
+				e.put("descontado", b.descontado);
+				e.put("ventas", b.ventas);
+				o.put("embudo", e);
+			}
+		}
+		return (o.toJSONString());
+	}
+
+	/** Las ofertas que se pueden mandar en una campana, para el selector de la pantalla. */
+	@SuppressWarnings("unchecked")
+	public static String ofertas() {
+		final JSONArray lista = new JSONArray();
+		for (final capaDAOCC.CodigoPromoDAO.OfertaEnviable e : capaDAOCC.CodigoPromoDAO.ofertasEnviables()) {
+			final JSONObject o = new JSONObject();
+			o.put("idoferta", e.idOferta);
+			o.put("nombre", e.nombre);
+			o.put("valor", e.valor);
+			o.put("porcentaje", e.porcentaje);
+			o.put("dias", e.dias);
+			o.put("max_emision", e.maxEmision);
+			o.put("emitidos", e.emitidos);
+			o.put("saldo", "S".equals(e.redParcial));
+			lista.add(o);
+		}
+		final JSONObject r = new JSONObject();
+		r.put("ofertas", lista);
+		return (r.toJSONString());
+	}
+
+	/** Anula los codigos sin usar de una tanda con oferta (se mando la oferta equivocada, o con un error). */
+	@SuppressWarnings("unchecked")
+	public static String anularCodigos(final long idEnvio, final String usuario) {
+		final JSONObject o = new JSONObject();
+		if (CampanaDAO.envioDirectoEnCurso() == idEnvio) {
+			o.put("error", "El envio sigue en curso: detengalo primero.");
+			return (o.toJSONString());
+		}
+		final int n = capaDAOCC.CodigoPromoDAO.anularEnvio(idEnvio, usuario);
+		if (n < 0) {
+			o.put("error", "No se pudieron anular los codigos.");
+		} else {
+			o.put("anulados", n);
+			o.put("mensaje", n + " codigos sin usar quedaron anulados. Los que ya se usaron no se tocan.");
+		}
 		return (o.toJSONString());
 	}
 

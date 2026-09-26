@@ -299,12 +299,23 @@
 									</div>
 								</div>
 
+								<div class="ep-campo" id="ep-caja-oferta" style="margin-top:12px;">
+									<label class="ep-rotulo" for="ep-oferta">Oferta con c&oacute;digo (opcional)</label>
+									<select id="ep-oferta" class="form-control">
+										<option value="0">Sin oferta: solo un mensaje</option>
+									</select>
+									<div class="ep-nota" id="ep-oferta-nota">
+										Con una oferta, cada persona recibe <b>su propio c&oacute;digo de un solo uso</b>,
+										que vence a los d&iacute;as que tenga la oferta, dentro del correo de la oferta.
+									</div>
+								</div>
+
 								<div class="ep-campo" id="ep-caja-plantilla" style="margin-top:12px;">
 									<label class="ep-rotulo" for="ep-plantilla">Plantilla de Brevo</label>
 									<select id="ep-plantilla" class="form-control"></select>
 								</div>
 
-								<div class="ep-campo">
+								<div class="ep-campo" id="ep-caja-asunto">
 									<label class="ep-rotulo" for="ep-asunto">Asunto</label>
 									<input type="text" id="ep-asunto" class="form-control" maxlength="250">
 								</div>
@@ -315,7 +326,7 @@
 										placeholder="Puede usar HTML. Escriba {{nombre}} donde vaya el nombre del cliente."></textarea>
 								</div>
 
-								<div class="ep-campo">
+								<div class="ep-campo" id="ep-caja-prueba">
 									<label class="ep-rotulo" for="ep-prueba">Probar primero (a d&oacute;nde)</label>
 									<div class="input-group">
 										<input type="text" id="ep-prueba" class="form-control"
@@ -395,6 +406,7 @@
 									<th class="ep-num">P&uacute;blico</th>
 									<th class="ep-num">Enviados</th>
 									<th class="ep-num">Fallidos</th>
+									<th>Oferta</th>
 									<th>Cu&aacute;ndo</th>
 								</tr>
 							</thead>

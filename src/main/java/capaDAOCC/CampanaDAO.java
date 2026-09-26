@@ -153,6 +153,8 @@ public class CampanaDAO {
 		public String usuario = "";
 		public String creadoEn = "";
 		public String terminadoEn = "";
+		/** Oferta que lleva la tanda; 0 si no lleva. */
+		public int idOferta;
 	}
 
 	/** Una persona a la que hay que escribirle. */
@@ -893,6 +895,125 @@ public class CampanaDAO {
 
 
 	// =======================================================================
+	// Envio con oferta
+	// =======================================================================
+
+	/** Le pone a la tanda la oferta que lleva. Se llama justo despues de abrirla. */
+	public static void asignarOferta(final long idEnvio, final int idOferta) {
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"UPDATE crm.campana_envio SET idoferta = ? WHERE idenvio = ?");
+			ps.setInt(1, idOferta);
+			ps.setLong(2, idEnvio);
+			ps.executeUpdate();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.asignarOferta: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	/**
+	 * Deja dicho que codigo se le emitio a esta persona. Va ANTES de mandar el correo: si el servidor se cae
+	 * entre emitir y marcar, al reanudar la emision es idempotente (oferta_cliente.idenvio) y no sale un segundo codigo.
+	 */
+	public static void marcarCodigo(final long idEnvio, final long idPersona, final int idOfertaCliente) {
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"UPDATE crm.campana_destinatario SET idofertacliente = ? WHERE idenvio = ? AND idpersona = ?");
+			ps.setInt(1, idOfertaCliente);
+			ps.setLong(2, idEnvio);
+			ps.setLong(3, idPersona);
+			ps.executeUpdate();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.marcarCodigo: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	/**
+	 * Lo que pasa con una tanda que llevaba oferta: del correo al codigo usado y al pedido.
+	 *
+	 * A diferencia de medir(), que solo mira si la persona compro despues, esto es CAUSAL: el codigo es
+	 * unico por persona, asi que si se uso, ese pedido vino de esta oferta.
+	 */
+	public static class Embudo {
+		/** false si la base todavia no tiene las columnas de oferta (falta correr el SQL). */
+		public boolean disponible;
+		public int enviados;
+		public int emitidos;
+		public int anulados;
+		public int usados;
+		public double descontado;
+		public double ventas;
+	}
+
+	public static Embudo embudo(final long idEnvio) {
+		final Embudo b = new Embudo();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			PreparedStatement ps = cn.prepareStatement(
+					"SELECT COUNT(*) FROM crm.campana_destinatario WHERE idenvio = ? AND estado = 'ENVIADO'");
+			ps.setLong(1, idEnvio);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				b.enviados = rs.getInt(1);
+			}
+			rs.close();
+			ps.close();
+
+			ps = cn.prepareStatement("SELECT COUNT(*), IFNULL(SUM(anulada = 'S'),0)"
+					+ "  FROM pizzaamericana.oferta_cliente WHERE idenvio = ?");
+			ps.setLong(1, idEnvio);
+			rs = ps.executeQuery();
+			if (rs.next()) {
+				b.emitidos = rs.getInt(1);
+				b.anulados = rs.getInt(2);
+			}
+			rs.close();
+			ps.close();
+
+			//Un codigo cuenta como usado por su registro en el log, no por la marca utilizada: en una
+			//oferta con saldo el codigo se usa varias veces antes de agotarse. El pedido se une por
+			//(idpedido, idtienda) para saber cuanto se vendio con el.
+			ps = cn.prepareStatement("SELECT COUNT(DISTINCT l.idofertacliente), IFNULL(SUM(l.descuento),0),"
+					+ "       IFNULL(SUM(pe.total_neto),0)"
+					+ "  FROM pizzaamericana.oferta_cliente oc"
+					+ "  JOIN pizzaamericana.log_redencion_codigo l ON l.idofertacliente = oc.idofertacliente"
+					+ "       AND l.estado IN ('OK','EXCESO')"
+					+ "  LEFT JOIN pizzaamericana.pedido pe ON pe.idpedido = l.idpedido AND pe.idtienda = l.idtienda"
+					+ " WHERE oc.idenvio = ?");
+			ps.setLong(1, idEnvio);
+			rs = ps.executeQuery();
+			if (rs.next()) {
+				b.usados = rs.getInt(1);
+				b.descontado = rs.getDouble(2);
+				b.ventas = rs.getDouble(3);
+			}
+			rs.close();
+			ps.close();
+			b.disponible = true;
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.embudo: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (b);
+	}
+
+
+	// =======================================================================
 	// Los filtros que venian de la pantalla anterior
 	// =======================================================================
 
@@ -1129,6 +1250,12 @@ public class CampanaDAO {
 		e.usuario = texto(rs.getString("usuario"));
 		e.creadoEn = texto(rs.getString("creado_en"));
 		e.terminadoEn = texto(rs.getString("terminado_en"));
+		try {
+			e.idOferta = rs.getInt("idoferta");
+		} catch (final Exception sinColumna) {
+			//La base todavia no tiene la columna: la tanda se lee como sin oferta.
+			e.idOferta = 0;
+		}
 		return (e);
 	}
 
