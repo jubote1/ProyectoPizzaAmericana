@@ -8,6 +8,10 @@
 		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
 		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
 		  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">
+		  <!-- Mismo ArcGIS (version, tema y forma de cargar) que ya usa Pedidos.html: Google quito el mapa de
+		       calor de su API (HeatmapLayer) desde la version 3.65, asi que no se puede seguir usando Google
+		       Maps para esto. ArcGIS si tiene HeatmapRenderer vigente, y ya esta licenciado en este sistema. -->
+		  <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
 	</head>
 	<body>
 
@@ -87,11 +91,11 @@
 			</div>
 		</div>
 
-		<script type="text/javascript" src="js/mapacalordomicilios.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
-		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDwtRU2RaLjjwoFVivJrVAjD2oxWV4olN4&libraries=visualization&callback=mcInitMap" async defer></script>
 		<script src="js/jquery-ui.min.js"></script>
 		<script type="text/javascript" src="js/datepicker.js"></script>
+		<script src="https://js.arcgis.com/4.27/"></script>
+		<script src="js/mapacalordomicilios.js" type="text/javascript"></script>
 		<script>
 			$("#fechainicial").datepicker($.datepicker.regional["es"]);
 			$("#fechainicial").datepicker('setDate', new Date());
