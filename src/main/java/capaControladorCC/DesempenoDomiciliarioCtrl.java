@@ -213,7 +213,13 @@ public class DesempenoDomiciliarioCtrl {
 		final ArrayList<Integer> calles = new ArrayList<Integer>();
 		int aTiempo = 0;
 		int medibles = 0;
+		//Los programados se entregan pero no se juzgan por tiempo (ver DesempenoDomiciliarioDAO.cargarEntregas):
+		//se cuentan aparte, como cumplimiento de entrega, no como parte de "medibles"/"a_tiempo"/los promedios.
+		int programados = 0;
 		for (final DesempenoDomiciliarioDAO.Entrega e : entregas) {
+			if (e.programado) {
+				programados++;
+			}
 			if (!e.medible) {
 				continue;
 			}
@@ -229,6 +235,10 @@ public class DesempenoDomiciliarioCtrl {
 		o.put("pedidos", entregas.size());
 		o.put("salidas", salidas);
 		o.put("pedidos_por_salida", salidas > 0 ? redondear((double) entregas.size() / salidas, 2) : 0);
+		//Programados entregados: cumplieron (se entregaron), y quedan fuera de "medibles" porque no se
+		//juzgan por tiempo. Ojo, esto cuenta los que SI llegaron a salir con un domiciliario; un programado
+		//que nunca se despacho no aparece aqui (esta pantalla solo ve lo que paso por despacho_real).
+		o.put("programados", programados);
 		o.put("medibles", medibles);
 		o.put("sin_medir", entregas.size() - medibles);
 		o.put("a_tiempo", aTiempo);

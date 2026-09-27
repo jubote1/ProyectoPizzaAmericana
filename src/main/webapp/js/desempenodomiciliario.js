@@ -370,6 +370,7 @@ function ddPintarCalidad(g, r) {
 		ddFila('Sin hora de regreso', g.sin_regreso) +
 		ddFila('Con regreso pero sin entrega contra que medir', g.sin_entrega) +
 		ddFila('Entregas sin tiempo prometido', r.sin_medir) +
+		ddFila('Pedidos programados entregados (cumplieron; no se miden en tiempo)', r.programados) +
 		'</table>';
 	if (pct >= 10) {
 		html += '<div class="alert alert-warning" style="padding:8px 12px;font-size:12px;margin-bottom:0;">' +

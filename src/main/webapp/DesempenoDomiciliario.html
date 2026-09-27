@@ -36,6 +36,7 @@
 			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
 			var respuesta = '';
 			var usuario = "";
+			var roles = [];
 			$.ajax({
 				url: server + 'ValidarUsuarioAplicacion',
 				dataType: 'json',
@@ -44,22 +45,30 @@
 				success: function(data){
 					respuesta = data[0].respuesta;
 					usuario = data[0].nombreusuario;
+					roles = data[0].roles || [];
 				}
 			});
-			switch(respuesta)
-			{
-				case 'OK':
-					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
-					break;
-				case 'OKA':
-					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
-					break;
-				case 'OKP':
-					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
-					break;
-				default:
-					location.href = server + "Index.html";
-					break;
+			if (respuesta === 'OK' && roles.length > 0) {
+				//Un perfil nuevo por rol (por ejemplo Administrador de Tienda) no ve el menu completo de
+				//Operario: ve solo las pantallas que le dio su rol. Ese menu sale de MenuDinamico.html
+				//(GetMenuUsuario), no de un archivo estatico como Menu.html.
+				$('#cargarMenu').load("MenuDinamico.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+			} else {
+				switch(respuesta)
+				{
+					case 'OK':
+						$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKA':
+						$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKP':
+						$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					default:
+						location.href = server + "Index.html";
+						break;
+				}
 			}
 
 		</script>

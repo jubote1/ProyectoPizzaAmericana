@@ -83,6 +83,8 @@ public class DesempenoDomiciliarioDAO {
 		public int minutosCalle;
 		public int orden;
 		public boolean medible;
+		/** Pedido programado (horario acordado con el cliente): se entrega, pero no se juzga por tiempo. */
+		public boolean programado;
 	}
 
 	/** Una salida: el domiciliario sale con uno o varios pedidos y vuelve. */
@@ -211,7 +213,7 @@ public class DesempenoDomiciliarioDAO {
 		//Los minutos los calcula MySQL: traer las fechas y restarlas en Java
 		//obligaria a parsear, y el formato de fecha ya ha dado guerra aca.
 		final String sql = "select r.fecha, d.id_pedido, d.orden_planificada, "
-				+ "ifnull(p.tiempopedido, 0) as prometido, "
+				+ "ifnull(p.tiempopedido, 0) as prometido, ifnull(p.programado, 'N') as programado, "
 				+ "timestampdiff(minute, p.fechainsercion, d.hora_entrega) as min_total, "
 				+ "timestampdiff(minute, r.hora_salida, d.hora_entrega) as min_calle "
 				+ "from despacho_real r "
@@ -236,9 +238,13 @@ public class DesempenoDomiciliarioDAO {
 			final boolean sinTotal = rs.wasNull();
 			e.minutosCalle = rs.getInt("min_calle");
 			e.orden = rs.getInt("orden_planificada");
+			e.programado = "S".equals(rs.getString("programado"));
 			//Sin promesa no hay contra que medir, y un tiempo negativo es un
-			//dato malo, no una entrega instantanea.
-			e.medible = (e.prometido > 0 && !sinTotal && e.minutosTotal >= 0);
+			//dato malo, no una entrega instantanea. Y un pedido PROGRAMADO nunca es medible por tiempo:
+			//el cliente pidio una hora concreta, no "lo mas rapido posible", asi que compararlo contra
+			//pedido.tiempopedido (pensado para el pedido inmediato) mezclaria dos promesas distintas. Su
+			//cumplimiento se cuenta aparte, en "programados" (ver DesempenoDomiciliarioCtrl).
+			e.medible = (e.prometido > 0 && !sinTotal && e.minutosTotal >= 0 && !e.programado);
 			res.entregas.add(e);
 		}
 		rs.close();

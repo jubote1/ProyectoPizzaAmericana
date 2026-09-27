@@ -4042,8 +4042,67 @@ public class PedidoDAO {
 		}
 		return(consultaDirs);
 	}
-	
-	
+
+	/**
+	 * Las ubicaciones de los pedidos de DOMICILIO de una tienda, para el mapa de calor.
+	 *
+	 * A diferencia de ConsultarDireccionesPedido (que trae todo lo que haya en el central para revisar o
+	 * corregir coordenadas), esta se queda solo con lo que sirve para ver el comportamiento de los
+	 * domicilios: idtipopedido = 1 (Domicilio; el central solo conoce Domicilio y Virtual Recoger, y
+	 * Recoger no reparte a ningun lado) y sin cancelar. Con parametros, no concatenado: esta consulta la
+	 * dispara una pantalla nueva y no hay motivo para heredar la forma vieja.
+	 *
+	 * @param fechainicial y fechafinal en dd/MM/yyyy, como las escribe la pantalla
+	 */
+	public static ArrayList<DireccionFueraZona> consultarDireccionesDomicilio(String fechainicial, String fechafinal,
+			int idTienda) {
+		final Logger logger = Logger.getLogger("log_file");
+		final ArrayList<DireccionFueraZona> lista = new ArrayList<DireccionFueraZona>();
+		String fechaIni = fechainicial.substring(6, 10) + "-" + fechainicial.substring(3, 5) + "-"
+				+ fechainicial.substring(0, 2) + " 00:00:00";
+		String fechaFin = fechafinal.substring(6, 10) + "-" + fechafinal.substring(3, 5) + "-"
+				+ fechafinal.substring(0, 2) + " 23:59:59";
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = null;
+		try {
+			con1 = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = con1.prepareStatement(
+					"select a.idpedido id, b.direccion, ifnull(c.nombre,'') as municipio, b.idcliente,"
+							+ " b.latitud, b.longitud, b.telefono, b.nombre, b.apellido, a.fechapedido fecha_ingreso,"
+							+ " a.total_neto"
+							+ " from pedido a inner join cliente b on b.idcliente = a.idcliente"
+							+ " left join municipio c on c.idmunicipio = b.idmunicipio"
+							+ " where a.idtipopedido = 1 and a.fecha_cancelacion is null and a.idtienda = ?"
+							+ " and a.fechapedido >= ? and a.fechapedido <= ?"
+							+ " and b.latitud is not null and b.longitud is not null and b.latitud <> 0 and b.longitud <> 0");
+			ps.setInt(1, idTienda);
+			ps.setString(2, fechaIni);
+			ps.setString(3, fechaFin);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final DireccionFueraZona dir = new DireccionFueraZona(rs.getInt("id"), rs.getString("direccion"),
+						rs.getString("municipio"), rs.getInt("idcliente"), rs.getDouble("latitud"),
+						rs.getDouble("longitud"), rs.getString("telefono"), rs.getString("nombre"),
+						rs.getString("apellido"), rs.getDouble("total_neto"));
+				dir.setFechaIngreso(rs.getString("fecha_ingreso"));
+				lista.add(dir);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			logger.error("PedidoDAO.consultarDireccionesDomicilio: " + e.toString());
+		} finally {
+			try {
+				if (con1 != null) {
+					con1.close();
+				}
+			} catch (final Exception e1) {
+			}
+		}
+		return (lista);
+	}
+
+
 	/**
 	 * M�todo que se encargar� de consultar los pedidos pendientes dada una fecha determinada, con el fin de alertar posteriormente en correo electr�nico
 	 * @param fechaPed

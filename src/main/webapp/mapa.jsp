@@ -43,6 +43,41 @@
 </head>
 <body>
 <div id="cargarMenu"></div>
+<script type="text/javascript">
+	//Esta pantalla no pedia sesion: cualquiera con el enlace la abria. Con el perfil de Administrador
+	//de Tienda (rol -> pantalla, ver sql/rol_administrador_tienda.sql) ya tiene sentido exigirla, igual
+	//que el resto de pantallas del central.
+	var loc = window.location;
+	var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+	var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+	var respuesta = '';
+	var usuario = '';
+	var roles = [];
+	$.ajax({
+		url: server + 'ValidarUsuarioAplicacion',
+		dataType: 'json',
+		type: 'post',
+		async: false,
+		success: function (data) {
+			respuesta = data[0].respuesta;
+			usuario = data[0].nombreusuario;
+			roles = data[0].roles || [];
+		}
+	});
+	if (respuesta === 'OK' && roles.length > 0) {
+		//Un perfil nuevo por rol (por ejemplo Administrador de Tienda): ve solo las pantallas que le
+		//dio su rol, no el menu completo de Operario.
+		$('#cargarMenu').load("MenuDinamico.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+	} else if (respuesta === 'OK') {
+		$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+	} else if (respuesta === 'OKA') {
+		$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+	} else if (respuesta === 'OKP') {
+		$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+	} else {
+		location.href = server + "Index.html";
+	}
+</script>
 <div class="content-home">
 	<div id="paginador" class="d-flex justify-content-between">
 		<button id="anterior" class="btn btn-secondary" disabled>
