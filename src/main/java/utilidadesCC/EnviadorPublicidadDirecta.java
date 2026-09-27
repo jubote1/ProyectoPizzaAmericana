@@ -28,7 +28,12 @@ import capaModeloCC.CorreoElectronico;
  *
  * Y como el avance se guarda en crm.campana_destinatario de a un correo por
  * vez, si el Tomcat se reinicia a mitad de camino, al volver se reanuda justo
- * donde iba. A nadie se le escribe dos veces.
+ * donde iba -eso lo hace capaSeguridad.filtro.ReanudarEnvioDirectoListener al
+ * arrancar la aplicacion, no esta clase: un redespliegue crea una JVM nueva y
+ * el ScheduledExecutorService de aca abajo nace en null otra vez, asi que sin
+ * ese listener la tanda se quedaba en ENVIANDO para siempre y bloqueaba
+ * cualquier envio directo nuevo (paso el 2026-09-27 con el envio 11)-. A
+ * nadie se le escribe dos veces.
  *
  * POR QUE DE A UNO Y CON ESPERA
  *
