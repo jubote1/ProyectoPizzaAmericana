@@ -1,6 +1,7 @@
 /**
  * Mapa de calor de domicilios: reutiliza ConsultarDireccionesDomicilio (solo pedidos de domicilio sin
- * cancelar) y GetTiendas.
+ * cancelar), GetTiendas, y los mismos tiendas.json/poligonos2.json que ya usa Pedidos.html para marcar el
+ * punto de la tienda y el contorno de su zona.
  *
  * POR QUE ArcGIS Y NO GOOGLE MAPS
  *
@@ -13,10 +14,26 @@
  * ArcGIS pinta el calor sobre un FeatureLayer, no sobre un GraphicsLayer: un GraphicsLayer no acepta
  * renderer. Por eso los puntos se cargan como un FeatureLayer "de cliente" (source en memoria, sin
  * servicio detras), que es la forma soportada de pintar datos que no viven en un Feature Service de Esri.
+ *
+ * PUNTO Y ZONA DE LA TIENDA
+ *
+ * No se carga arcgis.js completo -esa pantalla ademas maneja tomar el pedido, arrastrar el marcador del
+ * cliente, validar cobertura, etc., nada de lo cual aplica aca-. Se leen los mismos dos JSON estaticos
+ * (tiendas.json: el punto de cada tienda; poligonos2.json: el contorno de cada zona) y se dibujan en una
+ * capa aparte, SIEMPRE por encima del calor: el contorno va sin relleno para no taparle el color al
+ * calor, solo la linea.
+ *
+ * El nombre de la tienda no se escribe igual en los tres lados -GetTiendas.nombre dice "America" o
+ * "Manrique Piloto", tiendas.json dice "La America" o "Piloto", poligonos2.json dice "america_id" o
+ * "piloto_id"-, asi que el cruce es por coincidencia de texto (normalizado, sin tildes) en cualquiera de
+ * los dos sentidos, no por igualdad exacta. Bodega, Poblado y Medayoung no tienen los tres datos a la vez
+ * -Bodega no es una tienda con domicilios, Poblado/Medayoung no tienen servidor local- y sencillamente no
+ * se les dibuja lo que falte, sin error.
  */
 var mcMapa = null;
 var mcView = null;
 var mcCapaCalor = null;
+var mcCapaTienda = null;
 var mcArcgisListo = false;
 
 //Misma clave que arcgis.js (Pedidos.html): ya esta licenciada y aprobada para este dominio.
@@ -25,10 +42,21 @@ var MC_ARCGIS_API_KEY = "AAPK211b4727a21c467cab976021a4014485adqFPyZ19VbYqn4_Znj
 var MC_FeatureLayer = null;
 var MC_HeatmapRenderer = null;
 var MC_Graphic = null;
+var MC_GraphicsLayer = null;
+var MC_SimpleMarkerSymbol = null;
+
+var MC_TIENDAS = null;
+var MC_POLIGONOS = null;
 
 $(document).ready(function () {
 	mcCargarTiendas();
 	mcInitMap();
+	mcCargarTiendasJson();
+	mcCargarPoligonosJson();
+
+	$('#selectTiendas').on('change', function () {
+		mcDibujarTienda($('#selectTiendas option:selected').text());
+	});
 });
 
 function mcInitMap() {
@@ -37,13 +65,17 @@ function mcInitMap() {
 		"esri/Map",
 		"esri/views/MapView",
 		"esri/layers/FeatureLayer",
+		"esri/layers/GraphicsLayer",
 		"esri/renderers/HeatmapRenderer",
+		"esri/symbols/SimpleMarkerSymbol",
 		"esri/Graphic"
-	], function (esriConfig, EsriMap, MapView, FeatureLayer, HeatmapRenderer, Graphic) {
+	], function (esriConfig, EsriMap, MapView, FeatureLayer, GraphicsLayer, HeatmapRenderer, SimpleMarkerSymbol, Graphic) {
 		esriConfig.apiKey = MC_ARCGIS_API_KEY;
 		MC_FeatureLayer = FeatureLayer;
 		MC_HeatmapRenderer = HeatmapRenderer;
 		MC_Graphic = Graphic;
+		MC_GraphicsLayer = GraphicsLayer;
+		MC_SimpleMarkerSymbol = SimpleMarkerSymbol;
 
 		mcMapa = new EsriMap({ basemap: "streets-navigation-vector" });
 		mcView = new MapView({
@@ -53,7 +85,16 @@ function mcInitMap() {
 			zoom: 12,
 			popup: { autoOpenEnabled: false }
 		});
+
+		mcCapaTienda = new GraphicsLayer({ id: "mcCapaTienda", title: "Tienda" });
+		mcMapa.add(mcCapaTienda);
+
 		mcArcgisListo = true;
+		//Si el usuario ya habia escogido tienda mientras ArcGIS terminaba de cargar.
+		var nombreEscogido = $('#selectTiendas option:selected').text();
+		if ($('#selectTiendas').val()) {
+			mcDibujarTienda(nombreEscogido);
+		}
 	});
 }
 
@@ -65,6 +106,110 @@ function mcCargarTiendas() {
 		}
 		$('#selectTiendas').html(str);
 	});
+}
+
+/** El punto de cada tienda (el mismo tiendas.json de Pedidos.html). */
+function mcCargarTiendasJson() {
+	$.getJSON('tiendas.json', function (data) {
+		MC_TIENDAS = data;
+		mcReintentarDibujoInicial();
+	}).fail(function () {
+		MC_TIENDAS = [];
+	});
+}
+
+/** El contorno de cada zona (el mismo poligonos2.json de Pedidos.html). */
+function mcCargarPoligonosJson() {
+	$.getJSON('poligonos2.json', function (data) {
+		MC_POLIGONOS = data;
+		mcReintentarDibujoInicial();
+	}).fail(function () {
+		MC_POLIGONOS = [];
+	});
+}
+
+/** Los tres archivos (mapa, tiendas.json, poligonos2.json) cargan por separado; se dibuja en cuanto esten los tres. */
+function mcReintentarDibujoInicial() {
+	if (mcArcgisListo && MC_TIENDAS && MC_POLIGONOS && $('#selectTiendas').val()) {
+		mcDibujarTienda($('#selectTiendas option:selected').text());
+	}
+}
+
+/** Sin tildes y en minuscula, para comparar nombres que no se escriben igual en cada archivo. */
+function mcNormalizar(texto) {
+	return (texto || '').toString()
+		.normalize('NFD').replace(/[̀-ͯ]/g, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]/g, '');
+}
+
+/** true si un nombre "contiene" al otro, en cualquiera de los dos sentidos (p.ej. "america" en "laamerica"). */
+function mcCoincide(a, b) {
+	if (!a || !b) { return false; }
+	return a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
+}
+
+/**
+ * Pinta el punto de la tienda y el contorno de su zona (o zonas: Bello tiene una zona roja aparte). Si
+ * alguno de los dos no se encuentra para esa tienda, se deja sin dibujar -no es un error, ver el
+ * comentario de arriba sobre Bodega/Poblado/Medayoung-.
+ */
+function mcDibujarTienda(nombreTienda) {
+	if (!mcArcgisListo || !mcCapaTienda || !MC_TIENDAS || !MC_POLIGONOS) {
+		return;
+	}
+	mcCapaTienda.removeAll();
+	if (!nombreTienda) {
+		return;
+	}
+	var normTienda = mcNormalizar(nombreTienda);
+
+	//El punto.
+	var tienda = null;
+	for (var i = 0; i < MC_TIENDAS.length; i++) {
+		if (mcCoincide(mcNormalizar(MC_TIENDAS[i].title), normTienda) && MC_TIENDAS[i].coordinates) {
+			tienda = MC_TIENDAS[i];
+			break;
+		}
+	}
+	if (tienda) {
+		mcCapaTienda.add(new MC_Graphic({
+			geometry: { type: "point", longitude: tienda.coordinates.lng, latitude: tienda.coordinates.lat },
+			symbol: new MC_SimpleMarkerSymbol({
+				style: "circle",
+				color: [16, 47, 111, 1],
+				size: 16,
+				outline: { color: [255, 255, 255, 1], width: 2 }
+			}),
+			attributes: { tipo: "tienda" },
+			popupTemplate: { title: tienda.title, content: "Tienda" }
+		}));
+	}
+
+	//El o los contornos de zona (Bello tiene una zona roja aparte, ademas de la principal).
+	var algunPoligono = false;
+	for (var p = 0; p < MC_POLIGONOS.length; p++) {
+		var poligono = MC_POLIGONOS[p];
+		var idZona = mcNormalizar((poligono.id || '').replace(/_id$/, '').replace(/zonaroja/, ''));
+		if (!mcCoincide(idZona, normTienda) || !poligono.coordinates) {
+			continue;
+		}
+		algunPoligono = true;
+		var color = poligono.color || [16, 47, 111, 1];
+		mcCapaTienda.add(new MC_Graphic({
+			geometry: { type: "polygon", rings: poligono.coordinates },
+			symbol: {
+				type: "simple-fill",
+				//Sin relleno: es solo el contorno, para no taparle el color al mapa de calor.
+				color: [0, 0, 0, 0],
+				outline: { color: [color[0], color[1], color[2], 1], width: 2 }
+			}
+		}));
+	}
+
+	if (tienda || algunPoligono) {
+		mcMapa.reorder(mcCapaTienda, mcMapa.layers.length - 1);
+	}
 }
 
 function mcAviso(texto, clase) {
@@ -89,6 +234,8 @@ function mcConsultar() {
 		mcAviso('El mapa todavía no ha cargado, espere un momento e intente de nuevo.');
 		return;
 	}
+
+	mcDibujarTienda($('#selectTiendas option:selected').text());
 
 	mcAviso('Consultando...', 'alert-info');
 	$.getJSON(server + 'ConsultarDireccionesDomicilio', {
@@ -154,7 +301,12 @@ function mcPintarCalor(data) {
 			minDensity: 0
 		})
 	});
-	mcMapa.add(mcCapaCalor);
+	//Al principio de la lista de capas: el punto y el contorno de la tienda (mcCapaTienda) quedan por
+	//encima, y se le hace reorder de todas formas por si acaso.
+	mcMapa.add(mcCapaCalor, 0);
+	if (mcCapaTienda) {
+		mcMapa.reorder(mcCapaTienda, mcMapa.layers.length - 1);
+	}
 	//Sin forzar el zoom: que encuadre solo, segun donde queden los puntos. Un solo punto no tiene
 	//"extent" (ancho y alto cero) y goTo fallaria si se le pidiera encuadrar sin zoom; en ese caso se
 	//deja el zoom que ya trae el mapa.
