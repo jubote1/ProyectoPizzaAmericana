@@ -74,15 +74,31 @@ function mcConsultar() {
 			$('#mcResumen').text('');
 			return;
 		}
-		mcCapaCalor = new google.maps.visualization.HeatmapLayer({
-			data: puntos,
-			map: mcMapa,
-			radius: 28
-		});
-		mcMapa.setCenter(puntos[0]);
-		mcAviso('');
-		$('#mcResumen').html('<b>' + data.length + '</b> pedido(s) de domicilio con ubicación en el rango escogido.'
-			+ ' Entre más clientes pidan cerca de un mismo punto, más rojo se ve esa zona.');
+		//Si la libreria "visualization" no cargo (por ejemplo, la clave de Google Maps sin facturacion
+		//habilitada: es la misma marca de agua "For development purposes only" que se ve en el mapa) esto
+		//lanza una excepcion. Sin el try/catch, el aviso "Consultando..." se quedaba pegado para siempre
+		//y no decia por que.
+		try {
+			if (!google.maps.visualization || !google.maps.visualization.HeatmapLayer) {
+				mcAviso('Google Maps no habilito la capa de calor para esta clave (revisar la facturacion '
+					+ 'del proyecto en Google Cloud; el mapa base funciona, pero "visualization" no cargo).',
+					'alert-danger');
+				$('#mcResumen').text('');
+				return;
+			}
+			mcCapaCalor = new google.maps.visualization.HeatmapLayer({
+				data: puntos,
+				map: mcMapa,
+				radius: 28
+			});
+			mcMapa.setCenter(puntos[0]);
+			mcAviso('');
+			$('#mcResumen').html('<b>' + data.length + '</b> pedido(s) de domicilio con ubicación en el rango escogido.'
+				+ ' Entre más clientes pidan cerca de un mismo punto, más rojo se ve esa zona.');
+		} catch (ex) {
+			mcAviso('No se pudo pintar el mapa de calor: ' + ex.message, 'alert-danger');
+			$('#mcResumen').text('');
+		}
 	}).fail(function () {
 		mcAviso('No se pudo consultar el central.', 'alert-danger');
 	});
