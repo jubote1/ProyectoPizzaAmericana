@@ -64,9 +64,11 @@
 			roles = data[0].roles || [];
 		}
 	});
-	if (respuesta === 'OK' && roles.length > 0) {
-		//Un perfil nuevo por rol (por ejemplo Administrador de Tienda): ve solo las pantallas que le
-		//dio su rol, no el menu completo de Operario.
+	//Se pregunta por el nombre del rol, no por "tiene algun rol": hay usuarios de prueba con el rol
+	//Operario que todavia no tienen ninguna pantalla en rol_pantalla, y con "roles.length > 0" se
+	//habrian quedado con un menu vacio. Esta pantalla nunca vivio en el Menu.html de Operario.
+	if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
+		//El perfil nuevo ve solo las pantallas que le dio su rol, no el menu completo de Operario.
 		$('#cargarMenu').load("MenuDinamico.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 	} else if (respuesta === 'OK') {
 		$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
