@@ -656,6 +656,99 @@ public class CodigoPromoDAO {
 		return e;
 	}
 
+	/**
+	 * Emite un codigo con un valor que se calcula, no que viene de la oferta.
+	 *
+	 * Lo usa el bono de recompra: alli el valor no es un descuento fijo sino un
+	 * porcentaje de lo que la persona compro, distinto para cada quien. El
+	 * emitir() de arriba saca el saldo de descuento_fijo_valor y por eso no
+	 * sirve; todo lo demas -validaciones, generacion del codigo, caducidad- es
+	 * identico y por eso vive aqui al lado y no en otra clase.
+	 *
+	 * La oferta tiene que tener red_parcial = 'S'. Sin eso el saldo no se
+	 * respeta al redimir y el bono se comportaria como un descuento completo:
+	 * quien se gano $8.000 los usaria como si fueran la oferta entera.
+	 *
+	 * @param valor    el valor del bono, ya calculado y topado
+	 * @param concepto que queda escrito en la oferta del cliente
+	 */
+	public static Emision emitirValor(final Connection cn, final int idOferta, final int idCliente,
+			final double valor, final String concepto, final String usuario) throws SQLException {
+		final Emision e = new Emision();
+		if (valor <= 0) {
+			e.error = "El bono quedo en cero: no se emite.";
+			return e;
+		}
+		String tipoOferta = "";
+		String habilitado = "";
+		String codigoPromocional = "";
+		String redParcial = "";
+		int dias = 0;
+		try (PreparedStatement ps = cn.prepareStatement("select tipo_oferta, habilitado, codigo_promocional,"
+				+ " red_parcial, dias_caducidad from oferta where idoferta = ?")) {
+			ps.setInt(1, idOferta);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (!rs.next()) {
+					e.error = "La oferta no existe.";
+					return e;
+				}
+				tipoOferta = texto(rs.getString(1), "C");
+				habilitado = texto(rs.getString(2), "S");
+				codigoPromocional = texto(rs.getString(3), "N");
+				redParcial = texto(rs.getString(4), "N");
+				dias = rs.getInt(5);
+			}
+		}
+		if (!"S".equals(habilitado)) {
+			e.error = "La oferta esta deshabilitada.";
+			return e;
+		}
+		if (!"C".equals(tipoOferta) || !"S".equals(codigoPromocional)) {
+			e.error = "El bono necesita una oferta personal con codigo promocional.";
+			return e;
+		}
+		if (!"S".equals(redParcial)) {
+			e.error = "La oferta no admite redencion parcial: el bono no podria llevar su valor.";
+			return e;
+		}
+		if (dias <= 0) {
+			e.error = "La oferta no tiene dias de caducidad: un bono tiene que vencer.";
+			return e;
+		}
+
+		final String codigo = generarCodigo(cn);
+		try (PreparedStatement ps = cn.prepareStatement("insert into oferta_cliente (idoferta, idcliente, observacion,"
+				+ " PQRS, codigo_promocion, usuario_ingreso, fecha_caducidad, saldo, cliente, idenvio)"
+				+ " values (?, ?, ?, 0, ?, ?, date_add(curdate(), interval ? day), ?, '', null)",
+				Statement.RETURN_GENERATED_KEYS)) {
+			ps.setInt(1, idOferta);
+			ps.setInt(2, idCliente);
+			ps.setString(3, recortar(concepto, 200));
+			ps.setString(4, codigo);
+			ps.setString(5, recortar(usuario, 20));
+			ps.setInt(6, dias);
+			ps.setDouble(7, valor);
+			ps.executeUpdate();
+			try (ResultSet k = ps.getGeneratedKeys()) {
+				if (k.next()) {
+					e.idOfertaCliente = k.getInt(1);
+				}
+			}
+		}
+		try (PreparedStatement ps = cn.prepareStatement("select fecha_caducidad from oferta_cliente"
+				+ " where idofertacliente = ?")) {
+			ps.setInt(1, e.idOfertaCliente);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					e.fechaCaducidad = texto(rs.getString(1), "");
+				}
+			}
+		}
+		e.codigo = codigo;
+		e.saldo = valor;
+		return e;
+	}
+
 	/** Igual que emitir(cn, ...) pero abriendo y cerrando su propia conexion. */
 	public static Emision emitir(final int idOferta, final int idCliente, final long idEnvio, final String usuario) {
 		Connection cn = null;

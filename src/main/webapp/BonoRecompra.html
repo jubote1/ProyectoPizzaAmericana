@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>BONO DE RECOMPRA</title>
+		<meta charset="utf-8" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<style type="text/css">
+			body { background-color:#F4F6F8; }
+			.br-panel { border:1px solid #E2E6EC; border-radius:6px; padding:14px 16px;
+				background-color:#FFFFFF; margin-bottom:16px; }
+			.br-titulo { font-size:13px; font-weight:bold; color:#102F6F; text-transform:uppercase;
+				letter-spacing:.05em; border-bottom:2px solid #FDC806; padding-bottom:6px;
+				margin-bottom:12px; }
+			.br-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase;
+				letter-spacing:.04em; margin-bottom:3px; display:block; font-weight:bold; }
+			.br-campo { margin-bottom:11px; }
+			.br-nota { font-size:11.5px; color:#8A93A3; line-height:1.4; margin-top:3px; }
+			.br-aviso { padding:9px 12px; border-radius:4px; font-size:12.5px; margin-bottom:10px; }
+			.br-aviso-ok { background-color:#E8F5EC; border:1px solid #BEE0C8; color:#1E6B39; }
+			.br-aviso-mal { background-color:#FBE9E9; border:1px solid #F0C2C2; color:#9B2C2C; }
+			.br-aviso-info { background-color:#FFF8E1; border:1px solid #F5E3A8; color:#7A5C00; }
+			.br-num { text-align:right; }
+			#br-tabla tbody tr:hover { background-color:#F7F9FC; }
+			.br-explica { background-color:#FFFDF3; border:1px solid #F0E6BE; border-radius:6px;
+				padding:12px 15px; font-size:12.5px; color:#5A4E23; line-height:1.55;
+				margin-bottom:16px; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = '';
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json', type: 'post', async: false,
+				success: function (data) {
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+				}
+			});
+			if (respuesta !== 'OK' && respuesta !== 'OKA' && respuesta !== 'OKP') {
+				location.href = server + 'Index.html';
+			} else {
+				var menu = 'MenuAdm.html';
+				try { if (sessionStorage.getItem('areaCRM') === 'S') { menu = 'MenuCRM.html'; } } catch (e) { }
+				$('#cargarMenu').load(menu, function () {
+					$('#cargarMenu').find('#usuariologin').html(usuario);
+				});
+			}
+		</script>
+
+		<div class="container-fluid" style="padding:18px 25px;">
+
+			<h3 style="color:#102F6F;margin-top:0;">Bono de recompra</h3>
+
+			<div class="br-explica">
+				<b>Compre ahora y le devolvemos un bono para despu&eacute;s.</b>
+				Es al rev&eacute;s de las ofertas normales: el bono no se le manda a nadie de
+				entrada, se <b>gana comprando</b> dentro de la ventana que usted defina.
+				<br><br>
+				Las compras las lee el <b>barrido nocturno</b>, que entra a las once tiendas.
+				Por eso cuenta tambi&eacute;n lo que se vende en mostrador &mdash; que es el
+				41% que el central no ve &mdash; y por eso el resultado aparece al d&iacute;a
+				siguiente, no al instante.
+			</div>
+
+			<div id="br-mensaje"></div>
+
+			<div class="row">
+				<div class="col-md-5">
+					<div class="br-panel">
+						<div class="br-titulo">La regla</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo" for="br-nombre">Nombre de la campa&ntilde;a</label>
+							<input type="text" id="br-nombre" class="form-control" maxlength="100"
+								placeholder="Ej: DEVOLUCION OCTUBRE">
+						</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo" for="br-oferta">Oferta con la que se emite el bono</label>
+							<select id="br-oferta" class="form-control"></select>
+							<div class="br-nota">
+								Tiene que ser una oferta personal, con c&oacute;digo promocional,
+								<b>redenci&oacute;n parcial</b> y d&iacute;as de caducidad. La caducidad de esa
+								oferta es la que define hasta cu&aacute;ndo se puede usar el bono.
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-desde">Compras desde</label>
+								<input type="date" id="br-desde" class="form-control">
+							</div>
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-hasta">Compras hasta</label>
+								<input type="date" id="br-hasta" class="form-control">
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-porcentaje">Se devuelve (%)</label>
+								<input type="number" id="br-porcentaje" class="form-control" min="1" max="100"
+									step="0.5" value="10">
+							</div>
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-tope">Tope del bono ($)</label>
+								<input type="text" id="br-tope" class="form-control" placeholder="Ej: 20.000">
+							</div>
+						</div>
+						<div class="br-nota" style="margin-top:-6px;margin-bottom:11px;">
+							El tope es obligatorio. Sin &eacute;l, un pedido empresarial de dos millones
+							genera un bono de doscientos mil.
+						</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo" for="br-minima">Compra m&iacute;nima para ganarse el bono ($)</label>
+							<input type="text" id="br-minima" class="form-control" placeholder="0 = cualquier compra">
+						</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo" for="br-productos">Solo estos productos</label>
+							<select id="br-productos" class="form-control" multiple size="6"></select>
+							<div class="br-nota">
+								Sin escoger ninguno cuenta <b>todo</b> lo que compre. Escogiendo, por
+								ejemplo, Grande y Extragrande, el porcentaje se calcula solo sobre esas
+								l&iacute;neas del pedido.
+							</div>
+						</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo">
+								<input type="checkbox" id="br-excluirpromos" checked />
+								No contar los pedidos vendidos con promoci&oacute;n
+							</label>
+							<div class="br-nota">
+								Pagar devoluci&oacute;n sobre algo que ya sali&oacute; con descuento es
+								descontar dos veces. (Los pedidos pagados con un c&oacute;digo nunca
+								cuentan, se marque esto o no: si contaran, un bono generar&iacute;a otro
+								bono sin fin.)
+							</div>
+						</div>
+
+						<div class="br-campo">
+							<label class="br-rotulo">
+								<input type="checkbox" id="br-repetible" />
+								Se lo puede ganar m&aacute;s de una vez
+							</label>
+							<div class="br-nota" id="br-nota-repetible"></div>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-estado">Estado</label>
+								<select id="br-estado" class="form-control">
+									<option value="BORRADOR">Borrador</option>
+									<option value="ACTIVA">Activa</option>
+									<option value="CERRADA">Cerrada</option>
+								</select>
+							</div>
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-emitir">&iquest;Ya emite de verdad?</label>
+								<select id="br-emitir" class="form-control">
+									<option value="N">No &mdash; solo calcular (ensayo)</option>
+									<option value="S">S&iacute; &mdash; emitir y avisar</option>
+								</select>
+							</div>
+						</div>
+						<div class="br-nota" style="margin-top:-6px;">
+							D&eacute;jelo en <b>ensayo</b> la primera noche: calcula a cu&aacute;ntos les
+							dar&iacute;a y por cu&aacute;nto, sin repartir nada. Despu&eacute;s lo prende.
+						</div>
+
+						<button type="button" id="br-guardar" class="btn btn-primary btn-block"
+							style="margin-top:14px;">Guardar la campa&ntilde;a</button>
+						<button type="button" id="br-nueva" class="btn btn-default btn-block"
+							style="margin-top:6px;">Nueva</button>
+					</div>
+				</div>
+
+				<div class="col-md-7">
+					<div class="br-panel">
+						<div class="br-titulo">Campa&ntilde;as</div>
+						<table id="br-tabla" class="table table-bordered table-condensed" style="font-size:12px;">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Campa&ntilde;a</th>
+									<th>Ventana</th>
+									<th class="br-num">%</th>
+									<th>Estado</th>
+									<th class="br-num">Gente</th>
+									<th class="br-num">Bonos</th>
+									<th class="br-num">Repartido</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<div class="br-nota">
+							<b>Gente</b> es cu&aacute;ntas personas llevan compras dentro de la ventana.
+							<b>Bonos</b> es a cu&aacute;ntas ya se les emiti&oacute;.
+							Haga clic en una campa&ntilde;a para cargarla y ver a qui&eacute;n se le dio.
+						</div>
+					</div>
+
+					<div class="br-panel" id="br-caja-emisiones" style="display:none;">
+						<div class="br-titulo">A qui&eacute;n se le dio</div>
+						<table id="br-emisiones" class="table table-bordered table-condensed"
+							style="font-size:12px;">
+							<thead>
+								<tr>
+									<th>Persona</th>
+									<th class="br-num">Pedidos</th>
+									<th class="br-num">Compr&oacute;</th>
+									<th class="br-num">Bono</th>
+									<th>C&oacute;digo</th>
+									<th>Vence</th>
+									<th>Estado</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="js/bonorecompra.js"></script>
+	</body>
+</html>
