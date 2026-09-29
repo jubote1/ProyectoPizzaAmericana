@@ -50,6 +50,16 @@ public class BonoRecompraDAO {
 		public String productos = "";
 		public boolean excluirPromociones = true;
 		public boolean repetible = false;
+		/** S = se lo gana cualquiera que compre. N = solo a quien se le invito. */
+		public boolean abierta = true;
+		/** La tanda de Envio de Publicidad con la que se invito. */
+		public long idEnvio;
+		/** El dia en que se emite. Vacio = al cerrar la ventana. */
+		public String fechaEmision = "";
+		/** Informativo, para el mensaje. */
+		public String redimeDesde = "";
+		/** Manda de verdad: de aqui sale la caducidad del codigo. */
+		public String redimeHasta = "";
 		public String estado = "";
 		public boolean emitir = false;
 		public boolean avisar = true;
@@ -167,21 +177,23 @@ public class BonoRecompraDAO {
 				final PreparedStatement ps = cn.prepareStatement(
 						"update pizzaamericana.bono_campana set nombre=?, idoferta=?, compra_desde=?,"
 						+ " compra_hasta=?, porcentaje=?, tope_bono=?, base_minima=?, productos=?,"
-						+ " excluir_promociones=?, repetible=?, estado=?, emitir=?, avisar=?"
+						+ " excluir_promociones=?, repetible=?, estado=?, emitir=?, avisar=?,"
+						+ " abierta=?, idenvio=?, fecha_emision=?, redime_desde=?, redime_hasta=?"
 						+ " where idbono=?");
 				ponerCampos(ps, c);
-				ps.setInt(14, id);
+				ps.setInt(19, id);
 				ps.executeUpdate();
 				ps.close();
 			} else {
 				final PreparedStatement ps = cn.prepareStatement(
 						"insert into pizzaamericana.bono_campana (nombre, idoferta, compra_desde,"
 						+ " compra_hasta, porcentaje, tope_bono, base_minima, productos,"
-						+ " excluir_promociones, repetible, estado, emitir, avisar, usuario, creada_en)"
-						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
+						+ " excluir_promociones, repetible, estado, emitir, avisar,"
+						+ " abierta, idenvio, fecha_emision, redime_desde, redime_hasta, usuario, creada_en)"
+						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
 						Statement.RETURN_GENERATED_KEYS);
 				ponerCampos(ps, c);
-				ps.setString(14, c.usuario);
+				ps.setString(19, c.usuario);
 				ps.executeUpdate();
 				final ResultSet rs = ps.getGeneratedKeys();
 				if (rs.next()) {
@@ -213,6 +225,25 @@ public class BonoRecompraDAO {
 		ps.setString(11, c.estado);
 		ps.setString(12, c.emitir ? "S" : "N");
 		ps.setString(13, c.avisar ? "S" : "N");
+		ps.setString(14, c.abierta ? "S" : "N");
+		if (c.idEnvio > 0) {
+			ps.setLong(15, c.idEnvio);
+		} else {
+			ps.setNull(15, java.sql.Types.BIGINT);
+		}
+		fecha(ps, 16, c.fechaEmision);
+		fecha(ps, 17, c.redimeDesde);
+		fecha(ps, 18, c.redimeHasta);
+	}
+
+	/** Una fecha vacia es NULL, no cadena vacia: MySQL rechaza '' en una columna DATE. */
+	private static void fecha(final PreparedStatement ps, final int pos, final String valor)
+			throws SQLException {
+		if (valor != null && valor.length() >= 10) {
+			ps.setString(pos, valor.substring(0, 10));
+		} else {
+			ps.setNull(pos, java.sql.Types.DATE);
+		}
 	}
 
 	// =======================================================================
@@ -290,12 +321,34 @@ public class BonoRecompraDAO {
 		try {
 			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 
-			//La campana que suma en UN bono no puede emitir antes de que la
-			//ventana cierre: si emitiera apenas la persona cruza el minimo,
-			//las compras de los dias siguientes no entrarian en ese bono.
-			if (!c.repetible && !ventanaCerrada(cn, c.idBono)) {
+			//CUANDO SE EMITE
+			//
+			//Si la campana dice un dia, manda ese dia. Es lo que hace cumplir
+			//"se redime del lunes al miercoles": antes de emitir no hay codigo,
+			//asi que no hay nada que redimir el fin de semana. No se puede
+			//lograr validando al redimir, porque en un codigo personal el
+			//sistema solo mira la caducidad, nunca una fecha de inicio.
+			//
+			//Sin dia dicho, se vuelve a la regla vieja: al cerrar la ventana,
+			//que es la unica forma de sumar todas las compras en un bono.
+			if (c.fechaEmision.length() >= 10) {
+				if (hoy(cn).compareTo(c.fechaEmision.substring(0, 10)) < 0) {
+					res.aviso = "Todavia no es el dia de emision (" + c.fechaEmision.substring(0, 10)
+							+ "). Se sigue acumulando.";
+					return (res);
+				}
+			} else if (!c.repetible && !ventanaCerrada(cn, c.idBono)) {
 				res.aviso = "La ventana de compra todavia no cierra. Se sigue acumulando;"
 						+ " el bono se emite cuando cierre, para que sume todas las compras.";
+				return (res);
+			}
+
+			//Una campana por invitacion sin envio no tiene publico: emitirla
+			//seria regalarle a todo el mundo, justo lo contrario de lo que se
+			//pidio. Se para antes de repartir nada.
+			if (!c.abierta && c.idEnvio <= 0) {
+				res.aviso = "La campana es por invitacion pero no tiene envio asociado."
+						+ " Sin el no se sabe a quien se invito y no se emite nada.";
 				return (res);
 			}
 
@@ -330,6 +383,15 @@ public class BonoRecompraDAO {
 		return (res);
 	}
 
+	/** La fecha del servidor, que es la que manda; no la del equipo que llama. */
+	private static String hoy(final Connection cn) throws SQLException {
+		try (PreparedStatement ps = cn.prepareStatement("select curdate()")) {
+			try (ResultSet rs = ps.executeQuery()) {
+				return (rs.next() ? rs.getString(1) : "");
+			}
+		}
+	}
+
 	/** Si ya paso el ultimo dia en que una compra contaba. */
 	private static boolean ventanaCerrada(final Connection cn, final int idBono) throws SQLException {
 		try (PreparedStatement ps = cn.prepareStatement(
@@ -355,6 +417,15 @@ public class BonoRecompraDAO {
 		sql.append("select p.idpersona, count(*) as pedidos, sum(p.base) as base")
 			.append(" from pizzaamericana.bono_pedido p")
 			.append(" where p.idbono = ? and p.idemision is null");
+		if (!c.abierta) {
+			//Solo los invitados. Y solo a quienes el mensaje les LLEGO: si el
+			//correo reboto, esa persona nunca supo que comprando se ganaba algo,
+			//asi que no se le puede reclamar ni ella puede reclamar.
+			sql.append(" and exists (select 1 from crm.campana_destinatario d")
+				.append("              where d.idenvio = ").append(c.idEnvio)
+				.append("                and d.idpersona = p.idpersona")
+				.append("                and d.estado = 'ENVIADO')");
+		}
 		if (!c.repetible) {
 			sql.append(" and not exists (select 1 from pizzaamericana.bono_emitido e")
 				.append("                 where e.idbono = p.idbono and e.idpersona = p.idpersona)");
@@ -407,8 +478,13 @@ public class BonoRecompraDAO {
 
 			final String concepto = "Bono de recompra " + c.nombre + " (" + e.pedidos
 					+ " pedidos, base " + Math.round(e.base) + ")";
+			//Si la campana dice hasta cuando se redime, esa es la caducidad. Con
+			//los dias de la oferta, emitir un dia mas tarde correria el
+			//vencimiento y el mensaje que ya se le mando al cliente -"del 5 al
+			//7"- quedaria mintiendo.
+			final String vence = c.redimeHasta.length() >= 10 ? c.redimeHasta.substring(0, 10) : null;
 			final CodigoPromoDAO.Emision emitida = CodigoPromoDAO.emitirValor(cn, c.idOferta,
-					e.idCliente, e.valor, concepto, usuario);
+					e.idCliente, e.valor, concepto, usuario, vence);
 			if (emitida.error != null && emitida.error.length() > 0) {
 				guardarEmision(cn, c, e, "FALLIDO", emitida.error);
 				cn.commit();
@@ -566,6 +642,11 @@ public class BonoRecompraDAO {
 		c.estado = txt(rs.getString("estado"));
 		c.emitir = "S".equals(rs.getString("emitir"));
 		c.avisar = "S".equals(rs.getString("avisar"));
+		c.abierta = !"N".equals(rs.getString("abierta"));
+		c.idEnvio = rs.getLong("idenvio");
+		c.fechaEmision = txt(rs.getString("fecha_emision"));
+		c.redimeDesde = txt(rs.getString("redime_desde"));
+		c.redimeHasta = txt(rs.getString("redime_hasta"));
 		c.usuario = txt(rs.getString("usuario"));
 		c.creadaEn = txt(rs.getString("creada_en"));
 		c.ultimoCalculoEn = txt(rs.getString("ultimo_calculo_en"));

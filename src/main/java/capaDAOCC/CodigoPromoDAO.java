@@ -674,6 +674,23 @@ public class CodigoPromoDAO {
 	 */
 	public static Emision emitirValor(final Connection cn, final int idOferta, final int idCliente,
 			final double valor, final String concepto, final String usuario) throws SQLException {
+		return emitirValor(cn, idOferta, idCliente, valor, concepto, usuario, null);
+	}
+
+	/**
+	 * Igual, pero con una fecha de vencimiento fija en vez de los dias de la
+	 * oferta.
+	 *
+	 * La necesita el bono de recompra: la campana dice "se redime del 5 al 7 de
+	 * octubre", no "vence a los N dias". Con los dias de la oferta, emitir un
+	 * dia mas tarde correria el vencimiento y el mensaje que ya se le mando al
+	 * cliente quedaria mintiendo.
+	 *
+	 * @param vence fecha exacta de vencimiento, o null para usar los dias de la oferta
+	 */
+	public static Emision emitirValor(final Connection cn, final int idOferta, final int idCliente,
+			final double valor, final String concepto, final String usuario, final String vence)
+			throws SQLException {
 		final Emision e = new Emision();
 		if (valor <= 0) {
 			e.error = "El bono quedo en cero: no se emite.";
@@ -711,22 +728,28 @@ public class CodigoPromoDAO {
 			e.error = "La oferta no admite redencion parcial: el bono no podria llevar su valor.";
 			return e;
 		}
-		if (dias <= 0) {
+		final boolean fechaFija = vence != null && vence.length() >= 10;
+		if (!fechaFija && dias <= 0) {
 			e.error = "La oferta no tiene dias de caducidad: un bono tiene que vencer.";
 			return e;
 		}
 
 		final String codigo = generarCodigo(cn);
-		try (PreparedStatement ps = cn.prepareStatement("insert into oferta_cliente (idoferta, idcliente, observacion,"
+		final String sql = "insert into oferta_cliente (idoferta, idcliente, observacion,"
 				+ " PQRS, codigo_promocion, usuario_ingreso, fecha_caducidad, saldo, cliente, idenvio)"
-				+ " values (?, ?, ?, 0, ?, ?, date_add(curdate(), interval ? day), ?, '', null)",
-				Statement.RETURN_GENERATED_KEYS)) {
+				+ " values (?, ?, ?, 0, ?, ?, " + (fechaFija ? "?" : "date_add(curdate(), interval ? day)")
+				+ ", ?, '', null)";
+		try (PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 			ps.setInt(1, idOferta);
 			ps.setInt(2, idCliente);
 			ps.setString(3, recortar(concepto, 200));
 			ps.setString(4, codigo);
 			ps.setString(5, recortar(usuario, 20));
-			ps.setInt(6, dias);
+			if (fechaFija) {
+				ps.setString(6, vence.substring(0, 10));
+			} else {
+				ps.setInt(6, dias);
+			}
 			ps.setDouble(7, valor);
 			ps.executeUpdate();
 			try (ResultSet k = ps.getGeneratedKeys()) {

@@ -105,6 +105,34 @@
 							</div>
 						</div>
 
+						<div class="br-campo" style="border-top:1px solid #E2E6EC;padding-top:10px;">
+							<label class="br-rotulo" for="br-emision">El bono se env&iacute;a el d&iacute;a</label>
+							<input type="date" id="br-emision" class="form-control">
+							<div class="br-nota">
+								<b>Esto es lo que de verdad manda.</b> Antes de ese d&iacute;a el bono no
+								existe, as&iacute; que no se puede redimir. Al redimir el sistema solo mira
+								la fecha de <i>vencimiento</i>, nunca una de inicio: si el bono sale un
+								mi&eacute;rcoles, se usa el fin de semana. D&eacute;jelo en blanco y sale
+								apenas cierre la ventana de compra.
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-redesde">Se redime desde</label>
+								<input type="date" id="br-redesde" class="form-control">
+							</div>
+							<div class="col-xs-6 br-campo">
+								<label class="br-rotulo" for="br-rehasta">Se redime hasta</label>
+								<input type="date" id="br-rehasta" class="form-control">
+							</div>
+						</div>
+						<div class="br-nota" style="margin-top:-6px;margin-bottom:11px;">
+							El <b>hasta</b> es el vencimiento del bono y sirve todo ese d&iacute;a. El
+							<b>desde</b> es para el mensaje; qui&eacute;n lo hace cumplir es el d&iacute;a
+							de env&iacute;o de arriba.
+						</div>
+
 						<div class="row">
 							<div class="col-xs-6 br-campo">
 								<label class="br-rotulo" for="br-porcentaje">Se devuelve (%)</label>
@@ -157,6 +185,26 @@
 							<div class="br-nota" id="br-nota-repetible"></div>
 						</div>
 
+						<div class="br-campo" style="border-top:1px solid #E2E6EC;padding-top:10px;">
+							<label class="br-rotulo" for="br-abierta">&iquest;Qui&eacute;n se lo puede ganar?</label>
+							<select id="br-abierta" class="form-control">
+								<option value="S">Cualquiera que compre</option>
+								<option value="N">Solo a qui&eacute;n se le avis&oacute;</option>
+							</select>
+						</div>
+
+						<div class="br-campo" id="br-caja-envio" style="display:none;">
+							<label class="br-rotulo" for="br-envio">El env&iacute;o con el que se avis&oacute;</label>
+							<select id="br-envio" class="form-control"></select>
+							<div class="br-nota">
+								De ah&iacute; sale a qui&eacute;nes se les prometi&oacute; el bono. Solo cuentan
+								aquellos a los que el mensaje les <b>lleg&oacute;</b>: si el correo rebot&oacute;,
+								esa persona nunca supo que compr&aacute;ndo se ganaba algo.
+								<br>Mande primero la invitaci&oacute;n por <b>Env&iacute;o de Publicidad</b>
+								y despu&eacute;s esc&oacute;jala aqu&iacute;.
+							</div>
+						</div>
+
 						<div class="row">
 							<div class="col-xs-6 br-campo">
 								<label class="br-rotulo" for="br-estado">Estado</label>
@@ -177,6 +225,16 @@
 						<div class="br-nota" style="margin-top:-6px;">
 							D&eacute;jelo en <b>ensayo</b> la primera noche: calcula a cu&aacute;ntos les
 							dar&iacute;a y por cu&aacute;nto, sin repartir nada. Despu&eacute;s lo prende.
+						</div>
+
+						<div id="br-mensaje-tipo" style="display:none;margin-top:12px;">
+							<label class="br-rotulo">Lo que le tiene que decir al cliente</label>
+							<textarea id="br-texto-invitacion" class="form-control" rows="4"
+								readonly style="font-size:12px;background-color:#FFFDF3;"></textarea>
+							<div class="br-nota">
+								Sale de las fechas de arriba. C&oacute;pielo en la plantilla de Brevo para
+								que el mensaje y lo que el sistema va a hacer digan lo mismo.
+							</div>
 						</div>
 
 						<button type="button" id="br-guardar" class="btn btn-primary btn-block"

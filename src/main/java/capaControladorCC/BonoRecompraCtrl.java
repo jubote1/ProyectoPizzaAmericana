@@ -33,6 +33,11 @@ public class BonoRecompraCtrl {
 			o.put("productos", c.productos);
 			o.put("excluir_promociones", c.excluirPromociones ? "S" : "N");
 			o.put("repetible", c.repetible ? "S" : "N");
+			o.put("abierta", c.abierta ? "S" : "N");
+			o.put("idenvio", c.idEnvio);
+			o.put("fecha_emision", c.fechaEmision);
+			o.put("redime_desde", c.redimeDesde);
+			o.put("redime_hasta", c.redimeHasta);
 			o.put("estado", c.estado);
 			o.put("emitir", c.emitir ? "S" : "N");
 			o.put("avisar", c.avisar ? "S" : "N");
@@ -79,6 +84,39 @@ public class BonoRecompraCtrl {
 					+ " enorme y no hay forma de saber cuanto se puede llegar a regalar.");
 			return (r.toJSONString());
 		}
+		//Una campana por invitacion sin envio no tiene publico. Guardarla asi
+		//dejaria una campana que el barrido no va a emitir nunca, y nadie
+		//sabria por que.
+		if (!c.abierta && c.idEnvio <= 0) {
+			r.put("error", "La campana es por invitacion: escoja el envio con el que se aviso."
+					+ " De ahi sale a quienes se les prometio el bono.");
+			return (r.toJSONString());
+		}
+		//Las fechas de redencion tienen que ser coherentes entre si y con la
+		//emision. Un bono que vence antes de emitirse nace muerto, y eso no se
+		//descubre hasta que el cliente lo intenta usar.
+		if (c.redimeHasta.length() >= 10) {
+			final String emite = c.fechaEmision.length() >= 10 ? c.fechaEmision : c.compraHasta;
+			if (c.redimeHasta.compareTo(emite) < 0) {
+				r.put("error", "El bono vencerira el " + c.redimeHasta + ", antes de emitirse el "
+						+ emite + ". Nadie alcanzaria a usarlo.");
+				return (r.toJSONString());
+			}
+		}
+		if (c.redimeDesde.length() >= 10 && c.redimeHasta.length() >= 10
+				&& c.redimeHasta.compareTo(c.redimeDesde) < 0) {
+			r.put("error", "La redencion termina antes de empezar.");
+			return (r.toJSONString());
+		}
+		//Emitir antes de que cierre la ventana de compra dejaria por fuera las
+		//compras de los ultimos dias, que es justo lo que se prometio sumar.
+		if (c.fechaEmision.length() >= 10 && c.fechaEmision.compareTo(c.compraHasta) <= 0) {
+			r.put("error", "El bono se emitiria el " + c.fechaEmision + ", antes de que cierre la"
+					+ " ventana de compra el " + c.compraHasta + ". Las compras de los ultimos dias"
+					+ " no alcanzarian a entrar.");
+			return (r.toJSONString());
+		}
+
 		//La oferta tiene que poder llevar el valor del bono. Se revisa aqui y no
 		//al emitir: descubrirlo de noche, con la ventana ya cerrada, seria tarde.
 		final String problema = capaDAOCC.CodigoPromoDAO.problemaParaEnviar(c.idOferta);

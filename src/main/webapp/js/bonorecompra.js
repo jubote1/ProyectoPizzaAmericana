@@ -17,11 +17,93 @@ $(document).ready(function () {
 	brCargarProductos();
 	brCargar();
 
+	brCargarEnvios();
+
 	$('#br-guardar').click(brGuardar);
 	$('#br-nueva').click(function () { brLimpiar(); });
 	$('#br-repetible').change(brNotaRepetible);
+	$('#br-abierta').change(brPintarPublico);
+
+	//El texto del mensaje sale de las fechas: si cambian, cambia.
+	$('#br-desde,#br-hasta,#br-emision,#br-redesde,#br-rehasta,#br-porcentaje,#br-tope')
+		.on('change keyup', brPintarInvitacion);
+
 	brNotaRepetible();
+	brPintarPublico();
 });
+
+/* El selector del envio solo tiene sentido cuando la campana es por invitacion. */
+function brPintarPublico() {
+	var porInvitacion = ($('#br-abierta').val() === 'N');
+	$('#br-caja-envio').toggle(porInvitacion);
+	brPintarInvitacion();
+}
+
+/*
+ * Arma la frase que hay que decirle al cliente, con las fechas de la campana.
+ *
+ * No es adorno. El mensaje y lo que el sistema va a hacer TIENEN que decir lo
+ * mismo: prometer "del 5 al 7" y que el bono venza el 6 es la clase de error
+ * que se descubre con el cliente parado en la caja.
+ */
+function brPintarInvitacion() {
+	var compraD = $('#br-desde').val();
+	var compraH = $('#br-hasta').val();
+	var emision = $('#br-emision').val();
+	var redD = $('#br-redesde').val();
+	var redH = $('#br-rehasta').val();
+	var pct = $('#br-porcentaje').val();
+	var tope = $('#br-tope').val();
+
+	if (!compraD || !redH) { $('#br-mensaje-tipo').hide(); return; }
+
+	var cuando = (compraD === compraH) ? ('el ' + brDia(compraD))
+		: ('entre el ' + brDia(compraD) + ' y el ' + brDia(compraH));
+	var vigencia = (redD && redD !== redH)
+		? ('entre el ' + brDia(redD) + ' y el ' + brDia(redH))
+		: ('hasta el ' + brDia(redH));
+
+	var t = 'Has sido seleccionado: todo lo que compres ' + cuando +
+		' (sin promociones) te lo devolvemos en un bono del ' + pct + '%';
+	if (tope) { t += ', hasta ' + tope; }
+	t += '.\n\nTe llega ' + (emision ? ('el ' + brDia(emision)) : 'apenas cierre el plazo') +
+		' y lo puedes redimir ' + vigencia + ', en punto de venta o llamando.';
+
+	$('#br-texto-invitacion').val(t);
+	$('#br-mensaje-tipo').show();
+}
+
+/* "2026-10-05" -> "lunes 5 de octubre". */
+function brDia(iso) {
+	if (!iso || iso.length < 10) { return (''); }
+	var dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+	var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+		'septiembre', 'octubre', 'noviembre', 'diciembre'];
+	//Se parte la cadena en vez de dejar que Date lea el ISO: leyendolo asi lo
+	//toma como UTC y en Colombia muestra el dia anterior.
+	var a = Number(iso.substring(0, 4));
+	var m = Number(iso.substring(5, 7)) - 1;
+	var d = Number(iso.substring(8, 10));
+	var f = new Date(a, m, d);
+	return (dias[f.getDay()] + ' ' + d + ' de ' + meses[m]);
+}
+
+/* Los envios de publicidad, para amarrar el bono al que llevo la invitacion. */
+function brCargarEnvios() {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'ultimas', cuantas: 30 }, function (d) {
+		var lista = (d && d.campanas) ? d.campanas : [];
+		var html = '<option value="">Escoja el env&iacute;o</option>';
+		for (var i = 0; i < lista.length; i++) {
+			var e = lista[i];
+			html += '<option value="' + e.idenvio + '">' + brEscapar(e.nombre) +
+				' — ' + String(e.creada_en || '').substring(0, 10) +
+				' (' + brMiles(e.enviados) + ' recibieron)</option>';
+		}
+		$('#br-envio').html(html);
+	}).fail(function () {
+		$('#br-envio').html('<option value="">No se pudieron cargar los env&iacute;os</option>');
+	});
+}
 
 // ===========================================================================
 // Plomeria
@@ -180,10 +262,16 @@ function brLimpiar() {
 	$('#br-excluirpromos').prop('checked', true);
 	$('#br-repetible').prop('checked', false);
 	$('#br-estado').val('BORRADOR');
+	$('#br-emision').val('');
+	$('#br-redesde').val('');
+	$('#br-rehasta').val('');
+	$('#br-abierta').val('S');
+	$('#br-envio').val('');
 	$('#br-emitir').val('N');
 	$('#br-caja-emisiones').hide();
 	$('#br-mensaje').html('');
 	brNotaRepetible();
+	brPintarPublico();
 }
 
 function brSeleccionar(idBono) {
@@ -204,8 +292,14 @@ function brSeleccionar(idBono) {
 	$('#br-excluirpromos').prop('checked', c.excluir_promociones !== 'N');
 	$('#br-repetible').prop('checked', c.repetible === 'S');
 	$('#br-estado').val(c.estado);
+	$('#br-emision').val(String(c.fecha_emision || '').substring(0, 10));
+	$('#br-redesde').val(String(c.redime_desde || '').substring(0, 10));
+	$('#br-rehasta').val(String(c.redime_hasta || '').substring(0, 10));
+	$('#br-abierta').val(c.abierta === 'N' ? 'N' : 'S');
+	$('#br-envio').val(c.idenvio ? String(c.idenvio) : '');
 	$('#br-emitir').val(c.emitir);
 	brNotaRepetible();
+	brPintarPublico();
 	brVerEmisiones(c.idbono);
 }
 
@@ -226,7 +320,12 @@ function brGuardar() {
 		repetible: $('#br-repetible').is(':checked') ? 'S' : 'N',
 		estado: $('#br-estado').val(),
 		emitir: $('#br-emitir').val(),
-		avisar: 'S'
+		avisar: 'S',
+		abierta: $('#br-abierta').val(),
+		idenvio: $('#br-envio').val() || 0,
+		fecha_emision: $('#br-emision').val(),
+		redime_desde: $('#br-redesde').val(),
+		redime_hasta: $('#br-rehasta').val()
 	};
 
 	//Prender la emision reparte plata de verdad. Se pregunta con las cifras

@@ -82,6 +82,11 @@ public class BonoRecompra extends HttpServlet {
 		//daria y por cuanto, y despues se prende.
 		c.emitir = "S".equals(request.getParameter("emitir"));
 		c.avisar = !"N".equals(request.getParameter("avisar"));
+		c.abierta = !"N".equals(request.getParameter("abierta"));
+		c.idEnvio = largo(request.getParameter("idenvio"));
+		c.fechaEmision = texto(request.getParameter("fecha_emision"));
+		c.redimeDesde = texto(request.getParameter("redime_desde"));
+		c.redimeHasta = texto(request.getParameter("redime_hasta"));
 		c.usuario = AccesoCRM.usuarioEnSesion(request);
 		return (c);
 	}
@@ -93,6 +98,14 @@ public class BonoRecompra extends HttpServlet {
 	private int entero(final String v) {
 		try {
 			return (Integer.parseInt(v.trim()));
+		} catch (final Exception e) {
+			return (0);
+		}
+	}
+
+	private long largo(final String v) {
+		try {
+			return (Long.parseLong(v.trim()));
 		} catch (final Exception e) {
 			return (0);
 		}
