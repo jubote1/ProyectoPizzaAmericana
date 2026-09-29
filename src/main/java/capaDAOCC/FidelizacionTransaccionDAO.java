@@ -537,4 +537,84 @@ public class FidelizacionTransaccionDAO {
 		}
 		return(resumen);
 	}
+
+	/** El siguiente vencimiento de un cliente, con los puntos que caen ese dia. */
+	public static class ProximoVencimiento {
+
+		/** Fecha del vencimiento mas cercano, en aaaa-mm-dd. Vacia si no hay. */
+		public String fecha = "";
+
+		/** Puntos que se vencen en esa fecha. */
+		public double puntos = 0;
+
+		public boolean hay() {
+			return (this.fecha.length() > 0);
+		}
+	}
+
+	/**
+	 * El proximo vencimiento de un cliente.
+	 *
+	 * Se diferencia de obtenerResumenPuntos en que aquella responde "de aqui a
+	 * N dias", que es lo que necesita el aviso masivo, y esta responde "lo
+	 * siguiente que se vence, sea cuando sea", que es lo que hay que ponerle al
+	 * cliente en el correo de una redencion: si el cliente redimio hoy y lo
+	 * proximo se le vence dentro de ocho meses, hay que decirselo igual.
+	 *
+	 * Solo cuenta lo que queda: acumulaciones no vencidas y con puntos sin
+	 * redimir. Y solo de hoy en adelante: una fecha ya pasada que siga sin
+	 * marcar como vencida es un dato viejo, no un aviso.
+	 *
+	 * Devuelve el objeto vacio si no hay nada que vencer o si la consulta falla.
+	 * Quien lo use tiene que distinguir "no hay" de "no se pudo": decirle al
+	 * cliente que no tiene puntos por vencer cuando lo que paso fue que la
+	 * consulta se cayo es peor que no decirle nada.
+	 */
+	public static ProximoVencimiento obtenerProximoVencimiento(String correo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ProximoVencimiento proximo = new ProximoVencimiento();
+		if(correo == null || correo.trim().isEmpty())
+		{
+			return(proximo);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if(con1 == null)
+		{
+			return(proximo);
+		}
+		//Se agrupa por fecha y se toma la primera: asi los puntos que se
+		//informan son los que de verdad caen ESE dia, y no todo lo que le queda
+		//al cliente. Decirle "se te vencen 3.000 el 14 de marzo" cuando ese dia
+		//solo se vencen 200 lo haria venir corriendo por nada, y la proxima vez
+		//no creeria el aviso.
+		String consulta = "select t.fecha_vencimiento as vence,"
+				+ " SUM(t.puntos - t.puntos_redimidos) as puntos"
+				+ " from fidelizacion_transaccion t"
+				+ " where t.correo = ? and t.vencidos = 'N' and t.puntos > t.puntos_redimidos"
+				+ "   and t.fecha_vencimiento >= CURDATE()"
+				+ " group by t.fecha_vencimiento"
+				+ " having puntos > 0"
+				+ " order by t.fecha_vencimiento limit 1";
+		try(PreparedStatement pst = con1.prepareStatement(consulta))
+		{
+			pst.setString(1, correo.trim());
+			try(ResultSet rs = pst.executeQuery())
+			{
+				if(rs.next())
+				{
+					proximo.fecha = rs.getString("vence") == null ? "" : rs.getString("vence");
+					proximo.puntos = rs.getDouble("puntos");
+				}
+			}
+			con1.close();
+		}
+		catch(Exception e)
+		{
+			logger.error("obtenerProximoVencimiento: " + e.toString());
+			try { con1.close(); } catch(Exception e1) { }
+		}
+		return(proximo);
+	}
 }

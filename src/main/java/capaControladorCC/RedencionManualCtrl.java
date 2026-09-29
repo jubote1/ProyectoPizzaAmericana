@@ -1,17 +1,11 @@
 package capaControladorCC;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import capaDAOCC.ParametrosDAO;
 import capaDAOCC.RedencionManualDAO;
-import capaModeloCC.Correo;
-import utilidadesCC.ControladorEnvioCorreo;
-import utilidadesCC.PlantillaCorreoRedencionManual;
 
 /**
  * Redencion manual de puntos.
@@ -152,8 +146,12 @@ public class RedencionManualCtrl {
 		}
 
 		//---- 3. El aviso al cliente ---------------------------------------
-		final String fecha = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-		final String avisoError = avisar(cliente, puntos, saldo, motivo.trim(), tienda, fecha);
+		//Aca SI se espera a que el correo salga, al reves de las redenciones
+		//normales. Esto lo hace una persona sentada frente a la pantalla, que
+		//puede esperar dos segundos y que tiene que enterarse si no salio,
+		//porque entonces le toca avisarle al cliente por otro lado.
+		final String avisoError = utilidadesCC.AvisoRedencion.enviarAhora(
+				cliente.correo, puntos, motivo.trim(), idTienda, true);
 
 		respuesta.put("respuesta", "OK");
 		respuesta.put("idredencion", Integer.valueOf(idRedencion));
@@ -167,54 +165,6 @@ public class RedencionManualCtrl {
 						: " NO se pudo enviar el correo: " + avisoError
 						+ " La redencion si quedo hecha; hay que avisarle al cliente por otro medio."));
 		return (respuesta.toJSONString());
-	}
-
-	/**
-	 * Manda el correo. Devuelve vacio si salio, o el motivo si no.
-	 *
-	 * Nunca lanza: un problema mandando el correo no puede tumbar una redencion
-	 * que ya quedo hecha.
-	 */
-	private String avisar(final RedencionManualDAO.Cliente cliente, final double puntos,
-			final double saldo, final String motivo, final String tienda, final String fecha) {
-		try {
-			if (!ControladorEnvioCorreo.esDireccionValida(cliente.correo)) {
-				return ("la direccion [" + cliente.correo + "] no es una direccion valida.");
-			}
-
-			//La misma cuenta del aviso de vencimiento de puntos, que es el otro
-			//correo del plan de fidelizacion. Si no esta parametrizada se cae a
-			//la de siempre, para que el aviso salga igual.
-			String cuenta = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOVENCIMIENTO");
-			String clave = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOVENCIMIENTO");
-			if (cuenta == null || cuenta.trim().length() == 0) {
-				cuenta = ParametrosDAO.retornarValorAlfanumerico("CUENTACORREOWOMPI");
-				clave = ParametrosDAO.retornarValorAlfanumerico("CLAVECORREOWOMPI");
-			}
-			if (cuenta == null || cuenta.trim().length() == 0) {
-				return ("no hay una cuenta de correo parametrizada.");
-			}
-
-			final Correo correo = new Correo();
-			correo.setUsuarioCorreo(cuenta);
-			correo.setContrasena(clave);
-			correo.setAsunto(PlantillaCorreoRedencionManual.asunto());
-			correo.setMensaje(PlantillaCorreoRedencionManual.cuerpo(cliente.nombre, puntos, saldo,
-					motivo, tienda, fecha));
-
-			final ArrayList destinos = new ArrayList();
-			destinos.add(cliente.correo);
-
-			final ControladorEnvioCorreo envio = new ControladorEnvioCorreo(correo, destinos);
-			final ControladorEnvioCorreo.ResultadoEnvio resultado = envio.enviarConReintentos();
-			if (resultado == ControladorEnvioCorreo.ResultadoEnvio.ENVIADO) {
-				return ("");
-			}
-			return ("el servidor de correo respondio " + resultado + ".");
-		} catch (final Exception e) {
-			System.out.println("RedencionManualCtrl.avisar: " + e.toString());
-			return ("error tecnico enviando el correo.");
-		}
 	}
 
 	@SuppressWarnings("unchecked")
