@@ -216,7 +216,7 @@ public class EnviadorPublicidadDirecta {
 			final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo(
 					"CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
 			final Correo correo = new Correo();
-			correo.setAsunto(asunto);
+			correo.setAsunto(personalizar(asunto, d.nombre));
 			correo.setUsuarioCorreo(cuenta.getCuentaCorreo());
 			correo.setContrasena(cuenta.getClaveCorreo());
 			correo.setMensaje(mensaje != null ? mensaje : personalizar(tanda.cuerpo, d.nombre));
@@ -250,7 +250,7 @@ public class EnviadorPublicidadDirecta {
 	}
 
 	/**
-	 * Reemplaza el nombre en el cuerpo.
+	 * Reemplaza el nombre en el asunto o en el cuerpo -se usa para los dos-.
 	 *
 	 * Se deja deliberadamente simple -una marca, {{nombre}}- porque el correo
 	 * directo es la salida de emergencia, no el canal de campanas grandes. Para

@@ -612,7 +612,7 @@ public class EnvioPublicidadCtrl {
 				final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo(
 						"CUENTACORREOREPORTES", "CLAVECORREOREPORTE");
 				final Correo correo = new Correo();
-				correo.setAsunto("[PRUEBA] " + (asunto == null ? "" : asunto));
+				correo.setAsunto("[PRUEBA] " + (asunto == null ? "" : asunto.replace("{{nombre}}", "Prueba")));
 				correo.setUsuarioCorreo(cuenta.getCuentaCorreo());
 				correo.setContrasena(cuenta.getClaveCorreo());
 				correo.setMensaje(cuerpo == null ? "" : cuerpo.replace("{{nombre}}", "Prueba"));
