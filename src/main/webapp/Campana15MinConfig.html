@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>Campaña 15 Minutos o Gratis</title>
+		<meta charset="utf-8" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/marca.css" rel="stylesheet" type="text/css" />
+		<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.css">
+		<style>
+			.dia-check { display:inline-block; margin-right:14px; }
+			.dia-check label { font-weight:normal; margin-left:4px; }
+			.lista-exclusiones li { padding:4px 0; }
+			.nota-ayuda { color:#888; font-size:12px; margin-top:6px; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function(data){
+					respuesta =  data[0].respuesta;
+					usuario = data[0].nombreusuario;
+				}
+			});
+			switch(respuesta)
+			{
+				case 'OK':
+					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKA':
+					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				default:
+					location.href = server +"Index.html";
+					break;
+			}
+		</script>
+
+		<div class="container">
+			<h3>Campaña 15 Minutos o Gratis</h3>
+			<p class="nota-ayuda">
+				Configura el mensaje, las fechas/días/horario en que aplica y el porcentaje de
+				retención cuando el pago fue por datáfono o QR. Solo aplica en punto de venta.
+			</p>
+
+			<div class="panel panel-default">
+				<div class="panel-heading">Configuración</div>
+				<div class="panel-body">
+					<input type="hidden" id="idcampana" value="0">
+					<div class="row">
+						<div class="col-md-8">
+							<label for="nombre">Nombre</label>
+							<input type="text" id="nombre" class="form-control" maxlength="80">
+						</div>
+						<div class="col-md-4">
+							<label>&nbsp;</label>
+							<div class="checkbox">
+								<label><input type="checkbox" id="activo"> Campaña activa</label>
+							</div>
+						</div>
+					</div>
+					<div class="row" style="margin-top:10px;">
+						<div class="col-md-6">
+							<label for="mensajeoperario">Mensaje para el operario (diálogo al finalizar el pedido)</label>
+							<textarea id="mensajeoperario" class="form-control" rows="2" maxlength="300"></textarea>
+						</div>
+						<div class="col-md-6">
+							<label for="mensajefactura">Mensaje impreso en la factura</label>
+							<textarea id="mensajefactura" class="form-control" rows="2" maxlength="300"></textarea>
+						</div>
+					</div>
+					<div class="row" style="margin-top:10px;">
+						<div class="col-md-3">
+							<label for="fechadesde">Fecha desde</label>
+							<input type="text" id="fechadesde" class="form-control" placeholder="aaaa-mm-dd">
+						</div>
+						<div class="col-md-3">
+							<label for="fechahasta">Fecha hasta</label>
+							<input type="text" id="fechahasta" class="form-control" placeholder="aaaa-mm-dd">
+						</div>
+						<div class="col-md-3">
+							<label for="horadesde">Hora desde</label>
+							<input type="text" id="horadesde" class="form-control" placeholder="hh:mm:ss">
+						</div>
+						<div class="col-md-3">
+							<label for="horahasta">Hora hasta</label>
+							<input type="text" id="horahasta" class="form-control" placeholder="hh:mm:ss">
+						</div>
+					</div>
+					<div class="row" style="margin-top:10px;">
+						<div class="col-md-12">
+							<label>Días en que aplica</label><br>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="0" checked><label>Lunes</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="1" checked><label>Martes</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="2" checked><label>Miércoles</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="3" checked><label>Jueves</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="4" checked><label>Viernes</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="5" checked><label>Sábado</label></span>
+							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="6" checked><label>Domingo</label></span>
+						</div>
+					</div>
+					<div class="row" style="margin-top:10px;">
+						<div class="col-md-3">
+							<label for="minutospromesa">Minutos prometidos</label>
+							<input type="number" id="minutospromesa" class="form-control" value="15" min="1">
+						</div>
+						<div class="col-md-3">
+							<label for="porcentajeretencion">Retención medio virtual (%)</label>
+							<input type="number" id="porcentajeretencion" class="form-control" value="5" min="0" max="100" step="0.5">
+						</div>
+						<div class="col-md-3">
+							<label>&nbsp;</label>
+							<input type="button" class="btn btn-primary btn-block" value="Guardar" onclick="guardarConfiguracion()">
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="panel panel-default">
+				<div class="panel-heading">Especialidades excluidas</div>
+				<div class="panel-body">
+					<p class="nota-ayuda">
+						Se excluyen automáticamente las especialidades premium (las que suman valor
+						adicional al elegirlas en el POS). Esta lista es para excluir por nombre las que
+						tardan más en prepararse aunque no sumen precio, como "The Works" o "Con Todo".
+					</p>
+					<div class="row">
+						<div class="col-md-6">
+							<input type="text" id="nuevaexclusion" class="form-control" placeholder="Nombre exacto de la especialidad/producto" maxlength="120">
+						</div>
+						<div class="col-md-3">
+							<input type="button" class="btn btn-default" value="Agregar exclusión" onclick="agregarExclusion()">
+						</div>
+					</div>
+					<ul class="list-unstyled lista-exclusiones" id="listaExclusiones" style="margin-top:14px;"></ul>
+				</div>
+			</div>
+		</div>
+
+	<script src="js/campana15minconfig.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.1.0/jquery-confirm.min.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechadesde").datepicker($.datepicker.regional["es"]);
+		$("#fechahasta").datepicker($.datepicker.regional["es"]);
+		$("#fechadesde").datepicker("option", "dateFormat", "yy-mm-dd");
+		$("#fechahasta").datepicker("option", "dateFormat", "yy-mm-dd");
+		cargarConfiguracion();
+	</script>
+	</body>
+</html>
