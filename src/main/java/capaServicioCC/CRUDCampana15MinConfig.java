@@ -60,9 +60,6 @@ public class CRUDCampana15MinConfig extends HttpServlet {
 				String mensajeFactura = request.getParameter("mensajefactura");
 				String fechaDesde = request.getParameter("fechadesde");
 				String fechaHasta = request.getParameter("fechahasta");
-				String diasSemana = request.getParameter("diassemana");
-				String horaDesde = request.getParameter("horadesde");
-				String horaHasta = request.getParameter("horahasta");
 				int minutosPromesa = 15;
 				try {
 					minutosPromesa = Integer.parseInt(request.getParameter("minutospromesa"));
@@ -76,10 +73,11 @@ public class CRUDCampana15MinConfig extends HttpServlet {
 					porcentajeRetencion = 5;
 				}
 				out.write(ctrl.guardarConfiguracion(idCampana, nombre, activo, mensajeOperario, mensajeFactura,
-						fechaDesde, fechaHasta, diasSemana, horaDesde, horaHasta, minutosPromesa,
-						porcentajeRetencion));
+						fechaDesde, fechaHasta, minutosPromesa, porcentajeRetencion));
 			} else if (operacion == 4) {
 				out.write(ctrl.obtenerConfiguraciones());
+			} else if (operacion == 5) {
+				out.write(ctrl.obtenerTiendasDesactivadasHoy());
 			} else {
 				out.write("[]");
 			}

@@ -11,9 +11,11 @@ import org.apache.log4j.Logger;
 import conexionCC.ConexionBaseDatos;
 
 /**
- * Configuracion de la campana "15 minutos o gratis" (fechas, dias, horario,
- * mensajes, retencion por medio de pago virtual). El POS la lee por servicio
- * y nunca bloquea la venta si no hay respuesta o no hay campana activa.
+ * Configuracion de la campana "15 minutos o gratis" (fechas, mensajes,
+ * retencion por medio de pago virtual). El horario, que varia por dia de la
+ * semana, vive aparte en Campana15MinHorarioDiaDAO. El POS la lee por
+ * servicio y nunca bloquea la venta si no hay respuesta o no hay campana
+ * activa.
  */
 public class Campana15MinConfigDAO {
 
@@ -32,12 +34,6 @@ public class Campana15MinConfigDAO {
 
 		public String fechaHasta = "";
 
-		public String diasSemana = "SSSSSSS";
-
-		public String horaDesde = "";
-
-		public String horaHasta = "";
-
 		public int minutosPromesa = 15;
 
 		public double porcentajeRetencionMedioVirtual = 5;
@@ -52,18 +48,17 @@ public class Campana15MinConfigDAO {
 		c.mensajeFactura = rs.getString("mensaje_factura") == null ? "" : rs.getString("mensaje_factura");
 		c.fechaDesde = rs.getString("fecha_desde") == null ? "" : rs.getString("fecha_desde");
 		c.fechaHasta = rs.getString("fecha_hasta") == null ? "" : rs.getString("fecha_hasta");
-		c.diasSemana = rs.getString("dias_semana") == null ? "SSSSSSS" : rs.getString("dias_semana");
-		c.horaDesde = rs.getString("hora_desde") == null ? "" : rs.getString("hora_desde");
-		c.horaHasta = rs.getString("hora_hasta") == null ? "" : rs.getString("hora_hasta");
 		c.minutosPromesa = rs.getInt("minutos_promesa");
 		c.porcentajeRetencionMedioVirtual = rs.getDouble("porcentaje_retencion_medio_virtual");
 		return (c);
 	}
 
 	/**
-	 * La campana activa AHORA MISMO: activo='S', fecha y dia de la semana y hora
-	 * dentro de ventana. Es la unica consulta que le importa al POS; si no
-	 * devuelve nada, el flujo del pedido sigue normal.
+	 * La campana activa AHORA MISMO: activo='S', fecha dentro de ventana, y el
+	 * horario configurado para el dia de la semana de hoy (campana_15min_horario_dia)
+	 * activo y con la hora actual dentro de ventana (o "todo el dia").
+	 * Es la unica consulta que le importa al POS; si no devuelve nada, el flujo
+	 * del pedido sigue normal.
 	 */
 	public static Config obtenerActivaAhora() {
 		Logger logger = Logger.getLogger("log_file");
@@ -71,16 +66,17 @@ public class Campana15MinConfigDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		Config resultado = null;
 		try {
-			// dias_semana es 'LMMJVSD' en el orden lunes..domingo, char 'S'/'N' en la
-			// posicion del dia de hoy. DAYOFWEEK de MySQL da 1=domingo..7=sabado, se
-			// traduce a 1=lunes..7=domingo restando y con modulo.
-			String sql = "select * from campana_15min_config where activo = 'S'"
-					+ " and (fecha_desde is null or fecha_desde <= curdate())"
-					+ " and (fecha_hasta is null or fecha_hasta >= curdate())"
-					+ " and (hora_desde is null or hora_desde <= curtime())"
-					+ " and (hora_hasta is null or hora_hasta >= curtime())"
-					+ " and substring(dias_semana, ((dayofweek(curdate()) + 5) mod 7) + 1, 1) = 'S'"
-					+ " order by idcampana desc limit 1";
+			// dayofweek() de MySQL da 1=domingo..7=sabado; se traduce a 1=lunes..7=domingo.
+			String sql = "select c.* from campana_15min_config c"
+					+ " join campana_15min_horario_dia h on h.idcampana = c.idcampana"
+					+ "   and h.dia_semana = ((dayofweek(curdate()) + 5) mod 7) + 1"
+					+ " where c.activo = 'S' and h.activo = 'S'"
+					+ " and (c.fecha_desde is null or c.fecha_desde <= curdate())"
+					+ " and (c.fecha_hasta is null or c.fecha_hasta >= curdate())"
+					+ " and (h.todo_el_dia = 'S'"
+					+ "      or ((h.hora_desde is null or h.hora_desde <= curtime())"
+					+ "          and (h.hora_hasta is null or h.hora_hasta >= curtime())))"
+					+ " order by c.idcampana desc limit 1";
 			PreparedStatement pst = con1.prepareStatement(sql);
 			ResultSet rs = pst.executeQuery();
 			if (rs.next()) {
@@ -156,9 +152,9 @@ public class Campana15MinConfigDAO {
 		try {
 			if (c.idCampana <= 0) {
 				PreparedStatement pst = con1.prepareStatement("insert into campana_15min_config (nombre, activo,"
-						+ " mensaje_operario, mensaje_factura, fecha_desde, fecha_hasta, dias_semana, hora_desde,"
-						+ " hora_hasta, minutos_promesa, porcentaje_retencion_medio_virtual)"
-						+ " values (?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+						+ " mensaje_operario, mensaje_factura, fecha_desde, fecha_hasta, minutos_promesa,"
+						+ " porcentaje_retencion_medio_virtual) values (?,?,?,?,?,?,?,?)",
+						Statement.RETURN_GENERATED_KEYS);
 				llenarParametros(pst, c);
 				pst.executeUpdate();
 				ResultSet rs = pst.getGeneratedKeys();
@@ -170,10 +166,9 @@ public class Campana15MinConfigDAO {
 			} else {
 				PreparedStatement pst = con1.prepareStatement("update campana_15min_config set nombre = ?,"
 						+ " activo = ?, mensaje_operario = ?, mensaje_factura = ?, fecha_desde = ?, fecha_hasta = ?,"
-						+ " dias_semana = ?, hora_desde = ?, hora_hasta = ?, minutos_promesa = ?,"
-						+ " porcentaje_retencion_medio_virtual = ? where idcampana = ?");
+						+ " minutos_promesa = ?, porcentaje_retencion_medio_virtual = ? where idcampana = ?");
 				llenarParametros(pst, c);
-				pst.setInt(12, c.idCampana);
+				pst.setInt(9, c.idCampana);
 				pst.executeUpdate();
 				pst.close();
 			}
@@ -205,18 +200,7 @@ public class Campana15MinConfigDAO {
 		} else {
 			pst.setString(6, c.fechaHasta);
 		}
-		pst.setString(7, c.diasSemana == null || c.diasSemana.length() != 7 ? "SSSSSSS" : c.diasSemana);
-		if (c.horaDesde == null || c.horaDesde.trim().equals("")) {
-			pst.setNull(8, java.sql.Types.TIME);
-		} else {
-			pst.setString(8, c.horaDesde);
-		}
-		if (c.horaHasta == null || c.horaHasta.trim().equals("")) {
-			pst.setNull(9, java.sql.Types.TIME);
-		} else {
-			pst.setString(9, c.horaHasta);
-		}
-		pst.setInt(10, c.minutosPromesa <= 0 ? 15 : c.minutosPromesa);
-		pst.setDouble(11, c.porcentajeRetencionMedioVirtual);
+		pst.setInt(7, c.minutosPromesa <= 0 ? 15 : c.minutosPromesa);
+		pst.setDouble(8, c.porcentajeRetencionMedioVirtual);
 	}
 }

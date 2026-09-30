@@ -3,9 +3,14 @@
  * Hoy solo se administra una campana (la primera que exista); si el usuario
  * quiere una segunda campana en el futuro, este mismo CRUD ya soporta
  * multiples filas, solo falta un selector en pantalla.
+ *
+ * El horario NO es uniforme entre semana: cada dia se guarda por separado
+ * (campana_15min_horario_dia), "todo el dia" o con una franja horaria.
  */
 
 var idCampanaActual = 0;
+
+var NOMBRES_DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 function cargarConfiguracion()
 {
@@ -15,10 +20,16 @@ function cargarConfiguracion()
         {
             pintarConfiguracion(datos[0]);
             cargarExclusiones(datos[0].idcampana);
+            cargarHorario(datos[0].idcampana);
+        }
+        else
+        {
+            pintarHorarioPorDefecto();
         }
     }).fail(function(){
         $.alert('No se pudo cargar la configuracion. Si acaba de iniciar sesion, recargue la pagina.');
     });
+    cargarTiendasDesactivadas();
 }
 
 function pintarConfiguracion(c)
@@ -31,25 +42,12 @@ function pintarConfiguracion(c)
     $('#mensajefactura').val(c.mensajefactura);
     $('#fechadesde').val(c.fechadesde || '');
     $('#fechahasta').val(c.fechahasta || '');
-    $('#horadesde').val(c.horadesde || '');
-    $('#horahasta').val(c.horahasta || '');
     $('#minutospromesa').val(c.minutospromesa);
     $('#porcentajeretencion').val(c.porcentajeretencionmediovirtual);
-
-    var dias = String(c.diassemana || 'SSSSSSS');
-    $('.chk-dia').each(function(){
-        var pos = Number($(this).data('pos'));
-        $(this).prop('checked', dias.charAt(pos) === 'S');
-    });
 }
 
 function guardarConfiguracion()
 {
-    var diasSemana = '';
-    $('.chk-dia').each(function(){
-        diasSemana += $(this).is(':checked') ? 'S' : 'N';
-    });
-
     var params = $.param({
         idoperacion: 1,
         idcampana: $('#idcampana').val(),
@@ -59,9 +57,6 @@ function guardarConfiguracion()
         mensajefactura: $('#mensajefactura').val(),
         fechadesde: $('#fechadesde').val(),
         fechahasta: $('#fechahasta').val(),
-        diassemana: diasSemana,
-        horadesde: $('#horadesde').val(),
-        horahasta: $('#horahasta').val(),
         minutospromesa: $('#minutospromesa').val(),
         porcentajeretencionmediovirtual: $('#porcentajeretencion').val()
     });
@@ -70,10 +65,15 @@ function guardarConfiguracion()
     {
         if(data.respuesta === 'OK')
         {
+            var esNueva = idCampanaActual <= 0;
             idCampanaActual = Number(data.idcampana);
             $('#idcampana').val(data.idcampana);
             $.alert({ title: 'Guardado', content: 'La configuracion quedo guardada.', type: 'green' });
             cargarExclusiones(idCampanaActual);
+            if(esNueva)
+            {
+                pintarHorarioPorDefecto();
+            }
         }
         else
         {
@@ -82,6 +82,137 @@ function guardarConfiguracion()
     }).fail(function(){
         $.alert('No hubo respuesta del servidor al guardar.');
     });
+}
+
+function cargarHorario(idCampana)
+{
+    $.getJSON(server + 'CRUDCampana15MinHorario?idoperacion=4&idcampana=' + idCampana, function(datos)
+    {
+        if(datos && datos.length > 0)
+        {
+            pintarHorario(datos);
+        }
+        else
+        {
+            pintarHorarioPorDefecto();
+        }
+    });
+}
+
+function pintarHorarioPorDefecto()
+{
+    // Sin datos guardados todavia: todos los dias activos, todo el dia.
+    var dias = [];
+    for(var d = 1; d <= 7; d++)
+    {
+        dias.push({ diasemana: d, activo: 'S', todoeldia: 'S', horadesde: '', horahasta: '' });
+    }
+    pintarHorario(dias);
+}
+
+function pintarHorario(dias)
+{
+    var porDia = {};
+    for(var i = 0; i < dias.length; i++)
+    {
+        porDia[Number(dias[i].diasemana)] = dias[i];
+    }
+
+    var filas = '';
+    for(var d = 1; d <= 7; d++)
+    {
+        var h = porDia[d] || { activo: 'S', todoeldia: 'S', horadesde: '', horahasta: '' };
+        var todoElDia = h.todoeldia === 'S';
+        filas += '<tr data-dia="' + d + '">'
+            + '<td><input type="checkbox" class="chk-dia-activo" ' + (h.activo === 'S' ? 'checked' : '') + '></td>'
+            + '<td>' + NOMBRES_DIAS[d - 1] + '</td>'
+            + '<td><input type="checkbox" class="chk-todo-el-dia" ' + (todoElDia ? 'checked' : '') + ' onchange="alternarHorasDia(this)"></td>'
+            + '<td><input type="text" class="form-control input-sm txt-hora-desde" placeholder="hh:mm:ss" value="' + escaparTexto(h.horadesde || '') + '" ' + (todoElDia ? 'disabled' : '') + '></td>'
+            + '<td><input type="text" class="form-control input-sm txt-hora-hasta" placeholder="hh:mm:ss" value="' + escaparTexto(h.horahasta || '') + '" ' + (todoElDia ? 'disabled' : '') + '></td>'
+            + '</tr>';
+    }
+    $('#tablaHorario tbody').html(filas);
+}
+
+function alternarHorasDia(checkbox)
+{
+    var fila = $(checkbox).closest('tr');
+    var deshabilitar = $(checkbox).is(':checked');
+    fila.find('.txt-hora-desde, .txt-hora-hasta').prop('disabled', deshabilitar);
+}
+
+function guardarHorario()
+{
+    if(idCampanaActual <= 0)
+    {
+        $.alert('Guarde primero la configuracion antes del horario.');
+        return;
+    }
+
+    var dias = [];
+    $('#tablaHorario tbody tr').each(function(){
+        var fila = $(this);
+        dias.push({
+            diasemana: Number(fila.data('dia')),
+            activo: fila.find('.chk-dia-activo').is(':checked') ? 'S' : 'N',
+            todoeldia: fila.find('.chk-todo-el-dia').is(':checked') ? 'S' : 'N',
+            horadesde: fila.find('.txt-hora-desde').val(),
+            horahasta: fila.find('.txt-hora-hasta').val()
+        });
+    });
+
+    $.ajax({
+        url: server + 'CRUDCampana15MinHorario?idcampana=' + idCampanaActual,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(dias),
+        dataType: 'json',
+        success: function(data){
+            if(data.respuesta === 'OK')
+            {
+                $.alert({ title: 'Guardado', content: 'El horario quedo guardado.', type: 'green' });
+            }
+            else
+            {
+                $.alert('No se pudo guardar el horario.');
+            }
+        },
+        error: function(){
+            $.alert('No hubo respuesta del servidor al guardar el horario.');
+        }
+    });
+}
+
+function cargarTiendasDesactivadas()
+{
+    $.getJSON(server + 'CRUDCampana15MinConfig?idoperacion=5', function(datos)
+    {
+        pintarTiendasDesactivadas(datos || []);
+    });
+}
+
+function pintarTiendasDesactivadas(datos)
+{
+    if(datos.length === 0)
+    {
+        $('#tablaDesactivadas tbody').html('');
+        $('#sinDesactivadas').show();
+        return;
+    }
+    $('#sinDesactivadas').hide();
+    var filas = '';
+    for(var i = 0; i < datos.length; i++)
+    {
+        var d = datos[i];
+        filas += '<tr>'
+            + '<td>' + escaparTexto(d.tienda) + '</td>'
+            + '<td>' + escaparTexto(d.motivo) + '</td>'
+            + '<td>' + escaparTexto(d.usuarioautoriza) + '</td>'
+            + '<td>' + escaparTexto(d.usuariodesactiva) + '</td>'
+            + '<td>' + escaparTexto(d.fechahora) + '</td>'
+            + '</tr>';
+    }
+    $('#tablaDesactivadas tbody').html(filas);
 }
 
 function cargarExclusiones(idCampana)

@@ -92,28 +92,6 @@
 							<input type="text" id="fechahasta" class="form-control" placeholder="aaaa-mm-dd">
 						</div>
 						<div class="col-md-3">
-							<label for="horadesde">Hora desde</label>
-							<input type="text" id="horadesde" class="form-control" placeholder="hh:mm:ss">
-						</div>
-						<div class="col-md-3">
-							<label for="horahasta">Hora hasta</label>
-							<input type="text" id="horahasta" class="form-control" placeholder="hh:mm:ss">
-						</div>
-					</div>
-					<div class="row" style="margin-top:10px;">
-						<div class="col-md-12">
-							<label>Días en que aplica</label><br>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="0" checked><label>Lunes</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="1" checked><label>Martes</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="2" checked><label>Miércoles</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="3" checked><label>Jueves</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="4" checked><label>Viernes</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="5" checked><label>Sábado</label></span>
-							<span class="dia-check"><input type="checkbox" class="chk-dia" data-pos="6" checked><label>Domingo</label></span>
-						</div>
-					</div>
-					<div class="row" style="margin-top:10px;">
-						<div class="col-md-3">
 							<label for="minutospromesa">Minutos prometidos</label>
 							<input type="number" id="minutospromesa" class="form-control" value="15" min="1">
 						</div>
@@ -121,11 +99,58 @@
 							<label for="porcentajeretencion">Retención medio virtual (%)</label>
 							<input type="number" id="porcentajeretencion" class="form-control" value="5" min="0" max="100" step="0.5">
 						</div>
-						<div class="col-md-3">
-							<label>&nbsp;</label>
-							<input type="button" class="btn btn-primary btn-block" value="Guardar" onclick="guardarConfiguracion()">
+					</div>
+					<div class="row" style="margin-top:10px;">
+						<div class="col-md-12">
+							<input type="button" class="btn btn-primary" value="Guardar" onclick="guardarConfiguracion()">
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<div class="panel panel-default">
+				<div class="panel-heading">Horario por día</div>
+				<div class="panel-body">
+					<p class="nota-ayuda">
+						El horario real no es igual toda la semana: cada día se configura por separado,
+						"todo el día" o con una franja horaria puntual.
+					</p>
+					<table class="table table-condensed" id="tablaHorario">
+						<thead>
+							<tr>
+								<th style="width:30px;">Aplica</th>
+								<th>Día</th>
+								<th style="width:130px;">Todo el día</th>
+								<th style="width:130px;">Hora desde</th>
+								<th style="width:130px;">Hora hasta</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<input type="button" class="btn btn-primary" value="Guardar horario" onclick="guardarHorario()">
+				</div>
+			</div>
+
+			<div class="panel panel-default">
+				<div class="panel-heading">Tiendas desactivadas hoy</div>
+				<div class="panel-body">
+					<p class="nota-ayuda">
+						Cuando el administrador de una tienda desactiva la campaña por hoy (horno dañado,
+						falta de personal, etc.) queda registrado aquí. Se reactiva sola al día siguiente.
+					</p>
+					<table class="table table-condensed table-striped" id="tablaDesactivadas">
+						<thead>
+							<tr>
+								<th>Tienda</th>
+								<th>Motivo</th>
+								<th>Autorizó</th>
+								<th>Desactivó</th>
+								<th>Hora</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<p class="nota-ayuda" id="sinDesactivadas" style="display:none;">Ninguna tienda la ha desactivado hoy.</p>
 				</div>
 			</div>
 

@@ -1,16 +1,22 @@
 package capaControladorCC;
 
+import java.util.ArrayList;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.Campana15MinAplicadoDAO;
 import capaDAOCC.Campana15MinConfigDAO;
 import capaDAOCC.Campana15MinExclusionDAO;
+import capaDAOCC.Campana15MinHorarioDiaDAO;
 import capaDAOCC.Campana15MinIncumplimientoDAO;
+import capaDAOCC.Campana15MinTiendaDesactivadaDAO;
 
 /**
- * Campana "15 minutos o gratis" en punto de venta: configuracion, exclusiones,
- * registro de aplicacion desde el POS y cola de revision de incumplimientos.
+ * Campana "15 minutos o gratis" en punto de venta: configuracion, horario por
+ * dia de la semana, exclusiones, registro de aplicacion desde el POS, cola de
+ * revision de incumplimientos, y visibilidad de tiendas que la desactivaron
+ * por hoy.
  */
 public class Campana15MinCtrl {
 
@@ -70,17 +76,14 @@ public class Campana15MinCtrl {
 		fila.put("mensajefactura", c.mensajeFactura);
 		fila.put("fechadesde", c.fechaDesde);
 		fila.put("fechahasta", c.fechaHasta);
-		fila.put("diassemana", c.diasSemana);
-		fila.put("horadesde", c.horaDesde);
-		fila.put("horahasta", c.horaHasta);
 		fila.put("minutospromesa", c.minutosPromesa);
 		fila.put("porcentajeretencionmediovirtual", c.porcentajeRetencionMedioVirtual);
 		return (fila);
 	}
 
 	public String guardarConfiguracion(int idCampana, String nombre, boolean activo, String mensajeOperario,
-			String mensajeFactura, String fechaDesde, String fechaHasta, String diasSemana, String horaDesde,
-			String horaHasta, int minutosPromesa, double porcentajeRetencion) {
+			String mensajeFactura, String fechaDesde, String fechaHasta, int minutosPromesa,
+			double porcentajeRetencion) {
 		Campana15MinConfigDAO.Config c = new Campana15MinConfigDAO.Config();
 		c.idCampana = idCampana;
 		c.nombre = nombre == null || nombre.trim().equals("") ? "15 MINUTOS O GRATIS" : nombre.trim();
@@ -89,9 +92,6 @@ public class Campana15MinCtrl {
 		c.mensajeFactura = mensajeFactura == null ? "" : mensajeFactura;
 		c.fechaDesde = fechaDesde;
 		c.fechaHasta = fechaHasta;
-		c.diasSemana = diasSemana;
-		c.horaDesde = horaDesde;
-		c.horaHasta = horaHasta;
 		c.minutosPromesa = minutosPromesa;
 		c.porcentajeRetencionMedioVirtual = porcentajeRetencion;
 		String resultado = Campana15MinConfigDAO.guardar(c);
@@ -126,6 +126,75 @@ public class Campana15MinCtrl {
 		JSONObject respuesta = new JSONObject();
 		respuesta.put("respuesta", "OK");
 		return (respuesta.toJSONString());
+	}
+
+	/** Los 7 dias de horario de una campana, 1=lunes..7=domingo. */
+	public String obtenerHorarioSemana(int idCampana) {
+		JSONArray lista = new JSONArray();
+		for (Campana15MinHorarioDiaDAO.HorarioDia h : Campana15MinHorarioDiaDAO.obtenerPorCampana(idCampana)) {
+			JSONObject fila = new JSONObject();
+			fila.put("diasemana", h.diaSemana);
+			fila.put("activo", h.activo ? "S" : "N");
+			fila.put("todoeldia", h.todoElDia ? "S" : "N");
+			fila.put("horadesde", h.horaDesde);
+			fila.put("horahasta", h.horaHasta);
+			lista.add(fila);
+		}
+		return (lista.toJSONString());
+	}
+
+	/**
+	 * Guarda los 7 dias de la semana de una sola vez.
+	 *
+	 * @param dias arreglo de objetos con diasemana, activo (S/N), todoeldia (S/N),
+	 *             horadesde, horahasta
+	 */
+	public String guardarHorarioSemana(int idCampana, JSONArray dias) {
+		ArrayList<Campana15MinHorarioDiaDAO.HorarioDia> lista = new ArrayList<>();
+		for (Object o : dias) {
+			JSONObject item = (JSONObject) o;
+			Campana15MinHorarioDiaDAO.HorarioDia h = new Campana15MinHorarioDiaDAO.HorarioDia();
+			h.idCampana = idCampana;
+			h.diaSemana = ((Long) item.get("diasemana")).intValue();
+			h.activo = "S".equals(item.get("activo"));
+			h.todoElDia = "S".equals(item.get("todoeldia"));
+			h.horaDesde = (String) item.get("horadesde");
+			h.horaHasta = (String) item.get("horahasta");
+			lista.add(h);
+		}
+		String resultado = Campana15MinHorarioDiaDAO.guardarSemana(idCampana, lista);
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("respuesta", "exitoso".equals(resultado) ? "OK" : "NOK");
+		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * El POS reporta, best-effort, que un administrador de tienda desactivo la
+	 * campana por hoy. Solo para visibilidad central; el POS ya decidio y
+	 * aplico la desactivacion localmente sin esperar esta respuesta.
+	 */
+	public String registrarTiendaDesactivada(int idTienda, String fecha, String motivo, String usuarioAutoriza,
+			String usuarioDesactiva) {
+		Campana15MinTiendaDesactivadaDAO.registrar(idTienda, fecha, motivo, usuarioAutoriza, usuarioDesactiva);
+		JSONObject respuesta = new JSONObject();
+		respuesta.put("respuesta", "OK");
+		return (respuesta.toJSONString());
+	}
+
+	/** Tiendas desactivadas hoy, para la pantalla de configuracion. */
+	public String obtenerTiendasDesactivadasHoy() {
+		JSONArray lista = new JSONArray();
+		for (Campana15MinTiendaDesactivadaDAO.Desactivacion d : Campana15MinTiendaDesactivadaDAO.obtenerDeHoy()) {
+			JSONObject fila = new JSONObject();
+			fila.put("idtienda", d.idTienda);
+			fila.put("tienda", d.nombreTienda);
+			fila.put("motivo", d.motivo);
+			fila.put("usuarioautoriza", d.usuarioAutoriza);
+			fila.put("usuariodesactiva", d.usuarioDesactiva);
+			fila.put("fechahora", d.fechaHora);
+			lista.add(fila);
+		}
+		return (lista.toJSONString());
 	}
 
 	/** Cola de incumplimientos para la pantalla de revision. */
