@@ -51,6 +51,9 @@ public class BonoRecompra extends HttpServlet {
 			out.write(BonoRecompraCtrl.emisiones(entero(request.getParameter("idbono")),
 					entero(request.getParameter("cuantas"))));
 
+		} else if ("previsualizar".equals(accion)) {
+			out.write(BonoRecompraCtrl.previsualizar(entero(request.getParameter("idbono"))));
+
 		} else {
 			out.write("{\"error\":\"Accion no reconocida.\"}");
 		}

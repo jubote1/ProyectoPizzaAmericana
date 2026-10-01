@@ -158,6 +158,20 @@ public class BonoRecompraCtrl {
 	}
 
 	@SuppressWarnings("unchecked")
+	public static String previsualizar(final int idBono) {
+		final JSONObject r = new JSONObject();
+		if (idBono <= 0) {
+			r.put("error", "Falta escoger la campana.");
+			return (r.toJSONString());
+		}
+		final BonoRecompraDAO.Resultado res = BonoRecompraDAO.previsualizar(idBono);
+		r.put("califican", res.califican);
+		r.put("valor", res.valor);
+		r.put("aviso", res.aviso);
+		return (r.toJSONString());
+	}
+
+	@SuppressWarnings("unchecked")
 	public static String emisiones(final int idBono, final int cuantas) {
 		final JSONArray lista = new JSONArray();
 		final ArrayList<BonoRecompraDAO.Emision> emisiones =

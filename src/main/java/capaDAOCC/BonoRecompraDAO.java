@@ -383,6 +383,40 @@ public class BonoRecompraDAO {
 		return (res);
 	}
 
+	/**
+	 * A cuantos les daria y por cuanto, con lo que ya se acumulo HOY.
+	 *
+	 * Es la misma cuenta de candidatos() que usa el cierre real, pero sin las
+	 * guardas de cuando se emite y sin emitir nada: sirve para ver el avance
+	 * cualquier dia, no solo el dia de emision. El numero puede subir si
+	 * siguen entrando pedidos antes de que el barrido cierre de verdad.
+	 */
+	public static Resultado previsualizar(final int idBono) {
+		final Resultado res = new Resultado();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+			final Campana c = obtener(cn, idBono);
+			if (c == null) {
+				res.aviso = "No existe esa campana.";
+				return (res);
+			}
+			final ArrayList<Emision> candidatos = candidatos(cn, c);
+			res.califican = candidatos.size();
+			for (int i = 0; i < candidatos.size(); i++) {
+				res.valor += candidatos.get(i).valor;
+			}
+			res.aviso = "Estimado con lo acumulado hasta ahora. No es definitivo: puede"
+					+ " subir si siguen entrando pedidos antes del cierre real.";
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("BonoRecompraDAO.previsualizar: " + e.toString());
+			res.aviso = "No se pudo calcular: " + e.toString();
+		} finally {
+			cerrar(cn);
+		}
+		return (res);
+	}
+
 	/** La fecha del servidor, que es la que manda; no la del equipo que llama. */
 	private static String hoy(final Connection cn) throws SQLException {
 		try (PreparedStatement ps = cn.prepareStatement("select curdate()")) {

@@ -21,6 +21,7 @@ $(document).ready(function () {
 
 	$('#br-guardar').click(brGuardar);
 	$('#br-nueva').click(function () { brLimpiar(); });
+	$('#br-refrescar-estimado').click(function () { if (brSeleccionada) { brVerEstimado(brSeleccionada); } });
 	$('#br-repetible').change(brNotaRepetible);
 	$('#br-abierta').change(brPintarPublico);
 
@@ -269,6 +270,7 @@ function brLimpiar() {
 	$('#br-envio').val('');
 	$('#br-emitir').val('N');
 	$('#br-caja-emisiones').hide();
+	$('#br-caja-estimado').hide();
 	$('#br-mensaje').html('');
 	brNotaRepetible();
 	brPintarPublico();
@@ -301,6 +303,7 @@ function brSeleccionar(idBono) {
 	brNotaRepetible();
 	brPintarPublico();
 	brVerEmisiones(c.idbono);
+	brVerEstimado(c.idbono);
 }
 
 function brGuardar() {
@@ -357,6 +360,31 @@ function brGuardar() {
 		$('#br-guardar').prop('disabled', false).text('Guardar la campaña');
 		brMensaje('br-aviso-mal', 'No se pudo guardar la campa&ntilde;a.');
 	});
+}
+
+// ===========================================================================
+// Como vamos (estimado, sin esperar al cierre real)
+// ===========================================================================
+
+function brVerEstimado(idBono) {
+	$('#br-caja-estimado').show();
+	$('#br-est-personas').text('...');
+	$('#br-est-valor').text('...');
+	$('#br-est-aviso').text('Calculando...');
+	$.getJSON(server + 'BonoRecompra', { accion: 'previsualizar', idbono: idBono },
+		function (d) {
+			if (d.error) {
+				$('#br-est-personas').text('-');
+				$('#br-est-valor').text('-');
+				$('#br-est-aviso').text(d.error);
+				return;
+			}
+			$('#br-est-personas').text(d.califican);
+			$('#br-est-valor').text(brPesos(d.valor));
+			$('#br-est-aviso').text(d.aviso || '');
+		}).fail(function () {
+			$('#br-est-aviso').text('No se pudo calcular el estimado.');
+		});
 }
 
 // ===========================================================================
