@@ -78,34 +78,34 @@ SELECT c.idcategoria, nuevos.ambito, nuevos.idvalor, 'S'
                       AND ya.idvalor = nuevos.idvalor);
 
 -- ===========================================================================
--- 3. EL PARAMETRO DEL REPROCESO, QUE NO EXISTIA
+-- 3. SE BORRA UN PARAMETRO QUE NO DEBIO EXISTIR
 --
--- ServicioSemanalVentaIntegralReproceso lee FECHAREPROCESOVENTAINTEGRAL de
--- general.parametros, y esa fila nunca se creo: el proceso arrancaba, no
--- encontraba fecha utilizable y se salia diciendolo. Nadie lo habia notado
--- porque hasta ahora no habia hecho falta reprocesar.
+-- En la primera version de este script se creo FECHAREPROCESOVENTAINTEGRAL,
+-- porque el javadoc de ServicioSemanalVentaIntegralReproceso dice que el
+-- proceso lee ese parametro. El javadoc esta MAL: la constante del codigo es
 --
--- OJO: es un parametro PROPIO, distinto de FECHAREPROCESO, que usan los otros
--- reportes. Esta separado a proposito: reprocesar Venta Integral de una semana
--- no tiene por que arrastrar al resto de reportes a esa misma fecha.
+--     private static final String PARAM_FECHA_REPROCESO = "FECHAREPROCESO";
 --
--- Queda en 2026-09-28 -lunes- para reprocesar la semana del 21 al 27 de
--- septiembre, que es la primera en que se vendio Pinaronni. Se acepta corte
--- domingo o lunes.
+-- o sea el mismo parametro de todos los demas reprocesos, que es como debe
+-- ser: uno solo para toda la casa. El reproceso de Venta Integral siempre
+-- funciono; lo que estaba equivocado era el comentario, y de paso esta nota.
+--
+-- La fila creada no la lee nadie, asi que se borra para que no confunda al
+-- siguiente que busque de donde sale la fecha.
 -- ===========================================================================
 
-INSERT INTO general.parametros (valorparametro, valornumerico, valortexto, valornumericod)
-SELECT 'FECHAREPROCESOVENTAINTEGRAL', 0,
-       '2026-09-28', 0 FROM DUAL
- WHERE NOT EXISTS (SELECT 1 FROM general.parametros
-                    WHERE valorparametro = 'FECHAREPROCESOVENTAINTEGRAL');
+DELETE FROM general.parametros WHERE valorparametro = 'FECHAREPROCESOVENTAINTEGRAL';
 
 -- ===========================================================================
 -- COMO QUEDO
 -- ===========================================================================
 
+-- Tiene que quedar FECHAREPROCESO -y FECHAREPROCESO2, que usa el cierre de
+-- inventario para la fecha anterior- y NO debe aparecer el de venta integral.
 SELECT valorparametro, valortexto AS fecha_de_corte
-  FROM general.parametros WHERE valorparametro = 'FECHAREPROCESOVENTAINTEGRAL';
+  FROM general.parametros
+ WHERE valorparametro LIKE 'FECHAREPROCESO%'
+ ORDER BY valorparametro;
 
 SELECT idcategoria, nombre, abreviatura, tipodato, medicion_tienda,
        excluye_anulados_tienda, medicion_cc, activo, orden
