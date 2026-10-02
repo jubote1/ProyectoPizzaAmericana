@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>PROMOCIONES DEL REPORTE DIARIO</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="Expires" content="0">
+		<meta http-equiv="Cache-Control" content="no-cache, mustrevalidate">
+		<meta http-equiv="Pragma" content="no-cache">
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<style>
+			body { background-color: #f4f6f8; }
+			.panel-pr { background: #fff; border: 1px solid #ddd; border-radius: 6px;
+				padding: 16px 20px; margin-bottom: 14px; }
+			.titulo-pr { color: #20287f; font-weight: 700; font-size: 17px; margin: 0 0 4px; }
+			.sub-pr { color: #777; font-size: 12.5px; margin: 0 0 12px; }
+			.rotulo-pr { font-size: 11px; color: #777; text-transform: uppercase;
+				letter-spacing: .5px; margin-bottom: 3px; display: block; }
+
+			.promo { border: 1px solid #e2e6ec; border-radius: 6px; margin-bottom: 10px; background: #fff; }
+			.promo.apagada { opacity: .55; }
+			.promo-cab { padding: 10px 14px; border-bottom: 1px solid #eef1f5; cursor: pointer; }
+			.promo-cab:hover { background: #fafbfc; }
+			.promo-nombre { font-weight: 700; color: #20287f; font-size: 15px; }
+			.promo-cuerpo { padding: 12px 14px; display: none; background: #fcfcfd; }
+
+			.etiqueta { display: inline-block; padding: 2px 8px; border-radius: 10px;
+				font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+			.et-propia { background: #dbe3f7; color: #20287f; }
+			.et-plataforma { background: #fdebd0; color: #7d6608; }
+			.et-apagada { background: #e4e7ec; color: #4a5260; }
+
+			.prod { border-bottom: 1px solid #eef1f5; padding: 6px 0; font-size: 13px; }
+			.prod:last-child { border-bottom: none; }
+			.prod .id { color: #888; font-size: 11.5px; }
+			.prod .vend { color: #16704f; font-weight: 700; }
+			.prod .cero { color: #c0392b; font-style: italic; }
+
+			.aviso { padding: 10px 14px; border-radius: 4px; font-size: 13.5px; margin-bottom: 14px; }
+			.aviso-ok { background: #d5f5e3; color: #1e6b3a; border: 1px solid #b6dec9; }
+			.aviso-mal { background: #fadbd8; color: #922b21; border: 1px solid #f0bcbc; }
+
+			.resultado { border: 1px solid #e2e6ec; border-radius: 4px; max-height: 270px;
+				overflow-y: auto; margin-top: 8px; background: #fff; }
+			.resultado .fila { padding: 7px 10px; border-bottom: 1px solid #f2f4f7; font-size: 13px; }
+			.resultado .fila:hover { background: #f7f9fc; }
+			.ocupado { color: #c0392b; font-size: 11.5px; }
+			.nota { color: #888; font-size: 12px; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json', type: 'post', async: false,
+				success: function (data) { respuesta = data[0].respuesta; usuario = data[0].nombreusuario; }
+			});
+			switch (respuesta) {
+				case 'OK':
+					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKA':
+					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKP':
+					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				default:
+					location.href = server + "Index.html";
+					break;
+			}
+		</script>
+
+		<div class="container" style="max-width:1000px;">
+
+			<h3 class="titulo-pr" style="font-size:22px;margin-top:18px;">Promociones del reporte diario</h3>
+			<p class="sub-pr">
+				Esto es lo que el reporte de cada madrugada mide y manda por correo. Una promoci&oacute;n
+				es una fila aqu&iacute;, no un cambio en el programa: agregar una nueva no necesita que
+				nadie programe nada.
+			</p>
+
+			<div id="aviso" class="aviso" style="display:none;"></div>
+
+			<!-- ============ AGREGAR PROMOCION ============ -->
+			<div class="panel-pr">
+				<h4 class="titulo-pr">Nueva promoci&oacute;n</h4>
+				<div class="row">
+					<div class="col-sm-5">
+						<label class="rotulo-pr">Nombre</label>
+						<input type="text" id="nuevoNombre" class="form-control" maxlength="80"
+							placeholder="Ej: Combo Insuperable" autocomplete="off">
+					</div>
+					<div class="col-sm-3">
+						<label class="rotulo-pr">Tipo</label>
+						<select id="nuevoTipo" class="form-control">
+							<option value="N">Propia</option>
+							<option value="S">De plataforma (DiDi, Rappi)</option>
+						</select>
+					</div>
+					<div class="col-sm-2">
+						<label class="rotulo-pr">Orden</label>
+						<input type="text" id="nuevoOrden" class="form-control" value="140" style="text-align:right;">
+					</div>
+					<div class="col-sm-2">
+						<label class="rotulo-pr">&nbsp;</label>
+						<button id="btnCrear" class="btn btn-primary btn-block">Crear</button>
+					</div>
+				</div>
+				<p class="nota" style="margin-top:8px;">
+					Las de plataforma salen en una secci&oacute;n aparte del correo: la tienda no decide
+					esas ventas. El orden es el de la tabla, de menor a mayor.
+				</p>
+			</div>
+
+			<!-- ============ LISTA ============ -->
+			<div class="panel-pr">
+				<h4 class="titulo-pr">El cat&aacute;logo</h4>
+				<p class="sub-pr">
+					Haga clic en una promoci&oacute;n para ver y cambiar sus productos. El n&uacute;mero
+					en verde es lo que vendi&oacute; ese producto en los &uacute;ltimos 30 d&iacute;as;
+					si sale en rojo, revise que sea el producto correcto.
+				</p>
+				<div id="lista"></div>
+			</div>
+
+		</div>
+
+		<script src="js/promocionesreporte.js" type="text/javascript"></script>
+	</body>
+</html>
