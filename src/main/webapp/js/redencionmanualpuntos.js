@@ -64,12 +64,33 @@ function consultar() {
 		$('#datosCliente').show();
 		$('#panelResultado').hide();
 
+		//Las tres cifras se reinician ACA, antes de cualquier salida temprana.
+		//Estaban quedando con los valores del cliente anterior cuando la consulta
+		//se salia por inactivo o por saldo en cero: la pantalla mostraba el saldo
+		//de uno y el "le quedan" de otro, que en una pantalla que mueve puntos es
+		//de lo peor que puede pasar.
+		$('#puntos').val('');
+		$('#seDescuentan').text('0');
+		$('#leQuedan').text(formatear(data.puntos));
+		$('#cajaQueda').removeClass('malo').addClass('queda');
+
 		if (data.activo !== 'S') {
 			avisar('El cliente esta inactivo en el plan. Hay que activarlo antes de redimir.', 'ojo');
 			$('#bloqueRedencion').hide();
 			return;
 		}
-		if (data.puntos <= 0) {
+		//Un saldo negativo NO es lo mismo que un saldo en cero: es un descuadre,
+		//y hay que decirlo con esas palabras para que alguien lo corrija en vez
+		//de pensar que el cliente simplemente gasto sus puntos.
+		if (data.puntos < 0) {
+			$('#cajaQueda').removeClass('queda').addClass('malo');
+			avisar('OJO: el saldo de este cliente esta en NEGATIVO (' + formatear(data.puntos)
+				+ '). Eso no deberia pasar nunca y no se corrige redimiendo. '
+				+ 'Hay que revisar sus acumulaciones y redenciones antes de hacerle nada.', 'mal');
+			$('#bloqueRedencion').hide();
+			return;
+		}
+		if (data.puntos === 0) {
 			avisar('El cliente no tiene puntos para redimir.', 'ojo');
 			$('#bloqueRedencion').hide();
 			return;
