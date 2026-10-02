@@ -98,6 +98,28 @@ public class EnvioPublicidadCtrl {
 		return (r.toJSONString());
 	}
 
+	/**
+	 * Las especialidades favoritas, para el filtro de gusto.
+	 *
+	 * Van con el conteo porque la lista sola engana: hay familias con tres
+	 * personas. El numero "claras" es el publico real al que se le puede decir
+	 * "sabemos que te gusta".
+	 */
+	@SuppressWarnings("unchecked")
+	public static String familias() {
+		final JSONArray lista = new JSONArray();
+		for (final SegmentacionPersonaDAO.Familia x : SegmentacionPersonaDAO.familias()) {
+			final JSONObject j = new JSONObject();
+			j.put("familia", x.nombre);
+			j.put("personas", Integer.valueOf(x.personas));
+			j.put("claras", Integer.valueOf(x.claras));
+			lista.add(j);
+		}
+		final JSONObject r = new JSONObject();
+		r.put("familias", lista);
+		return (r.toJSONString());
+	}
+
 	@SuppressWarnings("unchecked")
 	public static String alcance(final SegmentacionPersonaDAO.Filtro filtro,
 			final CampanaDAO.FiltroExtra extra) {

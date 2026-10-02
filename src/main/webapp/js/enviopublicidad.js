@@ -20,6 +20,7 @@ $(document).ready(function () {
 
 	epCargarTiendas();
 	epCargarSegmentos();
+	epCargarFamilias();
 	epCargarPlantillas();
 	epCargarCampanas();
 	epCargarOfertas();
@@ -74,6 +75,12 @@ $(document).ready(function () {
 	//Cualquier cambio de filtro invalida la cuenta: no se puede enviar contra
 	//un numero que ya no corresponde a lo que esta en pantalla.
 	$('#ep-filtros').on('change', 'input,select', epLimpiarAlcance);
+
+	//Los dos minimos del gusto solo se ven cuando hay familia escogida: sin
+	//ella no quieren decir nada y solo estorban.
+	$('#ep-familia').change(function () {
+		$('#ep-gusto-detalle').toggle($(this).val() !== '');
+	});
 
 	//Las listas de seleccion multiple no traen forma obvia de desmarcar (hay que saber que es Ctrl+clic): un enlace debajo de cada una.
 	$('#ep-filtros select[multiple]').each(function () {
@@ -139,6 +146,14 @@ function epFiltro() {
 	//perdia.
 	d.canal = $('#ep-canalventa').val();
 
+	//El gusto. Los dos minimos solo viajan si hay familia escogida: sin ella
+	//no quieren decir nada y dejarian por fuera a todo el que no tiene perfil.
+	if ($('#ep-familia').val()) {
+		d.familiafavorita = $('#ep-familia').val();
+		if ($('#ep-fidelidadmin').val()) { d.fidelidadmin = $('#ep-fidelidadmin').val(); }
+		if ($('#ep-pizzasmin').val()) { d.pizzasmin = $('#ep-pizzasmin').val(); }
+	}
+
 	//Los que venian de la pantalla anterior.
 	if ($('#ep-diassinpublicidad').val()) { d.diassinpublicidad = $('#ep-diassinpublicidad').val(); }
 	if ($('#ep-excluirplataformas').is(':checked')) { d.excluirplataformas = 'S'; }
@@ -175,6 +190,31 @@ function epCargarTiendas() {
 		$('#ep-tienda').html(html);
 	}).fail(function () {
 		$('#ep-tienda').html('<option value="">Todas</option>');
+	});
+}
+
+/*
+ * Las especialidades favoritas, para el filtro de gusto.
+ *
+ * Salen de los datos y no de una lista escrita aqui: el dia que entre una
+ * especialidad nueva, aparece sola. Cada opcion dice a cuanta gente le gusta
+ * de verdad -la que cumple el minimo- porque la lista pelada engana: hay
+ * familias con tres personas, y escoger una de esas es armar una campana para
+ * nadie.
+ */
+function epCargarFamilias() {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'familias' }, function (d) {
+		var lista = (d && d.familias) ? d.familias : [];
+		var html = '<option value="">Cualquiera</option>';
+		for (var i = 0; i < lista.length; i++) {
+			html += '<option value="' + epEscapar(lista[i].familia) + '">' +
+				epEscapar(lista[i].familia) + ' (' + lista[i].claras + ')</option>';
+		}
+		$('#ep-familia').html(html);
+	}).fail(function () {
+		//Sin la lista el filtro no se puede usar, pero la pantalla sirve igual:
+		//es un filtro mas, no el envio.
+		$('#ep-familia').html('<option value="">Cualquiera</option>');
 	});
 }
 

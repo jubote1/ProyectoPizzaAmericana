@@ -109,6 +109,9 @@ public class EnvioPublicidad extends HttpServlet {
 		} else if ("tiendas".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.tiendas());
 
+		} else if ("familias".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.familias());
+
 		} else if ("segmentos".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.segmentos());
 
@@ -136,7 +139,8 @@ public class EnvioPublicidad extends HttpServlet {
 		final StringBuilder t = new StringBuilder();
 		final String[] campos = { "segmentos", "idtienda", "pedidosmin", "valormin",
 				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo",
-				"diassinpublicidad", "tiposcliente", "productos" };
+				"diassinpublicidad", "tiposcliente", "productos",
+				"familiafavorita", "fidelidadmin", "pizzasmin" };
 		for (int i = 0; i < campos.length; i++) {
 			final String valor = request.getParameter(campos[i]);
 			if (valor != null && valor.trim().length() > 0) {
