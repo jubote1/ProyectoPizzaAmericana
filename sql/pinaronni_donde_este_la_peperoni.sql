@@ -42,6 +42,9 @@ INSERT INTO pizzaamericana.especialidad_excepcion (idespecialidad, idproducto, p
 SELECT 40, x.idproducto, x.precio
   FROM pizzaamericana.especialidad_excepcion x
  WHERE x.idespecialidad = 24
+   -- La estofada NO: la Pinaronni estofada no se puede hacer. 311 es Pizza MD
+   -- Estofada y 312 Pizza GD Estofada.
+   AND x.idproducto NOT IN (311,312)
    AND NOT EXISTS (SELECT 1 FROM pizzaamericana.especialidad_excepcion ya
                     WHERE ya.idespecialidad = 40 AND ya.idproducto = x.idproducto);
 
@@ -53,6 +56,8 @@ INSERT INTO pizzaamericana.controla_especialidades (idexcepcion, idproducto, Ide
 SELECT c.idexcepcion, c.idproducto, 40
   FROM pizzaamericana.controla_especialidades c
  WHERE c.Idespecialidad = 24
+   -- Lo mismo: fuera las dos estofadas, que se controlan por producto.
+   AND NOT (c.idexcepcion = 0 AND c.idproducto IN (311,312))
    AND NOT EXISTS (SELECT 1 FROM pizzaamericana.controla_especialidades ya
                     WHERE ya.idexcepcion = c.idexcepcion AND ya.idproducto = c.idproducto
                       AND ya.Idespecialidad = 40);
