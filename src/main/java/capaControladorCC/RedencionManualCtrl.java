@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import capaDAOCC.FidelizacionRedencionDAO;
 import capaDAOCC.RedencionManualDAO;
 
 /**
@@ -36,6 +37,9 @@ public class RedencionManualCtrl {
 
 	/** Mas que esto en una sola operacion casi siempre es un dedo de mas. */
 	private static final double PUNTOS_MAXIMOS = 5000;
+
+	/** Con que queda marcada en fidelizacion_redencion. La columna es char(3). */
+	private static final String ORIGEN_MANUAL = "ADM";
 
 	/**
 	 * Lo que la pantalla necesita para mostrar antes de confirmar: si el cliente
@@ -125,25 +129,38 @@ public class RedencionManualCtrl {
 					+ " puntos y se intentan redimir " + formatear(puntos) + "."));
 		}
 
-		//---- 1. El descuento ---------------------------------------------
-		final double saldo = RedencionManualDAO.redimirConSaldo(cliente.correo, puntos);
-		if (saldo < 0) {
-			//El saldo alcanzaba hace un instante y ya no. Casi siempre es que la
-			//tienda alcanzo a redimir por el camino normal mientras se digitaba.
-			return (malo(respuesta, "No se pudo descontar: el saldo cambio mientras se procesaba. "
-					+ "Vuelva a consultar el cliente."));
+		//---- 1 y 2. El descuento y el registro, en una sola transaccion ----
+		//
+		//Se usa el MISMO camino que la redencion normal. La primera version de
+		//esta pantalla tenia el suyo propio -restaba el saldo y guardaba el
+		//registro- y eso dejaba a medias lo mas importante: no repartia el
+		//debito entre las acumulaciones de fidelizacion_transaccion.
+		//
+		//La consecuencia no se ve de inmediato pero es seria: el saldo del
+		//cliente baja, pero sus acumulaciones siguen diciendo que esos puntos
+		//estan disponibles. Con eso, el correo de vencimiento le avisa al
+		//cliente que se le vencen puntos que ya no tiene, y una reversa no
+		//sabria de que acumulacion devolverlos.
+		//
+		//ejecutarRedencion ademas valida el saldo DENTRO de la transaccion, con
+		//las filas bloqueadas, y aborta si las acumulaciones no cubren la
+		//redencion en vez de agrandar un descuadre que ya existia.
+		//
+		//El codigo va vacio a proposito: una redencion manual no pasa por codigo
+		//de redencion, y ejecutarRedencion lo admite.
+		final FidelizacionRedencionDAO.ResultadoRedencion hecho =
+				FidelizacionRedencionDAO.ejecutarRedencion("", cliente.correo, puntos, idTienda, 0,
+						usuario, ORIGEN_MANUAL, false);
+		if (!hecho.exitosa) {
+			return (malo(respuesta, "No se pudo redimir: " + hecho.detalleError));
 		}
+		final int idRedencion = hecho.idRedencion;
+		final double saldo = hecho.puntosRestantes;
 
-		//---- 2. El registro ----------------------------------------------
-		final int idRedencion = RedencionManualDAO.registrar(cliente.correo, puntos, idTienda,
-				usuario, motivo.trim());
-		if (idRedencion == 0) {
-			final boolean devuelto = RedencionManualDAO.devolver(cliente.correo, puntos);
-			return (malo(respuesta, "No se pudo registrar la redencion, asi que no se hizo. "
-					+ (devuelto ? "Los puntos quedaron como estaban."
-							: "OJO: los puntos se descontaron y NO se pudieron devolver. "
-							+ "Avise a sistemas con el correo del cliente.")));
-		}
+		//El motivo es lo unico que ejecutarRedencion no guarda, porque las
+		//redenciones normales no lo tienen. Se agrega aparte; si fallara, la
+		//redencion ya esta hecha y correcta, solo quedaria sin la explicacion.
+		RedencionManualDAO.guardarMotivo(idRedencion, motivo.trim());
 
 		//---- 3. El aviso al cliente ---------------------------------------
 		//Aca SI se espera a que el correo salga, al reves de las redenciones

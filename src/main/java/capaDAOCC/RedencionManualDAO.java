@@ -12,25 +12,30 @@ import conexionCC.ConexionBaseDatos;
  * La redencion manual de puntos: cuando la tienda no pudo hacerla y la hace
  * administracion.
  *
- * POR QUE NO SE REUSA ClienteFidelizacionDAO.redimirPuntosClienteFidelizacion
+ * ESTE ARCHIVO YA NO DESCUENTA PUNTOS, Y ESO ES UNA CORRECCION
  *
- * Ese metodo resta a ciegas:
+ * La primera version tenia su propio camino: restaba el saldo con la condicion
+ * dentro del UPDATE y guardaba el registro. Resolvia bien el saldo negativo,
+ * pero dejaba a medias lo mas importante: NO repartia el debito entre las
+ * acumulaciones de fidelizacion_transaccion.
  *
- *     update cliente_fidelizacion set puntos_vigentes = puntos_vigentes - X
+ * La consecuencia no se ve de inmediato. El saldo del cliente baja, pero sus
+ * acumulaciones siguen diciendo que esos puntos estan disponibles, y de ahi
+ * salen dos cosas: el correo que le avisa al cliente que se le vencen puntos
+ * -le avisaria de puntos que ya no tiene- y la reversa, que no sabria a que
+ * acumulacion devolverlos.
  *
- * Nadie revisa antes si el cliente tiene esos puntos, asi que redimir 200 a
- * quien tiene 50 lo deja en -150 y el sistema no dice nada. En el POS el riesgo
- * es limitado porque la pantalla valida antes de llamar; aca lo digita una
- * persona contra un saldo que leyo hace un rato, y entre que lo leyo y le da al
- * boton el cliente pudo haber redimido en la tienda.
+ * Aparecio mirando un saldo en negativo: cinco clientes tenian el saldo por
+ * debajo de su propio detalle, exactamente por el monto de las redenciones
+ * manuales que se les habian hecho.
  *
- * Por eso {@link #redimirConSaldo} pone la condicion DENTRO del update: si el
- * saldo ya no alcanza, no actualiza ninguna fila y se sabe. Es una sola
- * sentencia, asi que no hay ventana entre leer y escribir.
+ * Ahora la redencion la hace FidelizacionRedencionDAO.ejecutarRedencion, el
+ * mismo camino de las redenciones normales, que reparte el debito, escribe el
+ * detalle para que la reversa sea exacta, valida el saldo con las filas
+ * bloqueadas y aborta si las acumulaciones no cubren.
  *
- * Este archivo es nuevo a proposito y no toca ClienteFidelizacionDAO, que
- * Servicios compila por referencia de codigo fuente: cambiarlo obligaria a
- * desplegar los dos al tiempo.
+ * Aqui queda lo que es propio de la redencion manual: quien puede hacerla, a
+ * quien se le hace, y el motivo -que las redenciones normales no tienen-.
  */
 public class RedencionManualDAO {
 
@@ -104,109 +109,14 @@ public class RedencionManualDAO {
 	}
 
 	/**
-	 * Descuenta los puntos solo si el cliente los tiene.
+	 * Guarda el motivo de una redencion manual.
 	 *
-	 * La condicion del saldo va dentro del UPDATE, no en un SELECT previo: entre
-	 * un SELECT y un UPDATE cabe una redencion hecha en la tienda, y el cliente
-	 * terminaria con saldo negativo sin que nadie se entere.
-	 *
-	 * @return el saldo que le queda, o -1 si no se pudo porque ya no alcanzaba
+	 * Es lo unico que FidelizacionRedencionDAO.ejecutarRedencion no guarda,
+	 * porque las redenciones normales no tienen motivo. Va aparte y despues: la
+	 * redencion ya quedo hecha y correcta, y si esto fallara solo quedaria sin
+	 * la explicacion escrita.
 	 */
-	public static double redimirConSaldo(final String correo, final double puntos) {
-		final Logger logger = Logger.getLogger("log_file");
-		final ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection cn = null;
-		double restante = -1;
-		try {
-			cn = con.obtenerConexionBDPrincipal();
-
-			final PreparedStatement ps = cn.prepareStatement(
-					"UPDATE cliente_fidelizacion SET puntos_vigentes = puntos_vigentes - ?"
-					+ " WHERE correo = ? AND puntos_vigentes >= ?");
-			ps.setDouble(1, puntos);
-			ps.setString(2, correo);
-			ps.setDouble(3, puntos);
-			final int filas = ps.executeUpdate();
-			ps.close();
-
-			if (filas == 1) {
-				final PreparedStatement psl = cn.prepareStatement(
-						"SELECT puntos_vigentes FROM cliente_fidelizacion WHERE correo = ?");
-				psl.setString(1, correo);
-				final ResultSet rsl = psl.executeQuery();
-				if (rsl.next()) {
-					restante = rsl.getDouble(1);
-				}
-				rsl.close();
-				psl.close();
-			} else {
-				logger.warn("RedencionManualDAO: no alcanzo el saldo para redimir " + puntos
-						+ " de [" + correo + "]");
-			}
-		} catch (final Exception e) {
-			logger.error("RedencionManualDAO.redimirConSaldo: " + e.toString());
-			restante = -1;
-		} finally {
-			cerrar(cn);
-		}
-		return (restante);
-	}
-
-	/**
-	 * Deja el registro de la redencion.
-	 *
-	 * Guarda el motivo, que en una redencion manual es lo mas importante: es el
-	 * unico lugar donde queda escrito por que administracion le movio los puntos
-	 * a un cliente. La tienda queda en idtienda para saber donde se entrego el
-	 * producto, y el pedido va en cero porque no hay pedido: si lo hubiera, la
-	 * redencion se habria podido hacer por el camino normal.
-	 *
-	 * @return el id de la redencion, o 0 si no quedo registrada
-	 */
-	public static int registrar(final String correo, final double puntos, final int idTienda,
-			final String usuario, final String motivo) {
-		final Logger logger = Logger.getLogger("log_file");
-		final ConexionBaseDatos con = new ConexionBaseDatos();
-		Connection cn = null;
-		int idRedencion = 0;
-		try {
-			cn = con.obtenerConexionBDPrincipal();
-			final PreparedStatement ps = cn.prepareStatement(
-					"INSERT INTO fidelizacion_redencion"
-					+ " (correo, puntos_redimidos, idtienda, idpedidotienda, usuario, origen,"
-					+ "  estado, fecha_estado, usuario_estado, motivo)"
-					+ " VALUES (?, ?, ?, 0, ?, ?, 'CONFIRMADA', NOW(), ?, ?)",
-					java.sql.Statement.RETURN_GENERATED_KEYS);
-			ps.setString(1, correo);
-			ps.setDouble(2, puntos);
-			ps.setInt(3, idTienda);
-			ps.setString(4, recortar(usuario, 20));
-			ps.setString(5, ORIGEN);
-			ps.setString(6, recortar(usuario, 20));
-			ps.setString(7, recortar(motivo, 200));
-			ps.executeUpdate();
-			final ResultSet rs = ps.getGeneratedKeys();
-			if (rs.next()) {
-				idRedencion = rs.getInt(1);
-			}
-			rs.close();
-			ps.close();
-		} catch (final Exception e) {
-			logger.error("RedencionManualDAO.registrar: " + e.toString());
-		} finally {
-			cerrar(cn);
-		}
-		return (idRedencion);
-	}
-
-	/**
-	 * Devuelve los puntos de una redencion que quedo registrada pero cuyo
-	 * proceso no se pudo terminar.
-	 *
-	 * Solo se usa cuando el registro falla despues de haber descontado: sin esto
-	 * el cliente quedaria sin los puntos y sin constancia de a donde fueron.
-	 */
-	public static boolean devolver(final String correo, final double puntos) {
+	public static boolean guardarMotivo(final int idRedencion, final String motivo) {
 		final Logger logger = Logger.getLogger("log_file");
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
@@ -214,14 +124,13 @@ public class RedencionManualDAO {
 		try {
 			cn = con.obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
-					"UPDATE cliente_fidelizacion SET puntos_vigentes = puntos_vigentes + ?"
-					+ " WHERE correo = ?");
-			ps.setDouble(1, puntos);
-			ps.setString(2, correo);
-			listo = (ps.executeUpdate() == 1);
+					"UPDATE fidelizacion_redencion SET motivo = ? WHERE idredencion = ?");
+			ps.setString(1, recortar(motivo, 200));
+			ps.setInt(2, idRedencion);
+			listo = (ps.executeUpdate() > 0);
 			ps.close();
 		} catch (final Exception e) {
-			logger.error("RedencionManualDAO.devolver: " + e.toString());
+			logger.error("RedencionManualDAO.guardarMotivo: " + e.toString());
 		} finally {
 			cerrar(cn);
 		}
