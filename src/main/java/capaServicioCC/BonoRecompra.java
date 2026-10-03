@@ -90,6 +90,9 @@ public class BonoRecompra extends HttpServlet {
 		c.fechaEmision = texto(request.getParameter("fecha_emision"));
 		c.redimeDesde = texto(request.getParameter("redime_desde"));
 		c.redimeHasta = texto(request.getParameter("redime_hasta"));
+		c.horaDesde = texto(request.getParameter("hora_desde"));
+		c.horaHasta = texto(request.getParameter("hora_hasta"));
+		c.tiposPedido = texto(request.getParameter("tipos_pedido"));
 		c.usuario = AccesoCRM.usuarioEnSesion(request);
 		return (c);
 	}

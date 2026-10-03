@@ -60,6 +60,11 @@ public class BonoRecompraDAO {
 		public String redimeDesde = "";
 		/** Manda de verdad: de aqui sale la caducidad del codigo. */
 		public String redimeHasta = "";
+		/** La franja en que la compra cuenta. Vacias = todo el dia. */
+		public String horaDesde = "";
+		public String horaHasta = "";
+		/** idtipopedido separados por coma; vacio = todos. 2 y 3 son punto de venta. */
+		public String tiposPedido = "";
 		public String estado = "";
 		public boolean emitir = false;
 		public boolean avisar = true;
@@ -178,10 +183,11 @@ public class BonoRecompraDAO {
 						"update pizzaamericana.bono_campana set nombre=?, idoferta=?, compra_desde=?,"
 						+ " compra_hasta=?, porcentaje=?, tope_bono=?, base_minima=?, productos=?,"
 						+ " excluir_promociones=?, repetible=?, estado=?, emitir=?, avisar=?,"
-						+ " abierta=?, idenvio=?, fecha_emision=?, redime_desde=?, redime_hasta=?"
+						+ " abierta=?, idenvio=?, fecha_emision=?, redime_desde=?, redime_hasta=?,"
+						+ " hora_desde=?, hora_hasta=?, tipos_pedido=?"
 						+ " where idbono=?");
 				ponerCampos(ps, c);
-				ps.setInt(19, id);
+				ps.setInt(22, id);
 				ps.executeUpdate();
 				ps.close();
 			} else {
@@ -189,11 +195,12 @@ public class BonoRecompraDAO {
 						"insert into pizzaamericana.bono_campana (nombre, idoferta, compra_desde,"
 						+ " compra_hasta, porcentaje, tope_bono, base_minima, productos,"
 						+ " excluir_promociones, repetible, estado, emitir, avisar,"
-						+ " abierta, idenvio, fecha_emision, redime_desde, redime_hasta, usuario, creada_en)"
-						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
+						+ " abierta, idenvio, fecha_emision, redime_desde, redime_hasta,"
+						+ " hora_desde, hora_hasta, tipos_pedido, usuario, creada_en)"
+						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
 						Statement.RETURN_GENERATED_KEYS);
 				ponerCampos(ps, c);
-				ps.setString(19, c.usuario);
+				ps.setString(22, c.usuario);
 				ps.executeUpdate();
 				final ResultSet rs = ps.getGeneratedKeys();
 				if (rs.next()) {
@@ -234,6 +241,19 @@ public class BonoRecompraDAO {
 		fecha(ps, 16, c.fechaEmision);
 		fecha(ps, 17, c.redimeDesde);
 		fecha(ps, 18, c.redimeHasta);
+		hora(ps, 19, c.horaDesde);
+		hora(ps, 20, c.horaHasta);
+		ps.setString(21, c.tiposPedido);
+	}
+
+	/** Una hora vacia es NULL: significa "todo el dia", no las doce de la noche. */
+	private static void hora(final PreparedStatement ps, final int pos, final String valor)
+			throws SQLException {
+		if (valor != null && valor.length() >= 4) {
+			ps.setString(pos, valor.length() == 5 ? valor + ":00" : valor);
+		} else {
+			ps.setNull(pos, java.sql.Types.TIME);
+		}
 	}
 
 	/** Una fecha vacia es NULL, no cadena vacia: MySQL rechaza '' en una columna DATE. */
@@ -681,6 +701,9 @@ public class BonoRecompraDAO {
 		c.fechaEmision = txt(rs.getString("fecha_emision"));
 		c.redimeDesde = txt(rs.getString("redime_desde"));
 		c.redimeHasta = txt(rs.getString("redime_hasta"));
+		c.horaDesde = txt(rs.getString("hora_desde"));
+		c.horaHasta = txt(rs.getString("hora_hasta"));
+		c.tiposPedido = txt(rs.getString("tipos_pedido"));
 		c.usuario = txt(rs.getString("usuario"));
 		c.creadaEn = txt(rs.getString("creada_en"));
 		c.ultimoCalculoEn = txt(rs.getString("ultimo_calculo_en"));

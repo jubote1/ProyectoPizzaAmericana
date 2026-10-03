@@ -38,6 +38,9 @@ public class BonoRecompraCtrl {
 			o.put("fecha_emision", c.fechaEmision);
 			o.put("redime_desde", c.redimeDesde);
 			o.put("redime_hasta", c.redimeHasta);
+			o.put("hora_desde", c.horaDesde);
+			o.put("hora_hasta", c.horaHasta);
+			o.put("tipos_pedido", c.tiposPedido);
 			o.put("estado", c.estado);
 			o.put("emitir", c.emitir ? "S" : "N");
 			o.put("avisar", c.avisar ? "S" : "N");
@@ -110,7 +113,16 @@ public class BonoRecompraCtrl {
 		}
 		//Emitir antes de que cierre la ventana de compra dejaria por fuera las
 		//compras de los ultimos dias, que es justo lo que se prometio sumar.
-		if (c.fechaEmision.length() >= 10 && c.fechaEmision.compareTo(c.compraHasta) <= 0) {
+		//
+		//Con franja horaria eso deja de ser cierto el ultimo dia: si la compra
+		//solo cuenta hasta las 5 pm, emitir esa misma noche esta bien y es lo
+		//que se quiere. Por eso la regla se afloja a "no ANTES del ultimo dia"
+		//cuando hay hora de cierre.
+		final boolean conFranja = c.horaHasta.length() >= 4;
+		final boolean emiteMuyPronto = conFranja
+				? c.fechaEmision.compareTo(c.compraHasta) < 0
+				: c.fechaEmision.compareTo(c.compraHasta) <= 0;
+		if (c.fechaEmision.length() >= 10 && emiteMuyPronto) {
 			r.put("error", "El bono se emitiria el " + c.fechaEmision + ", antes de que cierre la"
 					+ " ventana de compra el " + c.compraHasta + ". Las compras de los ultimos dias"
 					+ " no alcanzarian a entrar.");
