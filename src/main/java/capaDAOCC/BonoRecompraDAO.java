@@ -472,13 +472,28 @@ public class BonoRecompraDAO {
 			.append(" from pizzaamericana.bono_pedido p")
 			.append(" where p.idbono = ? and p.idemision is null");
 		if (!c.abierta) {
-			//Solo los invitados. Y solo a quienes el mensaje les LLEGO: si el
-			//correo reboto, esa persona nunca supo que comprando se ganaba algo,
-			//asi que no se le puede reclamar ni ella puede reclamar.
+			//Solo los invitados, y solo aquellos a quienes el mensaje les LLEGO:
+			//si el correo reboto, esa persona nunca supo que comprando se ganaba
+			//algo, asi que ni se le puede reclamar ni ella puede reclamar.
+			//
+			//CUENTAN TODAS LAS TANDAS DE LA MISMA CAMPANA, no solo la que quedo
+			//amarrada. Una invitacion grande no cabe en un solo envio -el de
+			//publicidad va por tandas, 500 y 500- y amarrando una sola, la gente
+			//de la segunda quedaba por fuera sin que nada lo dijera.
+			//
+			//Por eso se resuelve la campana a partir del envio guardado y se
+			//buscan todos sus envios.
 			sql.append(" and exists (select 1 from crm.campana_destinatario d")
-				.append("              where d.idenvio = ").append(c.idEnvio)
-				.append("                and d.idpersona = p.idpersona")
-				.append("                and d.estado = 'ENVIADO')");
+				.append("              join crm.campana_envio e on e.idenvio = d.idenvio")
+				.append("             where e.idcampana = (select e2.idcampana")
+				.append("                                    from crm.campana_envio e2")
+				.append("                                   where e2.idenvio = ").append(c.idEnvio).append(")")
+				.append("               and d.idpersona = p.idpersona")
+				.append("               and d.estado = 'ENVIADO'")
+				//Invitado ANTES de que cerrara la ventana de compra. Sin esto,
+				//una tanda enviada el martes le pagaria las compras del sabado
+				//a alguien que el sabado no sabia que existia la promocion.
+				.append("               and date(d.enviado_en) <= ?)");
 		}
 		if (!c.repetible) {
 			sql.append(" and not exists (select 1 from pizzaamericana.bono_emitido e")
@@ -487,8 +502,13 @@ public class BonoRecompraDAO {
 		sql.append(" group by p.idpersona having sum(p.base) >= ?");
 
 		try (PreparedStatement ps = cn.prepareStatement(sql.toString())) {
-			ps.setInt(1, c.idBono);
-			ps.setDouble(2, c.baseMinima);
+			int i = 1;
+			ps.setInt(i++, c.idBono);
+			if (!c.abierta) {
+				ps.setString(i++, c.compraHasta.length() >= 10
+						? c.compraHasta.substring(0, 10) : c.compraHasta);
+			}
+			ps.setDouble(i++, c.baseMinima);
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					final Emision e = new Emision();
