@@ -171,10 +171,27 @@ public class CorreoOferta {
 		return (resultado.trim());
 	}
 
+	/**
+	 * Lo que vale ESTE codigo, en pesos. Cero si no es un valor fijo.
+	 *
+	 * Manda el saldo del cliente por encima del valor de la oferta: en el bono
+	 * de recompra la oferta vale cero y lo que cuenta es lo que cada persona se
+	 * gano, que vive en oferta_cliente.saldo. En una oferta de valor fijo de
+	 * toda la vida el saldo viene en cero y se usa el de la oferta, como
+	 * siempre.
+	 */
+	private static double valorDelCodigo(DatosCorreoOferta datos) {
+		if (datos.saldo > 0) {
+			return (datos.saldo);
+		}
+		return (datos.descuentoValor);
+	}
+
 	/** El beneficio en una frase corta: sirve para el asunto y para el titular. */
 	private static String beneficio(DatosCorreoOferta datos) {
-		if (datos.descuentoValor > 0) {
-			return ("$" + CorreoOferta.formatoMiles().format(datos.descuentoValor));
+		final double valor = CorreoOferta.valorDelCodigo(datos);
+		if (valor > 0) {
+			return ("$" + CorreoOferta.formatoMiles().format(valor));
 		}
 		if (datos.descuentoPorcentaje > 0) {
 			return (datos.descuentoPorcentaje + "% de descuento");
@@ -228,7 +245,8 @@ public class CorreoOferta {
 		String ben = CorreoOferta.beneficio(datos);
 		boolean tieneCodigo = (datos.codigoPromocion != null && datos.codigoPromocion.trim().length() > 0);
 		boolean controlaHora = "S".equals(datos.controlaHora);
-		boolean dejaSaldo = "S".equals(datos.redencionParcial) && datos.descuentoValor > 0;
+		double valorCodigo = CorreoOferta.valorDelCodigo(datos);
+		boolean dejaSaldo = "S".equals(datos.redencionParcial) && valorCodigo > 0;
 		String fechaVence = CorreoOferta.fechaEnPalabras(datos.fechaCaducidad);
 		//Los mensajes de la oferta traen comodines escritos: se resuelven una vez
 		//aqui y de ahi en adelante se usa el texto ya armado.
@@ -292,8 +310,19 @@ public class CorreoOferta {
 					.append(";letter-spacing:.14em;text-transform:uppercase;font-weight:bold;'>Tu c&oacute;digo</div>")
 					.append("<div style='font-size:30px;font-weight:bold;color:").append(CorreoOferta.TINTA)
 					.append(";letter-spacing:.14em;padding-top:6px;font-family:Consolas,\"Courier New\",monospace;'>")
-					.append(CorreoOferta.escapar(datos.codigoPromocion.trim())).append("</div>")
-					.append("<div style='font-size:12.5px;color:").append(CorreoOferta.AMARILLO_TEXTO)
+					.append(CorreoOferta.escapar(datos.codigoPromocion.trim())).append("</div>");
+			//CUANTO VALE, debajo del codigo. Un codigo sin monto no dice nada: el
+			//cliente no sabe si le sirve venir. Y en el bono de recompra el valor
+			//es distinto para cada persona, asi que no se puede dejar escrito en
+			//el mensaje de la oferta.
+			if (valorCodigo > 0) {
+				m.append("<div style='font-size:13px;color:").append(CorreoOferta.AMARILLO_TEXTO)
+						.append(";padding-top:10px;'>Vale</div>")
+						.append("<div style='font-size:26px;font-weight:bold;color:")
+						.append(CorreoOferta.TINTA).append(";padding-top:2px;'>$")
+						.append(CorreoOferta.formatoMiles().format(valorCodigo)).append("</div>");
+			}
+			m.append("<div style='font-size:12.5px;color:").append(CorreoOferta.AMARILLO_TEXTO)
 					.append(";padding-top:7px;'>Dilo al pedir. Es solo tuyo.</div>")
 					.append("</td></tr></table></td></tr>");
 		}
