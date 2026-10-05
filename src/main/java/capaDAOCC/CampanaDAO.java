@@ -93,6 +93,21 @@ public class CampanaDAO {
 	 * Diez digitos y nada mas: el codigo le antepone el +57 por su cuenta, asi
 	 * que un numero con espacios, guiones o con el 57 ya puesto sale mal.
 	 */
+	/**
+	 * Deja por fuera las direcciones que ya rebotaron en duro.
+	 *
+	 * Una direccion muerta se intentaba en CADA campana, para siempre: nada lo
+	 * aprendia. Lo que se protege no es el cupo sino la reputacion del dominio,
+	 * que es lo primero que miran Gmail y Outlook para mandar a spam; ahi no se
+	 * pierde el correo de la campana, se pierde el de las facturas.
+	 *
+	 * Solo el DURO -la direccion no existe- bloquea. El blando -buzon lleno- es
+	 * pasajero, y sacar por eso a un cliente bueno seria perderlo por un dia malo.
+	 */
+	private static final String SIN_REBOTE =
+			" AND NOT EXISTS (SELECT 1 FROM crm.correo_rebotado r"
+			+ "                WHERE r.email = TRIM(email) AND r.tipo = 'DURO')";
+
 	public static final String PATRON_CELULAR = "[0-9]{10}";
 
 	private static final String CELULAR_VALIDO =
@@ -206,7 +221,7 @@ public class CampanaDAO {
 					//Contando "tiene algo escrito en el correo" la pantalla
 					//prometia 5.450 y salian menos, sin que nadie supiera por que.
 					"SELECT COUNT(*) AS personas,"
-					+ " SUM(" + CORREO_VALIDO + ") AS con_correo,"
+					+ " SUM(" + CORREO_VALIDO + SIN_REBOTE + ") AS con_correo,"
 					+ " SUM(" + CELULAR_VALIDO + ") AS con_celular"
 					+ " FROM crm.persona_resumen" + where + CONSENTIMIENTO);
 			SegmentacionPersonaDAO.ponerValores(ps, valores);
@@ -467,6 +482,11 @@ public class CampanaDAO {
 				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
 				.append(" FROM crm.persona_resumen").append(where).append(CONSENTIMIENTO)
 				.append(" AND ").append(destinoValido);
+			//Los rebotados no entran. Solo aplica al correo: una direccion
+			//muerta no dice nada del celular de esa persona.
+			if (!porCelular) {
+				sql.append(SIN_REBOTE);
+			}
 			//El orden importa: si solo caben 500, que sean los 500 que mas
 			//valen, no los primeros que salgan.
 			sql.append(" ORDER BY valor DESC");
