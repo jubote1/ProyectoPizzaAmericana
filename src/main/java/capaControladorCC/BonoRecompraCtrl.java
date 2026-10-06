@@ -35,6 +35,7 @@ public class BonoRecompraCtrl {
 			o.put("repetible", c.repetible ? "S" : "N");
 			o.put("abierta", c.abierta ? "S" : "N");
 			o.put("idenvio", c.idEnvio);
+			o.put("idcampana", c.idCampana);
 			o.put("fecha_emision", c.fechaEmision);
 			o.put("redime_desde", c.redimeDesde);
 			o.put("redime_hasta", c.redimeHasta);
@@ -87,12 +88,13 @@ public class BonoRecompraCtrl {
 					+ " enorme y no hay forma de saber cuanto se puede llegar a regalar.");
 			return (r.toJSONString());
 		}
-		//Una campana por invitacion sin envio no tiene publico. Guardarla asi
-		//dejaria una campana que el barrido no va a emitir nunca, y nadie
-		//sabria por que.
-		if (!c.abierta && c.idEnvio <= 0) {
-			r.put("error", "La campana es por invitacion: escoja el envio con el que se aviso."
-					+ " De ahi sale a quienes se les prometio el bono.");
+		//Una campana por invitacion sin campana de correo no tiene publico.
+		//Guardarla asi dejaria un bono que el barrido no va a emitir nunca, y
+		//nadie sabria por que.
+		if (!c.abierta && c.idCampana <= 0) {
+			r.put("error", "La campana es por invitacion: escoja la campana de correo con la que"
+					+ " se invita. Cuentan todas sus tandas, asi que puede mandar varios envios"
+					+ " y a segmentos distintos.");
 			return (r.toJSONString());
 		}
 		//Las fechas de redencion tienen que ser coherentes entre si y con la

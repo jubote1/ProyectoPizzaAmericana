@@ -89,20 +89,29 @@ function brDia(iso) {
 	return (dias[f.getDay()] + ' ' + d + ' de ' + meses[m]);
 }
 
-/* Los envios de publicidad, para amarrar el bono al que llevo la invitacion. */
+/*
+ * Las campanas del maestro, para amarrar el bono a la que lleva la invitacion.
+ *
+ * Va por campana y no por tanda a proposito: el motor siempre conto todas las
+ * tandas de la campana, pero la pantalla pedia una sola y hacia creer que esa
+ * era la que valia. Ver sql/bono_por_campana.sql.
+ */
 function brCargarEnvios() {
-	$.getJSON(server + 'EnvioPublicidad', { accion: 'ultimas', cuantas: 30 }, function (d) {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'campanas' }, function (d) {
 		var lista = (d && d.campanas) ? d.campanas : [];
-		var html = '<option value="">Escoja el env&iacute;o</option>';
+		var html = '<option value="">Escoja la campa&ntilde;a</option>';
 		for (var i = 0; i < lista.length; i++) {
-			var e = lista[i];
-			html += '<option value="' + e.idenvio + '">' + brEscapar(e.nombre) +
-				' — ' + String(e.creada_en || '').substring(0, 10) +
-				' (' + brMiles(e.enviados) + ' recibieron)</option>';
+			var c = lista[i];
+			//Se muestran las tandas y la gente que ya recibio, que es lo que
+			//deja ver de un vistazo si es la campana que uno cree.
+			var cuantos = brMiles(c.enviados || 0) + ' ya recibieron';
+			var tandas = (c.envios || 0) === 1 ? '1 tanda' : (c.envios || 0) + ' tandas';
+			html += '<option value="' + c.idcampana + '">' + brEscapar(c.nombre) +
+				' — ' + tandas + ', ' + cuantos + '</option>';
 		}
 		$('#br-envio').html(html);
 	}).fail(function () {
-		$('#br-envio').html('<option value="">No se pudieron cargar los env&iacute;os</option>');
+		$('#br-envio').html('<option value="">No se pudieron cargar las campa&ntilde;as</option>');
 	});
 }
 
@@ -298,7 +307,7 @@ function brSeleccionar(idBono) {
 	$('#br-redesde').val(String(c.redime_desde || '').substring(0, 10));
 	$('#br-rehasta').val(String(c.redime_hasta || '').substring(0, 10));
 	$('#br-abierta').val(c.abierta === 'N' ? 'N' : 'S');
-	$('#br-envio').val(c.idenvio ? String(c.idenvio) : '');
+	$('#br-envio').val(c.idcampana ? String(c.idcampana) : '');
 	$('#br-emitir').val(c.emitir);
 	brNotaRepetible();
 	brPintarPublico();
@@ -325,7 +334,7 @@ function brGuardar() {
 		emitir: $('#br-emitir').val(),
 		avisar: 'S',
 		abierta: $('#br-abierta').val(),
-		idenvio: $('#br-envio').val() || 0,
+		idcampana: $('#br-envio').val() || 0,
 		fecha_emision: $('#br-emision').val(),
 		redime_desde: $('#br-redesde').val(),
 		redime_hasta: $('#br-rehasta').val()
