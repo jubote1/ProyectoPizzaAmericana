@@ -103,10 +103,20 @@ public class CampanaDAO {
 	 *
 	 * Solo el DURO -la direccion no existe- bloquea. El blando -buzon lleno- es
 	 * pasajero, y sacar por eso a un cliente bueno seria perderlo por un dia malo.
+	 *
+	 * EL CORREO VA CALIFICADO CON SU TABLA, Y NO ES UN DETALLE DE ESTILO.
+	 *
+	 * crm.correo_rebotado TAMBIEN tiene una columna "email", asi que dentro de
+	 * la subconsulta un "email" suelto no es el de la persona: MySQL lo resuelve
+	 * contra la tabla de adentro. La condicion se volvia r.email = TRIM(r.email),
+	 * cierta para toda fila sin espacios, el EXISTS daba verdadero para TODO el
+	 * mundo y la pantalla mostraba 0 personas con correo. Paso el 2026-10-05 y
+	 * dejo las campanas de correo sin poder enviar.
+	 *
+	 * Por eso la condicion vive en un solo sitio, en CorreoRebotadoDAO: aqui
+	 * habia una segunda copia y fue la copia la que salio mal.
 	 */
-	private static final String SIN_REBOTE =
-			" AND NOT EXISTS (SELECT 1 FROM crm.correo_rebotado r"
-			+ "                WHERE r.email = TRIM(email) AND r.tipo = 'DURO')";
+	private static final String SIN_REBOTE = CorreoRebotadoDAO.NO_REBOTADO;
 
 	public static final String PATRON_CELULAR = "[0-9]{10}";
 
