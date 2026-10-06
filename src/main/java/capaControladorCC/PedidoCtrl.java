@@ -8392,6 +8392,10 @@ public class PedidoCtrl {
 					}
 				}
 			}
+			// Confirmacion al cliente por correo: solo para pedidos del bot. Nunca tumba el pedido (hilo aparte, dentro de try).
+			if (pedidoInsertado) {
+				ConfirmacionBotCorreoCtrl.enviar(idPedido, nombreCliente, correo, direccion, idFormaPago == 4);
+			}
 			return pedidoInsertado;
 		} catch (Exception e) {
 			resultadoProceso = resultadoProceso
@@ -9256,12 +9260,14 @@ public class PedidoCtrl {
 				// Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead, mensaje, "pedidobot");
 			}
+			// Confirmacion al cliente por correo (plantilla de la casa). El aviso de abajo queda solo para uso interno:
+			// el cliente ya recibe la confirmacion, con el recordatorio del pago en linea.
+			ConfirmacionBotCorreoCtrl.enviar(idPedido, nombreCliente, correo, direccion, idFormaPago == 4);
 			try {
 				// Enviamos notificación de creación del pedido
 				ArrayList correos = new ArrayList();
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
-				correos.add(correo);
 				Correo correoNoti = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 						"CLAVECORREOREPORTE");
