@@ -61,8 +61,21 @@ public class DesempenoDomiciliarioCtrl {
 		return (respuesta.toJSONString());
 	}
 
-	@SuppressWarnings("unchecked")
 	public static String consultarDesempeno(final int idEmpleado, final String desde, final String hasta) {
+		return (consultarDesempeno(idEmpleado, desde, hasta, new java.util.HashSet<Integer>()));
+	}
+
+	/**
+	 * El desempeno barriendo las tiendas en vivo, y para las tiendas de idsDatamart leyendo el DATAMART.
+	 *
+	 * Las tiendas que no contestan NO se completan solas con el datamart: se devuelven en
+	 * tiendas_sin_respuesta_detalle, con la fecha hasta la que el datamart las tiene, y es la persona la que
+	 * decide si quiere verlas asi. El datamart solo llega hasta AYER, y mezclarlo en silencio le dejaria
+	 * pensar que tiene lo de hoy.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String consultarDesempeno(final int idEmpleado, final String desde, final String hasta,
+			final java.util.Set<Integer> idsDatamart) {
 		final Logger logger = Logger.getLogger("log_file");
 		final JSONObject respuesta = new JSONObject();
 		respuesta.put("desde", desde);
@@ -94,19 +107,32 @@ public class DesempenoDomiciliarioCtrl {
 		respuesta.put("domiciliario", jsonDomi);
 
 		final ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> resultados = barrerTiendas(idEmpleado, desde,
-				hasta, logger);
+				hasta, logger, idsDatamart);
 
 		//Todo junto, para los numeros consolidados.
 		final ArrayList<DesempenoDomiciliarioDAO.Entrega> entregas = new ArrayList<DesempenoDomiciliarioDAO.Entrega>();
 		final ArrayList<DesempenoDomiciliarioDAO.Salida> salidas = new ArrayList<DesempenoDomiciliarioDAO.Salida>();
 		final JSONArray sinRespuesta = new JSONArray();
+		final JSONArray sinRespuestaDetalle = new JSONArray();
+		final JSONArray desdeDatamart = new JSONArray();
+		final ArrayList<Integer> idsSinRespuesta = new ArrayList<Integer>();
+		final ArrayList<String> nombresSinRespuesta = new ArrayList<String>();
 		final JSONArray porTienda = new JSONArray();
 		final DesempenoDomiciliarioDAO.Enrutamiento enrTotal = new DesempenoDomiciliarioDAO.Enrutamiento();
 
 		for (final DesempenoDomiciliarioDAO.ResultadoTienda r : resultados) {
 			if (!r.conecto) {
 				sinRespuesta.add(r.tienda);
+				idsSinRespuesta.add(Integer.valueOf(r.idTienda));
+				nombresSinRespuesta.add(r.tienda);
 				continue;
+			}
+			if ("DATAMART".equals(r.fuente)) {
+				final JSONObject dm = new JSONObject();
+				dm.put("idtienda", r.idTienda);
+				dm.put("tienda", r.tienda);
+				dm.put("datos_hasta", r.datosHasta);
+				desdeDatamart.add(dm);
 			}
 			entregas.addAll(r.entregas);
 			salidas.addAll(r.salidas);
@@ -120,6 +146,19 @@ public class DesempenoDomiciliarioCtrl {
 
 		respuesta.put("tiendas_consultadas", resultados.size());
 		respuesta.put("tiendas_sin_respuesta", sinRespuesta);
+		//Para cada tienda apagada, si el datamart tiene algo de ella y hasta que dia: es lo que se le ofrece a la persona.
+		final java.util.HashMap<Integer, String> disponibles =
+				DesempenoDomiciliarioDAO.datosDisponiblesDatamart(idsSinRespuesta);
+		for (int i = 0; i < idsSinRespuesta.size(); i++) {
+			final JSONObject d = new JSONObject();
+			d.put("idtienda", idsSinRespuesta.get(i));
+			d.put("tienda", nombresSinRespuesta.get(i));
+			final String hastaDm = disponibles.get(idsSinRespuesta.get(i));
+			d.put("datamart_hasta", hastaDm == null ? "" : hastaDm);
+			sinRespuestaDetalle.add(d);
+		}
+		respuesta.put("tiendas_sin_respuesta_detalle", sinRespuestaDetalle);
+		respuesta.put("tiendas_datamart", desdeDatamart);
 		respuesta.put("por_tienda", porTienda);
 		respuesta.put("resumen", resumenEntregas(entregas, salidas.size()));
 		respuesta.put("regreso", resumenRegreso(salidas));
@@ -136,7 +175,7 @@ public class DesempenoDomiciliarioCtrl {
 	// =======================================================================
 
 	private static ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> barrerTiendas(final int idEmpleado,
-			final String desde, final String hasta, final Logger logger) {
+			final String desde, final String hasta, final Logger logger, final java.util.Set<Integer> idsDatamart) {
 		final ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> resultados =
 				new ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda>();
 		final ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendasFuncionales();
@@ -150,6 +189,16 @@ public class DesempenoDomiciliarioCtrl {
 					new ArrayList<Callable<DesempenoDomiciliarioDAO.ResultadoTienda>>();
 			for (final Tienda t : tiendas) {
 				final String hosbd = t.getHosbd();
+				//Las que se piden por datamart no necesitan el host de la tienda.
+				if (idsDatamart != null && idsDatamart.contains(Integer.valueOf(t.getIdTienda()))) {
+					tareas.add(new Callable<DesempenoDomiciliarioDAO.ResultadoTienda>() {
+						public DesempenoDomiciliarioDAO.ResultadoTienda call() {
+							return (DesempenoDomiciliarioDAO.consultarTiendaDatamart(t.getIdTienda(), t.getNombreTienda(),
+									idEmpleado, desde, hasta));
+						}
+					});
+					continue;
+				}
 				if (hosbd == null || hosbd.trim().length() == 0) {
 					continue;
 				}
@@ -172,7 +221,7 @@ public class DesempenoDomiciliarioCtrl {
 					final DesempenoDomiciliarioDAO.ResultadoTienda fallo =
 							new DesempenoDomiciliarioDAO.ResultadoTienda();
 					fallo.conecto = false;
-					fallo.tienda = nombreDe(tiendas, i);
+					fallo.tienda = nombreDe(tiendas, i, idsDatamart);
 					fallo.error = "Se paso del tiempo de espera";
 					resultados.add(fallo);
 				}
@@ -186,11 +235,13 @@ public class DesempenoDomiciliarioCtrl {
 	}
 
 	/** El nombre de la tienda que quedo en esa posicion de la lista de tareas. */
-	private static String nombreDe(final ArrayList<Tienda> tiendas, final int posicion) {
+	private static String nombreDe(final ArrayList<Tienda> tiendas, final int posicion,
+			final java.util.Set<Integer> idsDatamart) {
 		int i = 0;
 		for (final Tienda t : tiendas) {
 			final String hosbd = t.getHosbd();
-			if (hosbd == null || hosbd.trim().length() == 0) {
+			final boolean porDatamart = idsDatamart != null && idsDatamart.contains(Integer.valueOf(t.getIdTienda()));
+			if (!porDatamart && (hosbd == null || hosbd.trim().length() == 0)) {
 				continue;
 			}
 			if (i == posicion) {
@@ -300,6 +351,8 @@ public class DesempenoDomiciliarioCtrl {
 		final JSONObject o = new JSONObject();
 		o.put("idtienda", r.idTienda);
 		o.put("tienda", r.tienda);
+		o.put("fuente", r.fuente);
+		o.put("datos_hasta", r.datosHasta);
 		o.put("resumen", resumenEntregas(r.entregas, r.salidas.size()));
 		o.put("regreso", resumenRegreso(r.salidas));
 		o.put("enrutamiento", aJson(r.enrutamiento));

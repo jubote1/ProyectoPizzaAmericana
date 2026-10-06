@@ -116,6 +116,10 @@ public class DesempenoDomiciliarioDAO {
 		public String tienda = "";
 		public boolean conecto;
 		public String error = "";
+		/** TIENDA si se le pregunto a la tienda en vivo, DATAMART si salio de la replica diaria. */
+		public String fuente = "TIENDA";
+		/** Solo DATAMART: la ultima fecha que el datamart tiene de esta tienda. */
+		public String datosHasta = "";
 		public ArrayList<Entrega> entregas = new ArrayList<Entrega>();
 		public ArrayList<Salida> salidas = new ArrayList<Salida>();
 		public Enrutamiento enrutamiento = new Enrutamiento();
@@ -195,9 +199,9 @@ public class DesempenoDomiciliarioDAO {
 				return (res);
 			}
 			res.conecto = true;
-			cargarEntregas(cn, res, idEmpleado, desde, hasta);
-			cargarSalidas(cn, res, idEmpleado, desde, hasta);
-			cargarEnrutamiento(cn, res, idEmpleado, desde, hasta);
+			cargarEntregas(cn, res, idEmpleado, desde, hasta, false);
+			cargarSalidas(cn, res, idEmpleado, desde, hasta, false);
+			cargarEnrutamiento(cn, res, idEmpleado, desde, hasta, false);
 		} catch (final Exception e) {
 			logger.error("DesempenoDomiciliarioDAO.consultarTienda " + hosbd + ": " + e.toString());
 			res.error = e.toString();
@@ -207,25 +211,125 @@ public class DesempenoDomiciliarioDAO {
 		return (res);
 	}
 
+	/**
+	 * Lo mismo que consultarTienda, pero leyendo del DATAMART en vez de la tienda.
+	 *
+	 * Sirve cuando la tienda esta apagada. El datamart lo llena ServicioReplicaPedidos una vez al dia, de
+	 * madrugada, con el dia de ayer: por eso trae datos HASTA AYER y no incluye lo de hoy. Se devuelve en
+	 * datosHasta la ultima fecha que tiene esa tienda, para que la pantalla lo diga.
+	 *
+	 * En el datamart los ids se repiten de una tienda a otra (idpedidotienda, despacho_real.id...), asi que
+	 * TODA consulta de aqui filtra y cruza por idtienda.
+	 */
+	public static ResultadoTienda consultarTiendaDatamart(final int idTienda, final String nombreTienda,
+			final int idEmpleado, final String desde, final String hasta) {
+		final Logger logger = Logger.getLogger("log_file");
+		final ResultadoTienda res = new ResultadoTienda();
+		res.idTienda = idTienda;
+		res.tienda = texto(nombreTienda);
+		res.fuente = "DATAMART";
+
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDDatamartLocal();
+			if (cn == null) {
+				res.conecto = false;
+				res.error = "No se pudo conectar con el datamart";
+				return (res);
+			}
+			res.conecto = true;
+			res.datosHasta = ultimaFechaDatamart(cn, idTienda);
+			cargarEntregas(cn, res, idEmpleado, desde, hasta, true);
+			cargarSalidas(cn, res, idEmpleado, desde, hasta, true);
+			cargarEnrutamiento(cn, res, idEmpleado, desde, hasta, true);
+		} catch (final Exception e) {
+			logger.error("DesempenoDomiciliarioDAO.consultarTiendaDatamart " + idTienda + ": " + e.toString());
+			res.error = e.toString();
+			res.conecto = false;
+		} finally {
+			cerrar(cn);
+		}
+		return (res);
+	}
+
+	/**
+	 * La ultima fecha de despachos que el datamart tiene de una tienda, o "" si no tiene ninguna. Es hasta
+	 * donde se puede confiar en lo que se muestra de esa tienda.
+	 */
+	public static String ultimaFechaDatamart(final Connection cn, final int idTienda) {
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"select max(fecha) as f from despacho_real where idtienda = ?");
+			ps.setInt(1, idTienda);
+			final ResultSet rs = ps.executeQuery();
+			String f = "";
+			if (rs.next() && rs.getString("f") != null) {
+				f = rs.getString("f");
+			}
+			rs.close();
+			ps.close();
+			return (f);
+		} catch (final Exception e) {
+			return ("");
+		}
+	}
+
+	/**
+	 * Cual de las tiendas dadas tiene datos en el datamart y hasta que fecha, para ofrecerle a quien consulta
+	 * "no contesto, pero lo tengo hasta tal dia". Devuelve idtienda -> ultima fecha.
+	 */
+	public static java.util.HashMap<Integer, String> datosDisponiblesDatamart(final ArrayList<Integer> idsTienda) {
+		final java.util.HashMap<Integer, String> disponibles = new java.util.HashMap<Integer, String>();
+		if (idsTienda == null || idsTienda.isEmpty()) {
+			return (disponibles);
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDDatamartLocal();
+			if (cn == null) {
+				return (disponibles);
+			}
+			for (final Integer id : idsTienda) {
+				final String f = ultimaFechaDatamart(cn, id.intValue());
+				if (f.length() > 0) {
+					disponibles.put(id, f);
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+		return (disponibles);
+	}
+
 	/** Un renglon por pedido entregado. */
 	private static void cargarEntregas(final Connection cn, final ResultadoTienda res,
-			final int idEmpleado, final String desde, final String hasta) throws Exception {
+			final int idEmpleado, final String desde, final String hasta, final boolean datamart) throws Exception {
 		//Los minutos los calcula MySQL: traer las fechas y restarlas en Java
 		//obligaria a parsear, y el formato de fecha ya ha dado guerra aca.
+		//En el datamart cada cruce lleva idtienda: los ids se repiten entre tiendas.
 		final String sql = "select r.fecha, d.id_pedido, d.orden_planificada, "
 				+ "ifnull(p.tiempopedido, 0) as prometido, ifnull(p.programado, 'N') as programado, "
 				+ "timestampdiff(minute, p.fechainsercion, d.hora_entrega) as min_total, "
 				+ "timestampdiff(minute, r.hora_salida, d.hora_entrega) as min_calle "
 				+ "from despacho_real r "
-				+ "inner join despacho_real_det d on d.despacho_real_id = r.id "
-				+ "left join pedido p on p.idpedidotienda = d.id_pedido "
-				+ "where r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
+				+ "inner join despacho_real_det d on d.despacho_real_id = r.id"
+				+ (datamart ? " and d.idtienda = r.idtienda " : " ")
+				+ "left join pedido p on p.idpedidotienda = d.id_pedido"
+				+ (datamart ? " and p.idtienda = r.idtienda " : " ")
+				+ "where " + (datamart ? "r.idtienda = ? and " : "")
+				+ "r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
 				+ "and d.hora_entrega is not null "
 				+ "order by r.fecha, r.id, d.orden_planificada";
 		final PreparedStatement ps = cn.prepareStatement(sql);
-		ps.setInt(1, idEmpleado);
-		ps.setString(2, desde);
-		ps.setString(3, hasta);
+		int k = 1;
+		if (datamart) {
+			ps.setInt(k++, res.idTienda);
+		}
+		ps.setInt(k++, idEmpleado);
+		ps.setString(k++, desde);
+		ps.setString(k++, hasta);
 		final ResultSet rs = ps.executeQuery();
 		while (rs.next()) {
 			final Entrega e = new Entrega();
@@ -253,19 +357,25 @@ public class DesempenoDomiciliarioDAO {
 
 	/** Un renglon por salida, con el regreso a la tienda. */
 	private static void cargarSalidas(final Connection cn, final ResultadoTienda res,
-			final int idEmpleado, final String desde, final String hasta) throws Exception {
+			final int idEmpleado, final String desde, final String hasta, final boolean datamart) throws Exception {
 		final String sql = "select r.id, r.fecha, count(d.id) as pedidos, "
 				+ "(r.hora_regreso is null) as sin_regreso, "
 				+ "timestampdiff(minute, max(d.hora_entrega), r.hora_regreso) as min_regreso "
 				+ "from despacho_real r "
-				+ "left join despacho_real_det d on d.despacho_real_id = r.id "
-				+ "where r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
+				+ "left join despacho_real_det d on d.despacho_real_id = r.id"
+				+ (datamart ? " and d.idtienda = r.idtienda " : " ")
+				+ "where " + (datamart ? "r.idtienda = ? and " : "")
+				+ "r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
 				+ "group by r.id, r.fecha, r.hora_regreso "
 				+ "order by r.fecha, r.id";
 		final PreparedStatement ps = cn.prepareStatement(sql);
-		ps.setInt(1, idEmpleado);
-		ps.setString(2, desde);
-		ps.setString(3, hasta);
+		int k = 1;
+		if (datamart) {
+			ps.setInt(k++, res.idTienda);
+		}
+		ps.setInt(k++, idEmpleado);
+		ps.setString(k++, desde);
+		ps.setString(k++, hasta);
 		final ResultSet rs = ps.executeQuery();
 		while (rs.next()) {
 			final Salida s = new Salida();
@@ -300,20 +410,27 @@ public class DesempenoDomiciliarioDAO {
 	 *
 	 * Va en su propio try: es lo mas nuevo que hay -las tablas las creo la
 	 * migracion 2026_09_10_03- y si en alguna tienda no alcanzaron a correrla,
-	 * el resto de la pantalla tiene que seguir funcionando.
+	 * el resto de la pantalla tiene que seguir funcionando. Lo mismo en el datamart, donde estas tablas
+	 * las crea la migracion 2026_10_06_01 y empiezan a llenarse con la replica de la madrugada.
 	 */
 	private static void cargarEnrutamiento(final Connection cn, final ResultadoTienda res,
-			final int idEmpleado, final String desde, final String hasta) {
+			final int idEmpleado, final String desde, final String hasta, final boolean datamart) {
 		final Logger logger = Logger.getLogger("log_file");
 		final Enrutamiento en = res.enrutamiento;
+		//En el datamart cada consulta filtra por idtienda y los cruces entre tablas tambien.
+		final String filtroS = datamart ? " and s.idtienda = ? " : " ";
 		try {
 			PreparedStatement ps = cn.prepareStatement(
 					"select s.estado, count(*) as veces from pedido_sugerencia s "
-					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ? "
+					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ?" + filtroS
 					+ "group by s.estado");
-			ps.setInt(1, idEmpleado);
-			ps.setString(2, desde);
-			ps.setString(3, hasta);
+			int k = 1;
+			ps.setInt(k++, idEmpleado);
+			ps.setString(k++, desde);
+			ps.setString(k++, hasta);
+			if (datamart) {
+				ps.setInt(k++, res.idTienda);
+			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				final String estado = texto(rs.getString("estado"));
@@ -335,12 +452,17 @@ public class DesempenoDomiciliarioDAO {
 			//Cuantas veces le movieron un pedido que ya le habian sugerido.
 			ps = cn.prepareStatement(
 					"select count(*) as veces from pedido_sugerencia_log l "
-					+ "inner join pedido_sugerencia s on s.id = l.pedido_sugerencia_id "
-					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ? "
+					+ "inner join pedido_sugerencia s on s.id = l.pedido_sugerencia_id"
+					+ (datamart ? " and s.idtienda = l.idtienda " : " ")
+					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ?" + filtroS
 					+ "and l.accion = 'REASIGNADA'");
-			ps.setInt(1, idEmpleado);
-			ps.setString(2, desde);
-			ps.setString(3, hasta);
+			k = 1;
+			ps.setInt(k++, idEmpleado);
+			ps.setString(k++, desde);
+			ps.setString(k++, hasta);
+			if (datamart) {
+				ps.setInt(k++, res.idTienda);
+			}
 			rs = ps.executeQuery();
 			if (rs.next()) {
 				en.vecesReasignada = rs.getInt("veces");
@@ -350,12 +472,17 @@ public class DesempenoDomiciliarioDAO {
 
 			ps = cn.prepareStatement(
 					"select t.estado_det, count(*) as veces from pedido_sugerencia_det t "
-					+ "inner join pedido_sugerencia s on s.id = t.pedido_sugerencia_id "
-					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ? "
+					+ "inner join pedido_sugerencia s on s.id = t.pedido_sugerencia_id"
+					+ (datamart ? " and s.idtienda = t.idtienda " : " ")
+					+ "where s.id_domiciliario = ? and s.fecha_jornada >= ? and s.fecha_jornada <= ?" + filtroS
 					+ "group by t.estado_det");
-			ps.setInt(1, idEmpleado);
-			ps.setString(2, desde);
-			ps.setString(3, hasta);
+			k = 1;
+			ps.setInt(k++, idEmpleado);
+			ps.setString(k++, desde);
+			ps.setString(k++, hasta);
+			if (datamart) {
+				ps.setInt(k++, res.idTienda);
+			}
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				final String estado = texto(rs.getString("estado_det"));
@@ -375,11 +502,16 @@ public class DesempenoDomiciliarioDAO {
 			//asignacion a mano de siempre.
 			ps = cn.prepareStatement(
 					"select count(*) as veces from despacho_real r "
-					+ "where r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
+					+ "where " + (datamart ? "r.idtienda = ? and " : "")
+					+ "r.id_domiciliario = ? and r.fecha >= ? and r.fecha <= ? "
 					+ "and r.origen = 'SUGERIDO'");
-			ps.setInt(1, idEmpleado);
-			ps.setString(2, desde);
-			ps.setString(3, hasta);
+			k = 1;
+			if (datamart) {
+				ps.setInt(k++, res.idTienda);
+			}
+			ps.setInt(k++, idEmpleado);
+			ps.setString(k++, desde);
+			ps.setString(k++, hasta);
 			rs = ps.executeQuery();
 			if (rs.next()) {
 				en.salidasDesdeSugerencia = rs.getInt("veces");

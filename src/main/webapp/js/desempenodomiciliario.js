@@ -10,6 +10,8 @@
  */
 
 var ddDatos = null;
+//Tiendas que no contestaron y que la persona pidio ver desde el datamart (ids separados por coma).
+var ddTiendasDatamart = '';
 
 $(document).ready(function () {
 
@@ -24,6 +26,14 @@ $(document).ready(function () {
 	ddCargarDomiciliarios();
 
 	$('#ddConsultar').click(function () {
+		//Una consulta nueva empieza de cero: lo del datamart se pide solo despues de ver quien no contesto.
+		ddTiendasDatamart = '';
+		ddConsultar();
+	});
+
+	//El boton que ofrece el datamart para las tiendas apagadas (se crea al pintar el resultado).
+	$(document).on('click', '#ddVerDatamart', function () {
+		ddTiendasDatamart = $(this).attr('data-ids') || '';
 		ddConsultar();
 	});
 });
@@ -91,7 +101,7 @@ function ddConsultar() {
 
 	$.ajax({
 		url: server + 'ConsultarDesempenoDomiciliario',
-		data: { idempleado: idEmpleado, fechadesde: desde, fechahasta: hasta },
+		data: { idempleado: idEmpleado, fechadesde: desde, fechahasta: hasta, tiendasdatamart: ddTiendasDatamart },
 		dataType: 'json',
 		type: 'get',
 		success: function (data) {
@@ -129,18 +139,7 @@ function ddPintar(d) {
 
 	//Una tienda que no contesto no es una tienda sin pedidos. Si no se dice,
 	//el domiciliario aparece con menos trabajo del que hizo.
-	var sin = d.tiendas_sin_respuesta || [];
-	if (sin.length > 0) {
-		var nombres = [];
-		for (var i = 0; i < sin.length; i++) {
-			nombres.push(ddEscapar(sin[i]));
-		}
-		$('#ddSinRespuesta').html('<div class="alert alert-warning" style="padding:8px 12px;">' +
-			'<b>Ojo:</b> no contestaron ' + nombres.join(', ') + '. Si el domiciliario trabajo ahi, ' +
-			'esos pedidos NO estan contados abajo.</div>');
-	} else {
-		$('#ddSinRespuesta').html('');
-	}
+	$('#ddSinRespuesta').html(ddAvisoTiendas(d));
 
 	if (r.pedidos === 0) {
 		$('#ddKpis').html('<div class="col-md-12"><div class="alert alert-info" style="margin:0;">' +
@@ -172,6 +171,69 @@ function ddPintar(d) {
 	ddPintarPeores(d.peores);
 
 	$('#ddResultado').show();
+}
+
+// ===========================================================================
+// Tiendas que no contestaron, y el datamart como respaldo
+// ===========================================================================
+
+/**
+ * Lo que se le dice a la persona sobre las tiendas que no contestaron y las que se leyeron del datamart.
+ *
+ * Una tienda apagada NO es una tienda sin pedidos. Si el datamart tiene algo de ella se le ofrece, con la
+ * fecha hasta la que llega: el datamart se llena de madrugada con el dia de ayer, asi que nunca trae lo de hoy.
+ * No se mezcla solo: es la persona la que decide.
+ */
+function ddAvisoTiendas(d) {
+	var html = '';
+	var detalle = d.tiendas_sin_respuesta_detalle || [];
+	var porDatamart = d.tiendas_datamart || [];
+
+	// Las que se leyeron del datamart: se dice cuales y hasta cuando llegan los datos.
+	if (porDatamart.length > 0) {
+		var lineas = [];
+		for (var i = 0; i < porDatamart.length; i++) {
+			var t = porDatamart[i];
+			var hasta = t.datos_hasta ? ' (datos hasta el ' + ddEscapar(t.datos_hasta) + ')' : ' (sin datos en el datamart)';
+			lineas.push('<b>' + ddEscapar(t.tienda) + '</b>' + hasta);
+		}
+		html += '<div class="alert alert-info" style="padding:8px 12px;">' +
+			'<b>Leidas del datamart, no de la tienda:</b> ' + lineas.join(', ') + '. ' +
+			'El datamart se llena de madrugada con el dia anterior: no incluye lo de hoy ni lo que paso despues de la ultima replica.' +
+			'</div>';
+	}
+
+	// Las que siguen sin contestar: con el boton, si el datamart tiene algo de ellas.
+	if (detalle.length > 0) {
+		var ids = [];
+		var conDatos = [];
+		var sinDatos = [];
+		for (var j = 0; j < detalle.length; j++) {
+			var s = detalle[j];
+			if (s.datamart_hasta) {
+				ids.push(s.idtienda);
+				conDatos.push('<b>' + ddEscapar(s.tienda) + '</b> (hasta el ' + ddEscapar(s.datamart_hasta) + ')');
+			} else {
+				sinDatos.push('<b>' + ddEscapar(s.tienda) + '</b>');
+			}
+		}
+		var nombres = [];
+		for (var k = 0; k < detalle.length; k++) {
+			nombres.push(ddEscapar(detalle[k].tienda));
+		}
+		html += '<div class="alert alert-warning" style="padding:10px 14px;">' +
+			'<b>Ojo:</b> no contestaron ' + nombres.join(', ') + '. Si el domiciliario trabajo ahi, esos pedidos NO estan contados abajo.';
+		if (ids.length > 0) {
+			html += '<div style="margin-top:8px;">El datamart tiene datos de ' + conDatos.join(', ') + '. ' +
+				'<button type="button" id="ddVerDatamart" class="btn btn-warning btn-sm" data-ids="' + ids.join(',') + '" ' +
+				'style="margin-left:6px;">Consultar esas tiendas en el datamart</button></div>';
+		}
+		if (sinDatos.length > 0) {
+			html += '<div style="margin-top:6px;font-size:12px;">El datamart no tiene datos de ' + sinDatos.join(', ') + '.</div>';
+		}
+		html += '</div>';
+	}
+	return html;
 }
 
 function ddKpi(valor, rotulo, apoyo, clase) {
@@ -311,7 +373,9 @@ function ddPintarTiendas(tiendas) {
 		var r = t.resumen;
 		var g = t.regreso;
 		html += '<tr>' +
-			'<td>' + ddEscapar(t.tienda) + '</td>' +
+			'<td>' + ddEscapar(t.tienda) +
+				(t.fuente === 'DATAMART' ? ' <span class="label label-info" title="Datos hasta el ' + ddEscapar(t.datos_hasta || '') + '">datamart</span>' : '') +
+				'</td>' +
 			'<td class="text-right">' + r.pedidos + '</td>' +
 			'<td class="text-right">' + r.salidas + '</td>' +
 			'<td class="text-right">' + r.pedidos_por_salida + '</td>' +
