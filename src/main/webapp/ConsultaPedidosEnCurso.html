@@ -243,8 +243,6 @@
 									</tr>
 								</tbody>
 							</table>
-							<input type="button" class="btn btn-success btn-lg" id="reenviarNotificacion" name="reenviarNotificacion" value="Reenviar Notificacion Cliente" onclick="reenviarNotificacion()" disabled>
-							<input type="button" class="btn btn-warning btn-lg" id="recrearLink" name="recrearLink" value="Recrear Link" onclick="recrearLink()" disabled>
 						<div>
 						<div class="container">
 							<form id="marcacionesPedido">
@@ -273,12 +271,46 @@
 								      			
 								      	</tbody>
 								</table>
-								<input type="button" class="btn btn-danger btn-lg" id="reenviarPedido" name="reenviarPedido" value="Reenviar Pedido a Tienda" onclick="enviarPedidoTienda(true)" disabled>
-								<input type="button" class="btn btn-warning btn-lg" id="marcarPedido" name="marcarPedido" value="Marcar pedido como enviado SIN ENVIAR" onclick="marcarPedidoTienda()" disabled>
-								<input type="button" class="btn btn-warning btn-lg" id="cancelarPedido" name="cancelarPedido" value="Cancelar Pedido" onclick="cancelarPedido()" disabled>
+								<!-- Terminar va de primero y en verde porque es la accion que rescata
+								     el pedido. Descartar queda al lado, en gris, porque es la que no
+								     tiene vuelta atras. -->
+								<input type="button" class="btn btn-success btn-lg" id="terminarPedido" name="terminarPedido" value="Terminar y enviar" onclick="terminarPedido()" disabled>
+								<input type="button" class="btn btn-default btn-lg" id="cancelarPedido" name="cancelarPedido" value="Descartar pedido" onclick="cancelarPedido()" disabled>
+								<!-- Reenviar y Marcar como enviado NO van aca: un pedido a medio tomar
+								     no se puede reenviar, porque nunca se envio. Para eso esta
+								     Consulta de Pedidos, que trabaja sobre los finalizados. -->
+								<a href="ConsultaPedidos.html" class="btn btn-link btn-lg">Ir a Consulta de Pedidos</a>
 						</div>
 		</div>
-		
+
+		<!-- Lo unico que le falta a un pedido a medio tomar es la forma de pago:
+		     ya tiene productos, cliente y direccion. Por eso el dialogo pide eso
+		     y nada mas. El total NO se pregunta: sale de los productos. -->
+		<div class="modal fade" id="modalTerminar" tabindex="-1" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Terminar el pedido y enviarlo a la tienda</h4>
+					</div>
+					<div class="modal-body">
+						<p>El pedido ya tiene los productos y el cliente. Solo falta la forma de pago.</p>
+						<div class="form-group">
+							<label for="selectFormaPagoTerminar">Forma de pago</label>
+							<select id="selectFormaPagoTerminar" class="form-control"></select>
+						</div>
+						<div class="form-group">
+							<label for="valorPagoTerminar">Con cuanto paga (opcional)</label>
+							<input type="text" id="valorPagoTerminar" class="form-control" placeholder="Vacio = paga exacto">
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" onclick="cancelarTerminar()">Cancelar</button>
+						<button type="button" class="btn btn-success" onclick="confirmarTerminar()">Terminar y enviar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 	</body>
 	<script src="js/consultapedidosencurso.js" type="text/javascript"></script>
 	<script src="js/jquery-confirm.min.js"></script>
