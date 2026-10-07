@@ -105,6 +105,12 @@ public class EnvioTiendaDAO {
 					"UPDATE pedido SET envio_tienda_en_curso = NOW()"
 					+ " WHERE idpedido = ?"
 					+ "   AND (IFNULL(enviadopixel,0) <> 1 OR IFNULL(numposheader,0) = 0)"
+					//RETENIDO NO SALE, NI SIQUIERA A MANO. El 3 ya deja al
+					//pedido invisible para los procesos de Servicios, pero el
+					//boton Reenviar de las ocho pantallas no mira enviadopixel:
+					//pide turno. Esta linea es lo que lo tapa tambien a el, y
+					//por eso va aqui y no en cada pantalla.
+					+ "   AND IFNULL(enviadopixel,0) <> " + RetencionPedidoDAO.RETENIDO
 					+ "   AND (envio_tienda_en_curso IS NULL"
 					+ "        OR envio_tienda_en_curso < NOW() - INTERVAL " + SEGUNDOS_TURNO + " SECOND)");
 			ps.setInt(1, idPedido);
@@ -147,7 +153,8 @@ public class EnvioTiendaDAO {
 		final PreparedStatement ps = cn.prepareStatement(
 				"SELECT IFNULL(enviadopixel,0) enviadopixel, IFNULL(numposheader,0) numposheader,"
 				+ " envio_tienda_en_curso,"
-				+ " TIMESTAMPDIFF(SECOND, envio_tienda_en_curso, NOW()) hace"
+				+ " TIMESTAMPDIFF(SECOND, envio_tienda_en_curso, NOW()) hace,"
+				+ " IFNULL(retenido_motivo,'') retenido_motivo, IFNULL(retenido_por,'') retenido_por"
 				+ " FROM pedido WHERE idpedido = ?");
 		ps.setInt(1, idPedido);
 		final ResultSet rs = ps.executeQuery();
@@ -162,9 +169,26 @@ public class EnvioTiendaDAO {
 		final int numero = rs.getInt("numposheader");
 		final int hace = rs.getInt("hace");
 		final boolean hayMarca = rs.getString("envio_tienda_en_curso") != null;
+		final String motivoRetencion = rs.getString("retenido_motivo");
+		final String quienRetuvo = rs.getString("retenido_por");
 		rs.close();
 		ps.close();
 
+		//Se mira ANTES que lo demas: a quien oprimio Reenviar hay que decirle
+		//que el pedido esta retenido y por quien, no que "no se pudo".
+		if (enviado == RetencionPedidoDAO.RETENIDO) {
+			t.motivo = "RETENIDO";
+			if ("PROGRAMADO".equals(motivoRetencion)) {
+				t.mensaje = "Este pedido es para una fecha futura y todavia no le toca salir."
+						+ " Sale solo a su hora; si de verdad hay que mandarlo ya,"
+						+ " hagalo desde la pantalla de pedidos programados.";
+			} else {
+				t.mensaje = "Este pedido lo esta editando "
+						+ (quienRetuvo.length() > 0 ? quienRetuvo : "otra persona")
+						+ ". No se envio para no mandar a cocina algo a medio corregir.";
+			}
+			return;
+		}
 		if (enviado == 1 && numero > 0) {
 			t.motivo = "YA_EN_TIENDA";
 			t.numeroTienda = numero;
