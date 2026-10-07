@@ -26,7 +26,13 @@ $(function () {
 	$('#btnAgregar').on('click', agregarEvento);
 	$('#btnAtendida').on('click', function () { cerrarNovedad('ATENDIDA'); });
 	$('#btnRechazar').on('click', function () { cerrarNovedad('RECHAZADA'); });
-	$('#btnCerrarCaja').on('click', function () { $('#cajaRevision').hide(); novedadActual = null; });
+	//Al cerrar hay que devolver la pantalla a la tabla: si no, la caja desaparece
+	//y uno queda abajo del todo mirando el vacio, sin saber que paso.
+	$('#btnCerrarCaja').on('click', function () {
+		$('#cajaRevision').hide();
+		novedadActual = null;
+		traerALaVista('#grid-novedades');
+	});
 	consultar();
 });
 
@@ -154,7 +160,28 @@ function revisar(idNovedad) {
 	$('#nuevaHora').val('');
 	$('#observacion').val('');
 	$('#cajaRevision').show();
+	//La caja de revision NO es un modal: es un div que vive debajo de la tabla,
+	//en el flujo normal de la pagina. Con doce novedades en pantalla se abre muy
+	//por debajo de lo que se alcanza a ver, y desde la silla el boton Revisar
+	//parece que no hiciera nada. Hay que traerla a la vista.
+	traerALaVista('#cajaRevision');
 	cargarJornada();
+}
+
+/**
+ * Lleva la pantalla hasta un bloque que se acaba de mostrar.
+ *
+ * Se usa animate y no scrollTop directo para que se vea el recorrido: si la
+ * pagina salta de golpe, quien hizo clic no entiende que lo movieron y busca
+ * donde estaba. El desplazamiento de 20 pixeles deja el borde superior
+ * despegado del filo de la ventana.
+ */
+function traerALaVista(selector) {
+	var caja = $(selector);
+	if (caja.length === 0) {
+		return;
+	}
+	$('html, body').animate({ scrollTop: caja.offset().top - 20 }, 350);
 }
 
 function cargarJornada() {
@@ -335,6 +362,7 @@ function cerrarNovedad(estado) {
 							$.alert(data.mensaje);
 							$('#cajaRevision').hide();
 							novedadActual = null;
+							traerALaVista('#grid-novedades');
 							consultar();
 						},
 						error: function () {
