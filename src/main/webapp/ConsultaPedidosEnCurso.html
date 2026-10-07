@@ -319,7 +319,9 @@
 	<script type="text/javascript" src="js/datepicker.js"></script>
 	<script>
 		$("#fechainicial").datepicker($.datepicker.regional["es"]);
-		$("#fechainicial").datepicker('setDate', new Date());
+		/* Por defecto, la semana que va corriendo: un pedido colgado de hace mas de
+		   una semana ya no se rescata, y un rango mas grande solo hace lenta la consulta. */
+		$("#fechainicial").datepicker('setDate', '-7d');
 		$("#fechafinal").datepicker($.datepicker.regional["es"]);
 		$("#fechafinal").datepicker('setDate', new Date());
 	</script>

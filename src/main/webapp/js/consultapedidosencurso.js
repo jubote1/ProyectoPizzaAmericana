@@ -108,13 +108,11 @@ $(document).ready(function () {
 		seleccionarPedido(datos);
 	});
 
-	//Por defecto, la semana que va corriendo: un pedido colgado de hace mas de
-	//una semana ya no se rescata, y pedir un rango mas grande solo hace lenta
-	//la consulta.
-	var hoy = new Date();
-	var hace7 = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-	$('#fechainicial').val(aISO(hace7));
-	$('#fechafinal').val(aISO(hoy));
+	//Las fechas NO se llenan aqui: el selector de fechas de la pagina
+	//(ConsultaPedidosEnCurso.html, al final) las pone en dd/mm/aaaa, con la
+	//semana que va corriendo como rango. Antes esto las dejaba en aaaa-mm-dd,
+	//y el servidor no las entendia; ademas se veian en dos formatos distintos
+	//segun se hubieran escrito o escogido en el calendario.
 
 	//Esta pantalla es la de los que quedaron a medio tomar: se abre con ese
 	//filtro puesto, aunque se pueda cambiar.
@@ -125,22 +123,38 @@ $(document).ready(function () {
 	botones(false);
 });
 
-function aISO(f) {
-	var m = f.getMonth() + 1;
-	var d = f.getDate();
-	return (f.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d);
-}
-
+/*
+ * El servicio ConsultaIntegradaPedidosEnCurso recibe la tienda por su NOMBRE,
+ * o la palabra TODAS: asi lo hacen todas las pantallas hermanas
+ * (consultapedidos.js y compania). Cuando esta lista mandaba el id -y "0" para
+ * todas- el servidor buscaba una tienda llamada "0", no la encontraba, y
+ * filtraba por idtienda = 0: la consulta volvia siempre vacia.
+ *
+ * GetTiendas devuelve una lista de {id, nombre}; el id viene en "id", no en
+ * "idtienda".
+ */
 function cargarTiendas() {
 	$.getJSON(server + 'GetTiendas', function (datos) {
 		var lista = (datos && datos.tiendas) ? datos.tiendas : datos;
-		var html = '<option value="0">Todas</option>';
+		var html = '';
 		for (var i = 0; i < lista.length; i++) {
-			html += '<option value="' + lista[i].idtienda + '">'
+			html += '<option value="' + lista[i].nombre + '">'
 				+ lista[i].nombre + '</option>';
 		}
+		html += '<option value="TODAS" selected>TODAS</option>';
 		$('#selectTiendas').html(html);
 	});
+}
+
+/*
+ * El servidor lee las fechas como dd/MM/yyyy (el formato del selector de
+ * fechas de la pagina). Si por cualquier razon el campo trae aaaa-mm-dd, se
+ * convierte antes de enviar: con ese formato la consulta fallaba entera.
+ */
+function fechaParaServidor(texto) {
+	var t = $.trim(texto || '');
+	var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+	return m ? (m[3] + '/' + m[2] + '/' + m[1]) : t;
 }
 
 /* Prende o apaga los botones que actuan sobre un pedido. */
@@ -150,8 +164,8 @@ function botones(hay) {
 }
 
 function consultarPedido() {
-	var fechaini = $('#fechainicial').val();
-	var fechafin = $('#fechafinal').val();
+	var fechaini = fechaParaServidor($('#fechainicial').val());
+	var fechafin = fechaParaServidor($('#fechafinal').val());
 
 	if (!fechaini || !fechafin) {
 		alert('Las dos fechas son obligatorias.');
