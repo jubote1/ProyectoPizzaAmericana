@@ -11,6 +11,15 @@
 		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
 		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
 		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+		  <style type="text/css">
+			/* El grid tiene 15 columnas visibles y el contenedor mide lo que mide el resto de la pagina:
+			   sin esto la tabla se salia por la derecha y arrastraba toda la pagina. Aqui se compacta, y si
+			   aun asi no cabe, se desplaza dentro de su propia tarjeta. */
+			.tabla-desplazable { overflow-x: auto; }
+			#grid-encabezadopedido { margin: 0; }
+			#grid-encabezadopedido thead th { padding: 8px 20px 8px 6px; font-size: 11px; }
+			#grid-encabezadopedido tbody td { padding: 4px 6px; font-size: 12px; word-break: break-word; }
+		  </style>
 	</head>
 	<body>
 
@@ -102,7 +111,7 @@
 			</form>
 		</div>
 				<div class="container">
-					<div>
+					<div class="tabla-desplazable">
         				<table id="grid-encabezadopedido" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
 								        <thead>
 								            <tr>
