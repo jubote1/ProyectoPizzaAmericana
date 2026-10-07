@@ -4,12 +4,16 @@
 		<title>Consulta Pedidos NUEVA Tienda Virtual</title>
 		<meta charset="utf-8" />
 		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/all.min.css" rel="stylesheet" type="text/css" />
 		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
 		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+		  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+		  <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
+		  <link rel="stylesheet" href="css/pedidos_mapa_clasico.css?v=5">
 		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
 		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
-		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
-		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
+		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>	
 	</head>
 	<body>
 
@@ -193,7 +197,69 @@
 				
 			</form>
 		</div>
-		<div class="container" id="map" style="width:800px; height:600px; text-align:center" >
+		<div class="container panel-mapa-contenedor">
+			<!-- Card de Asistencia Visual y Verificación de Coordenadas -->
+			<div class="panel-mapa-asistente">
+				<div class="panel-mapa-grid">
+					<!-- Dirección Registrada -->
+					<div class="panel-mapa-item">
+						<div class="panel-mapa-item-header">
+							<span class="panel-mapa-label"><i class="fas fa-file-invoice"></i> Dir. Pedido:</span>
+							<span id="mapaBadgeOrigenDireccion" class="badge-origen-dir label label-info">Nomenclatura</span>
+						</div>
+						<div class="panel-mapa-valor valor-registrada" id="mapaTxtDireccionRegistrada">Sin dirección especificada</div>
+					</div>
+
+					<!-- Dirección Detectada en Mapa con botón directo para aplicar -->
+					<div class="panel-mapa-item item-detectada">
+						<div class="panel-mapa-item-header">
+							<span class="panel-mapa-label"><i class="fas fa-map-marker-alt text-danger"></i> Dir. en Mapa:</span>
+							<span id="mapaBadgeCoincidencia" class="badge-similitud-dir" style="display: none;"></span>
+						</div>
+						<div class="panel-mapa-valor valor-detectada" id="mapaTxtDireccionDetectada">Mueva el marcador o consulte cobertura...</div>
+						<div style="margin-top: 6px;">
+							<button type="button" class="btn btn-usar-direccion" id="btnCopiarDireccionMapa" style="display:none;" onclick="aplicarDireccionDetectadaAlFormulario()">
+								<i class="fas fa-check-circle"></i> Usar esta Dirección en el Pedido
+							</button>
+						</div>
+					</div>
+
+					<!-- Tienda Asignada y Cobertura -->
+					<div class="panel-mapa-item">
+						<span class="panel-mapa-label"><i class="fas fa-store"></i> Tienda / Cobertura:</span>
+						<div class="panel-mapa-valor" id="mapaTxtTiendaCobertura">-</div>
+					</div>
+
+					<!-- Coordenadas Exactas -->
+					<div class="panel-mapa-item">
+						<span class="panel-mapa-label"><i class="fas fa-location-arrow"></i> Coordenadas GPS del Pedido:</span>
+						<div class="panel-mapa-valor" id="mapaTxtCoordenadas" style="font-family: monospace; font-size: 13px;">Lat: 0.000000, Lng: 0.000000</div>
+					</div>
+				</div>
+
+				<!-- Toolbar de controles del mapa: Calles / Satélite, Mover Marcador y Street View -->
+				<div class="panel-mapa-toolbar">
+					<div class="btn-group" role="group">
+						<button type="button" class="btn btn-default active" id="btnMapaBasemapCalles" onclick="cambiarBasemapArcgis('gray-vector')">
+							<i class="fas fa-map"></i> Calles
+						</button>
+						<button type="button" class="btn btn-default" id="btnMapaBasemapSatelite" onclick="cambiarBasemapArcgis('hybrid')">
+							<i class="fas fa-satellite"></i> Satélite HD
+						</button>
+					</div>
+					<button type="button" class="btn btn-default btn-modo-mover" id="btnModoMoverMarcador" onclick="toggleModoMoverMarcador()" title="Haz clic aquí o sobre el marcador para reubicar al cliente con seguridad">
+						<i class="fas fa-arrows-alt"></i> <span id="txtBtnMoverMarcador">Mover Marcador</span>
+					</button>
+					<div>
+						<a href="#" id="btnMapaStreetView" target="_blank" class="btn-streetview" style="display: none;">
+							<i class="fab fa-google"></i> Google Maps / Street View <i class="fas fa-external-link-alt" style="font-size: 10px;"></i>
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Contenedor del Mapa ArcGIS -->
+			<div id="map"></div>
 		</div>
 		<div class="container">
 			<table class="table table-bordered">
@@ -234,7 +300,7 @@
 											<select id="selectMunicipio" class="form-control" onchange="descripcionDireccion()"></select>
 										</div>
 										<div class="col-md-2">
-											<button type="button" class="btn btn-secondary btn-sm" id="buscarmapa"  onclick="EventoBuscar()">Buscar</button>
+											<button type="button" class="btn btn-primary btn-sm btn-buscar-global" id="buscarmapa" onclick="findAddress(null, true)"><i class="fas fa-search"></i> Buscar</button>
 										</div>
 										<div class="col-md-6 col-md-offset-0 col-lg-6 col-lg-offset-0">  
 											<input type="text" id="descDireccion" name="descDireccion" class="form-control" placeholder="Descripción Dirección" maxlength="10">
@@ -357,22 +423,18 @@
 								<input type="button" class="btn btn-warning btn-lg" id="cancelarPedido" name="cancelarPedido" value="Cancelar Pedido" onclick="cancelarPedido()" disabled>
 						</div>
 		</div>
-		<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
-	    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
-	    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
-	    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
-	    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-	    <script src="./apihere.js"></script>
-	</body>
-	<script src="js/consultapedidosnuevatienda.js" type="text/javascript"></script>
-	<script src="js/jquery-confirm.min.js"></script>
-	</script>
-	<script src="js/jquery-ui.min.js"></script>
-	<script type="text/javascript" src="js/datepicker.js"></script>
-	<script>
+	    <script src="js/jquery-confirm.min.js"></script>
+	    <script src="js/jquery-ui.min.js"></script>
+	    <script type="text/javascript" src="js/datepicker.js"></script>
+	    <script>
 		$("#fechainicial").datepicker($.datepicker.regional["es"]);
 		$("#fechainicial").datepicker('setDate', new Date());
 		$("#fechafinal").datepicker($.datepicker.regional["es"]);
 		$("#fechafinal").datepicker('setDate', new Date());
-	</script>
+	    </script>
+	    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+	    <script src="js/consultapedidosnuevatienda.js" type="text/javascript"></script>
+	    <script src="https://js.arcgis.com/4.27/"></script>
+	    <script src="./arcgis.js?v=50" type="text/javascript"></script>
+	</body>
 </html>

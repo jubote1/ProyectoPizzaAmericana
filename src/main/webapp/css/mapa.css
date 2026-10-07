@@ -1256,3 +1256,148 @@
 
 
 
+
+
+/* Tarjetas y Contenedor de la Lista de Paradas */
+.contenedor-lista-paradas {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.contenedor-lista-paradas::-webkit-scrollbar {
+    width: 6px;
+}
+
+.contenedor-lista-paradas::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+.card-parada-item {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    cursor: pointer;
+    border-radius: 7px;
+}
+
+.card-parada-item:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.16) !important;
+    transform: translateY(-1.5px);
+}
+
+.card-parada-item.parada-activa {
+    border: 2px solid #d97706 !important;
+    background: #fffbeb !important;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.22) !important;
+}
+
+.card-parada-item.tipo-entrega {
+    border-left: 4px solid #10b981 !important;
+}
+
+.card-parada-item.tipo-entrega:hover {
+    border-color: #10b981 !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+}
+
+.card-parada-item.tipo-entrega.parada-activa {
+    border: 2px solid #059669 !important;
+    border-left: 5px solid #059669 !important;
+    background: #ecfdf5 !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25) !important;
+}
+
+.card-parada-item.tipo-parada {
+    border-left: 4px solid #f59e0b !important;
+}
+
+.card-parada-item.tipo-parada:hover {
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2) !important;
+}
+
+.card-parada-item.tipo-parada.parada-activa {
+    border: 2px solid #d97706 !important;
+    border-left: 5px solid #d97706 !important;
+    background: #fffbeb !important;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25) !important;
+}
+
+.card-parada-item.tipo-desconexion {
+    border-left: 4px solid #ef4444 !important;
+    background: #fffafa !important;
+}
+
+.card-parada-item.tipo-desconexion:hover {
+    border-color: #ef4444 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+.card-parada-item.tipo-desconexion.parada-activa {
+    border: 2px solid #dc2626 !important;
+    border-left: 5px solid #dc2626 !important;
+    background: #fef2f2 !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25) !important;
+}
+
+.btn-ir-parada {
+    font-size: 11px !important;
+    padding: 2px 9px !important;
+    border-radius: 5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px;
+    transition: all 0.15s ease;
+}
+
+.parada-badge-chip {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Pestañas de telemetría y alertas de paradas */
+#pills-tab-recorrido .nav-link {
+    padding: 6px 4px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#pills-tab-recorrido .badge-danger {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.fila-parada-alerta {
+    animation: fadeIn 0.3s ease;
+}
+
+.badge-alerta-senal {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    min-width: 20px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    padding: 0 5px !important;
+    border-radius: 9px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    margin-left: 4px !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+}

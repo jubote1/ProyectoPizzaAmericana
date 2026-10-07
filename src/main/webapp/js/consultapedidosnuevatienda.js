@@ -1149,10 +1149,21 @@ function getListaMunicipios(){
 	});
 }
 
-function fijarCoordenadasManualmente(coordenadaMapa)
+function fijarCoordenadasManualmente(lat, lon)
 {
-    latitud = coordenadaMapa.lat;
-    longitud = coordenadaMapa.lng;
+    if (typeof lat === 'object' && lat !== null) {
+        latitud = lat.lat !== undefined ? lat.lat : lat.latitude;
+        longitud = lat.lng !== undefined ? lat.lng : lat.longitude;
+    } else {
+        latitud = lat;
+        longitud = lon;
+    }
+}
+
+function EventoBuscar() {
+    if (typeof findAddress === 'function') {
+        findAddress(null, true);
+    }
 }
 
 //Este método tendrá como objetivo realizar cambios en el contenido para prevenir posibles fallas en la búsqueda de la dirección

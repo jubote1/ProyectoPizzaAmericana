@@ -647,7 +647,7 @@ $(document).ready(function() {
 		return (peds > 0) ? "EN_RUTA" : "FUERA_DE_TIENDA";
 	}
 
-	function updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado = null, bateria = null, velocidad = null, pedidos_activos = 0, pedidos_detalle = null, autoFilter = true) {
+	function updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado = null, bateria = null, velocidad = null, pedidos_activos = 0, pedidos_detalle = null, autoFilter = true, app_version = null) {
 		if (typeof estado === 'boolean') {
 			autoFilter = estado;
 			estado = null;
@@ -675,13 +675,18 @@ $(document).ready(function() {
 			if ((!finalIdTienda || finalIdTienda === 0) && regExistente.idtienda) {
 				finalIdTienda = parseInt(regExistente.idtienda, 10) || 0;
 			}
-			if (!finalTipo) finalTipo = regExistente.tipo_repartidor;
-			if (!finalEmpresa) finalEmpresa = regExistente.empresa_temporal;
+			if (finalTipo === undefined || finalTipo === null) finalTipo = regExistente.tipo_repartidor;
+			if (finalTipo === 'DIRECTO') {
+				finalEmpresa = "";
+			} else if (finalEmpresa === undefined || finalEmpresa === null) {
+				finalEmpresa = regExistente.empresa_temporal;
+			}
 			if (finalBiometria === undefined) finalBiometria = regExistente.en_turno_biometria;
 			if (finalBateria === null || finalBateria === undefined) finalBateria = regExistente.bateria;
 			if (finalVelocidad === null || finalVelocidad === undefined) finalVelocidad = regExistente.velocidad;
 			if (pedidos_activos === undefined || pedidos_activos === null) finalPedidosActivos = regExistente.pedidos_activos;
 			if (pedidos_detalle === undefined || pedidos_detalle === null) finalPedidosDetalle = regExistente.pedidos_detalle;
+			if (!app_version && regExistente.app_version) app_version = regExistente.app_version;
 		}
 		if (!finalTipo) finalTipo = "OTRO";
 		if (!finalEmpresa) finalEmpresa = "";
@@ -706,6 +711,9 @@ $(document).ready(function() {
 		const badgeInactivoHtml = esInactivo 
 			? '<span class="badge-inactivo-tag ml-1" title="Sin reporte GPS hace más de 2 horas"><i class="fas fa-moon mr-1"></i>Inactivo</span>' 
 			: '';
+		const badgeVersionHtml = app_version 
+			? `<span class="badge badge-success ml-1" style="font-size: 9px; padding: 2px 4px; vertical-align: middle; border-radius: 4px;" title="Versión de App Instalada: v${app_version}"><i class="fas fa-mobile-alt mr-1"></i>v${app_version}</span>` 
+			: '';
 
 		const colUsuario = `
 			<div class="domi-nombre-cell">
@@ -718,6 +726,7 @@ $(document).ready(function() {
 					${badgeInactivoHtml}
 					${badgeBiometriaHtml}
 					${badgeTipoHtml}
+					${badgeVersionHtml}
 				</div>
 			</div>
 		`;
@@ -743,6 +752,7 @@ $(document).ready(function() {
 			reg.velocidad = finalVelocidad;
 			reg.pedidos_activos = finalPedidosActivos;
 			reg.pedidos_detalle = finalPedidosDetalle;
+			reg.app_version = app_version;
 
 			reg.row.data([
 				colUsuario,
@@ -841,10 +851,13 @@ $(document).ready(function() {
 				empresa_temporal: finalEmpresa,
 				en_turno_biometria: finalBiometria,
 				estado: finalEstado,
+				esInactivo: esInactivo,
+				minutosInactividad: minutosInactividad,
 				bateria: finalBateria,
 				velocidad: finalVelocidad,
 				pedidos_activos: finalPedidosActivos,
 				pedidos_detalle: finalPedidosDetalle,
+				app_version: app_version,
 				row: newRow,
 				marker: marker
 			});
@@ -1112,7 +1125,7 @@ $(document).ready(function() {
 	// Escuchar datos desde el servidor
 	socket.on('updateLocation', (data) => {
 		if (!data || !data.clave_usuario) return;
-		const { clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle } = data;
+		const { clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, app_version } = data;
 		const selectedStore = String(selectTienda.val() || "0");
 		const driverStore = String(idtienda || "");
 
@@ -1121,7 +1134,7 @@ $(document).ready(function() {
 			return;
 		}
 
-		updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle);
+		updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, true, app_version);
 	});
 
 
@@ -1207,8 +1220,8 @@ $(document).ready(function() {
 					markers = {};
 
 					response.forEach(location => {
-						const { clave_usuario, latitud, longitud, fecha, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle } = location;
-						updateRowAndMarker(clave_usuario, latitud, longitud, fecha, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, false);
+						const { clave_usuario, latitud, longitud, fecha, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, app_version } = location;
+						updateRowAndMarker(clave_usuario, latitud, longitud, fecha, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, false, app_version);
 					});
 
 					aplicarFiltrosLive(true);
@@ -1290,32 +1303,127 @@ $(document).ready(function() {
 	let markerInicio = null;
 	let markerFin = null;
 	let markersParadas = [];
+	let todosLosMarkersEntregas = [];
 	let markersEntregas = [];
+	let markerTiendaDetalle = null;
 	let polylinesSaltos = [];
 	let rutaVisible = true;
-	let entregasVisibles = true;
+	let entregasVisibles = false; // Desactivado por defecto según requerimiento
+	let tiendaIdOriginal = null;
+	let tiendaNombreOriginal = null;
+	let despachosHistorialMap = new Map();
 
 	function actualizarVisibilidadEntregas() {
+		const conteo = markersEntregas.length;
 		if (entregasVisibles) {
-			markersEntregas.forEach(m => {
-				if (!map_detalle.hasLayer(m)) {
-					m.addTo(map_detalle);
+			todosLosMarkersEntregas.forEach(m => {
+				if (markersEntregas.includes(m)) {
+					if (!map_detalle.hasLayer(m)) {
+						m.addTo(map_detalle);
+					}
+				} else {
+					if (map_detalle.hasLayer(m)) {
+						map_detalle.removeLayer(m);
+					}
 				}
 			});
 			$('#btnToggleEntregas')
-				.removeClass('btn-outline-secondary')
-				.addClass('btn-outline-success')
-				.html(`<i class="fas fa-box mr-1"></i> Pedidos (${markersEntregas.length})`);
+				.removeClass('btn-outline-secondary btn-outline-success')
+				.addClass('btn-success')
+				.html(`<i class="fas fa-box mr-1"></i> Pedidos (${conteo}) (Activo)`);
 		} else {
-			markersEntregas.forEach(m => {
+			todosLosMarkersEntregas.forEach(m => {
 				if (map_detalle.hasLayer(m)) {
 					map_detalle.removeLayer(m);
 				}
 			});
 			$('#btnToggleEntregas')
-				.removeClass('btn-outline-success')
+				.removeClass('btn-success btn-outline-success')
 				.addClass('btn-outline-secondary')
-				.html('<i class="fas fa-eye-slash mr-1"></i> Pedidos Ocultos');
+				.html(`<i class="fas fa-box mr-1"></i> Pedidos (${conteo})`);
+		}
+	}
+
+	function ubicarMarcadorTiendaEnDetalle(idtienda, tiendaNombre, puntosRef) {
+		if (markerTiendaDetalle && map_detalle && map_detalle.hasLayer(markerTiendaDetalle)) {
+			map_detalle.removeLayer(markerTiendaDetalle);
+		}
+		markerTiendaDetalle = null;
+
+		let tiendaObj = null;
+
+		// 1. Proximidad física al punto inicial del recorrido si se suministran puntos
+		if (puntosRef && puntosRef.length > 0) {
+			const lat0 = parseFloat(puntosRef[0].latitud);
+			const lng0 = parseFloat(puntosRef[0].longitud);
+			if (!isNaN(lat0) && !isNaN(lng0) && lat0 !== 0 && lng0 !== 0) {
+				let distMin = Infinity;
+				let tiendaCercana = null;
+				for (const k in TIENDAS_POR_ID) {
+					const t = TIENDAS_POR_ID[k];
+					const d = calcularDistanciaPuntosMetros(lat0, lng0, t.lat, t.lng);
+					if (d < distMin) {
+						distMin = d;
+						tiendaCercana = t;
+					}
+				}
+				if (tiendaCercana && distMin <= 800) {
+					tiendaObj = tiendaCercana;
+				}
+			}
+		}
+
+		// 2. Coincidencia por nombre (normalizando acentos)
+		if (!tiendaObj && tiendaNombre) {
+			const nombreNorm = String(tiendaNombre).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+			for (const k in TIENDAS_POR_ID) {
+				const tNom = String(TIENDAS_POR_ID[k].nombre).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+				if (nombreNorm.includes(tNom) || tNom.includes(nombreNorm)) {
+					tiendaObj = TIENDAS_POR_ID[k];
+					break;
+				}
+			}
+		}
+
+		// 3. Fallback por idtienda
+		if (!tiendaObj && idtienda && TIENDAS_POR_ID[idtienda]) {
+			tiendaObj = TIENDAS_POR_ID[idtienda];
+		}
+
+		if (tiendaObj && map_detalle) {
+			// Icono redondo idéntico en forma y tamaño al del domiciliario (34px), pero con casita y color verde esmeralda distintivo
+			const iconTienda = L.divIcon({
+				className: 'custom-tienda-marker',
+				html: `
+					<div class="tienda-marker-box" title="Punto de Venta: ${tiendaObj.nombre}" style="position: relative; width: 34px; height: 34px; cursor: pointer;">
+						<div class="tienda-marker-icon" style="width: 34px; height: 34px; background: #059669; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35); border: 2px solid #ffffff; transition: transform 0.2s ease;">
+							<i class="fas fa-home" style="font-size: 16px; color: #ffffff;"></i>
+						</div>
+					</div>
+				`,
+				iconSize: [34, 34],
+				iconAnchor: [17, 17],
+				popupAnchor: [0, -18]
+			});
+
+			markerTiendaDetalle = L.marker([tiendaObj.lat, tiendaObj.lng], {
+				icon: iconTienda,
+				zIndexOffset: 1200
+			}).addTo(map_detalle);
+
+			markerTiendaDetalle.bindTooltip(`
+				<div class="p-1 font-weight-bold">
+					<i class="fas fa-home text-success mr-1"></i>Punto de Venta: <b>${tiendaObj.nombre}</b>
+				</div>
+			`, { direction: 'top', offset: [0, -15] });
+
+			markerTiendaDetalle.bindPopup(`
+				<div class="p-2 text-center">
+					<i class="fas fa-store text-success fa-2x mb-1"></i>
+					<div class="font-weight-bold text-dark">${tiendaObj.nombre}</div>
+					<div class="small text-muted">Punto de Venta / Sede</div>
+				</div>
+			`);
 		}
 	}
 
@@ -1340,22 +1448,46 @@ $(document).ready(function() {
 	}
 
 	// Detecta si entre dos puntos consecutivos hubo un bache de señal o salto atípico
-	function esSaltoSenal(pA, pB) {
+	function esSaltoSenal(pA, pB, puntosOriginales = null) {
 		if (!pA || !pB || !pA.fecha || !pB.fecha) return false;
 		const tA = new Date(pA.fecha).getTime();
 		const tB = new Date(pB.fecha).getTime();
 		const diffMin = (tB - tA) / (1000 * 60);
+
+		// Si pasaron menos de 5.5 minutos, evaluar si hubo un salto atípico de distancia
+		if (diffMin < 5.5) {
+			const posA = L.latLng(parseFloat(pA.latitud), parseFloat(pA.longitud));
+			const posB = L.latLng(parseFloat(pB.latitud), parseFloat(pB.longitud));
+			const distM = posA.distanceTo(posB);
+			return (diffMin >= 2.5 && distM > 2500);
+		}
+
+		// Si pasaron >= 5.5 min en la lista filtrada pero tenemos los puntos originales del GPS:
+		// Verificar si en realidad el domiciliario estuvo enviando reportes quieto en el mismo lugar (ej: esperando pedidos en tienda)
+		if (puntosOriginales && puntosOriginales.length > 0) {
+			const huboPuntosIntermedios = puntosOriginales.some(p => {
+				const t = new Date(p.fecha).getTime();
+				return t > (tA + 10000) && t < (tB - 10000);
+			});
+			if (huboPuntosIntermedios) {
+				return false; // NO es desconexión; hubo telemetría continua en parada/tienda
+			}
+		}
+
+		// Si el desplazamiento es despreciable (< 120m), el domiciliario estuvo en la misma parada/tienda
+		// No se marca como pérdida de ruta en trayecto a menos que sea un tiempo excesivo (> 45 min)
 		const posA = L.latLng(parseFloat(pA.latitud), parseFloat(pA.longitud));
 		const posB = L.latLng(parseFloat(pB.latitud), parseFloat(pB.longitud));
 		const distM = posA.distanceTo(posB);
+		if (distM < 120 && diffMin < 45) {
+			return false; // Estuvo quieto en la misma parada o tienda sin salto de ruta
+		}
 
-		// Se considera pérdida de señal si pasaron >= 5.5 minutos sin reporte,
-		// o si en >= 2.5 minutos hubo un salto de más de 2500 metros
-		return (diffMin >= 5.5) || (diffMin >= 2.5 && distM > 2500);
+		return true;
 	}
 
 	// Segmenta los puntos en bloques continuos confiables para no unir con calles falsas los baches de señal
-	function segmentarPuntosEnBloques(puntos) {
+	function segmentarPuntosEnBloques(puntos, puntosOriginales = null) {
 		if (!puntos || puntos.length === 0) return { bloques: [], saltos: [] };
 		const bloques = [];
 		const saltos = [];
@@ -1365,7 +1497,7 @@ $(document).ready(function() {
 			const pActual = puntos[i];
 			const pSig = puntos[i + 1];
 
-			if (esSaltoSenal(pActual, pSig)) {
+			if (esSaltoSenal(pActual, pSig, puntosOriginales)) {
 				bloques.push(bloqueActual);
 				const tA = new Date(pActual.fecha).getTime();
 				const tB = new Date(pSig.fecha).getTime();
@@ -1405,8 +1537,8 @@ $(document).ready(function() {
 			.addClass('btn-outline-info')
 			.html('<i class="fas fa-spinner fa-spin mr-1"></i> Trazando calles...');
 
-		// Segmentar en bloques continuos para que OSRM NUNCA invente calles sobre un bache de desconexión
-		const { bloques } = segmentarPuntosEnBloques(puntosBase);
+		// Segmentar en bloques continuos respetando reportes reales y saltos de señal
+		const { bloques } = segmentarPuntosEnBloques(puntosBase, puntosHistorico);
 
 		try {
 			const promesasBloques = bloques.map(async (bloque, bIdx) => {
@@ -1414,35 +1546,71 @@ $(document).ready(function() {
 					return bloque.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]);
 				}
 
-				// Dividir el bloque en trozos secuenciales de máximo 18 waypoints con 1 de solapamiento
-				const CHUNK_SIZE = 18;
+				// Dividir el bloque en trozos secuenciales de máximo 8 waypoints con 1 de solapamiento
+				// CHUNK_SIZE = 8 aprovecha el API de Map Matching de OSRM sin exceder el límite del servidor público
+				const CHUNK_SIZE = 8;
 				const chunks = [];
 				for (let i = 0; i < bloque.length - 1; i += CHUNK_SIZE) {
 					const end = Math.min(bloque.length, i + CHUNK_SIZE + 1);
 					chunks.push(bloque.slice(i, end));
 				}
 
-				const promesasChunks = chunks.map((chunk, idx) => {
-					const coordsStr = chunk.map(p => `${parseFloat(p.longitud).toFixed(5)},${parseFloat(p.latitud).toFixed(5)}`).join(';');
-					const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`;
+				const resultadosChunks = new Array(chunks.length);
+				let nextChunkIdx = 0;
 
-					return fetch(url)
-						.then(r => r.json())
-						.then(res => {
-							if (res && res.code === 'Ok' && res.routes && res.routes.length > 0) {
-								return res.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+				// Procesar con pool de trabajadores concurrentes (4 en paralelo) para máxima velocidad sin bloqueos
+				async function chunkWorker() {
+					while (nextChunkIdx < chunks.length) {
+						const idx = nextChunkIdx++;
+						const chunk = chunks[idx];
+						const coordsStr = chunk.map(p => `${parseFloat(p.longitud).toFixed(5)},${parseFloat(p.latitud).toFixed(5)}`).join(';');
+						const radsStr = chunk.map(() => '40').join(';');
+
+						// 1. Prioridad: OSRM Map Matching API (/match/v1/driving/)
+						// Ajusta la traza GPS directamente sobre los ejes viales y curvas reales sin rodeos artificiales
+						const matchUrl = `https://router.project-osrm.org/match/v1/driving/${coordsStr}?overview=full&geometries=geojson&radiuses=${radsStr}`;
+						try {
+							const rMatch = await fetch(matchUrl);
+							const resMatch = await rMatch.json();
+							if (resMatch && resMatch.code === 'Ok' && resMatch.matchings && resMatch.matchings.length > 0) {
+								const coordsMatched = [];
+								resMatch.matchings.forEach(m => {
+									if (m.geometry && m.geometry.coordinates) {
+										coordsMatched.push(...m.geometry.coordinates.map(c => [c[1], c[0]]));
+									}
+								});
+								if (coordsMatched.length > 0) {
+									resultadosChunks[idx] = coordsMatched;
+									continue;
+								}
 							}
-							return chunk.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]);
-						})
-						.catch(err => {
-							console.warn(`Chunk ${idx} del bloque ${bIdx} falló OSRM, usando directo:`, err);
-							return chunk.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]);
-						});
-				});
 
-				const resultadosChunks = await Promise.all(promesasChunks);
+							// 2. Fallback: OSRM Routing tradicional (/route/v1/driving/)
+							const routeUrl = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&continue_straight=false&radiuses=${radsStr}`;
+							const rRoute = await fetch(routeUrl);
+							const resRoute = await rRoute.json();
+							if (resRoute && resRoute.code === 'Ok' && resRoute.routes && resRoute.routes.length > 0) {
+								const geom = resRoute.routes[0].geometry;
+								if (geom && geom.coordinates && geom.coordinates.length > 0) {
+									resultadosChunks[idx] = geom.coordinates.map(c => [c[1], c[0]]);
+									continue;
+								}
+							}
+
+							// 3. Fallback seguro: Trazo directo por coordenadas GPS filtradas (sin saltar manzanas)
+							resultadosChunks[idx] = chunk.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]);
+						} catch (errChunk) {
+							resultadosChunks[idx] = chunk.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]);
+						}
+					}
+				}
+
+				const workers = [chunkWorker(), chunkWorker(), chunkWorker(), chunkWorker()];
+				await Promise.all(workers);
+
 				const coordsBloque = [];
 				resultadosChunks.forEach((coordsChunk, idx) => {
+					if (!coordsChunk || coordsChunk.length === 0) return;
 					if (idx === 0) {
 						coordsBloque.push(...coordsChunk);
 					} else {
@@ -1499,7 +1667,7 @@ $(document).ready(function() {
 			if (polylineGlow) polylineGlow.setLatLngs(latLngsDirectos);
 			rutaAjustadaACalles = false;
 			$('#btnAjustarCalles')
-				.removeClass('btn-success')
+				.removeClass('btn-success btn-primary')
 				.addClass('btn-outline-primary')
 				.html('<i class="fas fa-road mr-1"></i> Ajustar a Calles');
 		} else {
@@ -1529,15 +1697,11 @@ $(document).ready(function() {
 		markersParadas.forEach(m => {
 			if (map_detalle.hasLayer(m)) map_detalle.removeLayer(m);
 		});
-		entregasVisibles = true;
-		markersEntregas.forEach(m => {
+		// Remover capas de entregas del mapa sin destruir la lista en memoria
+		todosLosMarkersEntregas.forEach(m => {
 			if (map_detalle.hasLayer(m)) map_detalle.removeLayer(m);
 		});
-		markersEntregas = [];
-		$('#btnToggleEntregas')
-			.removeClass('btn-outline-secondary')
-			.addClass('btn-outline-success')
-			.html('<i class="fas fa-box mr-1"></i> Pedidos (0)');
+		actualizarVisibilidadEntregas();
 		polylinesSaltos.forEach(p => {
 			if (map_detalle.hasLayer(p)) map_detalle.removeLayer(p);
 		});
@@ -1548,7 +1712,6 @@ $(document).ready(function() {
 		markerInicio = null;
 		markerFin = null;
 		rutaAjustadaACalles = true;
-		despachoActivoId = null;
 		latLngsDirectos = [];
 		latLngsCalles = [];
 		puntosActualesDetalle = [];
@@ -1560,9 +1723,21 @@ $(document).ready(function() {
 	}
 
 	function cargarDetalleHistorico(datos, usuarioNombre, tiendaNombre, fechaDia) {
+		despachoActivoId = null;
+		todosLosMarkersEntregas.forEach(m => {
+			if (map_detalle && map_detalle.hasLayer(m)) map_detalle.removeLayer(m);
+		});
+		todosLosMarkersEntregas = [];
+		markersEntregas = [];
+		entregasVisibles = false; // Desactivado por defecto al abrir
 		limpiarMapaDetalle();
 		rutaVisible = true;
 		actualizarBotonToggleRuta();
+
+		// Ubicar el punto de venta (tienda) en el mapa con su propio icono
+		tiendaIdOriginal = (datos && datos[0] && datos[0].idtienda) || 0;
+		tiendaNombreOriginal = tiendaNombre;
+		ubicarMarcadorTiendaEnDetalle(tiendaIdOriginal, tiendaNombreOriginal, puntosHistorico);
 
 		const tipoRep = (datos && datos[0] && datos[0].tipo_repartidor) || window._ultimoTipoRepartidor || "OTRO";
 		const empTemp = (datos && datos[0] && datos[0].empresa_temporal) || window._ultimaEmpresaTemporal || "";
@@ -1614,6 +1789,7 @@ $(document).ready(function() {
 
 	function consultarYRenderizarDespachosHistorial(claveRapida, fechaDia, puntos) {
 		$('#badgeTotalDespachos').text('0');
+		$('#badgeAlertasDesconexion').empty();
 		$('#lista-despachos-body').html('<div class="text-center text-muted py-3 small"><i class="fas fa-spinner fa-spin mr-1"></i> Consultando despachos en Datamart...</div>');
 
 		if (!claveRapida || !fechaDia) {
@@ -1643,6 +1819,7 @@ $(document).ready(function() {
 
 				// Agrupar por despacho_id preservando orden cronológico
 				const despachosMap = new Map();
+				despachosHistorialMap = despachosMap;
 				response.forEach(item => {
 					const dId = item.despacho_id;
 					if (!despachosMap.has(dId)) {
@@ -1664,13 +1841,35 @@ $(document).ready(function() {
 					}
 				});
 
-				$('#badgeTotalDespachos').text(despachosMap.size);
+				let totalPedidos = 0;
+				despachosMap.forEach(d => { totalPedidos += d.pedidos ? d.pedidos.length : 0; });
+				$('#kpi-despachos').text(despachosMap.size);
+				$('#kpi-pedidos').text(totalPedidos);
+				$('#badgeTotalDespachos').html(`${despachosMap.size} <small style="font-size:10px;">(${totalPedidos} peds)</small>`);
+
+				// Actualizar sede de despacho activa en el mapa según los despachos reales
+				if (despachosMap && despachosMap.size > 0) {
+					const primerDespacho = Array.from(despachosMap.values())[0];
+					if (primerDespacho && (primerDespacho.idtienda || primerDespacho.tienda)) {
+						tiendaIdOriginal = primerDespacho.idtienda || 0;
+						tiendaNombreOriginal = primerDespacho.tienda || '';
+						ubicarMarcadorTiendaEnDetalle(tiendaIdOriginal, tiendaNombreOriginal, null);
+					}
+				}
 
 				const dHoy = new Date();
 				const hoyStr = `${dHoy.getFullYear()}-${String(dHoy.getMonth() + 1).padStart(2, '0')}-${String(dHoy.getDate()).padStart(2, '0')}`;
 				const esFechaPasada = fechaDia && fechaDia < hoyStr;
 
-				let htmlCards = '';
+				let htmlCards = `
+					<div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light border rounded shadow-sm">
+						<span class="small font-weight-bold text-dark"><i class="fas fa-clipboard-check text-primary mr-1"></i> Resumen de la Jornada:</span>
+						<div>
+							<span class="badge badge-primary mr-1"><i class="fas fa-truck-loading mr-1"></i>${despachosMap.size} despachos</span>
+							<span class="badge badge-success font-weight-bold"><i class="fas fa-box mr-1"></i>${totalPedidos} pedidos</span>
+						</div>
+					</div>
+				`;
 				despachosMap.forEach(despacho => {
 					const estadoRegreso = despacho.hora_regreso 
 						? `<span class="badge badge-success small"><i class="fas fa-check-circle mr-1"></i>Retorno: ${String(despacho.hora_regreso).replace('.0', '')}</span>`
@@ -1744,6 +1943,8 @@ $(document).ready(function() {
 										data-id="${despacho.despacho_id}" 
 										data-salida="${despacho.hora_salida || ''}" 
 										data-regreso="${despacho.hora_regreso || ''}"
+										data-tienda="${despacho.tienda || ''}"
+										data-idtienda="${despacho.idtienda || ''}"
 										title="Trazar y ver en el mapa únicamente el recorrido de este despacho">
 									<i class="fas fa-route mr-1"></i> Ver Ruta
 								</button>
@@ -1758,6 +1959,10 @@ $(document).ready(function() {
 
 				$('#lista-despachos-body').html(htmlCards);
 				actualizarVisibilidadEntregas();
+				// Re-renderizar paradas si ya hay puntos en pantalla para asociar pedidos entregados
+				if (puntosFiltrados && puntosFiltrados.length > 0) {
+					try { renderizarRecorrido(puntosFiltrados); } catch (eRef) { console.warn('Refresco paradas:', eRef); }
+				}
 			},
 			error: function(err) {
 				console.error("Error consultando despachos historial:", err);
@@ -1854,30 +2059,39 @@ $(document).ready(function() {
 				</div>
 			`);
 
-			if (entregasVisibles) {
-				marker.addTo(map_detalle);
-			}
+			marker.despachoId = despacho.despacho_id;
+			marker.pedidoId = pedido.id_pedido;
 
-			markersEntregas.push(marker);
+			todosLosMarkersEntregas.push(marker);
+			if (!despachoActivoId || String(despachoActivoId) === String(despacho.despacho_id)) {
+				markersEntregas.push(marker);
+				if (entregasVisibles) {
+					marker.addTo(map_detalle);
+				}
+			}
+			actualizarVisibilidadEntregas();
 		}
 	}
 
 	$(document).on('click', '.pedido-item-click', function() {
 		const numPedido = $(this).data('pedido');
 		const hora = $(this).data('hora');
-		let foundMarker = null;
-		markersEntregas.forEach(m => {
-			const popup = m.getPopup();
-			if (popup && popup.getContent() && popup.getContent().includes(`#${numPedido}`)) {
-				foundMarker = m;
-			}
-		});
+		let foundMarker = todosLosMarkersEntregas.find(m => String(m.pedidoId) === String(numPedido));
+		if (!foundMarker) {
+			foundMarker = markersEntregas.find(m => {
+				const popup = m.getPopup();
+				return popup && popup.getContent() && popup.getContent().includes(`#${numPedido}`);
+			});
+		}
 
 		if (foundMarker) {
 			// Si los marcadores estaban ocultos, activarlos para que el usuario pueda ver el punto seleccionado
 			if (!entregasVisibles) {
 				entregasVisibles = true;
 				actualizarVisibilidadEntregas();
+			}
+			if (!map_detalle.hasLayer(foundMarker)) {
+				foundMarker.addTo(map_detalle);
 			}
 
 			map_detalle.panTo(foundMarker.getLatLng());
@@ -1925,6 +2139,16 @@ $(document).ready(function() {
 	});
 
 	// Filtro inteligente para eliminar ruido GPS, saltos erráticos y telarañas cuando la moto está detenida
+		function calcularCosenoGiro(pA, pB, pC) {
+		const v1x = pB.lng - pA.lng, v1y = pB.lat - pA.lat;
+		const v2x = pC.lng - pB.lng, v2y = pC.lat - pB.lat;
+		const dot = v1x * v2x + v1y * v2y;
+		const mag1 = Math.sqrt(v1x * v1x + v1y * v1y);
+		const mag2 = Math.sqrt(v2x * v2x + v2y * v2y);
+		if (mag1 === 0 || mag2 === 0) return 1;
+		return dot / (mag1 * mag2);
+	}
+
 	function filtrarPuntosRutaLimpios(puntos) {
 		if (!puntos || puntos.length <= 2) return puntos;
 
@@ -1948,7 +2172,6 @@ $(document).ready(function() {
 			const velocidadKmh = (distAncla / deltaSec) * 3.6;
 
 			// 1. Descartar picos erráticos de satélite o salto de antena (Teleport glitch):
-			// Si la velocidad calculada es absurda (> 90 km/h) o el punto se dispara a > 160m y luego regresa
 			if (i < puntos.length - 1) {
 				const pSig = L.latLng(parseFloat(puntos[i+1].latitud), parseFloat(puntos[i+1].longitud));
 				const distRetorno = pAncla.distanceTo(pSig);
@@ -1957,10 +2180,34 @@ $(document).ready(function() {
 				}
 			}
 
+			// 1b. Descartar agujas / rebotes laterales espurios (giro cerrado > 140° que regresa de inmediato al eje vial)
+			if (i < puntos.length - 1) {
+				const pSig = puntos[i + 1];
+				const latSig = parseFloat(pSig.latitud);
+				const lngSig = parseFloat(pSig.longitud);
+				if (!isNaN(latSig) && !isNaN(lngSig) && latSig !== 0 && lngSig !== 0) {
+					const dAB = distAncla;
+					const dBC = L.latLng(lat, lng).distanceTo(L.latLng(latSig, lngSig));
+					const dAC = pAncla.distanceTo(L.latLng(latSig, lngSig));
+					const exceso = (dAB + dBC) - dAC;
+					const ratio = (dAB + dBC) / Math.max(1, dAC);
+					const cosGiro = calcularCosenoGiro(
+						{ lat: pAncla.lat, lng: pAncla.lng },
+						{ lat, lng },
+						{ lat: latSig, lng: lngSig }
+					);
+
+					// Aguja lateral espuria: giro agudo (cosGiro < -0.80), con exceso significativo (> 75m) y ratio alto (> 1.8x)
+					if (cosGiro < -0.80 && exceso > 75 && ratio > 1.8) {
+						continue; // Ignorar salto lateral espurio que rebota sobre el eje vial
+					}
+				}
+			}
+
 			// 2. Filtro de ancla estacionaria (elimina 100% las telarañas / garabatos mientras la moto está detenida):
 			// Si el vehículo está a menos de 35 metros del ancla, o a menos de 55 metros con velocidad < 6 km/h,
 			// significa que sigue en el mismo punto de parada / entrega / restaurante.
-			const esMismaParada = (distAncla < 35) || (distAncla < 55 && velocidadKmh < 6);
+			const esMismaParada = (distAncla < 35) || (distAncla < 70 && velocidadKmh < 7) || (distAncla < 100 && velocidadKmh < 4);
 			if (esMismaParada && i < puntos.length - 1) {
 				continue; // No agregar vértices falsos en la misma parada
 			}
@@ -1981,7 +2228,7 @@ $(document).ready(function() {
 			return;
 		}
 
-		// 1. Cálculos de telemetría (distancia, duración, paradas)
+		// 1. Cálculos de telemetría (distancia, duración)
 		let distanciaKm = 0;
 		for (let i = 0; i < puntos.length - 1; i++) {
 			const pA = L.latLng(puntos[i].latitud, puntos[i].longitud);
@@ -1996,34 +2243,274 @@ $(document).ready(function() {
 		const minutos = diffMin % 60;
 		const duracionTexto = horas > 0 ? `${horas}h ${minutos}m` : `${minutos}m`;
 
-		// Detección de paradas (> 3 minutos sin desplazamiento significativo < 25m)
+		// 2. Trazar polilínea de ruta limpia y evaluar saltos de señal
+		const puntosLimpios = filtrarPuntosRutaLimpios(puntos);
+		const { bloques, saltos } = segmentarPuntosEnBloques(puntosLimpios, puntosHistorico);
+
+		// Detección acumulada de paradas (> 3 minutos acumulados en radio < 35m)
 		const paradas = [];
-		for (let i = 0; i < puntos.length - 1; i++) {
-			const p1 = puntos[i];
-			const p2 = puntos[i+1];
-			const d = L.latLng(p1.latitud, p1.longitud).distanceTo(L.latLng(p2.latitud, p2.longitud));
-			const diffSec = (new Date(p2.fecha).getTime() - new Date(p1.fecha).getTime()) / 1000;
-			if (d < 25 && diffSec >= 180) {
-				paradas.push({
-					latitud: p1.latitud,
-					longitud: p1.longitud,
-					fechaInicio: p1.fecha.split(' ')[1] || p1.fecha,
-					fechaFin: p2.fecha.split(' ')[1] || p2.fecha,
-					duracionMin: Math.round(diffSec / 60)
-				});
+		let pIdx = 0;
+		while (pIdx < puntos.length - 1) {
+			const pInicio = puntos[pIdx];
+			const tInicioP = new Date(String(pInicio.fecha).replace(' ', 'T')).getTime();
+			let pSub = pIdx + 1;
+			let pUltimo = pInicio;
+			const latIni = parseFloat(pInicio.latitud);
+			const lngIni = parseFloat(pInicio.longitud);
+
+			while (pSub < puntos.length) {
+				const pAct = puntos[pSub];
+				const dist = L.latLng(latIni, lngIni).distanceTo(L.latLng(parseFloat(pAct.latitud), parseFloat(pAct.longitud)));
+				if (dist > 35) break;
+				pUltimo = pAct;
+				pSub++;
+			}
+
+			const tFinP = new Date(String(pUltimo.fecha).replace(' ', 'T')).getTime();
+			const duracionSec = (tFinP - tInicioP) / 1000;
+			if (duracionSec >= 180) { // >= 3 minutos acumulados
+				// Excluir paradas dentro de la tienda (radio de 90m de la pizzería/base).
+				let enTienda = false;
+				if (markerTiendaDetalle && map_detalle.hasLayer(markerTiendaDetalle)) {
+					const tLatLng = markerTiendaDetalle.getLatLng();
+					if (L.latLng(latIni, lngIni).distanceTo(tLatLng) <= 90) {
+						enTienda = true;
+					}
+				}
+				if (!enTienda && typeof TIENDAS_POR_ID === 'object') {
+					for (const k in TIENDAS_POR_ID) {
+						const t = TIENDAS_POR_ID[k];
+						if (L.latLng(latIni, lngIni).distanceTo(L.latLng(t.lat, t.lng)) <= 90) {
+							enTienda = true;
+							break;
+						}
+					}
+				}
+
+				if (!enTienda) {
+					const hIni = String(pInicio.fecha).includes(' ') ? pInicio.fecha.split(' ')[1].substring(0, 5) : String(pInicio.fecha).substring(11, 16);
+					const hFin = String(pUltimo.fecha).includes(' ') ? pUltimo.fecha.split(' ')[1].substring(0, 5) : String(pUltimo.fecha).substring(11, 16);
+					const durMin = Math.round(duracionSec / 60);
+
+					// Verificar si coincide con una entrega de pedido confirmada
+					let pedidoEntrega = null;
+					if (despachosHistorialMap && despachosHistorialMap.size > 0) {
+						for (const d of despachosHistorialMap.values()) {
+							if (!d.pedidos) continue;
+							for (const ped of d.pedidos) {
+								if (!ped.hora_entrega) continue;
+								const strE = String(ped.hora_entrega).replace('.0', '').trim();
+								let tE = NaN;
+								if (strE.includes(' ')) {
+									tE = new Date(strE.replace(' ', 'T')).getTime();
+								} else if (d.hora_salida && d.hora_salida.includes(' ')) {
+									const fB = d.hora_salida.split(' ')[0];
+									tE = new Date(`${fB}T${strE}`).getTime();
+								}
+								if (isNaN(tE)) continue;
+								if (tE >= (tInicioP - 90000) && tE <= (tFinP + 90000)) {
+									pedidoEntrega = ped;
+									break;
+								}
+							}
+							if (pedidoEntrega) break;
+						}
+					}
+
+					paradas.push({
+						tipo: pedidoEntrega ? 'ENTREGA' : 'PARADA',
+						pedidoId: pedidoEntrega ? pedidoEntrega.id_pedido : null,
+						latitud: latIni,
+						longitud: lngIni,
+						horaInicio: hIni,
+						horaFin: hFin,
+						duracionMin: durMin,
+						puntosCount: pSub - pIdx,
+						startIndex: pIdx,
+						endIndex: pSub - 1,
+						tInicio: tInicioP,
+						tFin: tFinP
+					});
+				}
+				pIdx = pSub;
+			} else {
+				pIdx++;
 			}
 		}
 
-		// 2. Actualizar tarjetas KPI
+		// Numeración correlativa para paradas estándar
+		let numPContador = 0;
+		paradas.forEach(p => {
+			if (p.tipo === 'PARADA') {
+				p.numParada = ++numPContador;
+			}
+		});
+
+		// Detección de Desconexiones / Pérdidas de Señal GPS
+		const desconexiones = [];
+		if (saltos && saltos.length > 0) {
+			saltos.forEach(salto => {
+				if (salto.diffMin < 3.5) return;
+				const hIni = String(salto.desde.fecha).includes(' ') ? salto.desde.fecha.split(' ')[1].substring(0, 5) : String(salto.desde.fecha).substring(11, 16);
+				const hFin = String(salto.hasta.fecha).includes(' ') ? salto.hasta.fecha.split(' ')[1].substring(0, 5) : String(salto.hasta.fecha).substring(11, 16);
+				const tIniS = new Date(String(salto.desde.fecha).replace(' ', 'T')).getTime();
+				const tFinS = new Date(String(salto.hasta.fecha).replace(' ', 'T')).getTime();
+				const distM = Math.round(parseFloat(salto.distKm) * 1000);
+
+				const yaEnParada = paradas.some(p => Math.abs(p.tInicio - tIniS) < 60000);
+				if (!yaEnParada) {
+					desconexiones.push({
+						tipo: 'DESCONEXION',
+						latitud: parseFloat(salto.desde.latitud),
+						longitud: parseFloat(salto.desde.longitud),
+						latitudFin: parseFloat(salto.hasta.latitud),
+						longitudFin: parseFloat(salto.hasta.longitud),
+						horaInicio: hIni,
+						horaFin: hFin,
+						duracionMin: salto.diffMin,
+						distanciaMetros: distM,
+						tInicio: tIniS,
+						tFin: tFinS
+					});
+				}
+			});
+		}
+
+		// Consolidar todos los eventos de la pestaña ordenados cronológicamente
+		const eventosRecorrido = [...paradas, ...desconexiones].sort((a, b) => a.tInicio - b.tInicio);
+
+		// Actualizar tarjetas KPI y pestaña de Paradas y Alertas
 		$('#kpi-puntos').text(puntos.length);
 		$('#kpi-distancia').text(distanciaKm.toFixed(1) + ' km');
 		$('#kpi-duracion').text(duracionTexto);
 		$('#kpi-paradas').text(paradas.length);
-		$('#badgeTotalPuntosLista').text(puntos.length + ' puntos');
 
-		// 3. Trazar polilínea de ruta limpia (sin garabatos de deriva ni picos falsos)
-		const puntosLimpios = filtrarPuntosRutaLimpios(puntos);
-		const { bloques, saltos } = segmentarPuntosEnBloques(puntosLimpios);
+		$('#badgeTotalParadasLista').text(paradas.length);
+		if (desconexiones.length > 0) {
+			$('#badgeAlertasDesconexion').html(`
+				<span class="badge badge-danger badge-alerta-senal" title="${desconexiones.length} interrupción(es) de señal detectada(s)">
+					<i class="fas fa-wifi-slash mr-1" style="font-size: 9px;"></i>${desconexiones.length}
+				</span>
+			`);
+		} else {
+			$('#badgeAlertasDesconexion').empty();
+		}
+
+		// Llenar la lista interactiva de eventos (entregas, paradas y desconexiones)
+		const $listaParadas = $('#lista-paradas-body');
+		$listaParadas.empty();
+		if (eventosRecorrido.length === 0) {
+			$listaParadas.html(`
+				<div class="text-center text-muted py-4 small">
+					<i class="fas fa-check-circle text-success fa-2x mb-2 d-block"></i>
+					No se registraron paradas prolongadas (> 3 min) ni pérdidas de conexión en este tramo.
+				</div>
+			`);
+		} else {
+			eventosRecorrido.forEach((ev, idx) => {
+				let tituloHtml = '';
+				let badgeHtml = '';
+				let detalleHtml = '';
+				let cardClase = '';
+				let btnClase = '';
+
+				if (ev.tipo === 'ENTREGA') {
+					cardClase = 'tipo-entrega';
+					btnClase = 'btn-outline-success';
+					tituloHtml = `<strong class="text-success small"><i class="fas fa-box text-success mr-1"></i>Entrega Pedido #${ev.pedidoId}</strong>`;
+					badgeHtml = `<span class="badge badge-success font-weight-bold"><i class="fas fa-check mr-1"></i>${ev.duracionMin} min</span>`;
+					detalleHtml = `<i class="fas fa-motorcycle text-success mr-1"></i>Detención por entrega confirmada (${ev.duracionMin} min, ${ev.puntosCount} pings)`;
+				} else if (ev.tipo === 'PARADA') {
+					cardClase = 'tipo-parada';
+					btnClase = 'btn-outline-warning text-dark';
+					tituloHtml = `<strong class="text-dark small"><i class="fas fa-pause-circle text-warning mr-1"></i>Parada #${ev.numParada}</strong>`;
+					badgeHtml = `<span class="badge badge-warning text-dark font-weight-bold"><i class="fas fa-stopwatch mr-1"></i>${ev.duracionMin} min</span>`;
+					detalleHtml = `<i class="fas fa-map-marker-alt text-secondary mr-1"></i>Detención en ruta (${ev.duracionMin} min, ${ev.puntosCount} pings)`;
+				} else if (ev.tipo === 'DESCONEXION') {
+					cardClase = 'tipo-desconexion';
+					btnClase = 'btn-outline-danger';
+					tituloHtml = `<strong class="text-danger small"><i class="fas fa-wifi-slash text-danger mr-1"></i>Pérdida de Conexión</strong>`;
+					badgeHtml = `<span class="badge badge-danger font-weight-bold"><i class="fas fa-signal-slash mr-1"></i>${ev.duracionMin} min</span>`;
+					const subDesc = ev.distanciaMetros > 60 
+						? `Salto de ${ev.distanciaMetros}m sin telemetría (${ev.duracionMin} min sin señal)` 
+						: `Sin reportes GPS durante ${ev.duracionMin} min (posible falta de red)`;
+					detalleHtml = `<i class="fas fa-exclamation-triangle text-danger mr-1"></i>${subDesc}`;
+				}
+
+				$listaParadas.append(`
+					<div class="card-parada-item ${cardClase} mb-2 p-2 border rounded shadow-sm bg-white" data-lat="${ev.latitud}" data-lng="${ev.longitud}" data-idx="${idx}">
+						<div class="d-flex align-items-center justify-content-between mb-1">
+							${tituloHtml}
+							${badgeHtml}
+						</div>
+						<div class="d-flex align-items-center justify-content-between text-muted small mb-1">
+							<span><i class="far fa-clock text-info mr-1"></i><b>${ev.horaInicio}</b> &rarr; <b>${ev.horaFin}</b></span>
+							<button type="button" class="btn btn-xs ${btnClase} font-weight-bold btn-ir-parada" data-lat="${ev.latitud}" data-lng="${ev.longitud}" data-idx="${idx}">
+								<i class="fas fa-crosshairs mr-1"></i>Ir
+							</button>
+						</div>
+						<div class="small text-muted font-italic" style="font-size: 10.5px;">
+							${detalleHtml}
+						</div>
+					</div>
+				`);
+			});
+		}
+
+		// Marcadores visuales de eventos en el mapa
+		eventosRecorrido.forEach((ev, idx) => {
+			let markerBg = '#f59e0b';
+			let markerIcon = 'fa-pause';
+			let tooltipTitulo = '';
+
+			if (ev.tipo === 'ENTREGA') {
+				markerBg = '#10b981';
+				markerIcon = 'fa-box';
+				tooltipTitulo = `<strong class="text-success"><i class="fas fa-box mr-1"></i> Entrega Pedido #${ev.pedidoId}</strong>`;
+			} else if (ev.tipo === 'PARADA') {
+				markerBg = '#f59e0b';
+				markerIcon = 'fa-pause';
+				tooltipTitulo = `<strong class="text-warning"><i class="fas fa-pause mr-1"></i> Parada #${ev.numParada}</strong>`;
+			} else if (ev.tipo === 'DESCONEXION') {
+				markerBg = '#ef4444';
+				markerIcon = 'fa-wifi-slash';
+				tooltipTitulo = `<strong class="text-danger"><i class="fas fa-wifi-slash mr-1"></i> Pérdida de Conexión (${ev.duracionMin}m)</strong>`;
+			}
+
+			const iconoEv = L.divIcon({
+				className: 'marker-parada-custom',
+				html: `
+					<div style="background-color: ${markerBg}; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;" title="${ev.tipo === 'ENTREGA' ? 'Entrega #' + ev.pedidoId : (ev.tipo === 'PARADA' ? 'Parada #' + ev.numParada : 'Sin señal')} (${ev.duracionMin}m)">
+						<i class="fas ${markerIcon}" style="font-size: 9px;"></i>
+					</div>
+				`,
+				iconSize: [24, 24],
+				iconAnchor: [12, 12]
+			});
+
+			const mEv = L.marker([ev.latitud, ev.longitud], { icon: iconoEv })
+				.bindTooltip(`
+					<div style="padding: 2px 4px; font-size: 11px;">
+						${tooltipTitulo}<br>
+						<span><b>Duración:</b> ${ev.duracionMin} min</span><br>
+						<span class="text-muted">${ev.horaInicio} &rarr; ${ev.horaFin}</span>
+					</div>
+				`, { sticky: true });
+
+			mEv.on('click', () => {
+				$('#tab-paradas-btn').tab('show');
+				$('.card-parada-item').removeClass('parada-activa');
+				const $card = $(`.card-parada-item[data-idx="${idx}"]`);
+				if ($card.length) {
+					$card.addClass('parada-activa');
+					$card[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}
+			});
+
+			mEv.addTo(map_detalle);
+			markersParadas.push(mEv);
+		});
+		$('#badgeTotalPuntosLista').text(puntos.length);
 
 		// Construir trazo directo por bloques independientes (MultiPolyline)
 		const bloquesDirectos = bloques.map(b => b.map(p => [parseFloat(p.latitud), parseFloat(p.longitud)]));
@@ -2060,49 +2547,83 @@ $(document).ready(function() {
 			const horaB = salto.hasta.fecha.split(' ')[1] || salto.hasta.fecha;
 
 			const polySalto = L.polyline([latLngA, latLngB], {
-				color: '#f59e0b',
+				color: '#ef4444',
 				weight: 3,
-				dashArray: '7, 9',
-				opacity: 0.9
+				opacity: 0.85,
+				dashArray: '6, 8',
+				lineCap: 'round'
 			}).bindTooltip(`
-				<div style="font-size: 11.5px; line-height: 1.4;">
-					<strong class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Pérdida de señal / Desconexión</strong><br>
-					<strong>Tiempo sin reporte:</strong> ~${salto.diffMin} min<br>
-					<strong>Distancia del salto:</strong> ${salto.distKm} km<br>
+				<div style="font-size: 11px;">
+					<strong class="text-danger"><i class="fas fa-wifi-slash mr-1"></i>Pérdida de señal / Sin telemetría</strong><br>
+					<span><b>Duración:</b> ~${salto.diffMin} min</span><br>
+					<span><b>Distancia:</b> ~${salto.distKm} km</span><br>
 					<span class="text-muted">${horaA} &rarr; ${horaB}</span>
 				</div>
 			`, { sticky: true });
 
+			polySalto.addTo(map_detalle);
 			polylinesSaltos.push(polySalto);
 		});
 
-		if (rutaVisible) {
-			polylineGlow.addTo(map_detalle);
-			polylineRuta.addTo(map_detalle);
-			polylinesSaltos.forEach(p => p.addTo(map_detalle));
+		// Glow y polyline principal agregadas al mapa
+		polylineGlow.addTo(map_detalle);
+		polylineRuta.addTo(map_detalle);
+
+		// Marcadores de Inicio y Fin del tramo
+		const pInicioP = puntos[0];
+		const pFinP = puntos[puntos.length - 1];
+		const horaIni = pInicioP.fecha.split(' ')[1] || pInicioP.fecha;
+		const horaFin = pFinP.fecha.split(' ')[1] || pFinP.fecha;
+
+		const iconInicio = L.divIcon({
+			className: 'custom-div-icon',
+			html: '<div style="background-color: #10b981; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);" title="Inicio: ' + horaIni + '"><i class="fas fa-play" style="font-size: 8px;"></i></div>',
+			iconSize: [22, 22],
+			iconAnchor: [11, 11]
+		});
+
+		const iconFin = L.divIcon({
+			className: 'custom-div-icon',
+			html: '<div style="background-color: #ef4444; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);" title="Fin: ' + horaFin + '"><i class="fas fa-flag-checkered" style="font-size: 9px;"></i></div>',
+			iconSize: [22, 22],
+			iconAnchor: [11, 11]
+		});
+
+		markerInicio = L.marker([pInicioP.latitud, pInicioP.longitud], { icon: iconInicio })
+			.bindTooltip(`<b>Inicio:</b> ${horaIni}`, { direction: 'top', offset: [0, -8] })
+			.addTo(map_detalle);
+
+		markerFin = L.marker([pFinP.latitud, pFinP.longitud], { icon: iconFin })
+			.bindTooltip(`<b>Fin:</b> ${horaFin}`, { direction: 'top', offset: [0, -8] })
+			.addTo(map_detalle);
+
+		// Marcador de moto para simulación y navegación interactiva (círculo rojo distintivo con pulso)
+		const iconMoto = L.divIcon({
+			className: 'custom-moto-marker',
+			html: `
+				<div class="moto-marker-box" title="Moto en Simulación">
+					<div class="moto-marker-pulse"></div>
+					<div class="moto-marker-icon">
+						<i class="fas fa-motorcycle"></i>
+					</div>
+				</div>
+			`,
+			iconSize: [38, 38],
+			iconAnchor: [19, 19],
+			popupAnchor: [0, -20]
+		});
+		markerMotoSimulacion = L.marker([pInicioP.latitud, pInicioP.longitud], { icon: iconMoto, zIndexOffset: 1000 })
+			.addTo(map_detalle);
+
+		// Ajustar zoom para mostrar la ruta completa
+		if (bloquesDirectos.length > 0 && bloquesDirectos[0].length > 0) {
+			map_detalle.fitBounds(polylineRuta.getBounds(), { padding: [50, 50] });
 		}
 
-		// Iniciar trazado de calles únicamente si el usuario tiene el modo activo explícitamente
-		if (rutaAjustadaACalles) {
-			traerRutaAjustadaACalles(puntosLimpios);
-		}
+		// Auto-ajustar a calles con OSRM de fondo
+		traerRutaAjustadaACalles(puntosLimpios);
 
-		// Ajustar vista del mapa a los límites de la ruta
-		try {
-			if (polylineRuta && polylineRuta.getBounds().isValid()) {
-				map_detalle.fitBounds(polylineRuta.getBounds(), { padding: [40, 40], maxZoom: 18 });
-			}
-		} catch (eFit) {
-			console.warn("Ajuste de límites:", eFit);
-		}
-
-		// 4. Marcador de la Motocicleta en Simulación (Único icono limpio, sin banderas ni pausas invasivas)
-		markerMotoSimulacion = L.marker([parseFloat(puntos[0].latitud), parseFloat(puntos[0].longitud)], {
-			icon: crearIconoMoto("Moto en Simulación"),
-			zIndexOffset: 1000
-		}).addTo(map_detalle);
-
-		// 8. Configurar el slider de tiempo
+		// Configurar el slider de tiempo
 		const ultIdx = puntos.length - 1;
 		const hInicio = (puntos[0].fecha && puntos[0].fecha.includes(' ')) ? puntos[0].fecha.split(' ')[1].substring(0, 5) : (puntos[0].fecha || "00:00");
 		const hFin = (puntos[ultIdx].fecha && puntos[ultIdx].fecha.includes(' ')) ? puntos[ultIdx].fecha.split(' ')[1].substring(0, 5) : (puntos[ultIdx].fecha || "23:59");
@@ -2110,11 +2631,11 @@ $(document).ready(function() {
 		$('#labelHoraFin').text(hFin);
 		$('#sliderTiempoRuta').attr('max', ultIdx).val(0);
 
-		// 9. Llenar tabla de cronología de puntos con alertas visuales para baches de señal
+		// Llenar tabla de cronología de puntos con alertas visuales para baches de señal
 		const tbody = $('#puntos-recorrido-body');
 		tbody.empty();
 		puntos.forEach((pt, index) => {
-			if (index > 0 && esSaltoSenal(puntos[index - 1], pt)) {
+			if (index > 0 && esSaltoSenal(puntos[index - 1], pt, puntosHistorico)) {
 				const tA = new Date(puntos[index - 1].fecha).getTime();
 				const tB = new Date(pt.fecha).getTime();
 				const diffM = Math.round((tB - tA) / (1000 * 60));
@@ -2122,23 +2643,41 @@ $(document).ready(function() {
 					.distanceTo(L.latLng(parseFloat(pt.latitud), parseFloat(pt.longitud))) / 1000).toFixed(1);
 
 				tbody.append(`
-					<tr class="fila-salto-alerta" style="background-color: #fffbeb; border-top: 1px dashed #f59e0b; border-bottom: 1px dashed #f59e0b;">
-						<td colspan="2" class="py-1 px-2 text-center" style="font-size: 11px; color: #b45309;">
-							<i class="fas fa-exclamation-triangle mr-1 text-warning"></i>
+					<tr class="fila-salto-alerta" style="background-color: #fef2f2; border-top: 1px dashed #ef4444; border-bottom: 1px dashed #ef4444;">
+						<td colspan="2" class="py-1 px-2 text-center" style="font-size: 11px; color: #dc2626;">
+							<i class="fas fa-wifi-slash mr-1 text-danger"></i>
 							<strong>Pérdida de señal: ~${diffM} min</strong> (${dKm} km)
 						</td>
 					</tr>
 				`);
 			}
 
+			// Alerta amarilla para Paradas / Entregas en el recorrido (igual estilo que pérdida de señal)
+			const paradaEnEstePunto = paradas.find(p => p.startIndex === index);
+			if (paradaEnEstePunto) {
+				const iconP = paradaEnEstePunto.tipo === 'ENTREGA' ? 'fa-box text-success' : 'fa-pause-circle text-warning';
+				const txtP = paradaEnEstePunto.tipo === 'ENTREGA' 
+					? `Entrega Pedido #${paradaEnEstePunto.pedidoId}: ~${paradaEnEstePunto.duracionMin} min` 
+					: `Parada #${paradaEnEstePunto.numParada}: ~${paradaEnEstePunto.duracionMin} min`;
+				tbody.append(`
+					<tr class="fila-parada-alerta" style="background-color: #fffbeb; border-top: 1px dashed #f59e0b; border-bottom: 1px dashed #f59e0b;">
+						<td colspan="2" class="py-1 px-2 text-center" style="font-size: 11px; color: #b45309;">
+							<i class="fas ${iconP} mr-1"></i>
+							<strong>${txtP}</strong> (${paradaEnEstePunto.horaInicio} a ${paradaEnEstePunto.horaFin})
+						</td>
+					</tr>
+				`);
+			}
+
 			const hora = pt.fecha.split(' ')[1] || pt.fecha;
+
 			const tr = $(`
 				<tr class="fila-punto-recorrido" data-idx="${index}">
 					<td class="align-middle">
 						<span class="small font-weight-bold text-dark"><i class="far fa-clock text-muted mr-1"></i>${hora}</span>
 					</td>
 					<td class="text-right align-middle">
-						<button class="btn btn-xs btn-outline-primary btn-ir-punto py-0 px-2 font-weight-bold" data-idx="${index}">
+						<button type="button" class="btn btn-xs btn-outline-primary btn-ir-punto py-0 px-2 font-weight-bold" data-idx="${index}">
 							<i class="fas fa-crosshairs mr-1"></i>Ir
 						</button>
 					</td>
@@ -2150,7 +2689,7 @@ $(document).ready(function() {
 		moverASimulacionIndice(0, false);
 	}
 
-	function moverASimulacionIndice(idx, centrarMapa = false) {
+	function moverASimulacionIndice(idx, centrarMapa = false, scrollLista = true) {
 		if (!puntosFiltrados || puntosFiltrados.length === 0 || idx < 0 || idx >= puntosFiltrados.length) return;
 		indicePuntoActual = idx;
 		const pt = puntosFiltrados[idx];
@@ -2202,15 +2741,18 @@ $(document).ready(function() {
 			// Ignorar si el mapa aún se está inicializando
 		}
 
-		// Resaltar y hacer scroll automático en la lista cronológica
+		// Resaltar la fila en la tabla de puntos
 		$('.fila-punto-recorrido').removeClass('fila-punto-activa');
 		const filaActiva = $(`.fila-punto-recorrido[data-idx="${idx}"]`);
 		if (filaActiva.length) {
 			filaActiva.addClass('fila-punto-activa');
-			const contenedor = $('.contenedor-lista-puntos');
-			if (contenedor.length) {
-				const topPos = filaActiva.position().top + contenedor.scrollTop() - 80;
-				contenedor.scrollTop(topPos);
+			// Únicamente hacer scroll en reproducción automática o slider (nunca al hacer clic manual en "Ir")
+			if (scrollLista) {
+				const contenedor = $('.contenedor-lista-puntos');
+				if (contenedor.length) {
+					const topPos = filaActiva.offset().top - contenedor.offset().top + contenedor.scrollTop() - 80;
+					contenedor.scrollTop(topPos);
+				}
 			}
 		}
 
@@ -2289,10 +2831,13 @@ $(document).ready(function() {
 	});
 
 	// Botón "Ir" en la cronología
-	$(document).on('click', '.btn-ir-punto', function() {
+	$(document).on('click', '.btn-ir-punto', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
 		pausarSimulacion();
 		const idx = parseInt($(this).data('idx'));
-		moverASimulacionIndice(idx, true);
+		// scrollLista = false para que la lista no salte ni pierda la fila que el usuario acaba de cliquear
+		moverASimulacionIndice(idx, true, false);
 	});
 
 	// Botón para alternar visibilidad de la ruta en el mapa
@@ -2356,11 +2901,29 @@ $(document).ready(function() {
 
 	let despachoActivoId = null;
 
+	$(document).on('click', '.card-parada-item, .btn-ir-parada', function(e) {
+		e.stopPropagation();
+		const lat = parseFloat($(this).data('lat'));
+		const lng = parseFloat($(this).data('lng'));
+		const idx = parseInt($(this).data('idx'), 10);
+		$('.card-parada-item').removeClass('parada-activa');
+		$(`.card-parada-item[data-idx="${idx}"]`).addClass('parada-activa');
+
+		if (!isNaN(lat) && !isNaN(lng)) {
+			map_detalle.flyTo([lat, lng], 17, { duration: 0.8 });
+			if (markersParadas && markersParadas[idx]) {
+				markersParadas[idx].openTooltip();
+			}
+		}
+	});
+
 	$(document).on('click', '.btn-ver-ruta-despacho', function(e) {
 		e.stopPropagation();
 		const dId = $(this).data('id');
 		const strSalida = $(this).data('salida');
 		const strRegreso = $(this).data('regreso');
+		const tiendaDespacho = $(this).data('tienda');
+		const idTiendaDespacho = $(this).data('idtienda');
 
 		// Si ya está activo este despacho, al darle clic de nuevo se restablece la vista completa del día
 		if (despachoActivoId === dId) {
@@ -2368,10 +2931,10 @@ $(document).ready(function() {
 			return;
 		}
 
-		filtrarRecorridoPorDespacho(dId, strSalida, strRegreso);
+		filtrarRecorridoPorDespacho(dId, strSalida, strRegreso, tiendaDespacho, idTiendaDespacho);
 	});
 
-	function filtrarRecorridoPorDespacho(dId, strSalida, strRegreso) {
+	function filtrarRecorridoPorDespacho(dId, strSalida, strRegreso, tiendaDespacho, idTiendaDespacho) {
 		if (!puntosHistorico || puntosHistorico.length === 0) {
 			Swal.fire({ icon: 'info', text: 'No hay puntos GPS registrados para este día.' });
 			return;
@@ -2432,6 +2995,15 @@ $(document).ready(function() {
 		}
 
 		despachoActivoId = dId;
+		// Ubicar el punto de venta correspondiente a este despacho o sus coordenadas
+		ubicarMarcadorTiendaEnDetalle(idTiendaDespacho, tiendaDespacho, puntosDespacho);
+
+		// Filtrar los pedidos que pertenecen únicamente a este despacho
+		markersEntregas = todosLosMarkersEntregas.filter(m => String(m.despachoId) === String(dId));
+		// Mostrar los pedidos de este despacho por defecto en el mapa
+		entregasVisibles = true;
+		actualizarVisibilidadEntregas();
+
 		puntosFiltrados = puntosDespacho;
 
 		// Actualizar aspecto de las tarjetas de despacho
@@ -2454,6 +3026,13 @@ $(document).ready(function() {
 			Tramo: <b>${hSalidaCorta} a ${hRegresoCorta}</b> (${puntosDespacho.length} puntos)
 		`);
 
+		if (despachosHistorialMap && despachosHistorialMap.has(dId)) {
+			const dInfo = despachosHistorialMap.get(dId);
+			const nPeds = dInfo.pedidos ? dInfo.pedidos.length : 0;
+			$('#kpi-despachos').text(`1 de ${despachosHistorialMap.size}`);
+			$('#kpi-pedidos').text(nPeds);
+		}
+
 		// Trazar únicamente el recorrido de este despacho en el mapa
 		renderizarRecorrido(puntosFiltrados);
 	}
@@ -2465,6 +3044,22 @@ $(document).ready(function() {
 			.removeClass('btn-success')
 			.addClass('btn-outline-primary')
 			.html('<i class="fas fa-route mr-1"></i> Ver Ruta');
+
+		if (despachosHistorialMap) {
+			let totPeds = 0;
+			despachosHistorialMap.forEach(d => { totPeds += d.pedidos ? d.pedidos.length : 0; });
+			$('#kpi-despachos').text(despachosHistorialMap.size);
+			$('#kpi-pedidos').text(totPeds);
+		}
+
+		// Restablecer punto de venta general del día
+		ubicarMarcadorTiendaEnDetalle(tiendaIdOriginal, tiendaNombreOriginal, puntosHistorico);
+
+		// Restablecer todos los pedidos de la jornada completa
+		markersEntregas = [...todosLosMarkersEntregas];
+		// En la jornada completa, mantener los pedidos ocultos por defecto para no saturar el mapa
+		entregasVisibles = false;
+		actualizarVisibilidadEntregas();
 
 		puntosFiltrados = [...puntosHistorico];
 		if (puntosHistorico.length) {

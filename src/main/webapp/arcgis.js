@@ -109,6 +109,13 @@ require([
   map.add(zonasLayer);
   map.add(tiendasLayer);
 
+  view.when(function () {
+    if (window._puntoPendiente) {
+      ubicarClienteExistente(window._puntoPendiente.lat, window._puntoPendiente.lng);
+      window._puntoPendiente = null;
+    }
+  });
+
   // Paleta de colores oficiales extraída directamente de Google My Maps de Pizza Americana
   function getZonaColor(nombre) {
     if (!nombre) return [65, 105, 225, 0.35];
@@ -375,7 +382,7 @@ require([
       findAddress(null, true);
     });
 
-    $("#descDireccion, #direccion").on("keydown", function (event) {
+    $("#descDireccion, #direccion, #direccionact").on("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
         findAddress(null, true);
@@ -388,7 +395,7 @@ require([
     });
 
     // Actualizar en tiempo real Card 1 con la dirección que se guardará
-    $("#direccion, #zona, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
+    $("#direccion, #direccionact, #zona, #zonaact, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
       actualizarTarjetaDireccionPedidoUI();
     });
 
@@ -536,28 +543,44 @@ function detectarYSincronizarMunicipio(texto) {
 }
 
 function obtenerDireccionCobertura() {
-  if ($("#validaDir").is(":checked")) {
-    return obtenerValor("#descDireccion");
+  if ($("#validaDir").length > 0) {
+    if ($("#validaDir").is(":checked")) {
+      return obtenerValor("#descDireccion") || obtenerValor("#direccionact") || obtenerValor("#direccion");
+    }
+    return obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
-  return obtenerValor("#direccion");
+  // Para ventanas sin checkbox #validaDir (ConsultaPedidosNuevaTienda, ConsultaPedidosCRMBOT, etc.)
+  var desc = (obtenerValor("#descDireccion") || "").trim();
+  if (desc && desc.length > 3 && !desc.startsWith("#") && !desc.startsWith("-")) {
+    return desc;
+  }
+  var dirAct = (obtenerValor("#direccionact") || "").trim();
+  if (dirAct && dirAct.length > 3) {
+    return dirAct;
+  }
+  return desc || dirAct || obtenerValor("#direccion");
 }
 
 function obtenerTextoDireccionPedidoUI() {
-  var usaNomenclatura = $("#validaDir").is(":checked");
+  var usaNomenclatura = $("#validaDir").length > 0 ? $("#validaDir").is(":checked") : true;
   var dir = "";
 
   if (usaNomenclatura) {
-    dir = obtenerValor("#descDireccion");
+    dir = obtenerValor("#descDireccion") || obtenerValor("#direccionact");
     if (!dir && typeof formarDireccionEstructurada === "function") {
       dir = formarDireccionEstructurada(false) || "";
     }
   } else {
-    dir = obtenerValor("#direccion");
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact");
+  }
+
+  if (!dir) {
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
   var texto = (dir || "").trim();
-  var complemento = obtenerValor("#zona") || obtenerValor("#barrio");
+  var complemento = obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact");
 
   // Detectar si el texto ya contiene el nombre de algún municipio (ej: "calle 20e #71-60, bello")
   var muniDetectado = detectarYSincronizarMunicipio(texto);
@@ -711,7 +734,7 @@ async function findAddress(idcliente = null, esClicManual = false) {
 
       let coberturaRequest;
 
-      if (!idcliente && typeof idCliente !== 'undefined' && idCliente && idCliente > 0) {
+      if (!idcliente && typeof idCliente !== 'undefined' && idCliente && idCliente > 0 && !esClicManual) {
           idcliente = idCliente;
       }
 
@@ -728,10 +751,15 @@ async function findAddress(idcliente = null, esClicManual = false) {
               return;
           }
 
+          var muniVal = obtenerValor("#selectMunicipio");
+          if (!muniVal || muniVal === "Seleccione..." || muniVal === "null") {
+              muniVal = obtenerValor("#municipio") || "";
+          }
+
           coberturaRequest = {
               direccion,
-              municipio: obtenerValor("#selectMunicipio"),
-              barrio: obtenerValor("#zona") || obtenerValor("#barrio")
+              municipio: muniVal,
+              barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || ""
           };
 
           bloquearBusqueda(true);
@@ -1228,6 +1256,9 @@ function aplicarDireccionDetectadaAlFormulario() {
   }
 
   $('#direccion').val(direccionAplicar);
+  if ($('#direccionact').length > 0) {
+    $('#direccionact').val(direccionAplicar);
+  }
   detectarYSincronizarMunicipio(direccionAplicar);
   actualizarTarjetaDireccionPedidoUI();
   $('#btnCopiarDireccionMapa').hide();
@@ -1330,3 +1361,73 @@ function aplicarDireccionDetectadaAlFormulario() {
 
   actualizarModoDireccionUI();
 }
+
+function fijarCoordenadasManualmente(lat, lon) {
+  var l1, l2;
+  if (typeof lat === 'object' && lat !== null) {
+    l1 = lat.lat !== undefined ? lat.lat : lat.latitude;
+    l2 = lat.lng !== undefined ? lat.lng : lat.longitude;
+  } else {
+    l1 = lat;
+    l2 = lon;
+  }
+
+  window.latitud = l1;
+  window.longitud = l2;
+  try {
+    latitud = l1;
+    longitud = l2;
+  } catch (e) {}
+
+  if (typeof window.fijarCoordenadasManualmenteHook === 'function') {
+    window.fijarCoordenadasManualmenteHook(l1, l2);
+  }
+}
+
+function ubicarClienteExistente(lat, lng) {
+  if (coordenadasValidas(lat, lng)) {
+    const punto = {
+      type: "point",
+      latitude: Number(lat),
+      longitude: Number(lng)
+    };
+    if (view && marker) {
+      showAddress("Ubicación del cliente", punto);
+      fijarCoordenadasManualmente(punto.latitude, punto.longitude);
+      actualizarInfoCoordenadasUI(punto.latitude, punto.longitude);
+      var dirActual = obtenerTextoDireccionPedidoUI();
+      if (dirActual) {
+        $('#mapaTxtDireccionRegistrada').text(dirActual);
+      }
+      var tVal = $('#tienda').val() || $('#selectTiendas option:selected').text();
+      if (tVal && tVal !== "Seleccione..." && tVal !== "") {
+        $('#mapaTxtTiendaCobertura').text(tVal);
+      }
+      geocodificarInversaArcGIS(punto.latitude, punto.longitude, dirActual);
+    } else {
+      window._puntoPendiente = { lat: Number(lat), lng: Number(lng) };
+    }
+  } else {
+    if (typeof idCliente !== 'undefined' && idCliente && idCliente > 0) {
+      findAddress(idCliente, false);
+    } else {
+      var dir = obtenerDireccionCobertura();
+      if (dir && dir.trim().length > 3) {
+        findAddress(null, false);
+      } else {
+        clarearMapa();
+      }
+    }
+  }
+}
+
+// Exportar globalmente a window para máxima compatibilidad
+window.findAddress = findAddress;
+window.showAddress = showAddress;
+window.cambiarBasemapArcgis = cambiarBasemapArcgis;
+window.toggleModoMoverMarcador = toggleModoMoverMarcador;
+window.aplicarDireccionDetectadaAlFormulario = aplicarDireccionDetectadaAlFormulario;
+window.actualizarInfoCoordenadasUI = actualizarInfoCoordenadasUI;
+window.clarearMapa = clarearMapa;
+window.ubicarClienteExistente = ubicarClienteExistente;
+window.fijarCoordenadasManualmente = fijarCoordenadasManualmente;
