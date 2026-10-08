@@ -154,6 +154,27 @@
 										<label class="ep-rotulo" for="ep-tienda">Tienda habitual</label>
 										<select id="ep-tienda" class="form-control"></select>
 									</div>
+									<!-- El gusto va DESPUES del segmento y no lo reemplaza: una
+									     persona es FIEL y ademas amante de la Hawaiana. -->
+									<div class="ep-campo">
+										<label class="ep-rotulo" for="ep-familia">Su especialidad favorita</label>
+										<select id="ep-familia" class="form-control"></select>
+										<small style="color:#6C7482;font-size:11.5px;">
+											Solo se sabe de quien pide a domicilio o por la virtual:
+											el mostrador no deja detalle. Quien compra solo en mostrador
+											queda por fuera de este filtro.
+										</small>
+									</div>
+									<div class="row" id="ep-gusto-detalle" style="display:none;">
+										<div class="col-xs-6 ep-campo">
+											<label class="ep-rotulo" for="ep-fidelidadmin">Que sea al menos el (%)</label>
+											<input type="number" id="ep-fidelidadmin" class="form-control" min="1" max="100" value="60">
+										</div>
+										<div class="col-xs-6 ep-campo">
+											<label class="ep-rotulo" for="ep-pizzasmin">De m&iacute;nimo (pizzas)</label>
+											<input type="number" id="ep-pizzasmin" class="form-control" min="1" value="3">
+										</div>
+									</div>
 									<div class="ep-campo">
 										<label class="ep-rotulo" for="ep-canalventa">Por d&oacute;nde compra</label>
 										<select id="ep-canalventa" class="form-control">
@@ -299,12 +320,23 @@
 									</div>
 								</div>
 
+								<div class="ep-campo" id="ep-caja-oferta" style="margin-top:12px;">
+									<label class="ep-rotulo" for="ep-oferta">Oferta con c&oacute;digo (opcional)</label>
+									<select id="ep-oferta" class="form-control">
+										<option value="0">Sin oferta: solo un mensaje</option>
+									</select>
+									<div class="ep-nota" id="ep-oferta-nota">
+										Con una oferta, cada persona recibe <b>su propio c&oacute;digo de un solo uso</b>,
+										que vence a los d&iacute;as que tenga la oferta, dentro del correo de la oferta.
+									</div>
+								</div>
+
 								<div class="ep-campo" id="ep-caja-plantilla" style="margin-top:12px;">
 									<label class="ep-rotulo" for="ep-plantilla">Plantilla de Brevo</label>
 									<select id="ep-plantilla" class="form-control"></select>
 								</div>
 
-								<div class="ep-campo">
+								<div class="ep-campo" id="ep-caja-asunto">
 									<label class="ep-rotulo" for="ep-asunto">Asunto</label>
 									<input type="text" id="ep-asunto" class="form-control" maxlength="250">
 								</div>
@@ -315,7 +347,7 @@
 										placeholder="Puede usar HTML. Escriba {{nombre}} donde vaya el nombre del cliente."></textarea>
 								</div>
 
-								<div class="ep-campo">
+								<div class="ep-campo" id="ep-caja-prueba">
 									<label class="ep-rotulo" for="ep-prueba">Probar primero (a d&oacute;nde)</label>
 									<div class="input-group">
 										<input type="text" id="ep-prueba" class="form-control"
@@ -395,6 +427,7 @@
 									<th class="ep-num">P&uacute;blico</th>
 									<th class="ep-num">Enviados</th>
 									<th class="ep-num">Fallidos</th>
+									<th>Oferta</th>
 									<th>Cu&aacute;ndo</th>
 								</tr>
 							</thead>

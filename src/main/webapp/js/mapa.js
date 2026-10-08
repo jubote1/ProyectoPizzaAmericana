@@ -396,6 +396,15 @@ $(document).ready(function() {
 					<div class="text-right d-flex flex-wrap justify-content-end" style="max-width: 65%;">${chips}</div>
 				</div>
 			`;
+		} else if (reg.estado === 'EN_RUTA') {
+			filaPedidos = `
+				<div class="item-dato-domi">
+					<span class="text-muted"><i class="fas fa-motorcycle mr-1 text-primary"></i> Pedidos en Ruta:</span>
+					<div id="pedidos-live-container-${reg.clave_usuario}" class="text-right d-flex flex-wrap justify-content-end" style="max-width: 65%;">
+						<span class="badge badge-primary font-weight-bold"><i class="fas fa-route mr-1"></i>En entrega</span>
+					</div>
+				</div>
+			`;
 		} else if (reg.estado === 'FUERA_DE_TIENDA') {
 			filaPedidos = `
 				<div class="item-dato-domi">
@@ -448,6 +457,10 @@ $(document).ready(function() {
 				</button>
 			</div>
 		`);
+
+		if (reg.estado === 'EN_RUTA' && pedsCount === 0) {
+			consultarPedidosActivosRuta(reg.clave_usuario, reg.idtienda);
+		}
 
 		if (centrar && reg.marker) {
 			map.setView([lat, lng], 17);
@@ -644,7 +657,7 @@ $(document).ready(function() {
 			}
 		}
 		if (enTienda) return "EN_TIENDA";
-		return (peds > 0) ? "EN_RUTA" : "FUERA_DE_TIENDA";
+		return "EN_RUTA";
 	}
 
 	function updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado = null, bateria = null, velocidad = null, pedidos_activos = 0, pedidos_detalle = null, autoFilter = true, app_version = null) {
@@ -918,6 +931,7 @@ $(document).ready(function() {
 
 		window._ultimoUsuarioSeleccionado = selectedUser;
 		window._ultimaTiendaSeleccionada = selectedStore;
+		window._ultimaIdTiendaSeleccionada = idTienda;
 		window._ultimaFechaSeleccionada = selectedDate;
 		window._ultimaClaveSeleccionada = String(claveUsuario);
 
@@ -955,6 +969,7 @@ $(document).ready(function() {
 		window._ultimaEmpresaTemporal = empresa;
 		window._ultimoUsuarioSeleccionado = nombre;
 		window._ultimaTiendaSeleccionada = tienda;
+		window._ultimaIdTiendaSeleccionada = idtienda;
 		window._ultimaFechaSeleccionada = hoy;
 		window._ultimaClaveSeleccionada = String(clave);
 
@@ -1790,7 +1805,7 @@ $(document).ready(function() {
 	function consultarYRenderizarDespachosHistorial(claveRapida, fechaDia, puntos) {
 		$('#badgeTotalDespachos').text('0');
 		$('#badgeAlertasDesconexion').empty();
-		$('#lista-despachos-body').html('<div class="text-center text-muted py-3 small"><i class="fas fa-spinner fa-spin mr-1"></i> Consultando despachos en Datamart...</div>');
+		$('#lista-despachos-body').html('<div class="text-center text-muted py-3 small"><i class="fas fa-spinner fa-spin mr-1"></i> Consultando despachos y entregas...</div>');
 
 		if (!claveRapida || !fechaDia) {
 			$('#lista-despachos-body').html('<div class="text-center text-muted py-3 small">No hay información de domiciliario para consultar despachos.</div>');
@@ -1803,7 +1818,8 @@ $(document).ready(function() {
 			data: {
 				action: "despachos_historial",
 				startDate: fechaDia,
-				claveRapida: String(claveRapida)
+				claveRapida: String(claveRapida),
+				tiendaId: window._ultimaIdTiendaSeleccionada || 0
 			},
 			success: function(response) {
 				if (!response || !Array.isArray(response) || response.length === 0) {

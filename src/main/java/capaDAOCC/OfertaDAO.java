@@ -518,10 +518,11 @@ public class OfertaDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String consulta = "select * from oferta where codigo_general = '" + codigoGeneral + "'";
-			logger.info(consulta);
-			ResultSet rs = stm.executeQuery(consulta);
+			//Solo un codigo abierto HABILITADO y dentro de su vigencia, y nunca uno vacio: con la consulta vieja,
+			//un codigo en blanco coincidia con todas las ofertas que no tienen codigo general.
+			PreparedStatement stm = con1.prepareStatement("select * from oferta where codigo_general = ? and codigo_general <> '' and habilitado = 'S' and (fecha_desde is null or fecha_desde <= curdate()) and (fecha_hasta is null or fecha_hasta >= curdate())");
+			stm.setString(1, codigoGeneral == null ? "" : codigoGeneral.trim());
+			ResultSet rs = stm.executeQuery();
 			int idOferta;
 			String nombreOferta;
 			int idExcepcion;

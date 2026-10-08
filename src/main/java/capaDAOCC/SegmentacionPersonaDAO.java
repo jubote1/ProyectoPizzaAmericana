@@ -77,6 +77,28 @@ public class SegmentacionPersonaDAO {
 		public boolean soloAutorizados = false;
 		/** TODOS, MOSTRADOR, DOMICILIO, AMBOS. */
 		public String canal = "TODOS";
+		/**
+		 * Familia de especialidad que la persona prefiere. Vacio = cualquiera.
+		 *
+		 * Es OTRO EJE, no un segmento: una persona es FIEL y ademas amante de la
+		 * Hawaiana. Por eso se filtra aqui, encima del segmento, y no dentro de
+		 * segmento_definicion, donde cada persona solo puede tener uno.
+		 */
+		public String familiaFavorita = "";
+		/**
+		 * Que tan marcada tiene que ser esa preferencia, en porcentaje.
+		 *
+		 * Sin esto "le gusta la Hawaiana" incluye a quien la pidio una vez entre
+		 * diez. 60 es el punto donde deja de ser casualidad.
+		 */
+		public int fidelidadMin = 0;
+		/**
+		 * Minimo de pizzas en los ultimos doce meses.
+		 *
+		 * Una sola pizza da 100% de fidelidad y no dice nada. Va aparte de
+		 * pedidosMin porque cuenta pizzas con especialidad, no pedidos.
+		 */
+		public int pizzasMin = 0;
 		/** VALOR, RECIENTE, PEDIDOS. */
 		public String orden = "VALOR";
 		public int pagina = 1;
@@ -182,7 +204,22 @@ public class SegmentacionPersonaDAO {
 		if (f.soloAutorizados) {
 			w.append(" AND politica_datos = 'S'");
 		}
+		if (f.familiaFavorita != null && f.familiaFavorita.trim().length() > 0) {
+			w.append(" AND familia_favorita = ?");
+			valores.add(f.familiaFavorita.trim());
+		}
+		if (f.fidelidadMin > 0) {
+			w.append(" AND fidelidad_favorita >= ?");
+			valores.add(Integer.valueOf(f.fidelidadMin));
+		}
+		if (f.pizzasMin > 0) {
+			w.append(" AND pizzas_12m >= ?");
+			valores.add(Integer.valueOf(f.pizzasMin));
+		}
 		if ("MOSTRADOR".equals(f.canal)) {
+			//OJO: quien solo compra en mostrador NO tiene perfil de gusto, porque
+			//el central no ve ese detalle. Combinar este canal con una familia
+			//favorita devuelve cero, y no es un error: es que ese dato no existe.
 			w.append(" AND pedidos_tienda > 0 AND pedidos_central = 0");
 		} else if ("DOMICILIO".equals(f.canal)) {
 			w.append(" AND pedidos_central > 0 AND pedidos_tienda = 0");
@@ -399,6 +436,59 @@ public class SegmentacionPersonaDAO {
 	// =======================================================================
 	// Lo que necesita la pantalla para armarse
 	// =======================================================================
+
+	/** Una familia de especialidades, con cuanta gente la tiene de favorita. */
+	public static class Familia {
+		public String nombre = "";
+		public int personas = 0;
+		public int claras = 0;
+	}
+
+	/**
+	 * Las especialidades favoritas que de verdad existen en los datos.
+	 *
+	 * Se leen y no se escriben en la pantalla, por lo mismo que los segmentos:
+	 * una familia que falte en la lista no da error, simplemente no se puede
+	 * escoger y nadie se entera.
+	 *
+	 * Van con el conteo al lado porque sin el la lista enganaria: hay familias
+	 * con tres personas, y escoger una de esas es armar una campana para nadie.
+	 * El segundo numero -los "claros"- es el que importa: gente que ademas
+	 * cumple el minimo de 60% y tres pizzas, que es a quienes se les puede
+	 * decir "sabemos que te gusta" sin mentir.
+	 */
+	public static ArrayList<Familia> familias() {
+		final ArrayList<Familia> lista = new ArrayList<Familia>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT familia_favorita, COUNT(*),"
+					+ " SUM(fidelidad_favorita >= 60 AND pizzas_12m >= 3)"
+					+ " FROM crm.persona_resumen"
+					+ " WHERE familia_favorita IS NOT NULL"
+					+ " GROUP BY familia_favorita"
+					//Por los claros y no alfabetico: quien arma una campana
+					//quiere ver primero los publicos que sirven.
+					+ " ORDER BY 3 DESC, familia_favorita");
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Familia x = new Familia();
+				x.nombre = texto(rs.getString(1));
+				x.personas = rs.getInt(2);
+				x.claras = rs.getInt(3);
+				lista.add(x);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("SegmentacionPersonaDAO.familias: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (lista);
+	}
 
 	public static ArrayList<Tienda> tiendas() {
 		final ArrayList<Tienda> lista = new ArrayList<Tienda>();

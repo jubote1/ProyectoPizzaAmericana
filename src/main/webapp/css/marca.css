@@ -1,0 +1,173 @@
+/*
+ * Piel de marca para las pantallas del central que no han tenido rediseno
+ * reciente (todo lo que NO es Pedidos.html ni las pantallas tocadas en las
+ * ultimas 3 semanas: esas ya van por su propio camino visual).
+ *
+ * Reusa la paleta oficial del manual de marca -#E42528 rojo, #FDC806
+ * amarillo, #102F6F azul- sobre los componentes de Bootstrap 3 que estas
+ * pantallas ya usan (botones, tablas, DataTables, modales, formularios),
+ * sin tocar el HTML ni la logica de cada una: es una capa de estilos
+ * encima, un solo <link> por pantalla.
+ *
+ * A proposito NO toca .navbar/.dropdown-menu/.nav-link: esos viven en
+ * Menu.html/MenuAdm.html, que ya tienen su propio estilo (barra oscura,
+ * acentos amarillos) y no forman parte de esta pasada.
+ */
+
+:root {
+	--marca-azul: #102F6F;
+	--marca-azul-osc: #0B2354;
+	--marca-amarillo: #FDC806;
+	--marca-rojo: #E42528;
+	--marca-fondo: #F4F6F8;
+	--marca-borde: #E2E6EC;
+	--marca-texto: #1F2430;
+	--marca-texto-suave: #6C7482;
+}
+
+body {
+	background-color: var(--marca-fondo);
+	color: var(--marca-texto);
+}
+
+/* El contenido de cada pantalla vive en un container justo debajo del menu:
+   se le da aire y una tarjeta blanca en vez de quedar pegado al fondo gris.
+   Solo el container de mas afuera -hijo directo del body-, para no tocar
+   los container/container-fluid que Bootstrap usa por dentro de tablas,
+   modales o de la propia barra de menu. */
+body > .container,
+body > .container-fluid {
+	background-color: #FFFFFF;
+	border: 1px solid var(--marca-borde);
+	border-radius: 6px;
+	padding: 22px 26px;
+	margin-top: 20px;
+	margin-bottom: 30px;
+	box-shadow: 0 1px 3px rgba(16, 47, 111, .06);
+}
+
+h1, h2, h3, h4 {
+	color: var(--marca-azul);
+	font-weight: bold;
+}
+
+/* ---- Botones ---- */
+.btn-primary {
+	background-color: var(--marca-azul);
+	border-color: var(--marca-azul);
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+	background-color: var(--marca-azul-osc) !important;
+	border-color: var(--marca-azul-osc) !important;
+}
+.btn-success {
+	background-color: #1E824C;
+	border-color: #1E824C;
+}
+.btn-danger {
+	background-color: var(--marca-rojo);
+	border-color: var(--marca-rojo);
+}
+.btn-warning {
+	background-color: var(--marca-amarillo);
+	border-color: var(--marca-amarillo);
+	color: var(--marca-azul);
+}
+
+/* ---- Tablas y DataTables ---- */
+.table > thead > tr > th,
+table.dataTable thead th,
+table.dataTable thead td {
+	background-color: var(--marca-azul);
+	color: #FFFFFF;
+	border-color: var(--marca-azul) !important;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: .03em;
+	vertical-align: middle;
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+	background-color: #FAFBFC;
+}
+.table-hover > tbody > tr:hover {
+	background-color: #F1F4F9;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+	background: var(--marca-azul) !important;
+	border-color: var(--marca-azul) !important;
+	color: #FFFFFF !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+	background: var(--marca-amarillo) !important;
+	border-color: var(--marca-amarillo) !important;
+	color: var(--marca-azul) !important;
+}
+.dataTables_wrapper .dataTables_filter input:focus,
+.dataTables_wrapper .dataTables_length select:focus {
+	border-color: var(--marca-azul);
+	outline: none;
+}
+
+/* ---- Modales ---- */
+.modal-content {
+	border-radius: 6px;
+	overflow: hidden;
+}
+.modal-header {
+	background-color: var(--marca-azul);
+	border-radius: 0;
+}
+.modal-header .modal-title {
+	color: #FFFFFF;
+	font-weight: bold;
+}
+.modal-header .close {
+	color: #FFFFFF;
+	opacity: .85;
+	text-shadow: none;
+}
+.modal-header .close:hover,
+.modal-header .close:focus {
+	color: var(--marca-amarillo);
+	opacity: 1;
+}
+
+/* ---- Formularios ---- */
+.form-control:focus {
+	border-color: var(--marca-azul);
+	box-shadow: 0 0 0 2px rgba(16, 47, 111, .15);
+}
+label {
+	color: var(--marca-texto-suave);
+	font-weight: 600;
+}
+
+/* ---- Pestanas ---- */
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+	color: var(--marca-azul);
+	border-top: 2px solid var(--marca-rojo);
+	font-weight: bold;
+}
+
+/* ---- Alertas ---- */
+.alert-info {
+	background-color: #EAF0FB;
+	border-color: #C7D6EF;
+	color: var(--marca-azul);
+}
+.alert-success {
+	background-color: #E4F1E9;
+	border-color: #BFE0CC;
+	color: #1E824C;
+}
+.alert-danger {
+	background-color: #FDE9E9;
+	border-color: #F4C2C2;
+	color: var(--marca-rojo);
+}

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<title>Ayuda - Revisión 15 Minutos o Gratis</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<style>
+		body { padding: 20px 28px 60px 28px; font-size: 14px; }
+		h1 { font-size: 24px; color: #102F6F; margin-bottom: 4px; }
+		h2 { font-size: 17px; color: #102F6F; margin-top: 26px; border-bottom: 1px solid #e5e5e5; padding-bottom: 5px; }
+		.intro { color: #666; margin-bottom: 20px; }
+		table { font-size: 13px; }
+		.aviso { background: #fdf3d8; border-left: 4px solid #FDC806; padding: 10px 14px; margin: 14px 0; }
+		.ojo { background: #fdecea; border-left: 4px solid #E42528; padding: 10px 14px; margin: 14px 0; }
+		.etq { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+		.e1 { background:#fdebd0; color:#a04000; }
+		.e2 { background:#d5f5e3; color:#1e6b3a; }
+		.e3 { background:#fadbd8; color:#922b21; }
+	</style>
+</head>
+<body>
+
+<h1>Revisión 15 Minutos o Gratis</h1>
+<p class="intro">
+	Cómo revisar los casos donde un pedido de punto de venta con la campaña "15 minutos o gratis"
+	no salió a tiempo.
+</p>
+
+<h2>1. Qué llega a esta pantalla</h2>
+<p>
+	Solo pedidos de <strong>punto de venta</strong> (nunca domicilio ni plataformas) donde:
+</p>
+<ul>
+	<li>La campaña estaba activa y el pedido tenía exactamente una pizza a precio de carta, sin
+		especialidad premium ni especialidades excluidas (The Works, Con Todo, etc.).</li>
+	<li>Pasaron los minutos prometidos (15 por defecto) desde que el pedido se envió a cocina, sin
+		que el sistema encuentre evidencia de que se facturó a tiempo.</li>
+</ul>
+<div class="aviso">
+	<strong>Cómo llegan aquí:</strong> un proceso en Servicios revisa cada pocos minutos, en
+	silencio, los pedidos con la campaña aplicada. No avisa por correo ni interrumpe a nadie: solo
+	deja el caso en esta bandeja para que alguien lo revise cuando pueda.
+</div>
+
+<h2>2. Los estados</h2>
+<p>
+	<span class="etq e1">PENDIENTE</span> Espera decisión. No se ha devuelto nada todavía.<br><br>
+	<span class="etq e2">APROBADA</span> El caso quedó aprobado con el monto calculado, listo para
+	que caja o Servicio al Cliente ejecute la devolución.<br><br>
+	<span class="etq e3">RECHAZADA</span> No se aprobó la devolución. Queda la constancia y el
+	motivo.
+</p>
+
+<h2>3. Cómo se calcula el monto a devolver</h2>
+<table class="table table-bordered">
+	<tbody>
+		<tr>
+			<td style="width:220px;"><strong>Valor base</strong></td>
+			<td>El valor de la pizza a precio de carta que aplicó a la campaña. Nunca incluye
+				acompañantes ni bebidas del mismo pedido: solo se devuelve la pizza.</td>
+		</tr>
+		<tr>
+			<td><strong>Retención del 5%</strong></td>
+			<td>Se descuenta del valor base <strong>solo</strong> si el pedido se pagó por
+				datáfono o código QR (medio de pago virtual). Es por los costos que cobra el
+				medio de pago; si el pago fue en efectivo no se retiene nada.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h2>4. Qué pasa cuando aprueba</h2>
+<div class="ojo">
+	<strong>Importante:</strong> aprobar NO mueve dinero. El sistema no tiene integración con el
+	datáfono, Bold ni Wompi para devolver plata sola. Al aprobar, el caso queda con el monto ya
+	calculado y quién lo autorizó — la devolución real (datáfono, QR o efectivo) la ejecuta
+	caja o Servicio al Cliente por fuera de este sistema, con ese monto como referencia.
+</div>
+
+<h2>5. Cómo se decide</h2>
+<ol>
+	<li>Deje el filtro en <strong>Pendientes de revisión</strong> y pulse <strong>Consultar</strong>.</li>
+	<li>Revise tienda, pedido, hora de inicio y el monto a devolver ya calculado.</li>
+	<li>Pulse <strong>Aprobar</strong> o <strong>Rechazar</strong>, escriba la observación y confirme.</li>
+	<li>Si aprueba, coordine con la tienda o con caja para que la devolución real se ejecute.</li>
+</ol>
+<p>
+	Para rechazar, la observación es obligatoria.
+</p>
+
+<h2>6. Preguntas frecuentes</h2>
+<table class="table table-bordered">
+	<tbody>
+		<tr>
+			<td style="width:290px;"><strong>No me carga nada y salgo de la sesión.</strong></td>
+			<td>La pantalla necesita sesión iniciada. Recargue la página e ingrese de nuevo.</td>
+		</tr>
+		<tr>
+			<td><strong>Aprobé por error, ¿cómo lo deshago?</strong></td>
+			<td>No hay botón para deshacerlo desde aquí. Como aprobar no mueve dinero, avise a
+				quien vaya a ejecutar la devolución para que no la haga.</td>
+		</tr>
+		<tr>
+			<td><strong>¿Por qué un pedido no aparece aquí si claramente se demoró?</strong></td>
+			<td>Puede que la campaña no estuviera activa en ese momento, que el pedido tuviera
+				más de una pizza, una especialidad premium o excluida, o que aún no hayan pasado
+				los minutos prometidos.</td>
+		</tr>
+	</tbody>
+</table>
+
+</body>
+</html>

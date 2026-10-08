@@ -109,7 +109,7 @@ function determinarEstadoOperativo(lat, lng, idtienda, pedidosActivos = 0) {
         }
     }
     if (enTienda) return 'EN_TIENDA';
-    return (parseInt(pedidosActivos, 10) > 0) ? 'EN_RUTA' : 'FUERA_DE_TIENDA';
+    return 'EN_RUTA';
 }
 
 // -------------------------------------------------------------

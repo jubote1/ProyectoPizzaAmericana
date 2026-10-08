@@ -530,6 +530,20 @@ public class FidelizacionCtrl {
 			respuesta.put("detalle", resultado.detalleError);
 			return(respuesta.toJSONString());
 		}
+		//El aviso al cliente sale solo cuando la redencion queda CONFIRMADA. Una
+		//RESERVADA todavia puede reversarse sola si el pedido nunca se finaliza,
+		//y avisarle al cliente de puntos que le van a volver seria peor que no
+		//avisarle: cuando mire el saldo no va a cuadrar con el correo. En ese
+		//caso el aviso sale al confirmar, en confirmarRedencionPuntos.
+		//
+		//Va en segundo plano a proposito: aca hay un cliente en el mostrador
+		//esperando, y el POS no puede quedarse esperando a que un servidor SMTP
+		//conteste. El resultado queda en el log.
+		if(!reservar)
+		{
+			utilidadesCC.AvisoRedencion.enviarLuego(correo, puntosRedimir, "", idTienda, false);
+		}
+
 		respuesta.put("respuesta", "OK");
 		respuesta.put("puntosrestantes", resultado.puntosRestantes);
 		respuesta.put("idredencion", resultado.idRedencion);
@@ -545,6 +559,23 @@ public class FidelizacionCtrl {
 	{
 		JSONObject respuesta = new JSONObject();
 		boolean confirmada = FidelizacionRedencionDAO.confirmarRedencion(idRedencion, usuario);
+
+		//Aqui es donde la redencion se vuelve definitiva, asi que aqui sale el
+		//aviso al cliente. Se lee la redencion DESPUES de confirmarla y no
+		//antes: si la confirmacion no prospera -porque ya estaba confirmada o
+		//reversada- no hay nada que avisar, y confirmarRedencion solo devuelve
+		//un booleano, sin el correo ni los puntos.
+		if(confirmada)
+		{
+			FidelizacionRedencionDAO.RedencionPedido redencion =
+					FidelizacionRedencionDAO.obtenerRedencionPorId(idRedencion);
+			if(redencion != null)
+			{
+				utilidadesCC.AvisoRedencion.enviarLuego(redencion.correo, redencion.puntosRedimidos,
+						"", redencion.idTienda, false);
+			}
+		}
+
 		respuesta.put("respuesta", confirmada ? "OK" : "NOK");
 		respuesta.put("detalle", confirmada ? ""
 				: "No se encontro la redencion en estado RESERVADA; puede que ya estuviera confirmada o reversada");

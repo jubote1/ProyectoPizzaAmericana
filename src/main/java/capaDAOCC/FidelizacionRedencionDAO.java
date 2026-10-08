@@ -520,6 +520,51 @@ public class FidelizacionRedencionDAO {
 	}
 
 	/**
+	 * Busca una redencion por su id.
+	 *
+	 * La necesita el correo de confirmacion: confirmarRedencion recibe solo el
+	 * idredencion, y para escribirle al cliente hay que saber a quien y por
+	 * cuantos puntos. Se lee despues de confirmar y no antes, para no mandar un
+	 * correo de algo que todavia podia fallar.
+	 */
+	public static RedencionPedido obtenerRedencionPorId(int idRedencion) {
+		Logger logger = Logger.getLogger("log_file");
+		RedencionPedido redencion = null;
+		if (idRedencion <= 0) {
+			return (null);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try {
+			PreparedStatement pst = con1.prepareStatement("select idredencion, correo, idtienda, idpedidotienda,"
+					+ " puntos_redimidos, puntos_reversados, estado from fidelizacion_redencion"
+					+ " where idredencion = ?");
+			pst.setInt(1, idRedencion);
+			ResultSet rs = pst.executeQuery();
+			if (rs.next()) {
+				redencion = new RedencionPedido();
+				redencion.idRedencion = rs.getInt("idredencion");
+				redencion.correo = rs.getString("correo");
+				redencion.idTienda = rs.getInt("idtienda");
+				redencion.idPedidoTienda = rs.getInt("idpedidotienda");
+				redencion.puntosRedimidos = rs.getDouble("puntos_redimidos");
+				redencion.puntosReversados = rs.getDouble("puntos_reversados");
+				redencion.estado = rs.getString("estado");
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		} catch (Exception e) {
+			logger.error("obtenerRedencionPorId: " + e.toString());
+			try {
+				con1.close();
+			} catch (Exception e1) {
+			}
+		}
+		return (redencion);
+	}
+
+	/**
 	 * Redenciones que quedaron RESERVADA hace mas de las horas indicadas. Son
 	 * pedidos que nunca se finalizaron: el proceso de barrido las reversa sola.
 	 */

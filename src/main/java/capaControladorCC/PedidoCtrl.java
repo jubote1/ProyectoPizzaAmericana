@@ -1541,6 +1541,28 @@ public class PedidoCtrl {
 
 	}
 
+	/** Las ubicaciones de los pedidos de domicilio de una tienda, para el mapa de calor. Ver PedidoDAO.consultarDireccionesDomicilio. */
+	@SuppressWarnings("unchecked")
+	public String consultarDireccionesDomicilio(String fechainicial, String fechafinal, int idTienda) {
+		ArrayList<DireccionFueraZona> dirsPedido = PedidoDAO.consultarDireccionesDomicilio(fechainicial, fechafinal,
+				idTienda);
+		JSONArray listJSON = new JSONArray();
+		for (DireccionFueraZona dirTemp : dirsPedido) {
+			JSONObject resultadoJSON = new JSONObject();
+			resultadoJSON.put("idpedido", dirTemp.getId());
+			resultadoJSON.put("direccion", dirTemp.getDireccion());
+			resultadoJSON.put("municipio", dirTemp.getMunicipio());
+			resultadoJSON.put("latitud", dirTemp.getLatitud());
+			resultadoJSON.put("longitud", dirTemp.getLongitud());
+			resultadoJSON.put("nombre", dirTemp.getNombre());
+			resultadoJSON.put("apellido", dirTemp.getApellido());
+			resultadoJSON.put("fechapedido", dirTemp.getFechaIngreso());
+			resultadoJSON.put("valor", dirTemp.getValor());
+			listJSON.add(resultadoJSON);
+		}
+		return listJSON.toJSONString();
+	}
+
 	public String ConsultarDireccionesPedido(String fechainicial, String fechafinal, String idMunicipio,
 			String idTienda, String horaIni, String horaFin) {
 		ArrayList<DireccionFueraZona> dirsPedido = PedidoDAO.ConsultarDireccionesPedido(fechainicial, fechafinal,
@@ -14001,6 +14023,10 @@ public class PedidoCtrl {
 		JSONObject respuesta = new JSONObject();
 		TercerizadoDomicilioEvento infoPedido = TercerizadoDomicilioEventoDAO.ConsultarInfoRappiCargo(idPedidoTienda, idTienda);
 		respuesta.put("idpedido", infoPedido.getIdPedido());
+		//El numero que ve Rappi (y el que entrega el domiciliario en la puerta): el pedido de la tienda
+		//y el de Rappi Cargo son numeros distintos, y hasta ahora este nunca llegaba al POS aunque ya
+		//se consultaba de la base de datos.
+		respuesta.put("idpedidologistico", infoPedido.getIdPedidoLogistico());
 		respuesta.put("urlseguimiento", infoPedido.getUrlSeguimiento());
 		respuesta.put("fechaentrega", infoPedido.getFechaEntrega());
 		respuesta.put("fechacancelacion", infoPedido.getFechaCancelacion());

@@ -294,9 +294,13 @@ public class PromocionesCtrl {
 	{
 		JSONArray listJSON = new JSONArray();
 		String respuesta = OfertaClienteDAO.actualizarUsoOferta(idOfertaCliente, usuarioUso, descuentoSobrante);
-		LogRedencionCodigoDAO.insertarLogRedencionCodigo(idOfertaCliente, usuarioUso, descuentoSobrante, descuento);
+		//Solo queda en el log lo que de verdad se consumio; antes se registraba y se decia "exitoso" aunque el codigo ya estuviera usado.
+		if(respuesta.equals("exitoso"))
+		{
+			LogRedencionCodigoDAO.insertarLogRedencionCodigo(idOfertaCliente, usuarioUso, descuentoSobrante, descuento);
+		}
 		JSONObject ResultadoJSON = new JSONObject();
-		ResultadoJSON.put("resultado", "exitoso");
+		ResultadoJSON.put("resultado", respuesta.equals("exitoso") ? "exitoso" : "error");
 		listJSON.add(ResultadoJSON);
 		return listJSON.toJSONString();
 	}
@@ -415,38 +419,29 @@ public class PromocionesCtrl {
  */
 	public String generarCodigoPromocional()
 	{
-		String codigo = "";
-		//variable para controlar que si hubo de generaci�n de c�digo �nico
-		boolean bandera = true;
-		while(bandera)
+		//Antes: Math.random, 7 caracteres (unos 60 millones de combinaciones) y solo digitos del 0 al 8. Ahora: SecureRandom,
+		//8 caracteres sin vocales ni 0/O/1/I (unos 500 mil millones). Los codigos ya emitidos siguen valiendo.
+		conexionCC.ConexionBaseDatos con = new conexionCC.ConexionBaseDatos();
+		java.sql.Connection cn = null;
+		try
 		{
-			codigo = "";
-			int a;
-			 for (int i = 0; i < 7; i++) 
-			 {
-			        if (i < 4) {    // 0,1,2,3 posiciones de numeros
-			            codigo = (int) (Math.random() * 9) + "" + codigo;
-
-			        } else {       // 4,5,6 posiciones de letras
-			            do {
-			                a = (int) (Math.random() * 26 + 65);///
-			            } while (a == 65 || a == 69 || a == 73 || a == 79 || a == 85);
-
-			            char letra = (char) a;
-			            if (i == 4) {
-			                codigo = codigo  + letra;
-			            } else {
-			                codigo = codigo + "" + letra;
-			            }
-
-			        }
-			 }
-			 //Validamos si el c�digo promocional existe, en caso de que no exista regresar� un false y saldr� del ciclo while
-			 bandera = OfertaClienteDAO.validarExistenciaOfertaCliente(codigo);
+			cn = con.obtenerConexionBDPrincipal();
+			return capaDAOCC.CodigoPromoDAO.generarCodigo(cn);
+		}catch(Exception e)
+		{
+			throw new RuntimeException("No se pudo generar el codigo promocional: " + e.getMessage(), e);
+		}finally
+		{
+			try
+			{
+				if(cn != null)
+				{
+					cn.close();
+				}
+			}catch(Exception e1)
+			{
+			}
 		}
-			 
-	    System.out.println(codigo);
-		return(codigo);
 	}
 	
 	/**
@@ -505,7 +500,8 @@ public class PromocionesCtrl {
 					{
 						
 					}
-					if(fechaActual.compareTo(fechaCaducidad) > 0)
+					//INCLUSIVA: la fecha de caducidad es el ultimo dia en que sirve, hasta el final del dia (antes vencia a las 00:00).
+					if(fechaActual.compareTo(new Date(fechaCaducidad.getTime() + 86399999L)) > 0)
 					{
 						vigente = false;
 					}else

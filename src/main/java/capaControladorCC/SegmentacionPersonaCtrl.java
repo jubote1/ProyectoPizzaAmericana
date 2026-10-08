@@ -46,6 +46,17 @@ public class SegmentacionPersonaCtrl {
 		f.soloConCorreo = "S".equals(request.getParameter("concorreo"));
 		f.soloAutorizados = "S".equals(request.getParameter("autorizados"));
 		f.canal = texto(request.getParameter("canal"), "TODOS");
+		//El gusto. Va encima del segmento y no en su lugar: una persona es FIEL
+		//y ademas amante de la Hawaiana.
+		f.familiaFavorita = texto(request.getParameter("familiafavorita"), "");
+		//Si se pide una familia y no se dice que tan marcada, se exige 60 y tres
+		//pizzas. Sin eso, "le gusta la Hawaiana" incluiria a quien la pidio una
+		//vez entre diez, y el mensaje -que le dice al cliente que es su
+		//favorita- quedaria mintiendo.
+		f.fidelidadMin = entero(request.getParameter("fidelidadmin"),
+				f.familiaFavorita.length() > 0 ? 60 : 0);
+		f.pizzasMin = entero(request.getParameter("pizzasmin"),
+				f.familiaFavorita.length() > 0 ? 3 : 0);
 		f.orden = texto(request.getParameter("orden"), "VALOR");
 		f.pagina = entero(request.getParameter("pagina"), 1);
 		f.porPagina = entero(request.getParameter("porpagina"), 50);

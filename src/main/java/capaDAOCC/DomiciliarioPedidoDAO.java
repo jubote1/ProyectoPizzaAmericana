@@ -131,15 +131,19 @@ public class DomiciliarioPedidoDAO {
 	           .append(") ")
 	           .append("LEFT JOIN general.empleado_temporal et ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
 	           .append("LEFT JOIN ( ")
-	           .append("    SELECT clave_dom, identificacion, nombre, empresa, idtienda, ")
+	           .append("    SELECT clave_dom, identificacion, nombre, empresa, idtienda, anulado, ")
 	           .append("           ROW_NUMBER() OVER(PARTITION BY COALESCE(NULLIF(TRIM(clave_dom), ''), TRIM(identificacion)) ORDER BY idinterno DESC) as rn ")
 	           .append("    FROM general.empleado_temporal_dia_tienda ")
 	           .append("    WHERE fecha_sistema = CURDATE() ")
 	           .append(") etdt ON ( ")
-	           .append("    (etdt.clave_dom IS NOT NULL AND TRIM(etdt.clave_dom) != '' AND ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.clave_dom) COLLATE utf8mb4_unicode_ci) ")
-	           .append("    OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(etdt.identificacion), 6) COLLATE utf8mb4_unicode_ci ")
-	           .append("    OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.identificacion) COLLATE utf8mb4_unicode_ci ")
-	           .append(") AND etdt.rn = 1 ")
+	           .append("    etdt.rn = 1 ")
+	           .append("    AND (etdt.anulado = 'N' OR etdt.anulado IS NULL OR etdt.anulado = '' OR etdt.anulado = '0') ")
+	           .append("    AND ( ")
+	           .append("        (etdt.clave_dom IS NOT NULL AND TRIM(etdt.clave_dom) != '' AND ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.clave_dom) COLLATE utf8mb4_unicode_ci) ")
+	           .append("        OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(etdt.identificacion), 6) COLLATE utf8mb4_unicode_ci ")
+	           .append("        OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.identificacion) COLLATE utf8mb4_unicode_ci ")
+	           .append("    ) ")
+	           .append(") ")
 	           .append("LEFT JOIN ( ")
 	           .append("    SELECT id, idtienda FROM ( ")
 	           .append("        SELECT id, idtienda, ROW_NUMBER() OVER(PARTITION BY id ORDER BY fecha_hora_log DESC) as rn ")
@@ -232,16 +236,18 @@ public class DomiciliarioPedidoDAO {
 	       .append(") ")
 	       .append("LEFT JOIN general.empleado_temporal et ON (u.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR u.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
 	       .append("LEFT JOIN ( ")
-	       .append("    SELECT fecha_sistema, clave_dom, identificacion, nombre, empresa, idtienda, ")
+	       .append("    SELECT fecha_sistema, clave_dom, identificacion, nombre, empresa, idtienda, anulado, ")
 	       .append("           ROW_NUMBER() OVER(PARTITION BY fecha_sistema, COALESCE(NULLIF(TRIM(clave_dom), ''), TRIM(identificacion)) ORDER BY idinterno DESC) as rn ")
 	       .append("    FROM general.empleado_temporal_dia_tienda ")
 	       .append(") etdt ON ( ")
 	       .append("    etdt.fecha_sistema = u.fecha_dia ")
+	       .append("    AND etdt.rn = 1 ")
+	       .append("    AND (etdt.anulado = 'N' OR etdt.anulado IS NULL OR etdt.anulado = '' OR etdt.anulado = '0') ")
 	       .append("    AND ( ")
 	       .append("        (etdt.clave_dom IS NOT NULL AND TRIM(etdt.clave_dom) != '' AND u.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.clave_dom) COLLATE utf8mb4_unicode_ci) ")
 	       .append("        OR u.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(etdt.identificacion), 6) COLLATE utf8mb4_unicode_ci ")
 	       .append("        OR u.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.identificacion) COLLATE utf8mb4_unicode_ci ")
-	       .append("    ) AND etdt.rn = 1 ")
+	       .append("    ) ")
 	       .append(") ")
 	       .append("LEFT JOIN tienda ti ON ti.idtienda = COALESCE(etdt.idtienda, u.idtienda) ")
 	       .append("ORDER BY u.fecha_dia DESC, nombre_largo");
@@ -296,8 +302,14 @@ public class DomiciliarioPedidoDAO {
 	       .append("    OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(CONVERT(e.nombre USING utf8mb4)), 6) COLLATE utf8mb4_unicode_ci ")
 	       .append(") ")
 	       .append("LEFT JOIN general.empleado_temporal et ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(et.identificacion), 6) COLLATE utf8mb4_unicode_ci OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(et.identificacion) COLLATE utf8mb4_unicode_ci) ")
-	       .append("LEFT JOIN general.empleado_temporal_dia_tienda etdt ON ( ")
+	       .append("LEFT JOIN ( ")
+	       .append("    SELECT fecha_sistema, clave_dom, identificacion, nombre, empresa, idtienda, anulado, ")
+	       .append("           ROW_NUMBER() OVER(PARTITION BY fecha_sistema, COALESCE(NULLIF(TRIM(clave_dom), ''), TRIM(identificacion)) ORDER BY idinterno DESC) as rn ")
+	       .append("    FROM general.empleado_temporal_dia_tienda ")
+	       .append(") etdt ON ( ")
 	       .append("    etdt.fecha_sistema = DATE(ubi.fecha) ")
+	       .append("    AND etdt.rn = 1 ")
+	       .append("    AND (etdt.anulado = 'N' OR etdt.anulado IS NULL OR etdt.anulado = '' OR etdt.anulado = '0') ")
 	       .append("    AND ( ")
 	       .append("        (etdt.clave_dom IS NOT NULL AND TRIM(etdt.clave_dom) != '' AND ubi.clave_dom COLLATE utf8mb4_unicode_ci = TRIM(etdt.clave_dom) COLLATE utf8mb4_unicode_ci) ")
 	       .append("        OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = RIGHT(TRIM(etdt.identificacion), 6) COLLATE utf8mb4_unicode_ci ")
@@ -307,9 +319,6 @@ public class DomiciliarioPedidoDAO {
 	       .append("LEFT JOIN tienda ti ON ti.idtienda = COALESCE(etdt.idtienda, ubi.idtienda) ")
 	       .append("WHERE ubi.clave_dom = ? ");
 
-	    if (idTienda != 0) {
-	        sql.append("AND ubi.idtienda = ? ");
-	    }
 	    sql.append("AND ubi.fecha >= ? AND ubi.fecha < DATE_ADD(?, INTERVAL 1 DAY) ")
 	       .append("ORDER BY ubi.fecha ASC");
 
@@ -318,7 +327,6 @@ public class DomiciliarioPedidoDAO {
 
 	        int paramIndex = 1;
 	        statement.setString(paramIndex++, claveRapida);
-	        if (idTienda != 0) statement.setInt(paramIndex++, idTienda);
 	        statement.setString(paramIndex++, fecha);
 	        statement.setString(paramIndex++, fecha);
 
@@ -342,6 +350,10 @@ public class DomiciliarioPedidoDAO {
 	}
 
 	public static List<JSONObject> ObtenerDespachosHistorial(String fecha, String claveRapida) throws SQLException {
+		return ObtenerDespachosHistorial(fecha, claveRapida, 0);
+	}
+
+	public static List<JSONObject> ObtenerDespachosHistorial(String fecha, String claveRapida, int tiendaIdParam) throws SQLException {
 	    List<JSONObject> lista = new ArrayList<>();
 	    String sql = "SELECT dr.id AS despacho_id, dr.idtienda, ti.nombre AS nombre_tienda, " +
 	                 "       dr.hora_salida, dr.hora_regreso, drd.id_pedido, drd.orden_planificada, drd.hora_entrega " +
@@ -378,6 +390,148 @@ public class DomiciliarioPedidoDAO {
 	    } catch (Exception e) {
 	        System.out.println("Error ObtenerDespachosHistorial: " + e);
 	    }
+
+	    // Si Datamart no arrojó resultados (ejemplo: fecha de hoy en curso que aún no ha corrido el ETL batch),
+	    // consultamos en tiempo real directamente en la base de datos de la tienda donde está operando el domiciliario
+	    if (lista.isEmpty() && claveRapida != null && !claveRapida.trim().isEmpty()) {
+	        try {
+	            ConexionBaseDatos cbd = new ConexionBaseDatos();
+	            int idEmpleado = 0;
+	            try (Connection conGen = cbd.obtenerConexionBDGeneral()) {
+	                if (conGen != null) {
+	                    String sqlEmp = "SELECT id FROM general.empleado WHERE claverapida = ? OR CAST(id AS CHAR) = ? OR nombre LIKE CONCAT('%', ?)";
+	                    try (PreparedStatement psE = conGen.prepareStatement(sqlEmp)) {
+	                        psE.setString(1, claveRapida);
+	                        psE.setString(2, claveRapida);
+	                        psE.setString(3, claveRapida);
+	                        try (ResultSet rsE = psE.executeQuery()) {
+	                            if (rsE.next()) {
+	                                idEmpleado = rsE.getInt("id");
+	                            }
+	                        }
+	                    }
+	                    if (idEmpleado == 0) {
+	                        try (PreparedStatement psET = conGen.prepareStatement(
+	                                "SELECT id FROM general.empleado_temporal WHERE identificacion LIKE CONCAT('%', ?) OR CAST(id AS CHAR) = ?")) {
+	                            psET.setString(1, claveRapida);
+	                            psET.setString(2, claveRapida);
+	                            try (ResultSet rsET = psET.executeQuery()) {
+	                                if (rsET.next()) {
+	                                    idEmpleado = rsET.getInt("id");
+	                                }
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+
+	            List<Integer> tiendasCandidatas = new ArrayList<>();
+	            if (tiendaIdParam > 0) {
+	                tiendasCandidatas.add(tiendaIdParam);
+	            }
+
+	            try (Connection conPA = cbd.obtenerConexionBDPrincipal()) {
+	                if (conPA != null) {
+	                    // 1. Biometria hoy
+	                    try (PreparedStatement psB = conPA.prepareStatement(
+	                            "SELECT idtienda FROM general.empleado_evento WHERE id = ? AND fecha = ? ORDER BY fecha_hora_log DESC LIMIT 1")) {
+	                        psB.setInt(1, idEmpleado);
+	                        psB.setString(2, fecha);
+	                        try (ResultSet rsB = psB.executeQuery()) {
+	                            if (rsB.next()) {
+	                                int tBio = rsB.getInt("idtienda");
+	                                if (tBio > 0 && !tiendasCandidatas.contains(tBio)) tiendasCandidatas.add(tBio);
+	                            }
+	                        }
+	                    }
+	                    // 2. Empleado temporal dia tienda hoy
+	                    try (PreparedStatement psTmp = conPA.prepareStatement(
+	                            "SELECT idtienda FROM general.empleado_temporal_dia_tienda WHERE (clave_dom = ? OR identificacion LIKE CONCAT('%', ?)) AND fecha_sistema = ? AND (anulado = 'N' OR anulado IS NULL OR anulado = '' OR anulado = '0') LIMIT 1")) {
+	                        psTmp.setString(1, claveRapida);
+	                        psTmp.setString(2, claveRapida);
+	                        psTmp.setString(3, fecha);
+	                        try (ResultSet rsTmp = psTmp.executeQuery()) {
+	                            if (rsTmp.next()) {
+	                                int tTmp = rsTmp.getInt("idtienda");
+	                                if (tTmp > 0 && !tiendasCandidatas.contains(tTmp)) tiendasCandidatas.add(tTmp);
+	                            }
+	                        }
+	                    }
+	                    // 3. Ultima ubicacion actual
+	                    try (PreparedStatement psT = conPA.prepareStatement(
+	                            "SELECT idtienda FROM domiciliario_ubicacion_actual WHERE clave_dom = ?")) {
+	                        psT.setString(1, claveRapida);
+	                        try (ResultSet rsT = psT.executeQuery()) {
+	                            if (rsT.next()) {
+	                                int tAct = rsT.getInt("idtienda");
+	                                if (tAct > 0 && !tiendasCandidatas.contains(tAct)) tiendasCandidatas.add(tAct);
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+
+	            if (idEmpleado > 0 && !tiendasCandidatas.isEmpty()) {
+	                for (int candTiendaId : tiendasCandidatas) {
+	                    String hosbd = null;
+	                    String nombreTienda = "Tienda " + candTiendaId;
+	                    try (Connection conPA = cbd.obtenerConexionBDPrincipal()) {
+	                        if (conPA != null) {
+	                            try (PreparedStatement psT = conPA.prepareStatement("SELECT hosbd, nombre FROM tienda WHERE idtienda = ?")) {
+	                                psT.setInt(1, candTiendaId);
+	                                try (ResultSet rsT = psT.executeQuery()) {
+	                                    if (rsT.next()) {
+	                                        hosbd = rsT.getString("hosbd");
+	                                        nombreTienda = rsT.getString("nombre");
+	                                    }
+	                                }
+	                            }
+	                        }
+	                    }
+	                    if (hosbd == null || hosbd.trim().isEmpty()) continue;
+
+	                    try (Connection conRemota = cbd.obtenerConexionBDTiendaRemota(hosbd.trim())) {
+	                        if (conRemota != null) {
+	                            String sqlRemoto = "SELECT dr.id AS despacho_id, dr.hora_salida, dr.hora_regreso, " +
+	                                    "       drd.id_pedido, drd.orden_planificada, drd.hora_entrega " +
+	                                    "FROM despacho_real dr " +
+	                                    "LEFT JOIN despacho_real_det drd ON dr.id = drd.despacho_real_id " +
+	                                    "WHERE dr.fecha = ? AND dr.id_domiciliario = ? " +
+	                                    "ORDER BY dr.hora_salida ASC, drd.orden_planificada ASC";
+	                            try (PreparedStatement psR = conRemota.prepareStatement(sqlRemoto)) {
+	                                psR.setString(1, fecha);
+	                                psR.setInt(2, idEmpleado);
+	                                try (ResultSet rsR = psR.executeQuery()) {
+	                                    while (rsR.next()) {
+	                                        JSONObject js = new JSONObject();
+	                                        js.put("despacho_id", rsR.getInt("despacho_id"));
+	                                        js.put("idtienda", candTiendaId);
+	                                        js.put("tienda", nombreTienda);
+	                                        js.put("hora_salida", rsR.getString("hora_salida"));
+	                                        js.put("hora_regreso", rsR.getString("hora_regreso"));
+	                                        js.put("id_pedido", rsR.getObject("id_pedido") != null ? rsR.getInt("id_pedido") : null);
+	                                        js.put("orden_planificada", rsR.getObject("orden_planificada") != null ? rsR.getInt("orden_planificada") : null);
+	                                        js.put("hora_entrega", rsR.getString("hora_entrega"));
+	                                        lista.add(js);
+	                                    }
+	                                }
+	                            }
+	                        }
+	                    } catch (Exception exRemota) {
+	                        System.out.println("Aviso: no se pudo consultar despachos en tienda remota " + hosbd + ": " + exRemota.getMessage());
+	                    }
+
+	                    // Si encontramos despachos en esta tienda, no necesitamos seguir buscando
+	                    if (!lista.isEmpty()) {
+	                        break;
+	                    }
+	                }
+	            }
+	        } catch (Exception ex) {
+	            System.out.println("Error fallback tiempo real despachos: " + ex);
+	        }
+	    }
+
 	    return lista;
 	}
 	

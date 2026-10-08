@@ -9,9 +9,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import capaControladorCC.OfertaReglasCtrl;
 import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PromocionesCtrl;
 import capaModeloCC.Oferta;
+import utilidadesCC.AccesoCRM;
 
 /**
  * Servlet implementation class CRUDExcepcionPrecio
@@ -53,6 +55,12 @@ public class CRUDOferta extends HttpServlet {
 		{
 			Oferta ofer = CRUDOferta.leerOferta(request, 0);
 			respuesta = PromoCtrl.insertarOferta(ofer);
+			//Bitacora: quien creo la oferta y con que.
+			int idCreada = OfertaReglasCtrl.ultimaConNombre(ofer.getNombreOferta());
+			if (idCreada > 0)
+			{
+				OfertaReglasCtrl.registrar(idCreada, AccesoCRM.usuarioEnSesion(request), "CREAR", "Oferta \"" + ofer.getNombreOferta() + "\"");
+			}
 		}else if (operacion ==2)
 		{
 			int idOferta = 0;
@@ -62,11 +70,20 @@ public class CRUDOferta extends HttpServlet {
 				idOferta = 0;
 			}
 			Oferta ofer = CRUDOferta.leerOferta(request, idOferta);
+			java.util.Map<String, String> antes = OfertaReglasCtrl.foto(idOferta);
 			respuesta = PromoCtrl.editarOferta(ofer);
+			//Bitacora: que campos cambiaron, de que valor a cual, y quien.
+			String cambios = OfertaReglasCtrl.diferencias(antes, OfertaReglasCtrl.foto(idOferta));
+			if (cambios.length() > 0)
+			{
+				OfertaReglasCtrl.registrar(idOferta, AccesoCRM.usuarioEnSesion(request), "EDITAR", cambios);
+			}
 		}else if (operacion ==3 )
 		{
 			int idOfertaEli = Integer.parseInt(request.getParameter("idoferta"));
+			String nombreEli = OfertaReglasCtrl.foto(idOfertaEli).get("nombre_oferta");
 			respuesta = PromoCtrl.eliminarOferta(idOfertaEli);
+			OfertaReglasCtrl.registrar(idOfertaEli, AccesoCRM.usuarioEnSesion(request), "ELIMINAR", "Oferta \"" + nombreEli + "\"");
 		}else if (operacion == 4)
 		{
 			int idOfertaCon = Integer.parseInt(request.getParameter("idoferta"));
