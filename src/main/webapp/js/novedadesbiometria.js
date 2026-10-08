@@ -19,6 +19,16 @@ var ultimoDetalle = [];
 var novedadActual = null;
 var jornadaActual = [];
 
+/* La franja de madrugada donde se confunde la tarde con la manana. Fuera de
+   ella no hay ambiguedad: nadie escribe 23:10 queriendo decir las once de la
+   manana. Los mismos valores estan en el POS, en VentSegNovedadBiometria. */
+var MADRUGADA_DESDE = 1;
+var MADRUGADA_HASTA = 6;
+/* Horas de distancia a la referencia desde las cuales la hora se ve rara. */
+var BRECHA_SOSPECHOSA = 10;
+/* Horas de distancia por debajo de las cuales la hora se ve bien. */
+var BRECHA_PLAUSIBLE = 6;
+
 $(function () {
 	ponerFechasPorDefecto();
 	$('#usuarioSesion').val(nombreusuario ? nombreusuario : usuario);
@@ -253,13 +263,128 @@ function guardarHora(indice) {
 		$.alert('La hora es la misma que ya estaba. No hay nada que cambiar.');
 		return;
 	}
-	enviarCambio({
-		accion: 'MODIFICA',
-		antestipo: evento.tipo,
-		anteshora: evento.fechahora,
-		despuestipo: evento.tipo,
-		despueshora: novedadActual.fecha + ' ' + completar(horaNueva)
-	}, 'Hora corregida.');
+	//La referencia es la marca que se esta corrigiendo: una correccion normal la
+	//mueve un par de horas, no medio dia.
+	confirmarSiPareceTarde(novedadActual.fecha + ' ' + completar(horaNueva), evento.fechahora, function () {
+		enviarCambio({
+			accion: 'MODIFICA',
+			antestipo: evento.tipo,
+			anteshora: evento.fechahora,
+			despuestipo: evento.tipo,
+			despueshora: novedadActual.fecha + ' ' + completar(horaNueva)
+		}, 'Hora corregida.');
+	});
+}
+
+/**
+ * Pregunta cuando la hora parece escrita de madrugada queriendo decir la tarde.
+ *
+ * EL ERROR QUE ATRAPA
+ *
+ * En Colombia se habla en doce horas. Quien reporta oye "entro a las 5:54" y
+ * tiene que traducirlo a 17:54 de cabeza. Casi siempre acierta, pero de las 41
+ * novedades que ya existen, TRES quedaron corridas medio dia: todas decian una
+ * hora de tarde en la explicacion y una de madrugada en el campo.
+ *
+ * LAS TRES CONDICIONES, Y POR QUE SON TRES
+ *
+ * 1. La hora cae en la franja de madrugada. Fuera de ahi no hay ambiguedad.
+ * 2. Queda lejisimos de la hora de referencia.
+ * 3. Sumarle doce la vuelve plausible. Esta es la que hace la diferencia: sin
+ *    ella, una salida olvidada a las 23:10 sobre un ingreso de las 13:55 -nueve
+ *    horas, perfectamente normal- tambien saltaria.
+ *
+ * Probado contra las 41 novedades existentes: avisa en exactamente las tres
+ * malas y en ninguna de las buenas.
+ *
+ * No corrige sola: puede ser un turno de madrugada de verdad. Pregunta.
+ */
+function confirmarSiPareceTarde(horaNueva, horaReferencia, alSeguir) {
+	var tarde = pareceDeLaTarde(horaNueva, horaReferencia);
+	if (!tarde) {
+		alSeguir();
+		return;
+	}
+	$.confirm({
+		title: 'Revise la hora',
+		content: 'La hora que escribió queda a las <b>' + escapar(horaNueva.substring(0, 5))
+			+ ' de la MADRUGADA</b>, y la referencia es de las '
+			+ escapar(horaReferencia.substring(0, 5)) + '.<br><br>'
+			+ 'Si quiso decir las <b>' + escapar(tarde.substring(0, 5))
+			+ ' de la TARDE</b>, cancele y corríjala.',
+		buttons: {
+			siEsMadrugada: {
+				text: 'Sí, fue de madrugada',
+				btnClass: 'btn-warning',
+				action: function () { alSeguir(); }
+			},
+			cancelar: {
+				text: 'Cancelar y corregir',
+				action: function () { }
+			}
+		}
+	});
+}
+
+/**
+ * La misma hora pero doce horas despues, cuando todo apunta a que eso fue lo
+ * que se quiso decir. Null cuando la hora se ve bien como esta.
+ *
+ * Las dos horas llegan como 'hh:mm:ss' del mismo dia, que es como las maneja
+ * esta pantalla.
+ */
+function pareceDeLaTarde(fechaHoraNueva, fechaHoraReferencia) {
+	var nueva = minutosDe(fechaHoraNueva);
+	var referencia = minutosDe(fechaHoraReferencia);
+	if (nueva === null || referencia === null) {
+		return (null);
+	}
+	//La hora se lee del texto y NO de la aritmetica: minutosDe devuelve minutos
+	//absolutos de epoca, y sacarle el resto de 1440 daria la hora en UTC, que en
+	//Colombia esta cinco horas corrida.
+	var hora = parseInt(String(fechaHoraNueva).substring(11, 13), 10);
+	if (isNaN(hora) || hora < MADRUGADA_DESDE || hora > MADRUGADA_HASTA) {
+		return (null);
+	}
+	if (Math.abs(nueva - referencia) <= BRECHA_SOSPECHOSA * 60) {
+		return (null);
+	}
+	var enLaTarde = nueva + 12 * 60;
+	if (Math.abs(enLaTarde - referencia) >= BRECHA_PLAUSIBLE * 60) {
+		return (null);
+	}
+	var minuto = parseInt(String(fechaHoraNueva).substring(14, 16), 10);
+	return (dos(hora + 12) + ':' + dos(isNaN(minuto) ? 0 : minuto) + ':00');
+}
+
+/**
+ * Minutos absolutos de un 'aaaa-mm-dd hh:mm:ss', contando el dia.
+ *
+ * Tiene que ser con la fecha y no solo con la hora: una SALIDA real a las 02:30
+ * del dia siguiente esta a siete horas y media de un INGRESO de las 19:00, pero
+ * comparando solo horas pareceria estar a dieciseis y media, y la guarda
+ * saltaria sobre un turno de noche perfectamente normal.
+ */
+function minutosDe(fechaHora) {
+	var texto = String(fechaHora || '');
+	if (texto.length < 16) {
+		return (null);
+	}
+	var fecha = texto.substring(0, 10).split('-');
+	var hm = texto.substring(11, 16).split(':');
+	if (fecha.length !== 3 || hm.length !== 2) {
+		return (null);
+	}
+	var d = new Date(parseInt(fecha[0], 10), parseInt(fecha[1], 10) - 1, parseInt(fecha[2], 10),
+			parseInt(hm[0], 10), parseInt(hm[1], 10), 0, 0);
+	if (isNaN(d.getTime())) {
+		return (null);
+	}
+	return (Math.round(d.getTime() / 60000));
+}
+
+function dos(n) {
+	return (n < 10 ? '0' + n : '' + n);
 }
 
 function eliminarEvento(indice) {
@@ -294,13 +419,41 @@ function agregarEvento() {
 		$.alert('Indique la hora del registro que falta.');
 		return;
 	}
-	enviarCambio({
-		accion: 'AGREGA',
-		antestipo: '',
-		anteshora: '',
-		despuestipo: $('#nuevoTipo').val(),
-		despueshora: novedadActual.fecha + ' ' + completar(hora)
-	}, 'Registro agregado.');
+	//Al AGREGAR no hay una marca que se este corrigiendo, asi que la referencia
+	//es la marca mas cercana de la jornada. Si el dia no tiene ninguna -que es
+	//justo cuando se agrega la primera- no hay contra que comparar y se sigue
+	//sin preguntar: inventar una referencia seria peor que no tenerla.
+	var cuando = novedadActual.fecha + ' ' + completar(hora);
+	confirmarSiPareceTarde(cuando, marcaMasCercana(cuando), function () {
+		enviarCambio({
+			accion: 'AGREGA',
+			antestipo: '',
+			anteshora: '',
+			despuestipo: $('#nuevoTipo').val(),
+			despueshora: novedadActual.fecha + ' ' + completar(hora)
+		}, 'Registro agregado.');
+	});
+}
+
+/** La marca de la jornada mas cercana a una fecha y hora dada, o ''. */
+function marcaMasCercana(fechaHora) {
+	var minutos = minutosDe(fechaHora);
+	if (minutos === null || !jornadaActual || jornadaActual.length === 0) {
+		return ('');
+	}
+	var mejor = '';
+	var menor = -1;
+	for (var i = 0; i < jornadaActual.length; i++) {
+		var otra = jornadaActual[i].fechahora;
+		var m = minutosDe(otra);
+		if (m === null) { continue; }
+		var distancia = Math.abs(m - minutos);
+		if (menor < 0 || distancia < menor) {
+			menor = distancia;
+			mejor = otra;
+		}
+	}
+	return (mejor);
 }
 
 function enviarCambio(datos, mensajeOk) {
