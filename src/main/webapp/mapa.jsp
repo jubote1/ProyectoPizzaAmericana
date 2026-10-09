@@ -98,7 +98,7 @@
 			</div>
 			<div class="d-flex align-items-center mt-2 mt-md-0 flex-wrap">
 				<div class="custom-control custom-switch d-inline-flex align-items-center py-1 px-3 mr-2 mb-1 bg-white border rounded shadow-sm">
-					<input type="checkbox" class="custom-control-input" id="chkSoloBiometriaLive">
+					<input type="checkbox" class="custom-control-input" id="chkSoloBiometriaLive" checked>
 					<label class="custom-control-label small font-weight-bold text-dark mb-0" for="chkSoloBiometriaLive" style="cursor:pointer;">
 						<i class="fas fa-fingerprint text-primary mr-1"></i> Solo en Turno (Biometría)
 					</label>
@@ -163,8 +163,8 @@
 									<div class="filtro-input-group">
 										<label for="filtroEstadoLive" class="filtro-label-micro">Estado Operativo</label>
 										<select id="filtroEstadoLive" class="filtro-select-clean font-weight-bold">
+											<option value="ACTIVOS" selected>⚡ Solo Activos Recientes</option>
 											<option value="TODOS">Todos</option>
-											<option value="ACTIVOS">⚡ Solo Activos Recientes</option>
 											<option value="EN_TIENDA">🟢 En Tienda</option>
 											<option value="EN_RUTA">🛵 En Ruta (Con Pedido)</option>
 											<option value="FUERA_DE_TIENDA">🟡 Fuera Tienda (Sin Pedido)</option>
@@ -310,7 +310,16 @@
 				<div class="modal-body p-3">
 					<!-- Tarjetas de KPIs de Telemetría -->
 					<div class="row kpis-telemetria mb-3">
-						<div class="col-6 col-md-3">
+						<div class="col-6 col-md">
+							<div class="kpi-card shadow-sm">
+								<div class="kpi-icon bg-soft-success"><i class="fas fa-boxes text-success"></i></div>
+								<div class="kpi-data">
+									<span class="kpi-title">Despachos / Pedidos</span>
+									<span class="kpi-value"><span id="kpi-despachos">0</span> <small class="text-success font-weight-bold" style="font-size: 12px;">(<span id="kpi-pedidos">0</span> peds)</small></span>
+								</div>
+							</div>
+						</div>
+						<div class="col-6 col-md">
 							<div class="kpi-card shadow-sm">
 								<div class="kpi-icon bg-soft-primary"><i class="fas fa-map-marker-alt text-primary"></i></div>
 								<div class="kpi-data">
@@ -319,25 +328,25 @@
 								</div>
 							</div>
 						</div>
-						<div class="col-6 col-md-3">
+						<div class="col-6 col-md">
 							<div class="kpi-card shadow-sm">
-								<div class="kpi-icon bg-soft-success"><i class="fas fa-route text-success"></i></div>
+								<div class="kpi-icon bg-soft-info"><i class="fas fa-route text-info"></i></div>
 								<div class="kpi-data">
 									<span class="kpi-title">Distancia Est.</span>
 									<span class="kpi-value" id="kpi-distancia">0.0 km</span>
 								</div>
 							</div>
 						</div>
-						<div class="col-6 col-md-3">
+						<div class="col-6 col-md">
 							<div class="kpi-card shadow-sm">
-								<div class="kpi-icon bg-soft-info"><i class="far fa-clock text-info"></i></div>
+								<div class="kpi-icon bg-soft-secondary"><i class="far fa-clock text-secondary"></i></div>
 								<div class="kpi-data">
 									<span class="kpi-title">Tiempo en Ruta</span>
 									<span class="kpi-value" id="kpi-duracion">0m</span>
 								</div>
 							</div>
 						</div>
-						<div class="col-6 col-md-3">
+						<div class="col-6 col-md">
 							<div class="kpi-card shadow-sm">
 								<div class="kpi-icon bg-soft-warning"><i class="fas fa-hand-paper text-warning"></i></div>
 								<div class="kpi-data">
@@ -370,8 +379,8 @@
 								<button id="btnAjustarCalles" class="btn btn-success btn-sm font-weight-bold mr-2 mb-1" title="Ajustar y trazar el recorrido sobre las calles y carriles reales de la ciudad (vía OSRM)">
 									<i class="fas fa-road mr-1"></i> Calles (Activo)
 								</button>
-								<button id="btnToggleEntregas" class="btn btn-outline-success btn-sm font-weight-bold mr-2 mb-1" title="Mostrar u ocultar los marcadores de pedidos en el mapa">
-									<i class="fas fa-box mr-1"></i> Pedidos (Activo)
+								<button id="btnToggleEntregas" class="btn btn-outline-secondary btn-sm font-weight-bold mr-2 mb-1" title="Mostrar u ocultar los marcadores de pedidos en el mapa">
+									<i class="fas fa-box mr-1"></i> Pedidos (0)
 								</button>
 							</div>
 							<div class="d-flex align-items-center mb-1">
@@ -421,6 +430,11 @@
 										</a>
 									</li>
 									<li class="nav-item">
+										<a class="nav-link py-1 px-2 small font-weight-bold" id="tab-paradas-btn" data-toggle="pill" href="#tab-paradas" role="tab">
+											<i class="fas fa-pause-circle mr-1 text-warning"></i> Paradas (<span id="badgeTotalParadasLista">0</span>)<span id="badgeAlertasDesconexion" class="ml-1"></span>
+										</a>
+									</li>
+									<li class="nav-item">
 										<a class="nav-link py-1 px-2 small font-weight-bold" id="tab-puntos-btn" data-toggle="pill" href="#tab-puntos" role="tab">
 											<i class="fas fa-list-ol mr-1"></i> Puntos GPS (<span id="badgeTotalPuntosLista">0</span>)
 										</a>
@@ -430,6 +444,11 @@
 									<div class="tab-pane fade show active" id="tab-despachos" role="tabpanel">
 										<div id="lista-despachos-body" class="contenedor-lista-despachos" style="max-height: 380px; overflow-y: auto;">
 											<div class="text-center text-muted py-3 small"><i class="fas fa-spinner fa-spin mr-1"></i> Consultando despachos...</div>
+										</div>
+									</div>
+									<div class="tab-pane fade" id="tab-paradas" role="tabpanel">
+										<div id="lista-paradas-body" class="contenedor-lista-paradas p-1" style="max-height: 380px; overflow-y: auto;">
+											<div class="text-center text-muted py-3 small"><i class="fas fa-spinner fa-spin mr-1"></i> Calculando paradas...</div>
 										</div>
 									</div>
 									<div class="tab-pane fade" id="tab-puntos" role="tabpanel">

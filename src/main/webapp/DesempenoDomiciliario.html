@@ -1,30 +1,216 @@
 <!DOCTYPE html>
 <html lang="es">
 	<head>
-		<title>DESEMPENO DE DOMICILIARIOS</title>
+		<title>Desempe&ntilde;o de Domiciliarios</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<meta charset="utf-8" />
 		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
 		<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
 		<link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
 		<script type="text/javascript" src="js/bootstrap.min.js"></script>
 		<script type="text/javascript" src="js/jquery-ui.min.js"></script>
 		<script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
 		<style type="text/css">
-			.dd-panel { background:#fff; border:1px solid #ddd; border-radius:4px; padding:15px; margin-bottom:15px; }
-			.dd-kpi { text-align:center; padding:12px 6px; border:1px solid #e5e5e5; border-radius:4px; margin-bottom:10px; background:#fafafa; }
-			.dd-kpi .valor { font-size:26px; font-weight:bold; line-height:1.1; }
-			.dd-kpi .rotulo { font-size:11px; color:#666; text-transform:uppercase; margin-top:4px; }
-			.dd-kpi .apoyo { font-size:11px; color:#999; }
-			.dd-bien { color:#2e7d32; }
-			.dd-regular { color:#ef6c00; }
-			.dd-mal { color:#c62828; }
-			.dd-titulo { font-size:14px; font-weight:bold; color:#102F6F; border-bottom:2px solid #FDC806;
-				padding-bottom:5px; margin-bottom:12px; text-transform:uppercase; }
-			.dd-nota { font-size:11px; color:#777; margin-top:8px; }
-			#ddCargando { display:none; }
-			#ddResultado { display:none; }
+			body {
+				font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+				background-color: #f8fafc;
+				color: #1e293b;
+			}
+			.dd-header-title {
+				font-size: 26px;
+				font-weight: 800;
+				color: #0f172a;
+				letter-spacing: -0.5px;
+				margin-top: 10px;
+				margin-bottom: 20px;
+				display: flex;
+				align-items: center;
+				gap: 12px;
+			}
+			.dd-panel {
+				background: #ffffff;
+				border: 1px solid #e2e8f0;
+				border-radius: 12px;
+				padding: 22px;
+				margin-bottom: 22px;
+				box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+				transition: box-shadow 0.2s ease;
+			}
+			.dd-panel:hover {
+				box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+			}
+			.dd-kpi {
+				text-align: center;
+				padding: 16px 12px;
+				border: 1px solid #e2e8f0;
+				border-radius: 10px;
+				margin-bottom: 12px;
+				background: #ffffff;
+				box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+				transition: transform 0.2s ease, box-shadow 0.2s ease;
+			}
+			.dd-kpi:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
+			}
+			.dd-kpi .valor {
+				font-size: 32px;
+				font-weight: 800;
+				line-height: 1.1;
+				letter-spacing: -0.5px;
+			}
+			.dd-kpi .rotulo {
+				font-size: 13px;
+				font-weight: 700;
+				color: #475569;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				margin-top: 6px;
+			}
+			.dd-kpi .apoyo {
+				font-size: 12px;
+				color: #94a3b8;
+				font-weight: 500;
+				margin-top: 3px;
+			}
+			.dd-bien { color: #059669; }
+			.dd-regular { color: #d97706; }
+			.dd-mal { color: #e11d48; }
+			.dd-titulo {
+				font-size: 15px;
+				font-weight: 700;
+				color: #0f172a;
+				border-bottom: 2px solid #e2e8f0;
+				padding-bottom: 10px;
+				margin-bottom: 16px;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				display: flex;
+				align-items: center;
+			}
+			.dd-titulo::before {
+				content: "";
+				display: inline-block;
+				width: 4px;
+				height: 16px;
+				background: #2563eb;
+				border-radius: 2px;
+				margin-right: 8px;
+			}
+			.dd-nota {
+				font-size: 12px;
+				color: #64748b;
+				margin-top: 10px;
+				line-height: 1.5;
+			}
+			#ddCargando {
+				display: none;
+				border-radius: 8px;
+				font-size: 14px;
+				font-weight: 500;
+			}
+			#ddResultado { display: none; }
+
+			/* Scorecard */
+			#ddPanelScorecard {
+				border-top: 4px solid #1e3a8a;
+				background: linear-gradient(180deg, #ffffff 0%, #fcfdfe 100%);
+			}
+			#ddTablaScorecard {
+				font-size: 13.5px;
+				border: 1px solid #cbd5e1;
+				border-radius: 8px;
+				overflow: hidden;
+			}
+			#ddTablaScorecard thead th {
+				background: #0f172a;
+				color: #f8fafc;
+				font-weight: 600;
+				font-size: 13px;
+				padding: 12px 8px;
+				border: none;
+				text-align: center;
+				vertical-align: middle;
+			}
+			#ddTablaScorecard tbody td {
+				padding: 12px 10px;
+				vertical-align: middle;
+				border-color: #e2e8f0;
+			}
+			#ddTablaScorecard tbody tr:hover {
+				background-color: #f8fafc;
+			}
+			.sc-meta {
+				font-size: 13px;
+				font-weight: 600;
+				border: 1.5px solid #cbd5e1;
+				border-radius: 6px;
+			}
+			.sc-meta:focus {
+				border-color: #2563eb;
+				box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+			}
+
+			/* Escala de compensacion */
+			.sc-tier-badge {
+				padding: 10px 8px;
+				border: 1.5px solid #e2e8f0;
+				border-radius: 8px;
+				background: #ffffff;
+				transition: all 0.2s ease;
+			}
+			.sc-tier-badge.active {
+				background: #ecfdf5 !important;
+				border: 2px solid #059669 !important;
+				box-shadow: 0 4px 14px rgba(5, 150, 105, 0.22) !important;
+				transform: translateY(-2px);
+			}
+			.sc-tier-badge.active div {
+				color: #047857 !important;
+			}
+			.sc-tier-badge.active small {
+				color: #065f46 !important;
+				font-weight: 700 !important;
+			}
+
+			/* Tablas */
+			#ddTablaTiendas, #ddTablaPeores {
+				font-size: 13.5px;
+			}
+			#ddTablaTiendas thead th, #ddTablaPeores thead th {
+				background: #f1f5f9;
+				color: #334155;
+				font-weight: 700;
+				font-size: 13px;
+				border-bottom: 2px solid #cbd5e1;
+				padding: 10px 8px;
+			}
+			#ddTablaTiendas tbody td, #ddTablaPeores tbody td {
+				padding: 10px 8px;
+				vertical-align: middle;
+			}
+			.form-control {
+				border-radius: 6px;
+				border-color: #cbd5e1;
+				height: 38px;
+				font-size: 13.5px;
+			}
+			.form-control:focus {
+				border-color: #2563eb;
+				box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+			}
+			.btn {
+				border-radius: 6px;
+				font-weight: 600;
+				height: 38px;
+				padding: 6px 16px;
+				font-size: 13.5px;
+			}
 		</style>
+		<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 	</head>
 	<body>
 
@@ -48,13 +234,7 @@
 					roles = data[0].roles || [];
 				}
 			});
-			//Se pregunta por el nombre del rol, no por "tiene algun rol": ya hay usuarios de prueba con el
-			//rol Operario (migrado del N/S/P viejo) que todavia no tienen ninguna pantalla asignada en
-			//rol_pantalla, y con "roles.length > 0" se habrian quedado con un menu vacio en vez del de
-			//siempre. Esta pantalla nunca vivio en el Menu.html de Operario, asi que no les quita nada.
 			if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
-				//El perfil nuevo no ve el menu completo de Operario: ve solo las pantallas que le dio su
-				//rol. Ese menu sale de MenuDinamico.html (GetMenuUsuario), no de un archivo estatico.
 				$('#cargarMenu').load("MenuDinamico.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 			} else {
 				switch(respuesta)
@@ -76,39 +256,47 @@
 
 		</script>
 
-		<div class="container-fluid" style="padding:15px 25px;">
+		<div class="container-fluid" style="padding:20px 30px;">
 
-			<h1 style="font-size:24px;">DESEMPEÑO DE DOMICILIARIOS</h1>
+			<div class="dd-header-title">
+				<span class="glyphicon glyphicon-dashboard" style="color:#2563eb;"></span>
+				DESEMPE&Ntilde;O DE DOMICILIARIOS
+			</div>
 
 			<div class="dd-panel">
 				<div class="row">
 					<div class="col-md-4">
-						<label for="ddDomiciliario">Domiciliario</label>
+						<label for="ddDomiciliario" style="font-weight:600; color:#334155;">Domiciliario</label>
 						<select id="ddDomiciliario" class="form-control">
-							<option value="">Cargando...</option>
+							<option value="">Cargando domiciliarios...</option>
 						</select>
 					</div>
 					<div class="col-md-2">
-						<label for="ddDesde">Desde</label>
+						<label for="ddDesde" style="font-weight:600; color:#334155;">Desde</label>
 						<input type="date" id="ddDesde" class="form-control" />
 					</div>
 					<div class="col-md-2">
-						<label for="ddHasta">Hasta</label>
+						<label for="ddHasta" style="font-weight:600; color:#334155;">Hasta</label>
 						<input type="date" id="ddHasta" class="form-control" />
 					</div>
 					<div class="col-md-4">
 						<label>&nbsp;</label><br/>
-						<button type="button" id="ddConsultar" class="btn btn-primary">Consultar</button>
-						<span class="dd-nota" style="margin-left:10px;">
-							Pregunta en vivo a todas las tiendas; puede demorar.
+						<button type="button" id="ddConsultar" class="btn btn-primary">
+							<span class="glyphicon glyphicon-search"></span> Consultar
+						</button>
+						<button type="button" id="ddBtnExcel" class="btn btn-success" style="display:none; margin-left:8px;" title="Descargar evaluaci&oacute;n completa en Excel">
+							<span class="glyphicon glyphicon-download-alt"></span> Descargar Excel
+						</button>
+						<span class="dd-nota" style="margin-left:12px; display:inline-block; vertical-align:middle;">
+							Consulta en vivo con respaldo hist&oacute;rico central.
 						</span>
 					</div>
 				</div>
 			</div>
 
 			<div id="ddCargando" class="alert alert-info">
-				Consultando las tiendas. Cada una se pregunta por separado, asi que si alguna esta
-				apagada la consulta sigue con las demas.
+				<span class="glyphicon glyphicon-refresh" style="animation: spin 1.5s linear infinite;"></span>
+				Consultando tiendas y consolidado central... Por favor espere unos segundos.
 			</div>
 
 			<div id="ddMensaje"></div>
@@ -118,7 +306,198 @@
 				<div class="dd-panel">
 					<div id="ddCabecera"></div>
 					<div id="ddSinRespuesta"></div>
-					<div id="ddKpis" class="row"></div>
+					<div id="ddKpis" class="row" style="margin-top:10px;"></div>
+				</div>
+
+				<!-- EVALUACION DE DESEMPENO Y LIQUIDACION PONDERADA (SOLICITUD DE GERENCIA) -->
+				<div class="dd-panel" id="ddPanelScorecard">
+					<div class="row" style="margin-bottom:16px; border-bottom:1px solid #e2e8f0; padding-bottom:14px;">
+						<div class="col-md-7">
+							<div class="dd-titulo" style="border:none; margin-bottom:4px; font-size:16px;">
+								<span class="glyphicon glyphicon-stats" style="color:#2563eb; margin-right:8px;"></span>
+								EVALUACI&Oacute;N DE DESEMPE&Ntilde;O Y LIQUIDACI&Oacute;N SUGERIDA
+							</div>
+							<div class="dd-nota" style="margin:0;">
+								Indicadores y ponderaciones establecidos por Gerencia cruzados con horas trabajadas.
+							</div>
+						</div>
+						<div class="col-md-5 text-right">
+							<div style="display:inline-block; vertical-align:middle; text-align:right; margin-right:12px;">
+								<span style="font-size:13px; font-weight:700; color:#1e293b;">Horas reales trabajadas:</span><br/>
+								<small class="text-muted" style="font-size:11px;">Biometr&iacute;a / Turnos (editable)</small>
+							</div>
+							<div style="display:inline-block; vertical-align:middle; width:110px;">
+								<input type="number" id="ddHorasReales" step="0.1" min="0" class="form-control text-center" style="font-weight:800; font-size:16px; border:2px solid #2563eb; color:#1e3a8a;" title="Horas reales calculadas desde la biometr&iacute;a. Puedes modificarlas para simular novedades." />
+							</div>
+						</div>
+					</div>
+
+					<!-- Resumen Destacado de Liquidacion -->
+					<div class="row" style="margin-bottom:16px;" id="ddScorecardResumen">
+						<div class="col-md-3">
+							<div class="dd-kpi" style="border-left:4px solid #2563eb;">
+								<div class="valor" id="scTotalPuntos" style="color:#1e3a8a;">0.0</div>
+								<div class="rotulo">Puntaje Total Obtenido</div>
+								<div class="apoyo">sobre 100 puntos</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="dd-kpi" style="border-left:4px solid #f59e0b;">
+								<div class="valor" id="scCumplimientoGlobal" style="color:#b45309;">0.0%</div>
+								<div class="rotulo">Cumplimiento Global</div>
+								<div class="apoyo" id="scRangoTexto">-</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="dd-kpi" style="border-left:4px solid #059669;">
+								<div class="valor" id="scTarifaPedido" style="color:#047857;">$0</div>
+								<div class="rotulo">Tarifa por Domicilio</div>
+								<div class="apoyo">seg&uacute;n escala de Gerencia</div>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="dd-kpi" style="border-left:4px solid #0d9488; background:#f0fdf4;">
+								<div class="valor" id="scTotalLiquidacion" style="color:#0f766e;">$0</div>
+								<div class="rotulo" style="color:#134e4a;">Liquidaci&oacute;n Sugerida</div>
+								<div class="apoyo" id="scSubtotalLiquidacion">0 pedidos &times; $0</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Tabla de Indicadores Ponderados (Scorecard) -->
+					<div class="table-responsive">
+						<table class="table table-bordered table-striped table-hover" id="ddTablaScorecard" style="margin-bottom:12px;">
+							<thead>
+								<tr>
+									<th>Indicador</th>
+									<th class="text-center" style="width:115px;">Horas reales</th>
+									<th class="text-center" style="width:135px;">Pedidos entregados</th>
+									<th class="text-center" style="width:155px;">Resultado obtenido</th>
+									<th class="text-center" style="width:130px;">Meta</th>
+									<th class="text-center" style="width:125px;">% Cumplimiento</th>
+									<th class="text-center" style="width:90px;">Peso</th>
+									<th class="text-center" style="width:110px;">Puntos</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>
+										<b style="color:#0f172a;">Productividad por hora</b>
+										<br/><small class="text-muted">Pedidos entregados &divide; horas reales trabajadas</small>
+									</td>
+									<td class="text-center sc-horas">-</td>
+									<td class="text-center sc-pedidos">-</td>
+									<td class="text-center" id="scResProductividad" style="font-weight:bold;">-</td>
+									<td class="text-center">
+										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
+											<input type="number" id="metaProd" step="0.1" value="2.0" class="form-control text-center sc-meta" />
+											<span class="input-group-addon">p/h</span>
+										</div>
+									</td>
+									<td class="text-center" id="scCumpProductividad" style="font-weight:bold;">-</td>
+									<td class="text-center" style="font-weight:bold;">30%</td>
+									<td class="text-center" id="scPtsProductividad" style="font-weight:bold; color:#1e3a8a;">-</td>
+								</tr>
+								<tr>
+									<td>
+										<b style="color:#0f172a;">Entregas a tiempo</b>
+										<br/><small class="text-muted">Pedidos entregados a tiempo &divide; pedidos evaluados &times; 100</small>
+									</td>
+									<td class="text-center sc-horas">-</td>
+									<td class="text-center sc-pedidos">-</td>
+									<td class="text-center" id="scResEntregas" style="font-weight:bold;">-</td>
+									<td class="text-center">
+										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
+											<input type="number" id="metaEntregas" step="1" value="90.0" class="form-control text-center sc-meta" />
+											<span class="input-group-addon">%</span>
+									</div>
+									</td>
+									<td class="text-center" id="scCumpEntregas" style="font-weight:bold;">-</td>
+									<td class="text-center" style="font-weight:bold;">35%</td>
+									<td class="text-center" id="scPtsEntregas" style="font-weight:bold; color:#1e3a8a;">-</td>
+								</tr>
+								<tr>
+									<td>
+										<b style="color:#0f172a;">Regresos a tiempo</b>
+										<br/><small class="text-muted">Regresos &le; 15 min &divide; regresos evaluados &times; 100</small>
+									</td>
+									<td class="text-center sc-horas">-</td>
+									<td class="text-center">&mdash;</td>
+									<td class="text-center" id="scResRegresos" style="font-weight:bold;">-</td>
+									<td class="text-center">
+										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
+											<input type="number" id="metaRegresos" step="1" value="90.0" class="form-control text-center sc-meta" />
+											<span class="input-group-addon">%</span>
+										</div>
+									</td>
+									<td class="text-center" id="scCumpRegresos" style="font-weight:bold;">-</td>
+									<td class="text-center" style="font-weight:bold;">20%</td>
+									<td class="text-center" id="scPtsRegresos" style="font-weight:bold; color:#1e3a8a;">-</td>
+								</tr>
+								<tr>
+									<td>
+										<b style="color:#0f172a;">Pedidos por salida</b>
+										<br/><small class="text-muted">Pedidos entregados &divide; n&uacute;mero de salidas</small>
+									</td>
+									<td class="text-center sc-horas">-</td>
+									<td class="text-center" id="scDetalleSalidas">-</td>
+									<td class="text-center" id="scResSalidas" style="font-weight:bold;">-</td>
+									<td class="text-center">
+										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
+											<input type="number" id="metaSalidas" step="0.1" value="1.0" class="form-control text-center sc-meta" />
+											<span class="input-group-addon">p/s</span>
+										</div>
+									</td>
+									<td class="text-center" id="scCumpSalidas" style="font-weight:bold;">-</td>
+									<td class="text-center" style="font-weight:bold;">15%</td>
+									<td class="text-center" id="scPtsSalidas" style="font-weight:bold; color:#1e3a8a;">-</td>
+								</tr>
+								<tr style="background:#f1f5f9; font-size:14.5px; border-top:2px solid #0f172a;">
+									<td><b style="color:#0f172a;">TOTAL EVALUACI&Oacute;N</b></td>
+									<td class="text-center sc-horas" style="font-weight:800;">-</td>
+									<td class="text-center sc-pedidos" style="font-weight:800;">-</td>
+									<td class="text-center">&mdash;</td>
+									<td class="text-center">&mdash;</td>
+									<td class="text-center" id="scCumpTotal" style="font-weight:800; font-size:16px; color:#1e3a8a;">-</td>
+									<td class="text-center" style="font-weight:800;">100%</td>
+									<td class="text-center" id="scPtsTotal" style="font-weight:800; font-size:17px; color:#1e3a8a;">-</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!-- Visualizacion de la Escala de Compensacion de Gerencia -->
+					<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 18px; margin-top:10px;">
+						<span style="font-size:12px; font-weight:700; text-transform:uppercase; color:#475569;">
+							Escala de compensaci&oacute;n por domicilio (Gerencia):
+						</span>
+						<div class="row" style="margin-top:10px;">
+							<div class="col-xs-3 text-center">
+								<div class="sc-tier-badge" id="scTier1">
+									<div class="tier-monto">$2.500</div>
+									<small class="tier-desc">Cumplimiento 0% al 50%</small>
+								</div>
+							</div>
+							<div class="col-xs-3 text-center">
+								<div class="sc-tier-badge" id="scTier2">
+									<div class="tier-monto">$2.700</div>
+									<small class="tier-desc">Cumplimiento 51% al 79%</small>
+								</div>
+							</div>
+							<div class="col-xs-3 text-center">
+								<div class="sc-tier-badge" id="scTier3">
+									<div class="tier-monto">$3.000</div>
+									<small class="tier-desc">Cumplimiento 80% al 100%</small>
+								</div>
+							</div>
+							<div class="col-xs-3 text-center">
+								<div class="sc-tier-badge" id="scTier4">
+									<div class="tier-monto">$3.500</div>
+									<small class="tier-desc">Cumplimiento &ge; 120%</small>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 
 				<div class="row">
@@ -129,44 +508,46 @@
 							<div class="dd-nota">
 								Se mide la diferencia y no el minuto suelto: hay pedidos prometidos a 30
 								minutos y otros a 60, y 45 minutos es tarde en uno y temprano en el otro.
-								Este reloj arranca cuando entra el pedido, asi que incluye cocina y horno.
+								Este reloj arranca cuando entra el pedido, as&iacute; que incluye cocina y horno.
 							</div>
 						</div>
 					</div>
 					<div class="col-md-6">
 						<div class="dd-panel">
-							<div class="dd-titulo">Regreso a la tienda despues de entregar</div>
+							<div class="dd-titulo">Regreso a la tienda despu&eacute;s de entregar</div>
 							<div id="ddGrafRegreso"></div>
 							<div class="dd-nota">
-								Desde la ultima entrega de la salida hasta que marca la llegada a la tienda.
+								Desde la &uacute;ltima entrega de la salida hasta que marca la llegada a la tienda.
 							</div>
 						</div>
 					</div>
 				</div>
 
 				<div class="dd-panel">
-					<div class="dd-titulo">Dia a dia</div>
+					<div class="dd-titulo">D&iacute;a a d&iacute;a</div>
 					<div id="ddGrafDias"></div>
 				</div>
 
 				<div class="dd-panel">
 					<div class="dd-titulo">Por tienda</div>
-					<table id="ddTablaTiendas" class="table table-bordered table-condensed">
-						<thead>
-							<tr>
-								<th>Tienda</th>
-								<th class="text-right">Pedidos</th>
-								<th class="text-right">Salidas</th>
-								<th class="text-right">Pedidos por salida</th>
-								<th class="text-right">A tiempo</th>
-								<th class="text-right">Prom. total</th>
-								<th class="text-right">Prom. en calle</th>
-								<th class="text-right">Regreso (mediana)</th>
-								<th class="text-right">Regresos a tiempo</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
+					<div class="table-responsive">
+						<table id="ddTablaTiendas" class="table table-bordered table-hover">
+							<thead>
+								<tr>
+									<th>Tienda</th>
+									<th class="text-right">Pedidos</th>
+									<th class="text-right">Salidas</th>
+									<th class="text-right">Pedidos por salida</th>
+									<th class="text-right">A tiempo</th>
+									<th class="text-right">Prom. total</th>
+									<th class="text-right">Prom. en calle</th>
+									<th class="text-right">Regreso (mediana)</th>
+									<th class="text-right">Regresos a tiempo</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
 				</div>
 
 				<div class="row">
@@ -185,27 +566,29 @@
 				</div>
 
 				<div class="dd-panel">
-					<div class="dd-titulo">Las entregas que mas se pasaron</div>
-					<table id="ddTablaPeores" class="table table-bordered table-condensed">
-						<thead>
-							<tr>
-								<th>Tienda</th>
-								<th>Fecha</th>
-								<th class="text-right">Pedido</th>
-								<th class="text-right">Prometido</th>
-								<th class="text-right">Demoro</th>
-								<th class="text-right">Se paso</th>
-								<th class="text-right">En calle</th>
-							</tr>
-						</thead>
-						<tbody></tbody>
-					</table>
+					<div class="dd-titulo">Las entregas que m&aacute;s se pasaron</div>
+					<div class="table-responsive">
+						<table id="ddTablaPeores" class="table table-bordered table-hover">
+							<thead>
+								<tr>
+									<th>Tienda</th>
+									<th>Fecha</th>
+									<th class="text-right">Pedido</th>
+									<th class="text-right">Prometido</th>
+									<th class="text-right">Demor&oacute;</th>
+									<th class="text-right">Se pas&oacute;</th>
+									<th class="text-right">En calle</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
 				</div>
 
 			</div>
 
 		</div>
 
-		<script type="text/javascript" src="js/desempenodomiciliario.js"></script>
+		<script type="text/javascript" charset="UTF-8" src="js/desempenodomiciliario.js"></script>
 	</body>
 </html>

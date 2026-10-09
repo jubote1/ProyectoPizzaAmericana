@@ -47,7 +47,7 @@ require([
   };
 
   const map = new Map({
-    basemap: "gray-vector",
+    basemap: "hybrid",
     ground: "world-elevation"
   });
   mapArcgis = map;
@@ -70,6 +70,12 @@ require([
   const tiendasLayer = new GraphicsLayer({ id: "tiendasLayer", title: "Tiendas" });
   const graphicsLayer = zonasLayer;
 
+  const markerSymbol = new PictureMarkerSymbol({
+    url: "pz.png",
+    width: 20,
+    height: 20
+  });
+
   const markerClient = new PictureMarkerSymbol({
     url: "markerClient.png",
     width: 24,
@@ -79,6 +85,21 @@ require([
   });
   markerClientNormal = markerClient;
 
+  const textTienda = {
+    type: "text",
+    color: "white",
+    haloColor: "black",
+    haloSize: "1px",
+    text: "",
+    xoffset: 3,
+    yoffset: 3,
+    font: {
+      size: 8,
+      family: "Orbitron",
+      weight: "bold"
+    }
+  };
+
   marker = new Graphic({
     geometry: CENTRO_MAPA,
     symbol: markerClient
@@ -87,6 +108,13 @@ require([
   view.graphics.add(marker);
   map.add(zonasLayer);
   map.add(tiendasLayer);
+
+  view.when(function () {
+    if (window._puntoPendiente) {
+      ubicarClienteExistente(window._puntoPendiente.lat, window._puntoPendiente.lng);
+      window._puntoPendiente = null;
+    }
+  });
 
   // Paleta de colores oficiales extraída directamente de Google My Maps de Pizza Americana
   function getZonaColor(nombre) {
@@ -107,7 +135,7 @@ require([
     return [65, 105, 225, 0.35];
   }
 
-  // Generador de íconos circulares tipo Google Maps con silueta de pizza (idéntico al mapa moderno)
+  // Generador de íconos circulares tipo Google Maps con silueta de pizza (idéntico a la imagen 3 de referencia)
   function crearIconoTiendaSVG(nombre) {
     var col = getZonaColor(nombre);
     var hexColor = "#" + ((1 << 24) + (col[0] << 16) + (col[1] << 8) + col[2]).toString(16).slice(1);
@@ -276,6 +304,7 @@ require([
         });
 
         tiendasLayer.add(markerGraphic);
+        // NOTA: Se eliminaron los textos planos sobre el mapa (San Antonio, Itagüí, etc.) para mantener el mapa limpio y moderno con los pines oficiales
       });
       if (tiendasLayer && map.layers.includes(tiendasLayer)) {
         map.reorder(tiendasLayer, map.layers.length - 1);
@@ -305,7 +334,6 @@ require([
         const markerTiendaSeleccionado = graphics.some(function (graphic) {
           return (graphic.layer === tiendasLayer || graphic.layer === zonasLayer) && graphic.attributes && graphic.attributes.tipo === "tienda";
         });
-
         if (markerTiendaSeleccionado) {
           return;
         }
@@ -351,13 +379,13 @@ require([
 
   function configurarEventosFormulario() {
     $("#buscarmapa, #btnBuscarDirLibre, .btn-buscar-global").on("click", function () {
-      findAddress();
+      findAddress(null, true);
     });
 
-    $("#descDireccion, #direccion").on("keydown", function (event) {
+    $("#descDireccion, #direccion, #direccionact").on("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
-        findAddress();
+        findAddress(null, true);
       }
     });
 
@@ -367,7 +395,7 @@ require([
     });
 
     // Actualizar en tiempo real Card 1 con la dirección que se guardará
-    $("#direccion, #zona, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
+    $("#direccion, #direccionact, #zona, #zonaact, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
       actualizarTarjetaDireccionPedidoUI();
     });
 
@@ -379,6 +407,14 @@ require([
 
     $("#selectMunicipio, #selectNomenclaturas").on("change", function () {
       actualizarTarjetaDireccionPedidoUI();
+    });
+
+    // Sincronizar tienda seleccionada directamente con el badge del mapa
+    $("#selectTiendas").on("change", function () {
+      var t = $(this).val();
+      if (t) {
+        $("#mapaTxtTiendaCobertura").text(t);
+      }
     });
 
     // Inicializar modo visual de direcciones
@@ -507,28 +543,44 @@ function detectarYSincronizarMunicipio(texto) {
 }
 
 function obtenerDireccionCobertura() {
-  if ($("#validaDir").is(":checked")) {
-    return obtenerValor("#descDireccion");
+  if ($("#validaDir").length > 0) {
+    if ($("#validaDir").is(":checked")) {
+      return obtenerValor("#descDireccion") || obtenerValor("#direccionact") || obtenerValor("#direccion");
+    }
+    return obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
-  return obtenerValor("#direccion");
+  // Para ventanas sin checkbox #validaDir (ConsultaPedidosNuevaTienda, ConsultaPedidosCRMBOT, etc.)
+  var desc = (obtenerValor("#descDireccion") || "").trim();
+  if (desc && desc.length > 3 && !desc.startsWith("#") && !desc.startsWith("-")) {
+    return desc;
+  }
+  var dirAct = (obtenerValor("#direccionact") || "").trim();
+  if (dirAct && dirAct.length > 3) {
+    return dirAct;
+  }
+  return desc || dirAct || obtenerValor("#direccion");
 }
 
 function obtenerTextoDireccionPedidoUI() {
-  var usaNomenclatura = $("#validaDir").is(":checked");
+  var usaNomenclatura = $("#validaDir").length > 0 ? $("#validaDir").is(":checked") : true;
   var dir = "";
 
   if (usaNomenclatura) {
-    dir = obtenerValor("#descDireccion");
+    dir = obtenerValor("#descDireccion") || obtenerValor("#direccionact");
     if (!dir && typeof formarDireccionEstructurada === "function") {
       dir = formarDireccionEstructurada(false) || "";
     }
   } else {
-    dir = obtenerValor("#direccion");
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact");
+  }
+
+  if (!dir) {
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
   var texto = (dir || "").trim();
-  var complemento = obtenerValor("#zona") || obtenerValor("#barrio");
+  var complemento = obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact");
 
   // Detectar si el texto ya contiene el nombre de algún municipio (ej: "calle 20e #71-60, bello")
   var muniDetectado = detectarYSincronizarMunicipio(texto);
@@ -678,9 +730,13 @@ function mostrarMensaje(mensaje) {
   }
 }
 
-async function findAddress(idcliente = null) {
+async function findAddress(idcliente = null, esClicManual = false) {
 
       let coberturaRequest;
+
+      if (!idcliente && typeof idCliente !== 'undefined' && idCliente && idCliente > 0 && !esClicManual) {
+          idcliente = idCliente;
+      }
 
       if (idcliente) {
           coberturaRequest = { idcliente };
@@ -689,14 +745,21 @@ async function findAddress(idcliente = null) {
           const direccion = obtenerDireccionCobertura();
 
           if (!direccion) {
-              mostrarMensaje("Debe ingresar una dirección.");
+              if (esClicManual) {
+                  mostrarMensaje("Debe ingresar una dirección.");
+              }
               return;
+          }
+
+          var muniVal = obtenerValor("#selectMunicipio");
+          if (!muniVal || muniVal === "Seleccione..." || muniVal === "null") {
+              muniVal = obtenerValor("#municipio") || "";
           }
 
           coberturaRequest = {
               direccion,
-              municipio: obtenerValor("#selectMunicipio"),
-              barrio: obtenerValor("#zona") || obtenerValor("#barrio")
+              municipio: muniVal,
+              barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || ""
           };
 
           bloquearBusqueda(true);
@@ -715,10 +778,16 @@ async function findAddress(idcliente = null) {
           const data = await response.json();
          
           if (!response.ok || !data.success) {
-              mostrarMensaje(data.resultado || "No fue posible validar la cobertura.");
+              if (esClicManual) {
+                  mostrarMensaje(data.resultado || "No fue posible validar la cobertura.");
+              }
               var dirActual = obtenerTextoDireccionPedidoUI();
               if (dirActual) {
                   $('#mapaTxtDireccionRegistrada').text(dirActual);
+              }
+              // Habilitar selección de tienda para no bloquear al cajero
+              if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
+                  $('#selectTiendas').attr('disabled', false);
               }
               if (marker && marker.geometry && marker.geometry.latitude && marker.geometry.longitude) {
                   geocodificarInversaArcGIS(marker.geometry.latitude, marker.geometry.longitude);
@@ -730,7 +799,9 @@ async function findAddress(idcliente = null) {
           }
 
           if (!coordenadasValidas(data.latitud, data.longitud)) {
-              mostrarMensaje("El servicio no devolvió coordenadas válidas.");
+              if (esClicManual) {
+                  mostrarMensaje("El servicio no devolvió coordenadas válidas.");
+              }
               return;
           }
 
@@ -767,9 +838,19 @@ async function findAddress(idcliente = null) {
 
           if (data.infoAdicional) {
               $('#mapaTxtTiendaCobertura').text(data.infoAdicional);
+              // Asignar automáticamente la tienda al campo selectTiendas si no tenía o estaba vacío
+              if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
+                  $("#selectTiendas").val(data.infoAdicional);
+                  $("#selectTiendas").trigger('change');
+              }
           } else {
               var tText = $('#selectTiendas option:selected').text();
-              if (tText) $('#mapaTxtTiendaCobertura').text(tText);
+              if (tText && tText !== "Seleccione..." && tText !== "") {
+                  $('#mapaTxtTiendaCobertura').text(tText);
+              } else {
+                  $('#mapaTxtTiendaCobertura').text("Sin tienda asignada");
+                  $('#selectTiendas').attr('disabled', false);
+              }
           }
 
           // Card 2: Mostrar directamente la dirección sugerida/corregida por el servicio (HERE / Google)
@@ -783,11 +864,14 @@ async function findAddress(idcliente = null) {
 
       } catch (error) {
           console.error("Error validando cobertura:", error);
-          mostrarMensaje("Error consultando el servicio de cobertura.");
-      } finally {
-          if (!idcliente) {
-              bloquearBusqueda(false);
+          if (esClicManual) {
+              mostrarMensaje("Error consultando el servicio de cobertura.");
           }
+          if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
+              $('#selectTiendas').attr('disabled', false);
+          }
+      } finally {
+          bloquearBusqueda(false);
       }
   }
 
@@ -1172,6 +1256,9 @@ function aplicarDireccionDetectadaAlFormulario() {
   }
 
   $('#direccion').val(direccionAplicar);
+  if ($('#direccionact').length > 0) {
+    $('#direccionact').val(direccionAplicar);
+  }
   detectarYSincronizarMunicipio(direccionAplicar);
   actualizarTarjetaDireccionPedidoUI();
   $('#btnCopiarDireccionMapa').hide();
@@ -1274,3 +1361,73 @@ function aplicarDireccionDetectadaAlFormulario() {
 
   actualizarModoDireccionUI();
 }
+
+function fijarCoordenadasManualmente(lat, lon) {
+  var l1, l2;
+  if (typeof lat === 'object' && lat !== null) {
+    l1 = lat.lat !== undefined ? lat.lat : lat.latitude;
+    l2 = lat.lng !== undefined ? lat.lng : lat.longitude;
+  } else {
+    l1 = lat;
+    l2 = lon;
+  }
+
+  window.latitud = l1;
+  window.longitud = l2;
+  try {
+    latitud = l1;
+    longitud = l2;
+  } catch (e) {}
+
+  if (typeof window.fijarCoordenadasManualmenteHook === 'function') {
+    window.fijarCoordenadasManualmenteHook(l1, l2);
+  }
+}
+
+function ubicarClienteExistente(lat, lng) {
+  if (coordenadasValidas(lat, lng)) {
+    const punto = {
+      type: "point",
+      latitude: Number(lat),
+      longitude: Number(lng)
+    };
+    if (view && marker) {
+      showAddress("Ubicación del cliente", punto);
+      fijarCoordenadasManualmente(punto.latitude, punto.longitude);
+      actualizarInfoCoordenadasUI(punto.latitude, punto.longitude);
+      var dirActual = obtenerTextoDireccionPedidoUI();
+      if (dirActual) {
+        $('#mapaTxtDireccionRegistrada').text(dirActual);
+      }
+      var tVal = $('#tienda').val() || $('#selectTiendas option:selected').text();
+      if (tVal && tVal !== "Seleccione..." && tVal !== "") {
+        $('#mapaTxtTiendaCobertura').text(tVal);
+      }
+      geocodificarInversaArcGIS(punto.latitude, punto.longitude, dirActual);
+    } else {
+      window._puntoPendiente = { lat: Number(lat), lng: Number(lng) };
+    }
+  } else {
+    if (typeof idCliente !== 'undefined' && idCliente && idCliente > 0) {
+      findAddress(idCliente, false);
+    } else {
+      var dir = obtenerDireccionCobertura();
+      if (dir && dir.trim().length > 3) {
+        findAddress(null, false);
+      } else {
+        clarearMapa();
+      }
+    }
+  }
+}
+
+// Exportar globalmente a window para máxima compatibilidad
+window.findAddress = findAddress;
+window.showAddress = showAddress;
+window.cambiarBasemapArcgis = cambiarBasemapArcgis;
+window.toggleModoMoverMarcador = toggleModoMoverMarcador;
+window.aplicarDireccionDetectadaAlFormulario = aplicarDireccionDetectadaAlFormulario;
+window.actualizarInfoCoordenadasUI = actualizarInfoCoordenadasUI;
+window.clarearMapa = clarearMapa;
+window.ubicarClienteExistente = ubicarClienteExistente;
+window.fijarCoordenadasManualmente = fijarCoordenadasManualmente;

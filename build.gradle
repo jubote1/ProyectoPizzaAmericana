@@ -33,7 +33,10 @@ war {
     // other war configuration...
 }
 
-	tasks.withType(JavaCompile) {
+	sourceCompatibility = 16
+targetCompatibility = 16
+
+tasks.withType(JavaCompile) {
 	options.encoding = "UTF-8"
     }
     

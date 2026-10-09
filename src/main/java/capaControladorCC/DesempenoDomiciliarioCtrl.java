@@ -167,6 +167,11 @@ public class DesempenoDomiciliarioCtrl {
 		respuesta.put("distribucion_regreso", distribucionRegreso(salidas));
 		respuesta.put("por_dia", porDia(entregas));
 		respuesta.put("peores", peoresEntregas(entregas));
+
+		// Horas reales trabajadas para evaluacion de productividad y liquidacion (Gerencia)
+		double horasTrabajadas = DesempenoDomiciliarioDAO.obtenerHorasTrabajadas(idEmpleado, desde, hasta);
+		respuesta.put("horas_trabajadas", redondear(horasTrabajadas, 2));
+
 		return (respuesta.toJSONString());
 	}
 
