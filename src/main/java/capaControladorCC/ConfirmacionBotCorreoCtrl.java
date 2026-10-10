@@ -78,7 +78,7 @@ public class ConfirmacionBotCorreoCtrl {
 			final CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 					"CLAVECORREOREPORTE");
 			final Correo correo = new Correo();
-			correo.setAsunto(PlantillaCorreoConfirmacionBot.asunto(idPedido));
+			correo.setAsunto(PlantillaCorreoConfirmacionBot.asunto(idPedido, pagoEnLinea));
 			correo.setContrasena(infoCorreo.getClaveCorreo());
 			correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
 			correo.setMensaje(PlantillaCorreoConfirmacionBot.cuerpo(nombre, direccion, resumen, pagoEnLinea));

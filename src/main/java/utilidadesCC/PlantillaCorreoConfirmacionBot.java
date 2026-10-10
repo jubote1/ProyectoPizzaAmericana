@@ -36,6 +36,17 @@ public final class PlantillaCorreoConfirmacionBot {
 	}
 
 	public static String asunto(final int idPedido) {
+		return (asunto(idPedido, false));
+	}
+
+	/**
+	 * Cuando el pedido se paga en linea, el asunto tiene que decir que falta algo: un "Confirmacion de tu pedido"
+	 * se lee como "ya esta todo" y el cliente no abre el link de pago. Sin tildes: el asunto no va en UTF-8.
+	 */
+	public static String asunto(final int idPedido, final boolean pagoEnLinea) {
+		if (pagoEnLinea) {
+			return ("Paga tu pedido #" + idPedido + " para que lo preparemos - Pizza Americana");
+		}
 		return ("Confirmacion de tu pedido #" + idPedido + " - Pizza Americana");
 	}
 
@@ -70,17 +81,55 @@ public final class PlantillaCorreoConfirmacionBot {
 				.append(saludo).append("</div>")
 				.append("<div style=\"font-size:21px;font-weight:bold;color:").append(TINTA)
 				.append(";line-height:1.35;padding-top:10px;\">")
-				.append("Hiciste este pedido por nuestro bot</div>")
+				.append(pagoEnLinea ? "Recibimos tu pedido por WhatsApp, pero falta tu pago"
+						: "Hiciste este pedido por WhatsApp")
+				.append("</div>")
 				.append("<div style=\"font-size:14.5px;color:").append(TINTA)
 				.append(";line-height:1.55;padding-top:10px;\">")
-				.append("Esta es la confirmaci&oacute;n de la informaci&oacute;n de tu pedido ")
-				.append("<b>#").append(resumen.idPedido).append("</b>. Rev&iacute;sala y verifica que todo est&eacute; bien.")
+				.append(pagoEnLinea
+						? "Este es el resumen de tu pedido <b>#" + resumen.idPedido + "</b>. "
+								+ "<b>Todav&iacute;a no lo hemos enviado a preparaci&oacute;n</b>: primero hay que pagarlo."
+						: "Esta es la confirmaci&oacute;n de la informaci&oacute;n de tu pedido <b>#" + resumen.idPedido
+								+ "</b>. Rev&iacute;sala y verifica que todo est&eacute; bien.")
 				.append("</div></td></tr>");
+
+		//El pago en linea: lo primero y lo mas visible del correo. Es lo unico que el cliente tiene que hacer, y si no
+		//lo hace el pedido no sale a la tienda: no puede quedar como una nota al pie.
+		if (pagoEnLinea) {
+			h.append("<tr><td style=\"padding:14px 24px 4px;\">")
+					.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='border-collapse:collapse;'>");
+			h.append("<tr><td align='center' style=\"background-color:").append(ROJO)
+					.append(";border-radius:10px 10px 0 0;padding:20px 18px 12px;\">")
+					.append("<div style=\"font-size:12px;letter-spacing:.14em;color:#FFFFFF;font-weight:bold;\">")
+					.append("&#9888; ATENCI&Oacute;N &#9888;</div>")
+					.append("<div style=\"font-size:32px;line-height:1.15;font-weight:bold;color:").append(AMARILLO)
+					.append(";padding-top:6px;letter-spacing:.02em;\">PAGA PRIMERO</div>")
+					.append("<div style=\"font-size:16px;line-height:1.45;color:#FFFFFF;padding-top:8px;\">")
+					.append("Tu pedido <b>NO se env&iacute;a a preparaci&oacute;n</b> hasta que realices el pago.</div>")
+					.append("</td></tr>");
+			h.append("<tr><td style=\"background-color:#FFF4F4;border-left:2px solid ").append(ROJO)
+					.append(";border-right:2px solid ").append(ROJO).append(";padding:14px 18px 8px;\">")
+					.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='border-collapse:collapse;'>");
+			paso(h, 1, "Abre el <b>link de pago que te enviamos por WhatsApp</b> y paga el total de <b>"
+					+ pesos(resumen.total) + "</b>.");
+			paso(h, 2, "Cuando el pago se confirme, <b>nos llega la notificaci&oacute;n autom&aacute;ticamente</b>: "
+					+ "no tienes que avisarnos.");
+			paso(h, 3, "Tu pedido pasa <b>de inmediato a preparaci&oacute;n</b> en la tienda.");
+			h.append("</table></td></tr>");
+			h.append("<tr><td align='center' style=\"background-color:").append(AZUL)
+					.append(";border-radius:0 0 10px 10px;padding:14px 18px;font-size:15px;line-height:1.4;")
+					.append("font-weight:bold;color:#FFFFFF;\">SIN PAGO NO HAY PEDIDO: <span style=\"color:")
+					.append(AMARILLO).append(";\">si no pagas, no lo mandamos a preparar.</span></td></tr>");
+			h.append("</table></td></tr>");
+		}
 
 		//Los datos del pedido.
 		h.append("<tr><td style=\"padding:14px 24px 4px;\">")
 				.append("<table cellpadding='0' cellspacing='0' border='0' width='100%' style='border-collapse:collapse;'>");
 		fila(h, "Punto de venta", resumen.tienda);
+		if (pagoEnLinea) {
+			fila(h, "Estado", "<span style=\"color:" + ROJO + ";\">PENDIENTE DE PAGO</span>");
+		}
 		if (direccion != null && direccion.trim().length() > 0) {
 			fila(h, "Direcci&oacute;n de entrega", escapar(direccion.trim()));
 		}
@@ -90,12 +139,6 @@ public final class PlantillaCorreoConfirmacionBot {
 		fila(h, "Cu&aacute;ndo", resumen.programado && resumen.horaProgramado.length() > 0
 				? "Programado para las " + escapar(resumen.horaProgramado) : "Lo m&aacute;s pronto posible");
 		h.append("</table></td></tr>");
-
-		if (pagoEnLinea) {
-			h.append("<tr><td style=\"padding:6px 24px 0;\"><div style=\"background-color:#EEF2FB;border-radius:6px;padding:12px 14px;font-size:13.5px;")
-					.append("color:").append(AZUL).append(";line-height:1.5;\"><b>Pago en l&iacute;nea:</b> tu pedido empieza a prepararse ")
-					.append("cuando se confirme tu pago con el link que te enviamos en el chat.</div></td></tr>");
-		}
 
 		//El detalle.
 		h.append("<tr><td style=\"padding:14px 24px 4px;\">")
@@ -136,7 +179,9 @@ public final class PlantillaCorreoConfirmacionBot {
 				.append("<td align='center' style=\"background-color:#FFF9E8;border:2px dashed ").append(AMARILLO)
 				.append(";border-radius:8px;padding:18px;\">")
 				.append("<div style=\"font-size:14.5px;color:").append(TINTA).append(";line-height:1.5;\">")
-				.append("<b>&iquest;Algo no coincide con lo que pediste, o recibiste este pedido dos veces?</b></div>")
+				.append(pagoEnLinea
+						? "<b>&iquest;Ya pagaste y tu pedido no avanza, algo no coincide o lo recibiste dos veces?</b></div>"
+						: "<b>&iquest;Algo no coincide con lo que pediste, o recibiste este pedido dos veces?</b></div>")
 				.append("<div style=\"font-size:13.5px;color:").append(GRIS).append(";padding-top:4px;\">")
 				.append("Comun&iacute;cate con nosotros a la l&iacute;nea de atenci&oacute;n:</div>")
 				.append("<div style=\"font-size:30px;font-weight:bold;color:").append(ROJO)
@@ -147,12 +192,22 @@ public final class PlantillaCorreoConfirmacionBot {
 
 		h.append("<tr><td style=\"padding:18px 24px 22px;border-top:1px solid ").append(BORDE)
 				.append(";font-size:12px;color:#8A9199;line-height:1.5;\">")
-				.append("Este correo es solo una confirmaci&oacute;n de tu pedido hecho por nuestro bot; no tienes ")
+				.append("Este correo es solo una confirmaci&oacute;n de tu pedido hecho por WhatsApp; no tienes ")
 				.append("que responderlo. &iexcl;Gracias por pedir en Pizza Americana!")
 				.append("</td></tr>");
 
 		h.append("</table></div>");
 		return (h.toString());
+	}
+
+	/** Un paso numerado del recuadro de pago. El numero va en un circulo azul para que se lea como una secuencia. */
+	private static void paso(final StringBuilder h, final int numero, final String textoHtml) {
+		h.append("<tr><td width='34' valign='top' style=\"padding:0 0 10px;\">")
+				.append("<div style=\"width:26px;height:26px;line-height:26px;text-align:center;border-radius:13px;")
+				.append("background-color:").append(AZUL).append(";color:#FFFFFF;font-weight:bold;font-size:14px;\">")
+				.append(numero).append("</div></td>")
+				.append("<td valign='top' style=\"padding:3px 0 10px;font-size:14.5px;line-height:1.45;color:").append(TINTA)
+				.append(";\">").append(textoHtml).append("</td></tr>");
 	}
 
 	private static void fila(final StringBuilder h, final String rotulo, final String valorHtml) {
