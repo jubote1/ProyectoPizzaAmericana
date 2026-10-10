@@ -159,8 +159,34 @@ function fechaParaServidor(texto) {
 
 /* Prende o apaga los botones que actuan sobre un pedido. */
 function botones(hay) {
+	$('#editarPedido').attr('disabled', !hay);
 	$('#terminarPedido').attr('disabled', !hay);
 	$('#cancelarPedido').attr('disabled', !hay);
+}
+
+/*
+ * AGREGAR O QUITAR PRODUCTOS
+ *
+ * No se arma otra pantalla de productos: se abre el pedido en la de tomar pedidos (Pedidos.html?reanudar=NNN),
+ * que ya soporta todo lo que hoy se soporta al tomar un pedido -especialidades por mitad, adiciones, "con" y
+ * "sin", excepciones de precio, productos incluidos, ofertas, puntos, descuentos- y se finaliza por el camino de
+ * siempre. Duplicar esas reglas aqui las dejaria desparejas a la primera regla nueva.
+ *
+ * El pedido queda reservado a nombre de quien lo abre (lo hace el servidor al recibir el pedido en esa
+ * pantalla), asi que nadie mas lo toca ni la red de seguridad lo manda a medio cambiar.
+ *
+ * Se abre en otra pestania para no perder esta lista. Al terminar, "Consultar" la refresca.
+ */
+function editarPedido() {
+	if (idPedido <= 0) {
+		alert('Escoja primero un pedido de la lista.');
+		return;
+	}
+	var ventana = window.open('Pedidos.html?reanudar=' + encodeURIComponent(idPedido), '_blank');
+	if (!ventana) {
+		alert('El navegador bloqueo la nueva pestania. Permita las ventanas emergentes para este sitio'
+			+ ' e intente de nuevo.');
+	}
 }
 
 function consultarPedido() {
