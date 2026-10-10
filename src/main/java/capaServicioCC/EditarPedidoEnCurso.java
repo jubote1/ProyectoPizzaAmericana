@@ -12,27 +12,23 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoEnCursoCtrl;
 
 /**
- * Editar el contenido de un pedido que quedo a medio tomar: ver lo que tiene, quitarle un producto, agregarle
- * otro. Es la parte de "editar" de la pantalla ConsultaPedidosEnCurso.html; terminarlo o descartarlo lo hace
- * TerminarPedidoEnCurso.
+ * Retomar un pedido que quedo a medio tomar en la pantalla de tomar pedidos (Pedidos.html?reanudar=NNN), para
+ * agregarle productos con todo lo que esa pantalla soporta: especialidades por mitad, adiciones, "con" y "sin",
+ * excepciones de precio, productos incluidos, ofertas y descuentos.
+ *
+ * Aqui NO se agregan ni se quitan productos: eso lo hace la pantalla de tomar pedidos con sus servicios de
+ * siempre (InsertarDetallePedido, EliminarDetallePedido...). Este servicio solo le entrega el pedido para
+ * continuarlo y lo mantiene retenido mientras la persona trabaja.
  *
  * ACCIONES
+ *   reanudar  (GET)   idpedido    Retiene el pedido a nombre de la sesion y devuelve cliente, tienda, tipo de
+ *                                 pedido y lo que ya tiene cargado.
+ *   renovar   (POST)  idpedido    Alarga la retencion mientras la pantalla sigue abierta.
  *
- * Lectura (GET):
- *   lineas   idpedido                       El detalle del pedido y su total.
- *   catalogo idpedido                       Los productos disponibles en la tienda del pedido.
- *   opciones idpedido, idproducto           Especialidades y sabores de bebida de ese producto.
- *
- * Cambian datos (solo POST):
- *   agregar  idpedido, idproducto, cantidad, idespecialidad1, idespecialidad2, idsabor, observacion
- *   quitar   idpedido, iddetalle
- *   renovar  idpedido                       Alarga la edicion mientras la persona trabaja.
- *
- * PARA EDITAR HAY QUE TENER EL PEDIDO RETENIDO (TerminarPedidoEnCurso, accion=retener) y que sea de quien
- * llama. El usuario sale de la sesion, no de un parametro. El precio no se recibe: lo calcula el servidor.
+ * El usuario sale de la sesion, no de un parametro.
  *
  * Acceso: P2 (usuario interno con sesion). A diferencia de la mayoria de los servicios antiguos, este si
- * verifica la sesion: modifica el contenido de un pedido, y eso se cobra.
+ * verifica la sesion: toma un pedido que es de otra persona.
  */
 @WebServlet("/EditarPedidoEnCurso")
 public class EditarPedidoEnCurso extends HttpServlet {
@@ -65,29 +61,16 @@ public class EditarPedidoEnCurso extends HttpServlet {
 		final int idPedido = entero(request.getParameter("idpedido"));
 		final PedidoEnCursoCtrl ctrl = new PedidoEnCursoCtrl();
 
-		if ("lineas".equals(accion)) {
-			out.write(ctrl.lineas(idPedido));
-		} else if ("catalogo".equals(accion)) {
-			out.write(ctrl.catalogo(idPedido));
-		} else if ("opciones".equals(accion)) {
-			out.write(ctrl.opciones(idPedido, entero(request.getParameter("idproducto"))));
-		} else if ("agregar".equals(accion) || "quitar".equals(accion) || "renovar".equals(accion)) {
+		if ("reanudar".equals(accion)) {
+			out.write(ctrl.reanudar(idPedido, usuario));
+		} else if ("renovar".equals(accion)) {
 			if (!esPost) {
-				//Un cambio de datos no se hace por GET: un enlace o un rastreador lo dispararia.
+				//Cambia datos: no se hace por GET, un enlace o un rastreador lo dispararia.
 				response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-				out.write("{\"ok\":\"N\",\"mensaje\":\"Use POST para modificar el pedido.\"}");
+				out.write("{\"ok\":\"N\",\"mensaje\":\"Use POST para renovar.\"}");
 				return;
 			}
-			if ("agregar".equals(accion)) {
-				out.write(ctrl.agregar(idPedido, entero(request.getParameter("idproducto")),
-						entero(request.getParameter("cantidad")), entero(request.getParameter("idespecialidad1")),
-						entero(request.getParameter("idespecialidad2")), entero(request.getParameter("idsabor")),
-						texto(request.getParameter("observacion")), usuario));
-			} else if ("quitar".equals(accion)) {
-				out.write(ctrl.quitar(idPedido, entero(request.getParameter("iddetalle")), usuario));
-			} else {
-				out.write(ctrl.renovar(idPedido, usuario));
-			}
+			out.write(ctrl.renovar(idPedido, usuario));
 		} else {
 			out.write("{\"ok\":\"N\",\"mensaje\":\"Accion no reconocida.\"}");
 		}
@@ -99,7 +82,7 @@ public class EditarPedidoEnCurso extends HttpServlet {
 	 * "capaModeloCC.Usuario@1a2b3c", distinto en cada sesion, que es justo lo que NO sirve para saber quien
 	 * tiene retenido un pedido.
 	 */
-	static String usuarioDeLaSesion(final HttpServletRequest request) {
+	public static String usuarioDeLaSesion(final HttpServletRequest request) {
 		try {
 			if (request.getSession(false) != null) {
 				final Object u = request.getSession(false).getAttribute("usuario");

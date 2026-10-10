@@ -40,6 +40,20 @@ public class FinalizarPedido extends HttpServlet {
 		response.setContentType("application/json;charset=UTF-8");
 		request.setCharacterEncoding("UTF-8");
 		int idpedido = Integer.parseInt(request.getParameter("idpedido"));
+		//Un pedido a medio tomar que se retomo en esta pantalla (Pedidos.html?reanudar=NNN) esta retenido a
+		//nombre de quien lo trabaja; el primer paso de FinalizarPedido pide turno de envio y ese turno se
+		//niega a los retenidos. Se suelta SOLO si la retencion es de edicion y es de esta misma sesion: la de
+		//otra persona se respeta, y un pedido nuevo -sin retencion- pasa de largo sin cambios.
+		try {
+			final capaDAOCC.RetencionPedidoDAO.Estado retencion = capaDAOCC.RetencionPedidoDAO.consultar(idpedido);
+			final String quien = EditarPedidoEnCurso.usuarioDeLaSesion(request);
+			if (retencion.retenido && capaDAOCC.RetencionPedidoDAO.POR_EDICION.equals(retencion.motivo)
+					&& quien.length() > 0 && quien.equals(retencion.por == null ? "" : retencion.por.trim())) {
+				capaDAOCC.RetencionPedidoDAO.liberar(idpedido);
+			}
+		} catch (Exception e) {
+			//Si no se pudo mirar, se sigue como siempre: el turno de envio decide.
+		}
 		int idformapago;
 		int idcliente;
 		int insertado;

@@ -283,7 +283,7 @@
 								<!-- Terminar va de primero y en verde porque es la accion que rescata
 								     el pedido. Descartar queda al lado, en gris, porque es la que no
 								     tiene vuelta atras. -->
-								<input type="button" class="btn btn-primary btn-lg" id="editarPedido" name="editarPedido" value="Editar productos" onclick="editarPedido()" disabled>
+								<input type="button" class="btn btn-primary btn-lg" id="editarPedido" name="editarPedido" value="Agregar o quitar productos" onclick="editarPedido()" disabled>
 								<input type="button" class="btn btn-success btn-lg" id="terminarPedido" name="terminarPedido" value="Terminar y enviar" onclick="terminarPedido()" disabled>
 								<input type="button" class="btn btn-default btn-lg" id="cancelarPedido" name="cancelarPedido" value="Descartar pedido" onclick="cancelarPedido()" disabled>
 								<!-- Reenviar y Marcar como enviado NO van aca: un pedido a medio tomar
@@ -296,90 +296,6 @@
 		<!-- Lo unico que le falta a un pedido a medio tomar es la forma de pago:
 		     ya tiene productos, cliente y direccion. Por eso el dialogo pide eso
 		     y nada mas. El total NO se pregunta: sale de los productos. -->
-		<!-- EDITAR LOS PRODUCTOS. Mientras este dialogo esta abierto el pedido esta retenido: nadie
-		     mas lo toca ni la red de seguridad lo manda a la tienda a medio cambiar. Los valores los
-		     calcula el servidor; aqui solo se escoge que producto, cuantos y con que especialidades. -->
-		<div class="modal fade" id="modalEditar" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
-			<div class="modal-dialog modal-lg" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h4 class="modal-title">Productos del pedido <span id="editNumPedido"></span></h4>
-					</div>
-					<div class="modal-body">
-						<div id="editMensaje"></div>
-						<table class="table table-condensed table-striped" id="tablaEditar">
-							<thead>
-								<tr>
-									<th>Producto</th>
-									<th style="text-align:right;">Cant.</th>
-									<th style="text-align:right;">Valor</th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-							<tfoot>
-								<tr>
-									<td><strong>TOTAL</strong></td>
-									<td></td>
-									<td id="editTotal" style="text-align:right;font-weight:bold;"></td>
-									<td></td>
-								</tr>
-							</tfoot>
-						</table>
-
-						<div class="panel panel-default">
-							<div class="panel-heading"><strong>Agregar un producto</strong></div>
-							<div class="panel-body">
-								<div class="row">
-									<div class="col-md-8">
-										<label for="editProducto">Producto</label>
-										<select id="editProducto" class="form-control" onchange="cambioProducto()"></select>
-									</div>
-									<div class="col-md-4">
-										<label for="editCantidad">Cantidad</label>
-										<input type="number" id="editCantidad" class="form-control" min="1" max="20" value="1">
-									</div>
-								</div>
-								<div class="row" id="editFilaEspecialidades" style="display:none;margin-top:10px;">
-									<div class="col-md-6">
-										<label for="editEspecialidad1">Especialidad (o primera mitad)</label>
-										<select id="editEspecialidad1" class="form-control"></select>
-									</div>
-									<div class="col-md-6">
-										<label for="editEspecialidad2">Segunda mitad (opcional)</label>
-										<select id="editEspecialidad2" class="form-control"></select>
-									</div>
-								</div>
-								<div class="row" id="editFilaSabor" style="display:none;margin-top:10px;">
-									<div class="col-md-12">
-										<label for="editSabor">Sabor de la bebida</label>
-										<select id="editSabor" class="form-control"></select>
-									</div>
-								</div>
-								<div class="row" style="margin-top:10px;">
-									<div class="col-md-12">
-										<label for="editObservacion">Observaci&oacute;n (opcional)</label>
-										<input type="text" id="editObservacion" class="form-control" maxlength="100">
-									</div>
-								</div>
-								<div style="margin-top:12px;">
-									<button type="button" class="btn btn-primary" id="btnAgregarProducto" onclick="agregarProducto()">Agregar al pedido</button>
-								</div>
-							</div>
-						</div>
-						<p class="help-block">
-							Aqu&iacute; se agregan y quitan productos. Las adiciones, quitar ingredientes y las promociones
-							se manejan en la pantalla de tomar pedidos. El precio lo calcula el sistema.
-						</p>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-default" onclick="cerrarEdicion()">Listo, soltar el pedido</button>
-						<button type="button" class="btn btn-success" onclick="terminarDesdeEdicion()">Terminar y enviar</button>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<div class="modal fade" id="modalTerminar" tabindex="-1" role="dialog">
 			<div class="modal-dialog" role="document">
 				<div class="modal-content">

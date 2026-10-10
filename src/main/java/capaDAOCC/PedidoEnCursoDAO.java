@@ -124,6 +124,11 @@ public class PedidoEnCursoDAO {
 		/** Mayor que cero si la tienda ya lo tiene: no se toca. */
 		public int numPosHeader = 0;
 		public int idCliente = 0;
+		public int idTipoPedido = 0;
+		public String tienda = "";
+		public String telefono = "";
+		public String programado = "";
+		public String horaProgramado = "";
 	}
 
 	/** Una linea del pedido, con lo necesario para pintarla y para decidir si se puede quitar. */
@@ -153,8 +158,12 @@ public class PedidoEnCursoDAO {
 		try {
 			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT idtienda, IFNULL(idestadopedido,0) estado, IFNULL(numposheader,0) numpos,"
-					+ " IFNULL(idcliente,0) idcliente FROM pedido WHERE idpedido = ?");
+					"SELECT p.idtienda, IFNULL(p.idestadopedido,0) estado, IFNULL(p.numposheader,0) numpos,"
+					+ " IFNULL(p.idcliente,0) idcliente, IFNULL(p.idtipopedido,0) idtipopedido,"
+					+ " IFNULL(p.programado,'') programado, IFNULL(p.hora_programado,'') hora,"
+					+ " IFNULL(t.nombre,'') tienda, IFNULL(c.telefono,'') telefono"
+					+ " FROM pedido p LEFT JOIN tienda t ON t.idtienda = p.idtienda"
+					+ " LEFT JOIN cliente c ON c.idcliente = p.idcliente WHERE p.idpedido = ?");
 			ps.setInt(1, idPedido);
 			final ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
@@ -163,6 +172,11 @@ public class PedidoEnCursoDAO {
 				c.idEstado = rs.getInt("estado");
 				c.numPosHeader = rs.getInt("numpos");
 				c.idCliente = rs.getInt("idcliente");
+				c.idTipoPedido = rs.getInt("idtipopedido");
+				c.programado = rs.getString("programado");
+				c.horaProgramado = rs.getString("hora");
+				c.tienda = rs.getString("tienda");
+				c.telefono = rs.getString("telefono");
 			}
 			rs.close();
 			ps.close();
@@ -219,34 +233,6 @@ public class PedidoEnCursoDAO {
 			cerrar(cn);
 		}
 		return (lista);
-	}
-
-	/**
-	 * Los productos incluidos que cuelgan de una linea: se marcan con la observacion "Producto Incluido-" + el
-	 * id de la linea principal. El DAO que borra una linea NO los borra (la pantalla de pedidos los quita uno
-	 * por uno), asi que hay que buscarlos aparte.
-	 */
-	public static java.util.ArrayList<Integer> incluidosDe(final int idPedido, final int idDetalle) {
-		final java.util.ArrayList<Integer> ids = new java.util.ArrayList<Integer>();
-		Connection cn = null;
-		try {
-			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
-			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT iddetalle_pedido FROM detalle_pedido WHERE idpedido = ? AND observacion = ?");
-			ps.setInt(1, idPedido);
-			ps.setString(2, "Producto Incluido-" + idDetalle);
-			final ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				ids.add(Integer.valueOf(rs.getInt(1)));
-			}
-			rs.close();
-			ps.close();
-		} catch (final Exception e) {
-			Logger.getLogger("log_file").error("PedidoEnCursoDAO.incluidosDe pedido " + idPedido + ": " + e.toString());
-		} finally {
-			cerrar(cn);
-		}
-		return (ids);
 	}
 
 	private static void cerrar(final Connection cn) {

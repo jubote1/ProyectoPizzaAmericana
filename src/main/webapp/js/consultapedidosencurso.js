@@ -38,12 +38,6 @@ var idCliente = 0;
 var idTienda = 0;
 var administrador = "N";
 
-// Edicion del contenido: si la persona esta editando el pedido (ya lo tiene retenido), el temporizador que
-// alarga la retencion y el catalogo de la tienda del pedido.
-var editando = false;
-var temporizadorRenovacion = null;
-var catalogoEdicion = [];
-
 /* Cuanto dura la retencion mientras alguien trabaja el pedido. Ver
  * capaDAOCC.RetencionPedidoDAO: si la persona se va, se suelta sola. */
 var MINUTOS_RETENCION = 10;
@@ -170,6 +164,31 @@ function botones(hay) {
 	$('#cancelarPedido').attr('disabled', !hay);
 }
 
+/*
+ * AGREGAR O QUITAR PRODUCTOS
+ *
+ * No se arma otra pantalla de productos: se abre el pedido en la de tomar pedidos (Pedidos.html?reanudar=NNN),
+ * que ya soporta todo lo que hoy se soporta al tomar un pedido -especialidades por mitad, adiciones, "con" y
+ * "sin", excepciones de precio, productos incluidos, ofertas, puntos, descuentos- y se finaliza por el camino de
+ * siempre. Duplicar esas reglas aqui las dejaria desparejas a la primera regla nueva.
+ *
+ * El pedido queda reservado a nombre de quien lo abre (lo hace el servidor al recibir el pedido en esa
+ * pantalla), asi que nadie mas lo toca ni la red de seguridad lo manda a medio cambiar.
+ *
+ * Se abre en otra pestania para no perder esta lista. Al terminar, "Consultar" la refresca.
+ */
+function editarPedido() {
+	if (idPedido <= 0) {
+		alert('Escoja primero un pedido de la lista.');
+		return;
+	}
+	var ventana = window.open('Pedidos.html?reanudar=' + encodeURIComponent(idPedido), '_blank');
+	if (!ventana) {
+		alert('El navegador bloqueo la nueva pestania. Permita las ventanas emergentes para este sitio'
+			+ ' e intente de nuevo.');
+	}
+}
+
 function consultarPedido() {
 	var fechaini = fechaParaServidor($('#fechainicial').val());
 	var fechafin = fechaParaServidor($('#fechafinal').val());
@@ -284,8 +303,6 @@ function cargarDetalle(numero) {
 }
 
 function limpiar() {
-	detenerRenovacion();
-	editando = false;
 	idPedido = 0;
 	idCliente = 0;
 	idTienda = 0;
@@ -350,11 +367,6 @@ function terminarPedido() {
 		alert('Escoja primero un pedido de la lista.');
 		return;
 	}
-	// Si viene de editar, el pedido ya esta retenido por esta persona: retener otra vez fallaria contra si mismo.
-	if (editando) {
-		abrirFormasPago();
-		return;
-	}
 	$.ajax({
 		url: server + 'TerminarPedidoEnCurso',
 		type: 'GET',
@@ -390,7 +402,6 @@ function abrirFormasPago() {
 		//Si no se pudo abrir el dialogo hay que soltar el pedido: dejarlo
 		//retenido sin que nadie lo este trabajando es peor que no haber
 		//empezado.
-		editando = false;
 		soltar();
 		alert('No se pudieron cargar las formas de pago.');
 	});
@@ -415,7 +426,6 @@ function confirmarTerminar() {
 			valorformapago: valor
 		},
 		success: function (r) {
-			editando = false;
 			$('#modalTerminar').modal('hide');
 			if (r && r.ok === 'S') {
 				alert('Pedido ' + idPedido + ' terminado y enviado a la tienda.');
@@ -425,7 +435,6 @@ function confirmarTerminar() {
 			consultarPedido();
 		},
 		error: function () {
-			editando = false;
 			$('#modalTerminar').modal('hide');
 			soltar();
 			alert('No se pudo terminar el pedido. Quedo como estaba.');
@@ -446,7 +455,6 @@ function soltar() {
 }
 
 function cancelarTerminar() {
-	editando = false;
 	soltar();
 	$('#modalTerminar').modal('hide');
 }
@@ -454,335 +462,4 @@ function cancelarTerminar() {
 function realizarOtraConsulta() {
 	limpiar();
 	table.clear().draw();
-}
-
-/*
- * EDITAR LOS PRODUCTOS DEL PEDIDO
- *
- * Es la misma pantalla: despues de escoger un pedido de la lista, "Editar productos" lo retiene -el mismo
- * mecanismo de Terminar: mientras se edita, nadie mas lo toca y la red de seguridad no se lo lleva a la tienda a
- * medio cambiar- y abre un dialogo con lo que tiene, para quitar un producto o agregar otro.
- *
- * El navegador no calcula ni manda ningun valor. Manda que producto, cuantos y con que especialidades; el precio
- * lo calcula el servidor con las reglas que ya usa el bot de WhatsApp. Ver capaServicioCC.EditarPedidoEnCurso.
- *
- * Lo que NO hace: adiciones, quitar ingredientes ni promociones. Esas se arman en la pantalla de tomar pedidos.
- */
-
-/** Cada cuanto se alarga la retencion mientras el dialogo esta abierto: menos de los 10 minutos que dura. */
-var MS_RENOVACION = 4 * 60 * 1000;
-
-function escapar(texto) {
-	return $('<div/>').text(texto === null || texto === undefined ? '' : texto).html();
-}
-
-function pesos(valor) {
-	var n = Math.round(Number(valor) || 0);
-	return '$ ' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-function mensajeEdicion(texto, tipo) {
-	if (!texto) {
-		$('#editMensaje').empty();
-		return;
-	}
-	$('#editMensaje').html('<div class="alert alert-' + (tipo || 'danger') + '" style="padding:8px 12px;">'
-		+ escapar(texto) + '</div>');
-}
-
-function editarPedido() {
-	if (idPedido <= 0) {
-		alert('Escoja primero un pedido de la lista.');
-		return;
-	}
-	$.ajax({
-		url: server + 'TerminarPedidoEnCurso',
-		type: 'GET',
-		dataType: 'json',
-		data: { accion: 'retener', idpedido: idPedido, minutos: MINUTOS_RETENCION },
-		success: function (r) {
-			if (!r || r.ok !== 'S') {
-				alert(r && r.mensaje ? r.mensaje : 'No se pudo tomar el pedido para editarlo.');
-				return;
-			}
-			editando = true;
-			$('#editNumPedido').text('#' + idPedido);
-			mensajeEdicion('');
-			$('#modalEditar').modal('show');
-			iniciarRenovacion();
-			cargarLineasEdicion();
-			cargarCatalogoEdicion();
-		},
-		error: function () {
-			alert('No se pudo tomar el pedido para editarlo.');
-		}
-	});
-}
-
-function iniciarRenovacion() {
-	detenerRenovacion();
-	temporizadorRenovacion = setInterval(function () {
-		$.ajax({
-			url: server + 'EditarPedidoEnCurso',
-			type: 'POST',
-			dataType: 'json',
-			data: { accion: 'renovar', idpedido: idPedido },
-			success: function (r) {
-				if (!r || r.ok !== 'S') {
-					mensajeEdicion(r && r.mensaje ? r.mensaje : 'Se perdio la edicion de este pedido.', 'danger');
-				}
-			}
-		});
-	}, MS_RENOVACION);
-}
-
-function detenerRenovacion() {
-	if (temporizadorRenovacion !== null) {
-		clearInterval(temporizadorRenovacion);
-		temporizadorRenovacion = null;
-	}
-}
-
-function cargarLineasEdicion() {
-	$.ajax({
-		url: server + 'EditarPedidoEnCurso',
-		type: 'GET',
-		dataType: 'json',
-		data: { accion: 'lineas', idpedido: idPedido },
-		success: function (r) {
-			pintarLineasEdicion(r);
-		},
-		error: function () {
-			mensajeEdicion('No se pudo cargar el detalle del pedido.', 'danger');
-		}
-	});
-}
-
-function pintarLineasEdicion(r) {
-	if (!r || r.ok !== 'S') {
-		mensajeEdicion(r && r.mensaje ? r.mensaje : 'No se pudo actualizar el detalle.', 'danger');
-		return;
-	}
-	var html = '';
-	var lineas = r.lineas || [];
-	for (var i = 0; i < lineas.length; i++) {
-		var l = lineas[i];
-		var detalle = '';
-		if (l.especialidad1) {
-			detalle += l.especialidad1 + (l.especialidad2 ? ' / ' + l.especialidad2 : '');
-		}
-		if (l.adicion) {
-			detalle += (detalle ? ' - ' : '') + l.adicion;
-		}
-		if (l.observacion && l.observacion.indexOf('Producto Incluido-') !== 0) {
-			detalle += (detalle ? ' - ' : '') + l.observacion;
-		}
-		var esHija = l.eshija === true;
-		html += '<tr' + (esHija ? ' class="text-muted"' : '') + '>'
-			+ '<td>' + (esHija ? '&nbsp;&nbsp;&rarr; ' : '') + escapar(l.producto)
-			+ (detalle ? '<br><small>' + escapar(detalle) + '</small>' : '') + '</td>'
-			+ '<td style="text-align:right;">' + l.cantidad + '</td>'
-			+ '<td style="text-align:right;">' + pesos(l.valortotal) + '</td>'
-			+ '<td style="text-align:right;">'
-			+ (esHija ? '' : '<button type="button" class="btn btn-danger btn-xs" onclick="quitarLinea('
-				+ l.iddetalle + ')">Quitar</button>')
-			+ '</td></tr>';
-	}
-	if (html === '') {
-		html = '<tr><td colspan="4" class="text-center text-muted">El pedido no tiene productos.</td></tr>';
-	}
-	$('#tablaEditar tbody').html(html);
-	$('#editTotal').text(pesos(r.total));
-}
-
-function quitarLinea(idDetalle) {
-	if (!confirm('Quitar este producto del pedido ' + idPedido + '?')) {
-		return;
-	}
-	$.ajax({
-		url: server + 'EditarPedidoEnCurso',
-		type: 'POST',
-		dataType: 'json',
-		data: { accion: 'quitar', idpedido: idPedido, iddetalle: idDetalle },
-		success: function (r) {
-			if (r && r.ok === 'S') {
-				mensajeEdicion('');
-			}
-			pintarLineasEdicion(r);
-		},
-		error: function () {
-			mensajeEdicion('No se pudo quitar el producto. Intente de nuevo.', 'danger');
-		}
-	});
-}
-
-function cargarCatalogoEdicion() {
-	$.ajax({
-		url: server + 'EditarPedidoEnCurso',
-		type: 'GET',
-		dataType: 'json',
-		data: { accion: 'catalogo', idpedido: idPedido },
-		success: function (r) {
-			if (!r || r.ok !== 'S') {
-				mensajeEdicion(r && r.mensaje ? r.mensaje : 'No se pudo cargar el catalogo.', 'danger');
-				return;
-			}
-			catalogoEdicion = r.productos || [];
-			// Agrupado por tipo (PIZZA, GASEOSA...): son cientos de productos y en una lista plana no se encuentran.
-			var grupos = {};
-			var orden = [];
-			for (var i = 0; i < catalogoEdicion.length; i++) {
-				var p = catalogoEdicion[i];
-				var tipo = p.tipo || 'OTROS';
-				if (!grupos[tipo]) {
-					grupos[tipo] = [];
-					orden.push(tipo);
-				}
-				grupos[tipo].push(p);
-			}
-			var html = '<option value="0">Escoja un producto...</option>';
-			for (var g = 0; g < orden.length; g++) {
-				html += '<optgroup label="' + escapar(orden[g]) + '">';
-				var lista = grupos[orden[g]];
-				for (var k = 0; k < lista.length; k++) {
-					html += '<option value="' + lista[k].idproducto + '">' + escapar(lista[k].nombre)
-						+ ' - ' + pesos(lista[k].precio) + '</option>';
-				}
-				html += '</optgroup>';
-			}
-			$('#editProducto').html(html);
-			cambioProducto();
-		},
-		error: function () {
-			mensajeEdicion('No se pudo cargar el catalogo de la tienda.', 'danger');
-		}
-	});
-}
-
-/* Al escoger un producto se piden solo las opciones que ese producto tiene: especialidades y sabor de bebida. */
-function cambioProducto() {
-	var idProducto = parseInt($('#editProducto').val(), 10) || 0;
-	$('#editFilaEspecialidades').hide();
-	$('#editFilaSabor').hide();
-	$('#editEspecialidad1, #editEspecialidad2, #editSabor').empty();
-	if (idProducto <= 0) {
-		return;
-	}
-	var producto = null;
-	for (var i = 0; i < catalogoEdicion.length; i++) {
-		if (catalogoEdicion[i].idproducto === idProducto) {
-			producto = catalogoEdicion[i];
-			break;
-		}
-	}
-	if (!producto) {
-		return;
-	}
-	var pideEspecialidad = String(producto.controlaespecialidades).toUpperCase() === 'S';
-	var pideSabor = String(producto.incluyeliquido).toUpperCase() === 'S';
-	if (!pideEspecialidad && !pideSabor) {
-		return;
-	}
-	$.ajax({
-		url: server + 'EditarPedidoEnCurso',
-		type: 'GET',
-		dataType: 'json',
-		data: { accion: 'opciones', idpedido: idPedido, idproducto: idProducto },
-		success: function (r) {
-			if (!r || r.ok !== 'S') {
-				mensajeEdicion(r && r.mensaje ? r.mensaje : 'No se pudieron cargar las opciones.', 'danger');
-				return;
-			}
-			if (pideEspecialidad) {
-				var esp = '<option value="0">Escoja...</option>';
-				var esp2 = '<option value="0">Sin segunda mitad</option>';
-				var lista = r.especialidades || [];
-				for (var j = 0; j < lista.length; j++) {
-					var etiqueta = escapar(lista[j].nombre) + (lista[j].adicional > 0 ? ' (+ ' + pesos(lista[j].adicional) + ')' : '');
-					esp += '<option value="' + lista[j].idespecialidad + '">' + etiqueta + '</option>';
-					esp2 += '<option value="' + lista[j].idespecialidad + '">' + etiqueta + '</option>';
-				}
-				$('#editEspecialidad1').html(esp);
-				$('#editEspecialidad2').html(esp2);
-				$('#editFilaEspecialidades').show();
-			}
-			if (pideSabor) {
-				var sab = '<option value="0">Escoja el sabor...</option>';
-				var sabores = r.sabores || [];
-				for (var s = 0; s < sabores.length; s++) {
-					sab += '<option value="' + sabores[s].idsabor + '">' + escapar(sabores[s].nombre)
-						+ (sabores[s].adicional > 0 ? ' (+ ' + pesos(sabores[s].adicional) + ')' : '') + '</option>';
-				}
-				$('#editSabor').html(sab);
-				$('#editFilaSabor').show();
-			}
-		},
-		error: function () {
-			mensajeEdicion('No se pudieron cargar las opciones del producto.', 'danger');
-		}
-	});
-}
-
-function agregarProducto() {
-	var idProducto = parseInt($('#editProducto').val(), 10) || 0;
-	if (idProducto <= 0) {
-		mensajeEdicion('Escoja el producto que quiere agregar.', 'warning');
-		return;
-	}
-	var cantidad = parseInt($('#editCantidad').val(), 10) || 0;
-	if (cantidad < 1 || cantidad > 20) {
-		mensajeEdicion('La cantidad debe estar entre 1 y 20.', 'warning');
-		return;
-	}
-	$('#btnAgregarProducto').attr('disabled', true);
-	$.ajax({
-		url: server + 'EditarPedidoEnCurso',
-		type: 'POST',
-		dataType: 'json',
-		data: {
-			accion: 'agregar',
-			idpedido: idPedido,
-			idproducto: idProducto,
-			cantidad: cantidad,
-			idespecialidad1: $('#editEspecialidad1').val() || 0,
-			idespecialidad2: $('#editEspecialidad2').val() || 0,
-			idsabor: $('#editSabor').val() || 0,
-			observacion: $('#editObservacion').val()
-		},
-		success: function (r) {
-			$('#btnAgregarProducto').attr('disabled', false);
-			if (r && r.ok === 'S') {
-				mensajeEdicion('Producto agregado.', 'success');
-				$('#editProducto').val('0');
-				$('#editCantidad').val(1);
-				$('#editObservacion').val('');
-				cambioProducto();
-			}
-			pintarLineasEdicion(r);
-		},
-		error: function () {
-			$('#btnAgregarProducto').attr('disabled', false);
-			mensajeEdicion('No se pudo agregar el producto. Intente de nuevo.', 'danger');
-		}
-	});
-}
-
-/* Cierra el dialogo y suelta el pedido tal como quedo. El detalle de la pantalla se refresca con lo nuevo. */
-function cerrarEdicion() {
-	detenerRenovacion();
-	soltar();
-	editando = false;
-	$('#modalEditar').modal('hide');
-	cargarDetalle(idPedido);
-}
-
-/* Pasa de editar a terminar sin soltar el pedido en medio: la retencion sigue siendo de esta persona. */
-function terminarDesdeEdicion() {
-	detenerRenovacion();
-	// Bootstrap 3 no apila dos dialogos bien: el de formas de pago se abre cuando este termine de cerrarse.
-	$('#modalEditar').one('hidden.bs.modal', function () {
-		cargarDetalle(idPedido);
-		terminarPedido();
-	});
-	$('#modalEditar').modal('hide');
 }
