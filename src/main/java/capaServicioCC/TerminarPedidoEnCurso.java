@@ -52,15 +52,10 @@ public class TerminarPedidoEnCurso extends HttpServlet {
 
 		//El usuario sale de la sesion, no del parametro: quien retiene un
 		//pedido queda registrado, y un parametro se puede escribir a mano.
-		String usuario = "";
-		try {
-			if (request.getSession(false) != null
-					&& request.getSession(false).getAttribute("usuario") != null) {
-				usuario = String.valueOf(request.getSession(false).getAttribute("usuario"));
-			}
-		} catch (final Exception e) {
-			usuario = "";
-		}
+		//OJO: el atributo de la sesion es un objeto Usuario, no un texto. Se lee igual que en
+		//EditarPedidoEnCurso: con String.valueOf quedaba "Usuario@1a2b3c" en retenido_por y en
+		//usuarioreenvio, que no le dice a nadie quien fue.
+		final String usuario = EditarPedidoEnCurso.usuarioDeLaSesion(request);
 
 		final PedidoEnCursoCtrl ctrl = new PedidoEnCursoCtrl();
 		String respuesta;
