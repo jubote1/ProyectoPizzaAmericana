@@ -390,6 +390,28 @@
 									</div>
 								</div>
 
+								<!-- Programar para despues. Sale solo a esa hora, aunque se cierre la
+								     pantalla: lo dispara el reloj del servidor. -->
+								<div class="ep-campo" style="border-top:1px solid #E2E6EC;
+									padding-top:10px;margin-top:10px;">
+									<label style="font-weight:normal;font-size:13.5px;cursor:pointer;margin:0;">
+										<input type="checkbox" id="ep-programar">
+										Programarlo para una fecha y hora futura
+									</label>
+									<div id="ep-programar-campos" style="display:none;margin-top:8px;">
+										<input type="datetime-local" id="ep-cuando" class="form-control"
+											style="font-size:15px;">
+										<div class="ep-nota">
+											Sale solo a esa hora, aunque cierre esta pantalla. El p&uacute;blico se arma
+											<b>a esa hora</b> con los datos de ese momento: la cifra de arriba es la que
+											usted aprob&oacute; y puede variar un poco; si creci&oacute; de m&aacute;s, no se
+											env&iacute;a nada. Si el servidor est&aacute; apagado a esa hora, sale al volver
+											mientras no hayan pasado m&aacute;s de dos horas. La ve y la puede cancelar en
+											la pesta&ntilde;a <b>Historial</b>.
+										</div>
+									</div>
+								</div>
+
 								<div id="ep-mensaje" style="margin-top:10px;"></div>
 								<button type="button" id="ep-enviar" class="btn btn-primary btn-block"
 									style="margin-top:12px;" disabled>Enviar la campa&ntilde;a</button>
@@ -409,6 +431,30 @@
 
 				<!-- ==================== HISTORIAL ==================== -->
 				<div class="tab-pane" id="tab-historial">
+					<div class="ep-panel" style="margin-bottom:14px;">
+						<div class="ep-titulo">Env&iacute;os programados</div>
+						<p class="ep-nota" style="margin-top:0;">
+							Los que esperan su hora se pueden cancelar. A la hora salen solos; cuando salen
+							pasan a la lista de abajo como una tanda m&aacute;s.
+						</p>
+						<table id="ep-tabla-prog" class="table table-bordered table-condensed">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Campa&ntilde;a</th>
+									<th>Canal</th>
+									<th>Sale el</th>
+									<th>Estado</th>
+									<th class="ep-num">Esperados</th>
+									<th>Program&oacute;</th>
+									<th>Detalle</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+
 					<div class="ep-panel">
 						<div class="ep-titulo">Env&iacute;os anteriores</div>
 						<p class="ep-nota" style="margin-top:0;">

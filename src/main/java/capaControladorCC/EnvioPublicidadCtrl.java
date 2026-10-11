@@ -156,47 +156,23 @@ public class EnvioPublicidadCtrl {
 			final String usuario, final int idOferta) {
 		final JSONObject r = new JSONObject();
 
-		if (!CampanaDAO.CANAL_CORREO.equals(canal) && !CampanaDAO.CANAL_WHATSAPP.equals(canal)
-				&& !CampanaDAO.CANAL_DIRECTO.equals(canal)) {
-			r.put("error", "Canal no valido.");
+		//Lo que se puede decir sin tocar nada: canal, campana, oferta, contenido. Es el mismo
+		//chequeo que hace programar() al guardar un envio para mas tarde.
+		final String problemaEstatico = problemaDeEnvio(canal, idCampanaEscogida, nombre, idPlantilla,
+				cuerpo, idOferta);
+		if (problemaEstatico.length() > 0) {
+			r.put("error", problemaEstatico);
 			return (r.toJSONString());
 		}
-		if (idCampanaEscogida <= 0 && (nombre == null || nombre.trim().length() == 0)) {
-			r.put("error", "Escoja una campana o pongale nombre a la nueva."
-					+ " Sin campana no se puede medir despues si sirvio.");
-			return (r.toJSONString());
-		}
-		if (idOferta > 0) {
-			//Con oferta cada persona recibe su propio codigo dentro del correo de la oferta, y ese correo sale por el
-			//correo directo: Brevo con una plantilla que lleve el codigo por destinatario queda para una segunda etapa.
-			if (!CampanaDAO.CANAL_DIRECTO.equals(canal)) {
-				r.put("error", "El envio con oferta sale por correo directo, con el correo de la oferta.");
-				return (r.toJSONString());
-			}
-			final String problemaOferta = capaDAOCC.CodigoPromoDAO.problemaParaEnviar(idOferta);
-			if (problemaOferta.length() > 0) {
-				r.put("error", problemaOferta);
-				return (r.toJSONString());
-			}
-			final long enCursoOferta = CampanaDAO.envioDirectoEnCurso();
-			if (enCursoOferta != 0) {
-				r.put("error", "Ya hay un envio de correo directo en curso (el " + enCursoOferta + "). Espere a que termine.");
-				return (r.toJSONString());
-			}
-		} else if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
-			if (cuerpo == null || cuerpo.trim().length() == 0) {
-				r.put("error", "El correo directo necesita el contenido del mensaje.");
-				return (r.toJSONString());
-			}
+		//Lo que depende del momento: el correo directo sale de a uno desde un solo reloj, y no
+		//caben dos tandas a la vez.
+		if (idOferta > 0 || CampanaDAO.CANAL_DIRECTO.equals(canal)) {
 			final long enCurso = CampanaDAO.envioDirectoEnCurso();
 			if (enCurso != 0) {
 				r.put("error", "Ya hay un envio de correo directo en curso (el " + enCurso
 						+ "). Espere a que termine.");
 				return (r.toJSONString());
 			}
-		} else if (idPlantilla <= 0) {
-			r.put("error", "Escoja la plantilla de Brevo.");
-			return (r.toJSONString());
 		}
 
 		//El tope del correo directo lo pone el servidor aunque la pantalla pida
@@ -679,5 +655,388 @@ public class EnvioPublicidadCtrl {
 		final JSONObject r = new JSONObject();
 		r.put("detenida", true);
 		return (r.toJSONString());
+	}
+
+	// =======================================================================
+	// Validar, y armar filtros desde un mapa de parametros
+	// =======================================================================
+
+	/**
+	 * Lo que se puede decir sobre un envio sin tocar nada: canal valido, campana o nombre, oferta
+	 * vigente, contenido. "" si esta bien.
+	 *
+	 * Lo usan el envio inmediato y la programacion, para que un envio programado no pueda guardarse
+	 * con algo que el inmediato habria rechazado.
+	 */
+	private static String problemaDeEnvio(final String canal, final long idCampanaEscogida,
+			final String nombre, final int idPlantilla, final String cuerpo, final int idOferta) {
+		if (!CampanaDAO.CANAL_CORREO.equals(canal) && !CampanaDAO.CANAL_WHATSAPP.equals(canal)
+				&& !CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+			return ("Canal no valido.");
+		}
+		if (idCampanaEscogida <= 0 && (nombre == null || nombre.trim().length() == 0)) {
+			return ("Escoja una campana o pongale nombre a la nueva."
+					+ " Sin campana no se puede medir despues si sirvio.");
+		}
+		if (idOferta > 0) {
+			//Con oferta cada persona recibe su propio codigo dentro del correo de la oferta, y ese correo sale por el
+			//correo directo: Brevo con una plantilla que lleve el codigo por destinatario queda para una segunda etapa.
+			if (!CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+				return ("El envio con oferta sale por correo directo, con el correo de la oferta.");
+			}
+			return (capaDAOCC.CodigoPromoDAO.problemaParaEnviar(idOferta));
+		}
+		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+			if (cuerpo == null || cuerpo.trim().length() == 0) {
+				return ("El correo directo necesita el contenido del mensaje.");
+			}
+			return ("");
+		}
+		if (idPlantilla <= 0) {
+			return ("Escoja la plantilla de Brevo.");
+		}
+		return ("");
+	}
+
+	/**
+	 * Guarda como texto el filtro con el que se armo la campana.
+	 *
+	 * No es adorno: dentro de tres meses, viendo que una campana funciono, lo primero que alguien va
+	 * a querer saber es a quien se le mando. Sin esto la respuesta se perdio.
+	 */
+	public static String resumenDeFiltros(final java.util.Map<String, String> p) {
+		final StringBuilder t = new StringBuilder();
+		final String[] campos = { "segmentos", "idtienda", "pedidosmin", "valormin",
+				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo",
+				"diassinpublicidad", "tiposcliente", "productos",
+				"familiafavorita", "fidelidadmin", "pizzasmin" };
+		for (int i = 0; i < campos.length; i++) {
+			final String valor = p.get(campos[i]);
+			if (valor != null && valor.trim().length() > 0) {
+				if (t.length() > 0) {
+					t.append(" | ");
+				}
+				t.append(campos[i]).append("=").append(valor.trim());
+			}
+		}
+		return (t.length() == 0 ? "todo el CRM" : t.toString());
+	}
+
+	/**
+	 * Los filtros que venian de la pantalla anterior.
+	 *
+	 * Van aparte del filtro de segmento porque salen a buscar a cliente y a pedido, mientras el otro
+	 * se resuelve dentro del resumen por persona. Tenerlos separados deja a la vista cuales son los
+	 * caros.
+	 */
+	public static CampanaDAO.FiltroExtra extraDe(final java.util.Map<String, String> p) {
+		final CampanaDAO.FiltroExtra e = new CampanaDAO.FiltroExtra();
+		e.diasSinPublicidad = entero(p.get("diassinpublicidad"));
+		e.excluirPlataformas = "S".equals(p.get("excluirplataformas"));
+		e.pedidosMax = entero(p.get("pedidosmax"));
+		e.puntosMin = entero(p.get("puntosmin"));
+		e.soloMiembrosClub = "S".equals(p.get("soloclub"));
+		e.correoContiene = texto(p.get("correo"));
+		e.compraDesde = texto(p.get("comprodesde"));
+		e.compraHasta = texto(p.get("comprohasta"));
+		llenarTexto(e.tiposCliente, p.get("tiposcliente"));
+		llenarEntero(e.productos, p.get("productos"));
+		llenarEntero(e.especialidades, p.get("especialidades"));
+		llenarEntero(e.excepciones, p.get("promociones"));
+		return (e);
+	}
+
+	/** Las listas llegan separadas por coma, como en el resto de la pantalla. */
+	private static void llenarEntero(final ArrayList<Integer> destino, final String valor) {
+		if (valor == null || valor.trim().length() == 0) {
+			return;
+		}
+		final String[] partes = valor.split(",");
+		for (int i = 0; i < partes.length; i++) {
+			final int n = entero(partes[i]);
+			if (n > 0) {
+				destino.add(Integer.valueOf(n));
+			}
+		}
+	}
+
+	private static void llenarTexto(final ArrayList<String> destino, final String valor) {
+		if (valor == null || valor.trim().length() == 0) {
+			return;
+		}
+		final String[] partes = valor.split(",");
+		for (int i = 0; i < partes.length; i++) {
+			if (partes[i].trim().length() > 0) {
+				destino.add(partes[i].trim());
+			}
+		}
+	}
+
+	private static String texto(final String valor) {
+		return (valor == null ? "" : valor.trim());
+	}
+
+	private static int entero(final String valor) {
+		try {
+			return (Integer.parseInt(valor.trim()));
+		} catch (final Exception e) {
+			return (0);
+		}
+	}
+
+	private static long largo(final String valor) {
+		try {
+			return (Long.parseLong(valor.trim()));
+		} catch (final Exception e) {
+			return (0);
+		}
+	}
+
+	// =======================================================================
+	// Programar para una fecha y hora futura
+	//
+	// Una programacion guarda los PARAMETROS de la pantalla, no la lista de gente. A la hora, el
+	// reloj del servidor (utilidadesCC.ProgramadorPublicidad) vuelve a armar el publico con los
+	// datos de ese momento y pasa por EXACTAMENTE el mismo camino que un envio inmediato:
+	// crearYEnviar. Por eso las mismas redes aplican: la de "esperados", el tope del correo
+	// directo, que no haya otro correo directo en curso, y que la oferta siga vigente.
+	// =======================================================================
+
+	/** Minutos de gracia por defecto si el parametro no esta. */
+	private static final int GRACIA_POR_DEFECTO_MIN = 120;
+
+	private static int graciaMinutos() {
+		int minutos = GRACIA_POR_DEFECTO_MIN;
+		try {
+			final int valor = capaDAOCC.ParametrosDAO.retornarValorNumerico("PUBLICIDADPROGRAMADAGRACIAMIN");
+			if (valor > 0) {
+				minutos = valor;
+			}
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("EnvioPublicidadCtrl.graciaMinutos: " + e.toString());
+		}
+		return (minutos);
+	}
+
+	/**
+	 * Lleva "2026-10-12T08:30" -o con espacio, o con segundos- a "yyyy-MM-dd HH:mm:ss".
+	 * null si no es una fecha y hora real: se rechaza el 31 de febrero en vez de dejarlo correr.
+	 */
+	private static String fechaHora(final String cuando) {
+		if (cuando == null) {
+			return (null);
+		}
+		String t = cuando.trim().replace('T', ' ');
+		if (!t.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(:\\d{2})?")) {
+			return (null);
+		}
+		if (t.length() == 16) {
+			t += ":00";
+		}
+		try {
+			final java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			f.setLenient(false);
+			f.parse(t);
+		} catch (final java.text.ParseException e) {
+			return (null);
+		}
+		return (t);
+	}
+
+	/**
+	 * Deja un envio listo para dispararse solo a la hora escogida.
+	 *
+	 * @param p       los mismos parametros que llegarian a "enviar" (filtros, canalenvio, plantilla,
+	 *                contenido, tope, esperados, idoferta...)
+	 * @param cuando  fecha y hora futura, en la hora del servidor
+	 */
+	@SuppressWarnings("unchecked")
+	public static String programar(final java.util.Map<String, String> p, final String cuando,
+			final String usuario) {
+		final JSONObject r = new JSONObject();
+
+		final String ejecutarEn = fechaHora(cuando);
+		if (ejecutarEn == null) {
+			r.put("error", "Escoja la fecha y la hora en que debe salir el envio.");
+			return (r.toJSONString());
+		}
+		final int minutos = capaDAOCC.CampanaProgramadaDAO.minutosHasta(ejecutarEn);
+		if (minutos == Integer.MIN_VALUE) {
+			r.put("error", "No se pudo validar la fecha escogida. Intente de nuevo.");
+			return (r.toJSONString());
+		}
+		if (minutos < capaDAOCC.CampanaProgramadaDAO.MINIMO_MINUTOS) {
+			r.put("error", "La hora tiene que ser futura: al menos " + capaDAOCC.CampanaProgramadaDAO.MINIMO_MINUTOS
+					+ " minutos desde ahora. Si es para ya, use Enviar.");
+			return (r.toJSONString());
+		}
+		if (minutos > capaDAOCC.CampanaProgramadaDAO.MAXIMO_DIAS * 24 * 60) {
+			r.put("error", "No se puede programar a mas de " + capaDAOCC.CampanaProgramadaDAO.MAXIMO_DIAS
+					+ " dias. Revise el ano.");
+			return (r.toJSONString());
+		}
+
+		final String canal = texto(p.get("canalenvio"));
+		final long idCampana = largo(p.get("idcampana"));
+		final String nombre = texto(p.get("nombre"));
+		final int idOferta = entero(p.get("idoferta"));
+		final String problema = problemaDeEnvio(canal, idCampana, nombre, entero(p.get("idplantilla")),
+				p.get("cuerpo"), idOferta);
+		if (problema.length() > 0) {
+			r.put("error", problema);
+			return (r.toJSONString());
+		}
+		final int esperados = entero(p.get("esperados"));
+		if (esperados <= 0) {
+			//Es la red del envio: sin el numero que la persona vio y aprobo, a la hora no habria contra
+			//que comparar, y un filtro que se pierda no se notaria hasta despues.
+			r.put("error", "Cuente el publico antes de programar: el numero que vea es el que se aprueba.");
+			return (r.toJSONString());
+		}
+
+		//Los parametros tal cual, menos lo que es de la accion y no del envio.
+		final JSONObject guardado = new JSONObject();
+		for (final java.util.Map.Entry<String, String> e : p.entrySet()) {
+			if ("accion".equals(e.getKey()) || "programar_para".equals(e.getKey())) {
+				continue;
+			}
+			guardado.put(e.getKey(), e.getValue());
+		}
+
+		final long id = capaDAOCC.CampanaProgramadaDAO.crear(idCampana, nombre, canal, idOferta, esperados,
+				entero(p.get("tope")), resumenDeFiltros(p), guardado.toJSONString(), ejecutarEn, usuario);
+		if (id == 0) {
+			r.put("error", "No se pudo guardar la programacion.");
+			return (r.toJSONString());
+		}
+		Logger.getLogger("log_file").info("[EnvioProgramado] " + usuario + " programo el envio " + id
+				+ " para " + ejecutarEn + " (canal " + canal + ", " + esperados + " esperados)");
+		r.put("idprogramacion", id);
+		r.put("ejecutar_en", ejecutarEn.substring(0, 16));
+		r.put("mensaje", "Quedo programado para el " + ejecutarEn.substring(0, 16)
+				+ ". El publico se arma a esa hora con los datos de ese momento.");
+		return (r.toJSONString());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static String programadas() {
+		final JSONObject r = new JSONObject();
+		final JSONArray lista = new JSONArray();
+		for (final capaDAOCC.CampanaProgramadaDAO.Programacion p : capaDAOCC.CampanaProgramadaDAO.listar(14)) {
+			final JSONObject o = new JSONObject();
+			o.put("idprogramacion", p.idProgramacion);
+			o.put("idcampana", p.idCampana);
+			o.put("nombre", p.nombre);
+			o.put("canal", p.canal);
+			o.put("idoferta", p.idOferta);
+			o.put("esperados", p.esperados);
+			o.put("tope", p.tope);
+			o.put("resumen", p.resumenFiltros);
+			o.put("ejecutar_en", p.ejecutarEn);
+			o.put("estado", p.estado);
+			o.put("idenvio", p.idEnvio);
+			o.put("resultado", p.resultado);
+			o.put("usuario", p.usuario);
+			o.put("creada_en", p.creadoEn);
+			lista.add(o);
+		}
+		r.put("programadas", lista);
+		return (r.toJSONString());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static String cancelarProgramada(final long idProgramacion, final String usuario) {
+		final JSONObject r = new JSONObject();
+		if (idProgramacion <= 0) {
+			r.put("error", "No se indico cual programacion.");
+			return (r.toJSONString());
+		}
+		if (capaDAOCC.CampanaProgramadaDAO.cancelar(idProgramacion, usuario)) {
+			Logger.getLogger("log_file").info("[EnvioProgramado] " + usuario + " cancelo la programacion "
+					+ idProgramacion);
+			r.put("mensaje", "Programacion cancelada. No se mando nada.");
+		} else {
+			r.put("error", "Ya no se puede cancelar: o ya salio, o ya la cancelaron, o esta saliendo en este momento.");
+		}
+		return (r.toJSONString());
+	}
+
+	/**
+	 * Dispara una programacion que ya llego a su hora. La llama el reloj del servidor.
+	 *
+	 * Pasa por crearYEnviar, el mismo camino del envio inmediato: no hay una segunda forma de
+	 * mandar publicidad, y por eso no hay una segunda forma de equivocarse.
+	 */
+	public static void ejecutarProgramada(final long idProgramacion) {
+		final Logger logger = Logger.getLogger("log_file");
+		final capaDAOCC.CampanaProgramadaDAO.Programacion p = capaDAOCC.CampanaProgramadaDAO.obtener(idProgramacion);
+		if (p == null || !capaDAOCC.CampanaProgramadaDAO.PROGRAMADA.equals(p.estado)) {
+			return;
+		}
+
+		//Paso su plazo: no se manda tarde. Una oferta pensada para las 8 de la manana que llega a las
+		//4 de la tarde es peor que no llegar, y quien la programo no esta mirando.
+		final int gracia = graciaMinutos();
+		if (p.minutosVencida > gracia) {
+			capaDAOCC.CampanaProgramadaDAO.vencer(idProgramacion, "Paso su hora por " + p.minutosVencida
+					+ " minutos (el plazo de gracia es de " + gracia + ") y no se mando. Reprogramela si todavia aplica.");
+			logger.warn("[EnvioProgramado] " + idProgramacion + " vencida sin enviarse.");
+			return;
+		}
+
+		//El correo directo sale de a uno desde un solo reloj. Si hay otra tanda saliendo, esta espera al
+		//siguiente minuto -hasta que venza la gracia- en vez de fallar.
+		final boolean usaCorreoDirecto = CampanaDAO.CANAL_DIRECTO.equals(p.canal) || p.idOferta > 0;
+		if (usaCorreoDirecto && CampanaDAO.envioDirectoEnCurso() != 0) {
+			return;
+		}
+
+		if (!capaDAOCC.CampanaProgramadaDAO.reclamar(idProgramacion)) {
+			return; //Otra instancia la tomo primero.
+		}
+
+		try {
+			final java.util.Map<String, String> params = new java.util.HashMap<String, String>();
+			final org.json.simple.JSONObject guardado =
+					(org.json.simple.JSONObject) new org.json.simple.parser.JSONParser().parse(p.parametros);
+			for (final Object clave : guardado.keySet()) {
+				final Object valor = guardado.get(clave);
+				params.put(String.valueOf(clave), valor == null ? "" : String.valueOf(valor));
+			}
+
+			final String respuesta = crearYEnviar(
+					largo(params.get("idcampana")),
+					params.get("nombre"),
+					params.get("canalenvio"),
+					entero(params.get("idplantilla")),
+					params.get("asunto"),
+					params.get("cuerpo"),
+					entero(params.get("tope")),
+					entero(params.get("esperados")),
+					p.resumenFiltros,
+					SegmentacionPersonaCtrl.filtroDe(params),
+					extraDe(params),
+					p.usuario,
+					entero(params.get("idoferta")));
+
+			final org.json.simple.JSONObject r =
+					(org.json.simple.JSONObject) new org.json.simple.parser.JSONParser().parse(respuesta);
+			final Object idEnvio = r.get("idenvio");
+			final Long envio = idEnvio instanceof Number ? Long.valueOf(((Number) idEnvio).longValue()) : null;
+			if (r.get("error") != null) {
+				capaDAOCC.CampanaProgramadaDAO.terminar(idProgramacion, capaDAOCC.CampanaProgramadaDAO.FALLIDA,
+						envio, String.valueOf(r.get("error")));
+				logger.error("[EnvioProgramado] " + idProgramacion + " no salio: " + r.get("error"));
+			} else {
+				capaDAOCC.CampanaProgramadaDAO.terminar(idProgramacion, capaDAOCC.CampanaProgramadaDAO.ENVIADA,
+						envio, String.valueOf(r.get("mensaje")));
+				logger.info("[EnvioProgramado] " + idProgramacion + " salio como envio " + envio + ": "
+						+ r.get("mensaje"));
+			}
+		} catch (final Throwable t) {
+			capaDAOCC.CampanaProgramadaDAO.terminar(idProgramacion, capaDAOCC.CampanaProgramadaDAO.FALLIDA, null,
+					"Fallo al dispararla: " + t.toString());
+			logger.error("[EnvioProgramado] " + idProgramacion + " fallo: " + t.toString());
+		}
 	}
 }
