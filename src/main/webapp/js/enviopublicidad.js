@@ -629,7 +629,7 @@ function epEnviar() {
 			' para el ' + epCuandoTexto() + ', a unas ' + epMiles(alcanza) + ' personas.' + deOferta +
 			'\n\nEl público se arma a esa hora, con los datos de ese momento: la cifra puede variar un poco.' +
 			' Si al llegar la hora el público creció de más, NO se envía nada.' +
-			'\nPuede cancelarla antes desde la pestaña Historial.\n\nContinuar?';
+			'\nPuede cancelarla antes desde la pestaña Campañas anteriores.\n\nContinuar?';
 	} else {
 		pregunta = 'Va a enviar "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
 			' a ' + epMiles(alcanza) + ' personas.' + deOferta + '\n\nEsto no se puede deshacer. Continuar?';
@@ -665,7 +665,7 @@ function epEnviar() {
 		if (programando) {
 			//No hay avance que seguir: todavia no salio nada. Queda en la lista de programados.
 			epMensaje('ep-aviso-ok', epEscapar(d.mensaje) +
-				' Lo ve, y lo puede cancelar, en la pesta&ntilde;a Historial.');
+				' Lo ve, y lo puede cancelar, en la pesta&ntilde;a Campa&ntilde;as anteriores.');
 			$('#ep-enviar').prop('disabled', false);
 			epPintarAlcance();
 			epCargarProgramadas();
