@@ -41,6 +41,14 @@
 			#ep-avance { display:none; }
 			table.table { font-size:12.5px; }
 			.nav-tabs { margin-bottom:16px; }
+			/* Las dos pestanas se veian como un solo texto pegado ("CampanaCampanas anteriores"):
+			   con este Bootstrap los <li> sin .nav-item quedan sin estilo. Separadas y con la activa marcada. */
+			.nav-tabs { list-style:none; padding-left:0; border-bottom:1px solid #DEE2E6; }
+			.nav-tabs > li { display:inline-block; margin-right:4px; margin-bottom:-1px; }
+			.nav-tabs > li > a { display:block; padding:9px 18px; border:1px solid transparent;
+				border-radius:5px 5px 0 0; text-decoration:none; font-weight:600; }
+			.nav-tabs > li.active > a { background-color:#FFFFFF; color:#102F6F;
+				border-color:#DEE2E6 #DEE2E6 #FFFFFF; }
 		</style>
 	</head>
 	<body>
