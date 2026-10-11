@@ -26,6 +26,7 @@ $(document).ready(function () {
 	epCargarOfertas();
 	epCargarHistorial();
 	epCargarCatalogos();
+	epCargarProgramadas();
 
 	//Crear campana nueva o volver a la lista. Son dos modos y no dos campos
 	//sueltos: con los dos a la vista, nadie sabe cual manda.
@@ -72,6 +73,16 @@ $(document).ready(function () {
 	//cuenta, se repinta y ya.
 	$('#ep-tope').on('change keyup', epPintarAlcance);
 
+	//Programar para despues: prender la casilla muestra la fecha y cambia el texto del boton.
+	$('#ep-programar').change(function () {
+		$('#ep-programar-campos').toggle(this.checked);
+		if (this.checked && !$('#ep-cuando').val()) { $('#ep-cuando').val(epSugerida()); }
+		epPintarAlcance();
+	});
+	$('#ep-cuando').on('change keyup', epPintarAlcance);
+	//Los programados cambian solos de estado (salen a su hora): se refrescan cada minuto.
+	setInterval(epCargarProgramadas, 60000);
+
 	//Cualquier cambio de filtro invalida la cuenta: no se puede enviar contra
 	//un numero que ya no corresponde a lo que esta en pantalla.
 	$('#ep-filtros').on('change', 'input,select', epLimpiarAlcance);
@@ -85,7 +96,7 @@ $(document).ready(function () {
 	//Las listas de seleccion multiple no traen forma obvia de desmarcar (hay que saber que es Ctrl+clic): un enlace debajo de cada una.
 	$('#ep-filtros select[multiple]').each(function () {
 		var lista = $(this);
-		$('<a href="#" class="ep-quitar" style="font-size:11.5px;">Quitar selecci00f3n</a>').insertAfter(lista).click(function (e) {
+		$('<a href="#" class="ep-quitar" style="font-size:11.5px;">Quitar selecci&oacute;n</a>').insertAfter(lista).click(function (e) {
 			e.preventDefault();
 			lista.val([]).trigger('change');
 		});
@@ -536,9 +547,14 @@ function epPintarAlcance() {
 	}
 	$('#ep-excluidos').html(extra);
 
+	//Con la casilla de programar prendida el boton dice lo que de verdad va a hacer: no envia, deja
+	//programado. Si ademas no hay fecha puesta, lo dice, para que no se oprima a ciegas.
+	var textoBoton = 'Enviar a ' + epMiles(alcanza) + ' personas';
+	if (epProgramando()) {
+		textoBoton = 'Programar para el ' + epCuandoTexto() + ' a unas ' + epMiles(alcanza) + ' personas';
+	}
 	$('#ep-enviar').prop('disabled', alcanza === 0)
-		.text(alcanza === 0 ? 'No hay a quién enviarle'
-			: 'Enviar a ' + epMiles(alcanza) + ' personas');
+		.text(alcanza === 0 ? 'No hay a quién enviarle' : textoBoton);
 }
 
 // ===========================================================================
@@ -581,6 +597,19 @@ function epEnviar() {
 	}
 	var comoSeLlama = nombre || $('#ep-campana option:selected').text();
 	var idOferta = epIdOferta();
+	var programando = epProgramando();
+
+	//Programar exige una fecha y hora futura: se dice aqui, antes de preguntar nada mas.
+	if (programando) {
+		if (!$('#ep-cuando').val()) {
+			epMensaje('ep-aviso-mal', 'Escoja la fecha y la hora en que debe salir el env&iacute;o.');
+			return;
+		}
+		if (new Date($('#ep-cuando').val()).getTime() < new Date().getTime() + 2 * 60000) {
+			epMensaje('ep-aviso-mal', 'La hora tiene que ser futura: al menos dos minutos desde ahora. Si es para ya, quite la programaci&oacute;n y use Enviar.');
+			return;
+		}
+	}
 
 	var alcanza = (epCanal === 'W') ? epAlcance.con_celular : epAlcance.con_correo;
 	var topeDirecto = epAlcance.tope_directo || 50;
@@ -594,13 +623,24 @@ function epEnviar() {
 	//Confirmacion con el numero escrito: que nadie pueda decir que no sabia a
 	//cuanta gente le estaba escribiendo.
 	var deOferta = idOferta > 0 ? ('\n\nCada persona recibe SU codigo de la oferta "' + epOfertaDe(idOferta).nombre + '".') : '';
-	if (!confirm('Va a enviar "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
-			' a ' + epMiles(alcanza) + ' personas.' + deOferta + '\n\nEsto no se puede deshacer. Continuar?')) {
+	var pregunta;
+	if (programando) {
+		pregunta = 'Va a PROGRAMAR "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
+			' para el ' + epCuandoTexto() + ', a unas ' + epMiles(alcanza) + ' personas.' + deOferta +
+			'\n\nEl público se arma a esa hora, con los datos de ese momento: la cifra puede variar un poco.' +
+			' Si al llegar la hora el público creció de más, NO se envía nada.' +
+			'\nPuede cancelarla antes desde la pestaña Historial.\n\nContinuar?';
+	} else {
+		pregunta = 'Va a enviar "' + comoSeLlama + '" por ' + epNombreCanal(epCanal) +
+			' a ' + epMiles(alcanza) + ' personas.' + deOferta + '\n\nEsto no se puede deshacer. Continuar?';
+	}
+	if (!confirm(pregunta)) {
 		return;
 	}
 
 	var datos = epFiltro();
-	datos.accion = 'enviar';
+	datos.accion = programando ? 'programar' : 'enviar';
+	if (programando) { datos.programar_para = $('#ep-cuando').val(); }
 	datos.idcampana = idCampana || 0;
 	datos.nombre = nombre || '';
 	datos.canalenvio = epCanal;
@@ -614,12 +654,21 @@ function epEnviar() {
 	datos.cuerpo = $('#ep-cuerpo').val();
 	datos.idoferta = idOferta;
 
-	$('#ep-enviar').prop('disabled', true).text('Enviando...');
+	$('#ep-enviar').prop('disabled', true).text(programando ? 'Programando...' : 'Enviando...');
 	$.post(server + 'EnvioPublicidad', datos, function (d) {
 		if (d.error) {
 			epMensaje('ep-aviso-mal', epEscapar(d.error));
 			$('#ep-enviar').prop('disabled', false);
 			epPintarAlcance();
+			return;
+		}
+		if (programando) {
+			//No hay avance que seguir: todavia no salio nada. Queda en la lista de programados.
+			epMensaje('ep-aviso-ok', epEscapar(d.mensaje) +
+				' Lo ve, y lo puede cancelar, en la pesta&ntilde;a Historial.');
+			$('#ep-enviar').prop('disabled', false);
+			epPintarAlcance();
+			epCargarProgramadas();
 			return;
 		}
 		epEnvio = d.idenvio;
@@ -632,9 +681,92 @@ function epEnviar() {
 		//poder mandarle la segunda tanda manana sin volver a escribir el nombre.
 		epCargarCampanas(d.idcampana);
 	}, 'json').fail(function () {
-		epMensaje('ep-aviso-mal', 'No se pudo lanzar la campa&ntilde;a.');
+		epMensaje('ep-aviso-mal', programando
+			? 'No se pudo programar el env&iacute;o.' : 'No se pudo lanzar la campa&ntilde;a.');
 		$('#ep-enviar').prop('disabled', false);
 		epPintarAlcance();
+	});
+}
+
+// ===========================================================================
+// Programar para una fecha y hora futura
+// ===========================================================================
+
+function epProgramando() {
+	return ($('#ep-programar').is(':checked'));
+}
+
+/* La hora escogida, como la entiende una persona: 12/10 8:30. */
+function epCuandoTexto() {
+	var v = $('#ep-cuando').val();
+	if (!v) { return ('...'); }
+	var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(v);
+	return (m ? (m[3] + '/' + m[2] + '/' + m[1] + ' ' + m[4] + ':' + m[5]) : v);
+}
+
+/* Por defecto, mañana a las 8:00: es lo que casi siempre se quiere. */
+function epSugerida() {
+	var d = new Date();
+	d.setDate(d.getDate() + 1);
+	d.setHours(8, 0, 0, 0);
+	function dos(n) { return ((n < 10 ? '0' : '') + n); }
+	return (d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate()) +
+		'T' + dos(d.getHours()) + ':' + dos(d.getMinutes()));
+}
+
+function epNombreEstadoProgramada(estado) {
+	if (estado === 'PROGRAMADA') { return ('Esperando su hora'); }
+	if (estado === 'EJECUTANDO') { return ('Saliéndo'); }
+	if (estado === 'ENVIADA') { return ('Enviada'); }
+	if (estado === 'FALLIDA') { return ('No salió'); }
+	if (estado === 'VENCIDA') { return ('Vencida: no se mandó'); }
+	if (estado === 'CANCELADA') { return ('Cancelada'); }
+	return (estado);
+}
+
+function epCargarProgramadas() {
+	$.getJSON(server + 'EnvioPublicidad', { accion: 'programadas' }, function (d) {
+		var lista = d.programadas || [];
+		var cuerpo = $('#ep-tabla-prog tbody');
+		cuerpo.empty();
+		if (lista.length === 0) {
+			cuerpo.html('<tr><td colspan="9" class="ep-nota">No hay env&iacute;os programados.</td></tr>');
+			return;
+		}
+		for (var i = 0; i < lista.length; i++) {
+			var p = lista[i];
+			var fila = $('<tr>');
+			fila.append($('<td>').text(p.idprogramacion));
+			fila.append($('<td>').text(p.nombre));
+			fila.append($('<td>').text(epNombreCanal(p.canal)));
+			fila.append($('<td>').text(String(p.ejecutar_en || '')));
+			fila.append($('<td>').text(epNombreEstadoProgramada(p.estado)));
+			fila.append($('<td class="ep-num">').text(epMiles(p.esperados)));
+			fila.append($('<td>').text(p.usuario));
+			//Si ya salio, lleva a su tanda en el historial; si fallo o vencio, dice por que.
+			var detalle = p.resultado || '';
+			if (p.idenvio > 0) { detalle = 'Envío ' + p.idenvio + (detalle ? ': ' + detalle : ''); }
+			fila.append($('<td>').text(detalle));
+			var accion = $('<td>');
+			if (p.estado === 'PROGRAMADA') {
+				var boton = $('<button type="button" class="btn btn-default btn-xs">Cancelar</button>');
+				boton.data('id', p.idprogramacion);
+				boton.click(function () { epCancelarProgramada($(this).data('id')); });
+				accion.append(boton);
+			}
+			fila.append(accion);
+			cuerpo.append(fila);
+		}
+	});
+}
+
+function epCancelarProgramada(id) {
+	if (!confirm('Cancelar el envío programado ' + id + '? No se mandará nada.')) { return; }
+	$.post(server + 'EnvioPublicidad', { accion: 'cancelarprogramada', idprogramacion: id }, function (d) {
+		alert(d.error ? d.error : d.mensaje);
+		epCargarProgramadas();
+	}, 'json').fail(function () {
+		alert('No se pudo cancelar. Intente de nuevo.');
 	});
 }
 
