@@ -32,6 +32,17 @@ $(document).ready(function () {
 	$('#ct-vista').click(ctVistaPrevia);
 	$('#ct-enviar').click(ctEnviar);
 
+	//El resumen de cumplimiento: se pinta solo al abrir (ayer, todas las tiendas) y se refresca cuando
+	//cambia el dia, el alcance o los minutos. No depende de que se busque la lista.
+	$('#ct-alcance').change(ctResumen);
+	$('#ct-fecha').on('change', ctResumen);
+	$('#ct-minutos').on('keyup change', ctResumenConEspera);
+	$('#ct-res-vertabla').click(function () {
+		ctVerTabla = !ctVerTabla;
+		ctPintarResumen();
+	});
+	ctResumen();
+
 	//Los criterios cambian: lo que hay en la tabla ya no corresponde a lo que dicen los campos, y
 	//enviar contra eso mandaria algo que nadie aprobo.
 	$('#ct-fecha, #ct-minutos, #ct-tienda, #ct-soloexceso').on('change keyup', ctInvalidar);
@@ -138,6 +149,7 @@ function ctBuscar() {
 	if (!fecha) { ctMensaje('ct-aviso-mal', 'Escoja el d&iacute;a.'); return; }
 	if (!(minutos > 0)) { ctMensaje('ct-aviso-mal', 'Ponga a partir de cu&aacute;ntos minutos.'); return; }
 	$('#ct-mensaje').html('');
+	ctResumen();
 
 	var datos = {
 		accion: 'consultar',
@@ -353,4 +365,302 @@ function ctSeguirAvance(idEnvio) {
 	}
 	mirar();
 	ctReloj = setInterval(mirar, 5000);
+}
+
+// ===========================================================================
+// Cumplimiento de la promesa de tiempo: general y por tienda
+//
+// Barras apiladas horizontales, una por tienda: cumplido (verde) e incumplido (rojo) sobre el total de lo
+// que se entrego. La peor tienda sale arriba: es la que hay que mirar. Los dos colores son los de ESTADO
+// y van siempre con icono y texto, nunca solos. Cada valor tambien esta en la vista de tabla.
+// ===========================================================================
+
+var ctResumenDatos = null;
+var ctVerTabla = false;
+var ctTemporizadorResumen = null;
+
+function ctResumen() {
+	var fecha = $('#ct-fecha').val();
+	var minutos = parseInt($('#ct-minutos').val(), 10) || 0;
+	if (!fecha) { return; }
+	$('#ct-resumen-panel').addClass('cargando');
+	$.getJSON(server + 'CompensacionTiempo', {
+		accion: 'resumen',
+		fecha: fecha,
+		dias: $('#ct-alcance').val() || 1,
+		minutos: minutos
+	}, function (d) {
+		$('#ct-resumen-panel').removeClass('cargando');
+		if (d.error) {
+			ctResumenDatos = null;
+			$('#ct-res-estado').html('<div class="ct-aviso ct-aviso-mal">' + ctEscapar(d.error) + '</div>');
+			$('#ct-res-cuerpo').hide();
+			return;
+		}
+		$('#ct-res-estado').html('');
+		$('#ct-res-cuerpo').show();
+		ctResumenDatos = d;
+		ctPintarResumen();
+	}).fail(function () {
+		$('#ct-resumen-panel').removeClass('cargando');
+		$('#ct-res-estado').html('<div class="ct-aviso ct-aviso-mal">No se pudo consultar el resumen.</div>');
+	});
+}
+
+/* Para campos que se teclean: no se consulta en cada letra. */
+function ctResumenConEspera() {
+	if (ctTemporizadorResumen) { clearTimeout(ctTemporizadorResumen); }
+	ctTemporizadorResumen = setTimeout(ctResumen, 500);
+}
+
+function ctPorcentajeTexto(p) {
+	return (String(p).replace('.', ',') + '%');
+}
+
+function ctRangoTexto(d) {
+	if (d.dias === 1) { return ('el ' + ctFechaCorta(d.hasta)); }
+	return ('del ' + ctFechaCorta(d.desde) + ' al ' + ctFechaCorta(d.hasta));
+}
+
+function ctFechaCorta(iso) {
+	var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+	return (m ? (m[3] + '/' + m[2] + '/' + m[1]) : (iso || ''));
+}
+
+function ctPintarResumen() {
+	var d = ctResumenDatos;
+	if (!d) { return; }
+	var g = d.general;
+
+	if (g.total === 0) {
+		$('#ct-res-hero').html('<div class="ct-nota" style="font-size:13px;">No hay pedidos entregados y medibles ' +
+			ctRangoTexto(d) + '.</div>');
+		$('#ct-res-tiles').html('');
+		$('#ct-res-tiendas').html('');
+		$('#ct-tendencia').html('');
+		$('#ct-res-tabla').html('');
+		ctAvisoSinDatos(d);
+		return;
+	}
+
+	// El numero que encabeza la vista: uno solo.
+	$('#ct-res-hero').html(
+		'<div class="ct-hero">' + ctEscapar(ctPorcentajeTexto(g.porcentaje)) + '</div>' +
+		'<div class="ct-hero-rotulo">de los pedidos cumplieron la promesa de tiempo ' + ctEscapar(ctRangoTexto(d)) + '</div>');
+
+	var tiles = [
+		{ valor: ctMiles(g.total), rotulo: 'pedidos entregados' },
+		{ valor: '✓ ' + ctMiles(g.cumplidos), rotulo: 'cumplidos' },
+		{ valor: '✗ ' + ctMiles(g.incumplidos), rotulo: 'incumplidos' },
+		{ valor: String(g.promedio).replace('.', ','), rotulo: 'minutos en promedio' }
+	];
+	if (d.umbral > 0) {
+		tiles.push({ valor: ctMiles(g.sobre_umbral), rotulo: 'pasaron de ' + d.umbral + ' min' });
+	}
+	var htmlTiles = '<div style="display:flex;flex-wrap:wrap;">';
+	for (var i = 0; i < tiles.length; i++) {
+		htmlTiles += '<div style="flex:1 1 96px;"><div class="ct-cifra"><div class="valor">' +
+			ctEscapar(tiles[i].valor) + '</div><div class="rotulo">' + ctEscapar(tiles[i].rotulo) +
+			'</div></div></div>';
+	}
+	htmlTiles += '</div>';
+	$('#ct-res-tiles').html(htmlTiles);
+
+	ctPintarTiendas(d);
+	ctPintarTendencia(d);
+	ctPintarTabla(d);
+	ctAvisoSinDatos(d);
+	$('#ct-res-tiendas').toggle(!ctVerTabla);
+	$('#ct-res-ayuda').toggle(!ctVerTabla);
+	$('#ct-tendencia').toggle(!ctVerTabla);
+	$('#ct-res-tabla').toggle(ctVerTabla);
+	$('#ct-res-vertabla').text(ctVerTabla ? 'Ver la gráfica' : 'Ver como tabla');
+}
+
+function ctAvisoSinDatos(d) {
+	var sin = d.tiendas_sin_datos || [];
+	if (sin.length > 0) {
+		$('#ct-res-estado').html('<div class="ct-peligro"><b>Sin datos de ' + ctEscapar(ctFechaCorta(d.hasta)) +
+			':</b> ' + ctEscapar(sin.join(', ')) + '. No cuentan en el resumen de ese día: la réplica ' +
+			'de esa tienda no ha llegado.</div>');
+	}
+}
+
+/* Una barra por tienda. Hecha con divs: crece sola con el ancho y cada segmento es su propio blanco de hover. */
+function ctPintarTiendas(d) {
+	var cont = $('#ct-res-tiendas');
+	cont.empty();
+	var tiendas = d.tiendas || [];
+	for (var i = 0; i < tiendas.length; i++) {
+		var t = tiendas[i];
+		var pBueno = t.total > 0 ? (t.cumplidos * 100 / t.total) : 0;
+		var pMalo = t.total > 0 ? (t.incumplidos * 100 / t.total) : 0;
+
+		var fila = $('<div class="ct-fila" tabindex="0">').data('t', t);
+		fila.append($('<div class="ct-fila-nombre">').text(t.nombre).attr('title', t.nombre));
+		var barra = $('<div class="ct-fila-barra">');
+		if (t.cumplidos > 0) {
+			barra.append($('<div class="ct-seg bueno">').css('width', pBueno + '%')
+				.toggleClass('ultimo', t.incumplidos === 0));
+		}
+		if (t.incumplidos > 0) {
+			barra.append($('<div class="ct-seg malo ultimo">').css('width', pMalo + '%'));
+		}
+		fila.append(barra);
+		// El valor va al final de la barra, fuera de ella: dentro de un segmento chico no cabria.
+		var valor = $('<div class="ct-fila-valor">');
+		valor.append($('<b>').text(ctPorcentajeTexto(t.porcentaje)));
+		valor.append($('<span>').text(' · ' + ctMiles(t.cumplidos) + ' de ' + ctMiles(t.total)));
+		fila.append(valor);
+
+		fila.on('mousemove', ctTooltipTienda).on('mouseleave blur', ctOcultarTooltip)
+			.on('focus', ctTooltipTienda)
+			.on('click keydown', function (e) {
+				if (e.type === 'keydown' && e.which !== 13 && e.which !== 32) { return; }
+				e.preventDefault();
+				ctIrATienda($(this).data('t'));
+			});
+		cont.append(fila);
+	}
+}
+
+/* Clic en una tienda: se filtra la lista de abajo a esa tienda y se busca. */
+function ctIrATienda(t) {
+	$('#ct-tienda').val(String(t.clave));
+	ctInvalidar();
+	ctBuscar();
+}
+
+function ctTooltipTienda(e) {
+	var t = $(this).data('t');
+	var tip = $('#ct-tip');
+	tip.empty();
+	tip.append($('<div class="t-nombre">').text(t.nombre));
+	var f1 = $('<div>');
+	f1.append($('<span class="t-valor">').text('✓ ' + ctMiles(t.cumplidos)));
+	f1.append($('<span class="t-sec">').text(' cumplidos (' + ctPorcentajeTexto(t.porcentaje) + ')'));
+	tip.append(f1);
+	var f2 = $('<div>');
+	f2.append($('<span class="t-valor">').text('✗ ' + ctMiles(t.incumplidos)));
+	f2.append($('<span class="t-sec">').text(' incumplidos (' +
+		ctPorcentajeTexto(Math.round((100 - t.porcentaje) * 10) / 10) + ')'));
+	tip.append(f2);
+	tip.append($('<div class="t-sec">').text('Promedio ' + String(t.promedio).replace('.', ',') +
+		' min · el más lento ' + t.maximo + ' min'));
+	var x = (e && e.clientX !== undefined) ? e.clientX : ($(this).offset().left + 40);
+	var y = (e && e.clientY !== undefined) ? e.clientY : ($(this).offset().top - $(window).scrollTop());
+	tip.css({ display: 'block', left: Math.min(x + 14, $(window).width() - 280), top: y + 14 });
+}
+
+function ctOcultarTooltip() {
+	$('#ct-tip').hide();
+}
+
+/* La evolucion diaria del % cumplido. Solo cuando el rango son varios dias. Una linea: un solo dato. */
+function ctPintarTendencia(d) {
+	var dias = d.por_dia || [];
+	var cont = $('#ct-tendencia');
+	if (d.dias === 1 || dias.length < 2) {
+		cont.html('');
+		return;
+	}
+	var W = 640, H = 170, mi = 40, md = 54, ms = 12, mb = 28;
+	var iw = W - mi - md, ih = H - ms - mb;
+	function x(i) { return (mi + (dias.length === 1 ? iw / 2 : i * iw / (dias.length - 1))); }
+	function y(p) { return (ms + ih - (p / 100) * ih); }
+
+	var s = '<div class="ct-leyenda" style="margin-top:0;">Cumplimiento por d&iacute;a (% de pedidos que cumplieron)</div>';
+	s += '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cumplimiento por d&iacute;a">';
+	// Rejilla: tres lineas, solidas y recesivas.
+	var marcas = [0, 50, 100];
+	for (var m = 0; m < marcas.length; m++) {
+		s += '<line x1="' + mi + '" x2="' + (W - md) + '" y1="' + y(marcas[m]) + '" y2="' + y(marcas[m]) +
+			'" stroke="#E1E0D9" stroke-width="1"/>';
+		s += '<text x="' + (mi - 6) + '" y="' + (y(marcas[m]) + 4) + '" text-anchor="end" font-size="10.5" ' +
+			'fill="#898781">' + marcas[m] + '%</text>';
+	}
+	var puntos = '';
+	for (var i = 0; i < dias.length; i++) {
+		puntos += (i === 0 ? '' : ' ') + x(i) + ',' + y(dias[i].porcentaje);
+	}
+	s += '<polyline points="' + puntos + '" fill="none" stroke="#2a78d6" stroke-width="2" ' +
+		'stroke-linejoin="round" stroke-linecap="round"/>';
+	// El ultimo dia: punto con anillo del color de la superficie y su valor, que es el dato que se lee.
+	var u = dias.length - 1;
+	s += '<circle cx="' + x(u) + '" cy="' + y(dias[u].porcentaje) + '" r="5" fill="#2a78d6" stroke="#FFFFFF" stroke-width="2"/>';
+	s += '<text x="' + (x(u) + 10) + '" y="' + (y(dias[u].porcentaje) + 4) + '" font-size="12" font-weight="700" ' +
+		'fill="#14181F">' + ctPorcentajeTexto(dias[u].porcentaje) + '</text>';
+	// Fechas: la primera y la ultima.
+	s += '<text x="' + x(0) + '" y="' + (H - 8) + '" text-anchor="start" font-size="10.5" fill="#898781">' +
+		ctFechaCorta(dias[0].clave).substring(0, 5) + '</text>';
+	s += '<text x="' + x(u) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10.5" fill="#898781">' +
+		ctFechaCorta(dias[u].clave).substring(0, 5) + '</text>';
+	// Blancos de hover: una columna transparente por dia, mas ancha que el punto.
+	var ancho = dias.length === 1 ? iw : iw / (dias.length - 1);
+	for (var k = 0; k < dias.length; k++) {
+		s += '<rect class="ct-dia" data-i="' + k + '" x="' + (x(k) - ancho / 2) + '" y="' + ms + '" width="' +
+			ancho + '" height="' + ih + '" fill="transparent" tabindex="0"/>';
+	}
+	s += '<line id="ct-cruz" x1="0" x2="0" y1="' + ms + '" y2="' + (ms + ih) + '" stroke="#C3C2B7" ' +
+		'stroke-width="1" style="display:none;pointer-events:none;"/>';
+	s += '</svg>';
+	cont.html(s);
+
+	cont.find('.ct-dia').on('mousemove focus', function (e) {
+		var di = dias[parseInt($(this).attr('data-i'), 10)];
+		var xi = parseFloat($(this).attr('x')) + parseFloat($(this).attr('width')) / 2;
+		$('#ct-cruz').attr('x1', xi).attr('x2', xi).show();
+		var tip = $('#ct-tip');
+		tip.empty();
+		tip.append($('<div class="t-nombre">').text(ctFechaCorta(di.clave)));
+		var f1 = $('<div>');
+		f1.append($('<span class="t-valor">').text(ctPorcentajeTexto(di.porcentaje)));
+		f1.append($('<span class="t-sec">').text(' cumplidos'));
+		tip.append(f1);
+		tip.append($('<div class="t-sec">').text(ctMiles(di.cumplidos) + ' de ' + ctMiles(di.total) +
+			' · ' + ctMiles(di.incumplidos) + ' incumplidos'));
+		var cx = (e.clientX !== undefined) ? e.clientX : ($(this).offset().left + 20);
+		var cy = (e.clientY !== undefined) ? e.clientY : ($(this).offset().top - $(window).scrollTop());
+		tip.css({ display: 'block', left: Math.min(cx + 14, $(window).width() - 280), top: cy + 14 });
+	}).on('mouseleave blur', function () {
+		$('#ct-cruz').hide();
+		ctOcultarTooltip();
+	});
+}
+
+/* La misma informacion, en filas: para quien prefiere leer numeros o necesita copiarlos. */
+function ctPintarTabla(d) {
+	function fila(a, rotuloClave) {
+		return '<tr><td>' + ctEscapar(a.nombre) + '</td>' +
+			'<td class="ct-num">' + ctMiles(a.total) + '</td>' +
+			'<td class="ct-num">' + ctMiles(a.cumplidos) + '</td>' +
+			'<td class="ct-num">' + ctMiles(a.incumplidos) + '</td>' +
+			'<td class="ct-num"><b>' + ctEscapar(ctPorcentajeTexto(a.porcentaje)) + '</b></td>' +
+			'<td class="ct-num">' + ctEscapar(String(a.promedio).replace('.', ',')) + '</td>' +
+			'<td class="ct-num">' + a.maximo + '</td>' +
+			(d.umbral > 0 ? '<td class="ct-num">' + ctMiles(a.sobre_umbral) + '</td>' : '') + '</tr>';
+	}
+	function cabecera(primero) {
+		return '<thead><tr><th>' + primero + '</th><th class="ct-num">Entregados</th>' +
+			'<th class="ct-num">Cumplidos</th><th class="ct-num">Incumplidos</th>' +
+			'<th class="ct-num">% cumplido</th><th class="ct-num">Promedio (min)</th>' +
+			'<th class="ct-num">M&aacute;s lento (min)</th>' +
+			(d.umbral > 0 ? '<th class="ct-num">Pasaron de ' + d.umbral + ' min</th>' : '') + '</tr></thead>';
+	}
+	var h = '<table class="table table-bordered table-condensed">' + cabecera('Tienda') + '<tbody>';
+	var tiendas = d.tiendas || [];
+	for (var i = 0; i < tiendas.length; i++) { h += fila(tiendas[i]); }
+	var g = d.general;
+	g.nombre = 'TODAS LAS TIENDAS';
+	h += '<tr style="font-weight:bold;background:#F4F6F8;">' + fila(g).substring(4);
+	h += '</tbody></table>';
+	if (d.dias > 1 && (d.por_dia || []).length > 0) {
+		h += '<table class="table table-bordered table-condensed" style="margin-top:14px;">' + cabecera('D&iacute;a') + '<tbody>';
+		for (var j = 0; j < d.por_dia.length; j++) {
+			d.por_dia[j].nombre = ctFechaCorta(d.por_dia[j].clave);
+			h += fila(d.por_dia[j]);
+		}
+		h += '</tbody></table>';
+	}
+	$('#ct-res-tabla').html(h);
 }

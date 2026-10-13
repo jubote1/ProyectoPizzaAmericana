@@ -111,6 +111,144 @@ public class CompensacionTiempoCtrl {
 	}
 
 	// =======================================================================
+	// Resumen de cumplimiento
+	// =======================================================================
+
+	/** Los acumulados de un grupo (todo, una tienda o un dia). */
+	private static class Acumulado {
+		int total;
+		int cumplidos;
+		int incumplidos;
+		int sobreUmbral;
+		long sumaMinutos;
+		int maximo;
+		String clave = "";
+		String nombre = "";
+
+		void sumar(final CompensacionTiempoDAO.FilaResumen f) {
+			total += f.total;
+			cumplidos += f.cumplidos;
+			incumplidos += f.incumplidos;
+			sobreUmbral += f.sobreUmbral;
+			sumaMinutos += f.sumaMinutos;
+			maximo = Math.max(maximo, f.maximo);
+		}
+
+		double porcentaje() {
+			return (total == 0 ? 0 : Math.round(cumplidos * 1000.0 / total) / 10.0);
+		}
+
+		double promedio() {
+			return (total == 0 ? 0 : Math.round(sumaMinutos * 10.0 / total) / 10.0);
+		}
+
+		@SuppressWarnings("unchecked")
+		JSONObject aJson() {
+			final JSONObject o = new JSONObject();
+			o.put("clave", clave);
+			o.put("nombre", nombre);
+			o.put("total", total);
+			o.put("cumplidos", cumplidos);
+			o.put("incumplidos", incumplidos);
+			o.put("sobre_umbral", sobreUmbral);
+			o.put("porcentaje", porcentaje());
+			o.put("promedio", promedio());
+			o.put("maximo", maximo);
+			return (o);
+		}
+	}
+
+	/**
+	 * Cuantos pedidos cumplieron la promesa de tiempo y cuantos no: en general, por tienda y -si el
+	 * rango son varios dias- por dia.
+	 *
+	 * @param dias 1, 7 o 30: el dia escogido y los anteriores hasta completar ese numero
+	 * @param umbral minutos del filtro de la lista; solo para contar cuantos lo pasaron
+	 */
+	@SuppressWarnings("unchecked")
+	public static String resumen(final String fecha, final int dias, final int umbral) {
+		final JSONObject r = new JSONObject();
+		if (!fechaValida(fecha)) {
+			r.put("error", "Escoja una fecha valida.");
+			return (r.toJSONString());
+		}
+		final int rango = (dias == 7 || dias == 30) ? dias : 1;
+		String desde = fecha;
+		try {
+			final SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd");
+			f.setLenient(false);
+			final Calendar c = Calendar.getInstance();
+			c.setTime(f.parse(fecha));
+			c.add(Calendar.DAY_OF_YEAR, -(rango - 1));
+			desde = f.format(c.getTime());
+		} catch (final java.text.ParseException e) {
+			r.put("error", "Escoja una fecha valida.");
+			return (r.toJSONString());
+		}
+
+		final CompensacionTiempoDAO.ResultadoResumen res =
+				CompensacionTiempoDAO.resumen(desde, fecha, umbral > 0 ? umbral : 0);
+		if (res.error.length() > 0) {
+			r.put("error", res.error);
+			return (r.toJSONString());
+		}
+
+		final Acumulado general = new Acumulado();
+		final Map<String, Acumulado> porTienda = new LinkedHashMap<String, Acumulado>();
+		final Map<String, Acumulado> porDia = new LinkedHashMap<String, Acumulado>();
+		for (final CompensacionTiempoDAO.FilaResumen f : res.filas) {
+			general.sumar(f);
+			Acumulado t = porTienda.get(String.valueOf(f.idTienda));
+			if (t == null) {
+				t = new Acumulado();
+				t.clave = String.valueOf(f.idTienda);
+				t.nombre = f.tienda;
+				porTienda.put(t.clave, t);
+			}
+			t.sumar(f);
+			Acumulado d = porDia.get(f.fecha);
+			if (d == null) {
+				d = new Acumulado();
+				d.clave = f.fecha;
+				d.nombre = f.fecha;
+				porDia.put(f.fecha, d);
+			}
+			d.sumar(f);
+		}
+
+		//La peor primero: es la que hay que mirar. Con igual porcentaje, la que mas pedidos tiene.
+		final List<Acumulado> tiendas = new ArrayList<Acumulado>(porTienda.values());
+		Collections.sort(tiendas, new Comparator<Acumulado>() {
+			public int compare(final Acumulado a, final Acumulado b) {
+				final int c = Double.compare(a.porcentaje(), b.porcentaje());
+				return (c != 0 ? c : Integer.compare(b.total, a.total));
+			}
+		});
+		final JSONArray jTiendas = new JSONArray();
+		for (final Acumulado a : tiendas) {
+			jTiendas.add(a.aJson());
+		}
+		final JSONArray jDias = new JSONArray();
+		if (rango > 1) {
+			for (final Acumulado a : porDia.values()) {
+				jDias.add(a.aJson());
+			}
+		}
+		final JSONArray sinDatos = new JSONArray();
+		sinDatos.addAll(res.tiendasSinDatos);
+
+		r.put("desde", desde);
+		r.put("hasta", fecha);
+		r.put("dias", rango);
+		r.put("umbral", umbral);
+		r.put("general", general.aJson());
+		r.put("tiendas", jTiendas);
+		r.put("por_dia", jDias);
+		r.put("tiendas_sin_datos", sinDatos);
+		return (r.toJSONString());
+	}
+
+	// =======================================================================
 	// Vista previa del correo
 	// =======================================================================
 

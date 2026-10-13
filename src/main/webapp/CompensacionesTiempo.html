@@ -38,6 +38,39 @@
 			#ct-correo-asunto { font-size:13px; color:#41495A; margin-bottom:10px; }
 			#ct-correo-cuerpo { background:#FFFFFF; padding:0; }
 			#ct-avance { display:none; }
+			/* Cumplimiento de la promesa: bueno/malo son los de estado, y siempre con icono y texto. */
+			#ct-resumen-panel { --bueno:#0ca30c; --malo:#d03b3b; --linea:#2a78d6; --tinta:#14181F;
+				--tinta-2:#6C7482; --rejilla:#E1E0D9; }
+			.ct-hero { font-size:56px; font-weight:700; color:var(--tinta); line-height:1; }
+			.ct-hero small { font-size:18px; font-weight:600; color:var(--tinta-2); margin-left:4px; }
+			.ct-hero-rotulo { font-size:12px; color:var(--tinta-2); text-transform:uppercase;
+				letter-spacing:.04em; margin-top:6px; }
+			.ct-leyenda { font-size:12px; color:var(--tinta-2); margin:6px 0 10px; }
+			.ct-leyenda span { margin-right:16px; white-space:nowrap; }
+			#ct-res-vertabla { white-space:nowrap; }
+			.ct-llave { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; }
+			.ct-fila { display:flex; align-items:center; padding:4px 0; cursor:pointer; outline:none; }
+			.ct-fila:hover .ct-fila-nombre, .ct-fila:focus .ct-fila-nombre { color:#102F6F; font-weight:600; }
+			.ct-fila-nombre { width:118px; font-size:12.5px; color:var(--tinta); white-space:nowrap;
+				overflow:hidden; text-overflow:ellipsis; padding-right:8px; }
+			.ct-fila-barra { flex:1; display:flex; height:18px; background:transparent; }
+			.ct-seg { height:100%; min-width:0; }
+			.ct-seg + .ct-seg { margin-left:2px; }
+			.ct-seg.bueno { background-color:var(--bueno); }
+			.ct-seg.malo { background-color:var(--malo); }
+			.ct-seg.ultimo { border-radius:0 4px 4px 0; }
+			.ct-fila:hover .ct-seg, .ct-fila:focus .ct-seg { filter:brightness(1.08); }
+			.ct-fila-valor { width:150px; padding-left:10px; font-size:12.5px; color:var(--tinta);
+				white-space:nowrap; }
+			.ct-fila-valor span { color:var(--tinta-2); font-size:11.5px; }
+			#ct-tip { position:fixed; z-index:9999; display:none; pointer-events:none; background:#FFFFFF;
+				border:1px solid #E2E6EC; border-radius:6px; padding:8px 10px; font-size:12px;
+				color:var(--tinta,#14181F); box-shadow:0 2px 8px rgba(0,0,0,.12); max-width:260px; }
+			#ct-tip .t-nombre { font-weight:700; margin-bottom:4px; }
+			#ct-tip .t-valor { font-weight:700; }
+			#ct-tip .t-sec { color:#6C7482; }
+			#ct-tendencia svg { width:100%; height:auto; display:block; }
+			#ct-resumen-panel.cargando #ct-res-cuerpo { opacity:.5; }
 		</style>
 	</head>
 	<body>
@@ -133,6 +166,16 @@
 							</div>
 						</div>
 
+						<div class="ct-campo">
+							<label class="ct-rotulo" for="ct-alcance">Resumen de cumplimiento de</label>
+							<select id="ct-alcance" class="form-control">
+								<option value="1">Ese d&iacute;a</option>
+								<option value="7">Los 7 d&iacute;as hasta ese d&iacute;a</option>
+								<option value="30">Los 30 d&iacute;as hasta ese d&iacute;a</option>
+							</select>
+							<div class="ct-nota">La gr&aacute;fica de la derecha. Siempre mira todas las tiendas.</div>
+						</div>
+
 						<button type="button" id="ct-buscar" class="btn btn-primary btn-block">Buscar los pedidos</button>
 						<div id="ct-mensaje" style="margin-top:10px;"></div>
 					</div>
@@ -148,13 +191,43 @@
 								nueva, h&aacute;gala en Ofertas y vuelva aqu&iacute;.
 							</div>
 						</div>
-						<button type="button" id="ct-vista" class="btn btn-default btn-block" disabled>
+						<button type="button" id="ct-vista" class="btn btn-default btn-outline-secondary btn-block" disabled>
 							Ver c&oacute;mo le llega al cliente</button>
 					</div>
 				</div>
 
 				<!-- Los pedidos -->
 				<div class="col-md-8">
+					<!-- Cumplimiento de la promesa de tiempo: general y por tienda -->
+					<div class="ct-panel" id="ct-resumen-panel">
+						<div class="ct-titulo">Cumplimiento de la promesa de tiempo</div>
+						<div id="ct-res-estado"></div>
+						<div id="ct-res-cuerpo">
+							<div class="row">
+								<div class="col-sm-4">
+									<div id="ct-res-hero"></div>
+								</div>
+								<div class="col-sm-8">
+									<div class="row" id="ct-res-tiles"></div>
+								</div>
+							</div>
+
+							<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;">
+								<div class="ct-leyenda" id="ct-res-leyenda">
+									<span><i class="ct-llave" style="background:#0ca30c;"></i>&#10003; Cumplido: entreg&oacute; en el tiempo prometido o antes</span>
+									<span><i class="ct-llave" style="background:#d03b3b;"></i>&#10007; Incumplido: se pas&oacute; de lo prometido</span>
+								</div>
+								<button type="button" id="ct-res-vertabla" class="btn btn-default btn-outline-secondary btn-xs btn-sm">Ver como tabla</button>
+							</div>
+
+							<div id="ct-res-tiendas"></div>
+							<p class="ct-nota" id="ct-res-ayuda">Haga clic en una tienda para ver sus pedidos que se demoraron.</p>
+
+							<div id="ct-tendencia" style="margin-top:14px;"></div>
+							<div id="ct-res-tabla" style="display:none;overflow-x:auto;"></div>
+						</div>
+					</div>
+
 					<div class="ct-panel">
 						<div class="ct-titulo">Pedidos que se demoraron</div>
 						<div id="ct-resumen"><p class="ct-nota" style="margin:0;">
@@ -162,9 +235,9 @@
 						<div id="ct-sindatos"></div>
 
 						<div style="margin:10px 0 6px;">
-							<button type="button" id="ct-todos" class="btn btn-default btn-xs" disabled>
+							<button type="button" id="ct-todos" class="btn btn-default btn-outline-secondary btn-xs btn-sm" disabled>
 								Escoger todos los que se pueden</button>
-							<button type="button" id="ct-ninguno" class="btn btn-default btn-xs" disabled>
+							<button type="button" id="ct-ninguno" class="btn btn-default btn-outline-secondary btn-xs btn-sm" disabled>
 								Quitar la selecci&oacute;n</button>
 						</div>
 
@@ -214,6 +287,7 @@
 			</div>
 		</div>
 
+		<div id="ct-tip" role="tooltip"></div>
 		<script type="text/javascript" src="js/compensacionestiempo.js"></script>
 	</body>
 </html>

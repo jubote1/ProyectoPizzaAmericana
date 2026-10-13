@@ -64,6 +64,10 @@ public class CompensacionTiempo extends HttpServlet {
 					entero(request.getParameter("minutos")), entero(request.getParameter("idtienda")),
 					"S".equals(texto(request.getParameter("soloexceso")))));
 
+		} else if ("resumen".equals(accion)) {
+			out.write(CompensacionTiempoCtrl.resumen(texto(request.getParameter("fecha")),
+					entero(request.getParameter("dias")), entero(request.getParameter("minutos"))));
+
 		} else if ("ofertas".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.ofertas());
 

@@ -223,6 +223,140 @@ public class CompensacionTiempoDAO {
 		return (res);
 	}
 
+	// =======================================================================
+	// El resumen de cumplimiento
+	// =======================================================================
+
+	/** Lo que paso en una tienda un dia: cuantos se entregaron y cuantos cumplieron la promesa. */
+	public static class FilaResumen {
+		public int idTienda;
+		public String tienda = "";
+		public String fecha = "";
+		public int total;
+		public int cumplidos;
+		public int incumplidos;
+		/** Los que pasaron del umbral de minutos que puso quien consulta (no es la promesa). */
+		public int sobreUmbral;
+		public long sumaMinutos;
+		public int maximo;
+	}
+
+	public static class ResultadoResumen {
+		public ArrayList<FilaResumen> filas = new ArrayList<FilaResumen>();
+		public String error = "";
+		public ArrayList<String> tiendasSinDatos = new ArrayList<String>();
+	}
+
+	/**
+	 * Cumplimiento de la promesa de tiempo, por tienda y por dia.
+	 *
+	 * CUMPLIDO es entregar en el tiempo prometido o antes (minutos <= pedido.tiempopedido); INCUMPLIDO,
+	 * pasarse. Es la misma promesa que usa el desempeno de domiciliarios, con las mismas exclusiones:
+	 * anulados, programados y pedidos sin promesa no se miden. Un tiempo negativo es un dato malo
+	 * -la hora de entrega marcada antes de que entrara el pedido-, no una entrega instantanea: se
+	 * deja por fuera en vez de contarlo como cumplido.
+	 *
+	 * El resumen mira TODAS las tiendas. La tienda que escogio quien consulta no filtra aqui: la idea es
+	 * poder compararlas.
+	 *
+	 * @param desde  aaaa-mm-dd
+	 * @param hasta  aaaa-mm-dd, anterior a hoy
+	 * @param umbral minutos a partir de los cuales se cuenta "sobre el umbral" (el mismo de la lista)
+	 */
+	public static ResultadoResumen resumen(final String desde, final String hasta, final int umbral) {
+		final ResultadoResumen res = new ResultadoResumen();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+
+			final PreparedStatement psHoy = cn.prepareStatement("SELECT ? < CURDATE() AND ? <= ?");
+			psHoy.setString(1, hasta);
+			psHoy.setString(2, desde);
+			psHoy.setString(3, hasta);
+			final ResultSet rsHoy = psHoy.executeQuery();
+			final boolean validas = rsHoy.next() && rsHoy.getInt(1) == 1;
+			rsHoy.close();
+			psHoy.close();
+			if (!validas) {
+				res.error = "Solo se pueden consultar dias anteriores a hoy: el datamart se llena de madrugada "
+						+ "con lo de ayer.";
+				return (res);
+			}
+
+			final String[] obligatorias = { "idpedidotienda", "fechapedido", "fechainsercion", "tiempopedido" };
+			for (int i = 0; i < obligatorias.length; i++) {
+				if (!tieneColumna(cn, "datamart", "pedido", obligatorias[i])) {
+					res.error = "El datamart no tiene la columna pedido." + obligatorias[i]
+							+ ". Revise la replica de pedidos.";
+					return (res);
+				}
+			}
+			final boolean conAnulacion = tieneColumna(cn, "datamart", "pedido", "idmotivoanulacion");
+			final boolean conProgramado = tieneColumna(cn, "datamart", "pedido", "programado");
+
+			final StringBuilder sql = new StringBuilder();
+			sql.append("SELECT x.idtienda, x.tienda, x.fecha,")
+				.append(" COUNT(*) AS total,")
+				.append(" SUM(CASE WHEN x.minutos <= x.prometido THEN 1 ELSE 0 END) AS cumplidos,")
+				.append(" SUM(CASE WHEN x.minutos > x.prometido THEN 1 ELSE 0 END) AS incumplidos,")
+				.append(" SUM(CASE WHEN x.minutos > ? THEN 1 ELSE 0 END) AS sobre_umbral,")
+				.append(" SUM(x.minutos) AS suma_minutos, MAX(x.minutos) AS maximo")
+				.append(" FROM (")
+				.append("  SELECT p.idtienda, IFNULL(t.nombre,'') AS tienda, p.fechapedido AS fecha,")
+				.append("         p.idpedidotienda, IFNULL(p.tiempopedido,0) AS prometido,")
+				.append("         TIMESTAMPDIFF(MINUTE, p.fechainsercion, MAX(d.hora_entrega)) AS minutos")
+				.append("    FROM datamart.pedido p")
+				.append("    JOIN datamart.despacho_real_det d")
+				.append("      ON d.id_pedido = p.idpedidotienda AND d.idtienda = p.idtienda")
+				.append("    LEFT JOIN pizzaamericana.tienda t ON t.idtienda = p.idtienda")
+				.append("   WHERE p.fechapedido >= ? AND p.fechapedido <= ?")
+				.append("     AND d.hora_entrega IS NOT NULL AND IFNULL(p.tiempopedido,0) > 0");
+			if (conAnulacion) {
+				sql.append("     AND p.idmotivoanulacion IS NULL");
+			}
+			if (conProgramado) {
+				sql.append("     AND IFNULL(p.programado,'N') <> 'S'");
+			}
+			sql.append("   GROUP BY p.idtienda, t.nombre, p.fechapedido, p.idpedidotienda,")
+				.append("            p.fechainsercion, p.tiempopedido")
+				.append("  HAVING minutos >= 0")
+				.append(" ) x")
+				.append(" GROUP BY x.idtienda, x.tienda, x.fecha")
+				.append(" ORDER BY x.tienda, x.fecha");
+
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			ps.setInt(1, umbral);
+			ps.setString(2, desde);
+			ps.setString(3, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final FilaResumen f = new FilaResumen();
+				f.idTienda = rs.getInt("idtienda");
+				f.tienda = rs.getString("tienda");
+				f.fecha = rs.getString("fecha");
+				f.total = rs.getInt("total");
+				f.cumplidos = rs.getInt("cumplidos");
+				f.incumplidos = rs.getInt("incumplidos");
+				f.sobreUmbral = rs.getInt("sobre_umbral");
+				f.sumaMinutos = rs.getLong("suma_minutos");
+				f.maximo = rs.getInt("maximo");
+				res.filas.add(f);
+			}
+			rs.close();
+			ps.close();
+
+			//Las tiendas sin datos del ULTIMO dia del rango: es el que casi siempre falta cuando la
+			//replica de una tienda se atraso.
+			res.tiendasSinDatos = tiendasSinDatos(cn, hasta, 0);
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CompensacionTiempoDAO.resumen: " + e.toString());
+			res.error = "No se pudo consultar: " + e.getMessage();
+		} finally {
+			cerrar(cn);
+		}
+		return (res);
+	}
+
 	/** Las tiendas operativas que no tienen despachos de ese dia en el datamart. */
 	private static ArrayList<String> tiendasSinDatos(final Connection cn, final String fecha, final int idTienda) {
 		final ArrayList<String> lista = new ArrayList<String>();
