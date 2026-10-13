@@ -16,6 +16,7 @@ var ctSeleccion = {};     // "idtienda:idpedido" -> true
 var ctConsulta = null;    // los parametros con los que se consulto: son los que se mandan al enviar
 var ctOfertas = [];
 var ctReloj = null;
+var ctTolerancia = 10;   // el margen (%) sobre lo prometido; lo manda el servidor
 
 $(document).ready(function () {
 	var ayer = new Date();
@@ -79,6 +80,15 @@ function ctClave(p) {
 	return (p.idtienda + ':' + p.idpedido);
 }
 
+/* El margen sobre la promesa que decide quien es incumplido (lo manda el servidor, se cambia en parametros). */
+function ctPonerTolerancia(t) {
+	var n = parseInt(t, 10);
+	if (isNaN(n)) { return; }
+	ctTolerancia = n;
+	$('.ct-tol').text(n);
+	$('#ct-tol-ej').text(Math.floor(60 * (100 + n) / 100));
+}
+
 // ===========================================================================
 // Cargas
 // ===========================================================================
@@ -136,7 +146,7 @@ function ctInvalidar() {
 	ctConsulta = null;
 	ctPedidos = [];
 	ctSeleccion = {};
-	$('#ct-tabla tbody').html('<tr><td colspan="11" class="ct-nota">Cambi&oacute; el filtro: oprima Buscar.</td></tr>');
+	$('#ct-tabla tbody').html('<tr><td colspan="12" class="ct-nota">Cambi&oacute; el filtro: oprima Buscar.</td></tr>');
 	$('#ct-resumen').html('');
 	$('#ct-sindatos').html('');
 	$('#ct-todos, #ct-ninguno').prop('disabled', true);
@@ -165,6 +175,7 @@ function ctBuscar() {
 			ctMensaje('ct-aviso-mal', ctEscapar(d.error));
 			return;
 		}
+		ctPonerTolerancia(d.tolerancia);
 		ctConsulta = { fecha: fecha, minutos: minutos, soloexceso: datos.soloexceso };
 		ctPedidos = d.pedidos || [];
 		ctSeleccion = {};
@@ -203,7 +214,7 @@ function ctPintar(d) {
 	var cuerpo = $('#ct-tabla tbody');
 	cuerpo.empty();
 	if (ctPedidos.length === 0) {
-		cuerpo.html('<tr><td colspan="11" class="ct-nota">Ning&uacute;n pedido pas&oacute; de ese tiempo ese d&iacute;a. ' +
+		cuerpo.html('<tr><td colspan="12" class="ct-nota">Ning&uacute;n pedido pas&oacute; de ese tiempo ese d&iacute;a. ' +
 			'Buena noticia.</td></tr>');
 	}
 	for (var i = 0; i < ctPedidos.length; i++) {
@@ -221,6 +232,7 @@ function ctPintar(d) {
 		fila.append($('<td>').text(p.hora_pedido));
 		fila.append($('<td>').text(p.hora_entrega));
 		fila.append($('<td class="ct-num">').text(p.prometido));
+		fila.append($('<td class="ct-num">').text(p.limite));
 		fila.append($('<td class="ct-num ct-mucho">').text(p.minutos));
 		fila.append($('<td class="ct-num">').text(p.exceso > 0 ? '+' + p.exceso : '0'));
 		fila.append($('<td>').text(p.cliente));
@@ -399,6 +411,7 @@ function ctResumen() {
 		}
 		$('#ct-res-estado').html('');
 		$('#ct-res-cuerpo').show();
+		ctPonerTolerancia(d.tolerancia);
 		ctResumenDatos = d;
 		ctPintarResumen();
 	}).fail(function () {

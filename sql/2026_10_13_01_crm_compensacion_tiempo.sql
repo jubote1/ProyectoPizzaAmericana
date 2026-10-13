@@ -40,10 +40,19 @@ CREATE TABLE IF NOT EXISTS crm.compensacion_tiempo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
   COMMENT='Pedidos demorados a los que se les mando una oferta de disculpa';
 
+-- El margen que se le da a la promesa de tiempo antes de llamar INCUMPLIDO a un pedido: con 60 minutos
+-- prometidos y 10%, es incumplido el que pasa de 66. Va en general.parametros y no en el codigo porque es
+-- justo lo que operacion va a querer mover. Si esta fila no existe, el codigo usa 10 igual.
+INSERT INTO general.parametros (valorparametro, valornumerico, valortexto)
+SELECT 'COMPENSACIONTOLERANCIAPCT', 10,
+       'Porcentaje de margen sobre el tiempo prometido antes de considerar incumplido un pedido'
+ WHERE NOT EXISTS (SELECT 1 FROM general.parametros
+                    WHERE valorparametro = 'COMPENSACIONTOLERANCIAPCT');
+
 -- La pantalla en el catalogo (modulo 4 = CRM). El menu que se ve en produccion es el estatico
 -- MenuCRM.html; esta fila deja el catalogo completo para cuando el menu dinamico se prenda.
 INSERT INTO pizzaamericana.pantalla (nombre, idmodulo, url_html, orden, activo)
 SELECT 'Compensaciones por Tiempo', 4, 'CompensacionesTiempo.html', 56, 'S'
  WHERE NOT EXISTS (SELECT 1 FROM pizzaamericana.pantalla WHERE url_html = 'CompensacionesTiempo.html');
 
-SELECT 'Listo. crm.compensacion_tiempo y la pantalla en el catalogo.' AS resultado;
+SELECT 'Listo. crm.compensacion_tiempo, el margen de la promesa y la pantalla en el catalogo.' AS resultado;

@@ -82,6 +82,7 @@ public class CompensacionTiempoCtrl {
 			o.put("hora_entrega", p.horaEntrega);
 			o.put("prometido", p.prometido);
 			o.put("minutos", p.minutos);
+			o.put("limite", p.limite);
 			o.put("exceso", p.exceso());
 			o.put("cliente", p.cliente);
 			o.put("email", p.email);
@@ -105,6 +106,7 @@ public class CompensacionTiempoCtrl {
 		r.put("ya_compensados", yaCompensados);
 		r.put("tiendas_sin_datos", sinDatos);
 		r.put("truncado", res.truncado);
+		r.put("tolerancia", res.tolerancia);
 		r.put("tope_directo", EnviadorPublicidadDirecta.tope());
 		r.put("segundos_directo", EnviadorPublicidadDirecta.segundosEntreCorreos());
 		return (r.toJSONString());
@@ -244,6 +246,7 @@ public class CompensacionTiempoCtrl {
 		r.put("general", general.aJson());
 		r.put("tiendas", jTiendas);
 		r.put("por_dia", jDias);
+		r.put("tolerancia", res.tolerancia);
 		r.put("tiendas_sin_datos", sinDatos);
 		return (r.toJSONString());
 	}

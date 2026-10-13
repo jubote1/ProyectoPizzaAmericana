@@ -66,8 +66,12 @@ public class CompensacionTiempoDAO {
 		public boolean yaCompensado;
 		public long idEnvioPrevio;
 
+		/** Los minutos maximos que se aceptan sin considerarlo incumplido: lo prometido mas el margen. */
+		public int limite;
+
+		/** Cuantos minutos se paso del limite (0 si no se paso). El margen ya esta descontado. */
 		public int exceso() {
-			return (prometido > 0 ? minutos - prometido : 0);
+			return (prometido > 0 ? Math.max(0, minutos - limite) : 0);
 		}
 	}
 
@@ -78,10 +82,53 @@ public class CompensacionTiempoDAO {
 		public ArrayList<String> tiendasSinDatos = new ArrayList<String>();
 		/** true si la consulta llego al tope de filas. */
 		public boolean truncado;
+		/** El margen (%) con el que se decidio quien es incumplido. */
+		public int tolerancia = TOLERANCIA_POR_DEFECTO;
 	}
 
 	private CompensacionTiempoDAO() {
 	}
+
+	/**
+	 * Cuanto margen se le da a la promesa antes de llamar a un pedido INCUMPLIDO.
+	 *
+	 * Un pedido que se prometio en 60 minutos es incumplido si pasa de 66 (60 + 10%), no de 60: unos
+	 * minutos de diferencia no son una falla del servicio y llenar la lista de disculpas por eso
+	 * gasta el valor de la compensacion. El 10% es el valor por defecto; se cambia en
+	 * general.parametros (COMPENSACIONTOLERANCIAPCT) sin una version nueva.
+	 */
+	public static final int TOLERANCIA_POR_DEFECTO = 10;
+
+	/**
+	 * El margen en porcentaje. Si el parametro no existe, 10. Si existe, se respeta -incluido 0, que
+	 * es "sin margen"- y se acota a 0..100 para que un dato mal puesto no apague el criterio.
+	 */
+	public static int toleranciaPct(final Connection cn) {
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT valornumerico FROM general.parametros WHERE valorparametro = 'COMPENSACIONTOLERANCIAPCT'");
+			final ResultSet rs = ps.executeQuery();
+			int valor = TOLERANCIA_POR_DEFECTO;
+			if (rs.next()) {
+				final String texto = rs.getString(1);
+				if (texto != null && texto.trim().length() > 0) {
+					valor = (int) Math.round(Double.parseDouble(texto.trim()));
+				}
+			}
+			rs.close();
+			ps.close();
+			return (Math.max(0, Math.min(100, valor)));
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CompensacionTiempoDAO.toleranciaPct: " + e.toString());
+			return (TOLERANCIA_POR_DEFECTO);
+		}
+	}
+
+	/** Los minutos maximos aceptados para una promesa, con el margen. Division entera: 45 + 10% = 49. */
+	public static int limiteDe(final int prometido, final int toleranciaPct) {
+		return ((prometido * (100 + toleranciaPct)) / 100);
+	}
+
 
 	/**
 	 * Los pedidos entregados ese dia que se demoraron al menos esos minutos, de todas las tiendas o de
@@ -125,6 +172,8 @@ public class CompensacionTiempoDAO {
 			}
 			//Las opcionales: sin ellas se consulta igual, y la pantalla lo avisa.
 			final boolean conAnulacion = tieneColumna(cn, "datamart", "pedido", "idmotivoanulacion");
+			final int tolerancia = toleranciaPct(cn);
+			res.tolerancia = tolerancia;
 			final boolean conProgramado = tieneColumna(cn, "datamart", "pedido", "programado");
 
 			final StringBuilder sql = new StringBuilder();
@@ -163,7 +212,8 @@ public class CompensacionTiempoDAO {
 			sql.append(" GROUP BY p.idtienda, t.nombre, p.idpedidotienda, p.fechainsercion, p.tiempopedido,")
 				.append(" s.idpersona, s.nombre, s.apellido, pr.email, pr.politica_datos, c.idenvio, cd.estado")
 				.append(" HAVING minutos >= ?")
-				.append(soloPasaronPromesa ? " AND minutos > prometido" : "")
+				.append(soloPasaronPromesa
+					? " AND minutos * 100 > prometido * " + (100 + tolerancia) : "")
 				.append(" ORDER BY minutos DESC, p.idtienda, p.idpedidotienda")
 				.append(" LIMIT ").append(MAXIMO_FILAS + 1);
 
@@ -188,6 +238,7 @@ public class CompensacionTiempoDAO {
 				p.horaPedido = rs.getString("hora_pedido");
 				p.horaEntrega = rs.getString("hora_entrega");
 				p.prometido = rs.getInt("prometido");
+				p.limite = limiteDe(p.prometido, tolerancia);
 				p.minutos = rs.getInt("minutos");
 				p.idPersona = rs.getLong("idpersona");
 				p.cliente = rs.getString("cliente");
@@ -244,14 +295,15 @@ public class CompensacionTiempoDAO {
 	public static class ResultadoResumen {
 		public ArrayList<FilaResumen> filas = new ArrayList<FilaResumen>();
 		public String error = "";
+		public int tolerancia = TOLERANCIA_POR_DEFECTO;
 		public ArrayList<String> tiendasSinDatos = new ArrayList<String>();
 	}
 
 	/**
 	 * Cumplimiento de la promesa de tiempo, por tienda y por dia.
 	 *
-	 * CUMPLIDO es entregar en el tiempo prometido o antes (minutos <= pedido.tiempopedido); INCUMPLIDO,
-	 * pasarse. Es la misma promesa que usa el desempeno de domiciliarios, con las mismas exclusiones:
+	 * CUMPLIDO es entregar en el tiempo prometido MAS EL MARGEN o antes (minutos <= tiempopedido + 10%);
+	 * INCUMPLIDO, pasarse de ese limite: con 60 minutos prometidos, mas de 66. Es la misma promesa que usa el desempeno de domiciliarios, con las mismas exclusiones:
 	 * anulados, programados y pedidos sin promesa no se miden. Un tiempo negativo es un dato malo
 	 * -la hora de entrega marcada antes de que entrara el pedido-, no una entrega instantanea: se
 	 * deja por fuera en vez de contarlo como cumplido.
@@ -292,13 +344,17 @@ public class CompensacionTiempoDAO {
 				}
 			}
 			final boolean conAnulacion = tieneColumna(cn, "datamart", "pedido", "idmotivoanulacion");
+			final int tolerancia = toleranciaPct(cn);
+			res.tolerancia = tolerancia;
 			final boolean conProgramado = tieneColumna(cn, "datamart", "pedido", "programado");
 
 			final StringBuilder sql = new StringBuilder();
 			sql.append("SELECT x.idtienda, x.tienda, x.fecha,")
 				.append(" COUNT(*) AS total,")
-				.append(" SUM(CASE WHEN x.minutos <= x.prometido THEN 1 ELSE 0 END) AS cumplidos,")
-				.append(" SUM(CASE WHEN x.minutos > x.prometido THEN 1 ELSE 0 END) AS incumplidos,")
+				.append(" SUM(CASE WHEN x.minutos * 100 <= x.prometido * " + (100 + tolerancia)
+						+ " THEN 1 ELSE 0 END) AS cumplidos,")
+				.append(" SUM(CASE WHEN x.minutos * 100 > x.prometido * " + (100 + tolerancia)
+						+ " THEN 1 ELSE 0 END) AS incumplidos,")
 				.append(" SUM(CASE WHEN x.minutos > ? THEN 1 ELSE 0 END) AS sobre_umbral,")
 				.append(" SUM(x.minutos) AS suma_minutos, MAX(x.minutos) AS maximo")
 				.append(" FROM (")

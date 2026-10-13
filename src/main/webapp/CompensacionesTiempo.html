@@ -159,10 +159,10 @@
 						<div class="ct-campo">
 							<label style="font-weight:normal;font-size:13px;cursor:pointer;margin:0;">
 								<input type="checkbox" id="ct-soloexceso" checked>
-								Solo los que pasaron del tiempo que se les prometi&oacute;
+								Solo los incumplidos: pasaron del tiempo prometido m&aacute;s el margen del <span class="ct-tol">10</span>%
 							</label>
 							<div class="ct-nota">
-								Prendido, un pedido que tard&oacute; 70 minutos con 90 prometidos no aparece.
+								Prendido, un pedido con 60 minutos prometidos aparece solo si tard&oacute; m&aacute;s de <b id="ct-tol-ej">66</b>.
 							</div>
 						</div>
 
@@ -214,8 +214,8 @@
 
 							<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;">
 								<div class="ct-leyenda" id="ct-res-leyenda">
-									<span><i class="ct-llave" style="background:#0ca30c;"></i>&#10003; Cumplido: entreg&oacute; en el tiempo prometido o antes</span>
-									<span><i class="ct-llave" style="background:#d03b3b;"></i>&#10007; Incumplido: se pas&oacute; de lo prometido</span>
+									<span><i class="ct-llave" style="background:#0ca30c;"></i>&#10003; Cumplido: entreg&oacute; en el tiempo prometido (m&aacute;s el <span class="ct-tol">10</span>%) o antes</span>
+									<span><i class="ct-llave" style="background:#d03b3b;"></i>&#10007; Incumplido: se pas&oacute; de lo prometido m&aacute;s el <span class="ct-tol">10</span>%</span>
 								</div>
 								<button type="button" id="ct-res-vertabla" class="btn btn-default btn-outline-secondary btn-xs btn-sm">Ver como tabla</button>
 							</div>
@@ -251,6 +251,7 @@
 										<th>Entr&oacute;</th>
 										<th>Lleg&oacute;</th>
 										<th class="ct-num">Prometido</th>
+										<th class="ct-num">L&iacute;mite</th>
 										<th class="ct-num">Minutos</th>
 										<th class="ct-num">Exceso</th>
 										<th>Cliente</th>
@@ -259,7 +260,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr><td colspan="11" class="ct-nota">Sin consultar.</td></tr>
+									<tr><td colspan="12" class="ct-nota">Sin consultar.</td></tr>
 								</tbody>
 							</table>
 						</div>
