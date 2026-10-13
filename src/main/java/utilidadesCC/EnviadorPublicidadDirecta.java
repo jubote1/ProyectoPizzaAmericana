@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 
 import capaDAOCC.CampanaDAO;
 import capaDAOCC.CodigoPromoDAO;
+import capaDAOCC.CompensacionTiempoDAO;
 import capaDAOCC.OfertaClienteDAO;
 import capaDAOCC.ParametrosDAO;
 import capaModeloCC.Correo;
@@ -209,8 +210,18 @@ public class EnviadorPublicidadDirecta {
 					CampanaDAO.marcar(tanda.idEnvio, d.idPersona, "FALLIDO", "No se pudieron leer los datos de la oferta");
 					return;
 				}
-				asunto = CorreoOferta.armarAsunto(datos);
-				mensaje = CorreoOferta.armarCuerpo(datos);
+				//Si esta tanda es de COMPENSACIONES POR TIEMPO, a esta persona se le pide disculpas por el
+				//pedido de un dia concreto y la oferta llega como compensacion. La fecha sale del libro de
+				//compensaciones (crm.compensacion_tiempo); una tanda normal no tiene fila ahi y sigue
+				//saliendo el correo de la oferta de siempre.
+				final String fechaDisculpa = CompensacionTiempoDAO.fechaPedido(tanda.idEnvio, d.idPersona);
+				if (fechaDisculpa.length() > 0) {
+					asunto = CorreoOferta.armarAsuntoDisculpa(datos, fechaDisculpa);
+					mensaje = CorreoOferta.armarCuerpoDisculpa(datos, fechaDisculpa);
+				} else {
+					asunto = CorreoOferta.armarAsunto(datos);
+					mensaje = CorreoOferta.armarCuerpo(datos);
+				}
 			}
 
 			final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo(

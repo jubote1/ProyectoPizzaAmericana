@@ -527,6 +527,66 @@ public class CampanaDAO {
 		return (cuantos);
 	}
 
+	/**
+	 * Mete en la tanda a ESTAS personas -no a las que cumplen un filtro-, por correo.
+	 *
+	 * La usa la pantalla de compensaciones por tiempo, donde alguien escogio uno por uno a quienes se
+	 * les va a pedir disculpas. Pasa por las mismas tres reglas que cualquier envio de correo, y por eso
+	 * se escriben aqui con las mismas constantes y no repetidas: el consentimiento, que la direccion
+	 * sea una que el servidor de correo va a aceptar, y que no haya rebotado en duro. Quien no las
+	 * cumpla simplemente no entra, y la diferencia entre lo pedido y lo cargado es lo que se le dice a
+	 * la persona.
+	 *
+	 * @param personas ids de crm.persona (sin repetir)
+	 * @return cuantas quedaron en la tanda
+	 */
+	public static int cargarDestinatariosDePersonas(final long idEnvio, final long idCampana,
+			final java.util.List<Long> personas) {
+		if (personas == null || personas.isEmpty()) {
+			return (0);
+		}
+		int cuantos = 0;
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final StringBuilder marcas = new StringBuilder();
+			for (int i = 0; i < personas.size(); i++) {
+				marcas.append(i == 0 ? "?" : ",?");
+			}
+			final StringBuilder sql = new StringBuilder();
+			sql.append("INSERT IGNORE INTO crm.campana_destinatario")
+				.append(" (idenvio, idcampana, idpersona, destino, nombre, estado)")
+				.append(" SELECT ?, ?, idpersona, TRIM(email),")
+				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
+				.append(" FROM crm.persona_resumen WHERE idpersona IN (").append(marcas).append(")")
+				.append(CONSENTIMIENTO)
+				.append(" AND ").append(CORREO_VALIDO)
+				.append(SIN_REBOTE);
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			int k = 1;
+			ps.setLong(k++, idEnvio);
+			ps.setLong(k++, idCampana);
+			for (final Long p : personas) {
+				ps.setLong(k++, p.longValue());
+			}
+			cuantos = ps.executeUpdate();
+			ps.close();
+
+			final PreparedStatement psUp = cn.prepareStatement(
+					"UPDATE crm.campana_envio SET publico = ? WHERE idenvio = ?");
+			psUp.setInt(1, cuantos);
+			psUp.setLong(2, idEnvio);
+			psUp.executeUpdate();
+			psUp.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.cargarDestinatariosDePersonas: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (cuantos);
+	}
+
 	// =======================================================================
 	// Mandar
 	// =======================================================================
