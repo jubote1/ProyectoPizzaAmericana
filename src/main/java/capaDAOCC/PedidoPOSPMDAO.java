@@ -173,7 +173,10 @@ public class PedidoPOSPMDAO {
 						cantidadPixel = 0.5;
 						idSaborTipoLiquido = cadaDetallePedido.getIdsabortipoliquido();
 						//Adicionamos el producto maestro con cantidad 1
-						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster));
+						//El valor viaja con la linea maestra: si el producto no tiene precio_pila en la tienda,
+						//ella lo toma de aqui. Sin el, un combo de puntos -base en cero- queda en cero y la
+						//tienda subregistra la venta frente a lo que cobro el central.
+						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster,cadaDetallePedido.getValorunitario()));
 						logger.debug(idproductomaestroext + " , " + cantidadPixel);
 						
 						idproductoextsep = PedidoPOSPMDAO.RetornarIdproductoExterno(10000, 0, idtienda);
@@ -262,7 +265,10 @@ public class PedidoPOSPMDAO {
 						idDetalleMaster = cadaDetallePedido.getIddetallepedido();
 						idSaborTipoLiquido = cadaDetallePedido.getIdsabortipoliquido();
 						//Adicionamos el producto maestro con cantidad 1
-						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster));
+						//El valor viaja con la linea maestra: si el producto no tiene precio_pila en la tienda,
+						//ella lo toma de aqui. Sin el, un combo de puntos -base en cero- queda en cero y la
+						//tienda subregistra la venta frente a lo que cobro el central.
+						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster,cadaDetallePedido.getValorunitario()));
 						logger.debug(idproductomaestroext + " , " + cantidadPixel);
 						
 						idproductoextsep = PedidoPOSPMDAO.RetornarIdproductoExterno(10000, 0, idtienda);
