@@ -657,7 +657,8 @@ $(document).ready(function() {
 			}
 		}
 		if (enTienda) return "EN_TIENDA";
-		return "EN_RUTA";
+		if (peds > 0) return "EN_RUTA";
+		return "FUERA_DE_TIENDA";
 	}
 
 	function updateRowAndMarker(clave_usuario, latitude, longitude, fecha_hora, nombre_usuario, idtienda, tipo_repartidor, empresa_temporal, en_turno_biometria, estado = null, bateria = null, velocidad = null, pedidos_activos = 0, pedidos_detalle = null, autoFilter = true, app_version = null) {

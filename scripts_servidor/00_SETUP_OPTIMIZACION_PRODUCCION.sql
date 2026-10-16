@@ -129,4 +129,22 @@ SET @preparedStatement = (SELECT IF(
 ));
 PREPARE stmt FROM @preparedStatement; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+
+-- ---------------------------------------------------------------------------------
+-- COLUMNAS PARA VERSION DE APP (Tanto en estado actual como en histórico)
+-- ---------------------------------------------------------------------------------
+SET @preparedStatement = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = 'domiciliario_ubicacion_actual' AND COLUMN_NAME = 'app_version') > 0,
+  'SELECT 1',
+  'ALTER TABLE domiciliario_ubicacion_actual ADD COLUMN app_version INT(11) DEFAULT NULL'
+));
+PREPARE stmt FROM @preparedStatement; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @preparedStatement = (SELECT IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @dbname AND TABLE_NAME = 'ubicacion_domiciliario' AND COLUMN_NAME = 'app_version') > 0,
+  'SELECT 1',
+  'ALTER TABLE ubicacion_domiciliario ADD COLUMN app_version INT(11) DEFAULT NULL'
+));
+PREPARE stmt FROM @preparedStatement; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SELECT '✅ OPTIMIZACIÓN Y ESTRUCTURA DE PIZZA AMERICANA COMPLETADA SATISFACTORIAMENTE' AS Resultado;
