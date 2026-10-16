@@ -110,7 +110,7 @@ public class DomiciliarioPedidoDAO {
 	        // Consulta directa optimizada con tabla derivada para eventos biométricos de hoy (ejecuta en ~300ms)
 	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, COALESCE(ev.idtienda, tt.idtienda, ubi.idtienda, 0) AS idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
 	           .append("       COALESCE(ubi.estado, 'EN_TIENDA') AS estado, ubi.bateria, ubi.velocidad, ")
-	           .append("       COALESCE(ubi.pedidos_activos, 0) AS pedidos_activos, ubi.pedidos_detalle, ")
+	           .append("       COALESCE(ubi.pedidos_activos, 0) AS pedidos_activos, ubi.pedidos_detalle, ubi.app_version, ")
 	           .append("       COALESCE(CASE WHEN (e.id IS NOT NULL AND (e.activo = 1 OR e.activo = '1')) THEN e.nombre_largo ELSE NULL END, etdt.nombre, et.nombre, e.nombre_largo, ubi.nombre_usuario, 'Domiciliario') AS nombre_largo, ")
 	           .append("       CASE ")
 	           .append("           WHEN (e.id IS NOT NULL AND (e.activo = 1 OR e.activo = '1')) THEN 'DIRECTO' ")
@@ -207,6 +207,7 @@ public class DomiciliarioPedidoDAO {
 	                js.put("velocidad", rs.getInt("velocidad"));
 	                js.put("pedidos_activos", rs.getInt("pedidos_activos"));
 	                js.put("pedidos_detalle", rs.getString("pedidos_detalle"));
+	                js.put("app_version", rs.getObject("app_version") != null ? rs.getInt("app_version") : null);
 	                lista.add(js);
 	            }
 	        }

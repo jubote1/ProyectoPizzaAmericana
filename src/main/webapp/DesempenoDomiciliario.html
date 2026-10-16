@@ -364,7 +364,7 @@
 						</div>
 					</div>
 
-					<!-- Tabla de Indicadores Ponderados (Scorecard) -->
+										<!-- Tabla de Indicadores Ponderados (Scorecard) -->
 					<div class="table-responsive">
 						<table class="table table-bordered table-striped table-hover" id="ddTablaScorecard" style="margin-bottom:12px;">
 							<thead>
@@ -373,31 +373,13 @@
 									<th class="text-center" style="width:115px;">Horas reales</th>
 									<th class="text-center" style="width:135px;">Pedidos entregados</th>
 									<th class="text-center" style="width:155px;">Resultado obtenido</th>
-									<th class="text-center" style="width:130px;">Meta</th>
+									<th class="text-center" style="width:175px;">Rango Meta (0% &rarr; 100%)</th>
 									<th class="text-center" style="width:125px;">% Cumplimiento</th>
 									<th class="text-center" style="width:90px;">Peso</th>
 									<th class="text-center" style="width:110px;">Puntos</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr>
-									<td>
-										<b style="color:#0f172a;">Productividad por hora</b>
-										<br/><small class="text-muted">Pedidos entregados &divide; horas reales trabajadas</small>
-									</td>
-									<td class="text-center sc-horas">-</td>
-									<td class="text-center sc-pedidos">-</td>
-									<td class="text-center" id="scResProductividad" style="font-weight:bold;">-</td>
-									<td class="text-center">
-										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
-											<input type="number" id="metaProd" step="0.1" value="2.0" class="form-control text-center sc-meta" />
-											<span class="input-group-addon">p/h</span>
-										</div>
-									</td>
-									<td class="text-center" id="scCumpProductividad" style="font-weight:bold;">-</td>
-									<td class="text-center" style="font-weight:bold;">30%</td>
-									<td class="text-center" id="scPtsProductividad" style="font-weight:bold; color:#1e3a8a;">-</td>
-								</tr>
 								<tr>
 									<td>
 										<b style="color:#0f172a;">Entregas a tiempo</b>
@@ -407,13 +389,15 @@
 									<td class="text-center sc-pedidos">-</td>
 									<td class="text-center" id="scResEntregas" style="font-weight:bold;">-</td>
 									<td class="text-center">
-										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
-											<input type="number" id="metaEntregas" step="1" value="90.0" class="form-control text-center sc-meta" />
-											<span class="input-group-addon">%</span>
-									</div>
+										<div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+											<input type="number" id="metaEntregasMin" step="1" value="80.0" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 0% con &le; 80%" />
+											<span style="font-size:11px; color:#64748b;">a</span>
+											<input type="number" id="metaEntregasMax" step="1" value="90.0" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 100% desde &ge; 90%" />
+											<span class="text-muted" style="font-size:11px;">%</span>
+										</div>
 									</td>
 									<td class="text-center" id="scCumpEntregas" style="font-weight:bold;">-</td>
-									<td class="text-center" style="font-weight:bold;">35%</td>
+									<td class="text-center" style="font-weight:bold; color:#1e3a8a;">40%</td>
 									<td class="text-center" id="scPtsEntregas" style="font-weight:bold; color:#1e3a8a;">-</td>
 								</tr>
 								<tr>
@@ -425,31 +409,55 @@
 									<td class="text-center">&mdash;</td>
 									<td class="text-center" id="scResRegresos" style="font-weight:bold;">-</td>
 									<td class="text-center">
-										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
-											<input type="number" id="metaRegresos" step="1" value="90.0" class="form-control text-center sc-meta" />
-											<span class="input-group-addon">%</span>
+										<div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+											<input type="number" id="metaRegresosMin" step="1" value="80.0" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 0% con &le; 80%" />
+											<span style="font-size:11px; color:#64748b;">a</span>
+											<input type="number" id="metaRegresosMax" step="1" value="90.0" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 100% desde &ge; 90%" />
+											<span class="text-muted" style="font-size:11px;">%</span>
 										</div>
 									</td>
 									<td class="text-center" id="scCumpRegresos" style="font-weight:bold;">-</td>
-									<td class="text-center" style="font-weight:bold;">20%</td>
+									<td class="text-center" style="font-weight:bold; color:#1e3a8a;">20%</td>
 									<td class="text-center" id="scPtsRegresos" style="font-weight:bold; color:#1e3a8a;">-</td>
 								</tr>
 								<tr>
 									<td>
+										<b style="color:#0f172a;">Productividad por hora</b>
+										<br/><small class="text-muted">Pedidos entregados &divide; horas reales trabajadas</small>
+									</td>
+									<td class="text-center sc-horas">-</td>
+									<td class="text-center sc-pedidos">-</td>
+									<td class="text-center" id="scResProductividad" style="font-weight:bold;">-</td>
+									<td class="text-center">
+										<div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+											<input type="number" id="metaProdMin" step="0.1" value="1.4" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 0% con &le; 1.4" />
+											<span style="font-size:11px; color:#64748b;">a</span>
+											<input type="number" id="metaProdMax" step="0.1" value="2.0" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 100% desde &ge; 2.0" />
+											<span class="text-muted" style="font-size:11px;">p/h</span>
+										</div>
+									</td>
+									<td class="text-center" id="scCumpProductividad" style="font-weight:bold;">-</td>
+									<td class="text-center" style="font-weight:bold; color:#1e3a8a;">30%</td>
+									<td class="text-center" id="scPtsProductividad" style="font-weight:bold; color:#1e3a8a;">-</td>
+								</tr>
+								<tr>
+									<td>
 										<b style="color:#0f172a;">Pedidos por salida</b>
-										<br/><small class="text-muted">Pedidos entregados &divide; n&uacute;mero de salidas</small>
+										<br/><small class="text-muted">Promedio pedidos por ruta (no castiga m&aacute;x 2)</small>
 									</td>
 									<td class="text-center sc-horas">-</td>
 									<td class="text-center" id="scDetalleSalidas">-</td>
 									<td class="text-center" id="scResSalidas" style="font-weight:bold;">-</td>
 									<td class="text-center">
-										<div class="input-group input-group-sm" style="width:110px; margin:0 auto;">
-											<input type="number" id="metaSalidas" step="0.1" value="1.0" class="form-control text-center sc-meta" />
-											<span class="input-group-addon">p/s</span>
+										<div style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+											<input type="number" id="metaSalidasMin" step="0.1" value="1.2" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 0% con &le; 1.2" />
+											<span style="font-size:11px; color:#64748b;">a</span>
+											<input type="number" id="metaSalidasMax" step="0.1" value="1.5" class="form-control text-center sc-meta" style="width:58px; height:28px; padding:2px 4px; display:inline-block;" title="Cumple 100% desde &ge; 1.5" />
+											<span class="text-muted" style="font-size:11px;">p/s</span>
 										</div>
 									</td>
 									<td class="text-center" id="scCumpSalidas" style="font-weight:bold;">-</td>
-									<td class="text-center" style="font-weight:bold;">15%</td>
+									<td class="text-center" style="font-weight:bold; color:#1e3a8a;">10%</td>
 									<td class="text-center" id="scPtsSalidas" style="font-weight:bold; color:#1e3a8a;">-</td>
 								</tr>
 								<tr style="background:#f1f5f9; font-size:14.5px; border-top:2px solid #0f172a;">
@@ -468,32 +476,41 @@
 
 					<!-- Visualizacion de la Escala de Compensacion de Gerencia -->
 					<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 18px; margin-top:10px;">
-						<span style="font-size:12px; font-weight:700; text-transform:uppercase; color:#475569;">
-							Escala de compensaci&oacute;n por domicilio (Gerencia):
-						</span>
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+							<span style="font-size:12px; font-weight:700; text-transform:uppercase; color:#475569;">
+								Escala de liquidaci&oacute;n por domicilio (Direcci&oacute;n General - Octubre 2026):
+							</span>
+							<span style="font-size:11.5px; color:#64748b; font-style:italic;">
+								* Se asigna el valor m&aacute;s alto cuyas dos condiciones se cumplan
+							</span>
+						</div>
 						<div class="row" style="margin-top:10px;">
 							<div class="col-xs-3 text-center">
 								<div class="sc-tier-badge" id="scTier1">
 									<div class="tier-monto">$2.500</div>
-									<small class="tier-desc">Cumplimiento 0% al 50%</small>
+									<div style="font-weight:700; font-size:12px; margin:2px 0; color:#334155;">Nivel B&aacute;sico</div>
+									<small class="tier-desc">Quien no cumpla niveles superiores</small>
 								</div>
 							</div>
 							<div class="col-xs-3 text-center">
 								<div class="sc-tier-badge" id="scTier2">
 									<div class="tier-monto">$2.700</div>
-									<small class="tier-desc">Cumplimiento 51% al 79%</small>
+									<div style="font-weight:700; font-size:12px; margin:2px 0; color:#334155;">Nivel Medio</div>
+									<small class="tier-desc">Eval &ge; 80% <b>Y</b> Entregas &ge; 85%</small>
 								</div>
 							</div>
 							<div class="col-xs-3 text-center">
 								<div class="sc-tier-badge" id="scTier3">
 									<div class="tier-monto">$3.000</div>
-									<small class="tier-desc">Cumplimiento 80% al 100%</small>
+									<div style="font-weight:700; font-size:12px; margin:2px 0; color:#334155;">Nivel &Oacute;ptimo</div>
+									<small class="tier-desc">Eval &ge; 90% <b>Y</b> Entregas &ge; 90%</small>
 								</div>
 							</div>
 							<div class="col-xs-3 text-center">
 								<div class="sc-tier-badge" id="scTier4">
 									<div class="tier-monto">$3.500</div>
-									<small class="tier-desc">Cumplimiento &ge; 120%</small>
+									<div style="font-weight:700; font-size:12px; margin:2px 0; color:#334155;">Nivel Sobresaliente</div>
+									<small class="tier-desc">Eval &ge; 97% <b>Y</b> Entregas &ge; 90%</small>
 								</div>
 							</div>
 						</div>

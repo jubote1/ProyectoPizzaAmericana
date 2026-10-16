@@ -98,7 +98,11 @@ function determinarEstadoOperativo(lat, lng, idtienda, pedidosActivos = 0) {
         }
     }
     if (enTienda) return 'EN_TIENDA';
-    return 'EN_RUTA';
+
+    const peds = parseInt(pedidosActivos, 10) || 0;
+    if (peds > 0) return 'EN_RUTA';
+
+    return 'FUERA_DE_TIENDA';
 }
 
 // Inserción segura en lote (histórico + última ubicación)
@@ -115,8 +119,8 @@ function insertBatch() {
         data.idtienda || 0,
         data.latitude,
         data.longitude,
-        isValidDate(data.fecha_hora) ? new Date(data.fecha_hora) : new Date()
-    ]);
+        isValidDate(data.fecha_hora) ? new Date(data.fecha_hora) : new Date(),
+        typeof data.app_version === 'number' ? data.app_version : (parseInt(data.app_version, 10) || null)    ]);
 
     // 2. Datos para tabla de estado en tiempo real (Upsert: 1 fila por domiciliario)
     const liveValues = currentBatch.map(data => [
@@ -130,18 +134,18 @@ function insertBatch() {
         typeof data.bateria === 'number' ? data.bateria : null,
         typeof data.velocidad === 'number' ? data.velocidad : 0,
         typeof data.pedidos_activos === 'number' ? data.pedidos_activos : 0,
-        data.pedidos_detalle ? String(data.pedidos_detalle).trim() : null
-    ]);
+        data.pedidos_detalle ? String(data.pedidos_detalle).trim() : null,
+        typeof data.app_version === 'number' ? data.app_version : (parseInt(data.app_version, 10) || null)    ]);
 
     const queryHistorical = `
         INSERT INTO ubicacion_domiciliario
-        (clave_dom, idtienda, latitud, longitud, fecha)
+        (clave_dom, idtienda, latitud, longitud, fecha, app_version)
         VALUES ?
     `;
 
     const queryLive = `
         INSERT INTO domiciliario_ubicacion_actual
-        (clave_dom, idtienda, latitud, longitud, fecha, nombre_usuario, estado, bateria, velocidad, pedidos_activos, pedidos_detalle)
+        (clave_dom, idtienda, latitud, longitud, fecha, nombre_usuario, estado, bateria, velocidad, pedidos_activos, pedidos_detalle, app_version)
         VALUES ?
         ON DUPLICATE KEY UPDATE
             idtienda = VALUES(idtienda),
@@ -153,7 +157,8 @@ function insertBatch() {
             bateria = COALESCE(VALUES(bateria), bateria),
             velocidad = COALESCE(VALUES(velocidad), velocidad),
             pedidos_activos = COALESCE(VALUES(pedidos_activos), pedidos_activos),
-            pedidos_detalle = VALUES(pedidos_detalle)
+            pedidos_detalle = VALUES(pedidos_detalle),
+            app_version = COALESCE(VALUES(app_version), app_version)
     `;
 
     // Ejecutar ambas inserciones
