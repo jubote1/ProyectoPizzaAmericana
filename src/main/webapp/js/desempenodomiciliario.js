@@ -54,8 +54,16 @@ function ddCargarDomiciliarios() {
 			var lista = data.domiciliarios || [];
 			var html = '<option value="">Seleccione un domiciliario</option>';
 			for (var i = 0; i < lista.length; i++) {
-				html += '<option value="' + lista[i].id + '">' + ddEscapar(lista[i].nombrelargo) +
-					' (' + ddEscapar(lista[i].nombre) + ')</option>';
+				var nombreLargo = lista[i].nombrelargo || '';
+				var nombreCorto = lista[i].nombre || '';
+				var esGenerico = /domiciliario\s*0?[1-9]/i.test(nombreLargo) || /domiciliario\s*0?[1-9]/i.test(nombreCorto);
+				if (esGenerico) {
+					html += '<option value="' + lista[i].id + '" style="color:#b45309; font-weight:bold;">' +
+						ddEscapar(nombreLargo) + ' [Cuenta Temporal / Comodín Tienda]</option>';
+				} else {
+					html += '<option value="' + lista[i].id + '">' + ddEscapar(nombreLargo) +
+						' (' + ddEscapar(nombreCorto) + ')</option>';
+				}
 			}
 			$('#ddDomiciliario').html(html);
 			if (lista.length === 0) {
@@ -456,6 +464,19 @@ function ddPintarScorecard(d) {
 	ddRecalcularScorecard();
 }
 
+function ddCalcularCumplimientoRango(valor, minVal, maxVal) {
+	if (minVal >= maxVal) {
+		return (valor >= maxVal ? 100 : 0);
+	}
+	if (valor <= minVal) {
+		return 0;
+	}
+	if (valor >= maxVal) {
+		return 100;
+	}
+	return (((valor - minVal) / (maxVal - minVal)) * 100);
+}
+
 function ddRecalcularScorecard() {
 	if (!ddDatos || !ddDatos.resumen) {
 		return;
@@ -473,87 +494,107 @@ function ddRecalcularScorecard() {
 	$('.sc-pedidos').text(textoPedidos);
 	$('#scDetalleSalidas').text(pedidos + ' ped / ' + salidas + ' sal');
 
-	// 1. Productividad por hora (Peso 30%)
-	var prodVal = horas > 0 ? (pedidos / horas) : 0;
-	$('#scResProductividad').text(prodVal > 0 ? (prodVal.toFixed(2) + ' ped/h') : '0.00 ped/h');
-	var metaProd = parseFloat($('#metaProd').val()) || 2.0;
-	var cumpProd = metaProd > 0 ? (prodVal / metaProd) * 100 : 0;
-	$('#scCumpProductividad').text(cumpProd.toFixed(2) + '%');
-	var ptsProd = (cumpProd / 100) * 30;
-	$('#scPtsProductividad').text(ptsProd.toFixed(2));
-
-	// 2. Entregas a tiempo (Peso 35%)
-	var entregasPct = r.porcentaje || 0;
-	$('#scResEntregas').text(entregasPct.toFixed(2) + '%');
-	var metaEntregas = parseFloat($('#metaEntregas').val()) || 90.0;
-	var cumpEntregas = metaEntregas > 0 ? (entregasPct / metaEntregas) * 100 : 0;
-	$('#scCumpEntregas').text(cumpEntregas.toFixed(2) + '%');
-	var ptsEntregas = (cumpEntregas / 100) * 35;
+	// 1. Entregas a tiempo (Peso 40%) - Direccion General
+	// Piso 0% con <= 80%, Meta 100% desde >= 90%, proporcional entre 80% y 90%
+	var entregasPct = (r.porcentaje !== undefined && r.porcentaje !== null) ? r.porcentaje : 0;
+	$('#scResEntregas').text(entregasPct.toFixed(1) + '%');
+	var metaEntregasMin = parseFloat($('#metaEntregasMin').val());
+	if (isNaN(metaEntregasMin)) metaEntregasMin = 80.0;
+	var metaEntregasMax = parseFloat($('#metaEntregasMax').val());
+	if (isNaN(metaEntregasMax)) metaEntregasMax = 90.0;
+	var cumpEntregas = ddCalcularCumplimientoRango(entregasPct, metaEntregasMin, metaEntregasMax);
+	$('#scCumpEntregas').text(cumpEntregas.toFixed(1) + '%');
+	var ptsEntregas = (cumpEntregas / 100) * 40.0;
 	$('#scPtsEntregas').text(ptsEntregas.toFixed(2));
 
-	// 3. Regresos a tiempo (Peso 20% - Tope 100%)
-	var regresosPct = g.porcentaje || 0;
-	$('#scResRegresos').text(regresosPct.toFixed(2) + '%');
-	var metaRegresos = parseFloat($('#metaRegresos').val()) || 90.0;
-	var cumpRegresosRaw = metaRegresos > 0 ? (regresosPct / metaRegresos) * 100 : 0;
-	var cumpRegresos = Math.min(cumpRegresosRaw, 100);
-	$('#scCumpRegresos').text(cumpRegresos.toFixed(2) + '%');
-	var ptsRegresos = (cumpRegresos / 100) * 20;
+	// 2. Regresos a tiempo (Peso 20%) - Direccion General
+	// Piso 0% con <= 80%, Meta 100% desde >= 90%, proporcional entre 80% y 90%
+	var regresosPct = (g.porcentaje !== undefined && g.porcentaje !== null) ? g.porcentaje : 0;
+	$('#scResRegresos').text(regresosPct.toFixed(1) + '%');
+	var metaRegresosMin = parseFloat($('#metaRegresosMin').val());
+	if (isNaN(metaRegresosMin)) metaRegresosMin = 80.0;
+	var metaRegresosMax = parseFloat($('#metaRegresosMax').val());
+	if (isNaN(metaRegresosMax)) metaRegresosMax = 90.0;
+	var cumpRegresos = ddCalcularCumplimientoRango(regresosPct, metaRegresosMin, metaRegresosMax);
+	$('#scCumpRegresos').text(cumpRegresos.toFixed(1) + '%');
+	var ptsRegresos = (cumpRegresos / 100) * 20.0;
 	$('#scPtsRegresos').text(ptsRegresos.toFixed(2));
 
-	// 4. Pedidos por salida (Peso 15% - Tope 100%)
-	var salidasRatio = r.pedidos_por_salida || 0;
+	// 3. Productividad por hora trabajada (Peso 30%) - Direccion General
+	// Piso 0% con <= 1.4, Meta 100% desde >= 2.0, proporcional entre 1.4 y 2.0
+	var prodVal = horas > 0 ? (pedidos / horas) : 0;
+	$('#scResProductividad').text(prodVal > 0 ? (prodVal.toFixed(2) + ' ped/h') : '0.00 ped/h');
+	var metaProdMin = parseFloat($('#metaProdMin').val());
+	if (isNaN(metaProdMin)) metaProdMin = 1.4;
+	var metaProdMax = parseFloat($('#metaProdMax').val());
+	if (isNaN(metaProdMax)) metaProdMax = 2.0;
+	var cumpProd = ddCalcularCumplimientoRango(prodVal, metaProdMin, metaProdMax);
+	$('#scCumpProductividad').text(cumpProd.toFixed(1) + '%');
+	var ptsProd = (cumpProd / 100) * 30.0;
+	$('#scPtsProductividad').text(ptsProd.toFixed(2));
+
+	// 4. Pedidos por salida (Peso 10%) - Direccion General
+	// Piso 0% con <= 1.2, Meta 100% desde >= 1.5, proporcional entre 1.2 y 1.5
+	var salidasRatio = (r.pedidos_por_salida !== undefined && r.pedidos_por_salida !== null) ? r.pedidos_por_salida : 0;
 	$('#scResSalidas').text(salidasRatio.toFixed(2) + ' ped/sal');
-	var metaSalidas = parseFloat($('#metaSalidas').val()) || 1.0;
-	var cumpSalidasRaw = metaSalidas > 0 ? (salidasRatio / metaSalidas) * 100 : 0;
-	var cumpSalidas = Math.min(cumpSalidasRaw, 100);
-	$('#scCumpSalidas').text(cumpSalidas.toFixed(2) + '%');
-	var ptsSalidas = (cumpSalidas / 100) * 15;
+	var metaSalidasMin = parseFloat($('#metaSalidasMin').val());
+	if (isNaN(metaSalidasMin)) metaSalidasMin = 1.2;
+	var metaSalidasMax = parseFloat($('#metaSalidasMax').val());
+	if (isNaN(metaSalidasMax)) metaSalidasMax = 1.5;
+	var cumpSalidas = ddCalcularCumplimientoRango(salidasRatio, metaSalidasMin, metaSalidasMax);
+	$('#scCumpSalidas').text(cumpSalidas.toFixed(1) + '%');
+	var ptsSalidas = (cumpSalidas / 100) * 10.0;
 	$('#scPtsSalidas').text(ptsSalidas.toFixed(2));
 
-	// Totales
-	var totalPuntos = ptsProd + ptsEntregas + ptsRegresos + ptsSalidas;
+	// Total de la evaluacion (0% a 100% con un decimal)
+	var totalPuntos = ptsEntregas + ptsRegresos + ptsProd + ptsSalidas;
 	var cumplimientoGlobal = totalPuntos;
 
-	$('#scCumpTotal').text(cumplimientoGlobal.toFixed(2) + '%');
-	$('#scPtsTotal').text(totalPuntos.toFixed(2) + ' / 100');
-	$('#scTotalPuntos').text(totalPuntos.toFixed(2));
-	$('#scCumplimientoGlobal').text(cumplimientoGlobal.toFixed(2) + '%');
+	$('#scCumpTotal').text(cumplimientoGlobal.toFixed(1) + '%');
+	$('#scPtsTotal').text(totalPuntos.toFixed(1) + ' / 100');
+	$('#scTotalPuntos').text(totalPuntos.toFixed(1));
+	$('#scCumplimientoGlobal').text(cumplimientoGlobal.toFixed(1) + '%');
 
 	// Color del cumplimiento
-	if (cumplimientoGlobal >= 80) {
-		$('#scCumplimientoGlobal').css('color', '#2e7d32');
-	} else if (cumplimientoGlobal >= 51) {
-		$('#scCumplimientoGlobal').css('color', '#ef6c00');
+	if (cumplimientoGlobal >= 90) {
+		$('#scCumplimientoGlobal').css('color', '#15803d');
+	} else if (cumplimientoGlobal >= 80) {
+		$('#scCumplimientoGlobal').css('color', '#2563eb');
+	} else if (cumplimientoGlobal >= 50) {
+		$('#scCumplimientoGlobal').css('color', '#d97706');
 	} else {
-		$('#scCumplimientoGlobal').css('color', '#c62828');
+		$('#scCumplimientoGlobal').css('color', '#dc2626');
 	}
 
-	// Escala de Gerencia:
-	// $2.500: Cumplimiento 0% al 50%
-	// $2.700: Cumplimiento 51% al 79%
-	// $3.000: Cumplimiento 80% al 100%
-	// $3.500: Cumplimiento >= 120%
+	// Escala de Direccion General (Doble condicion obligatoria):
+	// $3.500: Total >= 97% Y Entregas a tiempo >= 90%
+	// $3.000: Total >= 90% Y Entregas a tiempo >= 90%
+	// $2.700: Total >= 80% Y Entregas a tiempo >= 85%
+	// $2.500: Quien no cumpla lo anterior
+	// Se asigna el valor mas alto cuyas dos condiciones se cumplan.
 	$('.sc-tier-badge').removeClass('active');
 	var tarifa = 2500;
 	var rangoTexto = '\u2014';
 
-	if (cumplimientoGlobal >= 120) {
+	var evalRound = Math.round(cumplimientoGlobal * 10) / 10;
+	var entRound = Math.round(entregasPct * 10) / 10;
+
+	if (evalRound >= 97.0 && entRound >= 90.0) {
 		tarifa = 3500;
 		$('#scTier4').addClass('active');
-		rangoTexto = 'Nivel Sobresaliente (\u2265 120%)';
-	} else if (cumplimientoGlobal >= 80) {
+		rangoTexto = 'Nivel Sobresaliente (Eval \u2265 97% y Entregas \u2265 90%)';
+	} else if (evalRound >= 90.0 && entRound >= 90.0) {
 		tarifa = 3000;
 		$('#scTier3').addClass('active');
-		rangoTexto = 'Nivel \u00d3ptimo (80% - 100%)';
-	} else if (cumplimientoGlobal >= 51) {
+		rangoTexto = 'Nivel \u00d3ptimo (Eval \u2265 90% y Entregas \u2265 90%)';
+	} else if (evalRound >= 80.0 && entRound >= 85.0) {
 		tarifa = 2700;
 		$('#scTier2').addClass('active');
-		rangoTexto = 'Nivel Medio (51% - 79%)';
+		rangoTexto = 'Nivel Medio (Eval \u2265 80% y Entregas \u2265 85%)';
 	} else {
 		tarifa = 2500;
 		$('#scTier1').addClass('active');
-		rangoTexto = 'Nivel B\u00e1sico (0% - 50%)';
+		rangoTexto = 'Nivel B\u00e1sico (Quien no cumpla niveles superiores)';
 	}
 
 	$('#scRangoTexto').text(rangoTexto);
@@ -567,7 +608,6 @@ function ddRecalcularScorecard() {
 // ===========================================================================
 // Exportacion a Excel
 // ===========================================================================
-
 function ddExportarExcel() {
 	if (!ddDatos || !ddDatos.domiciliario) {
 		alert('Primero debe consultar el desempe\u00f1o de un domiciliario.');
@@ -630,10 +670,10 @@ function ddExportarExcel() {
 		headRow.height = 24;
 
 		// Filas Scorecard
-		var row1 = ws.addRow(['Productividad por hora', horas + ' h', r.pedidos + ' pedidos', $('#scResProductividad').text(), $('#metaProd').val() + ' ped/h', $('#scCumpProductividad').text(), '30%', $('#scPtsProductividad').text()]);
-		var row2 = ws.addRow(['Entregas a tiempo', horas + ' h', r.pedidos + ' pedidos', $('#scResEntregas').text(), $('#metaEntregas').val() + '%', $('#scCumpEntregas').text(), '35%', $('#scPtsEntregas').text()]);
-		var row3 = ws.addRow(['Regresos a tiempo', horas + ' h', '\u2014', $('#scResRegresos').text(), $('#metaRegresos').val() + '%', $('#scCumpRegresos').text(), '20%', $('#scPtsRegresos').text()]);
-		var row4 = ws.addRow(['Pedidos por salida', horas + ' h', r.pedidos + ' ped / ' + r.salidas + ' sal', $('#scResSalidas').text(), $('#metaSalidas').val() + ' ped/sal', $('#scCumpSalidas').text(), '15%', $('#scPtsSalidas').text()]);
+		var row1 = ws.addRow(['Entregas a tiempo', horas + ' h', r.pedidos + ' pedidos', $('#scResEntregas').text(), $('#metaEntregasMin').val() + '% - ' + $('#metaEntregasMax').val() + '%', $('#scCumpEntregas').text(), '40%', $('#scPtsEntregas').text()]);
+		var row2 = ws.addRow(['Regresos a tiempo', horas + ' h', '\u2014', $('#scResRegresos').text(), $('#metaRegresosMin').val() + '% - ' + $('#metaRegresosMax').val() + '%', $('#scCumpRegresos').text(), '20%', $('#scPtsRegresos').text()]);
+		var row3 = ws.addRow(['Productividad por hora', horas + ' h', r.pedidos + ' pedidos', $('#scResProductividad').text(), $('#metaProdMin').val() + ' - ' + $('#metaProdMax').val() + ' ped/h', $('#scCumpProductividad').text(), '30%', $('#scPtsProductividad').text()]);
+		var row4 = ws.addRow(['Pedidos por salida', horas + ' h', r.pedidos + ' ped / ' + r.salidas + ' sal', $('#scResSalidas').text(), $('#metaSalidasMin').val() + ' - ' + $('#metaSalidasMax').val() + ' ped/sal', $('#scCumpSalidas').text(), '10%', $('#scPtsSalidas').text()]);
 
 		var rowTotal = ws.addRow(['TOTAL EVALUACI\u00d3N', horas + ' h', r.pedidos + ' pedidos', '\u2014', '\u2014', $('#scCumpTotal').text(), '100%', $('#scPtsTotal').text()]);
 		rowTotal.font = { bold: true };
@@ -650,7 +690,7 @@ function ddExportarExcel() {
 		ws.addRow([]);
 
 		// Resumen Liquidacion
-		ws.addRow(['RESUMEN DE LIQUIDACI\u00d3N Y PAGO (ESCALA DE GERENCIA)']);
+		ws.addRow(['RESUMEN DE LIQUIDACI\u00d3N Y PAGO (ESCALA DE DIRECCI\u00d3N GENERAL)']);
 		ws.lastRow.font = { bold: true, size: 12, color: { argb: 'FF102F6F' } };
 		ws.addRow(['Puntaje Total Obtenido:', $('#scTotalPuntos').text() + ' / 100']);
 		ws.addRow(['Nivel de Cumplimiento:', $('#scCumplimientoGlobal').text() + ' (' + $('#scRangoTexto').text() + ')']);
@@ -703,11 +743,11 @@ function ddExportarCSV() {
 	csv += 'Total Pedidos;' + r.pedidos + '\r\n';
 	csv += 'Total Salidas;' + r.salidas + '\r\n\r\n';
 
-	csv += 'Indicador;Horas reales;Pedidos entregados;Resultado obtenido;Meta;% Cumplimiento;Peso;Puntos obtenidos\r\n';
-	csv += 'Productividad por hora;' + horas + ' h;' + r.pedidos + ' pedidos;' + $('#scResProductividad').text() + ';' + $('#metaProd').val() + ' ped/h;' + $('#scCumpProductividad').text() + ';30%;' + $('#scPtsProductividad').text() + '\r\n';
-	csv += 'Entregas a tiempo;' + horas + ' h;' + r.pedidos + ' pedidos;' + $('#scResEntregas').text() + ';' + $('#metaEntregas').val() + '%;' + $('#scCumpEntregas').text() + ';35%;' + $('#scPtsEntregas').text() + '\r\n';
-	csv += 'Regresos a tiempo;' + horas + ' h;\u2014;' + $('#scResRegresos').text() + ';' + $('#metaRegresos').val() + '%;' + $('#scCumpRegresos').text() + ';20%;' + $('#scPtsRegresos').text() + '\r\n';
-	csv += 'Pedidos por salida;' + horas + ' h;' + r.pedidos + ' ped / ' + r.salidas + ' sal;' + $('#scResSalidas').text() + ';' + $('#metaSalidas').val() + ' ped/sal;' + $('#scCumpSalidas').text() + ';15%;' + $('#scPtsSalidas').text() + '\r\n';
+	csv += 'Indicador;Horas reales;Pedidos entregados;Resultado obtenido;Rango Meta;% Cumplimiento;Peso;Puntos obtenidos\r\n';
+	csv += 'Entregas a tiempo;' + horas + ' h;' + r.pedidos + ' pedidos;' + $('#scResEntregas').text() + ';' + $('#metaEntregasMin').val() + '% - ' + $('#metaEntregasMax').val() + '%;' + $('#scCumpEntregas').text() + ';40%;' + $('#scPtsEntregas').text() + '\r\n';
+	csv += 'Regresos a tiempo;' + horas + ' h;\u2014;' + $('#scResRegresos').text() + ';' + $('#metaRegresosMin').val() + '% - ' + $('#metaRegresosMax').val() + '%;' + $('#scCumpRegresos').text() + ';20%;' + $('#scPtsRegresos').text() + '\r\n';
+	csv += 'Productividad por hora;' + horas + ' h;' + r.pedidos + ' pedidos;' + $('#scResProductividad').text() + ';' + $('#metaProdMin').val() + ' - ' + $('#metaProdMax').val() + ' ped/h;' + $('#scCumpProductividad').text() + ';30%;' + $('#scPtsProductividad').text() + '\r\n';
+	csv += 'Pedidos por salida;' + horas + ' h;' + r.pedidos + ' ped / ' + r.salidas + ' sal;' + $('#scResSalidas').text() + ';' + $('#metaSalidasMin').val() + ' - ' + $('#metaSalidasMax').val() + ' ped/sal;' + $('#scCumpSalidas').text() + ';10%;' + $('#scPtsSalidas').text() + '\r\n';
 	csv += 'TOTAL EVALUACION;' + horas + ' h;' + r.pedidos + ' pedidos;\u2014;\u2014;' + $('#scCumpTotal').text() + ';100%;' + $('#scPtsTotal').text() + '\r\n\r\n';
 
 	csv += 'LIQUIDACION SUGERIDA\r\n';
