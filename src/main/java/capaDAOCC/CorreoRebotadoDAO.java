@@ -43,6 +43,78 @@ public class CorreoRebotadoDAO {
 			+ "                  AND r.tipo = 'DURO')";
 
 	/**
+	 * Si a esta direccion ya no vale la pena escribirle.
+	 *
+	 * Solo bloquea el DURO, igual que NO_REBOTADO: un blando -buzon lleno- es
+	 * pasajero y sacar por eso a un cliente bueno seria perderlo por un dia malo.
+	 *
+	 * Existe aparte de NO_REBOTADO porque esa es una condicion para armar un
+	 * publico de miles dentro de una consulta, y esta es la pregunta por una sola
+	 * direccion, que es lo que necesita un envio individual como el del link de
+	 * pago.
+	 *
+	 * Si la consulta falla responde que NO esta rebotada: es peor dejar a un
+	 * cliente sin su link de pago porque la base no respondio, que mandar un
+	 * correo de mas.
+	 */
+	public static boolean esRebotadoDuro(final String email) {
+		if (email == null || email.trim().length() == 0) {
+			return (false);
+		}
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+			try (PreparedStatement ps = cn.prepareStatement(
+					"SELECT 1 FROM crm.correo_rebotado WHERE email = ? AND tipo = 'DURO' LIMIT 1")) {
+				//Se guarda en minuscula en anotar(), asi que se pregunta igual.
+				ps.setString(1, email.trim().toLowerCase());
+				try (ResultSet rs = ps.executeQuery()) {
+					return (rs.next());
+				}
+			}
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error(
+					"CorreoRebotadoDAO.esRebotadoDuro " + email + ": " + e.toString());
+			return (false);
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	/**
+	 * El motivo con el que quedo anotada la direccion, o cadena vacia.
+	 *
+	 * Sirve para poder decirle a quien atiende por que no se va a intentar el
+	 * envio. "La direccion no existe" y "el buzon esta lleno" llevan a acciones
+	 * distintas, y quien esta hablando con el cliente necesita saber cual es.
+	 */
+	public static String motivoRebote(final String email) {
+		if (email == null || email.trim().length() == 0) {
+			return ("");
+		}
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+			try (PreparedStatement ps = cn.prepareStatement(
+					"SELECT IFNULL(motivo,'') AS motivo FROM crm.correo_rebotado"
+					+ " WHERE email = ? AND tipo = 'DURO' LIMIT 1")) {
+				ps.setString(1, email.trim().toLowerCase());
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						return (rs.getString("motivo"));
+					}
+				}
+			}
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error(
+					"CorreoRebotadoDAO.motivoRebote " + email + ": " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return ("");
+	}
+
+	/**
 	 * Anota un rebote. Si la direccion ya estaba, le suma una vez.
 	 *
 	 * Un BLANDO no pisa a un DURO: una vez que se sabe que la direccion no

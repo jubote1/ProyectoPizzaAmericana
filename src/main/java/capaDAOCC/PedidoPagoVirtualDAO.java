@@ -1,6 +1,7 @@
 package capaDAOCC;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import org.apache.log4j.Logger;
@@ -10,7 +11,76 @@ import capaModeloCC.PedidoPagoVirtual;
 import conexionCC.ConexionBaseDatos;
 
 public class PedidoPagoVirtualDAO {
-	
+
+	/**
+	 * Cuantas veces ya se le mando a esta direccion el link de ESTE pedido.
+	 *
+	 * POR QUE EXISTE
+	 *
+	 * Una direccion que no existe rebota siempre, y el rebote llega minutos
+	 * despues por correo: el codigo que envia nunca se entera, porque para el
+	 * servidor SMTP el envio salio bien. Sin un conteo, nada impide mandar el
+	 * mismo link a la misma direccion muerta una y otra vez. El 2026-10-17 el
+	 * pedido 2395879 salio unas once veces en dos minutos, todas rebotadas.
+	 *
+	 * Cuenta los envios automaticos y los reenvios manuales juntos, porque para
+	 * el cliente son el mismo correo llegando otra vez.
+	 *
+	 * VA POR DIRECCION, NO SOLO POR PEDIDO, y eso es a proposito: si quien
+	 * atiende escribe otra direccion, el conteo de la anterior no puede
+	 * impedirle el intento. Cambiar la direccion es justamente la salida cuando
+	 * la que tenemos esta mala, y el tope no puede cerrarla.
+	 *
+	 * Solo cuenta las filas con correo: notificarLinkPago inserta una fila por
+	 * cada aviso aunque no haya salido correo -para dejar el rastro del
+	 * WhatsApp-, y esas no son intentos de envio.
+	 *
+	 * @param idPedido pedido del link
+	 * @param email    direccion por la que se pregunta
+	 * @return cuantas veces ya salio; 0 si no hay registro o si la consulta falla
+	 */
+	public static int contarEnviosACorreo(final int idPedido, final String email)
+	{
+		if (email == null || email.trim().length() == 0)
+		{
+			return (0);
+		}
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			PreparedStatement ps = con1.prepareStatement(
+					"SELECT COUNT(*) FROM pedido_pago_virtual"
+					+ " WHERE idpedido = ? AND TRIM(LOWER(email)) = ?");
+			ps.setInt(1, idPedido);
+			ps.setString(2, email.trim().toLowerCase());
+			ResultSet rs = ps.executeQuery();
+			int veces = 0;
+			if (rs.next())
+			{
+				veces = rs.getInt(1);
+			}
+			rs.close();
+			ps.close();
+			con1.close();
+			return (veces);
+		}
+		catch (Exception e)
+		{
+			logger.error("PedidoPagoVirtualDAO.contarEnviosACorreo(" + idPedido + "): " + e.toString());
+			try
+			{
+				con1.close();
+			} catch (Exception e1)
+			{
+			}
+			//Ante la duda se deja pasar: es peor bloquear un link de pago legitimo
+			//porque la consulta fallo, que permitir un envio de mas.
+			return (0);
+		}
+	}
+
 	public static int insertarPedidoPagoVirtual(PedidoPagoVirtual pedPag)
 	{
 		Logger logger = Logger.getLogger("log_file");
