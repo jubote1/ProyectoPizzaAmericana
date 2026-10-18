@@ -9,8 +9,11 @@ import java.util.StringTokenizer;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import capaDAOCC.TiendaDAO;
 import capaDAOCC.VentaIntegralCategoriaDAO;
 import capaDAOCC.VentaIntegralResumenDAO;
+import capaDAOCC.VentaIntegralTiendaDAO;
+import capaModeloCC.Tienda;
 import capaModeloCC.VentaIntegralCategoria;
 import capaModeloCC.VentaIntegralResumenSemana;
 
@@ -181,6 +184,73 @@ public class VentaIntegralCtrl {
 			}
 		}
 
+		ArrayList<String> alertas = VentaIntegralResumenDAO.consultarTiendasSinDatosAparentes(semanaIniISO,
+				semanaFinISO);
+		return (this.armarRespuestaVentaIntegral(porTiendaCategoria, nombrePorTienda, ccPorCategoria, categorias,
+				idTienda, alertas));
+	}
+
+	/**
+	 * Venta Integral calculada EN VIVO para un rango de fechas cualquiera.
+	 *
+	 * consultarResumenVentaIntegral lee lo que el proceso de los domingos ya
+	 * dejo cerrado en venta_integral_resumen_semanal; esta va y le pregunta a
+	 * cada tienda en el momento. Es lo que permite pedir la semana en curso o
+	 * un rango que no empiece en lunes, y es tambien por lo que se demora: son
+	 * once conexiones remotas, una por tienda.
+	 *
+	 * Una tienda que no responda no tumba el reporte. Queda por fuera de la
+	 * tabla y aparece en la alerta, que es la misma casilla donde la otra
+	 * consulta muestra las tiendas sin datos. Dejarla en cero seria peor: se
+	 * veria como una tienda que no vendio.
+	 */
+	public String consultarVentaIntegralVivo(int idTienda, String fechaIniISO, String fechaFinISO) {
+		ArrayList<VentaIntegralCategoria> categorias = VentaIntegralCategoriaDAO.listarCategoriasActivas();
+		HashMap<Integer, HashMap<Integer, Double>> porTiendaCategoria = new HashMap<>();
+		HashMap<Integer, String> nombrePorTienda = new HashMap<>();
+		HashMap<Integer, Double> ccPorCategoria = new HashMap<>();
+		ArrayList<String> alertas = new ArrayList<>();
+
+		for (Tienda tienda : TiendaDAO.obtenerTiendas()) {
+			//Una tienda sin hosbd no tiene base propia que consultar. No es una
+			//falla y no va a la alerta: simplemente no participa.
+			if (tienda.getHosbd() == null || tienda.getHosbd().trim().isEmpty()) {
+				continue;
+			}
+			VentaIntegralTiendaDAO.ResultadoTienda resultado = VentaIntegralTiendaDAO
+					.consultarTotalesTienda(tienda.getHosbd(), categorias, fechaIniISO, fechaFinISO);
+			if (!resultado.respondio) {
+				alertas.add(tienda.getNombreTienda() + " (no respondio)");
+				continue;
+			}
+			nombrePorTienda.put(tienda.getIdTienda(), tienda.getNombreTienda());
+			porTiendaCategoria.put(tienda.getIdTienda(), resultado.porCategoria);
+		}
+
+		//El contact center no se le pregunta a ninguna tienda: vive en el
+		//central y es uno solo para toda la red.
+		for (VentaIntegralCategoria categoria : categorias) {
+			ccPorCategoria.put(categoria.getIdCategoria(),
+					VentaIntegralResumenDAO.consultarTotalContactCenter(categoria, fechaIniISO, fechaFinISO));
+		}
+
+		return (this.armarRespuestaVentaIntegral(porTiendaCategoria, nombrePorTienda, ccPorCategoria, categorias,
+				idTienda, alertas));
+	}
+
+	/**
+	 * La parte comun de las dos consultas de Venta Integral: el promedio de la
+	 * red, el coeficiente de variacion de cada tienda y el JSON que espera la
+	 * pantalla.
+	 *
+	 * Esta separado para que la pestana de semanas cerradas y la de rango en
+	 * vivo den exactamente la misma tabla. Lo unico que cambia entre las dos es
+	 * de donde salen los numeros; como se comparan y como se pintan, no.
+	 */
+	@SuppressWarnings("unchecked")
+	private String armarRespuestaVentaIntegral(HashMap<Integer, HashMap<Integer, Double>> porTiendaCategoria,
+			HashMap<Integer, String> nombrePorTienda, HashMap<Integer, Double> ccPorCategoria,
+			ArrayList<VentaIntegralCategoria> categorias, int idTienda, ArrayList<String> alertas) {
 		// Promedio de la red por categoria, SOLO con tiendas reales.
 		HashMap<Integer, Double> sumaPorCategoria = new HashMap<>();
 		for (HashMap<Integer, Double> categoriasDeUnaTienda : porTiendaCategoria.values()) {
@@ -254,8 +324,7 @@ public class VentaIntegralCtrl {
 		JSONObject granTotalJSON = this.filaAJSON(-1, "Total Red", granTotalPorCategoria, granTotal, 0, 0);
 
 		JSONArray alertaJSON = new JSONArray();
-		for (String nombreTienda : VentaIntegralResumenDAO.consultarTiendasSinDatosAparentes(semanaIniISO,
-				semanaFinISO)) {
+		for (String nombreTienda : alertas) {
 			alertaJSON.add(nombreTienda);
 		}
 

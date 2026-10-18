@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>IDENTIFICACION EN EL MOSTRADOR</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/marca.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" src="js/bootbox.min.js"></script>
+		  <style type="text/css">
+			/* Mismo lenguaje visual que VentaIntegral.html. */
+			.im-tarjeta { border:1px solid #E2E6EC; border-radius:6px; padding:10px 12px;
+				margin-bottom:10px; background-color:#FFFFFF; }
+			.im-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.04em; }
+			.im-cifra { font-size:24px; font-weight:bold; color:#102F6F; line-height:1.15; }
+			.im-pie { font-size:12px; color:#6C7482; }
+			.im-bien .im-cifra { color:#1B8A4B; }
+			.im-alerta .im-cifra { color:#C21C1F; }
+			.im-filtros { margin:6px 0 16px; border:1px solid #E2E6EC; border-radius:6px;
+				padding:10px 12px; background-color:#FBFCFD; }
+			#tabla-container table { border-collapse:collapse; width:100%; }
+			#tabla-container th, #tabla-container td { padding:6px 10px; border-top:1px solid #E2E6EC; text-align:right; }
+			#tabla-container th:first-child, #tabla-container td:first-child { text-align:left; }
+			#tabla-container thead th { background:#102F6F; color:#FFFFFF; }
+			.im-fila-tienda { cursor:pointer; }
+			.im-fila-tienda:hover td { background:#F4F7FD; }
+			.im-cajeros td { background:#FBFCFD; font-size:12px; }
+			.im-cajeros table { width:100%; }
+			.im-cajeros th { background:#E8EDF7 !important; color:#102F6F !important; font-size:11px; }
+			.im-total td { font-weight:bold; background:#F4F4F6; border-top:2px solid #102F6F !important; }
+			.im-flecha { color:#6C7482; font-size:11px; }
+		  </style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({
+		    	url: server + 'ValidarUsuarioAplicacion',
+		    	dataType: 'json',
+		    	type: 'post',
+		    	async: false,
+		    	success: function(data){
+						    respuesta =  data[0].respuesta;
+						    usuario = data[0].nombreusuario;
+				}
+			});
+			//Dentro de una pestana de ReportesMercadeo.html no se carga el menu: ya lo
+			//tiene la pagina de afuera. La validacion de sesion sigue igual.
+			var embebido = (loc.search.indexOf("embebido=1") >= 0);
+			switch(respuesta)
+		    		{
+		    			case 'OK':
+		    				if(!embebido) { $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); }
+		    				break;
+		    			case 'OKA':
+		    				if(!embebido) { $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); }
+		    				break;
+		    			default:
+		    				location.href = server +"Index.html";
+		    				break;
+		    		}
+		</script>
+
+		<div class="container-fluid">
+			<h1>IDENTIFICACION EN EL MOSTRADOR</h1>
+			<p class="im-pie">Que tanto se identifica al cliente en los pedidos de <b>Punto de Venta</b>, por tienda y por
+			persona que atendio. Es la misma medicion del correo semanal, pero con el rango que usted escoja.
+			Se consulta a las tiendas en el momento, asi que se demora.</p>
+
+			<div class="im-filtros">
+				<div class="row">
+					<div class="col-md-2">
+						<label for="fechainicial">Fecha Inicial</label>
+						<input type="text" id="fechainicial" name="fechainicial" class="form-control">
+					</div>
+					<div class="col-md-2">
+						<label for="fechafinal">Fecha Final</label>
+						<input type="text" id="fechafinal" name="fechafinal" class="form-control">
+					</div>
+					<div class="col-md-3">
+						<label for="idtienda">Tienda</label>
+						<select id="idtienda" class="form-control"><option value="0">Todas las tiendas</option></select>
+					</div>
+					<div class="col-md-2">
+						<label>&nbsp;</label><br/>
+						<input type="button" id="im-boton-consultar" class="btn btn-primary" value="CONSULTAR" onclick="imConsultar()">
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-3"><div class="im-tarjeta"><div class="im-rotulo">Pedidos de mostrador</div><div class="im-cifra" id="im-res-pedidos">0</div><div class="im-pie">en el rango</div></div></div>
+				<div class="col-md-3"><div class="im-tarjeta"><div class="im-rotulo">Identificados</div><div class="im-cifra" id="im-res-identificados">0</div><div class="im-pie">con celular utilizable</div></div></div>
+				<div class="col-md-3"><div class="im-tarjeta" id="im-tarjeta-pct"><div class="im-rotulo">Porcentaje de la red</div><div class="im-cifra" id="im-res-pct">&mdash;</div><div class="im-pie">identificados sobre pedidos</div></div></div>
+				<div class="col-md-3"><div class="im-tarjeta"><div class="im-rotulo">Tiendas en la tabla</div><div class="im-cifra" id="im-res-tiendas">0</div><div class="im-pie">&nbsp;</div></div></div>
+			</div>
+
+			<div id="im-calculando" style="display:none;background:#EAF1FF;border:1px solid #102F6F;border-radius:4px;padding:10px 12px;margin-bottom:16px;">
+				<b style="color:#102F6F">Consultando las tiendas una por una.</b> Esto se demora: son once conexiones remotas.
+				Entre mas largo el rango, mas tarda. No cierre la pantalla.
+			</div>
+
+			<div id="im-sin-datos" style="display:none;background:#FFF6DC;border:1px solid #8a6d3b;border-radius:4px;padding:10px 12px;margin-bottom:16px;">
+				<b style="color:#8a6d3b">Sin datos en el rango:</b> <span id="im-sin-datos-texto"></span>.
+				O no respondieron, o no tuvieron pedidos de Punto de Venta. No se puede distinguir una cosa de la otra
+				desde aca, asi que no se dan por cero.
+			</div>
+
+			<h4>Tabla de posiciones</h4>
+			<p class="im-pie">De mejor a peor porcentaje. <b>Haga clic en una tienda</b> para ver el detalle por persona.
+			<b>Se negaron</b> son los clientes a los que si se les pregunto y no dieron el dato;
+			<b>sin preguntar</b> son los que nadie pregunto, y esa es la cifra que si depende de la operacion.
+			En el detalle solo salen las personas con al menos <span id="im-minimo">10</span> pedidos: con menos,
+			un porcentaje no dice nada.</p>
+			<div id="tabla-container" class="table-responsive"></div>
+
+			<div style="height:40px;"></div>
+		</div>
+	</body>
+	<script src="js/identificacionMostrador.js" type="text/javascript"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechainicial").datepicker($.datepicker.regional["es"]);
+		$("#fechafinal").datepicker($.datepicker.regional["es"]);
+	</script>
+</html>

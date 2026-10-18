@@ -85,6 +85,7 @@ import capaDAOCC.HomologacionSalesManagoDAO;
 import capaDAOCC.HomologacionTiendaTokenDAO;
 import capaDAOCC.IntegracionCRMDAO;
 import capaDAOCC.IntegracionCRMHomologaAsesorDAO;
+import capaDAOCC.CorreoRebotadoDAO;
 import capaDAOCC.LogEncuestaServicioDAO;
 import capaDAOCC.LogEventoWompiDAO;
 import capaDAOCC.LogPedidoVirtualDAO;
@@ -1713,6 +1714,11 @@ public class PedidoCtrl {
 		String observacionLog;
 		if (emailEnvio.length() > 0) {
 			observacionLog = "Se envio el correo con el link de pago a " + emailEnvio + ".";
+		} else if (envioCorreo.motivoBloqueo.length() > 0) {
+			// No hubo envio y no fue por un fallo: se decidio no intentarlo. El
+			// motivo ya viene redactado y queda guardado tal cual, porque es lo
+			// que necesita leer quien atienda al cliente despues.
+			observacionLog = envioCorreo.motivoBloqueo;
 		} else if (envioCorreo.resultado == ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA) {
 			observacionLog = "El correo del cliente es invalido, no se envio correo.";
 		} else if (envioCorreo.resultado == null) {
@@ -1781,6 +1787,19 @@ public class PedidoCtrl {
 					+ correoCliente + "\" del cliente " + idCliente + " no es valida.");
 			return (new ResultadoCorreoLinkPago("",
 					ControladorEnvioCorreo.ResultadoEnvio.DIRECCION_INVALIDA));
+		}
+
+		/*
+		 * Una direccion bien escrita puede no existir, y eso no se sabe al enviar:
+		 * el servidor SMTP acepta el correo y el rebote llega minutos despues. Por
+		 * eso aqui se consulta lo que ya se aprendio de rebotes anteriores en vez
+		 * de volver a averiguarlo a costa del cliente.
+		 */
+		final String motivoBloqueo = motivoNoEnviarLinkPago(idPedido, correoCliente);
+		if (motivoBloqueo.length() > 0) {
+			System.out.println("Link de pago del pedido " + idPedido + ": no se intenta el envio a \""
+					+ correoCliente + "\". " + motivoBloqueo);
+			return (new ResultadoCorreoLinkPago("", null, motivoBloqueo));
 		}
 
 		try {
@@ -1853,6 +1872,62 @@ public class PedidoCtrl {
 		}
 	}
 
+	/** Tope de envios del link del mismo pedido a la misma direccion, si no hay parametro. */
+	private static final int TOPE_ENVIOS_LINK_PAGO_POR_DEFECTO = 3;
+
+	/**
+	 * Por que NO se le debe mandar el link de pago a esta direccion, o cadena
+	 * vacia si si se puede.
+	 *
+	 * POR QUE EXISTE ESTE METODO, Y POR QUE UNO SOLO
+	 *
+	 * El link de pago sale por tres caminos -la creacion del pedido, la
+	 * recreacion del link y el reenvio manual- y los tres mandan el mismo correo
+	 * a la misma persona. Si la revision viviera en cada uno, bastaria con que a
+	 * uno se le olvidara para que el control no sirviera: ya paso con el
+	 * WhatsApp, donde habia dos copias del aviso y a una le faltaba el camino
+	 * alterno. La decision vive aqui y los tres preguntan.
+	 *
+	 * SON DOS CONTROLES DISTINTOS, no dos formas del mismo:
+	 *
+	 *  1. La direccion ya reboto DURO antes: se sabe que no existe o que no
+	 *     recibe. Insistir no la va a revivir, y de paso quema la reputacion del
+	 *     dominio, que es lo que mira Gmail para mandar a spam. Ahi no se pierde
+	 *     este correo: se pierden los que si importan.
+	 *  2. Ya se le mando varias veces a esa misma direccion el link de ESTE
+	 *     pedido. Esto atrapa el caso que el control anterior no puede ver,
+	 *     que es el comun: una direccion que rebota por primera vez y de la que
+	 *     todavia no se ha aprendido nada.
+	 *
+	 * El tope sale del parametro TOPEENVIOSLINKPAGOCORREO para poder subirlo o
+	 * bajarlo sin desplegar; si no esta, son 3.
+	 *
+	 * @param idPedido pedido del link
+	 * @param email    direccion a la que se quiere enviar
+	 * @return el motivo para no enviar, listo para mostrar y para el log, o ""
+	 */
+	private String motivoNoEnviarLinkPago(int idPedido, String email) {
+
+		if (CorreoRebotadoDAO.esRebotadoDuro(email)) {
+			String motivo = CorreoRebotadoDAO.motivoRebote(email);
+			return ("La direccion " + email + " ya reboto antes y no esta recibiendo correo"
+					+ (motivo.length() > 0 ? " (" + motivo + ")" : "")
+					+ ". No se intento el envio.");
+		}
+
+		int tope = ParametrosDAO.retornarValorNumerico("TOPEENVIOSLINKPAGOCORREO");
+		if (tope <= 0) {
+			tope = TOPE_ENVIOS_LINK_PAGO_POR_DEFECTO;
+		}
+		int yaEnviados = PedidoPagoVirtualDAO.contarEnviosACorreo(idPedido, email);
+		if (yaEnviados >= tope) {
+			return ("Ya se le envio " + yaEnviados + " veces el link de este pedido a " + email
+					+ ". No se intento el envio otra vez.");
+		}
+
+		return ("");
+	}
+
 	/**
 	 * Resultado del envio del correo del link de pago.
 	 *
@@ -1874,9 +1949,25 @@ public class PedidoCtrl {
 		/** Motivo del fallo, o null si el cliente no tenia correo registrado. */
 		private final ControladorEnvioCorreo.ResultadoEnvio resultado;
 
+		/**
+		 * Por que ni siquiera se intento, ya redactado; vacio si se intento.
+		 *
+		 * Va como texto y no como un valor mas de ResultadoEnvio a proposito: ese
+		 * enum describe cosas que le pasan al ENVIO, y aqui no hubo envio. Meterlo
+		 * ahi obligaria a revisar cada sitio que lo consulta, que son varios y
+		 * ninguno tiene que ver con el link de pago.
+		 */
+		private final String motivoBloqueo;
+
 		private ResultadoCorreoLinkPago(String email, ControladorEnvioCorreo.ResultadoEnvio resultado) {
+			this(email, resultado, "");
+		}
+
+		private ResultadoCorreoLinkPago(String email, ControladorEnvioCorreo.ResultadoEnvio resultado,
+				String motivoBloqueo) {
 			this.email = email;
 			this.resultado = resultado;
+			this.motivoBloqueo = (motivoBloqueo == null) ? "" : motivoBloqueo;
 		}
 	}
 
@@ -12139,6 +12230,29 @@ public class PedidoCtrl {
 		}
 		if (!correoValido(destino)) {
 			respuesta.put("mensaje", "El correo indicado no es valido: " + destino);
+			return (respuesta.toJSONString());
+		}
+
+		/*
+		 * La revision va ANTES de guardar el correo en la ficha, a proposito: si
+		 * la direccion que acaban de escribir es una que ya rebota, guardarla
+		 * dejaria el problema sembrado para el proximo pedido.
+		 *
+		 * El mensaje dice que hacer y no solo que no se pudo. Quien esta al
+		 * telefono con el cliente necesita saber que el camino es pedirle otra
+		 * direccion, no volver a oprimir el boton, que es exactamente lo que paso
+		 * el 2026-10-17 con el pedido 2395879: once correos en dos minutos, todos
+		 * rebotados, porque la pantalla no daba ninguna senal de que insistir no
+		 * servia.
+		 */
+		String motivoNoEnviar = motivoNoEnviarLinkPago(idPedido, destino);
+		if (motivoNoEnviar.length() > 0) {
+			respuesta.put("mensaje", motivoNoEnviar
+					+ " Pidale otra direccion al cliente y escribala aqui.");
+			//Queda el rastro de que se intento y por que no se hizo: si no, en el
+			//log del pedido pareceria que nadie intento ayudarlo.
+			PedidoPagoVirtualDAO.insertarPedidoPagoVirtual(new PedidoPagoVirtual(idPedido, "",
+					pedido.getTelefonoCelular(), "REENVIO MANUAL NO REALIZADO. " + motivoNoEnviar));
 			return (respuesta.toJSONString());
 		}
 
