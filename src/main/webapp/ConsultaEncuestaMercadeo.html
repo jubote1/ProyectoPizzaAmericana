@@ -58,16 +58,20 @@
 					nombreusuario = data[0].usu;
 				}
 			});
+			//Cuando esta pantalla va dentro de una pestana de ReportesMercadeo.html no
+			//se carga el menu: ya lo tiene la pagina de afuera y saldria dos veces. La
+			//validacion de sesion sigue igual, y sin sesion sigue mandando a Index.
+			var embebido = (loc.search.indexOf("embebido=1") >= 0);
 			switch(respuesta)
 			{
 				case 'OK':
-					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					if(!embebido) { $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); }
 					break;
 				case 'OKA':
-					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					if(!embebido) { $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); }
 					break;
 				case 'OKP':
-					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					if(!embebido) { $('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); }); }
 					break;
 				default:
 					location.href = server +"Index.html";

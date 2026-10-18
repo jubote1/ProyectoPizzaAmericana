@@ -1,5 +1,11 @@
 var server;
 
+//Que servicio consulta. VentaIntegral.html lee las semanas que el proceso de
+//los domingos ya cerro; VentaIntegralVivo.html, dentro de Reportes de Mercadeo,
+//lo cambia por el que calcula en vivo un rango cualquiera. Se comparte el
+//archivo para que las dos pinten EXACTAMENTE la misma tabla.
+var servicioVentaIntegral = "ConsultarVentaIntegral";
+
 $(document).ready(function() {
 
 	var loc = window.location;
@@ -54,11 +60,23 @@ function consultar()
 		bootbox.alert('Seleccione la fecha inicial y la fecha final.');
 		return;
 	}
-	$.getJSON(server + 'ConsultarVentaIntegral?fechainicial=' + fechaInicial + '&fechafinal=' + fechaFinal
+	//El aviso de "calculando" solo existe en la pantalla en vivo, que es la que
+	//se demora. En la de semanas cerradas el selector no engancha nada y estas
+	//dos lineas no hacen nada.
+	$('#vi-calculando').show();
+	$('#vi-boton-consultar').prop('disabled', true);
+	$.getJSON(server + servicioVentaIntegral + '?fechainicial=' + fechaInicial + '&fechafinal=' + fechaFinal
 			+ '&idtienda=' + idTienda, function(data){
 		pintarResumen(data);
 		pintarTarjetas(data, fechaInicial, fechaFinal);
 		pintarAlerta(data.alertatiendassindatos);
+	}).fail(function(){
+		//Sin esto, un error dejaria el aviso de "calculando" puesto para siempre
+		//y la pantalla pareceria colgada.
+		bootbox.alert('No se pudo consultar. Si el rango es largo puede haberse agotado el tiempo de espera; pruebe con menos dias.');
+	}).always(function(){
+		$('#vi-calculando').hide();
+		$('#vi-boton-consultar').prop('disabled', false);
 	});
 }
 
