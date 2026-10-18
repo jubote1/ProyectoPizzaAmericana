@@ -7,6 +7,7 @@ import java.util.Comparator;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import capaDAOCC.IdentificacionMostradorDAO;
 import capaDAOCC.TiendaDAO;
 import capaModeloCC.Tienda;
 
@@ -20,9 +21,11 @@ import capaModeloCC.Tienda;
  * sirve para mirar un mes, ni una quincena, ni comparar dos periodos, que es lo
  * que necesita un lider de zona.
  *
- * La consulta a cada tienda es la MISMA (capaDAOPOS.PedidoDAO, el DAO del POS),
- * asi que las dos cosas dan igual para un mismo rango. Si una se cambia hay que
- * mirar la otra.
+ * La consulta a cada tienda vive en capaDAOCC.IdentificacionMostradorDAO, que es
+ * una copia de la del POS. Esta copiada, y no llamada, porque el central compila
+ * contra una foto del POS en libs/ que esta un ano atrasada; el detalle esta en
+ * el comentario de ese DAO. Las dos consultas tienen que dar lo mismo: si se
+ * cambia una hay que cambiar la otra.
  *
  * Una tienda que no responda no tumba el reporte: no sale en la tabla y se
  * nombra aparte.
@@ -49,8 +52,8 @@ public class IdentificacionMostradorCtrl {
 		int seNegaron = 0;
 		int autPreguntadas = 0;
 		int autSi = 0;
-		ArrayList<capaDAOPOS.PedidoDAO.IdentificacionCajero> cajeros =
-				new ArrayList<capaDAOPOS.PedidoDAO.IdentificacionCajero>();
+		ArrayList<IdentificacionMostradorDAO.Cajero> cajeros =
+				new ArrayList<IdentificacionMostradorDAO.Cajero>();
 
 		int porcentaje() {
 			return (pedidos > 0 ? (int) Math.round((identificados * 100.0) / pedidos) : 0);
@@ -75,7 +78,7 @@ public class IdentificacionMostradorCtrl {
 			if (idTienda != 0 && idTienda != tienda.getIdTienda()) {
 				continue;
 			}
-			ArrayList<capaDAOPOS.PedidoDAO.IdentificacionCajero> cajeros = capaDAOPOS.PedidoDAO
+			ArrayList<IdentificacionMostradorDAO.Cajero> cajeros = IdentificacionMostradorDAO
 					.obtenerIdentificacionMostrador(desde, hasta, tienda.getHosbd(), TIPO_MOSTRADOR);
 			if (cajeros.isEmpty()) {
 				//Vacio puede ser "no respondio" o "no hubo pedidos de mostrador
@@ -87,7 +90,7 @@ public class IdentificacionMostradorCtrl {
 			FilaTienda fila = new FilaTienda();
 			fila.idTienda = tienda.getIdTienda();
 			fila.nombre = tienda.getNombreTienda();
-			for (capaDAOPOS.PedidoDAO.IdentificacionCajero c : cajeros) {
+			for (IdentificacionMostradorDAO.Cajero c : cajeros) {
 				fila.pedidos = fila.pedidos + c.pedidos;
 				fila.identificados = fila.identificados + c.identificados;
 				fila.seNegaron = fila.seNegaron + c.preguntadosSinDar;
@@ -127,13 +130,13 @@ public class IdentificacionMostradorCtrl {
 			filaJSON.put("autpreguntadas", fila.autPreguntadas);
 			filaJSON.put("autsi", fila.autSi);
 			JSONArray cajerosJSON = new JSONArray();
-			Collections.sort(fila.cajeros, new Comparator<capaDAOPOS.PedidoDAO.IdentificacionCajero>() {
-				public int compare(capaDAOPOS.PedidoDAO.IdentificacionCajero a,
-						capaDAOPOS.PedidoDAO.IdentificacionCajero b) {
+			Collections.sort(fila.cajeros, new Comparator<IdentificacionMostradorDAO.Cajero>() {
+				public int compare(IdentificacionMostradorDAO.Cajero a,
+						IdentificacionMostradorDAO.Cajero b) {
 					return (Integer.compare(b.porcentaje(), a.porcentaje()));
 				}
 			});
-			for (capaDAOPOS.PedidoDAO.IdentificacionCajero c : fila.cajeros) {
+			for (IdentificacionMostradorDAO.Cajero c : fila.cajeros) {
 				JSONObject cajeroJSON = new JSONObject();
 				cajeroJSON.put("cajero", c.cajero);
 				cajeroJSON.put("pedidos", c.pedidos);
