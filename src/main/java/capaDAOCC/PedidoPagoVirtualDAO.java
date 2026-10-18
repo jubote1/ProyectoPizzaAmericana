@@ -89,10 +89,24 @@ public class PedidoPagoVirtualDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String insert = "insert into pedido_pago_virtual (idpedido, email, telefono_celular, observacion) values (" + pedPag.getIdPedido() + ", '" + pedPag.getEmail() + "' , '" + pedPag.getTelefonoCelular() + "' , '" + pedPag.getObservacion() + "')"; 
-			logger.info(insert);
-			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
+			/*
+			 * Va con parametros y no concatenando. El correo llega desde la
+			 * pantalla de reenvio manual, es decir desde request.getParameter: un
+			 * apostrofo en la direccion -que es raro pero legal en un correo-
+			 * rompia el INSERT, y el aviso se perdia sin dejar rastro justo en el
+			 * registro que existe para dejar rastro. Es inyeccion autenticada, no
+			 * abierta, pero no hay razon para dejarla puesta.
+			 */
+			String insert = "insert into pedido_pago_virtual (idpedido, email, telefono_celular, observacion)"
+					+ " values (?, ?, ?, ?)";
+			PreparedStatement stm = con1.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+			stm.setInt(1, pedPag.getIdPedido());
+			stm.setString(2, pedPag.getEmail());
+			stm.setString(3, pedPag.getTelefonoCelular());
+			stm.setString(4, pedPag.getObservacion());
+			logger.info(insert + " [" + pedPag.getIdPedido() + ", " + pedPag.getEmail() + ", "
+					+ pedPag.getTelefonoCelular() + ", " + pedPag.getObservacion() + "]");
+			stm.executeUpdate();
 			ResultSet rs = stm.getGeneratedKeys();
 			if (rs.next()){
 				idEventoIns =rs.getInt(1);
