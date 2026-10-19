@@ -290,6 +290,29 @@ public class CorreoOferta {
 		double valorCodigo = CorreoOferta.valorDelCodigo(datos);
 		boolean dejaSaldo = "S".equals(datos.redencionParcial) && valorCodigo > 0;
 		String fechaVence = CorreoOferta.fechaEnPalabras(datos.fechaCaducidad);
+
+		//Un correo que entrega un codigo canjeable TIENE que decir hasta cuando
+		//sirve. Sin fecha, el cliente guarda el codigo, vuelve un mes despues,
+		//no se lo reciben, y esa discusion en el mostrador la pierde la marca.
+		//
+		//Antes la fila "Vence" era opcional: si fechaCaducidad llegaba vacia o
+		//mal formada -fechaEnPalabras devuelve "" para cualquier cosa de menos de
+		//10 caracteres- el correo salia igual, con el codigo bien grande y sin
+		//fecha, y sin una sola linea en el log.
+		//
+		//Se revienta en vez de poner un relleno: escribir "sin vencimiento" seria
+		//prometer algo que la oferta no cumple, y dejarlo en blanco es justo lo
+		//que estabamos haciendo. Quien llame a esto atrapa la excepcion, se salta
+		//ese destinatario y lo deja anotado.
+		//
+		//La guarda es solo cuando hay codigo: una campana de publicidad sin
+		//codigo puede no tener vencimiento y eso esta bien.
+		if (tieneCodigo && fechaVence.length() == 0) {
+			throw new IllegalArgumentException("CorreoOferta: la oferta '" + datos.nombreOferta
+					+ "' le entrega al cliente " + datos.idCliente + " el codigo " + datos.codigoPromocion
+					+ " sin fecha de caducidad utilizable (fechaCaducidad='" + datos.fechaCaducidad
+					+ "'). No se arma el correo.");
+		}
 		//Los mensajes de la oferta traen comodines escritos: se resuelven una vez
 		//aqui y de ahi en adelante se usa el texto ya armado.
 		String msj1 = CorreoOferta.reemplazarComodines(datos.mensaje1, datos);
