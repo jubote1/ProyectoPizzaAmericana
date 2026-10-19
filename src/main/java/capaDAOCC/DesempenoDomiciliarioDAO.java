@@ -150,6 +150,7 @@ public class DesempenoDomiciliarioDAO {
 					+ "from empleado e, tipo_empleado t "
 					+ "where t.idtipoempleado in (e.idtipoempleado, e.idtipoempleado2) "
 					+ "and t.es_domiciliario = '1' and e.activo = '1' "
+					+ "and e.nombre not like 'Domiciliario %' and e.nombre_largo not like 'Domiciliario %' "
 					+ "group by e.id, e.nombre, e.nombre_largo, t.descripcion "
 					+ "order by e.nombre_largo";
 			final PreparedStatement ps = cn.prepareStatement(sql);
@@ -190,13 +191,29 @@ public class DesempenoDomiciliarioDAO {
 		res.idTienda = idTienda;
 		res.tienda = texto(nombreTienda);
 
+		// 1. Optimizacion: Si la consulta es historica cerrada (anterior a hoy),
+		// cargar primero desde el historico central consolidado en milisegundos.
+		final String hoy = new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
+		final boolean esHistorico = (hasta != null && hasta.compareTo(hoy) < 0);
+
+		if (esHistorico) {
+			final boolean cargadoCentral = cargarDesdeHistoricoCentral(res, idEmpleado, desde, hasta);
+			if (cargadoCentral) {
+				res.conecto = true;
+				res.error = "";
+				return (res);
+			}
+		}
+
+		// 2. Si es para la jornada de hoy (en vivo) o si no habia datos consolidados en central:
+		// Consultar en vivo la base remota de la tienda fisica.
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
 		try {
 			cn = con.obtenerConexionBDTiendaRemota(hosbd);
 			if (cn == null) {
-				// Tienda no contestÃ³ (ej. fuera de horario / computador apagado en la noche).
-				// Consultamos en la base central el histÃ³rico consolidado.
+				// Tienda no contesto (computador apagado o sin red).
+				// Contingencia: intentar cargar desde el historico central.
 				final boolean cargadoCentral = cargarDesdeHistoricoCentral(res, idEmpleado, desde, hasta);
 				if (cargadoCentral) {
 					res.conecto = true;
@@ -554,74 +571,134 @@ public class DesempenoDomiciliarioDAO {
 		final Logger logger = Logger.getLogger("log_file");
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
-		boolean huboDatos = false;
+		boolean tieneHistoricoTienda = false;
 		try {
 			cn = con.obtenerConexionBDGeneral();
-			// 1. Entregas
+
+			// Validamos primero si la tienda fisica tiene datos consolidados en este rango en central
+			final String sqlCheck = "SELECT 1 FROM historico_entrega_domiciliario WHERE id_tienda = ? AND fecha >= ? AND fecha <= ? LIMIT 1";
+			try (PreparedStatement psCheck = cn.prepareStatement(sqlCheck)) {
+				psCheck.setInt(1, res.idTienda);
+				psCheck.setString(2, desde);
+				psCheck.setString(3, hasta);
+				try (ResultSet rsCheck = psCheck.executeQuery()) {
+					if (rsCheck.next()) {
+						tieneHistoricoTienda = true;
+					}
+				}
+			}
+
+			// Si no hay en entregas, verificamos si al menos hay salidas de esa tienda
+			if (!tieneHistoricoTienda) {
+				final String sqlCheckS = "SELECT 1 FROM historico_salida_domiciliario WHERE id_tienda = ? AND fecha >= ? AND fecha <= ? LIMIT 1";
+				try (PreparedStatement psCheckS = cn.prepareStatement(sqlCheckS)) {
+					psCheckS.setInt(1, res.idTienda);
+					psCheckS.setString(2, desde);
+					psCheckS.setString(3, hasta);
+					try (ResultSet rsCheckS = psCheckS.executeQuery()) {
+						if (rsCheckS.next()) {
+							tieneHistoricoTienda = true;
+						}
+					}
+				}
+			}
+
+			// Si la tienda no esta consolidada en el historico central para estas fechas,
+			// retornamos false para consultar la tienda fisica en vivo.
+			if (!tieneHistoricoTienda) {
+				return (false);
+			}
+
+			// 1. Entregas del domiciliario en esta tienda
 			final String sqlE = "SELECT tienda, fecha, id_pedido, orden, prometido, min_total, min_calle, programado "
 					+ "FROM historico_entrega_domiciliario "
 					+ "WHERE id_tienda = ? AND id_domiciliario = ? AND fecha >= ? AND fecha <= ? "
 					+ "ORDER BY fecha, id_pedido, orden";
-			final PreparedStatement psE = cn.prepareStatement(sqlE);
-			psE.setInt(1, res.idTienda);
-			psE.setInt(2, idEmpleado);
-			psE.setString(3, desde);
-			psE.setString(4, hasta);
-			final ResultSet rsE = psE.executeQuery();
-			while (rsE.next()) {
-				final Entrega e = new Entrega();
-				e.idTienda = res.idTienda;
-				e.tienda = rsE.getString("tienda");
-				e.fecha = texto(rsE.getString("fecha"));
-				e.idPedido = rsE.getInt("id_pedido");
-				e.prometido = rsE.getInt("prometido");
-				e.minutosTotal = rsE.getInt("min_total");
-				e.minutosCalle = rsE.getInt("min_calle");
-				e.orden = rsE.getInt("orden");
-				e.programado = "S".equals(rsE.getString("programado"));
-				e.medible = (e.prometido > 0 && e.minutosTotal >= 0 && !e.programado);
-				res.entregas.add(e);
-				huboDatos = true;
+			try (PreparedStatement psE = cn.prepareStatement(sqlE)) {
+				psE.setInt(1, res.idTienda);
+				psE.setInt(2, idEmpleado);
+				psE.setString(3, desde);
+				psE.setString(4, hasta);
+				try (ResultSet rsE = psE.executeQuery()) {
+					while (rsE.next()) {
+						final Entrega e = new Entrega();
+						e.idTienda = res.idTienda;
+						e.tienda = rsE.getString("tienda");
+						e.fecha = texto(rsE.getString("fecha"));
+						e.idPedido = rsE.getInt("id_pedido");
+						e.prometido = rsE.getInt("prometido");
+						e.minutosTotal = rsE.getInt("min_total");
+						e.minutosCalle = rsE.getInt("min_calle");
+						e.orden = rsE.getInt("orden");
+						e.programado = "S".equals(rsE.getString("programado"));
+						e.medible = (e.prometido > 0 && e.minutosTotal >= 0 && !e.programado);
+						res.entregas.add(e);
+					}
+				}
 			}
-			rsE.close();
-			psE.close();
 
-			// 2. Salidas
+			// 2. Salidas del domiciliario en esta tienda
 			final String sqlS = "SELECT tienda, fecha, id_despacho, pedidos, min_regreso, estado_regreso "
 					+ "FROM historico_salida_domiciliario "
 					+ "WHERE id_tienda = ? AND id_domiciliario = ? AND fecha >= ? AND fecha <= ? "
 					+ "ORDER BY fecha, id_despacho";
-			final PreparedStatement psS = cn.prepareStatement(sqlS);
-			psS.setInt(1, res.idTienda);
-			psS.setInt(2, idEmpleado);
-			psS.setString(3, desde);
-			psS.setString(4, hasta);
-			final ResultSet rsS = psS.executeQuery();
-			while (rsS.next()) {
-				final Salida s = new Salida();
-				s.idTienda = res.idTienda;
-				s.tienda = rsS.getString("tienda");
-				s.fecha = texto(rsS.getString("fecha"));
-				s.idDespacho = rsS.getInt("id_despacho");
-				s.pedidos = rsS.getInt("pedidos");
-				s.minutosRegreso = rsS.getInt("min_regreso");
-				s.estadoRegreso = texto(rsS.getString("estado_regreso"));
-				res.salidas.add(s);
-				huboDatos = true;
+			try (PreparedStatement psS = cn.prepareStatement(sqlS)) {
+				psS.setInt(1, res.idTienda);
+				psS.setInt(2, idEmpleado);
+				psS.setString(3, desde);
+				psS.setString(4, hasta);
+				try (ResultSet rsS = psS.executeQuery()) {
+					while (rsS.next()) {
+						final Salida s = new Salida();
+						s.idTienda = res.idTienda;
+						s.tienda = rsS.getString("tienda");
+						s.fecha = texto(rsS.getString("fecha"));
+						s.idDespacho = rsS.getInt("id_despacho");
+						s.pedidos = rsS.getInt("pedidos");
+						s.minutosRegreso = rsS.getInt("min_regreso");
+						s.estadoRegreso = texto(rsS.getString("estado_regreso"));
+						res.salidas.add(s);
+					}
+				}
 			}
-			rsS.close();
-			psS.close();
 
-			if (huboDatos) {
-				logger.info("DesempenoDomiciliarioDAO: Tienda " + res.tienda + " (" + res.idTienda
-						+ ") cargada desde historico central para empleado " + idEmpleado);
-			}
+			// 3. Enrutamiento historico (si existe)
+			try {
+				final String sqlEnr = "SELECT sugerencias_recibidas, aceptadas, rechazadas, expiradas, pendientes, "
+						+ "pedidos_llevados, pedidos_reasignados, pedidos_sin_llevar, salidas_desde_sugerencia "
+						+ "FROM historico_enrutamiento_domiciliario "
+						+ "WHERE id_tienda = ? AND id_domiciliario = ? AND fecha >= ? AND fecha <= ?";
+				try (PreparedStatement psEnr = cn.prepareStatement(sqlEnr)) {
+					psEnr.setInt(1, res.idTienda);
+					psEnr.setInt(2, idEmpleado);
+					psEnr.setString(3, desde);
+					psEnr.setString(4, hasta);
+					try (ResultSet rsEnr = psEnr.executeQuery()) {
+						while (rsEnr.next()) {
+							res.enrutamiento.sugerenciasRecibidas += rsEnr.getInt("sugerencias_recibidas");
+							res.enrutamiento.aceptadas += rsEnr.getInt("aceptadas");
+							res.enrutamiento.rechazadas += rsEnr.getInt("rechazadas");
+							res.enrutamiento.expiradas += rsEnr.getInt("expiradas");
+							res.enrutamiento.pendientes += rsEnr.getInt("pendientes");
+							res.enrutamiento.pedidosLlevados += rsEnr.getInt("pedidos_llevados");
+							res.enrutamiento.pedidosReasignados += rsEnr.getInt("pedidos_reasignados");
+							res.enrutamiento.pedidosSinLlevar += rsEnr.getInt("pedidos_sin_llevar");
+							res.enrutamiento.salidasDesdeSugerencia += rsEnr.getInt("salidas_desde_sugerencia");
+						}
+					}
+				}
+			} catch (final Exception ignoreEnr) {}
+
+			logger.info("DesempenoDomiciliarioDAO: Tienda " + res.tienda + " (" + res.idTienda
+					+ ") cargada desde historico central para empleado " + idEmpleado
+					+ " (" + res.entregas.size() + " entregas, " + res.salidas.size() + " salidas)");
+			return (true);
 		} catch (final Exception ex) {
 			logger.error("DesempenoDomiciliarioDAO.cargarDesdeHistoricoCentral: " + ex.toString());
 		} finally {
 			cerrar(cn);
 		}
-		return (huboDatos);
+		return (false);
 	}
 
 	/**
