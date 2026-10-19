@@ -7441,23 +7441,28 @@ public class PedidoCtrl {
 			}
 		}
 		// Procesamos las adiciones
-		if (!adicion.equals(new String(""))) {
+		if (esAdicionDeVerdad(adicion)) {
 			idProductoAdicion = parCtrl.homologarProductoTiendaVirtual(adicion);
 			strAdiciones = strAdiciones + " " + idProductoAdicion + "-" + adicion;
-			valorUnitarioAdicion = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
-			DetallePedido detPedidoAdicion = new DetallePedido(idProductoAdicion, idPedido, 1, 0, 0,
-					valorUnitarioAdicion, valorUnitarioAdicion, adicion, "" /* observacion */,
-					0 /* idSaborTipoLiquido */, 0 /* idexcepcion */, "", "");
-			idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoAdicion);
-			adiTemp = new AdicionTiendaVirtual();
-			adiTemp.setCantidad(1);
-			adiTemp.setIdProductoAdicion(idProductoAdicion);
-			adiTemp.setIdDetallePedido(idDetInser);
-			adiciones.add(adiTemp);
-			if (!adicion.equals(new String(""))) {
-				if (idProductoAdicion == 0) {
-					log = log + " Problema al homologar " + adicion + "-";
-				}
+			if (idProductoAdicion > 0) {
+				valorUnitarioAdicion = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
+				DetallePedido detPedidoAdicion = new DetallePedido(idProductoAdicion, idPedido, 1, 0, 0,
+						valorUnitarioAdicion, valorUnitarioAdicion, adicion, "" /* observacion */,
+						0 /* idSaborTipoLiquido */, 0 /* idexcepcion */, "", "");
+				idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoAdicion);
+				adiTemp = new AdicionTiendaVirtual();
+				adiTemp.setCantidad(1);
+				adiTemp.setIdProductoAdicion(idProductoAdicion);
+				adiTemp.setIdDetallePedido(idDetInser);
+				adiciones.add(adiTemp);
+			} else {
+				//Una adicion que no se homologa NO se inserta. Antes se insertaba
+				//igual con idproducto 0, y al enviar el pedido a la tienda ese cero
+				//caia en RetornarIdproductoExterno, que lo cruzaba contra las filas
+				//de bebidas de homologacion_producto -todas con idproductoint 0- y
+				//devolvia la primera: el sabor 1, que es Manzana 1.5 Lts. Asi nacio
+				//la gaseosa fantasma en las comandas.
+				log = log + " Problema al homologar " + adicion + "-";
 			}
 		}
 		// Procesamos los modificadores CON solo se hará en promociones, dado que en
@@ -7765,23 +7770,28 @@ public class PedidoCtrl {
 			}
 		}
 		// Procesamos las adiciones
-		if (!adicion.equals(new String(""))) {
+		if (esAdicionDeVerdad(adicion)) {
 			idProductoAdicion = parCtrl.homologarProductoTiendaVirtual(adicion);
 			strAdiciones = strAdiciones + " " + idProductoAdicion + "-" + adicion;
-			valorUnitarioAdicion = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
-			DetallePedido detPedidoAdicion = new DetallePedido(idProductoAdicion, idPedido, 1, 0, 0,
-					valorUnitarioAdicion, valorUnitarioAdicion, adicion, "" /* observacion */,
-					0 /* idSaborTipoLiquido */, 0 /* idexcepcion */, "", "");
-			idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoAdicion);
-			adiTemp = new AdicionTiendaVirtual();
-			adiTemp.setCantidad(1);
-			adiTemp.setIdProductoAdicion(idProductoAdicion);
-			adiTemp.setIdDetallePedido(idDetInser);
-			adiciones.add(adiTemp);
-			if (!adicion.equals(new String(""))) {
-				if (idProductoAdicion == 0) {
-					log = log + " Problema al homologar " + adicion + "-";
-				}
+			if (idProductoAdicion > 0) {
+				valorUnitarioAdicion = ProductoDAO.retornarProducto(idProductoAdicion).getPreciogeneral();
+				DetallePedido detPedidoAdicion = new DetallePedido(idProductoAdicion, idPedido, 1, 0, 0,
+						valorUnitarioAdicion, valorUnitarioAdicion, adicion, "" /* observacion */,
+						0 /* idSaborTipoLiquido */, 0 /* idexcepcion */, "", "");
+				idDetInser = PedidoDAO.InsertarDetallePedido(detPedidoAdicion);
+				adiTemp = new AdicionTiendaVirtual();
+				adiTemp.setCantidad(1);
+				adiTemp.setIdProductoAdicion(idProductoAdicion);
+				adiTemp.setIdDetallePedido(idDetInser);
+				adiciones.add(adiTemp);
+			} else {
+				//Una adicion que no se homologa NO se inserta. Antes se insertaba
+				//igual con idproducto 0, y al enviar el pedido a la tienda ese cero
+				//caia en RetornarIdproductoExterno, que lo cruzaba contra las filas
+				//de bebidas de homologacion_producto -todas con idproductoint 0- y
+				//devolvia la primera: el sabor 1, que es Manzana 1.5 Lts. Asi nacio
+				//la gaseosa fantasma en las comandas.
+				log = log + " Problema al homologar " + adicion + "-";
 			}
 		}
 		// Procesamos los modificadores CON solo se hará en promociones, dado que en
@@ -8391,6 +8401,10 @@ public class PedidoCtrl {
 								idTienda);
 					}
 				}
+			}
+			// Confirmacion al cliente por correo: solo para pedidos del bot. Nunca tumba el pedido (hilo aparte, dentro de try).
+			if (pedidoInsertado) {
+				ConfirmacionBotCorreoCtrl.enviar(idPedido, nombreCliente, correo, direccion, idFormaPago == 4);
 			}
 			return pedidoInsertado;
 		} catch (Exception e) {
@@ -9256,12 +9270,14 @@ public class PedidoCtrl {
 				// Se actualiza lead con el link de pago
 				actualizarLinkPagoLeadCRMBOT(lead, mensaje, "pedidobot");
 			}
+			// Confirmacion al cliente por correo (plantilla de la casa). El aviso de abajo queda solo para uso interno:
+			// el cliente ya recibe la confirmacion, con el recordatorio del pago en linea.
+			ConfirmacionBotCorreoCtrl.enviar(idPedido, nombreCliente, correo, direccion, idFormaPago == 4);
 			try {
 				// Enviamos notificación de creación del pedido
 				ArrayList correos = new ArrayList();
 				String correoEle = "jubote1@gmail.com";
 				correos.add(correoEle);
-				correos.add(correo);
 				Correo correoNoti = new Correo();
 				CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
 						"CLAVECORREOREPORTE");
@@ -14033,4 +14049,33 @@ public class PedidoCtrl {
 		return(respuesta.toJSONString());
 	}
 
+
+	/**
+	 * Lo que el BOT escribe cuando el cliente NO pidio adicion.
+	 *
+	 * El flujo de Kommo no deja el campo vacio: manda un punto, un guion o un
+	 * "ninguna". Ese texto no homologa contra ningun producto y terminaba
+	 * entrando al pedido como un producto cero.
+	 */
+	private static final String[] ADICION_VACIA = { "", ".", "..", "-", "--", "0", "n/a", "na", "no", "ninguna",
+			"ninguno", "nada", "sin adicion", "sin adiciones" };
+
+	/**
+	 * Responde si el texto de adicion que mando el BOT es una adicion de verdad.
+	 *
+	 * @param adicion el texto crudo del lead
+	 * @return false si viene vacio o si es uno de los rellenos del BOT
+	 */
+	private static boolean esAdicionDeVerdad(String adicion) {
+		if (adicion == null) {
+			return (false);
+		}
+		String limpia = adicion.trim().toLowerCase();
+		for (int i = 0; i < ADICION_VACIA.length; i++) {
+			if (limpia.equals(ADICION_VACIA[i])) {
+				return (false);
+			}
+		}
+		return (true);
+	}
 }

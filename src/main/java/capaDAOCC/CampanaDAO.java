@@ -93,6 +93,31 @@ public class CampanaDAO {
 	 * Diez digitos y nada mas: el codigo le antepone el +57 por su cuenta, asi
 	 * que un numero con espacios, guiones o con el 57 ya puesto sale mal.
 	 */
+	/**
+	 * Deja por fuera las direcciones que ya rebotaron en duro.
+	 *
+	 * Una direccion muerta se intentaba en CADA campana, para siempre: nada lo
+	 * aprendia. Lo que se protege no es el cupo sino la reputacion del dominio,
+	 * que es lo primero que miran Gmail y Outlook para mandar a spam; ahi no se
+	 * pierde el correo de la campana, se pierde el de las facturas.
+	 *
+	 * Solo el DURO -la direccion no existe- bloquea. El blando -buzon lleno- es
+	 * pasajero, y sacar por eso a un cliente bueno seria perderlo por un dia malo.
+	 *
+	 * EL CORREO VA CALIFICADO CON SU TABLA, Y NO ES UN DETALLE DE ESTILO.
+	 *
+	 * crm.correo_rebotado TAMBIEN tiene una columna "email", asi que dentro de
+	 * la subconsulta un "email" suelto no es el de la persona: MySQL lo resuelve
+	 * contra la tabla de adentro. La condicion se volvia r.email = TRIM(r.email),
+	 * cierta para toda fila sin espacios, el EXISTS daba verdadero para TODO el
+	 * mundo y la pantalla mostraba 0 personas con correo. Paso el 2026-10-05 y
+	 * dejo las campanas de correo sin poder enviar.
+	 *
+	 * Por eso la condicion vive en un solo sitio, en CorreoRebotadoDAO: aqui
+	 * habia una segunda copia y fue la copia la que salio mal.
+	 */
+	private static final String SIN_REBOTE = CorreoRebotadoDAO.NO_REBOTADO;
+
 	public static final String PATRON_CELULAR = "[0-9]{10}";
 
 	private static final String CELULAR_VALIDO =
@@ -206,7 +231,7 @@ public class CampanaDAO {
 					//Contando "tiene algo escrito en el correo" la pantalla
 					//prometia 5.450 y salian menos, sin que nadie supiera por que.
 					"SELECT COUNT(*) AS personas,"
-					+ " SUM(" + CORREO_VALIDO + ") AS con_correo,"
+					+ " SUM(" + CORREO_VALIDO + SIN_REBOTE + ") AS con_correo,"
 					+ " SUM(" + CELULAR_VALIDO + ") AS con_celular"
 					+ " FROM crm.persona_resumen" + where + CONSENTIMIENTO);
 			SegmentacionPersonaDAO.ponerValores(ps, valores);
@@ -467,6 +492,11 @@ public class CampanaDAO {
 				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
 				.append(" FROM crm.persona_resumen").append(where).append(CONSENTIMIENTO)
 				.append(" AND ").append(destinoValido);
+			//Los rebotados no entran. Solo aplica al correo: una direccion
+			//muerta no dice nada del celular de esa persona.
+			if (!porCelular) {
+				sql.append(SIN_REBOTE);
+			}
 			//El orden importa: si solo caben 500, que sean los 500 que mas
 			//valen, no los primeros que salgan.
 			sql.append(" ORDER BY valor DESC");
@@ -491,6 +521,66 @@ public class CampanaDAO {
 			psUp.close();
 		} catch (final Exception e) {
 			Logger.getLogger("log_file").error("CampanaDAO.cargarDestinatarios: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (cuantos);
+	}
+
+	/**
+	 * Mete en la tanda a ESTAS personas -no a las que cumplen un filtro-, por correo.
+	 *
+	 * La usa la pantalla de compensaciones por tiempo, donde alguien escogio uno por uno a quienes se
+	 * les va a pedir disculpas. Pasa por las mismas tres reglas que cualquier envio de correo, y por eso
+	 * se escriben aqui con las mismas constantes y no repetidas: el consentimiento, que la direccion
+	 * sea una que el servidor de correo va a aceptar, y que no haya rebotado en duro. Quien no las
+	 * cumpla simplemente no entra, y la diferencia entre lo pedido y lo cargado es lo que se le dice a
+	 * la persona.
+	 *
+	 * @param personas ids de crm.persona (sin repetir)
+	 * @return cuantas quedaron en la tanda
+	 */
+	public static int cargarDestinatariosDePersonas(final long idEnvio, final long idCampana,
+			final java.util.List<Long> personas) {
+		if (personas == null || personas.isEmpty()) {
+			return (0);
+		}
+		int cuantos = 0;
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final StringBuilder marcas = new StringBuilder();
+			for (int i = 0; i < personas.size(); i++) {
+				marcas.append(i == 0 ? "?" : ",?");
+			}
+			final StringBuilder sql = new StringBuilder();
+			sql.append("INSERT IGNORE INTO crm.campana_destinatario")
+				.append(" (idenvio, idcampana, idpersona, destino, nombre, estado)")
+				.append(" SELECT ?, ?, idpersona, TRIM(email),")
+				.append(" TRIM(CONCAT(IFNULL(nombre,''),' ',IFNULL(apellido,''))), 'PENDIENTE'")
+				.append(" FROM crm.persona_resumen WHERE idpersona IN (").append(marcas).append(")")
+				.append(CONSENTIMIENTO)
+				.append(" AND ").append(CORREO_VALIDO)
+				.append(SIN_REBOTE);
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			int k = 1;
+			ps.setLong(k++, idEnvio);
+			ps.setLong(k++, idCampana);
+			for (final Long p : personas) {
+				ps.setLong(k++, p.longValue());
+			}
+			cuantos = ps.executeUpdate();
+			ps.close();
+
+			final PreparedStatement psUp = cn.prepareStatement(
+					"UPDATE crm.campana_envio SET publico = ? WHERE idenvio = ?");
+			psUp.setInt(1, cuantos);
+			psUp.setLong(2, idEnvio);
+			psUp.executeUpdate();
+			psUp.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("CampanaDAO.cargarDestinatariosDePersonas: " + e.toString());
 		} finally {
 			cerrar(cn);
 		}

@@ -23,6 +23,15 @@ import utilidadesCC.AccesoCRM;
  * guarda -acceso al CRM- y el mismo armado de filtro. Partirlas obligaria a
  * repetir esa guarda siete veces, y una guarda repetida siete veces es una
  * guarda que algun dia se olvida en la octava.
+ *
+ * ENVIOS PROGRAMADOS (accion = programar | programadas | cancelarprogramada)
+ *
+ *   programar           POST. Los mismos parametros de "enviar" mas programar_para
+ *                       (yyyy-MM-ddTHH:mm). Guarda los parametros y deja el envio para esa hora.
+ *   programadas         GET. Los que esperan y los de los ultimos dias.
+ *   cancelarprogramada  POST. idprogramacion. Solo cancela uno que todavia espera.
+ *
+ * Las dos que cambian datos exigen POST: un enlace o un rastreador no puede programar ni cancelar.
  */
 @WebServlet("/EnvioPublicidad")
 public class EnvioPublicidad extends HttpServlet {
@@ -30,6 +39,16 @@ public class EnvioPublicidad extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		atender(request, response, false);
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		atender(request, response, true);
+	}
+
+	private void atender(final HttpServletRequest request, final HttpServletResponse response,
+			final boolean esPost) throws IOException {
 		request.setCharacterEncoding("UTF-8");
 		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setContentType("application/json; charset=UTF-8");
@@ -69,6 +88,28 @@ public class EnvioPublicidad extends HttpServlet {
 					extraDe(request),
 					AccesoCRM.usuarioEnSesion(request),
 					entero(request.getParameter("idoferta"))));
+
+		} else if ("programar".equals(accion)) {
+			if (!esPost) {
+				response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+				out.write("{\"error\":\"Use POST para programar un envio.\"}");
+				return;
+			}
+			out.write(EnvioPublicidadCtrl.programar(SegmentacionPersonaCtrl.parametrosDe(request),
+					request.getParameter("programar_para"),
+					AccesoCRM.usuarioEnSesion(request)));
+
+		} else if ("programadas".equals(accion)) {
+			out.write(EnvioPublicidadCtrl.programadas());
+
+		} else if ("cancelarprogramada".equals(accion)) {
+			if (!esPost) {
+				response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+				out.write("{\"error\":\"Use POST para cancelar un envio programado.\"}");
+				return;
+			}
+			out.write(EnvioPublicidadCtrl.cancelarProgramada(largo(request.getParameter("idprogramacion")),
+					AccesoCRM.usuarioEnSesion(request)));
 
 		} else if ("anularcodigos".equals(accion)) {
 			out.write(EnvioPublicidadCtrl.anularCodigos(largo(request.getParameter("idenvio")),
@@ -123,34 +164,16 @@ public class EnvioPublicidad extends HttpServlet {
 		}
 	}
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		doGet(request, response);
-	}
-
 	/**
 	 * Guarda como texto el filtro con el que se armo la campana.
 	 *
 	 * No es adorno: dentro de tres meses, viendo que una campana funciono, lo
 	 * primero que alguien va a querer saber es a quien se le mando. Sin esto la
-	 * respuesta se perdio.
+	 * respuesta se perdio. El armado vive en el controlador para que un envio
+	 * programado lo reuse tal cual.
 	 */
 	private String resumenDeFiltros(final HttpServletRequest request) {
-		final StringBuilder t = new StringBuilder();
-		final String[] campos = { "segmentos", "idtienda", "pedidosmin", "valormin",
-				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo",
-				"diassinpublicidad", "tiposcliente", "productos",
-				"familiafavorita", "fidelidadmin", "pizzasmin" };
-		for (int i = 0; i < campos.length; i++) {
-			final String valor = request.getParameter(campos[i]);
-			if (valor != null && valor.trim().length() > 0) {
-				if (t.length() > 0) {
-					t.append(" | ");
-				}
-				t.append(campos[i]).append("=").append(valor.trim());
-			}
-		}
-		return (t.length() == 0 ? "todo el CRM" : t.toString());
+		return (EnvioPublicidadCtrl.resumenDeFiltros(SegmentacionPersonaCtrl.parametrosDe(request)));
 	}
 
 	/**
@@ -161,50 +184,7 @@ public class EnvioPublicidad extends HttpServlet {
 	 * Tenerlos separados deja a la vista cuales son los caros.
 	 */
 	private capaDAOCC.CampanaDAO.FiltroExtra extraDe(final HttpServletRequest request) {
-		final capaDAOCC.CampanaDAO.FiltroExtra e = new capaDAOCC.CampanaDAO.FiltroExtra();
-		e.diasSinPublicidad = entero(request.getParameter("diassinpublicidad"));
-		e.excluirPlataformas = "S".equals(request.getParameter("excluirplataformas"));
-		e.pedidosMax = entero(request.getParameter("pedidosmax"));
-		e.puntosMin = entero(request.getParameter("puntosmin"));
-		e.soloMiembrosClub = "S".equals(request.getParameter("soloclub"));
-		e.correoContiene = texto(request.getParameter("correo"));
-		e.compraDesde = texto(request.getParameter("comprodesde"));
-		e.compraHasta = texto(request.getParameter("comprohasta"));
-		llenarTexto(e.tiposCliente, request.getParameter("tiposcliente"));
-		llenarEntero(e.productos, request.getParameter("productos"));
-		llenarEntero(e.especialidades, request.getParameter("especialidades"));
-		llenarEntero(e.excepciones, request.getParameter("promociones"));
-		return (e);
-	}
-
-	/** Las listas llegan separadas por coma, como en el resto de la pantalla. */
-	private void llenarEntero(final java.util.ArrayList<Integer> destino, final String valor) {
-		if (valor == null || valor.trim().length() == 0) {
-			return;
-		}
-		final String[] partes = valor.split(",");
-		for (int i = 0; i < partes.length; i++) {
-			final int n = entero(partes[i]);
-			if (n > 0) {
-				destino.add(Integer.valueOf(n));
-			}
-		}
-	}
-
-	private void llenarTexto(final java.util.ArrayList<String> destino, final String valor) {
-		if (valor == null || valor.trim().length() == 0) {
-			return;
-		}
-		final String[] partes = valor.split(",");
-		for (int i = 0; i < partes.length; i++) {
-			if (partes[i].trim().length() > 0) {
-				destino.add(partes[i].trim());
-			}
-		}
-	}
-
-	private String texto(final String valor) {
-		return (valor == null ? "" : valor.trim());
+		return (EnvioPublicidadCtrl.extraDe(SegmentacionPersonaCtrl.parametrosDe(request)));
 	}
 
 	private int entero(final String valor) {

@@ -173,7 +173,10 @@ public class PedidoPOSPMDAO {
 						cantidadPixel = 0.5;
 						idSaborTipoLiquido = cadaDetallePedido.getIdsabortipoliquido();
 						//Adicionamos el producto maestro con cantidad 1
-						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster));
+						//El valor viaja con la linea maestra: si el producto no tiene precio_pila en la tienda,
+						//ella lo toma de aqui. Sin el, un combo de puntos -base en cero- queda en cero y la
+						//tienda subregistra la venta frente a lo que cobro el central.
+						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster,cadaDetallePedido.getValorunitario()));
 						logger.debug(idproductomaestroext + " , " + cantidadPixel);
 						
 						idproductoextsep = PedidoPOSPMDAO.RetornarIdproductoExterno(10000, 0, idtienda);
@@ -262,7 +265,10 @@ public class PedidoPOSPMDAO {
 						idDetalleMaster = cadaDetallePedido.getIddetallepedido();
 						idSaborTipoLiquido = cadaDetallePedido.getIdsabortipoliquido();
 						//Adicionamos el producto maestro con cantidad 1
-						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster));
+						//El valor viaja con la linea maestra: si el producto no tiene precio_pila en la tienda,
+						//ella lo toma de aqui. Sin el, un combo de puntos -base en cero- queda en cero y la
+						//tienda subregistra la venta frente a lo que cobro el central.
+						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductomaestroext, 1,true,0,0,idDetalleMaster,cadaDetallePedido.getValorunitario()));
 						logger.debug(idproductomaestroext + " , " + cantidadPixel);
 						
 						idproductoextsep = PedidoPOSPMDAO.RetornarIdproductoExterno(10000, 0, idtienda);
@@ -521,8 +527,18 @@ public class PedidoPOSPMDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
+			//Un producto cero NO se busca. Las 427 filas de bebida de esta tabla
+			//viven con idproductoint 0, asi que preguntar por el cero devolvia la
+			//primera bebida de la lista -el sabor 1, Manzana 1.5 Lts- y esa gaseosa
+			//salia impresa en la comanda sin que nadie la hubiera pedido.
+			if(idproductoint <= 0)
+			{
+				logger.info("RetornarIdproductoExterno: no se busca el producto cero (tienda " + idtienda + ").");
+				con1.close();
+				return(0);
+			}
 			Statement stm = con1.createStatement();
-			String consulta = "select idproductoext from homologacion_producto where idproductoint = " + idproductoint + " and  idespecialidadint = " + idespecialidadint + " and idtienda =" + idtienda ; 
+			String consulta = "select idproductoext from homologacion_producto where idproductoint = " + idproductoint + " and  idespecialidadint = " + idespecialidadint + " and idsabortipoliquidoint = 0 and idtienda =" + idtienda ; 
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			while(rs.next()){
@@ -550,8 +566,15 @@ public class PedidoPOSPMDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
+			//Misma guarda que en RetornarIdproductoExterno: el cero no es un producto.
+			if(idproductoint <= 0)
+			{
+				logger.info("RetornarIdproductoMaestroExterno: no se busca el producto cero (tienda " + idtienda + ").");
+				con1.close();
+				return(0);
+			}
 			Statement stm = con1.createStatement();
-			String consulta = "select idproductoext from homologacion_producto where idproductoint = " + idproductoint + " and  idexcepcion = " + idexcepcion + " and idtienda =" + idtienda + " and idespecialidadint = 0" ; 
+			String consulta = "select idproductoext from homologacion_producto where idproductoint = " + idproductoint + " and  idexcepcion = " + idexcepcion + " and idsabortipoliquidoint = 0 and idtienda =" + idtienda + " and idespecialidadint = 0" ; 
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			while(rs.next()){

@@ -782,6 +782,16 @@ public class OfertaClienteDAO {
 		public String fechaCaducidad = "";
 		public double descuentoValor = 0;
 		public int descuentoPorcentaje = 0;
+		/**
+		 * El valor de ESTE codigo, que puede ser distinto para cada cliente.
+		 *
+		 * descuentoValor sale de la oferta y es el mismo para todos. El bono de
+		 * recompra no funciona asi: cada persona se gana un porcentaje de lo que
+		 * compro, y ese monto vive en oferta_cliente.saldo. Sin este campo el
+		 * correo mostraba el codigo pero no de cuanto era, que es justo lo que
+		 * el cliente necesita saber para venir a usarlo.
+		 */
+		public double saldo = 0;
 		public String controlaHora = "N";
 		public String horaInicio = "";
 		public String horaFin = "";
@@ -832,7 +842,7 @@ public class OfertaClienteDAO {
 		Logger logger = Logger.getLogger("log_file");
 		DatosCorreoOferta datos = new DatosCorreoOferta();
 		String consulta = "SELECT c.nombre, c.apellido, c.email, c.politica_datos, c.email_correcto, "
-				+ "  oc.idcliente, t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, "
+				+ "  oc.idcliente, t.nombre AS nombretienda, oc.codigo_promocion, oc.fecha_caducidad, oc.fecha_mensaje, oc.saldo, "
 				+ "  o.nombre_oferta, o.mensaje1, o.mensaje2, o.descuento_fijo_valor, "
 				+ "  o.descuento_fijo_porcentaje, o.controla_hora, o.hora_inicio, o.hora_fin, o.red_parcial "
 				+ " FROM oferta_cliente oc "
@@ -863,6 +873,7 @@ public class OfertaClienteDAO {
 					datos.fechaCaducidad = OfertaClienteDAO.textoSeguro(rs.getString("fecha_caducidad"));
 					datos.descuentoValor = rs.getDouble("descuento_fijo_valor");
 					datos.descuentoPorcentaje = rs.getInt("descuento_fijo_porcentaje");
+					datos.saldo = rs.getDouble("saldo");
 					datos.controlaHora = OfertaClienteDAO.textoSeguro(rs.getString("controla_hora"));
 					datos.horaInicio = OfertaClienteDAO.textoSeguro(rs.getString("hora_inicio"));
 					datos.horaFin = OfertaClienteDAO.textoSeguro(rs.getString("hora_fin"));

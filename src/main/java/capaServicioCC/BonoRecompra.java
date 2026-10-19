@@ -87,6 +87,7 @@ public class BonoRecompra extends HttpServlet {
 		c.avisar = !"N".equals(request.getParameter("avisar"));
 		c.abierta = !"N".equals(request.getParameter("abierta"));
 		c.idEnvio = largo(request.getParameter("idenvio"));
+		c.idCampana = largo(request.getParameter("idcampana"));
 		c.fechaEmision = texto(request.getParameter("fecha_emision"));
 		c.redimeDesde = texto(request.getParameter("redime_desde"));
 		c.redimeHasta = texto(request.getParameter("redime_hasta"));

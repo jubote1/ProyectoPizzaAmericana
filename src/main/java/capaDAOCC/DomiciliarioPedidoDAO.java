@@ -108,7 +108,7 @@ public class DomiciliarioPedidoDAO {
 
 	    try {
 	        // Consulta directa optimizada con tabla derivada para eventos biométricos de hoy (ejecuta en ~300ms)
-	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, COALESCE(ev.idtienda, etdt.idtienda, ubi.idtienda, 0) AS idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
+	        sql.append("SELECT ubi.clave_dom, ti.nombre AS tienda, COALESCE(ev.idtienda, tt.idtienda, ubi.idtienda, 0) AS idtienda, ubi.latitud, ubi.longitud, ubi.fecha, ")
 	           .append("       COALESCE(ubi.estado, 'EN_TIENDA') AS estado, ubi.bateria, ubi.velocidad, ")
 	           .append("       COALESCE(ubi.pedidos_activos, 0) AS pedidos_activos, ubi.pedidos_detalle, ubi.app_version, ")
 	           .append("       COALESCE(CASE WHEN (e.id IS NOT NULL AND (e.activo = 1 OR e.activo = '1')) THEN e.nombre_largo ELSE NULL END, etdt.nombre, et.nombre, e.nombre_largo, ubi.nombre_usuario, 'Domiciliario') AS nombre_largo, ")
@@ -118,11 +118,15 @@ public class DomiciliarioPedidoDAO {
 	           .append("           WHEN e.id IS NOT NULL THEN 'DIRECTO' ")
 	           .append("           ELSE 'OTRO' ")
 	           .append("       END AS tipo_repartidor, ")
-	           .append("       CASE ")
-	           .append("           WHEN (e.id IS NOT NULL AND (e.activo = 1 OR e.activo = '1')) THEN '' ")
-	           .append("           ELSE COALESCE(NULLIF(TRIM(etdt.empresa), ''), et.empresa, '') ")
-	           .append("       END AS empresa_temporal, ")
-	           .append("       CASE WHEN (ev.id IS NOT NULL OR etdt.identificacion IS NOT NULL OR etdt.clave_dom IS NOT NULL) THEN 1 ELSE 0 END AS en_turno_biometria ")
+	           .append("       COALESCE(et.empresa, '') AS empresa_temporal, ")
+	           // El interno esta en turno si tiene un evento de biometria hoy. El temporal no deja eventos ahi:
+	           // su ingreso y su salida llegan del POS a empleado_temporal_dia_tienda, y esta dentro mientras la
+	           // fila no tenga hora de salida.
+	           .append("       CASE WHEN ev.id IS NOT NULL THEN 1 ")
+	           .append("            WHEN tt.clave_dom IS NOT NULL AND TRIM(IFNULL(tt.horasalida, '')) = '' THEN 1 ")
+	           .append("            ELSE 0 END AS en_turno_biometria, ")
+	           .append("       CASE WHEN tt.clave_dom IS NOT NULL THEN 1 ELSE 0 END AS temporal_conocido, ")
+	           .append("       tt.horaingreso AS temporal_hora_ingreso, tt.horasalida AS temporal_hora_salida ")
 	           .append("FROM domiciliario_ubicacion_actual ubi ")
 	           .append("LEFT JOIN general.empleado e ON ( ")
 	           .append("    ubi.clave_dom COLLATE utf8mb4_unicode_ci = e.claverapida COLLATE utf8mb4_unicode_ci ")
@@ -150,12 +154,27 @@ public class DomiciliarioPedidoDAO {
 	           .append("        FROM general.empleado_evento ")
 	           .append("        WHERE fecha = CURDATE() ")
 	           .append("    ) sub WHERE rn = 1 ")
-	           .append(") ev ON (ev.id = e.id OR ev.id = CAST(RIGHT(TRIM(et.identificacion), 6) AS UNSIGNED) OR ev.id = CAST(TRIM(et.identificacion) AS UNSIGNED) OR ev.id = CAST(RIGHT(TRIM(etdt.identificacion), 6) AS UNSIGNED)) ")
-	           .append("LEFT JOIN tienda ti ON ti.idtienda = COALESCE(ev.idtienda, etdt.idtienda, ubi.idtienda) ")
+	           // Solo por el id del empleado interno. Antes tambien se probaba con los ultimos 6 digitos de la cedula
+	           // del temporal como si fueran un id de empleado: nunca habia eventos asi, y si coincidia con el id de
+	           // un empleado real le prestaba su turno a otra persona.
+	           .append(") ev ON ev.id = e.id ")
+	           // El temporal: la ultima fila de esa persona de la jornada de ayer o de hoy (la jornada cruza la
+	           // medianoche, asi que no se filtra por la fecha de hoy a secas). La clave de la app es los ultimos 6
+	           // digitos de la cedula o, a veces, la cedula completa.
+	           .append("LEFT JOIN ( ")
+	           .append("    SELECT clave_dom, identificacion, idtienda, horaingreso, horasalida FROM ( ")
+	           .append("        SELECT clave_dom, identificacion, idtienda, horaingreso, horasalida, ")
+	           .append("               ROW_NUMBER() OVER(PARTITION BY identificacion ORDER BY fecha_sistema DESC, version DESC) as rn ")
+	           .append("        FROM general.empleado_temporal_dia_tienda ")
+	           .append("        WHERE anulado = 'N' AND fecha_sistema >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) ")
+	           .append("    ) st WHERE rn = 1 ")
+	           .append(") tt ON (ubi.clave_dom COLLATE utf8mb4_unicode_ci = tt.clave_dom COLLATE utf8mb4_unicode_ci ")
+	           .append("      OR ubi.clave_dom COLLATE utf8mb4_unicode_ci = tt.identificacion COLLATE utf8mb4_unicode_ci) ")
+	           .append("LEFT JOIN tienda ti ON ti.idtienda = COALESCE(ev.idtienda, tt.idtienda, ubi.idtienda) ")
 	           .append("WHERE ubi.fecha >= CURDATE() ");
 
 	        if (id != 0) {
-	            sql.append("AND COALESCE(ev.idtienda, etdt.idtienda, ubi.idtienda) = ").append(id).append(" ");
+	            sql.append("AND COALESCE(ev.idtienda, tt.idtienda, ubi.idtienda) = ").append(id).append(" ");
 	        }
 	        sql.append("ORDER BY ubi.fecha DESC");
 
@@ -174,6 +193,15 @@ public class DomiciliarioPedidoDAO {
 	                js.put("tipo_repartidor", rs.getString("tipo_repartidor"));
 	                js.put("empresa_temporal", rs.getString("empresa_temporal"));
 	                js.put("en_turno_biometria", rs.getInt("en_turno_biometria") == 1);
+	                // Solo para los temporales. "conocido" distingue "la tienda no ha avisado nada" (sin fila: tienda
+	                // con el POS viejo) de "ya salio": sin esa diferencia habria que decir que todos los de una tienda
+	                // sin actualizar salieron.
+	                final boolean temporalConocido = rs.getInt("temporal_conocido") == 1;
+	                final String horaSalidaTemp = rs.getString("temporal_hora_salida") == null ? "" : rs.getString("temporal_hora_salida").trim();
+	                js.put("temporal_conocido", temporalConocido);
+	                js.put("temporal_hora_ingreso", rs.getString("temporal_hora_ingreso"));
+	                js.put("temporal_hora_salida", horaSalidaTemp);
+	                js.put("temporal_salio", temporalConocido && horaSalidaTemp.length() > 0);
 	                js.put("estado", rs.getString("estado"));
 	                js.put("bateria", rs.getObject("bateria") != null ? rs.getInt("bateria") : null);
 	                js.put("velocidad", rs.getInt("velocidad"));

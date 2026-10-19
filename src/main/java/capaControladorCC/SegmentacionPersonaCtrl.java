@@ -20,15 +20,38 @@ import capaDAOCC.SegmentacionPersonaDAO;
 public class SegmentacionPersonaCtrl {
 
 	/**
+	 * Los parametros de la peticion como un mapa simple (el primer valor de cada uno).
+	 *
+	 * Existe para que el MISMO armado de filtro sirva cuando no hay peticion: un envio programado
+	 * guarda los parametros de la pantalla y los vuelve a leer a la hora del envio, sin
+	 * navegador ni sesion. Asi el filtro de un envio programado y el de uno inmediato nacen del
+	 * mismo codigo, y no pueden diferir.
+	 */
+	public static java.util.Map<String, String> parametrosDe(final HttpServletRequest request) {
+		final java.util.Map<String, String> m = new java.util.LinkedHashMap<String, String>();
+		final java.util.Map<String, String[]> todos = request.getParameterMap();
+		for (final java.util.Map.Entry<String, String[]> e : todos.entrySet()) {
+			if (e.getValue() != null && e.getValue().length > 0) {
+				m.put(e.getKey(), e.getValue()[0]);
+			}
+		}
+		return (m);
+	}
+
+	public static SegmentacionPersonaDAO.Filtro filtroDe(final HttpServletRequest request) {
+		return (filtroDe(parametrosDe(request)));
+	}
+
+	/**
 	 * Lee el filtro de la peticion.
 	 *
 	 * Los dias van con -1 como "sin tope" y no con 0, porque 0 es un valor
 	 * legitimo: quien compro hoy tiene dias_sin_comprar = 0.
 	 */
-	public static SegmentacionPersonaDAO.Filtro filtroDe(final HttpServletRequest request) {
+	public static SegmentacionPersonaDAO.Filtro filtroDe(final java.util.Map<String, String> p) {
 		final SegmentacionPersonaDAO.Filtro f = new SegmentacionPersonaDAO.Filtro();
 
-		final String segmentos = request.getParameter("segmentos");
+		final String segmentos = p.get("segmentos");
 		if (segmentos != null && segmentos.trim().length() > 0) {
 			final String[] partes = segmentos.split(",");
 			for (int i = 0; i < partes.length; i++) {
@@ -38,28 +61,28 @@ public class SegmentacionPersonaCtrl {
 				}
 			}
 		}
-		f.idTienda = entero(request.getParameter("idtienda"), 0);
-		f.pedidosMin = entero(request.getParameter("pedidosmin"), 0);
-		f.valorMin = decimal(request.getParameter("valormin"), 0);
-		f.diasMin = entero(request.getParameter("diasmin"), -1);
-		f.diasMax = entero(request.getParameter("diasmax"), -1);
-		f.soloConCorreo = "S".equals(request.getParameter("concorreo"));
-		f.soloAutorizados = "S".equals(request.getParameter("autorizados"));
-		f.canal = texto(request.getParameter("canal"), "TODOS");
+		f.idTienda = entero(p.get("idtienda"), 0);
+		f.pedidosMin = entero(p.get("pedidosmin"), 0);
+		f.valorMin = decimal(p.get("valormin"), 0);
+		f.diasMin = entero(p.get("diasmin"), -1);
+		f.diasMax = entero(p.get("diasmax"), -1);
+		f.soloConCorreo = "S".equals(p.get("concorreo"));
+		f.soloAutorizados = "S".equals(p.get("autorizados"));
+		f.canal = texto(p.get("canal"), "TODOS");
 		//El gusto. Va encima del segmento y no en su lugar: una persona es FIEL
 		//y ademas amante de la Hawaiana.
-		f.familiaFavorita = texto(request.getParameter("familiafavorita"), "");
+		f.familiaFavorita = texto(p.get("familiafavorita"), "");
 		//Si se pide una familia y no se dice que tan marcada, se exige 60 y tres
 		//pizzas. Sin eso, "le gusta la Hawaiana" incluiria a quien la pidio una
 		//vez entre diez, y el mensaje -que le dice al cliente que es su
 		//favorita- quedaria mintiendo.
-		f.fidelidadMin = entero(request.getParameter("fidelidadmin"),
+		f.fidelidadMin = entero(p.get("fidelidadmin"),
 				f.familiaFavorita.length() > 0 ? 60 : 0);
-		f.pizzasMin = entero(request.getParameter("pizzasmin"),
+		f.pizzasMin = entero(p.get("pizzasmin"),
 				f.familiaFavorita.length() > 0 ? 3 : 0);
-		f.orden = texto(request.getParameter("orden"), "VALOR");
-		f.pagina = entero(request.getParameter("pagina"), 1);
-		f.porPagina = entero(request.getParameter("porpagina"), 50);
+		f.orden = texto(p.get("orden"), "VALOR");
+		f.pagina = entero(p.get("pagina"), 1);
+		f.porPagina = entero(p.get("porpagina"), 50);
 		return (f);
 	}
 

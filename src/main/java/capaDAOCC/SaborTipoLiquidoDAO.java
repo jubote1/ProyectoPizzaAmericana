@@ -2,6 +2,7 @@ package capaDAOCC;
 
 import java.sql.Connection;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -247,9 +248,29 @@ public class SaborTipoLiquidoDAO {
 	}
 	
 	/**
-	 * M�todo que se encarga de homologar el tipo de liquido incluido en el producto, con base en lo enviado dentro del JSON.
-	 * @param sku
-	 * @return
+	 * La familia de liquidos donde estan las bebidas que ya no se venden.
+	 *
+	 * Alguien retiro las descontinuadas moviendolas a este tipo -se llama
+	 * literalmente NO EXISTEN y tiene 32 sabores adentro- pero esta homologacion
+	 * buscaba solo por SKU y no miraba la familia, asi que el BOT las seguia
+	 * ofreciendo. La Manzana 1.5 Lts entraba por ahi: entre el 24 de septiembre
+	 * y el 8 de octubre aparecio 13 veces en tres tiendas, SIEMPRE por el CRM y
+	 * nunca por el POS, Rappi, DiDi ni la tienda virtual, porque ninguno de esos
+	 * canales usa esta tabla.
+	 */
+	private static final int TIPO_LIQUIDO_NO_EXISTE = 8;
+
+	/**
+	 * Homologa el liquido que viene en el JSON de la tienda virtual o del BOT.
+	 *
+	 * Devuelve 0 cuando el SKU no existe Y TAMBIEN cuando la bebida esta en la
+	 * familia de las descontinuadas. Quien llama ya sabe que hacer con un cero:
+	 * no agrega la bebida. Es mejor que el pedido llegue sin bebida -y que el
+	 * asesor lo note- a que la cocina reciba una gaseosa que no tiene.
+	 *
+	 * @param sku el texto que manda el canal, por ejemplo
+	 *            "Selecciona tu bebida Manzana Mediana (6 porciones)"
+	 * @return el idsabor_x_tipo_liquido, o 0 si no se puede o no se debe
 	 */
 	public static int homologarLiquidoTiendaVirtual(String sku)
 	{
@@ -259,19 +280,39 @@ public class SaborTipoLiquidoDAO {
 		int idInterno = 0;
 		try
 		{
-			Statement stm = con1.createStatement();
-			String consulta = "select idinterno from homologacion_producto_pedidovirtual where tipo = 'T' and sku = '" + sku + "'";
-			logger.info(consulta);
-			ResultSet rs = stm.executeQuery(consulta);
+			//El SKU viene de afuera, asi que va por parametro y no concatenado.
+			PreparedStatement pstmt = con1.prepareStatement(
+					"select h.idinterno, s.descripcion, s.idtipo_liquido"
+					+ "  from homologacion_producto_pedidovirtual h"
+					+ "  left join sabor_x_tipo_liquido s"
+					+ "    on s.idsabor_x_tipo_liquido = h.idinterno"
+					+ " where h.tipo = 'T' and h.sku = ?");
+			pstmt.setString(1, sku);
+			ResultSet rs = pstmt.executeQuery();
 			while(rs.next()){
-				idInterno = rs.getInt("idinterno");
+				int tipo = rs.getInt("idtipo_liquido");
+				if(tipo == TIPO_LIQUIDO_NO_EXISTE)
+				{
+					//Se deja en el log con nombre propio: si el BOT sigue
+					//ofreciendola, hay que quitarla de SU menu, que es donde de
+					//verdad se arregla. Esto solo evita que llegue al pedido.
+					logger.info("homologarLiquidoTiendaVirtual: '" + sku + "' apunta a "
+							+ rs.getString("descripcion") + ", que esta en la familia de bebidas "
+							+ "descontinuadas. NO se agrega al pedido.");
+					idInterno = 0;
+				}
+				else
+				{
+					idInterno = rs.getInt("idinterno");
+				}
 				break;
 			}
-			stm.close();
+			rs.close();
+			pstmt.close();
 			con1.close();
 		}
 		catch (Exception e){
-			logger.error(e.toString());
+			logger.error("homologarLiquidoTiendaVirtual: " + e.toString());
 			try
 			{
 				con1.close();
@@ -281,6 +322,7 @@ public class SaborTipoLiquidoDAO {
 		}
 		return(idInterno);
 	}
+
 	
 	public static int retornarProductoSaborTipoLiquido(int idsabortipoliquido)
 	{

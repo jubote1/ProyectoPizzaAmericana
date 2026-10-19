@@ -40,7 +40,19 @@ public class ConsultarDesempenoDomiciliario extends HttpServlet {
 		String desde = aFechaSql(request.getParameter("fechadesde"));
 		String hasta = aFechaSql(request.getParameter("fechahasta"));
 		logger.info("desempeno domiciliario idempleado=" + idEmpleado + " desde=" + desde + " hasta=" + hasta);
-		String respuesta = DesempenoDomiciliarioCtrl.consultarDesempeno(idEmpleado, desde, hasta);
+		//Tiendas que no contestaron y que la persona pidio ver desde el datamart (ids separados por coma).
+		java.util.Set<Integer> idsDatamart = new java.util.HashSet<Integer>();
+		String csv = request.getParameter("tiendasdatamart");
+		if (csv != null) {
+			for (String parte : csv.split(",")) {
+				try {
+					idsDatamart.add(Integer.valueOf(Integer.parseInt(parte.trim())));
+				} catch (Exception e) {
+					//Un id mal escrito se ignora.
+				}
+			}
+		}
+		String respuesta = DesempenoDomiciliarioCtrl.consultarDesempeno(idEmpleado, desde, hasta, idsDatamart);
 		PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}

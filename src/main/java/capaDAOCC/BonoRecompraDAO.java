@@ -52,7 +52,16 @@ public class BonoRecompraDAO {
 		public boolean repetible = false;
 		/** S = se lo gana cualquiera que compre. N = solo a quien se le invito. */
 		public boolean abierta = true;
-		/** La tanda de Envio de Publicidad con la que se invito. */
+		/**
+		 * La CAMPANA de Envio de Publicidad que invito. Cuentan todas sus
+		 * tandas: una invitacion de verdad son varios envios, y a segmentos
+		 * distintos -ORO el martes, FIEL el miercoles-.
+		 */
+		public long idCampana;
+		/**
+		 * La tanda que se escogio antes de que esto fuera por campana. Queda
+		 * como rastro de las tres campanas viejas; el motor ya no la mira.
+		 */
 		public long idEnvio;
 		/** El dia en que se emite. Vacio = al cerrar la ventana. */
 		public String fechaEmision = "";
@@ -184,10 +193,10 @@ public class BonoRecompraDAO {
 						+ " compra_hasta=?, porcentaje=?, tope_bono=?, base_minima=?, productos=?,"
 						+ " excluir_promociones=?, repetible=?, estado=?, emitir=?, avisar=?,"
 						+ " abierta=?, idenvio=?, fecha_emision=?, redime_desde=?, redime_hasta=?,"
-						+ " hora_desde=?, hora_hasta=?, tipos_pedido=?"
+						+ " hora_desde=?, hora_hasta=?, tipos_pedido=?, idcampana=?"
 						+ " where idbono=?");
 				ponerCampos(ps, c);
-				ps.setInt(22, id);
+				ps.setInt(23, id);
 				ps.executeUpdate();
 				ps.close();
 			} else {
@@ -196,11 +205,11 @@ public class BonoRecompraDAO {
 						+ " compra_hasta, porcentaje, tope_bono, base_minima, productos,"
 						+ " excluir_promociones, repetible, estado, emitir, avisar,"
 						+ " abierta, idenvio, fecha_emision, redime_desde, redime_hasta,"
-						+ " hora_desde, hora_hasta, tipos_pedido, usuario, creada_en)"
-						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
+						+ " hora_desde, hora_hasta, tipos_pedido, idcampana, usuario, creada_en)"
+						+ " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,now())",
 						Statement.RETURN_GENERATED_KEYS);
 				ponerCampos(ps, c);
-				ps.setString(22, c.usuario);
+				ps.setString(23, c.usuario);
 				ps.executeUpdate();
 				final ResultSet rs = ps.getGeneratedKeys();
 				if (rs.next()) {
@@ -244,6 +253,11 @@ public class BonoRecompraDAO {
 		hora(ps, 19, c.horaDesde);
 		hora(ps, 20, c.horaHasta);
 		ps.setString(21, c.tiposPedido);
+		if (c.idCampana > 0) {
+			ps.setLong(22, c.idCampana);
+		} else {
+			ps.setNull(22, java.sql.Types.BIGINT);
+		}
 	}
 
 	/** Una hora vacia es NULL: significa "todo el dia", no las doce de la noche. */
@@ -363,12 +377,12 @@ public class BonoRecompraDAO {
 				return (res);
 			}
 
-			//Una campana por invitacion sin envio no tiene publico: emitirla
-			//seria regalarle a todo el mundo, justo lo contrario de lo que se
-			//pidio. Se para antes de repartir nada.
-			if (!c.abierta && c.idEnvio <= 0) {
-				res.aviso = "La campana es por invitacion pero no tiene envio asociado."
-						+ " Sin el no se sabe a quien se invito y no se emite nada.";
+			//Una campana por invitacion sin campana de correo no tiene publico:
+			//emitirla seria regalarle a todo el mundo, justo lo contrario de lo
+			//que se pidio. Se para antes de repartir nada.
+			if (!c.abierta && c.idCampana <= 0) {
+				res.aviso = "La campana es por invitacion pero no tiene campana de correo asociada."
+						+ " Sin ella no se sabe a quien se invito y no se emite nada.";
 				return (res);
 			}
 
@@ -472,13 +486,28 @@ public class BonoRecompraDAO {
 			.append(" from pizzaamericana.bono_pedido p")
 			.append(" where p.idbono = ? and p.idemision is null");
 		if (!c.abierta) {
-			//Solo los invitados. Y solo a quienes el mensaje les LLEGO: si el
-			//correo reboto, esa persona nunca supo que comprando se ganaba algo,
-			//asi que no se le puede reclamar ni ella puede reclamar.
+			//Solo los invitados, y solo aquellos a quienes el mensaje les LLEGO:
+			//si el correo reboto, esa persona nunca supo que comprando se ganaba
+			//algo, asi que ni se le puede reclamar ni ella puede reclamar.
+			//
+			//CUENTAN TODAS LAS TANDAS DE LA CAMPANA. Una invitacion de verdad
+			//son varios envios -el de publicidad va por tandas, 500 y 500- y a
+			//segmentos distintos: ORO el martes, FIEL el miercoles. Amarrar una
+			//sola tanda dejaba por fuera a la gente de las otras sin que nada
+			//lo dijera.
+			//
+			//Hasta el 2026-10-06 se guardaba un envio y la campana se resolvia
+			//a partir de el. El resultado era el mismo, pero la pantalla decia
+			//"el envio con el que se aviso" y hacia creer que solo contaba ese.
 			sql.append(" and exists (select 1 from crm.campana_destinatario d")
-				.append("              where d.idenvio = ").append(c.idEnvio)
-				.append("                and d.idpersona = p.idpersona")
-				.append("                and d.estado = 'ENVIADO')");
+				.append("              join crm.campana_envio e on e.idenvio = d.idenvio")
+				.append("             where e.idcampana = ").append(c.idCampana)
+				.append("               and d.idpersona = p.idpersona")
+				.append("               and d.estado = 'ENVIADO'")
+				//Invitado ANTES de que cerrara la ventana de compra. Sin esto,
+				//una tanda enviada el martes le pagaria las compras del sabado
+				//a alguien que el sabado no sabia que existia la promocion.
+				.append("               and date(d.enviado_en) <= ?)");
 		}
 		if (!c.repetible) {
 			sql.append(" and not exists (select 1 from pizzaamericana.bono_emitido e")
@@ -487,8 +516,13 @@ public class BonoRecompraDAO {
 		sql.append(" group by p.idpersona having sum(p.base) >= ?");
 
 		try (PreparedStatement ps = cn.prepareStatement(sql.toString())) {
-			ps.setInt(1, c.idBono);
-			ps.setDouble(2, c.baseMinima);
+			int i = 1;
+			ps.setInt(i++, c.idBono);
+			if (!c.abierta) {
+				ps.setString(i++, c.compraHasta.length() >= 10
+						? c.compraHasta.substring(0, 10) : c.compraHasta);
+			}
+			ps.setDouble(i++, c.baseMinima);
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					final Emision e = new Emision();
@@ -698,6 +732,7 @@ public class BonoRecompraDAO {
 		c.avisar = "S".equals(rs.getString("avisar"));
 		c.abierta = !"N".equals(rs.getString("abierta"));
 		c.idEnvio = rs.getLong("idenvio");
+		c.idCampana = rs.getLong("idcampana");
 		c.fechaEmision = txt(rs.getString("fecha_emision"));
 		c.redimeDesde = txt(rs.getString("redime_desde"));
 		c.redimeHasta = txt(rs.getString("redime_hasta"));
