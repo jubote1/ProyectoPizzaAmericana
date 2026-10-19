@@ -73,6 +73,23 @@ public class PlantillaCorreoPremio {
 			final String mensajePremio, final String codigo, final String fechaVencimiento,
 			final String urlLogo) {
 
+		//Este correo SIEMPRE lleva un codigo -el bloque del codigo no es
+		//condicional, se pinta en todos los casos- asi que la fecha de
+		//vencimiento no puede ser opcional. Antes lo era: si llegaba vacia, el
+		//cliente recibia el codigo en letras grandes y ni una palabra de hasta
+		//cuando le servia.
+		//
+		//Pasa de verdad: RuletaCtrl arma la fecha con
+		//(asignada == null) ? "" : texto(asignada.getFechaCaducidad()), o sea que
+		//un premio sin codigo asignado, o con caducidad nula, salia sin fecha.
+		//
+		//Revienta a proposito en vez de rellenar: quien llama atrapa, se salta
+		//ese premio y lo deja en el log para arreglar el dato.
+		if (fechaVencimiento == null || fechaVencimiento.trim().length() == 0) {
+			throw new IllegalArgumentException("PlantillaCorreoPremio: el codigo " + codigo
+					+ " no trae fecha de vencimiento. No se arma el correo.");
+		}
+
 		final String saludo = (nombreCliente == null || nombreCliente.trim().length() == 0)
 				? "&iexcl;Hola!"
 				: "&iexcl;Hola " + escapar(primerNombre(nombreCliente)) + "!";
@@ -152,11 +169,10 @@ public class PlantillaCorreoPremio {
 		h.append(";border-radius:8px;padding:14px 28px;font-size:30px;font-weight:bold;");
 		h.append("letter-spacing:4px;color:").append(AZUL).append(";font-family:'Courier New',Courier,monospace;\">");
 		h.append(escapar(codigo)).append("</div>");
-		if (fechaVencimiento != null && fechaVencimiento.trim().length() > 0) {
-			h.append("<div style=\"font-size:14px;color:").append(ROJO);
-			h.append(";margin-top:10px;font-weight:bold;\">");
-			h.append("V&aacute;lido hasta el ").append(escapar(enLetras(fechaVencimiento))).append("</div>");
-		}
+		//Sin condicional: la guarda de arriba ya garantiza que hay fecha.
+		h.append("<div style=\"font-size:14px;color:").append(ROJO);
+		h.append(";margin-top:10px;font-weight:bold;\">");
+		h.append("V&aacute;lido hasta el ").append(escapar(enLetras(fechaVencimiento))).append("</div>");
 		h.append("</td></tr>");
 
 		// Como redimirlo
