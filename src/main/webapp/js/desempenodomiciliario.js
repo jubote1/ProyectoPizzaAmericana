@@ -31,6 +31,10 @@ $(document).ready(function () {
 	});
 
 	$(document).on('input change', '#ddHorasReales, .sc-meta', function () {
+		var h = parseFloat($('#ddHorasReales').val()) || 0;
+		if (h > 0) {
+			$('#ddHorasAlerta').hide();
+		}
 		ddRecalcularScorecard();
 	});
 });
@@ -58,12 +62,11 @@ function ddCargarDomiciliarios() {
 				var nombreCorto = lista[i].nombre || '';
 				var esGenerico = /domiciliario\s*0?[1-9]/i.test(nombreLargo) || /domiciliario\s*0?[1-9]/i.test(nombreCorto);
 				if (esGenerico) {
-					html += '<option value="' + lista[i].id + '" style="color:#b45309; font-weight:bold;">' +
-						ddEscapar(nombreLargo) + ' [Cuenta Temporal / Comodín Tienda]</option>';
-				} else {
-					html += '<option value="' + lista[i].id + '">' + ddEscapar(nombreLargo) +
-						' (' + ddEscapar(nombreCorto) + ')</option>';
+					// Omitir cuentas genericas/comodines de tienda
+					continue;
 				}
+				html += '<option value="' + lista[i].id + '">' + ddEscapar(nombreLargo) +
+					' (' + ddEscapar(nombreCorto) + ')</option>';
 			}
 			$('#ddDomiciliario').html(html);
 			if (lista.length === 0) {
@@ -160,11 +163,15 @@ function ddPintar(d) {
 	if (r.pedidos === 0) {
 		$('#ddKpis').html('<div class="col-md-12"><div class="alert alert-info" style="margin:0;">' +
 			'No hay entregas registradas para este domiciliario en el rango.</div></div>');
+		$('#ddPanelScorecard').hide();
+		$('#ddBtnExcel').hide();
 		$('#ddResultado').show();
 		$('#ddGrafPromesa,#ddGrafRegreso,#ddGrafDias,#ddEnrutamiento,#ddCalidad').html('');
 		$('#ddTablaTiendas tbody,#ddTablaPeores tbody').html('');
 		return;
 	}
+
+	$('#ddPanelScorecard').show();
 
 	$('#ddKpis').html(
 		ddKpi(r.pedidos, 'Pedidos entregados', r.salidas + ' salidas', '') +
@@ -461,6 +468,13 @@ function ddFormatoDinero(n) {
 function ddPintarScorecard(d) {
 	var horas = (d.horas_trabajadas !== undefined && d.horas_trabajadas !== null) ? d.horas_trabajadas : 0;
 	$('#ddHorasReales').val(horas > 0 ? horas : '');
+	if (horas > 0) {
+		$('#ddHorasBadge').show();
+		$('#ddHorasAlerta').hide();
+	} else {
+		$('#ddHorasBadge').hide();
+		$('#ddHorasAlerta').show();
+	}
 	ddRecalcularScorecard();
 }
 

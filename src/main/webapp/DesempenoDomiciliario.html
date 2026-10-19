@@ -324,7 +324,9 @@
 						<div class="col-md-5 text-right">
 							<div style="display:inline-block; vertical-align:middle; text-align:right; margin-right:12px;">
 								<span style="font-size:13px; font-weight:700; color:#1e293b;">Horas reales trabajadas:</span><br/>
-								<small class="text-muted" style="font-size:11px;">Biometr&iacute;a / Turnos (editable)</small>
+								<small class="text-muted" style="font-size:11px;">Biometr&iacute;a / Turnos</small>
+								<span id="ddHorasBadge" class="label label-success" style="font-size:10px; margin-left:4px; display:none;" title="Cargado autom&aacute;ticamente desde horario_trabajado / biometr&iacute;a">&#10003; Biometr&iacute;a</span>
+								<span id="ddHorasAlerta" class="label label-warning" style="font-size:10px; margin-left:4px; display:none;" title="No se encontraron marcaciones en biometr&iacute;a para este rango. Ingrese el valor manual.">&#9888; Sin registro</span>
 							</div>
 							<div style="display:inline-block; vertical-align:middle; width:110px;">
 								<input type="number" id="ddHorasReales" step="0.1" min="0" class="form-control text-center" style="font-weight:800; font-size:16px; border:2px solid #2563eb; color:#1e3a8a;" title="Horas reales calculadas desde la biometr&iacute;a. Puedes modificarlas para simular novedades." />
