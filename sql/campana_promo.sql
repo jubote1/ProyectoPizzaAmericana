@@ -75,7 +75,13 @@ create table if not exists campana_promo_tienda (
 ) engine=InnoDB default charset=utf8;
 
 -- PASO 3. Que dias y a que horas. Mismo modelo de campana_15min_horario_dia.
--- dia_semana sigue a MySQL DAYOFWEEK(): 1=domingo ... 7=sabado.
+--
+-- dia_semana va 1=LUNES .. 7=DOMINGO, igual que campana_15min_horario_dia y
+-- NO como el dayofweek() de MySQL, que empieza en domingo. La traduccion que
+-- usa la campana de 15 minutos es:
+--     ((dayofweek(curdate()) + 5) mod 7) + 1
+-- Tener dos tablas de campana numerando los dias al reves seria una trampa
+-- para el que escriba la tercera.
 create table if not exists campana_promo_dia (
     idcampana           int           not null,
     dia_semana          tinyint       not null,
