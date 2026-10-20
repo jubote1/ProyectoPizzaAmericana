@@ -451,7 +451,7 @@ public class CampanaPromoDAO {
 	 * quedo registrado.
 	 */
 	public static boolean marcar(int idCampana, int idTienda, int idPedido, int idPedidoTienda, int idCliente,
-			String correo, boolean solicito, String usuario) {
+			String correo, boolean solicito, String usuario, String observacion) {
 		Logger logger = Logger.getLogger("log_file");
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
@@ -460,10 +460,10 @@ public class CampanaPromoDAO {
 		}
 		try {
 			PreparedStatement pst = con1.prepareStatement("insert into pedido_campana_promo (idcampana, idtienda,"
-					+ " idpedidotienda, idpedido, idcliente, correo, solicito, usuario, estado)"
-					+ " values (?,?,?,?,?,?,?,?,?)"
+					+ " idpedidotienda, idpedido, idcliente, correo, solicito, usuario, estado, observacion)"
+					+ " values (?,?,?,?,?,?,?,?,?,?)"
 					+ " on duplicate key update correo = values(correo), solicito = values(solicito),"
-					+ " usuario = values(usuario)");
+					+ " usuario = values(usuario), observacion = values(observacion)");
 			pst.setInt(1, idCampana);
 			pst.setInt(2, idTienda);
 			pst.setInt(3, idPedidoTienda);
@@ -473,6 +473,11 @@ public class CampanaPromoDAO {
 			pst.setString(7, solicito ? "S" : "N");
 			pst.setString(8, usuario == null ? "" : usuario);
 			pst.setString(9, solicito ? "MARCADO" : "DESCARTADO");
+			//La observacion distingue "no la quiso" de "no se pudo, el cliente no
+			//tiene correo o no acepto la politica". Son dos problemas distintos:
+			//el primero es del cliente, el segundo es de datos y se puede
+			//arreglar.
+			pst.setString(10, observacion == null ? "" : observacion.trim());
 			pst.executeUpdate();
 			pst.close();
 			con1.close();

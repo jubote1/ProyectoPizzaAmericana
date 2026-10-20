@@ -88,7 +88,7 @@ public class CRUDCampanaPromo extends HttpServlet {
 						this.entero(request, "idpedido"), this.entero(request, "idpedidotienda"),
 						this.entero(request, "idcliente"), this.texto(request, "correo"),
 						"S".equalsIgnoreCase(this.texto(request, "solicito")),
-						String.valueOf(sesion.getAttribute("usuario"))));
+						String.valueOf(sesion.getAttribute("usuario")), this.texto(request, "observacion")));
 			} else if (operacion == 12) {
 				out.write(ctrl.listarParaEnviar(this.entero(request, "idcampana"),
 						"S".equalsIgnoreCase(this.texto(request, "solopendientes"))));

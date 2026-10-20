@@ -7181,11 +7181,56 @@ function preguntarCampanaPromo()
 		return false;
 	}
 
+	/*
+	 * El correo NO se vuelve a digitar.
+	 *
+	 * Si el cliente ya lo tiene y acepto la politica de manejo de datos, se le
+	 * muestra a quien atiende para que lo confirme en voz alta, pero bloqueado:
+	 * hacerlo teclear un correo que ya esta es perder tiempo en la caja y es una
+	 * oportunidad de equivocarse con algo que ya era correcto.
+	 *
+	 * Si le falta alguna de las dos, NO se captura aqui. Se avisa que falta y
+	 * que hay que tomarselo en la ficha del cliente, que es donde vive. Un correo
+	 * escrito solo para esta promocion se perderia para todo lo demas, y la
+	 * politica de datos no se puede dar por aceptada de oficio: vamos a mandarle
+	 * informacion por correo.
+	 */
+	var puede = (campana.puede === 'S');
 	var correoActual = (campana.correo || '').replace(/"/g, '&quot;');
-	var contenido = '<p style="font-size:15px">' + $('<div>').text(campana.pregunta).html() + '</p>'
-		+ '<label>Correo del cliente</label>'
-		+ '<input type="text" id="cp-correo" class="form-control" value="' + correoActual + '">'
-		+ '<span style="font-size:12px;color:#6C7482">La boleta se envia a este correo.</span>';
+	var contenido = '<p style="font-size:15px">' + $('<div>').text(campana.pregunta).html() + '</p>';
+
+	if (puede) {
+		contenido += '<label>Se le envia a este correo</label>'
+			+ '<input type="text" class="form-control" value="' + correoActual + '" readonly '
+			+ 'style="background:#F4F4F6;font-weight:bold">'
+			+ '<span style="font-size:12px;color:#6C7482">Confirmele el correo al cliente.</span>';
+	} else {
+		contenido += '<div style="background:#FFF6DC;border:1px solid #8a6d3b;border-radius:4px;'
+			+ 'padding:10px 12px"><b style="color:#8a6d3b">No se le puede enviar la boleta:</b> este cliente '
+			+ $('<div>').text(campana.falta || 'no tiene los datos completos').html() + '.<br><br>'
+			+ 'Para que aplique, t&oacute;mele esos datos en la ficha del cliente y vuelva a intentarlo.</div>';
+	}
+
+	if (!puede) {
+		//Sin los datos no hay nada que preguntar: se deja constancia de que no se
+		//pudo -que es distinto de que no la quisiera- y el pedido sigue.
+		$.confirm({
+			title: campana.nombre,
+			content: contenido,
+			closeIcon: false,
+			backgroundDismiss: false,
+			buttons: {
+				entendido: {
+					text: 'ENTENDIDO',
+					btnClass: 'btn-blue',
+					action: function(){
+						registrarCampanaPromo(campana, 'N', '', campana.falta || 'datos incompletos');
+					}
+				}
+			}
+		});
+		return true;
+	}
 
 	$.confirm({
 		title: campana.nombre,
@@ -7197,16 +7242,7 @@ function preguntarCampanaPromo()
 				text: 'SI la quiere',
 				btnClass: 'btn-blue',
 				action: function(){
-					var correo = $('#cp-correo').val();
-					if(campana.exigecorreo === 'S' && (correo == null || correo.indexOf('@') < 0))
-					{
-						//Se devuelve false para que el dialogo NO se cierre: sin
-						//correo no hay a donde mandarle la boleta, y cerrar aqui
-						//seria perder al cliente que si la queria.
-						$.alert('Para enviarle la boleta hace falta el correo.');
-						return false;
-					}
-					registrarCampanaPromo(campana, 'S', correo);
+					registrarCampanaPromo(campana, 'S', campana.correo || '', '');
 				}
 			},
 			no: {
@@ -7214,7 +7250,7 @@ function preguntarCampanaPromo()
 				action: function(){
 					//El NO tambien se guarda: sin eso no se puede distinguir
 					//"no la quisieron" de "nadie pregunto".
-					registrarCampanaPromo(campana, 'N', '');
+					registrarCampanaPromo(campana, 'N', '', '');
 				}
 			}
 		}
@@ -7222,7 +7258,7 @@ function preguntarCampanaPromo()
 	return true;
 }
 
-function registrarCampanaPromo(campana, solicito, correo)
+function registrarCampanaPromo(campana, solicito, correo, observacion)
 {
 	$.ajax({
 		url: server + 'CRUDCampanaPromo',
@@ -7233,7 +7269,8 @@ function registrarCampanaPromo(campana, solicito, correo)
 			idpedido: idPedido,
 			idcliente: campana.idcliente,
 			correo: correo,
-			solicito: solicito
+			solicito: solicito,
+			observacion: observacion || ""
 		},
 		dataType: 'json',
 		async: false
