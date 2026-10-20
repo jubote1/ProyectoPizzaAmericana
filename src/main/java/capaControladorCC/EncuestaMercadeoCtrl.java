@@ -61,6 +61,32 @@ public class EncuestaMercadeoCtrl {
 	}
 
 	/**
+	 * Igual que la de arriba, pero sin preguntas si el pedido YA fue encuestado.
+	 *
+	 * El POS pregunta al oprimir Finalizar y Finalizar se puede oprimir varias
+	 * veces sobre el mismo pedido. La guarda va aqui y no en el POS para que
+	 * valga igual desde donde se llame, y porque la respuesta vive en esta base.
+	 *
+	 * Con idtienda o idpedidotienda en cero se comporta como la version de
+	 * siempre: hay llamadas -la pantalla de configuracion- que no tienen pedido.
+	 *
+	 * @param idTienda       la tienda del pedido, o 0 si no aplica
+	 * @param idPedidoTienda el pedido, o 0 si no aplica
+	 */
+	public String obtenerPreguntasVigentes(final boolean esPuntoVenta, final int idTienda,
+			final int idPedidoTienda) {
+		if (idTienda > 0 && idPedidoTienda > 0
+				&& PreguntaMercadeoDAO.yaRespondioElPedido(idTienda, idPedidoTienda)) {
+			//Se devuelve la misma forma de respuesta que cuando no hay preguntas
+			//vigentes: el POS ya sabe no mostrar nada con una lista vacia, asi
+			//que no hay que tocarlo mas alla de mandarle el pedido.
+			return ("{\"preguntas\":[]}");
+		}
+		return (this.obtenerPreguntasVigentes(esPuntoVenta));
+	}
+
+
+	/**
 	 * Retorna todas las preguntas configuradas, vigentes o no, para el maestro de
 	 * configuracion del POS.
 	 *

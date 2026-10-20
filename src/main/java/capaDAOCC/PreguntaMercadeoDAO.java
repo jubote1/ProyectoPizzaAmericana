@@ -376,4 +376,52 @@ public class PreguntaMercadeoDAO {
 			// Se ignora: ya estamos manejando un error previo
 		}
 	}
+
+	/**
+	 * Si a este pedido ya le contestaron la encuesta.
+	 *
+	 * El POS pregunta al oprimir Finalizar, y Finalizar se puede oprimir varias
+	 * veces sobre el mismo pedido -se sale por el aviso del datafono, se corrige
+	 * algo, se vuelve a entrar-. Sin esta guarda la encuesta vuelve a salir cada
+	 * vez: medido el 2026-10-20, 354 pedidos tenian la misma pregunta contestada
+	 * mas de una vez, uno de ellos cuatro veces en siete minutos.
+	 *
+	 * No es solo molestia para quien atiende: cada repeticion entra como una
+	 * respuesta mas y infla la medicion de mercadeo.
+	 *
+	 * Ante un error se responde que NO esta respondido. Es el lado seguro para
+	 * mercadeo -se puede volver a preguntar- y no deja de tomarse una encuesta
+	 * porque la base tuvo un mal momento.
+	 */
+	public static boolean yaRespondioElPedido(final int idTienda, final int idPedidoTienda) {
+		final Logger logger = Logger.getLogger("log_file");
+		if (idTienda <= 0 || idPedidoTienda <= 0) {
+			return (false);
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return (false);
+		}
+		boolean respondido = false;
+		try {
+			final PreparedStatement pst = con1.prepareStatement("select 1 from encuesta_mercadeo"
+					+ " where idtienda = ? and idpedidotienda = ? limit 1");
+			pst.setInt(1, idTienda);
+			pst.setInt(2, idPedidoTienda);
+			final ResultSet rs = pst.executeQuery();
+			respondido = rs.next();
+			rs.close();
+			pst.close();
+			con1.close();
+		} catch (final Exception e) {
+			logger.error("yaRespondioElPedido: " + e.toString());
+			System.out.println("yaRespondioElPedido: " + e.toString());
+			try {
+				con1.close();
+			} catch (final Exception e1) {
+			}
+		}
+		return (respondido);
+	}
 }
