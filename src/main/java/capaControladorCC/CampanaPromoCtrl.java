@@ -329,14 +329,23 @@ public class CampanaPromoCtrl {
 		if (con1 != null) {
 			try {
 				PreparedStatement pst = con1.prepareStatement("select p.idtienda, p.idcliente,"
-						+ " c.email, c.nombres, c.apellidos from pedido p"
+						+ " c.email, c.politica_datos, c.nombres, c.apellidos from pedido p"
 						+ " left join cliente c on c.idcliente = p.idcliente where p.idpedido = ?");
 				pst.setInt(1, idPedido);
 				ResultSet rs = pst.executeQuery();
 				if (rs.next()) {
+					String correo = rs.getString("email") == null ? "" : rs.getString("email").trim();
+					boolean politica = "S".equalsIgnoreCase(
+							rs.getString("politica_datos") == null ? "" : rs.getString("politica_datos"));
 					j.put("idtienda", rs.getInt("idtienda"));
 					j.put("idcliente", rs.getInt("idcliente"));
-					j.put("correo", rs.getString("email") == null ? "" : rs.getString("email"));
+					j.put("correo", correo);
+					j.put("politica", politica ? "S" : "N");
+					//Decidido aqui y no en la pantalla: la regla de quien puede
+					//recibir el premio es una sola y tiene que ser la misma en el
+					//contact center y en el mostrador.
+					j.put("puede", (this.correoUtilizable(correo) && politica) ? "S" : "N");
+					j.put("falta", this.queLeFalta(correo, politica));
 					j.put("cliente", ((rs.getString("nombres") == null ? "" : rs.getString("nombres")) + " "
 							+ (rs.getString("apellidos") == null ? "" : rs.getString("apellidos"))).trim());
 				}
@@ -352,15 +361,49 @@ public class CampanaPromoCtrl {
 	}
 
 	public String marcar(int idCampana, int idTienda, int idPedido, int idPedidoTienda, int idCliente,
-			String correo, boolean solicito, String usuario) {
+			String correo, boolean solicito, String usuario, String observacion) {
 		if (idCampana <= 0) {
 			return ("{\"respuesta\":\"NOK\",\"detalle\":\"Falta la campana\"}");
 		}
 		if (CampanaPromoDAO.marcar(idCampana, idTienda, idPedido, idPedidoTienda, idCliente, correo, solicito,
-				usuario)) {
+				usuario, observacion)) {
 			return ("{\"respuesta\":\"OK\"}");
 		}
 		return ("{\"respuesta\":\"NOK\",\"detalle\":\"No se pudo registrar\"}");
+	}
+
+	/**
+	 * La misma vara simple de correo que usa el resto del sistema. No valida que
+	 * exista, solo que sirva de direccion.
+	 */
+	private boolean correoUtilizable(String correo) {
+		if (correo == null) {
+			return (false);
+		}
+		String limpio = correo.trim();
+		int arroba = limpio.indexOf('@');
+		return (arroba > 0 && limpio.indexOf('.', arroba) > arroba + 1 && !limpio.endsWith("."));
+	}
+
+	/**
+	 * Que le falta al cliente para poder recibir el premio, en palabras.
+	 *
+	 * Va en texto y no en banderas porque quien lo lee es la persona que esta
+	 * atendiendo: "no tiene correo registrado" le dice que hacer, "correo=false"
+	 * no.
+	 */
+	private String queLeFalta(String correo, boolean politica) {
+		boolean hayCorreo = this.correoUtilizable(correo);
+		if (hayCorreo && politica) {
+			return ("");
+		}
+		if (!hayCorreo && !politica) {
+			return ("no tiene correo registrado ni ha aceptado la politica de manejo de datos");
+		}
+		if (!hayCorreo) {
+			return ("no tiene correo registrado");
+		}
+		return ("no ha aceptado la politica de manejo de datos");
 	}
 
 	@SuppressWarnings("unchecked")

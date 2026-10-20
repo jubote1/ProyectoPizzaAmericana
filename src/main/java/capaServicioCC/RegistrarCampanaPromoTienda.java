@@ -62,7 +62,7 @@ public class RegistrarCampanaPromoTienda extends HttpServlet {
 		final boolean solicito = "S".equalsIgnoreCase(this.texto(request, "solicito"));
 		final boolean guardo = CampanaPromoDAO.marcar(idCampana, idTienda, 0, idPedidoTienda,
 				this.entero(request, "idcliente"), this.texto(request, "correo"), solicito,
-				this.texto(request, "usuario"));
+				this.texto(request, "usuario"), this.texto(request, "observacion"));
 		out.write(guardo ? "{\"respuesta\":\"OK\"}"
 				: "{\"respuesta\":\"NOK\",\"detalle\":\"No se pudo registrar\"}");
 	}
