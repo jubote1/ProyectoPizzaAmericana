@@ -485,6 +485,103 @@ public class CampanaPromoDAO {
 		}
 	}
 
+	/**
+	 * La campana viva AHORA para una tienda, con los productos que la disparan
+	 * en el catalogo de esa tienda.
+	 *
+	 * Es lo unico que el POS necesita: el POS no puede preguntarle al central si
+	 * un pedido aplica, porque el detalle del pedido vive en la base de la
+	 * tienda y el central no la tiene. Entonces se le manda la REGLA -tienda,
+	 * fechas, dia, productos- y el POS la evalua contra su propio detalle.
+	 *
+	 * Es el mismo reparto que usa la campana de 15 minutos.
+	 *
+	 * @return null si no hay ninguna viva para esa tienda en este momento
+	 */
+	public static Campana obtenerActivaParaTienda(int idTienda) {
+		Logger logger = Logger.getLogger("log_file");
+		Campana campana = null;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return (null);
+		}
+		try {
+			String sql = "select c.* from campana_promo c"
+					+ " join campana_promo_tienda ct on ct.idcampana = c.idcampana and ct.idtienda = ?"
+					+ " join campana_promo_dia cd on cd.idcampana = c.idcampana and cd.activo = 'S'"
+					+ "   and cd.dia_semana = ((dayofweek(curdate()) + 5) mod 7) + 1"
+					+ "   and (cd.todo_el_dia = 'S' or (curtime() between cd.hora_desde and cd.hora_hasta))"
+					+ " where c.activo = 'S'"
+					+ "   and (c.fecha_desde is null or c.fecha_desde <= curdate())"
+					+ "   and (c.fecha_hasta is null or c.fecha_hasta >= curdate())"
+					+ " limit 1";
+			PreparedStatement pst = con1.prepareStatement(sql);
+			pst.setInt(1, idTienda);
+			ResultSet rs = pst.executeQuery();
+			if (rs.next()) {
+				campana = mapear(rs);
+			}
+			rs.close();
+			pst.close();
+
+			if (campana != null) {
+				PreparedStatement pp = con1.prepareStatement("select idproducto from campana_promo_producto"
+						+ " where idcampana = ? and ambito = ? and activo = 'S'");
+				pp.setInt(1, campana.idCampana);
+				pp.setString(2, AMBITO_TIENDA);
+				ResultSet rp = pp.executeQuery();
+				while (rp.next()) {
+					Producto p = new Producto();
+					p.ambito = AMBITO_TIENDA;
+					p.idProducto = rp.getInt("idproducto");
+					campana.productos.add(p);
+				}
+				rp.close();
+				pp.close();
+				//Una campana sin productos de tienda no tiene como dispararse
+				//alla. Se devuelve null para que el POS ni se entere: mostrar una
+				//pregunta que nunca iba a aplicar confunde a la caja.
+				if (campana.productos.isEmpty()) {
+					campana = null;
+				}
+			}
+			con1.close();
+		} catch (Exception e) {
+			logger.error("CampanaPromoDAO.obtenerActivaParaTienda: " + e);
+			try { con1.close(); } catch (Exception e1) { }
+		}
+		return (campana);
+	}
+
+	/** Si un pedido de tienda ya quedo marcado, para no preguntar dos veces. */
+	public static boolean yaMarcadoEnTienda(int idCampana, int idTienda, int idPedidoTienda) {
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			//Ante la duda se dice que NO esta marcado: la unique key de la tabla
+			//impide el duplicado de todas formas, y es peor dejar de preguntarle
+			//a un cliente que preguntarle de mas.
+			return (false);
+		}
+		boolean existe = false;
+		try {
+			PreparedStatement pst = con1.prepareStatement("select 1 from pedido_campana_promo"
+					+ " where idcampana = ? and idtienda = ? and idpedidotienda = ? limit 1");
+			pst.setInt(1, idCampana);
+			pst.setInt(2, idTienda);
+			pst.setInt(3, idPedidoTienda);
+			ResultSet rs = pst.executeQuery();
+			existe = rs.next();
+			rs.close();
+			pst.close();
+			con1.close();
+		} catch (Exception e) {
+			try { con1.close(); } catch (Exception e1) { }
+		}
+		return (existe);
+	}
+
 	/** Una fila de la lista para enviar las boletas a mano. */
 	public static class ParaEnviar {
 		public int idRegistro = 0;
