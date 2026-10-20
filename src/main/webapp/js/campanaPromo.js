@@ -135,6 +135,7 @@ function nuevaCampana()
 	pintarProductos();
 	$('#btn-eliminar').hide();
 	$('#caja-marcados').hide();
+	$('#caja-enviar').hide();
 	$('#caja-form').show();
 }
 
@@ -175,6 +176,8 @@ function abrirCampana(idCampana)
 		}
 		pintarProductos();
 		pintarMarcados(c.marcados);
+		$('#caja-enviar').show();
+		cargarParaEnviar();
 		$('#btn-eliminar').show();
 		$('#caja-form').show();
 		$('html, body').animate({ scrollTop: $('#caja-form').offset().top - 20 }, 200);
@@ -195,6 +198,96 @@ function pintarMarcados(marcados)
 	}
 	$('#tabla-marcados').html(html + '</tbody></table>');
 	$('#caja-marcados').show();
+}
+
+/*
+ * LA LISTA PARA ENVIAR
+ *
+ * El premio no lo manda el sistema: las boletas son imagenes con codigo de
+ * barras unico que se envian a mano. Esta lista es para saber a quien le falta,
+ * y para dejar anotado que boleta le toco a cada uno.
+ */
+function cargarParaEnviar()
+{
+	var idCampana = $('#idcampana').val();
+	if (!idCampana || idCampana == 0) { return; }
+	var solo = $('#solo-pendientes').is(':checked') ? 'S' : 'N';
+	$.getJSON(server + 'CRUDCampanaPromo?idoperacion=12&idcampana=' + idCampana
+			+ '&solopendientes=' + solo, function(data){
+		if (!data || data.length === 0) {
+			$('#tabla-enviar').html('<p class="cp-pie">'
+				+ (solo === 'S' ? 'No queda nadie por enviar.' : 'Nadie ha pedido la boleta todavia.')
+				+ '</p>');
+			return;
+		}
+		var html = '<table class="table"><thead><tr><th>Tienda</th><th>Pedido</th><th>Cliente</th>'
+			+ '<th>Correo</th><th>Estado</th><th>Codigo de barras</th><th></th></tr></thead><tbody>';
+		for (var i = 0; i < data.length; i++) {
+			var f = data[i];
+			var enviada = (f.estado === 'ENVIADO');
+			html += '<tr><td>' + escapar(f.tienda) + '</td>'
+				+ '<td>' + (f.idpedido > 0 ? f.idpedido : f.idpedidotienda) + '</td>'
+				+ '<td>' + escapar(f.cliente) + '</td>'
+				+ '<td>' + escapar(f.correo) + '</td>'
+				+ '<td><span class="cp-chip ' + (enviada ? 'cp-si">Enviada' : 'cp-no">Falta') + '</span></td>';
+			if (enviada) {
+				html += '<td>' + escapar(f.codigoboleta) + '<br><span class="cp-pie">'
+					+ escapar(f.fechaenvio) + ' - ' + escapar(f.usuarioenvio) + '</span></td><td></td>';
+			} else {
+				html += '<td><input type="text" class="form-control input-sm cod-boleta" '
+					+ 'data-registro="' + f.idregistro + '" placeholder="codigo de barras"></td>'
+					+ '<td><button class="btn btn-xs btn-primary" onclick="marcarEnviada('
+					+ f.idregistro + ')">ENVIADA</button></td>';
+			}
+			html += '</tr>';
+		}
+		$('#tabla-enviar').html(html + '</tbody></table>');
+	});
+}
+
+function marcarEnviada(idRegistro)
+{
+	var codigo = $('.cod-boleta[data-registro="' + idRegistro + '"]').val();
+	if (!codigo || codigo.trim() === '') {
+		bootbox.alert('Escriba el codigo de barras de la boleta que le envio.');
+		return;
+	}
+	$.getJSON(server + 'CRUDCampanaPromo', {
+		idoperacion: 13, idregistro: idRegistro, codigoboleta: codigo
+	}, function(r){
+		if (r.respuesta === 'OK') {
+			cargarParaEnviar();
+		} else {
+			bootbox.alert(r.detalle || 'No se pudo marcar.');
+		}
+	});
+}
+
+/* Los correos de los que faltan, para pegarlos en el gestor de correo. */
+function copiarCorreos()
+{
+	var correos = [];
+	$('#tabla-enviar tbody tr').each(function(){
+		var estado = $(this).find('.cp-chip').text();
+		var correo = $(this).find('td').eq(3).text();
+		if (estado === 'Falta' && correo.indexOf('@') > 0) {
+			correos.push(correo);
+		}
+	});
+	if (correos.length === 0) {
+		bootbox.alert('No hay correos pendientes en la lista.');
+		return;
+	}
+	$('#correos-copiar').val(correos.join('; '));
+	$('#correos-copiar').select();
+	try {
+		document.execCommand('copy');
+		bootbox.alert(correos.length + ' correos copiados. Peguelos en el destinatario.');
+	} catch (e) {
+		// Si el navegador no deja copiar, al menos se muestran para seleccionar
+		// a mano: peor seria dejar al usuario sin la lista.
+		bootbox.alert('Copie estos correos:<br><br>' + escapar(correos.join('; ')));
+	}
 }
 
 function cambioAmbito()

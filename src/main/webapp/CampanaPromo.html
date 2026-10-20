@@ -159,6 +159,18 @@
 					<div id="tabla-marcados"></div>
 				</div>
 
+				<div id="caja-enviar" style="display:none;margin-top:16px">
+					<div class="cp-titulo">A quien hay que enviarle</div>
+					<p class="cp-pie">Solo los que dijeron que si. Las boletas se mandan a mano desde el correo;
+					al enviar una, escriba su <b>codigo de barras</b> y marquela. Ese codigo es unico, asi que si se
+					repite el sistema avisa antes de dejarlo.</p>
+					<label class="cp-dia"><input type="checkbox" id="solo-pendientes" checked
+						onchange="cargarParaEnviar()"> Solo los que faltan</label>
+					<button class="btn btn-default btn-sm" onclick="copiarCorreos()">COPIAR CORREOS</button>
+					<div id="tabla-enviar" class="table-responsive" style="margin-top:10px"></div>
+					<textarea id="correos-copiar" style="position:absolute;left:-9999px;top:-9999px"></textarea>
+				</div>
+
 				<div style="margin-top:16px">
 					<button class="btn btn-primary" onclick="guardarCampana()">GUARDAR</button>
 					<button class="btn btn-default" onclick="cerrarForm()">CANCELAR</button>
