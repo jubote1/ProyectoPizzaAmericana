@@ -47,8 +47,24 @@ public class ObtenerEncuestaMercadeoActiva extends HttpServlet {
 		final String parametroPV = request.getParameter("espuntoventa");
 		// Por defecto se asume punto de venta, que es el unico canal habilitado hoy
 		final boolean esPuntoVenta = parametroPV == null || !parametroPV.equalsIgnoreCase("N");
+		//El pedido llega para no volver a encuestar uno que ya se encuesto:
+		//Finalizar se puede oprimir varias veces sobre el mismo pedido. Si no
+		//vienen -la pantalla de configuracion no tiene pedido- se comporta como
+		//siempre.
+		int idTienda = 0;
+		int idPedidoTienda = 0;
+		try {
+			idTienda = Integer.parseInt(request.getParameter("idtienda"));
+		} catch (final Exception e) {
+			idTienda = 0;
+		}
+		try {
+			idPedidoTienda = Integer.parseInt(request.getParameter("idpedidotienda"));
+		} catch (final Exception e) {
+			idPedidoTienda = 0;
+		}
 		final EncuestaMercadeoCtrl encCtrl = new EncuestaMercadeoCtrl();
-		final String respuesta = encCtrl.obtenerPreguntasVigentes(esPuntoVenta);
+		final String respuesta = encCtrl.obtenerPreguntasVigentes(esPuntoVenta, idTienda, idPedidoTienda);
 		final PrintWriter out = response.getWriter();
 		out.write(respuesta);
 	}
