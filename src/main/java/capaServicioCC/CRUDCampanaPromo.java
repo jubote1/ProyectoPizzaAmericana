@@ -81,6 +81,20 @@ public class CRUDCampanaPromo extends HttpServlet {
 						this.texto(request, "tiendas")));
 			} else if (operacion == 8) {
 				out.write(ctrl.listarExcepciones());
+			} else if (operacion == 10) {
+				out.write(ctrl.consultarParaPedido(this.entero(request, "idpedido")));
+			} else if (operacion == 11) {
+				out.write(ctrl.marcar(this.entero(request, "idcampana"), this.entero(request, "idtienda"),
+						this.entero(request, "idpedido"), this.entero(request, "idpedidotienda"),
+						this.entero(request, "idcliente"), this.texto(request, "correo"),
+						"S".equalsIgnoreCase(this.texto(request, "solicito")),
+						String.valueOf(sesion.getAttribute("usuario"))));
+			} else if (operacion == 12) {
+				out.write(ctrl.listarParaEnviar(this.entero(request, "idcampana"),
+						"S".equalsIgnoreCase(this.texto(request, "solopendientes"))));
+			} else if (operacion == 13) {
+				out.write(ctrl.marcarEnviada(this.entero(request, "idregistro"),
+						this.texto(request, "codigoboleta"), String.valueOf(sesion.getAttribute("usuario"))));
 			} else {
 				out.write("[]");
 			}

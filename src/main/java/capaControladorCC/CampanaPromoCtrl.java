@@ -299,6 +299,99 @@ public class CampanaPromoCtrl {
 		return (nombre);
 	}
 
+	/**
+	 * Si a este pedido hay que hacerle la pregunta, y con que texto.
+	 *
+	 * La pantalla de toma la llama justo antes de finalizar. Devuelve siempre un
+	 * JSON con "aplica": si es false, quien toma el pedido no se entera de que
+	 * existe una campana, que es lo correcto cuando no aplica.
+	 *
+	 * Trae tambien el correo que ya tiene el cliente, para que la pregunta no lo
+	 * vuelva a pedir cuando ya esta. En mostrador solo entre el 20% y el 35% lo
+	 * tienen, asi que la mayoria de las veces vendra vacio y hay que capturarlo.
+	 */
+	@SuppressWarnings("unchecked")
+	public String consultarParaPedido(int idPedido) {
+		JSONObject j = new JSONObject();
+		CampanaPromoDAO.Campana c = CampanaPromoDAO.aplicaAPedidoCentral(idPedido);
+		if (c == null) {
+			j.put("aplica", Boolean.FALSE);
+			return (j.toJSONString());
+		}
+		j.put("aplica", Boolean.TRUE);
+		j.put("idcampana", c.idCampana);
+		j.put("pregunta", c.pregunta);
+		j.put("exigecorreo", c.exigeCorreo ? "S" : "N");
+		j.put("nombre", c.nombre);
+
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 != null) {
+			try {
+				PreparedStatement pst = con1.prepareStatement("select p.idtienda, p.idcliente,"
+						+ " c.email, c.nombres, c.apellidos from pedido p"
+						+ " left join cliente c on c.idcliente = p.idcliente where p.idpedido = ?");
+				pst.setInt(1, idPedido);
+				ResultSet rs = pst.executeQuery();
+				if (rs.next()) {
+					j.put("idtienda", rs.getInt("idtienda"));
+					j.put("idcliente", rs.getInt("idcliente"));
+					j.put("correo", rs.getString("email") == null ? "" : rs.getString("email"));
+					j.put("cliente", ((rs.getString("nombres") == null ? "" : rs.getString("nombres")) + " "
+							+ (rs.getString("apellidos") == null ? "" : rs.getString("apellidos"))).trim());
+				}
+				rs.close();
+				pst.close();
+				con1.close();
+			} catch (Exception e) {
+				System.out.println("CampanaPromoCtrl.consultarParaPedido: " + e);
+				try { con1.close(); } catch (Exception e1) { }
+			}
+		}
+		return (j.toJSONString());
+	}
+
+	public String marcar(int idCampana, int idTienda, int idPedido, int idPedidoTienda, int idCliente,
+			String correo, boolean solicito, String usuario) {
+		if (idCampana <= 0) {
+			return ("{\"respuesta\":\"NOK\",\"detalle\":\"Falta la campana\"}");
+		}
+		if (CampanaPromoDAO.marcar(idCampana, idTienda, idPedido, idPedidoTienda, idCliente, correo, solicito,
+				usuario)) {
+			return ("{\"respuesta\":\"OK\"}");
+		}
+		return ("{\"respuesta\":\"NOK\",\"detalle\":\"No se pudo registrar\"}");
+	}
+
+	@SuppressWarnings("unchecked")
+	public String listarParaEnviar(int idCampana, boolean soloPendientes) {
+		JSONArray lista = new JSONArray();
+		for (CampanaPromoDAO.ParaEnviar f : CampanaPromoDAO.listarParaEnviar(idCampana, soloPendientes)) {
+			JSONObject j = new JSONObject();
+			j.put("idregistro", f.idRegistro);
+			j.put("tienda", f.nombreTienda);
+			j.put("idpedido", f.idPedido);
+			j.put("idpedidotienda", f.idPedidoTienda);
+			j.put("cliente", f.nombreCliente);
+			j.put("correo", f.correo);
+			j.put("estado", f.estado);
+			j.put("codigoboleta", f.codigoBoleta);
+			j.put("fechamarca", f.fechaMarca);
+			j.put("fechaenvio", f.fechaEnvio);
+			j.put("usuarioenvio", f.usuarioEnvio);
+			lista.add(j);
+		}
+		return (lista.toJSONString());
+	}
+
+	public String marcarEnviada(int idRegistro, String codigoBoleta, String usuario) {
+		String problema = CampanaPromoDAO.marcarEnviada(idRegistro, codigoBoleta, usuario);
+		if (problema.isEmpty()) {
+			return ("{\"respuesta\":\"OK\"}");
+		}
+		return ("{\"respuesta\":\"NOK\",\"detalle\":\"" + problema.replace("\"", "'") + "\"}");
+	}
+
 	private ArrayList<Integer> aEnteros(String csv) {
 		ArrayList<Integer> valores = new ArrayList<Integer>();
 		if (csv == null || csv.trim().isEmpty()) {

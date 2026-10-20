@@ -380,4 +380,230 @@ public class CampanaPromoDAO {
 		return (filas);
 	}
 
+	/**
+	 * La campana que aplica a un pedido del contact center, o null si ninguna.
+	 *
+	 * Se pregunta por TODO de una vez -campana viva, fecha dentro de la ventana,
+	 * dia de la semana prendido, la tienda del pedido entre las de la campana, y
+	 * el detalle con alguno de los productos que disparan- porque la respuesta
+	 * que le importa a quien toma el pedido es una sola: pregunto o no pregunto.
+	 *
+	 * dia_semana va 1=LUNES..7=DOMINGO, por eso la traduccion del dayofweek() de
+	 * MySQL, que empieza en domingo. Es la misma de la campana de 15 minutos.
+	 *
+	 * Y no vuelve a aplicar si ese pedido ya quedo marcado: la pregunta sale una
+	 * vez. Si el agente vuelve a finalizar -pasa cuando corrige algo- no se le
+	 * pregunta de nuevo ni se duplica la fila.
+	 */
+	public static Campana aplicaAPedidoCentral(int idPedido) {
+		Logger logger = Logger.getLogger("log_file");
+		Campana campana = null;
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return (null);
+		}
+		try {
+			String sql = "select distinct c.* from campana_promo c"
+					+ " join pedido p on p.idpedido = ?"
+					+ " join campana_promo_tienda ct on ct.idcampana = c.idcampana and ct.idtienda = p.idtienda"
+					+ " join campana_promo_dia cd on cd.idcampana = c.idcampana and cd.activo = 'S'"
+					+ "   and cd.dia_semana = ((dayofweek(curdate()) + 5) mod 7) + 1"
+					+ "   and (cd.todo_el_dia = 'S' or (curtime() between cd.hora_desde and cd.hora_hasta))"
+					+ " join campana_promo_producto cp on cp.idcampana = c.idcampana"
+					+ "   and cp.ambito = '" + AMBITO_CONTACTCENTER + "' and cp.activo = 'S'"
+					+ " join detalle_pedido dp on dp.idpedido = p.idpedido"
+					+ "   and dp.idproducto = cp.idproducto"
+					+ "   and (cp.idexcepcion = 0 or dp.idexcepcion = cp.idexcepcion)"
+					+ " where c.activo = 'S'"
+					+ "   and (c.fecha_desde is null or c.fecha_desde <= curdate())"
+					+ "   and (c.fecha_hasta is null or c.fecha_hasta >= curdate())"
+					+ "   and not exists (select 1 from pedido_campana_promo pc"
+					+ "                    where pc.idcampana = c.idcampana and pc.idpedido = p.idpedido)"
+					+ " limit 1";
+			PreparedStatement pst = con1.prepareStatement(sql);
+			pst.setInt(1, idPedido);
+			ResultSet rs = pst.executeQuery();
+			if (rs.next()) {
+				campana = mapear(rs);
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		} catch (Exception e) {
+			//Si esto falla NO se pregunta, y el pedido sigue su camino. Una
+			//promocion que no se ofrecio se puede ofrecer manana; un pedido que
+			//no se pudo finalizar es un cliente esperando.
+			logger.error("CampanaPromoDAO.aplicaAPedidoCentral: " + e);
+			try { con1.close(); } catch (Exception e1) { }
+		}
+		return (campana);
+	}
+
+	/**
+	 * Deja constancia de lo que contesto el cliente.
+	 *
+	 * Se guarda tambien el NO: sin eso no hay forma de distinguir "no la
+	 * quisieron" de "nadie pregunto", que son dos problemas distintos.
+	 *
+	 * Si el pedido ya estaba marcado no se duplica -hay unique key- y se
+	 * devuelve true igual: desde el punto de vista de quien toma el pedido, ya
+	 * quedo registrado.
+	 */
+	public static boolean marcar(int idCampana, int idTienda, int idPedido, int idPedidoTienda, int idCliente,
+			String correo, boolean solicito, String usuario) {
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return (false);
+		}
+		try {
+			PreparedStatement pst = con1.prepareStatement("insert into pedido_campana_promo (idcampana, idtienda,"
+					+ " idpedidotienda, idpedido, idcliente, correo, solicito, usuario, estado)"
+					+ " values (?,?,?,?,?,?,?,?,?)"
+					+ " on duplicate key update correo = values(correo), solicito = values(solicito),"
+					+ " usuario = values(usuario)");
+			pst.setInt(1, idCampana);
+			pst.setInt(2, idTienda);
+			pst.setInt(3, idPedidoTienda);
+			pst.setInt(4, idPedido);
+			pst.setInt(5, idCliente);
+			pst.setString(6, correo == null ? "" : correo.trim());
+			pst.setString(7, solicito ? "S" : "N");
+			pst.setString(8, usuario == null ? "" : usuario);
+			pst.setString(9, solicito ? "MARCADO" : "DESCARTADO");
+			pst.executeUpdate();
+			pst.close();
+			con1.close();
+			return (true);
+		} catch (Exception e) {
+			logger.error("CampanaPromoDAO.marcar: " + e);
+			System.out.println("CampanaPromoDAO.marcar: " + e);
+			try { con1.close(); } catch (Exception e1) { }
+			return (false);
+		}
+	}
+
+	/** Una fila de la lista para enviar las boletas a mano. */
+	public static class ParaEnviar {
+		public int idRegistro = 0;
+		public int idTienda = 0;
+		public String nombreTienda = "";
+		public int idPedido = 0;
+		public int idPedidoTienda = 0;
+		public String nombreCliente = "";
+		public String correo = "";
+		public String estado = "";
+		public String codigoBoleta = "";
+		public String fechaMarca = "";
+		public String fechaEnvio = "";
+		public String usuarioEnvio = "";
+	}
+
+	/**
+	 * A quien hay que mandarle la boleta.
+	 *
+	 * Solo los que dijeron que SI. Los que dijeron que no se guardan para poder
+	 * medir, pero no son una lista de envio.
+	 *
+	 * @param soloPendientes true = los que todavia no se han enviado
+	 */
+	public static ArrayList<ParaEnviar> listarParaEnviar(int idCampana, boolean soloPendientes) {
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList<ParaEnviar> filas = new ArrayList<ParaEnviar>();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return (filas);
+		}
+		try {
+			String sql = "select pc.*, t.nombre as nombretienda, cl.nombres, cl.apellidos"
+					+ " from pedido_campana_promo pc"
+					+ " left join tienda t on t.idtienda = pc.idtienda"
+					+ " left join cliente cl on cl.idcliente = pc.idcliente"
+					+ " where pc.idcampana = ? and pc.solicito = 'S'"
+					+ (soloPendientes ? " and pc.estado <> 'ENVIADO'" : "")
+					+ " order by pc.estado, pc.fecha_hora";
+			PreparedStatement pst = con1.prepareStatement(sql);
+			pst.setInt(1, idCampana);
+			ResultSet rs = pst.executeQuery();
+			while (rs.next()) {
+				ParaEnviar f = new ParaEnviar();
+				f.idRegistro = rs.getInt("idregistro");
+				f.idTienda = rs.getInt("idtienda");
+				f.nombreTienda = texto(rs.getString("nombretienda"));
+				f.idPedido = rs.getInt("idpedido");
+				f.idPedidoTienda = rs.getInt("idpedidotienda");
+				f.nombreCliente = (texto(rs.getString("nombres")) + " " + texto(rs.getString("apellidos"))).trim();
+				f.correo = texto(rs.getString("correo"));
+				f.estado = texto(rs.getString("estado"));
+				f.codigoBoleta = texto(rs.getString("codigo_boleta"));
+				f.fechaMarca = texto(rs.getString("fecha_hora"));
+				f.fechaEnvio = texto(rs.getString("fecha_envio"));
+				f.usuarioEnvio = texto(rs.getString("usuario_envio"));
+				filas.add(f);
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		} catch (Exception e) {
+			logger.error("CampanaPromoDAO.listarParaEnviar: " + e);
+			try { con1.close(); } catch (Exception e1) { }
+		}
+		return (filas);
+	}
+
+	/**
+	 * Marca una boleta como enviada, con su codigo de barras.
+	 *
+	 * El codigo es obligatorio: las boletas son unicas y sin el no hay forma de
+	 * saber cual se mando ni de darse cuenta si una se repitio.
+	 *
+	 * @return "" si quedo, o el motivo por el que no
+	 */
+	public static String marcarEnviada(int idRegistro, String codigoBoleta, String usuario) {
+		Logger logger = Logger.getLogger("log_file");
+		if (codigoBoleta == null || codigoBoleta.trim().isEmpty()) {
+			return ("Falta el codigo de barras de la boleta");
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		if (con1 == null) {
+			return ("No se pudo conectar");
+		}
+		try {
+			//Una boleta que ya se le mando a otro cliente no se puede volver a
+			//mandar: el codigo de barras es unico y al segundo no se la reciben.
+			PreparedStatement pr = con1.prepareStatement("select idregistro from pedido_campana_promo"
+					+ " where codigo_boleta = ? and idregistro <> ? limit 1");
+			pr.setString(1, codigoBoleta.trim());
+			pr.setInt(2, idRegistro);
+			ResultSet rr = pr.executeQuery();
+			boolean repetida = rr.next();
+			int otroRegistro = repetida ? rr.getInt("idregistro") : 0;
+			rr.close();
+			pr.close();
+			if (repetida) {
+				con1.close();
+				return ("Esa boleta ya se le envio a otro cliente (registro " + otroRegistro + ")");
+			}
+
+			PreparedStatement pst = con1.prepareStatement("update pedido_campana_promo"
+					+ " set codigo_boleta = ?, estado = 'ENVIADO', fecha_envio = now(), usuario_envio = ?"
+					+ " where idregistro = ?");
+			pst.setString(1, codigoBoleta.trim());
+			pst.setString(2, usuario == null ? "" : usuario);
+			pst.setInt(3, idRegistro);
+			int filas = pst.executeUpdate();
+			pst.close();
+			con1.close();
+			return (filas == 1 ? "" : "No se encontro ese registro");
+		} catch (Exception e) {
+			logger.error("CampanaPromoDAO.marcarEnviada: " + e);
+			try { con1.close(); } catch (Exception e1) { }
+			return ("Error tecnico");
+		}
+	}
+
 }
