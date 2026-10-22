@@ -298,6 +298,10 @@ $(document).ready(function() {
 			const label = peds > 0 ? `En Ruta (${peds} ${peds === 1 ? 'ped' : 'peds'})` : 'En Ruta';
 			return `<span class="badge-estado-domi badge-en-ruta" title="En Ruta con ${peds} pedidos asignados"><i class="fas fa-motorcycle mr-1"></i>${label}</span>`;
 		}
+		if (est === 'EN_TIENDA_CON_PEDIDO' || (est === 'EN_TIENDA' && peds > 0)) {
+			const label = peds > 0 ? `En Tienda (${peds} ${peds === 1 ? 'ped' : 'peds'})` : 'En Tienda (Con Pedido)';
+			return `<span class="badge-estado-domi badge-en-tienda-pedido" title="En Tienda con ${peds} pedido(s) asignado(s) - Preparando salida"><i class="fas fa-box-open mr-1"></i>${label}</span>`;
+		}
 		if (est === 'FUERA_DE_TIENDA' || est === 'SIN_PEDIDOS') {
 			return `<span class="badge-estado-domi badge-fuera-tienda" title="Fuera de Tienda (Sin Pedidos Asignados)"><i class="fas fa-walking mr-1"></i>Fuera Tienda</span>`;
 		}
@@ -588,7 +592,7 @@ $(document).ready(function() {
 				if (filtroEstado === "ACTIVOS" && reg.esInactivo) visible = false;
 				if (filtroEstado === "INACTIVOS" && !reg.esInactivo) visible = false;
 				const estadoReg = String(reg.estado || "EN_TIENDA").toUpperCase();
-				if (filtroEstado === "EN_TIENDA" && estadoReg !== "EN_TIENDA") visible = false;
+				if (filtroEstado === "EN_TIENDA" && estadoReg !== "EN_TIENDA" && estadoReg !== "EN_TIENDA_CON_PEDIDO") visible = false;
 				if (filtroEstado === "EN_RUTA" && estadoReg !== "EN_RUTA") visible = false;
 				if (filtroEstado === "FUERA_DE_TIENDA" && estadoReg !== "FUERA_DE_TIENDA" && estadoReg !== "SIN_PEDIDOS") visible = false;
 			}
@@ -656,7 +660,9 @@ $(document).ready(function() {
 				}
 			}
 		}
-		if (enTienda) return "EN_TIENDA";
+			if (enTienda) {
+			return (peds > 0) ? "EN_TIENDA_CON_PEDIDO" : "EN_TIENDA";
+		}
 		if (peds > 0) return "EN_RUTA";
 		return "FUERA_DE_TIENDA";
 	}
