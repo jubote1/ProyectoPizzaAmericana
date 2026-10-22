@@ -82,6 +82,13 @@
 			.rte-rojo .rte-cifra, .rte-txt-rojo { color:#E42528; }
 			.rte-verde .rte-cifra { color:#1B8A4B; }
 			.rte-lleno-rojo { background:#E42528; }
+			.rte-naranja .rte-cifra, .rte-txt-naranja { color:#C46A00; }
+			/* Barra apilada: lo enrutado partido en lo que paso con cada pedido. */
+			.rte-apilada { display:flex; overflow:hidden; min-width:60px; }
+			.rte-apilada span { display:block; height:100%; }
+			.rte-leyenda { display:flex; flex-wrap:wrap; gap:4px 16px; margin:8px 0 2px; }
+			.rte-leyenda-item { font-size:12px; color:#4a5164; white-space:nowrap; }
+			.rte-leyenda-item i { margin:0 5px 0 0; }
 			.rte-bien { background:#EAF7EF; border:1px solid #1B8A4B; color:#14633a; border-radius:6px;
 				padding:8px 12px; font-size:13px; margin:4px 0 8px; }
 			h5.rte-subseccion { margin:18px 0 6px; font-size:14px; font-weight:bold; color:#102F6F; }
@@ -176,9 +183,9 @@
 				<b>Haga clic en una tienda</b> para ver sus horas; vuelva a hacer clic para regresar a toda la red.</p>
 				<div id="rte-tiendas"></div>
 
-				<h4 class="rte-seccion" id="rte-titulo-soltados">Pedidos soltados por los domiciliarios</h4>
-				<p class="rte-pie">De los pedidos que el sistema <b>le enrut&oacute; a un domiciliario</b>, cu&aacute;ntos <b>solt&oacute; &eacute;l</b>.
-				Un pedido soltado vuelve a quedar libre y rompe la ruta de quien lo iba a llevar, as&iacute; que lo esperado es cero.</p>
+				<h4 class="rte-seccion" id="rte-titulo-soltados">Qu&eacute; pas&oacute; con los pedidos enrutados</h4>
+				<p class="rte-pie">De los pedidos que el sistema <b>le enrut&oacute; a un domiciliario</b>, cu&aacute;ntos <b>se llevaron por la ruta</b>, cu&aacute;ntos <b>sali&oacute; libres</b>
+				(el domiciliario nunca acept&oacute; la ruta y se llev&oacute; el pedido por fuera) y cu&aacute;ntos <b>solt&oacute; &eacute;l</b>. Lo esperado es que casi todo se lleve por la ruta.</p>
 				<div id="rte-soltados"></div>
 
 				<h4 class="rte-seccion" id="rte-titulo-horas">Por hora del d&iacute;a</h4>
@@ -220,6 +227,11 @@
 						Una sugerencia que el domiciliario solt&oacute; y que despu&eacute;s sali&oacute; &quot;libre&quot; no cuenta como enrutada.</li>
 						<li><b>Hora de entrada:</b> la de inserci&oacute;n del pedido, es decir, cuando entr&oacute; a la tienda.</li>
 						<li><b>Hora de salida:</b> la del &uacute;ltimo cambio del pedido a &quot;En ruta&quot;. Si un pedido se devolvi&oacute; y volvi&oacute; a salir, vale la salida real.</li>
+						<li><b>Qu&eacute; pas&oacute; con lo enrutado:</b> cada pedido que el sistema le sugiri&oacute; a un domiciliario cae en <u>una sola</u> categor&iacute;a, y todas suman lo enrutado.
+						<b>Llevado:</b> sali&oacute; por la ruta. <b>Sali&oacute; libre:</b> la ruta nunca se acept&oacute; ni se solt&oacute; y el pedido sali&oacute; con un domiciliario por fuera de ella
+						(no se cuenta si otra ruta s&iacute; lo llev&oacute;). <b>Soltado:</b> lo solt&oacute; el domiciliario. <b>Movido o anulado:</b> lo hizo un administrador.
+						<b>Expir&oacute; sin salir:</b> la ruta venci&oacute; al terminar la jornada y el pedido no tiene salida (se anul&oacute; o nunca sali&oacute;). <b>En curso:</b> la ruta sigue viva.
+						Una ruta &quot;expira&quot; solo cuando termina la jornada sin haberse aceptado.</li>
 						<li><b>Soltado:</b> un pedido que se le sugiri&oacute; a un domiciliario y que &eacute;l solt&oacute; (suelta uno solo o todo su enrutamiento). No cuenta cuando
 						un administrador anula la sugerencia, aunque el sistema marque igual el pedido como liberado: se separan con el registro de acciones.
 						Se cuenta por fecha de jornada de la sugerencia.</li>

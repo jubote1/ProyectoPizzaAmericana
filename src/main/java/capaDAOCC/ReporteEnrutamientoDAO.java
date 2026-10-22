@@ -96,6 +96,55 @@ public class ReporteEnrutamientoDAO {
 		public int sugeridos = 0;
 		/** De ellos, los que el solto. */
 		public int soltados = 0;
+		/** Los que se llevo por la ruta sugerida. */
+		public int llevados = 0;
+		/** Los que NO acepto ni solto: salieron por fuera de la ruta. */
+		public int libres = 0;
+	}
+
+	/**
+	 * Que paso con los pedidos que se enrutaron. Las categorias NO se traslapan y
+	 * suman sugeridos, para que la pantalla cierre la cuenta: ni un pedido enrutado
+	 * se queda sin explicar.
+	 */
+	public static class Desglose {
+		/** Pedidos que se sugirieron a un domiciliario en el rango (por jornada de la sugerencia). */
+		public int sugeridos = 0;
+		/** Salieron por la ruta sugerida. */
+		public int llevados = 0;
+		/** El domiciliario los solto. */
+		public int soltados = 0;
+		/** Un administrador los movio a otro domiciliario. */
+		public int reasignados = 0;
+		/** Un administrador anulo la sugerencia entera. */
+		public int anulados = 0;
+		/** La ruta no se acepto ni se solto, y el pedido SALIO por fuera de ella. */
+		public int libres = 0;
+		/** La sugerencia expiro y el pedido no salio (se anulo o no tiene salida registrada). */
+		public int expiradasSinSalir = 0;
+		/** La sugerencia sigue viva y el pedido todavia no sale. */
+		public int enCurso = 0;
+		/** Lo que no cae en ninguna de las anteriores (por ejemplo, un pedido sugerido dos veces). */
+		public int otros = 0;
+		/** Rutas (sugerencias) creadas, aceptadas y vencidas sin aceptar. */
+		public int sugerencias = 0;
+		public int sugerenciasAceptadas = 0;
+		public int sugerenciasExpiradas = 0;
+
+		public void sumar(final Desglose o) {
+			sugeridos += o.sugeridos;
+			llevados += o.llevados;
+			soltados += o.soltados;
+			reasignados += o.reasignados;
+			anulados += o.anulados;
+			libres += o.libres;
+			expiradasSinSalir += o.expiradasSinSalir;
+			enCurso += o.enCurso;
+			otros += o.otros;
+			sugerencias += o.sugerencias;
+			sugerenciasAceptadas += o.sugerenciasAceptadas;
+			sugerenciasExpiradas += o.sugerenciasExpiradas;
+		}
 	}
 
 	/** Un pedido soltado, con quien lo solto y el motivo que dio. */
@@ -146,13 +195,8 @@ public class ReporteEnrutamientoDAO {
 
 		/** Si se pudo leer el enrutamiento (las tres tablas de sugerencias). */
 		public boolean soltadosDisponible = false;
-		/** Pedidos que se sugirieron (por fecha de jornada de la sugerencia). */
-		public int sugeridos = 0;
-		public int llevados = 0;
-		/** Los que el domiciliario solto. */
-		public int soltados = 0;
-		/** Los que un administrador movio a otro domiciliario. */
-		public int reasignados = 0;
+		/** Que paso con los pedidos enrutados. */
+		public Desglose enrutamiento = new Desglose();
 		public ArrayList<PorDomiciliario> porDomiciliario = new ArrayList<PorDomiciliario>();
 		public ArrayList<Soltado> detalleSoltados = new ArrayList<Soltado>();
 	}
@@ -507,6 +551,25 @@ public class ReporteEnrutamientoDAO {
 				+ " AND l.accion = 'LIBERADA' AND (IFNULL(l.id_pedido,0) = 0 OR l.id_pedido = d.id_pedido)))");
 	}
 
+	/** El pedido de este detalle YA SALIO: tiene una salida de domiciliario (despacho_real_det). */
+	private static String salio(final boolean datamart) {
+		return ("EXISTS (SELECT 1 FROM despacho_real_det x WHERE x.id_pedido = d.id_pedido"
+				+ (datamart ? " AND x.idtienda = d.idtienda" : "") + ")");
+	}
+
+	/**
+	 * Un pedido enrutado que salio POR FUERA de su ruta: el detalle nunca se resolvio
+	 * (sigue SUGERIDO), el pedido salio con un domiciliario, y no fue porque otra
+	 * ruta lo llevo (otro detalle del mismo pedido en LLEVADO). Es el caso de un
+	 * domiciliario que ignora lo que se le sugirio: no lo solto, no lo acepto y salio
+	 * con ese pedido de todos modos.
+	 */
+	private static String esLibre(final boolean datamart) {
+		return ("(d.estado_det = 'SUGERIDO' AND " + salio(datamart)
+				+ " AND NOT EXISTS (SELECT 1 FROM pedido_sugerencia_det d2 WHERE d2.id_pedido = d.id_pedido"
+				+ " AND d2.estado_det = 'LLEVADO'" + (datamart ? " AND d2.idtienda = d.idtienda" : "") + "))");
+	}
+
 	/**
 	 * El enrutamiento: cuantos pedidos se sugirieron, cuantos se llevaron, cuantos
 	 * SOLTARON los domiciliarios y quien. Va en su propio try: si una tienda no
@@ -523,46 +586,89 @@ public class ReporteEnrutamientoDAO {
 			final String cruce = " FROM pedido_sugerencia_det d INNER JOIN pedido_sugerencia c ON c.id = d.pedido_sugerencia_id"
 					+ (datamart ? " AND c.idtienda = d.idtienda" : "");
 
-			//1. Cuantos hay en cada estado.
+			final Desglose g = res.enrutamiento;
+
+			//1. Que paso con cada pedido enrutado. Un solo recorrido, con categorias que
+			//no se traslapan (ver Desglose): para un detalle SUGERIDO, lo que lo separa
+			//es si el pedido YA SALIO y, si no, si su ruta expiro o sigue viva.
 			final Sql s1 = new Sql();
-			s1.add("SELECT d.estado_det AS estado, COUNT(*) AS cuantos" + cruce
-					+ " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
+			s1.add("SELECT COUNT(*) AS sugeridos,"
+					+ " SUM(CASE WHEN d.estado_det = 'LLEVADO' THEN 1 ELSE 0 END) AS llevados,"
+					+ " SUM(CASE WHEN d.estado_det = 'REASIGNADO' THEN 1 ELSE 0 END) AS reasignados,"
+					+ " SUM(CASE WHEN " + esSoltado(datamart) + " THEN 1 ELSE 0 END) AS soltados,"
+					+ " SUM(CASE WHEN d.estado_det = 'LIBERADO' THEN 1 ELSE 0 END) AS liberados,"
+					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres,"
+					+ " SUM(CASE WHEN d.estado_det = 'SUGERIDO' AND c.estado = 'EXPIRADA' AND NOT " + salio(datamart)
+					+ " THEN 1 ELSE 0 END) AS expiradas_sin_salir,"
+					+ " SUM(CASE WHEN d.estado_det = 'SUGERIDO' AND c.estado IN ('PENDIENTE','ASIGNADA','VISTA','ACEPTADA')"
+					+ " AND NOT " + salio(datamart) + " THEN 1 ELSE 0 END) AS en_curso"
+					+ cruce + " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
 			if (datamart) {
 				s1.add(" AND d.idtienda = ?", Integer.valueOf(idTienda));
 			}
-			s1.add(" GROUP BY d.estado_det");
 			PreparedStatement ps = s1.preparar(cn);
 			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				g.sugeridos = rs.getInt("sugeridos");
+				g.llevados = rs.getInt("llevados");
+				g.reasignados = rs.getInt("reasignados");
+				g.soltados = rs.getInt("soltados");
+				g.anulados = Math.max(0, rs.getInt("liberados") - g.soltados);
+				g.libres = rs.getInt("libres");
+				g.expiradasSinSalir = rs.getInt("expiradas_sin_salir");
+				g.enCurso = rs.getInt("en_curso");
+				g.otros = Math.max(0, g.sugeridos - g.llevados - g.reasignados - g.soltados - g.anulados - g.libres
+						- g.expiradasSinSalir - g.enCurso);
+			}
+			rs.close();
+			ps.close();
+
+			//1b. Las rutas (sugerencias) por estado: cuantas se crearon, cuantas se
+			//aceptaron y cuantas vencieron sin aceptarse.
+			final Sql sc = new Sql();
+			sc.add("SELECT c.estado AS estado, COUNT(*) AS cuantas FROM pedido_sugerencia c"
+					+ " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
+			if (datamart) {
+				sc.add(" AND c.idtienda = ?", Integer.valueOf(idTienda));
+			}
+			sc.add(" GROUP BY c.estado");
+			ps = sc.preparar(cn);
+			rs = ps.executeQuery();
 			while (rs.next()) {
 				final String estado = rs.getString("estado");
-				final int cuantos = rs.getInt("cuantos");
-				res.sugeridos = res.sugeridos + cuantos;
-				if ("LLEVADO".equals(estado)) {
-					res.llevados = cuantos;
-				} else if ("REASIGNADO".equals(estado)) {
-					res.reasignados = cuantos;
+				final int cuantas = rs.getInt("cuantas");
+				g.sugerencias = g.sugerencias + cuantas;
+				if ("ACEPTADA".equals(estado)) {
+					g.sugerenciasAceptadas = cuantas;
+				} else if ("EXPIRADA".equals(estado)) {
+					g.sugerenciasExpiradas = cuantas;
 				}
 			}
 			rs.close();
 			ps.close();
 
-			//2. Los soltados por domiciliario. El nombre sale de la tabla usuario de
-			//la tienda; en el datamart no esta, y el controlador lo completa.
+			//2. Por domiciliario: a quien se le enruto, cuantos llevo, cuantos solto y
+			//cuantos salieron por fuera de su ruta. El nombre sale de la tabla usuario
+			//de la tienda; en el datamart no esta, y el controlador lo completa.
 			final Sql s2 = new Sql();
-			s2.add("SELECT IFNULL(c.id_domiciliario,0) AS id_dom, COUNT(*) AS sugeridos, SUM(CASE WHEN " + esSoltado(datamart)
-					+ " THEN 1 ELSE 0 END) AS soltados" + cruce + " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
+			s2.add("SELECT IFNULL(c.id_domiciliario,0) AS id_dom, COUNT(*) AS sugeridos,"
+					+ " SUM(CASE WHEN d.estado_det = 'LLEVADO' THEN 1 ELSE 0 END) AS llevados,"
+					+ " SUM(CASE WHEN " + esSoltado(datamart) + " THEN 1 ELSE 0 END) AS soltados,"
+					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres"
+					+ cruce + " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
 			if (datamart) {
 				s2.add(" AND d.idtienda = ?", Integer.valueOf(idTienda));
 			}
-			s2.add(" GROUP BY IFNULL(c.id_domiciliario,0) HAVING soltados > 0 ORDER BY soltados DESC");
+			s2.add(" GROUP BY IFNULL(c.id_domiciliario,0) HAVING (soltados > 0 OR libres > 0) ORDER BY (soltados + libres) DESC");
 			ps = s2.preparar(cn);
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				final PorDomiciliario p = new PorDomiciliario();
 				p.idDomiciliario = rs.getInt("id_dom");
 				p.sugeridos = rs.getInt("sugeridos");
+				p.llevados = rs.getInt("llevados");
 				p.soltados = rs.getInt("soltados");
-				res.soltados = res.soltados + p.soltados;
+				p.libres = rs.getInt("libres");
 				res.porDomiciliario.add(p);
 			}
 			rs.close();
@@ -571,7 +677,7 @@ public class ReporteEnrutamientoDAO {
 			//3. Los soltados uno por uno, con el motivo. GROUP BY d.id porque una
 			//fila de log de "todo el enrutamiento" y una individual pueden cubrir el
 			//mismo pedido, y no se quiere contarlo dos veces.
-			if (res.soltados > 0) {
+			if (g.soltados > 0) {
 				final Sql s3 = new Sql();
 				s3.add("SELECT MAX(l.creado_en) AS cuando, MAX(IFNULL(c.id_domiciliario,0)) AS id_dom, MAX(d.id_pedido) AS id_pedido,"
 						+ " MAX(IFNULL(l.motivo,'')) AS motivo" + cruce
@@ -606,10 +712,7 @@ public class ReporteEnrutamientoDAO {
 			logger.error("ReporteEnrutamientoDAO.cargarSoltados " + idTienda + ": " + e.toString());
 			//Lo que se alcanzo a leer no se muestra a medias: o se tiene todo o no se dice nada.
 			res.soltadosDisponible = false;
-			res.sugeridos = 0;
-			res.llevados = 0;
-			res.soltados = 0;
-			res.reasignados = 0;
+			res.enrutamiento = new Desglose();
 			res.porDomiciliario.clear();
 			res.detalleSoltados.clear();
 		}

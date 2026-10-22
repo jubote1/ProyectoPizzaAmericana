@@ -376,72 +376,131 @@ function rteEscoger(id)
 // ===========================================================================
 
 /**
- * Cuantos pedidos de los que se enrutaron SOLTARON los domiciliarios. Lo
- * esperado es cero: un pedido enrutado que se suelta vuelve a quedar libre y
- * rompe la ruta de quien lo iba a llevar.
+ * Que paso con los pedidos que el sistema le enruto a un domiciliario. Las
+ * categorias no se traslapan y suman lo enrutado: llevados por la ruta, salieron
+ * LIBRES (la ruta no se acepto y el pedido salio por fuera), soltados por el
+ * domiciliario, movidos o anulados por un administrador, y lo que expiro sin
+ * salir o sigue en curso.
+ *
+ * Lo esperado es que casi todo sea "llevado". Lo que NO se lleva por la ruta se
+ * divide en dos: el que el domiciliario suelta y el que ignora (sale libre sin
+ * aceptar ni soltar). El segundo no deja huella en el POS mas que en este reporte.
  */
+var RTE_COLOR_LLEVADOS = '#102F6F';
+var RTE_COLOR_SOLTADOS = '#E42528';
+var RTE_COLOR_LIBRES = '#E8890C';
+var RTE_COLOR_ADMIN = '#9AA3B8';
+var RTE_COLOR_PENDIENTES = '#D5DAE5';
+
+/** Las cinco porciones de lo enrutado, en el orden en que se pintan. */
+function rteSegmentos(g)
+{
+	return [
+		{ clave: 'llevados', nombre: 'Llevados por la ruta', valor: g.llevados, color: RTE_COLOR_LLEVADOS },
+		{ clave: 'libres', nombre: 'Salieron libres (ruta sin aceptar)', valor: g.libres, color: RTE_COLOR_LIBRES },
+		{ clave: 'soltados', nombre: 'Soltados por el domiciliario', valor: g.soltados, color: RTE_COLOR_SOLTADOS },
+		{ clave: 'admin', nombre: 'Movidos o anulados por un administrador', valor: g.reasignados + g.anulados, color: RTE_COLOR_ADMIN },
+		{ clave: 'pendientes', nombre: 'Expiraron sin salir o siguen en curso', valor: g.expiradas_sin_salir + g.en_curso + g.otros, color: RTE_COLOR_PENDIENTES }
+	];
+}
+
+/** Una barra apilada: cada porcion mide lo que pesa dentro de lo enrutado. */
+function rteBarraDesglose(g)
+{
+	var segs = rteSegmentos(g);
+	var total = g.sugeridos;
+	var html = '<div class="rte-pista rte-apilada" role="img" aria-label="Que paso con los pedidos enrutados">';
+	for(var i = 0; i < segs.length; i++){
+		if(segs[i].valor > 0 && total > 0){
+			html += '<span title="' + segs[i].nombre + ': ' + rteNumero(segs[i].valor) + ' (' + rtePct(rteDe(segs[i].valor, total)) + ')" style="width:'
+				+ (segs[i].valor * 100.0 / total) + '%;background:' + segs[i].color + '"></span>';
+		}
+	}
+	return (html + '</div>');
+}
+
+function rteLeyendaDesglose(g)
+{
+	var segs = rteSegmentos(g);
+	var html = '<div class="rte-leyenda">';
+	for(var i = 0; i < segs.length; i++){
+		html += '<span class="rte-leyenda-item"><i style="background:' + segs[i].color + '"></i>' + segs[i].nombre + ': <b>' + rteNumero(segs[i].valor) + '</b></span>';
+	}
+	return (html + '</div>');
+}
+
 function rtePintarSoltados()
 {
 	var titulo = rteSeleccion == 0 ? 'toda la red' : rteEscapar(rteTienda(rteSeleccion).tienda);
-	$('#rte-titulo-soltados').html('Pedidos soltados por los domiciliarios &mdash; ' + titulo);
+	$('#rte-titulo-soltados').html('Qu&eacute; pas&oacute; con los pedidos enrutados &mdash; ' + titulo);
 	var s = (rteSeleccion == 0 ? rteRed().soltados : rteTienda(rteSeleccion).soltados);
 	if(!s || !s.disponible){
 		$('#rte-soltados').html('<p class="rte-pie">No se pudo leer el enrutamiento de ' + (rteSeleccion == 0 ? 'ninguna tienda' : 'esta tienda')
 			+ ' en el rango (las tablas de sugerencias no est&aacute;n disponibles).</p>');
 		return;
 	}
-	var clase = s.soltados > 0 ? 'rte-rojo' : 'rte-verde';
+	var noCumplido = s.soltados + s.libres;
 	var html = '<div class="row">'
 		+ rteTarjeta4('Pedidos enrutados', rteNumero(s.sugeridos), 'sugeridos a un domiciliario en el rango', '')
-		+ rteTarjeta4('Llevados', rteNumero(s.llevados), rtePct(rteDe(s.llevados, s.sugeridos)) + ' de los enrutados', 'rte-azul')
-		+ rteTarjeta4('Soltados', rteNumero(s.soltados), s.sugeridos > 0 ? rtePct(s.porcentaje) + ' de los enrutados' : 'sin pedidos enrutados', clase)
-		+ rteTarjeta4('Reasignados', rteNumero(s.reasignados), 'los movi&oacute; un administrador', '')
+		+ rteTarjeta4('Llevados por la ruta', rteNumero(s.llevados), rtePct(s.porcentaje_llevados) + ' de los enrutados', 'rte-azul')
+		+ rteTarjeta4('Salieron libres', rteNumero(s.libres), s.sugeridos > 0 ? rtePct(rteDe(s.libres, s.sugeridos)) + ' de los enrutados' : '&nbsp;', s.libres > 0 ? 'rte-naranja' : 'rte-verde')
+		+ rteTarjeta4('Soltados', rteNumero(s.soltados), s.sugeridos > 0 ? rtePct(s.porcentaje) + ' de los enrutados' : '&nbsp;', s.soltados > 0 ? 'rte-rojo' : 'rte-verde')
 		+ '</div>';
-	if(s.soltados == 0){
-		html += '<p class="rte-bien">Ning&uacute;n pedido enrutado fue soltado en el rango.</p>';
+
+	//La cuenta completa, para que nada quede sin explicar.
+	html += rteBarraDesglose(s) + rteLeyendaDesglose(s);
+	html += '<p class="rte-pie" style="margin-top:8px">Rutas creadas: <b>' + rteNumero(s.sugerencias) + '</b> &middot; aceptadas: <b>' + rteNumero(s.sugerencias_aceptadas)
+		+ '</b> (' + rtePct(s.porcentaje_aceptacion) + ') &middot; vencidas sin aceptar: <b>' + rteNumero(s.sugerencias_expiradas) + '</b>.'
+		+ ' Movidos por un administrador: <b>' + rteNumero(s.reasignados) + '</b> &middot; anulados por un administrador: <b>' + rteNumero(s.anulados)
+		+ '</b> &middot; expiraron sin salir: <b>' + rteNumero(s.expiradas_sin_salir) + '</b> &middot; en curso: <b>' + rteNumero(s.en_curso) + '</b>.</p>';
+
+	if(noCumplido == 0){
+		html += '<p class="rte-bien">Ning&uacute;n pedido enrutado se solt&oacute; ni sali&oacute; por fuera de su ruta en el rango.</p>';
 	} else {
-		html += '<p class="rte-pie"><b>Soltado</b> es un pedido que se le sugiri&oacute; a un domiciliario y que &eacute;l solt&oacute;; vuelve a quedar libre para cualquiera. '
-			+ 'No cuenta cuando un administrador anula la sugerencia. Lo esperado es cero.</p>';
+		html += '<p class="rte-pie"><b>Salieron libres:</b> la ruta se le asign&oacute; al domiciliario pero nunca la acept&oacute; ni la solt&oacute;, y el pedido sali&oacute; igual por fuera de ella. '
+			+ '<b>Soltados:</b> el domiciliario solt&oacute; el pedido y volvi&oacute; a quedar libre para cualquiera. '
+			+ 'En los dos casos la ruta no se cumpli&oacute;; lo esperado es que ambos sean cero.</p>';
 	}
 
-	//Por tienda: solo en la vista de toda la red.
+	//Por tienda: solo en la vista de toda la red. Una barra apilada por tienda, del
+	//tamano de lo que esa tienda enruto.
 	if(rteSeleccion == 0){
 		var filas = [];
 		for(var i = 0; i < rteDatos.tiendas.length; i++){
 			var t = rteDatos.tiendas[i];
 			if(t.estado == 'OK' && t.soltados.disponible && (!rteEsDatamart(t) || rteIncluirDatamart)){ filas.push(t); }
 		}
-		filas.sort(function(a, b){ return b.soltados.soltados - a.soltados.soltados || b.soltados.porcentaje - a.soltados.porcentaje; });
+		filas.sort(function(a, b){ return b.soltados.porcentaje_no_cumplido - a.soltados.porcentaje_no_cumplido || b.soltados.sugeridos - a.soltados.sugeridos; });
 		if(filas.length > 0){
-			var maximo = 0;
-			for(var j = 0; j < filas.length; j++){ maximo = Math.max(maximo, filas[j].soltados.porcentaje); }
-			html += '<h5 class="rte-subseccion">Soltados por tienda</h5>';
+			html += '<h5 class="rte-subseccion">Por tienda: qu&eacute; tanto se cumple la ruta</h5>';
 			for(var k = 0; k < filas.length; k++){
 				var f = filas[k];
 				var sf = f.soltados;
-				var ancho = maximo > 0 ? Math.max(sf.soltados > 0 ? 1 : 0, sf.porcentaje * 100.0 / Math.max(maximo, 1)) : 0;
 				html += '<div class="rte-fila" data-id="' + f.idtienda + '" tabindex="0" role="button">'
 					+ '<div class="rte-nombre">' + rteEscapar(f.tienda) + (rteEsDatamart(f) ? '<br>' + rteEtiquetaDatamart(f) : '') + '</div>'
-					+ '<div class="rte-pista"><span class="rte-lleno rte-lleno-rojo" style="width:' + ancho + '%"></span></div>'
-					+ '<div class="rte-cifras"><b class="' + (sf.soltados > 0 ? 'rte-txt-rojo' : '') + '">' + rteNumero(sf.soltados) + '</b>'
-					+ '<span>' + (sf.sugeridos > 0 ? rtePct(sf.porcentaje) + ' de ' + rteNumero(sf.sugeridos) : 'sin enrutados') + '</span></div></div>';
+					+ rteBarraDesglose(sf)
+					+ '<div class="rte-cifras"><b>' + (sf.sugeridos > 0 ? rtePct(sf.porcentaje_llevados) : '&mdash;') + '</b>'
+					+ '<span>' + (sf.sugeridos > 0 ? rteNumero(sf.llevados) + ' de ' + rteNumero(sf.sugeridos) + ' llevados' : 'sin enrutados') + '</span></div></div>';
 			}
+			html += '<p class="rte-pie">Cada barra es lo que esa tienda enrut&oacute;. Azul: llevado por la ruta; naranja: sali&oacute; libre; rojo: soltado; gris: lo movi&oacute; o anul&oacute; un administrador; claro: expir&oacute; sin salir o sigue en curso.</p>';
 		}
 	}
 
-	//Quien los solto.
+	//Quien no cumplio la ruta.
 	if(s.por_domiciliario && s.por_domiciliario.length > 0){
-		html += '<h5 class="rte-subseccion">Qui&eacute;n los solt&oacute;</h5><div class="table-responsive"><table class="table rte-tabla"><thead><tr>'
-			+ '<th>Domiciliario</th><th>Tienda</th><th>Enrutados</th><th>Soltados</th><th>% soltados</th></tr></thead><tbody>';
+		html += '<h5 class="rte-subseccion">Qui&eacute;n no llev&oacute; lo que se le enrut&oacute;</h5><div class="table-responsive"><table class="table rte-tabla"><thead><tr>'
+			+ '<th>Domiciliario</th><th>Tienda</th><th>Enrutados</th><th>Llevados</th><th>Salieron libres</th><th>Soltados</th><th>% no cumplido</th></tr></thead><tbody>';
 		for(var m = 0; m < s.por_domiciliario.length; m++){
 			var p = s.por_domiciliario[m];
 			html += '<tr><td>' + rteEscapar(p.domiciliario) + '</td><td>' + rteEscapar(p.tienda) + '</td><td>' + rteNumero(p.sugeridos)
-				+ '</td><td><b class="rte-txt-rojo">' + rteNumero(p.soltados) + '</b></td><td>' + rtePct(p.porcentaje) + '</td></tr>';
+				+ '</td><td>' + rteNumero(p.llevados) + '</td><td>' + (p.libres > 0 ? '<b class="rte-txt-naranja">' + rteNumero(p.libres) + '</b>' : '0')
+				+ '</td><td>' + (p.soltados > 0 ? '<b class="rte-txt-rojo">' + rteNumero(p.soltados) + '</b>' : '0')
+				+ '</td><td><b>' + rtePct(p.porcentaje_no_cumplido) + '</b></td></tr>';
 		}
 		html += '</tbody></table></div>';
 	}
 
-	//Los pedidos, con el motivo que dieron.
+	//Los pedidos soltados, con el motivo que dio cada domiciliario.
 	if(s.detalle && s.detalle.length > 0){
 		html += '<details class="rte-detalle"><summary>Ver los pedidos soltados y el motivo que dio cada domiciliario</summary>'
 			+ '<div class="table-responsive"><table class="table rte-tabla"><thead><tr><th>Cu&aacute;ndo</th><th>Tienda</th><th>Domiciliario</th>'
@@ -663,7 +722,7 @@ function rteIdeas(horas)
 function rtePintarDetalle()
 {
 	var html = '<table class="table"><thead><tr><th>Tienda</th><th>Fuente</th><th>Domicilios propios</th><th>Con enrutamiento</th>'
-		+ '<th>Sin enrutamiento</th><th>% con enrutamiento</th><th>Soltados</th><th>Salidas registradas</th><th>Sin salida registrada</th></tr></thead><tbody>';
+		+ '<th>Sin enrutamiento</th><th>% con enrutamiento</th><th>Soltados / libres</th><th>Salidas registradas</th><th>Sin salida registrada</th></tr></thead><tbody>';
 	for(var i = 0; i < rteDatos.tiendas.length; i++){
 		var t = rteDatos.tiendas[i];
 		if(t.estado != 'OK'){
@@ -679,14 +738,14 @@ function rtePintarDetalle()
 			+ (t.instalado ? rteNumero(t.no_enrutados) : '&mdash;') + '</td><td><b>'
 			+ (t.instalado && t.pedidos > 0 ? rtePct(t.porcentaje) : '&mdash;') + '</b>'
 			+ (t.instalado ? '' : ' <span class="rte-pie">sin instalar</span>') + '</td><td>'
-			+ (t.soltados.disponible ? (t.soltados.soltados > 0 ? '<b class="rte-txt-rojo">' + rteNumero(t.soltados.soltados) + '</b>' : '0') : '&mdash;') + '</td><td>'
+			+ (t.soltados.disponible ? rteNumero(t.soltados.soltados) + ' / ' + rteNumero(t.soltados.libres) : '&mdash;') + '</td><td>'
 			+ rteNumero(t.salidas) + '</td><td>' + rteNumero(t.sin_salida) + '</td></tr>';
 	}
 	var r = rteRed();
 	html += '</tbody><tfoot><tr class="rte-total"><td>Total (tiendas que cuentan: ' + r.tiendas_en_la_cuenta + ')</td><td></td><td>'
 		+ rteNumero(r.pedidos) + '</td><td>' + rteNumero(r.enrutados) + '</td><td>' + rteNumero(r.no_enrutados) + '</td><td>'
 		+ (r.pedidos > 0 ? rtePct(r.porcentaje) : '&mdash;') + '</td><td>'
-		+ (r.soltados && r.soltados.disponible ? rteNumero(r.soltados.soltados) : '&mdash;') + '</td><td>' + rteNumero(r.salidas) + '</td><td>'
+		+ (r.soltados && r.soltados.disponible ? rteNumero(r.soltados.soltados) + ' / ' + rteNumero(r.soltados.libres) : '&mdash;') + '</td><td>' + rteNumero(r.salidas) + '</td><td>'
 		+ rteNumero(r.sin_salida) + '</td></tr></tfoot></table>';
 	$('#rte-detalle').html(html);
 }
