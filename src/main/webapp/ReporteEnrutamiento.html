@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>REPORTE ENRUTAMIENTO</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/marca.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" src="js/bootbox.min.js"></script>
+		  <style type="text/css">
+			/* Mismo lenguaje visual de las otras pantallas de reporte: azul de la marca,
+			   tarjetas con borde fino y una sola cifra grande por tarjeta. */
+			.rte-tarjeta { border:1px solid #E2E6EC; border-radius:8px; padding:12px 14px;
+				margin-bottom:12px; background-color:#FFFFFF; }
+			.rte-hero { text-align:center; padding-bottom:6px; }
+			.rte-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.05em; }
+			.rte-cifra { font-size:28px; font-weight:bold; color:#1F2430; line-height:1.15; }
+			.rte-azul .rte-cifra { color:#102F6F; }
+			.rte-pie { font-size:12px; color:#6C7482; }
+			.rte-filtros { margin:6px 0 16px; border:1px solid #E2E6EC; border-radius:8px;
+				padding:10px 12px; background-color:#FBFCFD; }
+
+			.rte-aviso { border-radius:6px; padding:9px 12px; margin-bottom:10px; font-size:13px; }
+			.rte-aviso-alerta { background:#FFF6DC; border:1px solid #8a6d3b; color:#5c4a20; }
+			.rte-aviso-info { background:#EAF1FF; border:1px solid #102F6F; color:#102F6F; }
+			#rte-calculando { display:none; background:#EAF1FF; border:1px solid #102F6F; border-radius:6px;
+				padding:10px 12px; margin-bottom:16px; }
+			#rte-resultado { display:none; }
+
+			h4.rte-seccion { margin-top:26px; color:#102F6F; font-weight:bold; }
+
+			/* Una barra por tienda. */
+			.rte-fila { display:flex; align-items:center; gap:12px; padding:7px 10px; border-radius:6px;
+				border:1px solid transparent; cursor:pointer; }
+			.rte-fila:hover { background:#F4F7FD; }
+			.rte-fila:focus { outline:2px solid #102F6F; outline-offset:1px; }
+			.rte-fila-sel { background:#EAF1FF; border-color:#102F6F; }
+			.rte-nombre { width:130px; font-weight:600; color:#1F2430; flex:none; }
+			.rte-pista { flex:1; height:16px; background:#E3E8F1; border-radius:8px; overflow:hidden; }
+			.rte-lleno { display:block; height:100%; background:#102F6F; border-radius:8px; }
+			.rte-cifras { width:140px; text-align:right; flex:none; line-height:1.15; }
+			.rte-cifras b { display:block; font-size:16px; color:#102F6F; }
+			.rte-cifras span { font-size:11px; color:#6C7482; }
+			.rte-mensaje { flex:1; font-size:12.5px; color:#6C7482; }
+			.rte-fila-gris .rte-nombre, .rte-fila-apagada .rte-nombre { color:#6C7482; }
+			.rte-fila-apagada { cursor:default; background:#FAFAFB; border:1px dashed #C9CFDA; }
+			.rte-fila-apagada:hover { background:#FAFAFB; }
+			.rte-punto-rojo { display:inline-block; width:9px; height:9px; border-radius:50%; background:#E42528; margin-right:4px; }
+
+			.rte-leyenda { font-size:12px; color:#4a5164; margin:2px 0 10px; }
+			.rte-leyenda i { display:inline-block; width:12px; height:12px; border-radius:3px; margin:0 5px 0 12px; vertical-align:-2px; }
+			.rte-leyenda i:first-child { margin-left:0; }
+			.rte-grafica { border:1px solid #E2E6EC; border-radius:8px; padding:10px 12px 6px; margin-bottom:14px; background:#FFFFFF; }
+			.rte-grafica h5 { font-size:14px; font-weight:bold; color:#102F6F; margin:0 0 2px; }
+			.rte-svg { width:100%; height:auto; display:block; }
+			.rte-ideas { background:#FFF8E1; border-left:5px solid #FDC806; border-radius:6px; padding:10px 16px 10px 30px;
+				margin:8px 0 14px; font-size:13.5px; line-height:1.45; color:#1F2430; }
+
+			/* La franja de calor: una celda por hora. */
+			.rte-calor { display:flex; flex-wrap:wrap; gap:5px; }
+			.rte-celda { width:56px; padding:5px 0 6px; border-radius:7px; text-align:center; line-height:1.1; }
+			.rte-celda-vacia { background:#F4F5F8; color:#9aa3b8; }
+			.rte-celda span { display:block; }
+			.rte-celda-hora { font-size:10.5px; opacity:.85; }
+			.rte-celda-pct { font-size:16px; font-weight:bold; margin:2px 0; }
+			.rte-celda-n { font-size:10px; opacity:.85; }
+
+			#rte-detalle table { border-collapse:collapse; width:100%; }
+			#rte-detalle th, #rte-detalle td { padding:6px 10px; border-top:1px solid #E2E6EC; text-align:right; }
+			#rte-detalle th:first-child, #rte-detalle td:first-child { text-align:left; }
+			#rte-detalle thead th { background:#102F6F; color:#FFFFFF; }
+			.rte-det-gris td { color:#6C7482; background:#FAFAFB; text-align:left !important; }
+			.rte-total td { font-weight:bold; background:#F4F4F6; border-top:2px solid #102F6F !important; }
+
+			/* Lo leido del datamart y lo soltado. */
+			.rte-tag { display:inline-block; font-size:10px; font-weight:600; color:#102F6F; background:#EAF1FF;
+				border:1px solid #102F6F; border-radius:10px; padding:0 7px; margin-top:2px; line-height:1.5; }
+			.rte-fila-tenue { opacity:.55; }
+			.rte-rojo .rte-cifra, .rte-txt-rojo { color:#E42528; }
+			.rte-verde .rte-cifra { color:#1B8A4B; }
+			.rte-lleno-rojo { background:#E42528; }
+			.rte-bien { background:#EAF7EF; border:1px solid #1B8A4B; color:#14633a; border-radius:6px;
+				padding:8px 12px; font-size:13px; margin:4px 0 8px; }
+			h5.rte-subseccion { margin:18px 0 6px; font-size:14px; font-weight:bold; color:#102F6F; }
+			.rte-tabla { border-collapse:collapse; width:100%; font-size:13px; }
+			.rte-tabla th, .rte-tabla td { padding:6px 10px; border-top:1px solid #E2E6EC; text-align:right; }
+			.rte-tabla th:first-child, .rte-tabla td:first-child { text-align:left; }
+			.rte-tabla thead th { background:#102F6F; color:#FFFFFF; }
+			.rte-detalle { margin-top:12px; }
+			.rte-detalle summary { cursor:pointer; color:#102F6F; font-weight:600; font-size:13px; }
+
+			.rte-nota { border:1px solid #E2E6EC; border-radius:8px; padding:10px 14px; margin-top:22px; background:#FBFCFD;
+				font-size:12.5px; color:#4a5164; }
+			.rte-nota li { margin-bottom:3px; }
+		  </style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({
+		    	url: server + 'ValidarUsuarioAplicacion',
+		    	dataType: 'json',
+		    	type: 'post',
+		    	async: false,
+		    	success: function(data){
+						    respuesta =  data[0].respuesta;
+						    usuario = data[0].nombreusuario;
+				}
+			});
+			switch(respuesta)
+		    		{
+		    			case 'OK':
+		    				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+		    				break;
+		    			case 'OKA':
+		    				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+		    				break;
+		    			default:
+		    				location.href = server +"Index.html";
+		    				break;
+		    		}
+		</script>
+
+		<div class="container-fluid">
+			<h1>REPORTE ENRUTAMIENTO</h1>
+			<p class="rte-pie">Qu&eacute; porcentaje de los <b>domicilios propios</b> de cada tienda salen dentro de una ruta sugerida por el
+			enrutamiento, y <b>en qu&eacute; horas</b> entran y salen los pedidos. Sirve para saber si las tiendas est&aacute;n usando el
+			enrutamiento y en qu&eacute; momentos del d&iacute;a no, y <b>cu&aacute;ntos pedidos enrutados sueltan los domiciliarios</b>.
+			No cuenta plataformas (DiDi, Rappi) ni domicilios tercerizados. Se consulta a las tiendas en el momento, as&iacute; que se demora;
+			si el computador de una tienda no contesta, se muestran sus datos del datamart (hasta ayer).</p>
+
+			<div class="rte-filtros">
+				<div class="row">
+					<div class="col-md-2">
+						<label for="fechainicial">Fecha inicial</label>
+						<input type="text" id="fechainicial" name="fechainicial" class="form-control">
+					</div>
+					<div class="col-md-2">
+						<label for="fechafinal">Fecha final</label>
+						<input type="text" id="fechafinal" name="fechafinal" class="form-control">
+					</div>
+					<div class="col-md-3">
+						<label for="idtienda">Tienda</label>
+						<select id="idtienda" class="form-control"><option value="0">Todas las tiendas</option></select>
+					</div>
+					<div class="col-md-2">
+						<label>&nbsp;</label><br/>
+						<input type="button" id="rte-boton-consultar" class="btn btn-primary" value="CONSULTAR" onclick="rteConsultar()">
+					</div>
+				</div>
+			</div>
+
+			<div id="rte-calculando">
+				<b style="color:#102F6F">Consultando las tiendas.</b> Se les pregunta a todas al mismo tiempo, pero entre m&aacute;s largo el rango,
+				m&aacute;s tarda. No cierre la pantalla.
+			</div>
+
+			<div id="rte-avisos"></div>
+
+			<div id="rte-resultado">
+
+				<div id="rte-cabecera"></div>
+
+				<h4 class="rte-seccion">Uso del enrutamiento por tienda</h4>
+				<p class="rte-pie">De los domicilios propios de cada tienda, el porcentaje que sali&oacute; dentro de una ruta sugerida.
+				<b>Haga clic en una tienda</b> para ver sus horas; vuelva a hacer clic para regresar a toda la red.</p>
+				<div id="rte-tiendas"></div>
+
+				<h4 class="rte-seccion" id="rte-titulo-soltados">Pedidos soltados por los domiciliarios</h4>
+				<p class="rte-pie">De los pedidos que el sistema <b>le enrut&oacute; a un domiciliario</b>, cu&aacute;ntos <b>solt&oacute; &eacute;l</b>.
+				Un pedido soltado vuelve a quedar libre y rompe la ruta de quien lo iba a llevar, as&iacute; que lo esperado es cero.</p>
+				<div id="rte-soltados"></div>
+
+				<h4 class="rte-seccion" id="rte-titulo-horas">Por hora del d&iacute;a</h4>
+				<p class="rte-pie">Horas del reloj de la tienda, empezando a las 10:00. En cada columna, lo azul es lo que
+				<b>s&iacute; us&oacute; el enrutamiento</b> y lo gris, lo que no. Pase el mouse por una columna para ver el detalle.
+				<a href="#" id="rte-volver" style="display:none" onclick="rteEscoger(rteSeleccion); return false;">&laquo; Volver a toda la red</a></p>
+
+				<div id="rte-ideas"></div>
+
+				<div class="rte-leyenda"><i style="background:#102F6F"></i>Con enrutamiento<i style="background:#C9D3E6"></i>Sin enrutamiento</div>
+
+				<div class="rte-grafica">
+					<h5>Pedidos que entraron a la tienda, por hora</h5>
+					<div class="rte-pie">Seg&uacute;n la hora de inserci&oacute;n del pedido. Cu&aacute;ntos entran en cada hora y cu&aacute;ntos de ellos terminaron saliendo enrutados.</div>
+					<div id="rte-g-entradas"></div>
+				</div>
+
+				<div class="rte-grafica">
+					<h5>Pedidos que salieron a ruta, por hora</h5>
+					<div class="rte-pie">Seg&uacute;n la hora en que el pedido pas&oacute; a <b>En ruta</b>. Muestra cu&aacute;les son las horas de m&aacute;s salida de domicilios y cu&aacute;nto de esa salida va enrutada.</div>
+					<div id="rte-g-salidas"></div>
+				</div>
+
+				<div class="rte-grafica">
+					<h5>Uso del enrutamiento en cada hora de salida</h5>
+					<div class="rte-pie">Porcentaje de las salidas de esa hora que usaron el enrutamiento (arriba), con el n&uacute;mero de salidas (abajo). Entre m&aacute;s oscuro, m&aacute;s uso.</div>
+					<div id="rte-calor" style="margin-top:8px"></div>
+				</div>
+
+				<h4 class="rte-seccion">Detalle por tienda</h4>
+				<div id="rte-detalle" class="table-responsive"></div>
+
+				<div class="rte-nota">
+					<b>C&oacute;mo se cuenta</b>
+					<ul style="margin:6px 0 0 18px;padding:0">
+						<li><b>Domicilio propio:</b> pedido de tipo Domicilio, sin plataformas (DiDi, Rappi y similares), sin domicilios tercerizados
+						(Rappi Cargo, que lleva un tercero) y sin anulados. Es el mismo criterio con que el POS cuenta los domicilios.</li>
+						<li><b>Con enrutamiento:</b> el pedido sali&oacute; con un domiciliario que lo llevaba en la ruta que se le hab&iacute;a sugerido.
+						Una sugerencia que el domiciliario solt&oacute; y que despu&eacute;s sali&oacute; &quot;libre&quot; no cuenta como enrutada.</li>
+						<li><b>Hora de entrada:</b> la de inserci&oacute;n del pedido, es decir, cuando entr&oacute; a la tienda.</li>
+						<li><b>Hora de salida:</b> la del &uacute;ltimo cambio del pedido a &quot;En ruta&quot;. Si un pedido se devolvi&oacute; y volvi&oacute; a salir, vale la salida real.</li>
+						<li><b>Soltado:</b> un pedido que se le sugiri&oacute; a un domiciliario y que &eacute;l solt&oacute; (suelta uno solo o todo su enrutamiento). No cuenta cuando
+						un administrador anula la sugerencia, aunque el sistema marque igual el pedido como liberado: se separan con el registro de acciones.
+						Se cuenta por fecha de jornada de la sugerencia.</li>
+						<li><b>Tiendas apagadas:</b> si el computador de una tienda no contesta, se leen sus cifras del <b>datamart</b>, que se llena de madrugada con el d&iacute;a anterior:
+						llega hasta ayer, nunca trae hoy. Ah&iacute; la hora de salida es la de la salida del domiciliario (la misma en que el POS pasa los pedidos a &quot;En ruta&quot;).
+						Esas tiendas salen marcadas y una casilla deja escoger si se suman a la red.</li>
+						<li><b>Sin salida registrada:</b> pedidos del rango que a&uacute;n no han pasado a &quot;En ruta&quot; (en curso) o que nunca lo hicieron.</li>
+						<li><b>Jornada:</b> los pedidos se agrupan por la fecha de jornada, no por la del reloj; un pedido de las 00:30 pertenece a la jornada anterior.</li>
+						<li><b>La red:</b> el porcentaje de la red solo cuenta las tiendas que respondieron y tienen el enrutamiento instalado. Una tienda sin conexi&oacute;n no se da por cero.</li>
+					</ul>
+				</div>
+
+				<div style="height:40px;"></div>
+			</div>
+		</div>
+	</body>
+	<script src="js/reporteEnrutamiento.js" type="text/javascript"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fechainicial").datepicker($.datepicker.regional["es"]);
+		$("#fechafinal").datepicker($.datepicker.regional["es"]);
+	</script>
+</html>
