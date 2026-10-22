@@ -3100,6 +3100,8 @@ function ocultarModalAdiciones()
 
 function ReiniciarPedido()
 {
+	//Pedido nuevo, pregunta nueva.
+	campanaPromoPreguntada = false;
 	var resultado;
 	$.confirm({
 				'title'		: 'Confirmacion para Cancelar Pedido',
@@ -3408,6 +3410,22 @@ function ConfirmarPedido()
         idPedidoEmpresarial = idPedido;
         $('#modalVentaEmpresarial').modal('show');    
     }
+	//Campanas de promocion: si lo que lleva el pedido dispara una, se le
+	//pregunta al cliente ANTES de finalizar.
+	//
+	//La pregunta abre un dialogo, que es asincrono, y todo lo que sigue en esta
+	//funcion es sincrono. Por eso preguntarCampanaPromo() devuelve true cuando
+	//alcanzo a abrir el dialogo y aqui se corta: el dialogo vuelve a llamar a
+	//ConfirmarPedido() con la bandera puesta, y esa segunda vez pasa de largo.
+	//
+	//Va aqui y no mas arriba a proposito: ya pasaron todas las validaciones que
+	//cortan el pedido, asi que no se le pregunta por una boleta a un cliente
+	//cuyo pedido no se va a poder finalizar.
+	if(preguntarCampanaPromo())
+	{
+		return;
+	}
+
 	var valordevolver =  $("#valordevolver").val();
 	if(valordevolver >= 0)
 	{  
@@ -7119,3 +7137,146 @@ function mostrarUsuarioEnPantalla(nombre) {
     $('#usuarioenpantalla').html(nombre);
 }
 
+
+/*
+ * CAMPANAS DE PROMOCION
+ *
+ * "Por la compra del producto X, en estas tiendas, estos dias, preguntarle al
+ * cliente si quiere el premio." La configuracion vive en el central
+ * (campana_promo), no aqui: esta pantalla solo pregunta y registra lo que
+ * conteste.
+ *
+ * El premio NO lo manda el sistema. Las boletas son imagenes con codigo de
+ * barras unico que se envian a mano desde la pantalla de Campanas de
+ * Promocion; por eso aqui no se emite ningun codigo.
+ */
+
+//Para no volver a preguntar cuando el dialogo llama otra vez a ConfirmarPedido.
+var campanaPromoPreguntada = false;
+
+/**
+ * Pregunta si hace falta. Devuelve true si abrio el dialogo -y entonces
+ * ConfirmarPedido tiene que cortar- o false si no habia nada que preguntar.
+ */
+function preguntarCampanaPromo()
+{
+	if(campanaPromoPreguntada)
+	{
+		return false;
+	}
+	var campana = null;
+	$.ajax({
+		url: server + 'CRUDCampanaPromo?idoperacion=10&idpedido=' + idPedido,
+		dataType: 'json',
+		async: false,
+		success: function(data){ campana = data; },
+		//Si el central no contesta NO se pregunta y el pedido sigue. Una
+		//promocion que no se ofrecio se ofrece manana; un pedido que no se pudo
+		//finalizar es un cliente esperando.
+		error: function(){ campana = null; }
+	});
+	if(campana == null || campana.aplica !== true)
+	{
+		campanaPromoPreguntada = true;
+		return false;
+	}
+
+	/*
+	 * El correo NO se vuelve a digitar.
+	 *
+	 * Si el cliente ya lo tiene y acepto la politica de manejo de datos, se le
+	 * muestra a quien atiende para que lo confirme en voz alta, pero bloqueado:
+	 * hacerlo teclear un correo que ya esta es perder tiempo en la caja y es una
+	 * oportunidad de equivocarse con algo que ya era correcto.
+	 *
+	 * Si le falta alguna de las dos, NO se captura aqui. Se avisa que falta y
+	 * que hay que tomarselo en la ficha del cliente, que es donde vive. Un correo
+	 * escrito solo para esta promocion se perderia para todo lo demas, y la
+	 * politica de datos no se puede dar por aceptada de oficio: vamos a mandarle
+	 * informacion por correo.
+	 */
+	var puede = (campana.puede === 'S');
+	var correoActual = (campana.correo || '').replace(/"/g, '&quot;');
+	var contenido = '<p style="font-size:15px">' + $('<div>').text(campana.pregunta).html() + '</p>';
+
+	if (puede) {
+		contenido += '<label>Se le envia a este correo</label>'
+			+ '<input type="text" class="form-control" value="' + correoActual + '" readonly '
+			+ 'style="background:#F4F4F6;font-weight:bold">'
+			+ '<span style="font-size:12px;color:#6C7482">Confirmele el correo al cliente.</span>';
+	} else {
+		contenido += '<div style="background:#FFF6DC;border:1px solid #8a6d3b;border-radius:4px;'
+			+ 'padding:10px 12px"><b style="color:#8a6d3b">No se le puede enviar la boleta:</b> este cliente '
+			+ $('<div>').text(campana.falta || 'no tiene los datos completos').html() + '.<br><br>'
+			+ 'Para que aplique, t&oacute;mele esos datos en la ficha del cliente y vuelva a intentarlo.</div>';
+	}
+
+	if (!puede) {
+		//Sin los datos no hay nada que preguntar: se deja constancia de que no se
+		//pudo -que es distinto de que no la quisiera- y el pedido sigue.
+		$.confirm({
+			title: campana.nombre,
+			content: contenido,
+			closeIcon: false,
+			backgroundDismiss: false,
+			buttons: {
+				entendido: {
+					text: 'ENTENDIDO',
+					btnClass: 'btn-blue',
+					action: function(){
+						registrarCampanaPromo(campana, 'N', '', campana.falta || 'datos incompletos');
+					}
+				}
+			}
+		});
+		return true;
+	}
+
+	$.confirm({
+		title: campana.nombre,
+		content: contenido,
+		closeIcon: false,
+		backgroundDismiss: false,
+		buttons: {
+			si: {
+				text: 'SI la quiere',
+				btnClass: 'btn-blue',
+				action: function(){
+					registrarCampanaPromo(campana, 'S', campana.correo || '', '');
+				}
+			},
+			no: {
+				text: 'No la quiere',
+				action: function(){
+					//El NO tambien se guarda: sin eso no se puede distinguir
+					//"no la quisieron" de "nadie pregunto".
+					registrarCampanaPromo(campana, 'N', '', '');
+				}
+			}
+		}
+	});
+	return true;
+}
+
+function registrarCampanaPromo(campana, solicito, correo, observacion)
+{
+	$.ajax({
+		url: server + 'CRUDCampanaPromo',
+		data: {
+			idoperacion: 11,
+			idcampana: campana.idcampana,
+			idtienda: campana.idtienda,
+			idpedido: idPedido,
+			idcliente: campana.idcliente,
+			correo: correo,
+			solicito: solicito,
+			observacion: observacion || ""
+		},
+		dataType: 'json',
+		async: false
+	});
+	//Pase lo que pase con el registro, el pedido se finaliza. Perder la marca de
+	//una boleta es molesto; dejar un pedido a medio finalizar es peor.
+	campanaPromoPreguntada = true;
+	ConfirmarPedido();
+}

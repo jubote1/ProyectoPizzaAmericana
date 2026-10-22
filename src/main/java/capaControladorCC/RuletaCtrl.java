@@ -226,6 +226,17 @@ public class RuletaCtrl {
 					continue;
 				}
 
+				//Sin fecha de caducidad no se manda: el correo lleva el codigo en
+				//letras grandes y el cliente se queda sin saber hasta cuando le
+				//sirve. La plantilla ahora revienta si falta, pero se revisa aqui
+				//para que la novedad diga QUE paso en vez de "el correo no salio".
+				if (vence.length() == 0) {
+					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": el codigo " + codigo
+							+ " quedo sin fecha de caducidad, no se envio correo.");
+					conError++;
+					continue;
+				}
+
 				if (enviarCorreo(texto(premio.get("correo")), texto(premio.get("nombre_cliente")),
 						premioTitulo, texto(premio.get("mensaje_premio")), codigo, vence)) {
 					OfertaClienteDAO.actualizarMensajeOferta(idOfertaCliente);
@@ -305,6 +316,15 @@ public class RuletaCtrl {
 				if (codigo.length() == 0) {
 					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": la oferta no tiene "
 							+ "codigo promocional, no hay que enviar.");
+					conError++;
+					continue;
+				}
+
+				//Misma guarda que en el primer intento: sin fecha de caducidad el
+				//correo no sale, y la novedad dice por que.
+				if (vence.length() == 0) {
+					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": el codigo " + codigo
+							+ " sigue sin fecha de caducidad, no se envio correo.");
 					conError++;
 					continue;
 				}
