@@ -133,10 +133,7 @@ public class ReporteEnrutamientoCtrl {
 		int excluidosPlataforma = 0;
 		int excluidosTercerizados = 0;
 		int tiendasEnLaCuenta = 0;
-		int sugeridos = 0;
-		int llevados = 0;
-		int soltados = 0;
-		int reasignados = 0;
+		final ReporteEnrutamientoDAO.Desglose enr = new ReporteEnrutamientoDAO.Desglose();
 		int tiendasConSoltados = 0;
 		final int[] entradas = new int[24];
 		final int[] entradasEnrutadas = new int[24];
@@ -169,10 +166,7 @@ public class ReporteEnrutamientoCtrl {
 			}
 			if (r.soltadosDisponible) {
 				tiendasConSoltados++;
-				sugeridos = sugeridos + r.sugeridos;
-				llevados = llevados + r.llevados;
-				soltados = soltados + r.soltados;
-				reasignados = reasignados + r.reasignados;
+				enr.sumar(r.enrutamiento);
 				for (final ReporteEnrutamientoDAO.PorDomiciliario d : r.porDomiciliario) {
 					final FilaRanking f = new FilaRanking();
 					f.idTienda = r.idTienda;
@@ -191,7 +185,7 @@ public class ReporteEnrutamientoCtrl {
 
 		Collections.sort(ranking, new Comparator<FilaRanking>() {
 			public int compare(final FilaRanking a, final FilaRanking b) {
-				return (Integer.compare(b.d.soltados, a.d.soltados));
+				return (Integer.compare(b.d.soltados + b.d.libres, a.d.soltados + a.d.libres));
 			}
 		});
 		Collections.sort(detalle, new Comparator<FilaDetalle>() {
@@ -212,7 +206,7 @@ public class ReporteEnrutamientoCtrl {
 		red.put("excluidos_tercerizados", excluidosTercerizados);
 		red.put("tiendas_en_la_cuenta", tiendasEnLaCuenta);
 		red.put("horas", horasJSON(entradas, entradasEnrutadas, salidasHora, salidasHoraEnrutadas));
-		red.put("soltados", soltadosJSON(tiendasConSoltados > 0, sugeridos, llevados, soltados, reasignados,
+		red.put("soltados", soltadosJSON(tiendasConSoltados > 0, enr,
 				rankingJSON(ranking), detalleJSON(detalle)));
 		return (red);
 	}
@@ -228,8 +222,11 @@ public class ReporteEnrutamientoCtrl {
 			o.put("iddomiciliario", f.d.idDomiciliario);
 			o.put("domiciliario", nombreVisible(f.d.nombre, f.d.idDomiciliario));
 			o.put("sugeridos", f.d.sugeridos);
+			o.put("llevados", f.d.llevados);
 			o.put("soltados", f.d.soltados);
+			o.put("libres", f.d.libres);
 			o.put("porcentaje", porcentaje(f.d.soltados, f.d.sugeridos));
+			o.put("porcentaje_no_cumplido", porcentaje(f.d.soltados + f.d.libres, f.d.sugeridos));
 			a.add(o);
 		}
 		return (a);
@@ -253,15 +250,27 @@ public class ReporteEnrutamientoCtrl {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static JSONObject soltadosJSON(final boolean disponible, final int sugeridos, final int llevados,
-			final int soltados, final int reasignados, final JSONArray ranking, final JSONArray detalle) {
+	private static JSONObject soltadosJSON(final boolean disponible, final ReporteEnrutamientoDAO.Desglose g,
+			final JSONArray ranking, final JSONArray detalle) {
 		final JSONObject o = new JSONObject();
 		o.put("disponible", disponible);
-		o.put("sugeridos", sugeridos);
-		o.put("llevados", llevados);
-		o.put("soltados", soltados);
-		o.put("reasignados", reasignados);
-		o.put("porcentaje", porcentaje(soltados, sugeridos));
+		o.put("sugeridos", g.sugeridos);
+		o.put("llevados", g.llevados);
+		o.put("soltados", g.soltados);
+		o.put("reasignados", g.reasignados);
+		o.put("anulados", g.anulados);
+		o.put("libres", g.libres);
+		o.put("rutas_tardias", g.rutasTardias);
+		o.put("expiradas_sin_salir", g.expiradasSinSalir);
+		o.put("en_curso", g.enCurso);
+		o.put("otros", g.otros);
+		o.put("sugerencias", g.sugerencias);
+		o.put("sugerencias_aceptadas", g.sugerenciasAceptadas);
+		o.put("sugerencias_expiradas", g.sugerenciasExpiradas);
+		o.put("porcentaje", porcentaje(g.soltados, g.sugeridos));
+		o.put("porcentaje_llevados", porcentaje(g.llevados, g.sugeridos));
+		o.put("porcentaje_no_cumplido", porcentaje(g.soltados + g.libres, g.sugeridos));
+		o.put("porcentaje_aceptacion", porcentaje(g.sugerenciasAceptadas, g.sugerencias));
 		o.put("por_domiciliario", ranking);
 		o.put("detalle", detalle);
 		return (o);
@@ -308,8 +317,8 @@ public class ReporteEnrutamientoCtrl {
 			f.s = s;
 			detalle.add(f);
 		}
-		t.put("soltados", soltadosJSON(responde && r.soltadosDisponible, r.sugeridos, r.llevados, r.soltados,
-				r.reasignados, rankingJSON(ranking), detalleJSON(detalle)));
+		t.put("soltados", soltadosJSON(responde && r.soltadosDisponible, r.enrutamiento,
+				rankingJSON(ranking), detalleJSON(detalle)));
 		return (t);
 	}
 
