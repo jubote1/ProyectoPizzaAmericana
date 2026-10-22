@@ -329,7 +329,7 @@ public class CampanaPromoCtrl {
 		if (con1 != null) {
 			try {
 				PreparedStatement pst = con1.prepareStatement("select p.idtienda, p.idcliente,"
-						+ " c.email, c.politica_datos, c.nombres, c.apellidos from pedido p"
+						+ " c.email, c.politica_datos, c.nombre, c.apellido from pedido p"
 						+ " left join cliente c on c.idcliente = p.idcliente where p.idpedido = ?");
 				pst.setInt(1, idPedido);
 				ResultSet rs = pst.executeQuery();
@@ -346,8 +346,8 @@ public class CampanaPromoCtrl {
 					//contact center y en el mostrador.
 					j.put("puede", (this.correoUtilizable(correo) && politica) ? "S" : "N");
 					j.put("falta", this.queLeFalta(correo, politica));
-					j.put("cliente", ((rs.getString("nombres") == null ? "" : rs.getString("nombres")) + " "
-							+ (rs.getString("apellidos") == null ? "" : rs.getString("apellidos"))).trim());
+					j.put("cliente", ((rs.getString("nombre") == null ? "" : rs.getString("nombre")) + " "
+							+ (rs.getString("apellido") == null ? "" : rs.getString("apellido"))).trim());
 				}
 				rs.close();
 				pst.close();
