@@ -120,6 +120,8 @@ public class ReporteEnrutamientoDAO {
 		public int anulados = 0;
 		/** La ruta no se acepto ni se solto, y el pedido SALIO por fuera de ella. */
 		public int libres = 0;
+		/** La ruta se creo cuando el pedido YA HABIA SALIDO: llego tarde, no fue que se ignorara. */
+		public int rutasTardias = 0;
 		/** La sugerencia expiro y el pedido no salio (se anulo o no tiene salida registrada). */
 		public int expiradasSinSalir = 0;
 		/** La sugerencia sigue viva y el pedido todavia no sale. */
@@ -138,6 +140,7 @@ public class ReporteEnrutamientoDAO {
 			reasignados += o.reasignados;
 			anulados += o.anulados;
 			libres += o.libres;
+			rutasTardias += o.rutasTardias;
 			expiradasSinSalir += o.expiradasSinSalir;
 			enCurso += o.enCurso;
 			otros += o.otros;
@@ -558,16 +561,42 @@ public class ReporteEnrutamientoDAO {
 	}
 
 	/**
+	 * El pedido salio DESPUES de que se creo la ruta (despacho_real.hora_salida no
+	 * es anterior a pedido_sugerencia.creado_en). Si salio antes, la ruta llego
+	 * tarde y no hubo nada que ignorar.
+	 */
+	private static String salioDespuesDeLaRuta(final boolean datamart) {
+		return ("EXISTS (SELECT 1 FROM despacho_real_det x INNER JOIN despacho_real r ON r.id = x.despacho_real_id"
+				+ (datamart ? " AND r.idtienda = x.idtienda" : "")
+				+ " WHERE x.id_pedido = d.id_pedido" + (datamart ? " AND x.idtienda = d.idtienda" : "")
+				+ " AND r.hora_salida >= c.creado_en)");
+	}
+
+	/** Otra ruta SI llevo este pedido (otro detalle del mismo pedido en LLEVADO). */
+	private static String llevadoPorOtraRuta(final boolean datamart) {
+		return ("EXISTS (SELECT 1 FROM pedido_sugerencia_det d2 WHERE d2.id_pedido = d.id_pedido"
+				+ " AND d2.estado_det = 'LLEVADO'" + (datamart ? " AND d2.idtienda = d.idtienda" : "") + ")");
+	}
+
+	/**
 	 * Un pedido enrutado que salio POR FUERA de su ruta: el detalle nunca se resolvio
-	 * (sigue SUGERIDO), el pedido salio con un domiciliario, y no fue porque otra
-	 * ruta lo llevo (otro detalle del mismo pedido en LLEVADO). Es el caso de un
-	 * domiciliario que ignora lo que se le sugirio: no lo solto, no lo acepto y salio
-	 * con ese pedido de todos modos.
+	 * (sigue SUGERIDO), el pedido salio con un domiciliario DESPUES de que se creo la
+	 * ruta, y no fue porque otra ruta lo llevo. Es el caso de un domiciliario que
+	 * ignora lo que se le sugirio: no lo solto, no lo acepto y salio con ese pedido
+	 * de todos modos.
 	 */
 	private static String esLibre(final boolean datamart) {
-		return ("(d.estado_det = 'SUGERIDO' AND " + salio(datamart)
-				+ " AND NOT EXISTS (SELECT 1 FROM pedido_sugerencia_det d2 WHERE d2.id_pedido = d.id_pedido"
-				+ " AND d2.estado_det = 'LLEVADO'" + (datamart ? " AND d2.idtienda = d.idtienda" : "") + "))");
+		return ("(d.estado_det = 'SUGERIDO' AND " + salioDespuesDeLaRuta(datamart)
+				+ " AND NOT " + llevadoPorOtraRuta(datamart) + ")");
+	}
+
+	/**
+	 * Un pedido cuya ruta se creo CUANDO YA HABIA SALIDO: no se ignoro nada, la ruta
+	 * llego tarde (quien enruta lo hizo sobre un pedido que ya iba en la calle).
+	 */
+	private static String esRutaTardia(final boolean datamart) {
+		return ("(d.estado_det = 'SUGERIDO' AND " + salio(datamart) + " AND NOT " + salioDespuesDeLaRuta(datamart)
+				+ " AND NOT " + llevadoPorOtraRuta(datamart) + ")");
 	}
 
 	/**
@@ -598,6 +627,7 @@ public class ReporteEnrutamientoDAO {
 					+ " SUM(CASE WHEN " + esSoltado(datamart) + " THEN 1 ELSE 0 END) AS soltados,"
 					+ " SUM(CASE WHEN d.estado_det = 'LIBERADO' THEN 1 ELSE 0 END) AS liberados,"
 					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres,"
+					+ " SUM(CASE WHEN " + esRutaTardia(datamart) + " THEN 1 ELSE 0 END) AS rutas_tardias,"
 					+ " SUM(CASE WHEN d.estado_det = 'SUGERIDO' AND c.estado = 'EXPIRADA' AND NOT " + salio(datamart)
 					+ " THEN 1 ELSE 0 END) AS expiradas_sin_salir,"
 					+ " SUM(CASE WHEN d.estado_det = 'SUGERIDO' AND c.estado IN ('PENDIENTE','ASIGNADA','VISTA','ACEPTADA')"
@@ -615,10 +645,11 @@ public class ReporteEnrutamientoDAO {
 				g.soltados = rs.getInt("soltados");
 				g.anulados = Math.max(0, rs.getInt("liberados") - g.soltados);
 				g.libres = rs.getInt("libres");
+				g.rutasTardias = rs.getInt("rutas_tardias");
 				g.expiradasSinSalir = rs.getInt("expiradas_sin_salir");
 				g.enCurso = rs.getInt("en_curso");
 				g.otros = Math.max(0, g.sugeridos - g.llevados - g.reasignados - g.soltados - g.anulados - g.libres
-						- g.expiradasSinSalir - g.enCurso);
+						- g.rutasTardias - g.expiradasSinSalir - g.enCurso);
 			}
 			rs.close();
 			ps.close();

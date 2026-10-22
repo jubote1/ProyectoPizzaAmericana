@@ -260,6 +260,7 @@ public class ReporteEnrutamientoCtrl {
 		o.put("reasignados", g.reasignados);
 		o.put("anulados", g.anulados);
 		o.put("libres", g.libres);
+		o.put("rutas_tardias", g.rutasTardias);
 		o.put("expiradas_sin_salir", g.expiradasSinSalir);
 		o.put("en_curso", g.enCurso);
 		o.put("otros", g.otros);

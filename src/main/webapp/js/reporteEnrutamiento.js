@@ -390,6 +390,7 @@ var RTE_COLOR_LLEVADOS = '#102F6F';
 var RTE_COLOR_SOLTADOS = '#E42528';
 var RTE_COLOR_LIBRES = '#E8890C';
 var RTE_COLOR_ADMIN = '#9AA3B8';
+var RTE_COLOR_TARDIAS = '#7B6CA8';
 var RTE_COLOR_PENDIENTES = '#D5DAE5';
 
 /** Las cinco porciones de lo enrutado, en el orden en que se pintan. */
@@ -399,6 +400,7 @@ function rteSegmentos(g)
 		{ clave: 'llevados', nombre: 'Llevados por la ruta', valor: g.llevados, color: RTE_COLOR_LLEVADOS },
 		{ clave: 'libres', nombre: 'Salieron libres (ruta sin aceptar)', valor: g.libres, color: RTE_COLOR_LIBRES },
 		{ clave: 'soltados', nombre: 'Soltados por el domiciliario', valor: g.soltados, color: RTE_COLOR_SOLTADOS },
+		{ clave: 'tardias', nombre: 'Ruta creada cuando el pedido ya habia salido', valor: (g.rutas_tardias || 0), color: RTE_COLOR_TARDIAS },
 		{ clave: 'admin', nombre: 'Movidos o anulados por un administrador', valor: g.reasignados + g.anulados, color: RTE_COLOR_ADMIN },
 		{ clave: 'pendientes', nombre: 'Expiraron sin salir o siguen en curso', valor: g.expiradas_sin_salir + g.en_curso + g.otros, color: RTE_COLOR_PENDIENTES }
 	];
@@ -452,12 +454,12 @@ function rtePintarSoltados()
 	html += '<p class="rte-pie" style="margin-top:8px">Rutas creadas: <b>' + rteNumero(s.sugerencias) + '</b> &middot; aceptadas: <b>' + rteNumero(s.sugerencias_aceptadas)
 		+ '</b> (' + rtePct(s.porcentaje_aceptacion) + ') &middot; vencidas sin aceptar: <b>' + rteNumero(s.sugerencias_expiradas) + '</b>.'
 		+ ' Movidos por un administrador: <b>' + rteNumero(s.reasignados) + '</b> &middot; anulados por un administrador: <b>' + rteNumero(s.anulados)
-		+ '</b> &middot; expiraron sin salir: <b>' + rteNumero(s.expiradas_sin_salir) + '</b> &middot; en curso: <b>' + rteNumero(s.en_curso) + '</b>.</p>';
+		+ '</b> &middot; ruta creada tarde: <b>' + rteNumero(s.rutas_tardias || 0) + '</b> &middot; expiraron sin salir: <b>' + rteNumero(s.expiradas_sin_salir) + '</b> &middot; en curso: <b>' + rteNumero(s.en_curso) + '</b>.</p>';
 
 	if(noCumplido == 0){
 		html += '<p class="rte-bien">Ning&uacute;n pedido enrutado se solt&oacute; ni sali&oacute; por fuera de su ruta en el rango.</p>';
 	} else {
-		html += '<p class="rte-pie"><b>Salieron libres:</b> la ruta se le asign&oacute; al domiciliario pero nunca la acept&oacute; ni la solt&oacute;, y el pedido sali&oacute; igual por fuera de ella. '
+		html += '<p class="rte-pie"><b>Salieron libres:</b> la ruta ya exist&iacute;a, el domiciliario nunca la acept&oacute; ni la solt&oacute;, y el pedido sali&oacute; igual por fuera de ella. '
 			+ '<b>Soltados:</b> el domiciliario solt&oacute; el pedido y volvi&oacute; a quedar libre para cualquiera. '
 			+ 'En los dos casos la ruta no se cumpli&oacute;; lo esperado es que ambos sean cero.</p>';
 	}
@@ -482,7 +484,7 @@ function rtePintarSoltados()
 					+ '<div class="rte-cifras"><b>' + (sf.sugeridos > 0 ? rtePct(sf.porcentaje_llevados) : '&mdash;') + '</b>'
 					+ '<span>' + (sf.sugeridos > 0 ? rteNumero(sf.llevados) + ' de ' + rteNumero(sf.sugeridos) + ' llevados' : 'sin enrutados') + '</span></div></div>';
 			}
-			html += '<p class="rte-pie">Cada barra es lo que esa tienda enrut&oacute;. Azul: llevado por la ruta; naranja: sali&oacute; libre; rojo: soltado; gris: lo movi&oacute; o anul&oacute; un administrador; claro: expir&oacute; sin salir o sigue en curso.</p>';
+			html += '<p class="rte-pie">Cada barra es lo que esa tienda enrut&oacute;. Azul: llevado por la ruta; naranja: sali&oacute; libre; rojo: soltado; morado: la ruta se cre&oacute; cuando el pedido ya hab&iacute;a salido; gris: lo movi&oacute; o anul&oacute; un administrador; claro: expir&oacute; sin salir o sigue en curso.</p>';
 		}
 	}
 
