@@ -2,10 +2,15 @@
  * Reporte de uso del enrutamiento.
  *
  * Que porcentaje de los domicilios propios de cada tienda salen dentro de una
- * ruta sugerida, y a que horas entran y salen los pedidos. Las definiciones
- * exactas (que es "domicilio propio", que es "uso el enrutamiento", de donde sale
- * cada hora) estan en capaDAOCC.ReporteEnrutamientoDAO y se resumen al final de
- * la pantalla.
+ * ruta sugerida, a que horas entran y salen los pedidos, y cuantos pedidos
+ * enrutados SOLTARON los domiciliarios. Las definiciones exactas (que es
+ * "domicilio propio", que es "uso el enrutamiento", que es "soltado", de donde
+ * sale cada hora) estan en capaDAOCC.ReporteEnrutamientoDAO y se resumen al final
+ * de la pantalla.
+ *
+ * Una tienda que no contesta se lee del datamart, que llega hasta ayer. Esas
+ * tiendas salen marcadas, y una casilla deja escoger si se suman o no a las
+ * cifras de la red: sumarlas mezcla "hasta hoy" con "hasta ayer".
  *
  * Las funciones llevan el prefijo "rte" a proposito: otras pantallas del central
  * definen cargarTiendas y pintarResumen con el mismo nombre y se pisan entre si.
@@ -22,11 +27,19 @@ var RTE_ORDEN_HORAS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0
 var rteDatos = null;
 /** 0 = toda la red; si no, el idtienda escogido. */
 var rteSeleccion = 0;
+/** Si la red suma tambien las tiendas leidas del datamart. */
+var rteIncluirDatamart = true;
 
 $(document).ready(function() {
 	rteValidarVigenciaLogueo();
 	rteCargarTiendas();
 	rteFechasPorDefecto();
+	//La casilla vive dentro de un aviso que se vuelve a pintar; por eso el evento
+	//se cuelga del documento y no de la casilla.
+	$(document).on('change', '#rte-incluir-dm', function(){
+		rteIncluirDatamart = $(this).is(':checked');
+		rtePintarTodo();
+	});
 });
 
 function rteValidarVigenciaLogueo()
@@ -91,6 +104,7 @@ function rteConsultar()
 		}
 		rteDatos = data;
 		rteSeleccion = 0;
+		rteIncluirDatamart = true;
 		$('#rte-resultado').show();
 		rtePintarTodo();
 	}).fail(function(){
@@ -127,16 +141,41 @@ function rteHH(hora)
 	return (('0' + hora).slice(-2) + ':00');
 }
 
+/** De yyyy-MM-dd (o con hora) a dd/MM/yyyy. */
+function rteFecha(texto)
+{
+	if(!texto || texto.length < 10){ return ''; }
+	return (texto.substring(8, 10) + '/' + texto.substring(5, 7) + '/' + texto.substring(0, 4));
+}
+
+/** dd/MM HH:mm, para el detalle de soltados. */
+function rteFechaHora(texto)
+{
+	if(!texto || texto.length < 16){ return rteEscapar(texto); }
+	return (texto.substring(8, 10) + '/' + texto.substring(5, 7) + ' ' + texto.substring(11, 16));
+}
+
 /** Porcentaje que no miente: con total cero no hay porcentaje. */
 function rteDe(parte, total)
 {
 	return (total > 0 ? (parte * 100.0 / total) : 0);
 }
 
+function rteEsDatamart(t)
+{
+	return (t.fuente == 'DATAMART' && t.estado == 'OK');
+}
+
 /** Una tienda cuenta para el porcentaje de la red si contesto y tiene el enrutamiento. */
 function rteCuenta(t)
 {
-	return (t.estado == 'OK' && t.instalado);
+	return (t.estado == 'OK' && t.instalado && (!rteEsDatamart(t) || rteIncluirDatamart));
+}
+
+/** Los totales de la red: con o sin las tiendas leidas del datamart, segun la casilla. */
+function rteRed()
+{
+	return ((rteDatos.hay_datamart && rteIncluirDatamart) ? rteDatos.red_con_datamart : rteDatos.red);
 }
 
 function rteTienda(id)
@@ -148,6 +187,13 @@ function rteTienda(id)
 	return null;
 }
 
+/** La etiqueta que dice que las cifras de una tienda vienen del datamart. */
+function rteEtiquetaDatamart(t)
+{
+	return ('<span class="rte-tag" title="El computador de la tienda no contest&oacute;: estas cifras salen del datamart, que se llena de madrugada con el d&iacute;a anterior y no incluye hoy.">Datamart &middot; hasta '
+		+ rteFecha(t.datos_hasta).substring(0, 5) + '</span>');
+}
+
 // ===========================================================================
 // Pintar
 // ===========================================================================
@@ -157,6 +203,7 @@ function rtePintarTodo()
 	rtePintarAvisos();
 	rtePintarCabecera();
 	rtePintarTiendas();
+	rtePintarSoltados();
 	rtePintarHoras();
 	rtePintarDetalle();
 }
@@ -165,29 +212,43 @@ function rtePintarTodo()
 function rtePintarAvisos()
 {
 	var html = '';
-	var sinConexion = [], tardaron = [], conError = [], sinInstalar = [];
+	var sinConexion = [], tardaron = [], conError = [], sinInstalar = [], datamart = [], notaDatamart = [];
 	for(var i = 0; i < rteDatos.tiendas.length; i++){
 		var t = rteDatos.tiendas[i];
-		if(t.estado == 'SIN_CONEXION'){ sinConexion.push(t.tienda); }
-		else if(t.estado == 'TARDO'){ tardaron.push(t.tienda); }
-		else if(t.estado == 'ERROR'){ conError.push(t.tienda); }
-		else if(!t.instalado){ sinInstalar.push(t.tienda); }
+		if(rteEsDatamart(t)){
+			datamart.push(rteEscapar(t.tienda) + ' (hasta el ' + rteFecha(t.datos_hasta) + ')');
+		}
+		else if(t.estado == 'SIN_CONEXION'){
+			sinConexion.push(rteEscapar(t.tienda));
+			if(t.datos_hasta){ notaDatamart.push('El datamart de ' + rteEscapar(t.tienda) + ' llega hasta el ' + rteFecha(t.datos_hasta) + ', antes del rango pedido.'); }
+		}
+		else if(t.estado == 'TARDO'){ tardaron.push(rteEscapar(t.tienda)); }
+		else if(t.estado == 'ERROR'){ conError.push(rteEscapar(t.tienda)); }
+		else if(!t.instalado){ sinInstalar.push(rteEscapar(t.tienda)); }
 	}
 	if(sinConexion.length > 0){
 		html += '<div class="rte-aviso rte-aviso-alerta"><b>Sin conexi&oacute;n:</b> el computador de '
-			+ rteEscapar(sinConexion.join(', ')) + ' no se encuentra en l&iacute;nea. No entra a las cifras ni se da por cero.</div>';
+			+ sinConexion.join(', ') + ' no se encuentra en l&iacute;nea y el datamart no tiene datos para el rango. ' + notaDatamart.join(' ')
+			+ ' No entra a las cifras ni se da por cero.</div>';
 	}
 	if(tardaron.length > 0){
 		html += '<div class="rte-aviso rte-aviso-alerta"><b>No alcanz&oacute; a responder:</b> '
-			+ rteEscapar(tardaron.join(', ')) + '. Pruebe con un rango m&aacute;s corto.</div>';
+			+ tardaron.join(', ') + '. Pruebe con un rango m&aacute;s corto.</div>';
 	}
 	if(conError.length > 0){
 		html += '<div class="rte-aviso rte-aviso-alerta"><b>Respondi&oacute; con un error:</b> '
-			+ rteEscapar(conError.join(', ')) + '.</div>';
+			+ conError.join(', ') + '.</div>';
+	}
+	if(datamart.length > 0){
+		html += '<div class="rte-aviso rte-aviso-info"><b>Le&iacute;do del datamart:</b> el computador de '
+			+ datamart.join('; ') + ' no contest&oacute;, as&iacute; que se muestran sus cifras del datamart. Esa informaci&oacute;n llega hasta ayer: '
+			+ '<b>no incluye hoy</b>.<br><label style="margin:6px 0 0;font-weight:normal"><input type="checkbox" id="rte-incluir-dm"'
+			+ (rteIncluirDatamart ? ' checked' : '') + '> Sumar esas tiendas a las cifras de la red '
+			+ '(si se suman, la red mezcla datos hasta hoy con datos hasta ayer).</label></div>';
 	}
 	if(sinInstalar.length > 0){
 		html += '<div class="rte-aviso rte-aviso-info"><b>Sin el enrutamiento instalado:</b> '
-			+ rteEscapar(sinInstalar.join(', ')) + '. Se muestran sus pedidos, pero no entran al porcentaje de uso: '
+			+ sinInstalar.join(', ') + '. Se muestran sus pedidos, pero no entran al porcentaje de uso: '
 			+ '&quot;no puede usarlo&quot; no es lo mismo que &quot;no lo usa&quot;.</div>';
 	}
 	$('#rte-avisos').html(html);
@@ -212,20 +273,27 @@ function rteDonut(pct, hayDatos)
 /** La cifra grande y las tarjetas, de la red o de la tienda escogida. */
 function rtePintarCabecera()
 {
-	var d = rteSeleccion == 0 ? rteDatos.red : rteTienda(rteSeleccion);
+	var d = rteSeleccion == 0 ? rteRed() : rteTienda(rteSeleccion);
 	var hayDatos = true;
 	var titulo = 'Toda la red';
+	var nota = '';
 	if(rteSeleccion != 0){
 		titulo = d.tienda;
-		hayDatos = rteCuenta(d) && d.pedidos > 0;
+		hayDatos = d.estado == 'OK' && d.instalado && d.pedidos > 0;
+		if(rteEsDatamart(d)){
+			nota = '<div class="rte-pie" style="margin-top:4px">' + rteEtiquetaDatamart(d) + '</div>';
+		}
 	} else {
 		hayDatos = d.pedidos > 0;
+		if(rteDatos.hay_datamart && rteIncluirDatamart){
+			nota = '<div class="rte-pie" style="margin-top:4px">Incluye tiendas del datamart (hasta ayer)</div>';
+		}
 	}
 	var pct = hayDatos ? d.porcentaje : 0;
 	var excluidos = d.excluidos_plataforma + d.excluidos_tercerizados;
 	var html = '<div class="row">'
 		+ '<div class="col-md-4"><div class="rte-tarjeta rte-hero"><div class="rte-rotulo">' + rteEscapar(titulo) + '</div>'
-		+ rteDonut(pct, hayDatos) + '</div></div>'
+		+ rteDonut(pct, hayDatos) + nota + '</div></div>'
 		+ '<div class="col-md-8"><div class="row">'
 		+ rteTarjeta('Domicilios propios', rteNumero(d.pedidos), 'en el rango, sin plataformas ni tercerizados', '')
 		+ rteTarjeta('Con enrutamiento', rteNumero(d.enrutados), 'salieron en una ruta sugerida', 'rte-azul')
@@ -260,9 +328,11 @@ function rtePintarTiendas()
 	for(var j = 0; j < conDatos.length; j++){
 		var f = conDatos[j];
 		var sel = (rteSeleccion == f.idtienda) ? ' rte-fila-sel' : '';
-		html += '<div class="rte-fila' + sel + '" data-id="' + f.idtienda + '" tabindex="0" role="button" '
+		var dm = rteEsDatamart(f);
+		var tenue = (dm && !rteIncluirDatamart) ? ' rte-fila-tenue' : '';
+		html += '<div class="rte-fila' + sel + tenue + '" data-id="' + f.idtienda + '" tabindex="0" role="button" '
 			+ 'aria-label="Ver las horas de ' + rteEscapar(f.tienda) + '">'
-			+ '<div class="rte-nombre">' + rteEscapar(f.tienda) + '</div>'
+			+ '<div class="rte-nombre">' + rteEscapar(f.tienda) + (dm ? '<br>' + rteEtiquetaDatamart(f) : '') + '</div>'
 			+ '<div class="rte-pista" title="' + rteNumero(f.enrutados) + ' de ' + rteNumero(f.pedidos) + ' domicilios"><span class="rte-lleno" style="width:'
 			+ Math.max(f.porcentaje, f.pedidos > 0 && f.enrutados > 0 ? 0.6 : 0) + '%"></span></div>'
 			+ '<div class="rte-cifras"><b>' + (f.pedidos > 0 ? rtePct(f.porcentaje) : '&mdash;') + '</b>'
@@ -297,13 +367,113 @@ function rteEscoger(id)
 	rteSeleccion = (rteSeleccion == id ? 0 : id);
 	rtePintarCabecera();
 	rtePintarTiendas();
+	rtePintarSoltados();
 	rtePintarHoras();
 }
+
+// ===========================================================================
+// Los pedidos soltados
+// ===========================================================================
+
+/**
+ * Cuantos pedidos de los que se enrutaron SOLTARON los domiciliarios. Lo
+ * esperado es cero: un pedido enrutado que se suelta vuelve a quedar libre y
+ * rompe la ruta de quien lo iba a llevar.
+ */
+function rtePintarSoltados()
+{
+	var titulo = rteSeleccion == 0 ? 'toda la red' : rteEscapar(rteTienda(rteSeleccion).tienda);
+	$('#rte-titulo-soltados').html('Pedidos soltados por los domiciliarios &mdash; ' + titulo);
+	var s = (rteSeleccion == 0 ? rteRed().soltados : rteTienda(rteSeleccion).soltados);
+	if(!s || !s.disponible){
+		$('#rte-soltados').html('<p class="rte-pie">No se pudo leer el enrutamiento de ' + (rteSeleccion == 0 ? 'ninguna tienda' : 'esta tienda')
+			+ ' en el rango (las tablas de sugerencias no est&aacute;n disponibles).</p>');
+		return;
+	}
+	var clase = s.soltados > 0 ? 'rte-rojo' : 'rte-verde';
+	var html = '<div class="row">'
+		+ rteTarjeta4('Pedidos enrutados', rteNumero(s.sugeridos), 'sugeridos a un domiciliario en el rango', '')
+		+ rteTarjeta4('Llevados', rteNumero(s.llevados), rtePct(rteDe(s.llevados, s.sugeridos)) + ' de los enrutados', 'rte-azul')
+		+ rteTarjeta4('Soltados', rteNumero(s.soltados), s.sugeridos > 0 ? rtePct(s.porcentaje) + ' de los enrutados' : 'sin pedidos enrutados', clase)
+		+ rteTarjeta4('Reasignados', rteNumero(s.reasignados), 'los movi&oacute; un administrador', '')
+		+ '</div>';
+	if(s.soltados == 0){
+		html += '<p class="rte-bien">Ning&uacute;n pedido enrutado fue soltado en el rango.</p>';
+	} else {
+		html += '<p class="rte-pie"><b>Soltado</b> es un pedido que se le sugiri&oacute; a un domiciliario y que &eacute;l solt&oacute;; vuelve a quedar libre para cualquiera. '
+			+ 'No cuenta cuando un administrador anula la sugerencia. Lo esperado es cero.</p>';
+	}
+
+	//Por tienda: solo en la vista de toda la red.
+	if(rteSeleccion == 0){
+		var filas = [];
+		for(var i = 0; i < rteDatos.tiendas.length; i++){
+			var t = rteDatos.tiendas[i];
+			if(t.estado == 'OK' && t.soltados.disponible && (!rteEsDatamart(t) || rteIncluirDatamart)){ filas.push(t); }
+		}
+		filas.sort(function(a, b){ return b.soltados.soltados - a.soltados.soltados || b.soltados.porcentaje - a.soltados.porcentaje; });
+		if(filas.length > 0){
+			var maximo = 0;
+			for(var j = 0; j < filas.length; j++){ maximo = Math.max(maximo, filas[j].soltados.porcentaje); }
+			html += '<h5 class="rte-subseccion">Soltados por tienda</h5>';
+			for(var k = 0; k < filas.length; k++){
+				var f = filas[k];
+				var sf = f.soltados;
+				var ancho = maximo > 0 ? Math.max(sf.soltados > 0 ? 1 : 0, sf.porcentaje * 100.0 / Math.max(maximo, 1)) : 0;
+				html += '<div class="rte-fila" data-id="' + f.idtienda + '" tabindex="0" role="button">'
+					+ '<div class="rte-nombre">' + rteEscapar(f.tienda) + (rteEsDatamart(f) ? '<br>' + rteEtiquetaDatamart(f) : '') + '</div>'
+					+ '<div class="rte-pista"><span class="rte-lleno rte-lleno-rojo" style="width:' + ancho + '%"></span></div>'
+					+ '<div class="rte-cifras"><b class="' + (sf.soltados > 0 ? 'rte-txt-rojo' : '') + '">' + rteNumero(sf.soltados) + '</b>'
+					+ '<span>' + (sf.sugeridos > 0 ? rtePct(sf.porcentaje) + ' de ' + rteNumero(sf.sugeridos) : 'sin enrutados') + '</span></div></div>';
+			}
+		}
+	}
+
+	//Quien los solto.
+	if(s.por_domiciliario && s.por_domiciliario.length > 0){
+		html += '<h5 class="rte-subseccion">Qui&eacute;n los solt&oacute;</h5><div class="table-responsive"><table class="table rte-tabla"><thead><tr>'
+			+ '<th>Domiciliario</th><th>Tienda</th><th>Enrutados</th><th>Soltados</th><th>% soltados</th></tr></thead><tbody>';
+		for(var m = 0; m < s.por_domiciliario.length; m++){
+			var p = s.por_domiciliario[m];
+			html += '<tr><td>' + rteEscapar(p.domiciliario) + '</td><td>' + rteEscapar(p.tienda) + '</td><td>' + rteNumero(p.sugeridos)
+				+ '</td><td><b class="rte-txt-rojo">' + rteNumero(p.soltados) + '</b></td><td>' + rtePct(p.porcentaje) + '</td></tr>';
+		}
+		html += '</tbody></table></div>';
+	}
+
+	//Los pedidos, con el motivo que dieron.
+	if(s.detalle && s.detalle.length > 0){
+		html += '<details class="rte-detalle"><summary>Ver los pedidos soltados y el motivo que dio cada domiciliario</summary>'
+			+ '<div class="table-responsive"><table class="table rte-tabla"><thead><tr><th>Cu&aacute;ndo</th><th>Tienda</th><th>Domiciliario</th>'
+			+ '<th>Pedido</th><th>Motivo</th></tr></thead><tbody>';
+		for(var n = 0; n < s.detalle.length; n++){
+			var x = s.detalle[n];
+			html += '<tr><td>' + rteFechaHora(x.fecha_hora) + '</td><td>' + rteEscapar(x.tienda) + '</td><td>' + rteEscapar(x.domiciliario)
+				+ '</td><td>' + rteNumero(x.idpedido) + '</td><td style="text-align:left">' + (x.motivo ? rteEscapar(x.motivo) : '<span class="rte-pie">sin motivo</span>') + '</td></tr>';
+		}
+		html += '</tbody></table></div></details>';
+	}
+	$('#rte-soltados').html(html);
+	$('#rte-soltados .rte-fila[data-id]').off('click keypress').on('click keypress', function(ev){
+		if(ev.type == 'keypress' && ev.which != 13 && ev.which != 32){ return; }
+		rteEscoger($(this).data('id'));
+	});
+}
+
+function rteTarjeta4(rotulo, cifra, pie, clase)
+{
+	return ('<div class="col-sm-6 col-lg-3"><div class="rte-tarjeta ' + clase + '"><div class="rte-rotulo">' + rotulo + '</div>'
+		+ '<div class="rte-cifra">' + cifra + '</div><div class="rte-pie">' + pie + '</div></div></div>');
+}
+
+// ===========================================================================
+// Las horas
+// ===========================================================================
 
 /** Las horas de la red o de la tienda escogida. */
 function rteHoras()
 {
-	return (rteSeleccion == 0 ? rteDatos.red.horas : rteTienda(rteSeleccion).horas);
+	return (rteSeleccion == 0 ? rteRed().horas : rteTienda(rteSeleccion).horas);
 }
 
 /** Las 24 horas en orden operativo (10:00 a 09:00), sin los extremos vacios. */
@@ -492,27 +662,31 @@ function rteIdeas(horas)
 
 function rtePintarDetalle()
 {
-	var html = '<table class="table"><thead><tr><th>Tienda</th><th>Domicilios propios</th><th>Con enrutamiento</th>'
-		+ '<th>Sin enrutamiento</th><th>% con enrutamiento</th><th>Salidas registradas</th><th>Sin salida registrada</th></tr></thead><tbody>';
+	var html = '<table class="table"><thead><tr><th>Tienda</th><th>Fuente</th><th>Domicilios propios</th><th>Con enrutamiento</th>'
+		+ '<th>Sin enrutamiento</th><th>% con enrutamiento</th><th>Soltados</th><th>Salidas registradas</th><th>Sin salida registrada</th></tr></thead><tbody>';
 	for(var i = 0; i < rteDatos.tiendas.length; i++){
 		var t = rteDatos.tiendas[i];
 		if(t.estado != 'OK'){
-			html += '<tr class="rte-det-gris"><td>' + rteEscapar(t.tienda) + '</td><td colspan="6">'
+			html += '<tr class="rte-det-gris"><td>' + rteEscapar(t.tienda) + '</td><td colspan="8">'
 				+ (t.estado == 'SIN_CONEXION' ? 'El computador de la tienda no se encuentra en l&iacute;nea'
 					: (t.estado == 'TARDO' ? 'No alcanz&oacute; a responder' : 'Respondi&oacute; con un error')) + '</td></tr>';
 			continue;
 		}
-		html += '<tr><td>' + rteEscapar(t.tienda) + '</td><td>' + rteNumero(t.pedidos) + '</td><td>'
+		var dm = rteEsDatamart(t);
+		html += '<tr><td>' + rteEscapar(t.tienda) + '</td><td style="text-align:left">'
+			+ (dm ? 'Datamart, hasta ' + rteFecha(t.datos_hasta).substring(0, 5) : 'En vivo') + '</td><td>' + rteNumero(t.pedidos) + '</td><td>'
 			+ (t.instalado ? rteNumero(t.enrutados) : '&mdash;') + '</td><td>'
 			+ (t.instalado ? rteNumero(t.no_enrutados) : '&mdash;') + '</td><td><b>'
 			+ (t.instalado && t.pedidos > 0 ? rtePct(t.porcentaje) : '&mdash;') + '</b>'
 			+ (t.instalado ? '' : ' <span class="rte-pie">sin instalar</span>') + '</td><td>'
+			+ (t.soltados.disponible ? (t.soltados.soltados > 0 ? '<b class="rte-txt-rojo">' + rteNumero(t.soltados.soltados) + '</b>' : '0') : '&mdash;') + '</td><td>'
 			+ rteNumero(t.salidas) + '</td><td>' + rteNumero(t.sin_salida) + '</td></tr>';
 	}
-	var r = rteDatos.red;
-	html += '</tbody><tfoot><tr class="rte-total"><td>Total (tiendas que cuentan: ' + r.tiendas_en_la_cuenta + ')</td><td>'
+	var r = rteRed();
+	html += '</tbody><tfoot><tr class="rte-total"><td>Total (tiendas que cuentan: ' + r.tiendas_en_la_cuenta + ')</td><td></td><td>'
 		+ rteNumero(r.pedidos) + '</td><td>' + rteNumero(r.enrutados) + '</td><td>' + rteNumero(r.no_enrutados) + '</td><td>'
-		+ (r.pedidos > 0 ? rtePct(r.porcentaje) : '&mdash;') + '</td><td>' + rteNumero(r.salidas) + '</td><td>'
+		+ (r.pedidos > 0 ? rtePct(r.porcentaje) : '&mdash;') + '</td><td>'
+		+ (r.soltados && r.soltados.disponible ? rteNumero(r.soltados.soltados) : '&mdash;') + '</td><td>' + rteNumero(r.salidas) + '</td><td>'
 		+ rteNumero(r.sin_salida) + '</td></tr></tfoot></table>';
 	$('#rte-detalle').html(html);
 }

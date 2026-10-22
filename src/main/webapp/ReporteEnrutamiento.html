@@ -75,6 +75,23 @@
 			.rte-det-gris td { color:#6C7482; background:#FAFAFB; text-align:left !important; }
 			.rte-total td { font-weight:bold; background:#F4F4F6; border-top:2px solid #102F6F !important; }
 
+			/* Lo leido del datamart y lo soltado. */
+			.rte-tag { display:inline-block; font-size:10px; font-weight:600; color:#102F6F; background:#EAF1FF;
+				border:1px solid #102F6F; border-radius:10px; padding:0 7px; margin-top:2px; line-height:1.5; }
+			.rte-fila-tenue { opacity:.55; }
+			.rte-rojo .rte-cifra, .rte-txt-rojo { color:#E42528; }
+			.rte-verde .rte-cifra { color:#1B8A4B; }
+			.rte-lleno-rojo { background:#E42528; }
+			.rte-bien { background:#EAF7EF; border:1px solid #1B8A4B; color:#14633a; border-radius:6px;
+				padding:8px 12px; font-size:13px; margin:4px 0 8px; }
+			h5.rte-subseccion { margin:18px 0 6px; font-size:14px; font-weight:bold; color:#102F6F; }
+			.rte-tabla { border-collapse:collapse; width:100%; font-size:13px; }
+			.rte-tabla th, .rte-tabla td { padding:6px 10px; border-top:1px solid #E2E6EC; text-align:right; }
+			.rte-tabla th:first-child, .rte-tabla td:first-child { text-align:left; }
+			.rte-tabla thead th { background:#102F6F; color:#FFFFFF; }
+			.rte-detalle { margin-top:12px; }
+			.rte-detalle summary { cursor:pointer; color:#102F6F; font-weight:600; font-size:13px; }
+
 			.rte-nota { border:1px solid #E2E6EC; border-radius:8px; padding:10px 14px; margin-top:22px; background:#FBFCFD;
 				font-size:12.5px; color:#4a5164; }
 			.rte-nota li { margin-bottom:3px; }
@@ -118,8 +135,9 @@
 			<h1>REPORTE ENRUTAMIENTO</h1>
 			<p class="rte-pie">Qu&eacute; porcentaje de los <b>domicilios propios</b> de cada tienda salen dentro de una ruta sugerida por el
 			enrutamiento, y <b>en qu&eacute; horas</b> entran y salen los pedidos. Sirve para saber si las tiendas est&aacute;n usando el
-			enrutamiento y en qu&eacute; momentos del d&iacute;a no. No cuenta plataformas (DiDi, Rappi) ni domicilios tercerizados.
-			Se consulta a las tiendas en el momento, as&iacute; que se demora.</p>
+			enrutamiento y en qu&eacute; momentos del d&iacute;a no, y <b>cu&aacute;ntos pedidos enrutados sueltan los domiciliarios</b>.
+			No cuenta plataformas (DiDi, Rappi) ni domicilios tercerizados. Se consulta a las tiendas en el momento, as&iacute; que se demora;
+			si el computador de una tienda no contesta, se muestran sus datos del datamart (hasta ayer).</p>
 
 			<div class="rte-filtros">
 				<div class="row">
@@ -157,6 +175,11 @@
 				<p class="rte-pie">De los domicilios propios de cada tienda, el porcentaje que sali&oacute; dentro de una ruta sugerida.
 				<b>Haga clic en una tienda</b> para ver sus horas; vuelva a hacer clic para regresar a toda la red.</p>
 				<div id="rte-tiendas"></div>
+
+				<h4 class="rte-seccion" id="rte-titulo-soltados">Pedidos soltados por los domiciliarios</h4>
+				<p class="rte-pie">De los pedidos que el sistema <b>le enrut&oacute; a un domiciliario</b>, cu&aacute;ntos <b>solt&oacute; &eacute;l</b>.
+				Un pedido soltado vuelve a quedar libre y rompe la ruta de quien lo iba a llevar, as&iacute; que lo esperado es cero.</p>
+				<div id="rte-soltados"></div>
 
 				<h4 class="rte-seccion" id="rte-titulo-horas">Por hora del d&iacute;a</h4>
 				<p class="rte-pie">Horas del reloj de la tienda, empezando a las 10:00. En cada columna, lo azul es lo que
@@ -197,6 +220,12 @@
 						Una sugerencia que el domiciliario solt&oacute; y que despu&eacute;s sali&oacute; &quot;libre&quot; no cuenta como enrutada.</li>
 						<li><b>Hora de entrada:</b> la de inserci&oacute;n del pedido, es decir, cuando entr&oacute; a la tienda.</li>
 						<li><b>Hora de salida:</b> la del &uacute;ltimo cambio del pedido a &quot;En ruta&quot;. Si un pedido se devolvi&oacute; y volvi&oacute; a salir, vale la salida real.</li>
+						<li><b>Soltado:</b> un pedido que se le sugiri&oacute; a un domiciliario y que &eacute;l solt&oacute; (suelta uno solo o todo su enrutamiento). No cuenta cuando
+						un administrador anula la sugerencia, aunque el sistema marque igual el pedido como liberado: se separan con el registro de acciones.
+						Se cuenta por fecha de jornada de la sugerencia.</li>
+						<li><b>Tiendas apagadas:</b> si el computador de una tienda no contesta, se leen sus cifras del <b>datamart</b>, que se llena de madrugada con el d&iacute;a anterior:
+						llega hasta ayer, nunca trae hoy. Ah&iacute; la hora de salida es la de la salida del domiciliario (la misma en que el POS pasa los pedidos a &quot;En ruta&quot;).
+						Esas tiendas salen marcadas y una casilla deja escoger si se suman a la red.</li>
 						<li><b>Sin salida registrada:</b> pedidos del rango que a&uacute;n no han pasado a &quot;En ruta&quot; (en curso) o que nunca lo hicieron.</li>
 						<li><b>Jornada:</b> los pedidos se agrupan por la fecha de jornada, no por la del reloj; un pedido de las 00:30 pertenece a la jornada anterior.</li>
 						<li><b>La red:</b> el porcentaje de la red solo cuenta las tiendas que respondieron y tienen el enrutamiento instalado. Una tienda sin conexi&oacute;n no se da por cero.</li>
