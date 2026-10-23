@@ -16,6 +16,32 @@ import com.google.gson.JsonObject;
 import capaControladorCC.PedidoCtrl;
 import capaModeloCC.CoberturaRequest;
 
+/**
+ * Dada una direccion (o un cliente que ya la tiene), la ubica en el mapa y dice si esta dentro de
+ * la cobertura de alguna tienda, cual y si esa tienda esta disponible.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidacionCobertura   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json.
+ * Lee: cliente, municipio, nomenclatura_direccion, parametros, pedido, pedido_anulado, tienda,
+ * tienda_bloqueada.
+ * Escribe: cliente (UPDATE).
+ * Sistemas externos: ArcGIS, Gmail, Google Maps.
+ *
+ * Trampas y riesgos conocidos:
+ * - Latencia: hace varias llamadas HTTP a terceros dentro de la misma peticion. En una llamada
+ *   de voz hay que fijar un tiempo maximo y tener un plan B.
+ * - La tienda se devuelve por NOMBRE (infoAdicional); el id va en idtienda. El resto del sistema
+ *   (por ejemplo InsertarClienteEncabezadoPedido) espera el nombre.
+ * - Que haya cobertura no significa que la tienda este abierta: hay que leer estadoTienda y el
+ *   horario aparte.
+ * - Sin autenticacion en el servlet; CORS abierto a cualquier origen
+ *   (Access-Control-Allow-Origin: *) solo para POST y la cabecera Content-Type.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidacionCobertura.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ValidacionCobertura")
 public class ValidacionCobertura extends HttpServlet {
     private static final long serialVersionUID = 1L;

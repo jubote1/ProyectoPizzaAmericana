@@ -12,9 +12,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;
 
 /**
- * Servlet implementation class GetClientePorID
- * Servicio que se encarga de recibir un idcliente (el cual corresponde a el autoincrementable que posee la tabla de clientes)
- * con base en esto retorna un único cliente asociado a este id, el retorno es formato JSON.
+ * Devuelve una direccion de cliente por su identificador, con los datos para mostrar y editar.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetClientePorID   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idcliente (integer).
+ * Devuelve: application/json; claves: direccion, distanciatienda, email, idcliente, idtienda,
+ * latitud, longitud, nombrecliente, nombremunicipio, nombretienda, nomenclatura, num3, ....
+ * Lee: cliente, municipio, nomenclatura_direccion, tienda.
+ *
+ * Trampas y riesgos conocidos:
+ * - Un idcliente ausente o no numerico cae en el catch y la respuesta sale vacia (cuerpo vacio,
+ *   no []).
+ * - Si el cliente no existe devuelve un objeto con valores nulos o en cero, no un error.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetClientePorID.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetClientePorID")
 public class GetClientePorID extends HttpServlet {

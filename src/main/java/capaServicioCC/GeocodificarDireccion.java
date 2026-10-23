@@ -10,6 +10,24 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.UbicacionCtrl;
 import capaModeloCC.Ubicacion;
 
+/**
+ * Solo geocodifica: devuelve latitud, longitud y la direccion normalizada, sin decir si hay
+ * cobertura.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GeocodificarDireccion   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): direccion (string), municipio (string), barrio (string).
+ * Devuelve: application/json; charset=UTF-8; claves: error.
+ * Lee: parametros.
+ * Sistemas externos: ArcGIS, Google Maps.
+ *
+ * Trampas y riesgos conocidos:
+ * - Los errores salen con HTTP 200: hay que mirar la clave error.
+ * - Un 0,0 significa "no encontrado", no es una coordenada valida.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GeocodificarDireccion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/GeocodificarDireccion")
 public class GeocodificarDireccion extends HttpServlet {
 

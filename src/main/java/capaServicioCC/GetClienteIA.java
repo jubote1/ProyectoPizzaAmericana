@@ -12,9 +12,26 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Igual que GetCliente, pero solo devuelve las direcciones que se han usado en pedidos del ultimo
+ * ano y como maximo 2.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetClienteIA   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string).
+ * Devuelve: application/json; claves: apellido, clientesiniden, correo, direccion,
+ * distanciatienda, email, emailfact, fechanacimiento, idCliente, identificacion, idnomenclatura,
+ * idtipopersona, ....
+ * Lee: cliente, municipio, nomenclatura_direccion, pedido, tienda.
+ *
+ * Trampas y riesgos conocidos:
+ * - Un cliente real cuya ultima compra fue hace mas de un ano sale como "no existe" y el agente
+ *   podria crearlo duplicado.
+ * - Mismas observaciones de seguridad que GetCliente.
+ * - Ninguna pagina ni sistema del repositorio lo llama: se usa desde fuera (por ejemplo el bot o
+ *   una automatizacion), asi que no se puede retirar sin preguntar.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetClienteIA.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetClienteIA")
 public class GetClienteIA extends HttpServlet {

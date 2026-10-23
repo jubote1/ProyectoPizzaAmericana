@@ -15,9 +15,17 @@ import org.apache.log4j.Logger;
 import capaControladorCC.AutenticacionCtrl;
 import capaModeloCC.Usuario;
 /**
- * Servlet implementation class IngresarAplicacion
- * Servicio utilizado para el logueo de la aplicación, recibiendo usuario y password, validando el resultado de la operacion
- * y retornando un resultado para que el sistema interprete y continue la carga de la interface de pedidos.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca
+ * AutenticacionCtrl.autenticarUsuarioInventario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetIngresarAplicacionInventario   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): nombre (string), password (string).
+ * Devuelve: texto; claves: idgrupo, nombreLargo, nombre_permiso, permisos, usuario.
+ * Lee: empleado, permisos_grupo.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetIngresarAplicacionInventario.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetIngresarAplicacionInventario")
 public class GetIngresarAplicacionInventario extends HttpServlet {

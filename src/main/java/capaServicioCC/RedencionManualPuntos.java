@@ -15,31 +15,21 @@ import capaDAOCC.RedencionManualDAO;
 import capaModeloCC.Usuario;
 
 /**
- * Redencion manual de puntos: la que hace administracion cuando la tienda no
- * pudo.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * RedencionManualCtrl.redimir, RedencionManualDAO.esAdministrador.
  *
- * GET  que=consultar  el cliente y su saldo
- *      que=tiendas    el combo de tiendas
- * POST                hace la redencion
+ * Ruta: /ProyectoPizzaAmericana/RedencionManualPuntos   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Exige token de tienda.
+ * Devuelve: application/json; charset=UTF-8; claves: activo, correo, correoenviado, detalle,
+ * idredencion, idtienda, mail.smtp.host, mail.smtp.ssl.protocols, nombre, puntos, respuesta,
+ * saldo, ....
+ * Lee: cliente, cliente_fidelizacion, fidelizacion_transaccion, parametros, tienda, usuario.
+ * Escribe: cliente_fidelizacion (UPDATE), codigo_redencion_puntos (UPDATE), fidelizacion_redencion
+ * (INSERT/UPDATE), fidelizacion_redencion_detalle (INSERT), fidelizacion_transaccion (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
  *
- * QUIEN PUEDE
- *
- * Hay que tener sesion y ser administrador. Se revisa contra la base en cada
- * llamado y no contra el objeto de la sesion: a quien le quiten la marca deja
- * de poder mover puntos en el siguiente clic. Y falla CERRADO: si la consulta
- * no se puede hacer, no se autoriza.
- *
- * EL USUARIO NO VIENE POR PARAMETRO
- *
- * Se toma de la sesion, igual que en ResolverSolicitudReversa. Quien le mueve
- * los puntos a un cliente tiene que quedar registrado de una forma que no se
- * pueda cambiar desde el navegador.
- *
- * ESCRIBIR VA POR POST
- *
- * Un GET se dispara desde un enlace, desde el historial o desde una imagen en
- * otra pagina. Descontarle puntos a un cliente y mandarle un correo no puede
- * quedar a merced de eso.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RedencionManualPuntos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RedencionManualPuntos")
 public class RedencionManualPuntos extends HttpServlet {

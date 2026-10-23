@@ -22,10 +22,22 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS Este servicio se encarga
- * de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet
- * hace las veces de front y se encarga de la invocaci�n a la clase en la capa
- * Controladora.
+ * Servicio que modifica datos de PQRS y escalamiento: invoca SolicitudPQRSCtrl.insertarPqrsWeb.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarPqrsWeb   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Filtro JWT del web.xml.
+ * Recibe (query/form): fechasolicitud (string), tiposolicitud (string), nombre (string), apellido
+ * (string), telefono (string), direccion (string), email (string), idtienda (string), idmunicipio
+ * (string), politicaDatos (string), comentario (string).
+ * Devuelve: application/json; claves: idSolicitudPQRS, mail.smtp.auth, mail.smtp.host,
+ * mail.smtp.port, mail.smtp.ssl.protocols, mail.smtp.starttls.enable, message,
+ * registroComentarios, success.
+ * Lee: cliente, municipio, nomenclatura_direccion, parametros, pedido, pqrs_comentario, tienda.
+ * Escribe: cliente (INSERT), pqrs_comentario (DELETE/INSERT/UPDATE), solicitudpqrs (INSERT).
+ * Sistemas externos: Correo SMTP.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarPqrsWeb.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarPqrsWeb")
 public class InsertarPqrsWeb extends HttpServlet {

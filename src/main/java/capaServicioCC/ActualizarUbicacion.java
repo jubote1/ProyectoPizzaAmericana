@@ -13,9 +13,17 @@ import capaControladorCC.GeolocalizacionCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * GeolocalizacionCtrl.insertarUbicacionDomiciliario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarUbicacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): clave_dom (string), idtienda (integer), latitud (number), longitud
+ * (number).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarUbicacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarUbicacion")
 public class ActualizarUbicacion extends HttpServlet {

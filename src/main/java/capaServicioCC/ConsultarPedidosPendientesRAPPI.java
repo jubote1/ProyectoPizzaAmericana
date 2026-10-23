@@ -16,8 +16,17 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class ConsultarBloqueosTienda
- * Servicio que implementa los métodos para soportar el CRUD de la entidad Tienda.
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.consultarPedidosPendientesRAPPI.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarPedidosPendientesRAPPI   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: texto; claves: resultado.
+ * Lee: cliente, estado_pedido, forma_pago, pedido, pedido_forma_pago, tienda.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarPedidosPendientesRAPPI.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarPedidosPendientesRAPPI")
 public class ConsultarPedidosPendientesRAPPI extends HttpServlet {

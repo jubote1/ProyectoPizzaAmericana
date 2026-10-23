@@ -13,9 +13,20 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PromocionesCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * PromocionesCtrl.enviarMensajesOferta.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetEnviarMensajesOferta   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoferta (string).
+ * Devuelve: application/json; claves: mail.smtp.host, mail.smtp.ssl.protocols, mensajes,
+ * respuesta.
+ * Lee: cliente, integracion_crm, oferta, oferta_cliente, parametros, parametros_correo.
+ * Escribe: oferta_cliente (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail, WhatsApp, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetEnviarMensajesOferta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetEnviarMensajesOferta")
 public class GetEnviarMensajesOferta extends HttpServlet {

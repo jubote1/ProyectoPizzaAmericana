@@ -11,6 +11,21 @@ import capaModeloCC.AlertaEntregaDom;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+/**
+ * Servicio que modifica datos de Domiciliarios y enrutamiento: invoca
+ * PedidoCtrl.registrarAlertaEntregaDom.
+ *
+ * Ruta: /ProyectoPizzaAmericana/RegistroAlertaEntregaDom   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), clave_dom (string), idtienda (integer), descripcion
+ * (string), error (boolean), latitud_dom (number), longitud_dom (number), latitud_cli (number),
+ * longitud_cli (number), con_novedad (string).
+ * Devuelve: application/json; claves: success.
+ * Escribe: alerta_entrega_domiciliario (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RegistroAlertaEntregaDom.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/RegistroAlertaEntregaDom")
 public class RegistroAlertaEntregaDom extends HttpServlet {
 

@@ -13,9 +13,17 @@ import utilidadesCC.AccesoCRM;
 import capaControladorCC.Persona360Ctrl;
 
 /**
- * Servlet implementation class BuscarPersonaCRM
- * Busca personas en el maestro del CRM por celular, correo o nombre. Decide
- * sola por donde buscar segun lo que escribieron.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/BuscarPersonaCRM   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): texto (string).
+ * Devuelve: application/json; charset=UTF-8; claves: apellido, busco_por, celular, email, error,
+ * idpersona, mensaje, nombre, pedidos, personas, ultimo.
+ * Lee: cliente, crm.persona, pedido, usuario.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha BuscarPersonaCRM.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/BuscarPersonaCRM")
 public class BuscarPersonaCRM extends HttpServlet {

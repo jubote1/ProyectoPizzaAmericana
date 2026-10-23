@@ -14,15 +14,19 @@ import capaControladorCC.FidelizacionCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Crea la solicitud de devolucion de puntos que pasa por aprobacion.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * Usuario.getNombreUsuario, FidelizacionCtrl.solicitarReversaRedencion.
  *
- * Es el camino de los pedidos que SI se finalizaron: se anularon, o se les
- * quito el producto de redencion. Los puntos no se mueven hasta que alguien
- * apruebe la solicitud desde la pantalla de revision, porque el cliente pudo
- * haber recibido el producto.
+ * Ruta: /ProyectoPizzaAmericana/SolicitarReversaRedencion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idtienda (integer), idpedidotienda (integer), puntos (number), motivo
+ * (string), observacion (string), usuario (string).
+ * Devuelve: application/json; claves: detalle, idsolicitud, puntossolicitados, respuesta.
+ * Lee: fidelizacion_redencion, fidelizacion_reversa_solicitud.
+ * Escribe: fidelizacion_reversa_solicitud (INSERT).
  *
- * Parametros: idtienda, idpedidotienda, puntos (0 = todo lo pendiente),
- *             motivo (ANULACION o PRODUCTO_ELIMINADO), observacion, usuario
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha SolicitarReversaRedencion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/SolicitarReversaRedencion")
 public class SolicitarReversaRedencion extends HttpServlet {

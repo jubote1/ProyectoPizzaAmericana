@@ -13,9 +13,21 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetOtrosProductos
- * M�todo que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta informaci�n
- * es retornada en formato JSON.
+ * Devuelve la alerta que el negocio le haya puesto a un telefono (positiva o negativa), por
+ * ejemplo un cliente problematico o uno especial.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerClienteAlerta   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string).
+ * Devuelve: application/json; claves: mensaje, telefono, tipo_alerta.
+ * Lee: cliente_alerta.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si el telefono tiene varias alertas solo se ve la primera.
+ * - SQL concatenado, sin sesion.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerClienteAlerta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerClienteAlerta")
 public class ObtenerClienteAlerta extends HttpServlet {

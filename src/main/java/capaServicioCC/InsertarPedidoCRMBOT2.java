@@ -16,9 +16,29 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr� tomar un pedido, 
- * la informaci�n ser� retornada en formato JSON.
+ * Llama al mismo metodo de negocio (insertarPedidoCRMBOT) pero con el estilo anterior de
+ * transporte: procesa todo DENTRO de la peticion (Kommo espera a que termine) y responde cuerpo
+ * vacio, sin hilo en segundo plano.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarPedidoCRMBOT2   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: amount_in_cents, collect_shipping, currency,
+ * custom_fields_values, description, expires_at, field_id, id, mail.smtp.host,
+ * mail.smtp.ssl.protocols, mensaje, name, ....
+ * Lee: cliente, detalle_pedido, especialidad, especialidad_excepcion, excepcion_precio,
+ * forma_pago, homologacion_forpag_pedidovirtual, homologacion_producto_pedidovirtual,
+ * integracion_crm, integracion_crm_homologa_asesor.
+ * Escribe: cliente (INSERT/UPDATE), detalle_pedido (INSERT), log_pedido_crmbot (INSERT/UPDATE),
+ * pedido (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM), WhatsApp, Wompi.
+ *
+ * Trampas y riesgos conocidos:
+ * - Duplicado de codigo sin diferencia: confirmar con Kommo cual de las dos rutas esta en uso
+ *   antes de retirar una.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarPedidoCRMBOT2.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarPedidoCRMBOT2")
 public class InsertarPedidoCRMBOT2 extends HttpServlet {

@@ -17,9 +17,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.DashboardCargoCtrl;
 
 /**
- * Dashboard Cargo: pedidos llevados por Rappi Cargo en un rango de fechas,
- * con cumplimiento, tiempos, ranking por tienda, y las asignaciones a Cargo
- * que se cancelaron antes de quedar en firme.
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * DashboardCargoCtrl.consultarDashboard.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDashboardCargo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; charset=UTF-8; claves: asignacionescanceladas, cancelados,
+ * cumplidos, estado, fechaasignacion, fechacancelacion, fechacancelacioncargo, fechaentregado,
+ * fechainsercion, fechapedido, fueradetiempo, idpedido, ....
+ * Lee: parametros, pedido, tercerizado_domicilio_evento, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDashboardCargo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDashboardCargo")
 public class ConsultarDashboardCargo extends HttpServlet {

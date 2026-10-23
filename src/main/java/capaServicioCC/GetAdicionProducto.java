@@ -12,10 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetAdicionProducto
- * Servicio que se encarga de retornar en formato JSON todas los productos con la marca de tipo adicion, cone el fin
- * de que la capa de presentación se encargue de desplegarlos según sea la necesidad.
- */ 
+ * Servicio de consulta de Catalogo y productos (administracion): invoca
+ * PedidoCtrl.obtenerAdicionProductos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetAdicionProducto   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: descripcion, idproducto, idreceta, impuesto, nombre,
+ * preciogeneral, tipo.
+ * Lee: producto.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetAdicionProducto.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/GetAdicionProducto")
 public class GetAdicionProducto extends HttpServlet {
 	private static final long serialVersionUID = 1L;

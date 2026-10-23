@@ -12,32 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.BiometriaNovedadCtrl;
 
 /**
- * Aplica UN cambio a la jornada de un empleado y lo deja registrado en el log.
+ * Servicio que modifica datos de Tiendas y operacion: invoca BiometriaNovedadCtrl.error,
+ * BiometriaNovedadCtrl.guardarCambio.
  *
- * Un cambio por llamada a proposito: cada uno es atomico -o queda el cambio y
- * su fila de log, o no queda nada- y la pantalla llama tantas veces como
- * cambios haya hecho el supervisor. Si uno falla, los anteriores ya quedaron
- * registrados y se sabe exactamente donde se quedo.
+ * Ruta: /ProyectoPizzaAmericana/GuardarCambioBiometria   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idnovedad (string), id (string), idtienda (string), fecha (string), accion
+ * (string), antestipo (string), anteshora (string), despuestipo (string), despueshora (string),
+ * usuario (string), observacion (string).
+ * Devuelve: application/json; claves: detalle, mensaje, resultado.
+ * Lee: general.empleado_evento.
+ * Escribe: general.empleado_evento (DELETE/INSERT), general.empleado_evento_log (INSERT).
  *
- * OJO: aqui se escribe sobre general.empleado_evento, que es de donde sale el
- * calculo de horas. No hay autenticacion todavia; el usuario que llega en el
- * parametro es el que queda en el log.
- *
- * Parametros:
- *   idnovedad     novedad que motiva el cambio. 0 si el supervisor corrige por
- *                 su cuenta algo que nadie reporto.
- *   id            id del empleado. Obligatorio.
- *   fecha         dia de la jornada, aaaa-mm-dd. Obligatorio.
- *   idtienda      tienda del evento. Obligatorio.
- *   accion        MODIFICA, AGREGA o ELIMINA. Obligatorio.
- *   antestipo     INGRESO o SALIDA del evento original. Para MODIFICA y ELIMINA.
- *   anteshora     aaaa-mm-dd hh:mm:ss del evento original. Para MODIFICA y ELIMINA.
- *   despuestipo   INGRESO o SALIDA del evento nuevo. Para MODIFICA y AGREGA.
- *   despueshora   aaaa-mm-dd hh:mm:ss del evento nuevo. Para MODIFICA y AGREGA.
- *   usuario       quien hace el cambio. Obligatorio.
- *   observacion   por que se hizo. Obligatoria.
- *
- * Servlet implementation class GuardarCambioBiometria
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GuardarCambioBiometria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GuardarCambioBiometria")
 public class GuardarCambioBiometria extends HttpServlet {

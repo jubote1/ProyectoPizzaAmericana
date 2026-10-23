@@ -12,9 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Servicio de consulta de Clientes: invoca ClienteCtrl.obtenerClienteTodos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetClienteTodos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string).
+ * Devuelve: application/json; claves: apellido, direccion, distanciatienda, email, estado,
+ * idCliente, idnomenclatura, latitud, longitud, memcode, municipio, nombre, ....
+ * Lee: cliente, municipio, nomenclatura_direccion, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetClienteTodos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetClienteTodos")
 public class GetClienteTodos extends HttpServlet {

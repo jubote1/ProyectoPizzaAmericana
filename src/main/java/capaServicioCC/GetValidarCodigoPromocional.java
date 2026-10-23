@@ -13,9 +13,24 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PromocionesCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Dice si un codigo promocional existe, esta vigente y se puede usar.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetValidarCodigoPromocional   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): codigopromocional (string).
+ * Devuelve: application/json; claves: codigopromocional, fechacaducidad, idcliente, idoferta,
+ * idofertacliente, ingresooferta, mensaje, observacion, pqrs, redparcial, respuesta, saldo, ....
+ * Lee: oferta, oferta_cliente.
+ *
+ * Trampas y riesgos conocidos:
+ * - El freno por intentos es por IP y vive en la memoria del servidor: se pierde al reiniciar y,
+ *   detras de un proxy, todas las personas comparten IP.
+ * - No valida que el codigo corresponda al cliente que esta en la llamada: un codigo personal de
+ *   otro cliente es valido para quien lo conozca.
+ * - El codigo se compara con consultas preparadas (no inyectable).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetValidarCodigoPromocional.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetValidarCodigoPromocional")
 public class GetValidarCodigoPromocional extends HttpServlet {

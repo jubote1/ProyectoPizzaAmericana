@@ -16,12 +16,15 @@ import capaControladorCC.MenuCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class GetMenuUsuario
- * Retorna el arbol de menu (modulo -> pantallas) que el usuario logueado
- * puede ver, segun sus roles. Es lo que reemplaza a Menu.html/MenuAdm.html/
- * MenuPQRS.html estaticos: el HTML del menu pasa a ser uno solo, y pinta lo
- * que este servicio traiga. Mismo patron de lectura de sesion que
- * ValidarUsuarioAplicacion.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca MenuCtrl.obtenerMenuUsuario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetMenuUsuario   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Lee la sesion pero no la exige.
+ * Devuelve: application/json; claves: idmodulo, idpantalla, nombre, pantallas, url_html.
+ * Lee: menu_modulo, pantalla, rol, rol_pantalla, usuario_rol.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetMenuUsuario.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetMenuUsuario")
 public class GetMenuUsuario extends HttpServlet {

@@ -17,9 +17,25 @@ import capaModeloCC.CodigoRedencionPuntos;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Descuenta los puntos del cliente y registra la redencion, ya sea confirmada o reservada para un
+ * pedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/RealizarRedencionPuntos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): codigo (string), correo (string), idtienda (integer), idpedido (integer),
+ * puntosredimir (number), usuario (string), reservar (string).
+ * Devuelve: application/json; claves: detalle, idredencion, puntosrestantes, respuesta.
+ * Lee: cliente, cliente_fidelizacion, fidelizacion_transaccion, parametros, tienda.
+ * Escribe: cliente_fidelizacion (UPDATE), codigo_redencion_puntos (UPDATE), fidelizacion_redencion
+ * (INSERT), fidelizacion_redencion_detalle (INSERT), fidelizacion_transaccion (UPDATE).
+ * Sistemas externos: Wompi.
+ *
+ * Trampas y riesgos conocidos:
+ * - Es dinero (puntos): el usuario del POS viaja como parametro y puede alterarse; solo la
+ *   sesion es confiable.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RealizarRedencionPuntos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RealizarRedencionPuntos")
 public class RealizarRedencionPuntos extends HttpServlet {

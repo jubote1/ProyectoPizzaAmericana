@@ -16,9 +16,25 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Averigua el estado del pedido del cliente por su telefono y escribe un mensaje de estado en el
+ * lead.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarPedidoCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: custom_fields_values, estadopedido, field_id, id,
+ * mail.smtp.host, mail.smtp.ssl.protocols, mensaje, origen, tienda, value, values.
+ * Lee: cliente, estado_pedido, forma_pago, integracion_crm, parametros, pedido, pedido_forma_pago,
+ * tienda.
+ * Escribe: log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - Solo ve pedidos de hoy y en estado 2. Un pedido todavia "en curso" o de ayer no aparece.
+ * - Depende de que el servidor de la tienda este arriba.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarPedidoCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarPedidoCRMBOT")
 public class ConsultarPedidoCRMBOT extends HttpServlet {

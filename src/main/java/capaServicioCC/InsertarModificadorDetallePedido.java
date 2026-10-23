@@ -14,9 +14,20 @@ import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class InsertarModificadorDetallePedido
- * Este servicio se encarga de la inserción de lo llamado como modificadores de pedido, los cuales se refieren aquellos, 
- * productos con y sin que se le desean agregar a un producto.
+ * Registra un modificador "con" o "sin" (por ejemplo "sin cebolla") de una pizza.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarModificadorDetallePedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): iddetallepedidopadre (integer), idproductoespecialidad1 (integer),
+ * idproductoespecialidad2 (integer), cantidad (number), iddetallepedido (integer).
+ * Devuelve: texto; claves: idmodificador.
+ *
+ * Trampas y riesgos conocidos:
+ * - Solo el id del padre se lee sin try/catch (HTTP 500 si falta); los demas toman 0 cuando no
+ *   se entienden.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarModificadorDetallePedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarModificadorDetallePedido")
 public class InsertarModificadorDetallePedido extends HttpServlet {

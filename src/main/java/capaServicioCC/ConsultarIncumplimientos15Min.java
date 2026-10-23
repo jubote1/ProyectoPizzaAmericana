@@ -13,8 +13,18 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * Lista los casos de incumplimiento de la campana 15 minutos para la pantalla
- * de revision. Parametros: estado, fechadesde, fechahasta (todos opcionales).
+ * Servicio de consulta de Reportes y estadisticas: invoca Campana15MinCtrl.obtenerIncumplimientos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarIncumplimientos15Min   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): estado (string), fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; claves: estado, fechadeteccion, fechahorainicio, fecharevision,
+ * idpedidotienda, idsolicitud, idtienda, observacionrevision, retencionaplicada, tienda,
+ * usuariorevisa, valoradevolver, ....
+ * Lee: campana_15min_incumplimiento, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarIncumplimientos15Min.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarIncumplimientos15Min")
 public class ConsultarIncumplimientos15Min extends HttpServlet {

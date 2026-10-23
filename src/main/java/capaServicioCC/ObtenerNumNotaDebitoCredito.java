@@ -14,9 +14,16 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Servicio de consulta de Facturacion electronica: invoca PedidoCtrl.obtenerNumNotaDebitoCredito.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerNumNotaDebitoCredito   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): parametro (string).
+ * Devuelve: application/json; claves: numeracion.
+ * Lee: parametros.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerNumNotaDebitoCredito.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerNumNotaDebitoCredito")
 public class ObtenerNumNotaDebitoCredito extends HttpServlet {

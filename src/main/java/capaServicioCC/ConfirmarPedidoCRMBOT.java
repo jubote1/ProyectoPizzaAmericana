@@ -13,12 +13,29 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ConfirmacionPedidoCRMBOTCtrl;
 
 /**
- * Servlet encargado de recibir la solicitud de confirmación / cotización de un pedido
- * proveniente del CRM BOT (Kommo) antes de que se realice la inserción en la base de datos.
+ * Calcula, SIN guardar nada, cuanto cuesta el pedido que el bot armo en el lead: valora cada
+ * producto con su precio real, las especialidades, los modificadores, las adiciones, las bebidas,
+ * los acompanantes, los productos incluidos y el valor del domicilio, y devuelve el subtotal y el
+ * total.
  *
- * Mapeado a las URLs:
- * - /ConfirmarPedidoCRMBOT
- * - /ConfirmacionPedidoCRMBOT
+ * Ruta: /ProyectoPizzaAmericana/ConfirmarPedidoCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json;charset=UTF-8; claves: aclaracion, barrio, cantidad, cliente,
+ * descripcion, direccion, esDomicilio, fechaPedido, formaPago, horaPedido, incluido, items, ....
+ * Lee: especialidad, especialidad_excepcion, excepcion_precio,
+ * homologacion_producto_pedidovirtual, integracion_crm, parametros, producto, producto_incluido,
+ * sabor_x_tipo_liquido.
+ * Escribe: log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - Depende de Kommo: lee el lead por API y vuelve a escribir en el.
+ * - El precio sale de la homologacion por nombre: un texto distinto al esperado deja el renglon
+ *   sin valor o genera una observacion.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConfirmarPedidoCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet({"/ConfirmarPedidoCRMBOT", "/ConfirmacionPedidoCRMBOT"})
 public class ConfirmarPedidoCRMBOT extends HttpServlet {

@@ -14,9 +14,28 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Vuelve a armar el JSON de un pedido ya finalizado para reenviarlo a la tienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/FinalizarPedidoReenvio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idpedido (integer), idformapago (integer), valorformapago (number),
+ * valortotal (number), idcliente (integer), insertado (integer), tiempopedido (number),
+ * enviartienda (string).
+ * Devuelve: application/json;charset=UTF-8; claves: apellidos, apiKey, bloqueado, cantidad,
+ * cantidaditempedido, clientId, cliente, clientesiniden, contactEvent, contactExtEventType, date,
+ * descuento, ....
+ * Lee: adicion_detalle_pedido, cliente, detalle_pedido, especialidad, excepcion_precio,
+ * homologacion_forma_pago, homologacion_producto, integracion_crm, marcacion, marcacion_pedido.
+ * Escribe: pedido (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail, Rappi, SALESmanago, Wompi.
+ *
+ * Trampas y riesgos conocidos:
+ * - Con enviartienda = false se puede finalizar sin enviar: asi nacen pedidos "finalizados" que
+ *   la tienda no tiene.
+ * - Igual que FinalizarPedido, el usuariopedido hacia la tienda es CONTACT.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha FinalizarPedidoReenvio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/FinalizarPedidoReenvio")
 public class FinalizarPedidoReenvio extends HttpServlet {

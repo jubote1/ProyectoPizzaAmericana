@@ -13,7 +13,20 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class ObtenerHomologaGaseosaIncluida
+ * Lista las gaseosas (productos tipo GASEOSA) que una tienda tiene homologadas, con su precio.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHomologacionProductoGaseosa   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: application/json; claves: idproducto, idtienda, nombre, preciogeneral.
+ * Lee: homologacion_producto, producto, producto_no_existente.
+ *
+ * Trampas y riesgos conocidos:
+ * - El precio se lee con Double.parseDouble(rs.getString(...)): un precio nulo o con formato
+ *   raro lanza excepcion y la lista sale incompleta.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHomologacionProductoGaseosa.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerHomologacionProductoGaseosa")
 public class ObtenerHomologacionProductoGaseosa extends HttpServlet {

@@ -12,13 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.SegmentacionClienteCtrl;
 
 /**
- * Catalogo para los filtros de la pantalla de segmentacion de clientes:
- * productos y especialidades, con su id y su nombre.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca
+ * SegmentacionClienteCtrl.obtenerCatalogoSegmentacion.
  *
- * Los dos van en la misma respuesta porque la pantalla los necesita al mismo
- * tiempo, al cargar.
+ * Ruta: /ProyectoPizzaAmericana/ObtenerCatalogoSegmentacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: especialidades, id, nombre, productos.
+ * Lee: especialidad, producto.
  *
- * Servlet implementation class ObtenerCatalogoSegmentacion
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerCatalogoSegmentacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerCatalogoSegmentacion")
 public class ObtenerCatalogoSegmentacion extends HttpServlet {

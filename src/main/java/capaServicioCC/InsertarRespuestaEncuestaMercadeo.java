@@ -18,29 +18,17 @@ import org.json.simple.parser.JSONParser;
 import capaControladorCC.EncuestaMercadeoCtrl;
 
 /**
- * Servicio que registra las respuestas de una encuesta de mercadeo tomada en el POS
- * al finalizar un pedido.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * EncuestaMercadeoCtrl.registrarRespuestas.
  *
- * Recibe el cuerpo como JSON, no como parametros, porque las respuestas abiertas
- * pueden ser largas y romperian el limite de longitud de una URL.
+ * Ruta: /ProyectoPizzaAmericana/InsertarRespuestaEncuestaMercadeo   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: insertadas, mensaje, resultado.
+ * Escribe: encuesta_mercadeo (INSERT).
  *
- * Cuerpo esperado:
- * {
- *   "idtienda": 3,
- *   "idpedidotienda": 99213,
- *   "idcliente": 1852,
- *   "idusuario": 17,
- *   "respuestas": [
- *     { "idpregunta": 11, "idopcion": 0,  "respuesta": "S" },
- *     { "idpregunta": 12, "idopcion": 32, "respuesta": "Un amigo" },
- *     { "idpregunta": 13, "idopcion": 0,  "respuesta": "Mas sillas en el segundo piso" }
- *   ]
- * }
- *
- * OJO: idpedidotienda es el consecutivo del pedido en la TIENDA, no el idpedido de
- * pizzaamericana, que es una secuencia distinta.
- *
- * Servlet implementation class InsertarRespuestaEncuestaMercadeo
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarRespuestaEncuestaMercadeo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarRespuestaEncuestaMercadeo")
 public class InsertarRespuestaEncuestaMercadeo extends HttpServlet {

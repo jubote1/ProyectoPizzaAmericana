@@ -14,9 +14,18 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * EncuestaCtrl.obtenerEncuestaLaboral.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEncuestaTiendasAPP   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idencuesta (integer), documento (string).
+ * Devuelve: texto; claves: Encabezado, codigo, dependencia, descripcion, idempleado, idencuesta,
+ * nombreencuesta, version.
+ * Lee: empleado, encuesta_laboral.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEncuestaTiendasAPP.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEncuestaTiendasAPP")
 public class ObtenerEncuestaTiendasAPP extends HttpServlet {

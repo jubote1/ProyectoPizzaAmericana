@@ -16,8 +16,19 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.EscalamientoPQRS;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * M�todo que se encarga recibir los par�metros para la inserci�n de una especialidad.
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.insertarEscalamientoPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarEscalamientoPQRS   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): arearesponsable (string), idsolicitudpqrs (integer).
+ * Devuelve: texto; claves: mail.smtp.host, mail.smtp.ssl.protocols, resultado.
+ * Lee: area_escalamiento_pqrs, parametros.
+ * Escribe: escalamiento_pqrs (INSERT).
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarEscalamientoPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarEscalamientoPQRS")
 public class InsertarEscalamientoPQRS extends HttpServlet {

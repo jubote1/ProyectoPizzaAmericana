@@ -14,9 +14,18 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Servicio que modifica datos de Facturacion electronica: invoca
+ * PedidoCtrl.aumentarNumNotaDebitoCredito.
+ *
+ * Ruta: /ProyectoPizzaAmericana/AumentarNumNotaDebitoCredito   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): parametro (string).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Lee: parametros.
+ * Escribe: parametros (UPDATE), parametros_log (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AumentarNumNotaDebitoCredito.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AumentarNumNotaDebitoCredito")
 public class AumentarNumNotaDebitoCredito extends HttpServlet {

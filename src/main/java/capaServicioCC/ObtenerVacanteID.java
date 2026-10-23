@@ -14,6 +14,18 @@ import capaControladorCC.VacanteCtrl;
 import capaModeloCC.Vacante;
 
 
+/**
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca VacanteCtrl.obtenerVacantePorId.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerVacanteID   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Filtro JWT del web.xml.
+ * Recibe (query/form): idvacante (integer).
+ * Devuelve: cuerpo vacio; claves: error.
+ * Lee: categoria, lugar, vacante, vacante_lugar.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerVacanteID.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerVacanteID")
 public class ObtenerVacanteID extends HttpServlet {
 

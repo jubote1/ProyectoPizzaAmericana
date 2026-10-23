@@ -12,22 +12,26 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoEnCursoCtrl;
 
 /**
- * Terminar un pedido que quedo a medio tomar.
+ * Termina un pedido que quedo a medio tomar: le pone forma de pago y lo finaliza.
  *
- * QUE PEDIDO
+ * Ruta: /ProyectoPizzaAmericana/TerminarPedidoEnCurso   Metodos: GET.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string), idpedido (string), minutos (string), idcliente (string),
+ * idformapago (string), valorformapago (string).
+ * Devuelve: application/json;charset=UTF-8; claves: apellidos, apiKey, bloqueado, cantidad,
+ * cantidaditempedido, clientId, cliente, clientesiniden, contactEvent, contactExtEventType, date,
+ * descuento, ....
+ * Lee: cliente, detalle_pedido, forma_pago, homologacion_forma_pago, integracion_crm, marcacion,
+ * marcacion_pedido, municipio, nomenclatura_direccion, pedido.
+ * Escribe: pedido (UPDATE).
+ * Sistemas externos: Rappi, SALESmanago.
  *
- * idestadopedido = 1 con enviadopixel = 0: tiene productos, cliente y
- * direccion, pero no tiene forma de pago, y por eso ningun proceso de envio lo
- * ve. Medido sobre 7 dias, 29 de los 33 pedidos atascados son de estos.
+ * Trampas y riesgos conocidos:
+ * - Responde ok: S aunque el envio a la tienda no haya ocurrido: el exito es solo "finalizado en
+ *   el central".
  *
- * TRES ACCIONES, EN ESTE ORDEN
- *
- * retener  - antes de abrir el dialogo de forma de pago. Si no se retiene,
- *            apenas el pedido pase a finalizado la red de seguridad se lo
- *            lleva a cocina a medio terminar.
- * terminar - escoge la forma de pago, calcula el total y finaliza.
- * soltar   - si la persona se arrepiente. No es obligatorio: la retencion se
- *            vence sola, pero soltarla de una libera el pedido al instante.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha TerminarPedidoEnCurso.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/TerminarPedidoEnCurso")
 public class TerminarPedidoEnCurso extends HttpServlet {

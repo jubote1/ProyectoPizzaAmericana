@@ -16,9 +16,26 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.insertarPedidoTiendaVirtualKuno.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarPedidoTiendaVirtualKuno   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: amount_in_cents, collect_shipping, currency, description,
+ * expires_at, mail.smtp.host, mail.smtp.ssl.protocols, mensaje, name, redirect_url, respuesta,
+ * single_use, ....
+ * Lee: adicion_detalle_pedido, auth_kuno, cliente, descuentos_generales, detalle_pedido,
+ * especialidad_excepcion, excepcion_precio, forma_pago, homologacion_forpag_pedidovirtual,
+ * homologacion_producto_pedidovirtual.
+ * Escribe: cliente (INSERT/UPDATE), detalle_pedido (INSERT), log_pedido_virtual_kuno (INSERT),
+ * pedido (INSERT/UPDATE), pedido_idlink (INSERT), pedido_pago_virtual (INSERT),
+ * pedido_tienda_virtual (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Brevo, Correo SMTP, DiDi, GloriaFood/Kuno, Gmail, Google Maps, Kommo
+ * (CRM), WhatsApp, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarPedidoTiendaVirtualKuno.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarPedidoTiendaVirtualKuno")
 public class InsertarPedidoTiendaVirtualKuno extends HttpServlet {

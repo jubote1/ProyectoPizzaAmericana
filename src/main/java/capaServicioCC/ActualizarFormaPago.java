@@ -13,9 +13,19 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca
+ * PedidoCtrl.actualizarFormaPago.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarFormaPago   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idformapagonueva (integer), idpedido (integer), valorformapagonueva
+ * (number), valortotal (number), virtualorigen (boolean), virtualdestino (boolean).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Lee: pedido_forma_pago.
+ * Escribe: pedido (UPDATE), pedido_forma_pago (DELETE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarFormaPago.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarFormaPago")
 public class ActualizarFormaPago extends HttpServlet {

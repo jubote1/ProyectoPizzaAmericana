@@ -18,9 +18,37 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class InsertarClienteEncabezadoPedido
- * Este servicio se encarga de pasar como par�metro todo los valores del cliente y con base en estos el sistema
- * o actualiza o crea un nuevo cliente, esta labor se realiza en la inserci�n del encabezado de un pedido
+ * Es el servicio que empieza un pedido: crea el cliente si es nuevo, o actualiza los datos de la
+ * direccion si ya existe, y crea el encabezado del pedido en estado 1 ("En curso").
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarClienteEncabezadoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): telefono (string), nombres (string), apellidos (string), nombreCompania
+ * (string), direccion (string), zona (string), observacion (string), tienda (string), municipio
+ * (string), fechapedido (string), numnomenclatura1 (string), numnomenclatura2 (string), num3
+ * (string), telefonocelular (string), email (string), clientesiniden (string), emailfact (string),
+ * identificacion (string), politicadatos (string), programado (string), fechanacimiento (string),
+ * latitud (number), longitud (number), distanciatienda (number), memcode (integer), idcliente
+ * (integer), idnomenclatura (integer), idtipopedido (integer), idtipopersona (integer).
+ * Devuelve: texto; claves: descripcionestadopedido, idcliente, idestadopedido, idpedido.
+ * Lee: municipio, parametros, tienda.
+ * Escribe: cliente (INSERT/UPDATE), pedido (INSERT).
+ * Sistemas externos: ArcGIS, Google Maps.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si falta programado el servlet falla con una excepcion (compara con equals antes de revisar
+ *   nulo) y Tomcat responde HTTP 500.
+ * - Si fechapedido no tiene el formato dd/MM/aaaa el pedido no se inserta (idpedido 0), pero la
+ *   respuesta sigue diciendo idestadopedido":"1" y "En curso": hay que revisar idpedido, no el
+ *   estado.
+ * - Sin sesion no falla: el pedido queda con usuariopedido vacio. Un agente sin usuario propio
+ *   dejaria pedidos sin responsable.
+ * - Mezcla tres operaciones (crear cliente, actualizar direccion, abrir pedido) en una sola
+ *   llamada sin transaccion: si falla la ultima, el cliente ya quedo escrito.
+ * - Un nombre de tienda con comilla simple rompe el SQL de obteneridTienda (inyectable).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarClienteEncabezadoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarClienteEncabezadoPedido")
 public class InsertarClienteEncabezadoPedido extends HttpServlet {

@@ -14,9 +14,18 @@ import org.apache.log4j.Logger;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class CRUDRolPantalla
- * Administra que pantallas ve un rol. idoperacion 1 guardar (reemplaza todo
- * el set de pantallas del rol) 4 consultar (ids de pantalla ya asignados).
+ * Servicio con 2 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDRolPantalla   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (integer), idrol (string), idspantalla (string).
+ * Operaciones (operacion): 1, 4.
+ * Devuelve: texto; claves: idspantalla, resultado.
+ * Lee: rol_pantalla.
+ * Escribe: rol_pantalla (DELETE/INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDRolPantalla.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDRolPantalla")
 public class CRUDRolPantalla extends HttpServlet {

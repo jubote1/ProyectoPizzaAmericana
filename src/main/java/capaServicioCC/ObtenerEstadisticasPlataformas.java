@@ -13,9 +13,17 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerEstadisticasPromocionAPP
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.obtenerEstadisticasPlataformas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEstadisticasPlataformas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string).
+ * Devuelve: texto; claves: cantidadpedidos, fuente, totalventa.
+ * Lee: marcacion, marcacion_pedido, pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEstadisticasPlataformas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEstadisticasPlataformas")
 public class ObtenerEstadisticasPlataformas extends HttpServlet {

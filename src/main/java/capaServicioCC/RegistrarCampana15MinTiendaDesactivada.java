@@ -12,14 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * El POS llama esto, best-effort, cuando un administrador de tienda desactiva
- * la campana 15 minutos por hoy (horno danado, falta de personal, etc.). El
- * POS ya aplico la desactivacion localmente antes de llamar aqui: esto es
- * solo para que quede visible en el central. Si falla, no importa -- el POS
- * no depende de esta respuesta.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * Campana15MinCtrl.registrarTiendaDesactivada.
  *
- * Parametros: idtienda, fecha (aaaa-mm-dd), motivo, usuarioautoriza,
- * usuariodesactiva
+ * Ruta: /ProyectoPizzaAmericana/RegistrarCampana15MinTiendaDesactivada   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), fecha (string), motivo (string), usuarioautoriza
+ * (string), usuariodesactiva (string).
+ * Devuelve: application/json; claves: respuesta.
+ * Escribe: campana_15min_tienda_desactivada_dia (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RegistrarCampana15MinTiendaDesactivada.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RegistrarCampana15MinTiendaDesactivada")
 public class RegistrarCampana15MinTiendaDesactivada extends HttpServlet {

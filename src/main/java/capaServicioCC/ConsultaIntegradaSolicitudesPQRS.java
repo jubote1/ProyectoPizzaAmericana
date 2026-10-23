@@ -13,7 +13,21 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.SolicitudPQRSCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Servicio de consulta de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.ConsultaIntegradaSolicitudesPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultaIntegradaSolicitudesPQRS   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), tienda (string), tiposolicitud
+ * (string), descuentoredimido (string).
+ * Devuelve: application/json; charset=UTF-8; claves: apellidos, arearesponsable, ccVinculado,
+ * cliente, correo, descuentoRedimido, direccion, envio_encuesta, fecha_hora_cierre,
+ * fecha_hora_registro, fechasolicitud, idconsultaPQRS, ....
+ * Lee: estado_pqrs, foco_pqrs, municipio, origen_pqrs, pqrs_comentario, solicitudpqrs,
+ * solicitudpqrs_imagenes, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultaIntegradaSolicitudesPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultaIntegradaSolicitudesPQRS")
 public class ConsultaIntegradaSolicitudesPQRS extends HttpServlet {

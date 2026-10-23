@@ -13,9 +13,21 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Lista las "marcaciones" activas, que son etiquetas del origen del pedido (una plataforma, un
+ * convenio) que ademas permiten registrar un descuento.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerMarcaciones   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): adm (string).
+ * Devuelve: texto; claves: idmarcacion, marketplace, nombremarcacion.
+ * Lee: marcacion.
+ *
+ * Trampas y riesgos conocidos:
+ * - Sin adm el codigo compara con equals sobre un valor nulo y puede fallar; conviene mandarlo
+ *   siempre.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerMarcaciones.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerMarcaciones")
 public class ObtenerMarcaciones extends HttpServlet {

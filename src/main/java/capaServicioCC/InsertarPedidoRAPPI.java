@@ -16,9 +16,23 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.insertarPedidoRAPPI.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarPedidoRAPPI   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: document_number, document_type, email, first_name,
+ * last_name, mail.smtp.host, mail.smtp.ssl.protocols, phone_number, respuesta.
+ * Lee: cliente, detalle_pedido, forma_pago, homologacion_forpag_pedidovirtual,
+ * homologacion_producto_pedidovirtual, homologacion_producto_rappi, homologacion_tienda_token,
+ * integracion_crm, municipio, nomenclatura_direccion.
+ * Escribe: cliente (INSERT/UPDATE), detalle_pedido (INSERT), log_pedido_rappi (INSERT),
+ * marcacion_pedido (INSERT), pedido (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Correo SMTP, GloriaFood/Kuno, Gmail, Google Maps, Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarPedidoRAPPI.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarPedidoRAPPI")
 public class InsertarPedidoRAPPI extends HttpServlet {

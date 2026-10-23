@@ -12,12 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import utilidadesCC.ClientesHttp;
 
 /**
- * Endpoint de observabilidad en tiempo real para el pool de conexiones HTTP.
- * Permite monitorear desde navegador, Postman o curl la salud del pool:
- * - Conexiones en uso (leased)
- * - Conexiones disponibles (available)
- * - Peticiones en cola de espera (pending)
- * - Detalle por host/tienda activo
+ * Servicio de consulta de Reportes y estadisticas: invoca ClientesHttp.obtenerEstadoPoolsJSON.
+ *
+ * Ruta: /ProyectoPizzaAmericana/EstadoPoolHttp   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: apache_general, apache_redirecciones, conexiones_totales,
+ * disponibles, disponibles_ociosas, en_cola, en_cola_esperando, en_uso, en_uso_activas, estado,
+ * host, max_por_host, ....
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarEstadoPoolHttp.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/EstadoPoolHttp")
 public class ConsultarEstadoPoolHttp extends HttpServlet {

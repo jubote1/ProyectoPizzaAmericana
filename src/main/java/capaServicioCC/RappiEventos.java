@@ -14,6 +14,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaDAOCC.LogPedidoVirtualKunoDAO;
 
+/**
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * LogPedidoVirtualKunoDAO.insertarLogRAPPI, PedidoCtrl.procesarEventoRappi.
+ *
+ * Ruta: /ProyectoPizzaAmericana/RappiEventos   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: idLog, status.
+ * Lee: cliente, estado_pedido, forma_pago, parametros, pedido, pedido_forma_pago, tienda.
+ * Escribe: log_pedido_rappi (INSERT), notificaciones (INSERT), pedido (UPDATE).
+ * Sistemas externos: GloriaFood/Kuno, Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RappiEventos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/RappiEventos")
 public class RappiEventos extends HttpServlet {
 

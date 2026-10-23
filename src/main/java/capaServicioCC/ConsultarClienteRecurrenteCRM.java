@@ -14,6 +14,26 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
 
+/**
+ * Dice si el telefono del lead corresponde a un cliente conocido y lo escribe en el lead.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarClienteRecurrenteCRM   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: text/plain;charset=UTF-8; claves: mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: cliente, integracion_crm, municipio, nomenclatura_direccion, parametros, pedido,
+ * pedido_anulado, tienda, tienda_bloqueada.
+ * Escribe: cliente (UPDATE), log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - No valida la cabecera Authorization (ver la entrada comun).
+ * - Responde OK aunque el trabajo posterior falle: el error queda solo en el log del servidor.
+ * - Comparte un pool fijo de 5 hilos con sus propias llamadas.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarClienteRecurrenteCRM.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ConsultarClienteRecurrenteCRM")
 public class ConsultarClienteRecurrenteCRM extends HttpServlet {
     private static final long serialVersionUID = 1L;

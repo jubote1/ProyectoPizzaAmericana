@@ -12,9 +12,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetEspecialidades
- * Servicio que retorna todas la especialidades creadas en el sistemas, no se tiene filtro y por lo tanto no toma ningún
- * parámetro o filtro, el retorno de la información es formato JSON.
+ * Lista las especialidades de pizza (Hawaiana, Pollo Champinon...) que se pueden elegir.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetEspecialidades   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idexcepcion (integer), idproducto (integer).
+ * Devuelve: application/json; claves: abreviatura, idespecialidad, nombre.
+ * Lee: controla_especialidades, especialidad.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si se mandan los dos filtros a la vez no hay consulta definida: falla en silencio y devuelve
+ *   [].
+ * - No filtra por tienda: una especialidad que una tienda no pueda hacer sale igual.
+ * - No devuelve el recargo de la especialidad (eso va en ObtenerExcepcionEspecialidad).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetEspecialidades.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetEspecialidades")
 public class GetEspecialidades extends HttpServlet {

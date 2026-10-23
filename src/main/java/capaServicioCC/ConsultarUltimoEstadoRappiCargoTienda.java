@@ -11,6 +11,20 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * TercerizadoDomicilioEventoDAO.consultarUltimoEstadoPorPedidoTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarUltimoEstadoRappiCargoTienda   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedidotienda (integer), idtienda (integer).
+ * Devuelve: cuerpo vacio; claves: error, estado.
+ * Lee: pedido, tercerizado_domicilio_evento.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarUltimoEstadoRappiCargoTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ConsultarUltimoEstadoRappiCargoTienda")
 public class ConsultarUltimoEstadoRappiCargoTienda extends HttpServlet {
 

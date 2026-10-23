@@ -14,20 +14,22 @@ import capaControladorCC.RuletaCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servicio que dispersa los premios pendientes de la ruleta de encuestas en un
- * rango de fechas: a cada ganador le asigna la oferta que corresponde a su
- * premio, le genera el codigo promocional y le envia el correo.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * RuletaCtrl.reenviarCorreos, RuletaCtrl.dispersarPremios.
  *
- * A diferencia de las consultas, este servicio EXIGE sesion. Son dos razones:
- * asigna beneficios reales a clientes y manda correos, asi que no puede quedar
- * expuesto a que lo llamen por URL; y ademas hay que dejar registrado quien lo
- * ejecuto, que es lo que va a usuario_dispersion.
+ * Ruta: /ProyectoPizzaAmericana/DispersarPremiosRuleta   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): fechadesde (string), fechahasta (string), accion (string).
+ * Devuelve: application/json; claves: avisocliente, clientes_creados, codigo_promocion, con_error,
+ * correo, correos_enviados, detalle_errores, dias_caducidad, dispersados, estado, fecha,
+ * fecha_aviso, ....
+ * Lee: cliente, log_encuesta_servicio, oferta, oferta_cliente, opciones_ruleta, parametros,
+ * pedido, resultado_ruleta, ruleta_oferta, tienda.
+ * Escribe: cliente (INSERT), oferta_cliente (INSERT/UPDATE), resultado_ruleta (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
  *
- * Parametros:
- *   fechadesde  fecha inicial inclusive, formato aaaa-mm-dd. Obligatoria.
- *   fechahasta  fecha final inclusive, formato aaaa-mm-dd. Obligatoria.
- *
- * Servlet implementation class DispersarPremiosRuleta
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha DispersarPremiosRuleta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/DispersarPremiosRuleta")
 public class DispersarPremiosRuleta extends HttpServlet {

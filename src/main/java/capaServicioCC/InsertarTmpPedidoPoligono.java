@@ -13,9 +13,17 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetOtrosProductos
- * Método que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta información
- * es retornada en formato JSON.
+ * Servicio que modifica datos de Direccion y cobertura (administracion): invoca
+ * PedidoCtrl.insertarTmpPedidoPoligono.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarTmpPedidoPoligono   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), idcliente (integer).
+ * Devuelve: application/json; claves: resultado.
+ * Escribe: tmp_pedidos_poligono (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarTmpPedidoPoligono.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarTmpPedidoPoligono")
 public class InsertarTmpPedidoPoligono extends HttpServlet {

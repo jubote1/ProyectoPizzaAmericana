@@ -23,6 +23,23 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 
+/**
+ * Igual que el anterior, pero ademas entrega un token de renovacion nuevo (rotacion): el anterior
+ * se reemplaza en la base.
+ *
+ * Ruta: /ProyectoPizzaAmericana/NewRefreshTokenServlet   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): refresh_token (string).
+ * Devuelve: cuerpo vacio; claves: accessToken, accessTokenExpiration, refreshToken,
+ * refreshTokenExpiration.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si la respuesta se pierde en el camino (corte de red), el cliente queda con un token de
+ *   renovacion que ya no sirve y tiene que volver a hacer el login.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha NewRefreshTokenServlet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/NewRefreshTokenServlet")
 public class NewRefreshTokenServlet extends HttpServlet {
 

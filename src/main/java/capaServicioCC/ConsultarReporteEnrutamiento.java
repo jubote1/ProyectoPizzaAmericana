@@ -17,15 +17,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.ReporteEnrutamientoCtrl;
 
 /**
- * El reporte de uso del enrutamiento: de los domicilios propios de cada tienda,
- * cuantos salieron dentro de una ruta sugerida y a que horas entran y salen.
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca ReporteEnrutamientoCtrl.consultar.
  *
- * Consulta a las tiendas en el momento, asi que se demora; la pantalla avisa
- * antes de lanzarlo. Exige sesion, y acota el rango a ReporteEnrutamientoCtrl.DIAS_MAXIMOS
- * dias para no pedirle a once tiendas una consulta de un ano.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarReporteEnrutamiento   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idtienda (integer), fechainicial (string), fechafinal (string).
+ * Devuelve: application/json; charset=UTF-8; claves: anulados, datos_hasta, desde, detalle,
+ * disponible, domiciliario, en_curso, enrutados, entradas, entradas_enrutadas, error, estado, ....
+ * Lee: cambios_estado_pedido, despacho_real, despacho_real_det, empleado,
+ * information_schema.columns, information_schema.tables, pedido, pedido_sugerencia,
+ * pedido_sugerencia_det, pedido_sugerencia_log.
  *
- * Parametros: fechainicial y fechafinal (dd/MM/yyyy o yyyy-MM-dd) e idtienda
- * (0 = todas).
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarReporteEnrutamiento.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarReporteEnrutamiento")
 public class ConsultarReporteEnrutamiento extends HttpServlet {

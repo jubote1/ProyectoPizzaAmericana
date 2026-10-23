@@ -25,6 +25,20 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.MacAlgorithm;
 
 
+/**
+ * Cambia un token de renovacion valido por un token de acceso nuevo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/refreshToken   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): refresh_token (string).
+ * Devuelve: cuerpo vacio; claves: accessToken, accessTokenExpiration.
+ *
+ * Trampas y riesgos conocidos:
+ * - Los errores salen como HTML del servidor.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RefreshTokenServlet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/refreshToken")
 public class RefreshTokenServlet extends HttpServlet {
 

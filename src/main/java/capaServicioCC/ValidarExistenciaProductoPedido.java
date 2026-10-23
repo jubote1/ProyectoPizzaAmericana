@@ -16,9 +16,20 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.EmpleadoVale;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocaci�n a la clase en la capa Controladora.
+ * Dice si un pedido ya tiene un producto dado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarExistenciaProductoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), idproducto (integer).
+ * Devuelve: texto; claves: respuesta.
+ * Lee: detalle_pedido, pedido.
+ *
+ * Trampas y riesgos conocidos:
+ * - Responde false tambien cuando falla la consulta o cuando los ids no son validos: no
+ *   distingue "no lo tiene" de "no se pudo saber".
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarExistenciaProductoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarExistenciaProductoPedido")
 public class ValidarExistenciaProductoPedido extends HttpServlet {

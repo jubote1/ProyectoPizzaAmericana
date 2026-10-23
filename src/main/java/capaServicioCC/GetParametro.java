@@ -13,9 +13,24 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.ParametrosCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Devuelve el valor de un parametro de configuracion de la tabla parametros (base general).
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetParametro   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): parametro (string).
+ * Devuelve: application/json; claves: valornumerico, valortexto.
+ * Lee: parametros.
+ *
+ * Trampas y riesgos conocidos:
+ * - SEGURIDAD, grave: el SQL se arma concatenando el parametro (... where valorparametro = '" +
+ *   valorParametro + "'), asi que es inyectable, y el servicio no pide sesion. Quien llegue al
+ *   central puede leer cualquier parametro, incluidas las claves privadas de Wompi que
+ *   pedidos.js carga en el navegador (WOMPIPRODUCCIONPRI).
+ * - El controlador imprime en el log del servidor el JSON devuelto (System.out.println), asi que
+ *   los secretos quedan tambien en el log de Tomcat.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetParametro.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetParametro")
 public class GetParametro extends HttpServlet {

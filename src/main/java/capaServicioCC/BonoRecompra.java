@@ -14,11 +14,25 @@ import capaDAOCC.BonoRecompraDAO;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class BonoRecompra
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca AccesoCRM.puede,
+ * AccesoCRM.negado.
  *
- * Las acciones de la pantalla de bono de recompra, distinguidas por "accion".
- * Van juntas porque comparten la misma guarda de acceso al CRM: repetirla en
- * cuatro servlets es repetir algo que algun dia se olvida en el quinto.
+ * Ruta: /ProyectoPizzaAmericana/BonoRecompra   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string), idbono (string), cuantas (string), nombre (string),
+ * idoferta (string), compra_desde (string), compra_hasta (string), porcentaje (string), tope_bono
+ * (string), base_minima (string), productos (string), excluir_promociones (string), repetible
+ * (string), estado (string), emitir (string), avisar (string), abierta (string), idenvio (string),
+ * idcampana (string), fecha_emision (string), redime_desde (string), redime_hasta (string),
+ * hora_desde (string), hora_hasta (string), tipos_pedido (string).
+ * Devuelve: application/json; charset=UTF-8; claves: abierta, avisar, aviso, base, base_minima,
+ * califican, campanas, codigo, compra_desde, compra_hasta, con_pedidos, destino, ....
+ * Lee: crm.campana_destinatario, crm.campana_envio, crm.persona_resumen, oferta, oferta_cliente,
+ * pizzaamericana.bono_campana, pizzaamericana.bono_emitido, pizzaamericana.bono_pedido, usuario.
+ * Escribe: pizzaamericana.bono_campana (INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha BonoRecompra.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/BonoRecompra")
 public class BonoRecompra extends HttpServlet {

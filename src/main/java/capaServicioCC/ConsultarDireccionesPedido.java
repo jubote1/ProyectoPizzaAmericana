@@ -13,8 +13,24 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Lista las direcciones de los pedidos de un rango de fecha y hora para pintarlas en el mapa de
+ * zonas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDireccionesPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), idmunicipio (string), idtienda
+ * (string), horaini (string), horafin (string).
+ * Devuelve: texto; claves: apellido, direccion, fechapedido, idcliente, idpedido, latitud,
+ * longitud, municipio, nombre, telefono, valor.
+ * Lee: cliente, municipio, pedido, tmp_pedidos_poligono.
+ * Escribe: tmp_pedidos_poligono (DELETE).
+ *
+ * Trampas y riesgos conocidos:
+ * - Entrega nombre, telefono y direccion de clientes sin sesion.
+ * - La tabla temporal es unica: dos consultas a la vez pueden pisarse.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDireccionesPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDireccionesPedido")
 public class ConsultarDireccionesPedido extends HttpServlet {

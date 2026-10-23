@@ -13,9 +13,21 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Devuelve las horas a las que se puede programar un pedido para HOY, en franjas de media hora,
+ * segun el horario de apertura y cierre del dia.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHorarioProgramacionPizza   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): adm (string).
+ * Devuelve: texto; claves: hora.
+ * Lee: horario_dia.
+ *
+ * Trampas y riesgos conocidos:
+ * - No dice si la tienda esta abierta ahora ni si esta bloqueada.
+ * - Si falta la fila del dia en horario_dia, devuelve [] sin avisar.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHorarioProgramacionPizza.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerHorarioProgramacionPizza")
 public class ObtenerHorarioProgramacionPizza extends HttpServlet {

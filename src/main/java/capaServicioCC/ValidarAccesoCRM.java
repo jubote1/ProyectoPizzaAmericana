@@ -12,13 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class ValidarAccesoCRM
- * Dice si el usuario en sesion puede entrar al area de CRM. Lo usan las
- * pantallas del area para no dejar entrar, y los menus para mostrar u ocultar
- * la opcion.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca AccesoCRM.usuarioEnSesion,
+ * AccesoCRM.tieneAcceso.
  *
- * Que este servicio diga que si NO es lo que protege: cada servicio del CRM
- * vuelve a preguntar por su cuenta antes de entregar datos.
+ * Ruta: /ProyectoPizzaAmericana/ValidarAccesoCRM   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; charset=UTF-8; claves: acceso, sesion.
+ * Lee: usuario.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarAccesoCRM.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarAccesoCRM")
 public class ValidarAccesoCRM extends HttpServlet {

@@ -17,8 +17,17 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.EscalamientoPQRS;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * M�todo que se encarga recibir los par�metros para la inserci�n de una especialidad.
+ * Servicio de consulta de PQRS y escalamiento: invoca SolicitudPQRSCtrl.consultarEscalamientoPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarEscalamientoPQRS   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idsolicitudes (string), idsolicitudpqrs (string).
+ * Devuelve: application/json;charset=UTF-8; claves: arearesponsable, fechaescalamiento,
+ * fecharesolucion, idescalamiento, idsolicitudpqrs, solucionado.
+ * Lee: escalamiento_pqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarEscalamientoPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarEscalamientoPQRS")
 public class ConsultarEscalamientoPQRS extends HttpServlet {

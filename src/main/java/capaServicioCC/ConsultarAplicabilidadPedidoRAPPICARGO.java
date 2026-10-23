@@ -13,7 +13,20 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.consultarAplicabilidadPedidoRAPPICARGO.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarAplicabilidadPedidoRAPPICARGO   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: texto; claves: aplicaRappiCargoDist, cliente, datos, direccion, distanciaKm,
+ * enviadopixel, error, estadoenviotienda, estadopedido, fechafinalizacion, fechainsercion,
+ * fechapagovirtual, ....
+ * Lee: cliente, detalle_pedido, estado_pedido, forma_pago, parametros, pedido, pedido_forma_pago,
+ * producto, tienda.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarAplicabilidadPedidoRAPPICARGO.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarAplicabilidadPedidoRAPPICARGO")
 public class ConsultarAplicabilidadPedidoRAPPICARGO extends HttpServlet {

@@ -16,7 +16,24 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Envia a SALESmanago (la plataforma de marketing) los datos de un cliente nuevo para el programa
+ * de fidelizacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/IncluirFidelizacionSalesManago   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): nombres (string), apellidos (string), direccion (string), telefonocelular
+ * (string), email (string).
+ * Devuelve: texto.
+ * Lee: parametros.
+ * Sistemas externos: SALESmanago.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si el tercero no responde, el resultado depende de getResponseFromUrl: la pantalla no valida
+ *   si funciono.
+ * - Entrega datos personales a un tercero (hay que cubrirlo en la autorizacion de datos).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha IncluirFidelizacionSalesManago.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/IncluirFidelizacionSalesManago")
 public class IncluirFidelizacionSalesManago extends HttpServlet {

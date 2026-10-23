@@ -14,9 +14,21 @@ import capaControladorCC.FidelizacionCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Dice cuantos puntos vigentes tiene un cliente de fidelizacion, buscandolo por su correo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarRedencionPuntos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): correo (string).
+ * Devuelve: application/json; claves: puntos, respuesta.
+ * Lee: cliente_fidelizacion.
+ *
+ * Trampas y riesgos conocidos:
+ * - La identidad del programa es el correo, no el telefono: un cliente sin correo no tiene
+ *   puntos.
+ * - Cualquiera que sepa un correo puede consultar los puntos (sin sesion).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarRedencionPuntos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarRedencionPuntos")
 public class ValidarRedencionPuntos extends HttpServlet {

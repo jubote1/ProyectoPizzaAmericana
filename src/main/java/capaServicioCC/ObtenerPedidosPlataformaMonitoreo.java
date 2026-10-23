@@ -13,9 +13,19 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.obtenerPedidosPlataforma.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerPedidosPlataformaMonitoreo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string).
+ * Devuelve: texto; claves: fechacancelacion, fechadomiciliario, fechaentregado, fechaingreso,
+ * idordencomercio, idpedido, idpedidotienda, tiempodomiciliopedido, tiempopedido,
+ * tiemposalidadomiciliario.
+ * Lee: marcacion_pedido, pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerPedidosPlataformaMonitoreo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerPedidosPlataformaMonitoreo")
 public class ObtenerPedidosPlataformaMonitoreo extends HttpServlet {

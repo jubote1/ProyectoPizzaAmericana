@@ -34,6 +34,23 @@ import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 
+/**
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * EncuestaCtrl.resultadoRuleta, EncuestaServicio.getNombre_cliente.
+ *
+ * Ruta: /ProyectoPizzaAmericana/EncuestaServicioWb   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Filtro JWT del web.xml.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: animation_index, descripcion, description, idopcion,
+ * idresultado, idtipo, index, indice, iterations, message, option_type, premio, ....
+ * Lee: cliente, encuesta_servicio, municipio, nomenclatura_direccion, opciones_ruleta, parametros,
+ * pedido, resultado_ruleta, tienda.
+ * Escribe: cliente_servicio (INSERT), encuesta_servicio (INSERT), log_encuesta_servicio (UPDATE),
+ * resultado_ruleta (INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha EncuestaServicioWb.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/EncuestaServicioWb")
 public class EncuestaServicioWb extends HttpServlet {
     private static final long serialVersionUID = 1L;

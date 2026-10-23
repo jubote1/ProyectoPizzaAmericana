@@ -31,6 +31,18 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 
+/**
+ * Servicio de consulta de Clientes: invoca PedidoCtrl.validarPedidoEncuesta.
+ *
+ * Ruta: /ProyectoPizzaAmericana/VdclienteWb   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Filtro JWT del web.xml.
+ * Recibe (query/form): idpedido (integer), idtienda (integer).
+ * Devuelve: application/json; claves: message, resultado, success.
+ * Lee: pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha VdclienteWb.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/VdclienteWb")
 public class VdclienteWb extends HttpServlet {
     private static final long serialVersionUID = 1L;

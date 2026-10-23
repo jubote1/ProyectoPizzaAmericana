@@ -20,8 +20,23 @@ import capaControladorCC.FidelizacionCtrl;
 import capaModeloCC.Candidato;
 
 /**
- * Servlet implementation class CRUDTienda
- * Servicio que implementa los m�todos para soportar el CRUD de la entidad Tienda.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * FidelizacionCtrl.RegistrarClienteFidelizacionWb,
+ * FidelizacionCtrl.ConsultarClienteFidelizacionWb.
+ *
+ * Ruta: /ProyectoPizzaAmericana/Fidelizacion   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Filtro JWT del web.xml.
+ * Recibe (query/form): idoperacion (integer), correo (string), nombre (string), apellidos
+ * (string), telefono (string), fechaNacimiento (string), politicaDatos (string), idtienda
+ * (integer).
+ * Devuelve: application/json; claves: apellidos, dias, email, mensaje, messageVersions, name,
+ * nombre, params, porvencer, puntos, respuesta, sender, ....
+ * Lee: cliente, cliente_fidelizacion, fidelizacion_transaccion, integracion_crm, tienda.
+ * Escribe: cliente (INSERT/UPDATE), cliente_fidelizacion (INSERT/UPDATE).
+ * Sistemas externos: Brevo, Correo SMTP.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha Fidelizacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/Fidelizacion")
 public class Fidelizacion extends HttpServlet {

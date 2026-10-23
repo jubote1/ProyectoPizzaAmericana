@@ -12,9 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * PedidoCtrl.obtenerResumenDomiciliarioAppV2.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerResumenDomiciliarioAppV2   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), claveusuario (string).
+ * Devuelve: texto; claves: resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerResumenDomiciliarioAppV2.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerResumenDomiciliarioAppV2")
 public class ObtenerResumenDomiciliarioAppV2 extends HttpServlet {

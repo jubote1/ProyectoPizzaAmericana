@@ -16,8 +16,23 @@ import capaModeloCC.Oferta;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class CRUDExcepcionPrecio
- * Servicio que implementa los servicios que responden al CRUD de la entidad Excepcion Precio.
+ * Administra el catalogo de ofertas (crear, editar, eliminar, consultar y listar).
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDOferta   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), idoferta (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6, 7, 8.
+ * Devuelve: texto; claves: asignadas, codigogeneral, codigopromocional, contact, controlahora,
+ * descuentofijoporcentaje, descuentofijovalor, descuentoporcentajefuturo, diascaducidad,
+ * fechadesde, fechahasta, habilitado, ....
+ * Lee: excepcion_precio, oferta, oferta_cliente.
+ * Escribe: oferta (DELETE/INSERT/UPDATE), oferta_bitacora (INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - Es una pantalla de administracion: no debe quedar al alcance de un sistema externo.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDOferta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDOferta")
 public class CRUDOferta extends HttpServlet {

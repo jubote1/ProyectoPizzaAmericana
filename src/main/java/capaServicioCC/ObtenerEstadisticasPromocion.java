@@ -13,9 +13,17 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Servicio de consulta de Ofertas y fidelizacion (administracion): invoca
+ * PedidoCtrl.obtenerEstadisticasPromocion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEstadisticasPromocion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string).
+ * Devuelve: texto; claves: contact, fecha, idpromocion, idtienda, tiendavirtual, total.
+ * Lee: estadistica_promocion.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEstadisticasPromocion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEstadisticasPromocion")
 public class ObtenerEstadisticasPromocion extends HttpServlet {

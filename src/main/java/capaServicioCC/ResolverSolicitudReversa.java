@@ -14,15 +14,20 @@ import capaControladorCC.FidelizacionCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Aprueba o rechaza una solicitud de devolucion de puntos.
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca Usuario.getNombreUsuario,
+ * FidelizacionCtrl.resolverSolicitudReversa.
  *
- * Exige sesion iniciada y toma de ahi el usuario que aprueba. No se acepta el
- * usuario como parametro: quien autoriza una devolucion de puntos tiene que
- * quedar registrado de forma que no se pueda alterar desde el navegador. Si la
- * solicitud se aprueba, la devolucion de los puntos y el cambio de estado van
- * en la misma transaccion.
+ * Ruta: /ProyectoPizzaAmericana/ResolverSolicitudReversa   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idsolicitud (integer), aprobar (string), observacion (string).
+ * Devuelve: application/json; claves: detalle, respuesta.
+ * Lee: fidelizacion_redencion, fidelizacion_redencion_detalle, fidelizacion_reversa_solicitud.
+ * Escribe: cliente_fidelizacion (UPDATE), fidelizacion_redencion (UPDATE),
+ * fidelizacion_redencion_detalle (UPDATE), fidelizacion_reversa_solicitud (UPDATE),
+ * fidelizacion_transaccion (UPDATE).
  *
- * Parametros: idsolicitud, aprobar (S o N), observacion
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ResolverSolicitudReversa.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ResolverSolicitudReversa")
 public class ResolverSolicitudReversa extends HttpServlet {

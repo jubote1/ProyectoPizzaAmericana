@@ -12,9 +12,15 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class GetModulosConPantallas
- * Retorna el arbol modulo->pantallas completo (para el checklist de
- * asignacion de pantallas a un rol). No toma parametros.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca RolCtrl.listarModulosConPantallas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetModulosConPantallas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: idmodulo, idpantalla, nombre, pantallas, url_html.
+ * Lee: menu_modulo, pantalla.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetModulosConPantallas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetModulosConPantallas")
 public class GetModulosConPantallas extends HttpServlet {

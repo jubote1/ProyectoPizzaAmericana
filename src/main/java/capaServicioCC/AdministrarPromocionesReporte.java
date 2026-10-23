@@ -14,23 +14,18 @@ import capaControladorCC.PromocionReporteCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Administracion del catalogo de promociones del reporte diario.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * PromocionReporteCtrl.buscarProductos, PromocionReporteCtrl.listar.
  *
- * GET  que=listar     las promociones con sus productos
- *      que=buscar     productos de la tienda que coinciden con un texto
+ * Ruta: /ProyectoPizzaAmericana/AdministrarPromocionesReporte   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Devuelve: application/json; charset=UTF-8; claves: activo, descripcion, detalle, idproducto,
+ * idpromo, nombre, orden, plataforma, productos, promociones, respuesta, vendidos, ....
+ * Lee: detalle_pedido, pedido, producto, promocion_reporte, promocion_reporte_item, tienda.
+ * Escribe: promocion_reporte (INSERT/UPDATE), promocion_reporte_item (DELETE/INSERT).
  *
- * POST que=crear      promocion nueva
- *      que=actualizar nombre, tipo, activo y orden
- *      que=agregar    un producto a una promocion
- *      que=quitar     un producto de una promocion
- *
- * Lo que cambia el catalogo va por POST: un GET se dispara desde un enlace o
- * desde el historial, y aqui se decide que mide el reporte de toda la red.
- *
- * Exige sesion. No exige administrador: cambiar que promociones se miden no
- * expone informacion sensible ni mueve plata, y quien administra promociones no
- * es necesariamente administrador del sistema. Queda registrado en el log quien
- * toco que.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AdministrarPromocionesReporte.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AdministrarPromocionesReporte")
 public class AdministrarPromocionesReporte extends HttpServlet {

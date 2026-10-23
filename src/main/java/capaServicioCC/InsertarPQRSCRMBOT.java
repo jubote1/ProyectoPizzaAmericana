@@ -16,9 +16,27 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class InsertarPQRSCRMBOT
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr� tomar un pedido, 
- * la informaci�n ser� retornada en formato JSON.
+ * Crea una solicitud PQRS (peticion, queja, reclamo o sugerencia) con lo que el cliente conto al
+ * bot.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarPQRSCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: idSolicitudPQRS, mail.smtp.host, mail.smtp.ssl.protocols,
+ * message, registroComentarios, success.
+ * Lee: cliente, integracion_crm, log_pedido_crmbot, municipio, nomenclatura_direccion, parametros,
+ * parametros_correo, pedido, pqrs_comentario, tienda.
+ * Escribe: log_pedido_crmbot (INSERT/UPDATE), pqrs_comentario (DELETE/INSERT/UPDATE),
+ * solicitudpqrs (INSERT).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - No valida la cabecera Authorization.
+ * - El anti-duplicado depende de la ventana de minutos y del numero de lead: otro lead del mismo
+ *   cliente crea otra PQRS.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarPQRSCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarPQRSCRMBOT")
 public class InsertarPQRSCRMBOT extends HttpServlet {

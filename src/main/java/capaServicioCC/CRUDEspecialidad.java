@@ -14,8 +14,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class CRUDEspecialidad
- * Servicio que encarga de implementar los servicios CRUD para la entidad Especialidad.
+ * Servicio con 4 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDEspecialidad   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), abreviatura (string), idespecialidad
+ * (integer).
+ * Operaciones (operacion): 1, 2, 3, 4.
+ * Devuelve: texto; claves: abreviatura, idespecialidad, nombre, resultado.
+ * Lee: especialidad.
+ * Escribe: especialidad (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDEspecialidad.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDEspecialidad")
 public class CRUDEspecialidad extends HttpServlet {

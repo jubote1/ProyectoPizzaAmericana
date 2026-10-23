@@ -13,8 +13,16 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class AprobarBloqueoTienda
- * Servicio que implementa los m�todos para soportar el CRUD de la entidad Tienda.
+ * Servicio que modifica datos de Tiendas y operacion: invoca TiendaCtrl.aprobarBloqueoTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/AprobarBloqueoTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idlogbloqueo (string).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Escribe: log_bloqueo_tienda (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AprobarBloqueoTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AprobarBloqueoTienda")
 public class AprobarBloqueoTienda extends HttpServlet {

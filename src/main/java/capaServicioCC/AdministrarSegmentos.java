@@ -13,22 +13,19 @@ import capaControladorCC.DefinicionSegmentoCtrl;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Las definiciones de segmento: listar, probar, guardar, borrar y clasificar.
+ * Servicio que modifica datos de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
  *
- * Van las cinco en un solo servlet, separadas por el parametro accion, porque
- * son la misma pantalla y comparten la validacion de acceso. Cinco URL para
- * cinco botones serian cinco sitios donde olvidar esa validacion.
+ * Ruta: /ProyectoPizzaAmericana/AdministrarSegmentos   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string).
+ * Devuelve: application/json; charset=UTF-8; claves: activo, ayuda, calculado_en, campo, campos,
+ * color, condicion, contactables, cumplen, descripcion, error, etiqueta, ....
+ * Lee: crm.parametro_segmento, crm.persona_resumen, crm.segmento_campo, crm.segmento_definicion,
+ * crm.segmento_regla, usuario.
+ * Escribe: crm.segmento_definicion (DELETE/INSERT/UPDATE), crm.segmento_regla (DELETE/INSERT).
  *
- * ESTE SERVICIO ESCRIBE, Y ESO CAMBIA A QUIEN LE RESPONDE
- *
- * Los demas del CRM leen. Este cambia como se clasifican 450 mil personas, y
- * clasificar de nuevo toca la tabla que el CRM esta leyendo en ese momento. Por
- * eso ademas de exigir acceso al CRM -AccesoCRM.puede- las acciones que
- * escriben solo entran por POST: un GET se deja en un enlace, en un correo o en
- * el historial del navegador, y nadie debe poder reclasificar a media empresa
- * con un clic prestado.
- *
- * Servlet implementation class AdministrarSegmentos
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AdministrarSegmentos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AdministrarSegmentos")
 public class AdministrarSegmentos extends HttpServlet {

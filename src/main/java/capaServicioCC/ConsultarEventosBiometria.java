@@ -12,18 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.BiometriaNovedadCtrl;
 
 /**
- * Retorna en JSON la jornada completa de un empleado en un dia: todos sus
- * registros de biometria ordenados por hora.
+ * Servicio de consulta de Tiendas y operacion: invoca BiometriaNovedadCtrl.error,
+ * BiometriaNovedadCtrl.consultarEventosDelDia.
  *
- * Es lo que el supervisor necesita ver para resolver una novedad. No se le
- * muestra solo el registro que la novedad senala, porque para decidir si falta
- * una salida o si una hora esta mal hay que ver el dia entero.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarEventosBiometria   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), id (string).
+ * Devuelve: application/json; claves: detalle, fecha, fechahora, idtienda, mensaje, resultado,
+ * tipo, usobiometria.
+ * Lee: general.empleado_evento.
  *
- * Parametros:
- *   id     id del empleado. Obligatorio.
- *   fecha  dia de la jornada, aaaa-mm-dd. Obligatorio.
- *
- * Servlet implementation class ConsultarEventosBiometria
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarEventosBiometria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarEventosBiometria")
 public class ConsultarEventosBiometria extends HttpServlet {

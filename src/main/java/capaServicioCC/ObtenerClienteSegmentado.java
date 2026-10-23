@@ -22,6 +22,21 @@ import com.google.gson.JsonSyntaxException;
 import capaControladorCC.SegmentacionClienteCtrl;
 import capaModeloCC.FiltroSegmentacion;
 
+/**
+ * Servicio de consulta de Bot y CRM (Kommo): invoca
+ * SegmentacionClienteCtrl.obtenerClientesFiltrados, FiltroSegmentacion.setFechaInicio.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerClienteSegmentado   Metodos: GET, POST.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: email, error, fechamaxima, idcliente, nombre, nombreComp,
+ * nombretienda, numeropedidos, telefono.
+ * Lee: cliente, detalle_pedido, pedido, tienda.
+ * Sistemas externos: Gmail, Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerClienteSegmentado.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerClienteSegmentado")
 public class ObtenerClienteSegmentado extends HttpServlet {
     private static final long serialVersionUID = 1L;

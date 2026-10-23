@@ -17,10 +17,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ConsultarPagosTiendaConciliacion
- * Trae en vivo, desde la base local de una tienda, los pagos QR o Datafono en
- * un rango de fechas, para cruzarlos contra una diferencia de conciliacion.
- * Requiere que el computador de la tienda este encendido.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.consultarPagosTiendaConciliacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarPagosTiendaConciliacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), origen (string), fechadesde (string), fechahasta
+ * (string).
+ * Devuelve: texto; claves: anulado, error, estacion, fecha, idpedidotienda, nombrecliente, pagos,
+ * referenciadatafono, telefono, totalneto, valorformapago.
+ * Lee: cliente, pedido, pedido_forma_pago, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarPagosTiendaConciliacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarPagosTiendaConciliacion")
 public class ConsultarPagosTiendaConciliacion extends HttpServlet {

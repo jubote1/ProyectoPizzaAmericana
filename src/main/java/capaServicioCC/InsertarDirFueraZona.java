@@ -12,8 +12,23 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Guarda una direccion que quedo fuera de la cobertura, para que Mercadeo sepa donde hay demanda
+ * sin tienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarDirFueraZona   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): direccion (string), municipio (string), idcliente (string), latitud
+ * (string), longitud (string), telefono (string), nombre (string), apellido (string).
+ * Devuelve: texto; claves: id.
+ * Escribe: direccion_fuera_zona (INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - Todos los textos van concatenados al SQL: inyectable y se rompe con una comilla simple (un
+ *   apellido como "O'Brien").
+ * - Guarda datos personales (nombre, telefono, direccion) de alguien que no llego a ser cliente.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarDirFueraZona.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarDirFueraZona")
 public class InsertarDirFueraZona extends HttpServlet {

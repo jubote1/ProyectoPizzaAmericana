@@ -14,9 +14,19 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Marca un pedido como venta corporativa (la pantalla lo hace cuando el total supera 200.000).
+ *
+ * Ruta: /ProyectoPizzaAmericana/MarcarPedidoEmpresarial   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: texto; claves: resultado.
+ * Escribe: pedido (UPDATE).
+ *
+ * Trampas y riesgos conocidos:
+ * - El umbral de 200.000 esta escrito en el navegador, no en el servidor.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha MarcarPedidoEmpresarial.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/MarcarPedidoEmpresarial")
 public class MarcarPedidoEmpresarial extends HttpServlet {
