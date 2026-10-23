@@ -225,6 +225,7 @@ public class ReporteEnrutamientoCtrl {
 			o.put("llevados", f.d.llevados);
 			o.put("soltados", f.d.soltados);
 			o.put("libres", f.d.libres);
+			o.put("libres_otro", f.d.libresOtro);
 			o.put("porcentaje", porcentaje(f.d.soltados, f.d.sugeridos));
 			o.put("porcentaje_no_cumplido", porcentaje(f.d.soltados + f.d.libres, f.d.sugeridos));
 			a.add(o);
@@ -260,6 +261,9 @@ public class ReporteEnrutamientoCtrl {
 		o.put("reasignados", g.reasignados);
 		o.put("anulados", g.anulados);
 		o.put("libres", g.libres);
+		o.put("libres_otro", g.libresOtro);
+		o.put("libres_sin_dueno", g.libresSinDueno);
+		o.put("libres_asignado", g.libresAsignado);
 		o.put("rutas_tardias", g.rutasTardias);
 		o.put("expiradas_sin_salir", g.expiradasSinSalir);
 		o.put("en_curso", g.enCurso);
