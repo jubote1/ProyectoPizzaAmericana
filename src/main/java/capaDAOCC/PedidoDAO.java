@@ -4914,10 +4914,19 @@ public class PedidoDAO {
 		try
 		{
 			Statement stm = con1.createStatement();
-			// Actualizamos primero el pedido con la tienda correspondiente
-			String update1 = "update pedido set idTienda = " +idTienda + "  where idpedido = "+ idpedido;
-			logger.info(update1);
-			stm.executeUpdate(update1);
+			// Actualizamos el pedido con la tienda correspondiente y el idcliente reasignado
+			String update1 = "";
+			if (idTienda > 0 && idCliente > 0) {
+				update1 = "update pedido set idTienda = " + idTienda + ", idcliente = " + idCliente + " where idpedido = " + idpedido;
+			} else if (idTienda > 0) {
+				update1 = "update pedido set idTienda = " + idTienda + " where idpedido = " + idpedido;
+			} else if (idCliente > 0) {
+				update1 = "update pedido set idcliente = " + idCliente + " where idpedido = " + idpedido;
+			}
+			if (!update1.isEmpty()) {
+				logger.info(update1);
+				stm.executeUpdate(update1);
+			}
 			// Posteriormente realizamos la actualizaci�n del cliente
 			String update2 = "update cliente set idtienda = " + idTienda +  " where idcliente = " + idCliente;
 			System.out.println(update2);

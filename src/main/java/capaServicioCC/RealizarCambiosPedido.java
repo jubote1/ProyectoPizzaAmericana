@@ -45,19 +45,39 @@ public class RealizarCambiosPedido extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		response.setContentType("application/json");
 		try{
-			int idTiendaNueva = Integer.parseInt(request.getParameter("idtienda"));
-			int idPedido = Integer.parseInt(request.getParameter("idpedido"));
-			int idCliente = Integer.parseInt(request.getParameter("idcliente"));
-			response.addHeader("Access-Control-Allow-Origin", "*");
-			response.setContentType("application/json");
+			int idTiendaNueva = 0;
+			try {
+				if (request.getParameter("idtienda") != null && !request.getParameter("idtienda").trim().isEmpty()) {
+					idTiendaNueva = Integer.parseInt(request.getParameter("idtienda").trim());
+				}
+			} catch (Exception ex) {}
+
+			int idPedido = 0;
+			try {
+				if (request.getParameter("idpedido") != null && !request.getParameter("idpedido").trim().isEmpty()) {
+					idPedido = Integer.parseInt(request.getParameter("idpedido").trim());
+				}
+			} catch (Exception ex) {}
+
+			int idCliente = 0;
+			try {
+				if (request.getParameter("idcliente") != null && !request.getParameter("idcliente").trim().isEmpty()) {
+					idCliente = Integer.parseInt(request.getParameter("idcliente").trim());
+				}
+			} catch (Exception ex) {}
+
 			PedidoCtrl pedCtrl = new PedidoCtrl();
 			String respuesta = pedCtrl.realizarCambioPedido(idTiendaNueva, idPedido, idCliente);
 			PrintWriter out = response.getWriter();
 			out.write(respuesta);
-			
+			out.flush();
 		}catch(Exception e){
-			System.out.println(e.getMessage());
+			System.out.println("Error en RealizarCambiosPedido: " + e.getMessage());
+			PrintWriter out = response.getWriter();
+			out.write("{\"resultado\":\"ERROR\"}");
+			out.flush();
 		}
 	}
 

@@ -36,6 +36,14 @@ public class Usuario {
 	private String nombreLargo;
 	private String plataforma;
 	private boolean activo;
+	private boolean contactCenter;
+
+	public boolean isContactCenter() {
+		return contactCenter;
+	}
+	public void setContactCenter(boolean contactCenter) {
+		this.contactCenter = contactCenter;
+	}
 	
 	public boolean isActivo() {
 		return activo;

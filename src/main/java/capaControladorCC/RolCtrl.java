@@ -142,7 +142,7 @@ public class RolCtrl {
 	@SuppressWarnings("unchecked")
 	public String listarUsuariosConRoles() {
 		JSONArray listJSON = new JSONArray();
-		List<Usuario> usuarios = UsuarioDAO.obtenerUsuarioActivo();
+		List<Usuario> usuarios = UsuarioDAO.obtenerUsuariosActivos();
 		for (Usuario usu : usuarios) {
 			JSONObject usuarioJSON = new JSONObject();
 			usuarioJSON.put("idusuario", usu.getId());

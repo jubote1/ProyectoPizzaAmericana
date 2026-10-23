@@ -452,7 +452,7 @@ public int InsertarClientePedidoEncabezado(int idCliente,String telefono, String
 public String InsertarClientePedidoEncabezadoJSON(int idCliente,String telefono, String nombres, String apellidos, String nombreCompania, String direccion, String municipio, float latitud, float longitud, double distanciaTienda, String zona,  String observacion, String tienda, int memcode, int idnomenclatura, String numNomenclatura, String numNomenclatura2, String num3, String telefonoCelular, String email, String politicaDatos, String fechaNacimiento, String clienteSinIden, String emailFact, int idTipoPersona, String identificacion )
 {
 	//Incluimos la l�gica para validar la latitud y longitud
-	if(latitud == 0 && longitud == 0)
+	if(latitud == 0 && longitud == 0 && direccion != null && !direccion.trim().isEmpty())
 	{
 		String geolocaliza = ParametrosDAO.retornarValorAlfanumerico("GEOLOCALIZACIONACTIVA");
 		if(geolocaliza.equals(new String("S")))
