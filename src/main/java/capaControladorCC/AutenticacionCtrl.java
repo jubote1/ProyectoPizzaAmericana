@@ -140,9 +140,15 @@ public class AutenticacionCtrl {
 	
 	
 	public String obtenerUsuarioActivo() {
-	    List<Usuario> usuarios = UsuarioDAO.obtenerUsuarioActivo(); // esta ya retorna lista
+	    List<Usuario> usuarios = UsuarioDAO.obtenerUsuariosContactCenter();
 	    Gson gson = new Gson();
-	    return gson.toJson(usuarios); // convierte a JSON
+	    return gson.toJson(usuarios);
+	}
+	
+	public String obtenerUsuariosContactCenter() {
+	    List<Usuario> usuarios = UsuarioDAO.obtenerUsuariosContactCenter();
+	    Gson gson = new Gson();
+	    return gson.toJson(usuarios);
 	}
 
 }

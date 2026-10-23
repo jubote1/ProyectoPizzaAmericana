@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.AutenticacionCtrl;
 
-@WebServlet("/ObtenerUsuariosActivos")
+@WebServlet(urlPatterns = {"/ObtenerUsuariosActivos", "/ObtenerUsuariosContactCenter"})
 public class ObtenerUsuariosActivos extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		try {

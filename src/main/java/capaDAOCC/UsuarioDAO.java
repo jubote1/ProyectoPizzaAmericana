@@ -168,27 +168,30 @@ public class UsuarioDAO {
 		
 	}
 	
-	public static List<Usuario> obtenerUsuarioActivo() {
+	/**
+	 * Retorna todos los usuarios activos del sistema (activo = 1), ordenados alfabéticamente por nombre_largo.
+	 * Utilizado en la administración de roles (RolCtrl / AsignarRolUsuario.html).
+	 */
+	public static List<Usuario> obtenerUsuariosActivos() {
 		List<Usuario> ListaUsuario = new ArrayList<>();
 	    Logger logger = Logger.getLogger("log_file");
 	    ConexionBaseDatos con = new ConexionBaseDatos();
 	    Connection conn = con.obtenerConexionBDPrincipal();
 
-	    String consulta = "SELECT id, nombre, nombre_largo, plataforma ,activo FROM usuario WHERE activo = 1";
+	    String consulta = "SELECT id, nombre, nombre_largo, plataforma, activo, contact_center FROM usuario WHERE activo = 1 ORDER BY nombre_largo ASC";
 
 	    try (
 	        PreparedStatement stmt = conn.prepareStatement(consulta);
 	        ResultSet rs = stmt.executeQuery()
 	    ) {
-	
 	    	while (rs.next()) {
 	        	Usuario usuario = new Usuario();
-	            usuario = new Usuario();
 	            usuario.setId(rs.getInt("id"));
 	            usuario.setNombreUsuario(rs.getString("nombre"));
 	            usuario.setNombreLargo(rs.getString("nombre_largo"));
 	            usuario.setPlataforma(rs.getString("plataforma"));
 	            usuario.setActivo(rs.getBoolean("activo"));
+	            usuario.setContactCenter(rs.getBoolean("contact_center"));
 
 	            ListaUsuario.add(usuario);
 	        }
@@ -203,8 +206,55 @@ public class UsuarioDAO {
 	    }
         
 	    return ListaUsuario;
-	    
 	}
 
-	
+	/**
+	 * Retorna únicamente los usuarios activos marcados como contact center (contact_center = 1 AND activo = 1),
+	 * ordenados alfabéticamente por nombre_largo.
+	 * Utilizado en PQRS para los campos 'Registrado por' y 'Redimido por'.
+	 */
+	public static List<Usuario> obtenerUsuariosContactCenter() {
+		List<Usuario> ListaUsuario = new ArrayList<>();
+	    Logger logger = Logger.getLogger("log_file");
+	    ConexionBaseDatos con = new ConexionBaseDatos();
+	    Connection conn = con.obtenerConexionBDPrincipal();
+
+	    String consulta = "SELECT id, nombre, nombre_largo, plataforma, activo, contact_center FROM usuario WHERE contact_center = 1 AND activo = 1 ORDER BY nombre_largo ASC";
+
+	    try (
+	        PreparedStatement stmt = conn.prepareStatement(consulta);
+	        ResultSet rs = stmt.executeQuery()
+	    ) {
+	    	while (rs.next()) {
+	        	Usuario usuario = new Usuario();
+	            usuario.setId(rs.getInt("id"));
+	            usuario.setNombreUsuario(rs.getString("nombre"));
+	            usuario.setNombreLargo(rs.getString("nombre_largo"));
+	            usuario.setPlataforma(rs.getString("plataforma"));
+	            usuario.setActivo(rs.getBoolean("activo"));
+	            usuario.setContactCenter(rs.getBoolean("contact_center"));
+
+	            ListaUsuario.add(usuario);
+	        }
+	    } catch (SQLException e) {
+	        logger.info("Error al consultar usuarios de contact center: " + e.getMessage());
+	    } finally {
+	        try {
+	            conn.close();
+	        } catch (SQLException e) {
+	            logger.info("Error al cerrar conexión: " + e.getMessage());
+	        }
+	    }
+        
+	    return ListaUsuario;
+	}
+
+	/**
+	 * Método de compatibilidad para PQRS: retorna los usuarios de contact center (contact_center = 1).
+	 */
+	public static List<Usuario> obtenerUsuarioActivo() {
+		return obtenerUsuariosContactCenter();
+	}
+
 }
+
