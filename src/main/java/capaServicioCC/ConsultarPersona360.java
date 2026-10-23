@@ -15,8 +15,19 @@ import utilidadesCC.AccesoCRM;
 import capaControladorCC.Persona360Ctrl;
 
 /**
- * Servlet implementation class ConsultarPersona360
- * Todo lo de una persona: sus filas de cliente, pedidos, ofertas y PQRS.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarPersona360   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpersona (long).
+ * Devuelve: application/json; charset=UTF-8; claves: apellido, asunto, canal, cancelado, caras,
+ * celular, codigo, comentario, cuando, destino, direccion, email, ....
+ * Lee: cliente, crm.envio_brevo, crm.persona, crm.stage_cliente_tienda, crm.v_persona_360,
+ * estado_pqrs, oferta, oferta_cliente, pedido, pizzaamericana.plantilla_brevo.
+ * Sistemas externos: Brevo.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarPersona360.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarPersona360")
 public class ConsultarPersona360 extends HttpServlet {

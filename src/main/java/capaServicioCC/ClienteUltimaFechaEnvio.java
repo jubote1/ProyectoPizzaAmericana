@@ -24,6 +24,19 @@ import com.google.gson.JsonSyntaxException;
 import capaControladorCC.SegmentacionClienteCtrl;
 import capaDAOCC.SegmentacionClienteDAO;
 
+/**
+ * Servicio que modifica datos de Clientes: invoca
+ * SegmentacionClienteDAO.actualizarFechaUltimaPublicidad.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ClienteUltimaFechaEnvio   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: cuerpo vacio; claves: clientesFallidos, error, message, success.
+ * Escribe: cliente (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ClienteUltimaFechaEnvio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ClienteUltimaFechaEnvio")
 public class ClienteUltimaFechaEnvio extends HttpServlet {
     private static final long serialVersionUID = 1L;

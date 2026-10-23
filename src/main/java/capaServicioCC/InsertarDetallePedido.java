@@ -12,9 +12,30 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class InsertarDetallePedido
- * Servicio que es consumido en la inserción del pedido, cada vez que se agrega un detalle al pedido, para lo cual recibe 
- * la información clave para la inserción.
+ * Inserta un renglon en el pedido: una pizza, una gaseosa, una adicion, un producto incluido o
+ * cualquier otro producto.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarDetallePedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idproducto (integer), idpedido (integer), especialidad1 (string),
+ * especialidad2 (string), cantidad (number), valorunitario (number), valortotal (number), adicion
+ * (string), observacion (string), modespecialidad1 (string), modespecialidad2 (string),
+ * idsabortipoliquido (integer), idexcepcion (integer).
+ * Devuelve: texto; claves: iddetallepedido.
+ * Escribe: detalle_pedido (INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - SEGURIDAD y dinero: quien llame puede fijar el precio que quiera (por ejemplo 0) y la
+ *   promocion que quiera; el servidor lo graba.
+ * - Los numeros obligatorios se leen sin try/catch: si falta uno, el servlet lanza la excepcion
+ *   y Tomcat responde HTTP 500.
+ * - adicion y observacion son texto libre concatenado en el SQL: una comilla simple en la
+ *   observacion rompe la insercion (devuelve 0) y abre la puerta a inyeccion.
+ * - No es idempotente: repetir la llamada duplica el renglon.
+ * - Se puede agregar a cualquier idpedido, incluso de un pedido ya finalizado o ajeno.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarDetallePedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarDetallePedido")
 public class InsertarDetallePedido extends HttpServlet {

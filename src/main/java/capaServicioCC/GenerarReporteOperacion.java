@@ -14,7 +14,16 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class GenerarReporteOperacion
+ * Servicio de consulta de Reportes y estadisticas: invoca
+ * PedidoCtrl.generarStringHTMLReporteOperacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GenerarReporteOperacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: texto.
+ * Lee: parametros, pedido, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GenerarReporteOperacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GenerarReporteOperacion")
 public class GenerarReporteOperacion extends HttpServlet {

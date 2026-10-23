@@ -13,8 +13,17 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class ConsultarBloqueosTienda
- * Servicio que implementa los métodos para soportar el CRUD de la entidad Tienda.
+ * Servicio de consulta de Tiendas y operacion: invoca TiendaCtrl.consultarBloqueosTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarBloqueosTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (string), fecha (string).
+ * Devuelve: texto; claves: accion, aprobado, fecha_accion, idlogbloqueo, motivo, observacion,
+ * tienda.
+ * Lee: log_bloqueo_tienda, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarBloqueosTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarBloqueosTienda")
 public class ConsultarBloqueosTienda extends HttpServlet {

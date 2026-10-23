@@ -12,9 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ObtenerTotalPedido
- * Servicio que permite dado un id de pedido, retornar el total de un pedido, sumando los detalles de pedido asociados
- * al pedido.
+ * Suma el valor de todos los renglones de un pedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerTotalPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: texto; claves: valortotal.
+ * Lee: detalle_pedido.
+ *
+ * Trampas y riesgos conocidos:
+ * - Es la suma de lo que se guardo; si un precio fue manipulado, el total tambien.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerTotalPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerTotalPedido")
 public class ObtenerTotalPedido extends HttpServlet {

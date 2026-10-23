@@ -17,9 +17,25 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr� tomar un pedido, 
- * la informaci�n ser� retornada en formato JSON.
+ * Busca el link de pago de Wompi del pedido del cliente y lo escribe en el lead, para que el bot
+ * se lo muestre.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarLinkPagoVirtualCRM   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: custom_fields_values, field_id, id, mail.smtp.host,
+ * mail.smtp.ssl.protocols, value, values.
+ * Lee: cliente, estado_pedido, forma_pago, integracion_crm, parametros, pedido, pedido_forma_pago,
+ * tienda.
+ * Escribe: log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM), Wompi.
+ *
+ * Trampas y riesgos conocidos:
+ * - No valida la cabecera Authorization.
+ * - Depende de Kommo para leer y para escribir el lead.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarLinkPagoVirtualCRM.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarLinkPagoVirtualCRM")
 public class ConsultarLinkPagoVirtualCRM extends HttpServlet {

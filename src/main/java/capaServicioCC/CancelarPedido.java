@@ -12,7 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el n�mero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Servicio que modifica datos de Pedidos: invoca PedidoCtrl.cancelarPedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CancelarPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Escribe: pedido (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CancelarPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CancelarPedido")
 public class CancelarPedido extends HttpServlet {

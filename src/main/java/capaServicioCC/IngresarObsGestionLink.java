@@ -15,8 +15,17 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca
+ * PedidoCtrl.ingresarObsGestionLink, Usuario.getNombreUsuario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/IngresarObsGestionLink   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idpedido (integer), observacion (string).
+ * Devuelve: application/json; charset=UTF-8; claves: mensaje, resultado.
+ * Escribe: pedido_gestion_link (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha IngresarObsGestionLink.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/IngresarObsGestionLink")
 public class IngresarObsGestionLink extends HttpServlet {

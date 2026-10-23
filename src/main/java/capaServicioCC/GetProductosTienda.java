@@ -12,9 +12,24 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetOtrosProductos
- * Método que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta información
- * es retornada en formato JSON.
+ * Devuelve los productos que una tienda si tiene (quita los marcados como no existentes en esa
+ * tienda).
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetProductosTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), plataforma (string).
+ * Devuelve: application/json; claves: controlaespecialidades, descripcion, idproducto, idreceta,
+ * idtipo_liquido, impuesto, incluye_liquido, manejacantidad, nombre, preciogeneral, preciopuntos,
+ * productoasociaadicion, ....
+ * Lee: producto, producto_no_existente.
+ *
+ * Trampas y riesgos conocidos:
+ * - Lo que una tienda no tiene se maneja en producto_no_existente (pantalla
+ *   MarcarProductoNoExistente.html); este servicio solo lo lee.
+ * - El precio es el general, no uno por tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetProductosTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetProductosTienda")
 public class GetProductosTienda extends HttpServlet {

@@ -14,9 +14,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class CRUDRol
- * CRUD del catalogo de roles: idoperacion 1 insertar 2 editar 3 eliminar 4 consultar.
- * Mismo patron que CRUDEspecialidad.
+ * Servicio con 4 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDRol   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (integer), nombre (string), descripcion (string), idrol
+ * (string).
+ * Operaciones (operacion): 1, 2, 3, 4.
+ * Devuelve: texto; claves: activo, descripcion, idrol, nombre, resultado.
+ * Lee: rol.
+ * Escribe: rol (INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDRol.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDRol")
 public class CRUDRol extends HttpServlet {

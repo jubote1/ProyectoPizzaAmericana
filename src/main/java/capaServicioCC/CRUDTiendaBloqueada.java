@@ -13,8 +13,25 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.TiendaBloqueadaCtrl;
 
 /**
- * Servlet implementation class CRUDTienda
- * Servicio que implementa los m�todos para soportar el CRUD de la entidad Tienda.
+ * Gestiona las tiendas bloqueadas, es decir, las que temporalmente no pueden tomar pedidos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDTiendaBloqueada   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), idtienda (integer), observacion (string), motivo
+ * (string), desbloqueoen (string).
+ * Operaciones (operacion): 1, 2 (vacia), 3, 4 (vacia), 5, 6 (vacia).
+ * Devuelve: texto; claves: comentario, fecha, idtienda, nombre, resultado.
+ * Lee: tienda, tienda_bloqueada.
+ * Escribe: log_bloqueo_tienda (INSERT), tienda_bloqueada (DELETE/INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - SEGURIDAD: bloquear y desbloquear tiendas es un GET sin validar sesion en el servlet.
+ *   Cualquiera con acceso HTTP al central podria bloquear todas las tiendas con una URL.
+ * - Responde exitoso aunque la insercion haya fallado: el controlador no revisa el resultado del
+ *   DAO.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDTiendaBloqueada.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDTiendaBloqueada")
 public class CRUDTiendaBloqueada extends HttpServlet {

@@ -12,10 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.VentaIntegralCtrl;
 
 /**
- * Servlet implementation class GetVentaIntegralCategorias
- * Retorna el catalogo completo de categorias de Venta Integral (activas e
- * inactivas), con sus items de tienda y de contact center, en formato JSON.
- * No toma parametros, mismo patron que GetEspecialidades.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * VentaIntegralCtrl.listarCategorias.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetVentaIntegralCategorias   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: abreviatura, activo, excluyeanuladostienda,
+ * filtroestaciontienda, idcategoria, itemscontactcenter, itemstienda, medicioncc, mediciontienda,
+ * nombre, orden, tipodato.
+ * Lee: venta_integral_categoria, venta_integral_categoria_item.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetVentaIntegralCategorias.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetVentaIntegralCategorias")
 public class GetVentaIntegralCategorias extends HttpServlet {

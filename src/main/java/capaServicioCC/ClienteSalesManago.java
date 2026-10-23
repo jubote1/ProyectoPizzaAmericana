@@ -12,6 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Cliente;
 
+/**
+ * Servicio de consulta de Bot y CRM (Kommo): invoca Cliente.setNombres, Cliente.setApellidos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ClienteSalesManago   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): nombres (string), apellidos (string), direccion (string), telefonocelular
+ * (string), email (string), isAdd (boolean).
+ * Devuelve: application/json;charset=UTF-8; claves: address, apiKey, clientId, contact, country,
+ * doubleOptInLanguage, email, externalId, forceOptIn, idcontacto, mensaje, name, ....
+ * Lee: integracion_crm.
+ * Sistemas externos: SALESmanago.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ClienteSalesManago.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ClienteSalesManago")
 public class ClienteSalesManago extends HttpServlet {
 	private static final long serialVersionUID = 1L;

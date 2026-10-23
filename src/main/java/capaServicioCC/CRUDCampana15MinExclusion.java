@@ -13,9 +13,19 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * CRUD de exclusiones por nombre (The Works, Con Todo, etc.) de la campana 15
- * minutos: idoperacion 1 insertar, 3 eliminar, 4 listar por idcampana. Exige
- * sesion.
+ * Servicio con 3 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDCampana15MinExclusion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idoperacion (integer), idcampana (integer), nombreproducto (string),
+ * idexclusion (integer).
+ * Operaciones (operacion): 1, 3, 4.
+ * Devuelve: application/json; claves: detalle, idcampana, idexclusion, nombreproducto, respuesta.
+ * Lee: campana_15min_exclusion.
+ * Escribe: campana_15min_exclusion (DELETE/INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDCampana15MinExclusion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDCampana15MinExclusion")
 public class CRUDCampana15MinExclusion extends HttpServlet {

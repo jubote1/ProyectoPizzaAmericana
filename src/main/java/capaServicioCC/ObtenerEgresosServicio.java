@@ -12,9 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ObtenerEgresosServicio
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio de consulta de Reportes y estadisticas: invoca PedidoCtrl.obtenerEgresosServicio.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEgresosServicio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), fecha (string).
+ * Devuelve: texto; claves: resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEgresosServicio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEgresosServicio")
 public class ObtenerEgresosServicio extends HttpServlet {

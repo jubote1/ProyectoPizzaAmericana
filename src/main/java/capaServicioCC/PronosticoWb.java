@@ -14,6 +14,17 @@ import com.google.gson.Gson;
 import capaControladorCC.PartidoCtrl;
 import capaModeloCC.Pronostico;
 
+/**
+ * Servicio de consulta de Sin clasificar (revisar a mano): invoca PartidoCtrl.guardarPronostico.
+ *
+ * Ruta: /ProyectoPizzaAmericana/PronosticoWb   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Filtro JWT del web.xml.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: cuerpo vacio; claves: message, success.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha PronosticoWb.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/PronosticoWb")
 public class PronosticoWb extends HttpServlet {
 

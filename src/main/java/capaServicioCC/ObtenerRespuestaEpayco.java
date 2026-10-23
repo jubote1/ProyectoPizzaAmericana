@@ -16,9 +16,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.capturarEventoPagoEpayco.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerRespuestaEpayco   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idOrden (integer), codRespuesta (integer), tipoPago (string).
+ * Devuelve: texto; claves: respuesta.
+ * Escribe: log_pedido_epayco (INSERT).
+ * Sistemas externos: ePayco.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerRespuestaEpayco.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerRespuestaEpayco")
 public class ObtenerRespuestaEpayco extends HttpServlet {

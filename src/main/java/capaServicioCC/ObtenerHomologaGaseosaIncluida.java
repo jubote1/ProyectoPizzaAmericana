@@ -13,7 +13,19 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class ObtenerHomologaGaseosaIncluida
+ * Dice, por tienda, que sabores de bebida estan homologados (equivalentes) con un producto de la
+ * tienda, para saber cuales se entregan como "gaseosa incluida".
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHomologaGaseosaIncluida   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: idsabortipoliquido, idtienda.
+ * Lee: homologacion_producto.
+ *
+ * Trampas y riesgos conocidos:
+ * - Devuelve las homologaciones de todas las tiendas juntas; la pantalla filtra despues.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHomologaGaseosaIncluida.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerHomologaGaseosaIncluida")
 public class ObtenerHomologaGaseosaIncluida extends HttpServlet {

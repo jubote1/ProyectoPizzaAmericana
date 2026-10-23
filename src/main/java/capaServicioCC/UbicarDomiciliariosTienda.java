@@ -18,7 +18,16 @@ import capaDAOCC.DomiciliarioPedidoDAO;
 
 
 /**
- * Servlet implementation class Servlet
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca DomiciliarioPedidoDAO.obtenerPorId.
+ *
+ * Ruta: /ProyectoPizzaAmericana/UbicarDomiciliariosTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): t (integer), bool (string).
+ * Devuelve: text/plain; claves: clave_dom, fecha, idtienda, latitud, longitud, nombre_largo.
+ * Lee: general.empleado, tienda, ubicacion_domiciliario.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha UbicarDomiciliariosTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/UbicarDomiciliariosTienda")
 public class UbicarDomiciliariosTienda extends HttpServlet {

@@ -13,15 +13,18 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Guarda la resolucion de una diferencia de conciliacion.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca ValorDigitado.leer,
+ * PedidoCtrl.actualizarSolicitudConciliacion.
  *
- * No existia. La pantalla de conciliacion era de solo lectura, asi que el
- * estado de una diferencia se cambiaba a mano en la base de datos. Al
- * 2026-09-15 habia 122 diferencias PENDIENTE por $5.852.232, la mas vieja de
- * hace 422 dias: nadie las estaba cerrando porque no habia con que.
+ * Ruta: /ProyectoPizzaAmericana/ActualizarSolicitudConciliacion   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idsolicitud (integer), valorfinal (string), estado (string), observacion
+ * (string).
+ * Devuelve: application/json; charset=UTF-8; claves: respuesta.
+ * Escribe: solicitud_conciliacion (UPDATE).
  *
- * Se toma el usuario de la SESION y no de un parametro: quien resolvio una
- * diferencia de plata no puede ser algo que el navegador diga de si mismo.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarSolicitudConciliacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarSolicitudConciliacion")
 public class ActualizarSolicitudConciliacion extends HttpServlet {

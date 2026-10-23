@@ -26,6 +26,19 @@ import capaModeloCC.FormacionCandidato;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * CandidatoCtrl.insertarCandidato.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarCandidato   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Filtro JWT del web.xml.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: mensaje, respuesta.
+ * Escribe: candidato (INSERT), experiencia_candidato (INSERT), formacion_candidato (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarCandidato.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/InsertarCandidato")
     public class InsertarCandidato extends HttpServlet {
         private CandidatoCtrl candidatoCtrl;

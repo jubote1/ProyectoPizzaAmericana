@@ -16,6 +16,18 @@ import capaModeloCC.Vacante;
 
 
 
+/**
+ * Servicio de consulta de PQRS y escalamiento: invoca SolicitudPQRSCtrl.obtenerPendientesPqrs.
+ *
+ * Ruta: /ProyectoPizzaAmericana/PendientePqrs   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string).
+ * Devuelve: cuerpo vacio; claves: error.
+ * Lee: origen_pqrs, pqrs_comentario, solicitudpqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha PendientePqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/PendientePqrs")
 public class PendientePqrs extends HttpServlet {
 

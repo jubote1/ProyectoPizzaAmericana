@@ -16,9 +16,18 @@ import capaModeloCC.DomiciliarioPedido;
  */
 @WebServlet("/InsertarDomiciliarioPedido")
 /**
- * Servlet que tiene como objetivo la INserción del encabezado de un despacho tienda.
- * @author JuanDavid
+ * Servicio que modifica datos de Domiciliarios y enrutamiento: invoca
+ * PedidoCtrl.insertarDomiciliarioPedido.
  *
+ * Ruta: /ProyectoPizzaAmericana/InsertarDomiciliarioPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), idtienda (integer), idusuario (integer), cantidad
+ * (integer).
+ * Devuelve: application/json.
+ * Escribe: domiciliario_pedido (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarDomiciliarioPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 public class InsertarDomiciliarioPedido extends HttpServlet {
 	private static final long serialVersionUID = 1L;

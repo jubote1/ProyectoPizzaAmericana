@@ -14,8 +14,17 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;
 
 /**
- * Servlet implementation class CRUDMunicipio
- * Servicio que implementa el CRUD para la entidad Municipio.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDOrigenPqrs   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombreorigen (string), idorigen (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: application/json; charset=UTF-8; claves: idorigen, nombreorigen.
+ * Lee: origen_pqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDOrigenPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDOrigenPqrs")
 public class CRUDOrigenPqrs extends HttpServlet {

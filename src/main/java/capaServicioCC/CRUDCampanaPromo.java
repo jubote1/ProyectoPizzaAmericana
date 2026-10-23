@@ -13,15 +13,30 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.CampanaPromoCtrl;
 
 /**
- * Pantalla de campanas de promocion. Mismo molde que CRUDCampana15MinConfig:
- * una sola puerta con idoperacion.
+ * Gestiona las campanas que le hacen una pregunta al cliente al finalizar un pedido (por ejemplo
+ * "?desea la boleta de Cinepolis?") y registra que respondio.
  *
- *   1  guardar (crea si idcampana viene en cero)
- *   2  eliminar
- *   4  listar
- *   6  obtener una con sus tiendas, dias y productos
- *   7  consultar como se llama un producto o una excepcion
- *   8  listar las excepciones de precio del central
+ * Ruta: /ProyectoPizzaAmericana/CRUDCampanaPromo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Exige sesion de usuario.
+ * Operaciones (operacion): 1, 2, 4, 6, 7, 8, 10, 11, 12, 13.
+ * Devuelve: application/json; claves: activo, ambito, aplica, cliente, codigoboleta, correo,
+ * cuantos, descripcion, detalle, dias, estado, exigecorreo, ....
+ * Lee: campana_promo, campana_promo_dia, campana_promo_producto, campana_promo_tienda, cliente,
+ * detalle_pedido, excepcion_precio, pedido, pedido_campana_promo, producto.
+ * Escribe: campana_promo (DELETE/INSERT/UPDATE), campana_promo_dia (DELETE/INSERT),
+ * campana_promo_producto (DELETE/INSERT), campana_promo_tienda (DELETE/INSERT),
+ * pedido_campana_promo (INSERT/UPDATE).
+ *
+ * Trampas y riesgos conocidos:
+ * - Corregido el 2026-10-23: las operaciones 11 y 13 guardaban en el campo de usuario el texto
+ *   capaModeloCC.Usuario@... en lugar del nombre, porque la clase Usuario no tiene toString().
+ *   Los registros anteriores a esa fecha tienen ese texto en pedido_campana_promo.usuario y
+ *   usuario_envio.
+ * - El estado de un registro que pasa de "no" a "si" quedaba en DESCARTADO (corregido el
+ *   2026-10-22).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDCampanaPromo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDCampanaPromo")
 public class CRUDCampanaPromo extends HttpServlet {

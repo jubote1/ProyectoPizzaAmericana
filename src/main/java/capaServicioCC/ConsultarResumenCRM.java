@@ -13,8 +13,17 @@ import utilidadesCC.AccesoCRM;
 import capaControladorCC.Persona360Ctrl;
 
 /**
- * Servlet implementation class ConsultarResumenCRM
- * El estado del maestro de personas, para la pagina de inicio del CRM.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarResumenCRM   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; charset=UTF-8; claves: alias, central_colgados, central_sueltos,
+ * cobertura_central, cobertura_tienda, error, mensaje, personas, tienda_colgados, tienda_sueltos,
+ * ultima_persona.
+ * Lee: cliente, crm.persona, crm.stage_cliente_tienda, usuario.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarResumenCRM.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarResumenCRM")
 public class ConsultarResumenCRM extends HttpServlet {

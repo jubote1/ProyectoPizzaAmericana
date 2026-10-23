@@ -15,9 +15,17 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.SolicitudPQRSImagenes;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocaci�n a la clase en la capa Controladora.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * PedidoCtrl.consultarSolicitudCumpleImagenes.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSolicitudCumpleImagenes   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idsolicitudcumple (integer).
+ * Devuelve: texto; claves: rutaimagen.
+ * Lee: solicitud_cumple_imagenes.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSolicitudCumpleImagenes.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSolicitudCumpleImagenes")
 public class ConsultarSolicitudCumpleImagenes extends HttpServlet {

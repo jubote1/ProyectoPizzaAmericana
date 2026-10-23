@@ -11,6 +11,22 @@ import javax.servlet.http.*;
 
 import capaControladorCC.PedidoCtrl;
 
+/**
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * PedidoCtrl.procesarEncuestaPqrs.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ProcesarEncuestaPqrs   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera Authorization.
+ * Devuelve: application/json; claves: descripcion, idpregunta, mail.smtp.host,
+ * mail.smtp.ssl.protocols, message, success, titulo.
+ * Lee: integracion_crm, parametros, pregunta_pqrs.
+ * Escribe: encuesta_pqrs (INSERT).
+ * Sistemas externos: Correo SMTP, Gmail, Kommo (CRM).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ProcesarEncuestaPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ProcesarEncuestaPqrs")
 public class ProcesarEncuestaPqrs extends HttpServlet {
     private static final long serialVersionUID = 1L;

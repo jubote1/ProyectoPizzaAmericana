@@ -17,7 +17,18 @@ import capaModeloCC.SolicitudFactura;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio de consulta de Reportes y estadisticas: invoca
+ * PedidoCtrl.ConsultarPedidosVentasCorporativas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarVentasEmpresariales   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string).
+ * Devuelve: texto; claves: asesor, cliente, fecha, idpedido, idpedidotienda, nombrecompania,
+ * valor.
+ * Lee: cliente, estado_pedido, forma_pago, pedido, pedido_forma_pago, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarVentasEmpresariales.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarVentasEmpresariales")
 public class ConsultarVentasEmpresariales extends HttpServlet {

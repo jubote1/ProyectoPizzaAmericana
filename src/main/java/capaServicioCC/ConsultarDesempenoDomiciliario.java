@@ -14,13 +14,21 @@ import org.apache.log4j.Logger;
 import capaControladorCC.DesempenoDomiciliarioCtrl;
 
 /**
- * Servlet implementation class ConsultarDesempenoDomiciliario
- * El tablero de desempeno de un domiciliario: cumplimiento del tiempo de
- * entrega, tiempo de regreso a la tienda y comportamiento frente al
- * enrutamiento, barriendo las tiendas.
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * DesempenoDomiciliarioCtrl.consultarDesempeno.
  *
- * Tarda: pregunta a las doce tiendas en vivo. La pantalla tiene que avisar que
- * esta consultando.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDesempenoDomiciliario   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idempleado (integer), fechadesde (string), fechahasta (string),
+ * tiendasdatamart (string).
+ * Devuelve: application/json; charset=UTF-8; claves: a_tiempo, aceptadas, alerta_minutos, bueno,
+ * calle, datamart_hasta, datos_hasta, demorados, desde, distribucion_promesa,
+ * distribucion_regreso, domiciliario, ....
+ * Lee: despacho_real, despacho_real_det, empleado, pedido, pedido_sugerencia,
+ * pedido_sugerencia_det, pedido_sugerencia_log, tienda, tipo_empleado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDesempenoDomiciliario.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDesempenoDomiciliario")
 public class ConsultarDesempenoDomiciliario extends HttpServlet {

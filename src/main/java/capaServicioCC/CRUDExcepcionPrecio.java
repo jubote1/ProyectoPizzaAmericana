@@ -13,8 +13,22 @@ import capaControladorCC.ParametrosCtrl;
 import capaModeloCC.ExcepcionPrecio;
 
 /**
- * Servlet implementation class CRUDExcepcionPrecio
- * Servicio que implementa los servicios que responden al CRUD de la entidad Excepcion Precio.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDExcepcionPrecio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), idproducto (integer), precio (number), descripcion
+ * (string), incluye_liquido (string), idtipoliquido (integer), habilitado (string), horainicial
+ * (string), horafinal (string), lunes (string), martes (string), miercoles (string), jueves
+ * (string), viernes (string), sabado (string), domingo (string), idexcepcion (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: descripcion, domingo, habilitado, horafinal, horainicial, idexcepcion,
+ * idproducto, idtipoliquido, incluye_liquido, jueves, lunes, martes, ....
+ * Lee: detalle_pedido, excepcion_precio, producto, tipo_liquido.
+ * Escribe: excepcion_precio (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDExcepcionPrecio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDExcepcionPrecio")
 public class CRUDExcepcionPrecio extends HttpServlet {

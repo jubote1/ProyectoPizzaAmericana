@@ -14,9 +14,17 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocaci�n a la clase en la capa Controladora.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * PedidoCtrl.insertarSolicitudCumple.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarSolicitudCumple   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), idpedido (integer), idtienda (integer).
+ * Devuelve: texto; claves: idSolicitudCumple.
+ * Escribe: solicitud_cumple (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarSolicitudCumple.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarSolicitudCumple")
 public class InsertarSolicitudCumple extends HttpServlet {

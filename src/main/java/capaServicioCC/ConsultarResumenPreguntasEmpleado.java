@@ -12,10 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PreguntaEmpleadoResultadoCtrl;
 
 /**
- * Servlet implementation class ConsultarResumenPreguntasEmpleado
- * Los empleados activos con cuantas preguntas del huellero contestaron en el
- * rango y su porcentaje de acierto. Parametros: fechadesde y fechahasta, en
- * yyyy-MM-dd o dd/MM/yyyy.
+ * Servicio de consulta de Tiendas y operacion: invoca
+ * PreguntaEmpleadoResultadoCtrl.consultarResumen.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarResumenPreguntasEmpleado   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; charset=UTF-8; claves: cargo, correctas, desde, empleados, error,
+ * hasta, id, nombre, nombrelargo, porcentaje, respondidas, ultima.
+ * Lee: empleado, opcion_respuesta_pregunta, respuesta_empleado, tipo_empleado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarResumenPreguntasEmpleado.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarResumenPreguntasEmpleado")
 public class ConsultarResumenPreguntasEmpleado extends HttpServlet {

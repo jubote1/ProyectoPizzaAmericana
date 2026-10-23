@@ -12,9 +12,36 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Cierra el pedido en el central y arma el JSON que la tienda necesita para recibirlo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/FinalizarPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), programado (string), validadir (string),
+ * motivodescuento (string), idformapago (integer), valorformapago (number), valortotal (number),
+ * idcliente (integer), insertado (integer), tiempopedido (number), descuento (number), tiendakuno
+ * (string).
+ * Devuelve: application/json;charset=UTF-8; claves: apellidos, apiKey, bloqueado, cantidad,
+ * cantidaditempedido, clientId, cliente, clientesiniden, contactEvent, contactExtEventType, date,
+ * descuento, ....
+ * Lee: adicion_detalle_pedido, cliente, detalle_pedido, especialidad, excepcion_precio,
+ * forma_pago, homologacion_forma_pago, homologacion_producto, integracion_crm, marcacion.
+ * Escribe: pedido (UPDATE).
+ * Sistemas externos: GloriaFood/Kuno, Rappi, SALESmanago.
+ *
+ * Trampas y riesgos conocidos:
+ * - El usuariopedido que viaja a la tienda es siempre CONTACT, no el usuario real.
+ * - pedido_forma_pago.valortotal es el que mando el cliente de la API, mientras que
+ *   pedido.total_neto es la suma menos descuento: pueden no coincidir (es una de las causas de
+ *   descuadres de forma de pago).
+ * - No valida que el pedido este en estado 1, que tenga renglones ni que el descuento sea menor
+ *   que el total (un descuento mayor deja un total negativo).
+ * - Si validadir falta, el servicio falla con una excepcion (usa validaDir.equals) DESPUES de
+ *   haber cerrado el pedido en la base: el pedido queda finalizado pero el navegador recibe un
+ *   error y no tiene el JSON para la tienda.
+ * - No es idempotente por el lado del cliente, pero el turno de envio protege del doble envio.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha FinalizarPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/FinalizarPedido")
 public class FinalizarPedido extends HttpServlet {

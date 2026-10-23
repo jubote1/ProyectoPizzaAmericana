@@ -12,10 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.FacturacionElectronicaCtrl;
 
 /**
- * El reporte mensual de facturacion electronica por tienda: facturado, notas credito y neto.
+ * Servicio de consulta de Facturacion electronica: invoca FacturacionElectronicaCtrl.csv,
+ * FacturacionElectronicaCtrl.consultar.
  *
- *   ConsultarFacturacionElectronica?mes=2026-09              -> JSON
- *   ConsultarFacturacionElectronica?mes=2026-09&formato=csv  -> CSV de todos los documentos del mes
+ * Ruta: /ProyectoPizzaAmericana/ConsultarFacturacionElectronica   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): mes (string), formato (string).
+ * Devuelve: text/csv; charset=UTF-8; claves: base, cantidad, dias_con_datos, dias_del_mes, error,
+ * factura, factura_de_otro_mes, facturas, facturas_no_aceptadas, fecha, fecha_factura, hora, ....
+ * Lee: factura_electronica_generada, nota_credito_electronica_generada, pedido, replica_log,
+ * tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarFacturacionElectronica.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarFacturacionElectronica")
 public class ConsultarFacturacionElectronica extends HttpServlet {

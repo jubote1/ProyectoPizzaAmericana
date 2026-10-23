@@ -15,16 +15,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Las solicitudes de conciliacion de QR y datafono.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.consultarSolicitudConciliacion.
  *
- * Antes recibia solo la fecha desde y el id de tienda, y hacia
- * Integer.parseInt(idtienda) dejandolo en 0 si fallaba. La pantalla mandaba
- * idtienda=TODAS para consultar todas, asi que quedaba en 0 y la consulta
- * buscaba "idtienda = 0": escoger TODAS era garantia de pantalla vacia, sin
- * ningun mensaje que lo explicara.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSolicitudConciliacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), fechahasta (string), estado (string), idtienda (integer).
+ * Devuelve: application/json; charset=UTF-8; claves: categoria, descripcion, dias, dias_mas_vieja,
+ * estado, fecha, fecha_procesa, idpedidotienda, idsolicitud, idtienda, nombretienda,
+ * observacion_cierre, ....
+ * Lee: solicitud_conciliacion, tienda.
  *
- * Ahora 0 o TODAS significan todas de verdad, y se aceptan fecha hasta y
- * estado, que es como se encuentran las pendientes sin buscarlas a ojo.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSolicitudConciliacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSolicitudConciliacion")
 public class ConsultarSolicitudConciliacion extends HttpServlet {

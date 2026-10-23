@@ -12,13 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.FidelizacionCtrl;
 
 /**
- * Confirma una redencion que habia quedado RESERVADA.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * FidelizacionCtrl.confirmarRedencionPuntos.
  *
- * La llama el POS cuando el pedido quedo finalizado de verdad. Mientras la
- * redencion esta RESERVADA se considera provisional, y si el pedido nunca se
- * finaliza el proceso de barrido la reversa sola.
+ * Ruta: /ProyectoPizzaAmericana/ConfirmarRedencionPuntos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idredencion (integer), usuario (string).
+ * Devuelve: application/json; claves: detalle, respuesta.
+ * Lee: cliente, cliente_fidelizacion, fidelizacion_redencion, fidelizacion_transaccion,
+ * parametros, tienda.
+ * Escribe: fidelizacion_redencion (UPDATE).
+ * Sistemas externos: Wompi.
  *
- * Parametros: idredencion, usuario
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConfirmarRedencionPuntos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConfirmarRedencionPuntos")
 public class ConfirmarRedencionPuntos extends HttpServlet {

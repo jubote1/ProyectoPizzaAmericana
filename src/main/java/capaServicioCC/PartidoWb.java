@@ -10,6 +10,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PartidoCtrl;
 
+/**
+ * Servicio de consulta de Sin clasificar (revisar a mano): invoca
+ * PartidoCtrl.obtenerPartidoPublicado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/PartidoWb   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Filtro JWT del web.xml.
+ * Devuelve: cuerpo vacio; claves: success.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha PartidoWb.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/PartidoWb")
 public class PartidoWb extends HttpServlet {
 

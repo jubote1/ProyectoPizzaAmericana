@@ -13,8 +13,18 @@ import capaControladorCC.SegmentacionPersonaCtrl;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class ConsultarSegmentacionPersona
- * Cuenta y lista personas de crm.persona_resumen segun los filtros del CRM.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSegmentacionPersona   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; charset=UTF-8; claves: activo, apellido, autorizados, calculado_en,
+ * celular, color, con_correo, descripcion, dias_activo, dias_entre_pedidos, dias_riesgo,
+ * dias_sin_comprar, ....
+ * Lee: apellido, celular, crm.parametro_segmento, crm.persona_resumen, crm.segmento_definicion,
+ * crm.segmento_regla, dias_entre_pedidos, dias_sin_comprar, email, nombre.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSegmentacionPersona.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSegmentacionPersona")
 public class ConsultarSegmentacionPersona extends HttpServlet {

@@ -15,9 +15,18 @@ import capaControladorCC.AutenticacionCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ValidarUsuarioAplicacion
- * Servicio que es invocado siempre que es cargada una página con el fin de validar si quien accede esta logueado en el sistema
- * en caso negativo se redirecciona a la URL de logueo a la aplicació.
+ * Cierra la sesion del usuario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/SalirUsuarioAplicacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: texto.
+ *
+ * Trampas y riesgos conocidos:
+ * - Se puede llamar por GET; cualquier pagina externa podria cerrar la sesion de quien la
+ *   visite.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha SalirUsuarioAplicacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/SalirUsuarioAplicacion")
 public class SalirUsuarioAplicacion extends HttpServlet {

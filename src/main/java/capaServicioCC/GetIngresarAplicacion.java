@@ -16,9 +16,24 @@ import org.apache.log4j.Logger;
 import capaControladorCC.AutenticacionCtrl;
 import capaModeloCC.Usuario;
 /**
- * Servlet implementation class IngresarAplicacion
- * Servicio utilizado para el logueo de la aplicación, recibiendo usuario y password, validando el resultado de la operacion
- * y retornando un resultado para que el sistema interprete y continue la carga de la interface de pedidos.
+ * Inicia sesion (login) con usuario y contrasena.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetIngresarAplicacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): txtUsuario (string), txtPassword (string).
+ * Devuelve: texto.
+ * Lee: rol, usuario, usuario_rol.
+ *
+ * Trampas y riesgos conocidos:
+ * - La contrasena viaja en la URL (por GET) y por lo tanto queda en los registros de acceso del
+ *   servidor y del navegador.
+ * - La consulta compara password = ? con la clave tal como llega: no se ve ninguna funcion de
+ *   hash en el servidor.
+ * - En el codigo leido no se ve bloqueo por intentos fallidos.
+ * - Acepta GET y POST.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetIngresarAplicacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetIngresarAplicacion")
 public class GetIngresarAplicacion extends HttpServlet {

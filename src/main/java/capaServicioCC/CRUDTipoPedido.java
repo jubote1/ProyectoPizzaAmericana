@@ -12,8 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDTipoLiquido
- * Servicio implementado para soportar las operaciones CRUD de la entidad tipo liquido.
+ * Lista los tipos de pedido (domicilio, para llevar, punto de venta...).
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDTipoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), tipopago (string), idtipopedido
+ * (integer).
+ * Operaciones (operacion): 1, 2, 3, 4 (vacia), 5, 6 (vacia).
+ * Devuelve: texto; claves: idtipopedido, nombre, tipopago, validadir.
+ * Lee: tipo_pedido.
+ *
+ * Trampas y riesgos conocidos:
+ * - Un idoperacion invalido se vuelve 0 en silencio y devuelve vacio con HTTP 200.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDTipoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDTipoPedido")
 public class CRUDTipoPedido extends HttpServlet {

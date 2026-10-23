@@ -12,9 +12,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Resume el historial comercial de un telefono: ultimo pedido, cuantos pedidos en 30, 90 y 180
+ * dias, PQRS radicadas y sus especialidades preferidas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerMercadeoCliente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string).
+ * Devuelve: application/json; claves: cantidadpedidos180, cantidadpedidos30, cantidadpedidos90,
+ * cantidadpqrs, especialidades, fechaultimopedido.
+ * Lee: cliente, detalle_pedido, especialidad, pedido, solicitudpqrs.
+ *
+ * Trampas y riesgos conocidos:
+ * - fechaultimopedido sale vacia si nunca ha pedido.
+ * - Cuatro consultas mas una de PQRS por llamada, todas con SQL concatenado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerMercadeoCliente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerMercadeoCliente")
 public class ObtenerMercadeoCliente extends HttpServlet {

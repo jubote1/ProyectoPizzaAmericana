@@ -11,8 +11,28 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.FidelizacionCtrl;
 
 /**
- * Servlet implementation class CRUDTienda
- * Servicio que implementa los m�todos para soportar el CRUD de la entidad Tienda.
+ * Es un servicio con varias operaciones sobre el programa de fidelizacion de un cliente.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ServiciosClienteFidelizacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), correo (string), canal (string), puntos (number),
+ * idtienda (integer), idpedidotienda (integer), valorneto (number).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.
+ * Devuelve: texto; claves: activo, dias, email, fechatransaccion, idpedidotienda, idtienda,
+ * mensaje, messageVersions, name, nombre, params, porvencer, ....
+ * Lee: cliente_fidelizacion, cliente_no_fidelizacion, fidelizacion_transaccion, integracion_crm,
+ * parametros, tienda.
+ * Escribe: cliente_fidelizacion (INSERT/UPDATE), cliente_no_fidelizacion (INSERT),
+ * fidelizacion_transaccion (INSERT).
+ * Sistemas externos: Brevo, Correo SMTP.
+ *
+ * Trampas y riesgos conocidos:
+ * - La operacion 6 recibe los puntos a sumar como parametro (puntos, valorneto): conviene
+ *   comprobar que el servicio los valide contra un pedido real, porque quien lo llame con un
+ *   correo podria decidir cuantos puntos suma.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ServiciosClienteFidelizacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ServiciosClienteFidelizacion")
 public class ServiciosClienteFidelizacion extends HttpServlet {

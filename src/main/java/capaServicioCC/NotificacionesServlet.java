@@ -12,6 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaDAOCC.PedidoDAO;
 import capaModeloCC.Notificaciones;
 
+/**
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca
+ * PedidoDAO.listarNotificaciones, PedidoDAO.marcarNotificacionesVistas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/NotificacionesServlet   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string).
+ * Devuelve: cuerpo vacio; claves: fecha_hora, id, idpedido, mensaje, notificado, ok, origen.
+ * Lee: notificaciones.
+ * Escribe: notificaciones (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha NotificacionesServlet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/NotificacionesServlet")
 public class NotificacionesServlet extends HttpServlet {
 

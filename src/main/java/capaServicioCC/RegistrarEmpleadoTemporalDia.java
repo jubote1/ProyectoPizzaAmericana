@@ -15,20 +15,18 @@ import capaControladorCC.CodigoPromoCtrl;
 import capaControladorCC.EmpleadoTemporalDiaTiendaCtrl;
 
 /**
- * Servlet implementation class RegistrarEmpleadoTemporalDia
+ * Servicio que modifica datos de Tiendas y operacion: invoca CodigoPromoCtrl.autorizado,
+ * CodigoPromoCtrl.sinAutorizacion.
  *
- * El POS de cada tienda le avisa al central que un domiciliario temporal ingreso o salio, para que el mapa
- * de domiciliarios sepa si esta dentro. Se llama despues de guardarlo en la base local de la tienda; si
- * este servicio no responde, la tienda sigue trabajando y lo reintenta mas tarde.
+ * Ruta: /ProyectoPizzaAmericana/RegistrarEmpleadoTemporalDia   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Exige token de tienda.
+ * Recibe: cuerpo de la peticion y cabecera X-Token-Tienda.
+ * Devuelve: application/json; charset=UTF-8; claves: mensaje, respuesta.
+ * Lee: parametros.
+ * Escribe: empleado_temporal_dia_tienda (INSERT/UPDATE).
  *
- * POST con un JSON: idtienda, idinterno, id, identificacion, nombre, telefono, empresa, idempresa,
- * fechasistema (aaaa-mm-dd), horaingreso, horasalida, observacion, anulado (S/N) y version.
- *
- * AUTORIZACION: el mismo token de las tiendas que usa CodigoPromocional. Si general.parametros.CODIGOSTOKEN
- * tiene valor, cada llamada debe traerlo en el encabezado X-Token-Tienda; si esta vacio no se exige nada, para
- * poder desplegar primero el central y despues el POS.
- *
- * Ver capaControladorCC.EmpleadoTemporalDiaTiendaCtrl y sql/2026_10_07_01_general_empleado_temporal_dia_tienda.sql.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RegistrarEmpleadoTemporalDia.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RegistrarEmpleadoTemporalDia")
 public class RegistrarEmpleadoTemporalDia extends HttpServlet {

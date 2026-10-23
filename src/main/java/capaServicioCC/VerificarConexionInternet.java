@@ -20,6 +20,18 @@ import capaModeloCC.Usuario;
 
 
 
+/**
+ * Servicio de consulta de Sin clasificar (revisar a mano): invoca
+ * TiendaCtrl.ServicioVerificarConexInternet.
+ *
+ * Ruta: /ProyectoPizzaAmericana/VerificarConexionInternet   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: conexion, funcional, hosbd, idtienda, mensaje, nombre.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha VerificarConexionInternet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/VerificarConexionInternet")
 public class VerificarConexionInternet extends HttpServlet {
 	private static final long serialVersionUID = 1L;

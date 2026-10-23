@@ -17,8 +17,17 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.SolicitudConciliacion;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * M�todo que se encarga recibir los par�metros para la inserci�n de una especialidad.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.validarCierreSolicitudConciliacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarCierreSolicitudConciliacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: texto; claves: respuesta.
+ * Lee: solicitud_conciliacion.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarCierreSolicitudConciliacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarCierreSolicitudConciliacion")
 public class ValidarCierreSolicitudConciliacion extends HttpServlet {

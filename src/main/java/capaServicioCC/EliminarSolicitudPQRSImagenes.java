@@ -16,6 +16,20 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.SolicitudPQRSImagenes;
 
 
+/**
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.eliminarSolicitudPQRSImagen.
+ *
+ * Ruta: /ProyectoPizzaAmericana/EliminarSolicitudPQRSImagenes   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idimagen (string).
+ * Devuelve: text/plain; claves: respuesta.
+ * Lee: solicitudpqrs_imagenes.
+ * Escribe: solicitudpqrs_imagenes (DELETE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha EliminarSolicitudPQRSImagenes.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/EliminarSolicitudPQRSImagenes")
 public class EliminarSolicitudPQRSImagenes extends HttpServlet {
     private static final long serialVersionUID = 1L;

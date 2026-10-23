@@ -19,6 +19,18 @@ import capaControladorCC.SegmentacionClienteCtrl;
 import capaDAOCC.SegmentacionClienteDAO;
 import capaModeloCC.PlantillaBrevo;
 
+/**
+ * Servicio de consulta de Bot y CRM (Kommo): invoca SegmentacionClienteCtrl.obtenerPlantillas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerPlantillaBrevo   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: categoria, error, idplantilla, nombre.
+ * Lee: plantilla_brevo.
+ * Sistemas externos: Brevo.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerPlantillaBrevo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerPlantillaBrevo")
 public class ObtenerPlantillaBrevo extends HttpServlet {
     private static final long serialVersionUID = 1L;

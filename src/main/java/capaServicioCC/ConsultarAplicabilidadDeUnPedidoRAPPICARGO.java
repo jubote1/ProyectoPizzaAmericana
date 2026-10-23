@@ -14,7 +14,25 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Dice si un pedido cumple las condiciones para entregarse con Rappi Cargo (domicilio tercerizado)
+ * y si su pago virtual ya esta confirmado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarAplicabilidadDeUnPedidoRAPPICARGO   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), idtienda (integer), numposheader (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: direccionCliente, distanciaKm,
+ * fechapagovirtual, formapago, idCliente, idformapago, latitudCliente, latitudTienda,
+ * longitudCliente, longitudTienda, mensaje, nombreTienda, ....
+ * Lee: cliente, forma_pago, parametros, pedido, pedido_forma_pago, producto, tienda.
+ * Sistemas externos: Rappi.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si no encuentra el pedido, responde
+ *   {"resultado":false,"validacionDistancia":false,"mensaje":"No se encontro informacion del
+ *   pedido en el servidor principal."}.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarAplicabilidadDeUnPedidoRAPPICARGO.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarAplicabilidadDeUnPedidoRAPPICARGO")
 public class ConsultarAplicabilidadDeUnPedidoRAPPICARGO extends HttpServlet {

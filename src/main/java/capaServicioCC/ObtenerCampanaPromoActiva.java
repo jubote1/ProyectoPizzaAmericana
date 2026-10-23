@@ -15,18 +15,18 @@ import org.json.simple.JSONObject;
 import capaDAOCC.CampanaPromoDAO;
 
 /**
- * Le dice al POS si hay una campana de promocion viva para su tienda, y con que
- * productos se dispara.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * CampanaPromoDAO.obtenerActivaParaTienda.
  *
- * El POS no puede preguntar "aplica a este pedido?" porque el detalle del pedido
- * vive en la base de la tienda y el central no la tiene. Asi que se le manda la
- * REGLA y el POS la evalua contra su propio detalle. Mismo reparto que la
- * campana de 15 minutos.
+ * Ruta: /ProyectoPizzaAmericana/ObtenerCampanaPromoActiva   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: application/json; claves: exigecorreo, hayCampana, idcampana, nombre, pregunta,
+ * productos.
+ * Lee: campana_promo, campana_promo_dia, campana_promo_producto, campana_promo_tienda.
  *
- * Sin sesion a proposito, igual que ObtenerCampana15MinActiva: quien llama es el
- * POS de una tienda, no un navegador con usuario. No expone nada sensible: el
- * nombre de una promocion, la pregunta que la caja va a leer en voz alta, y unos
- * ids de producto.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerCampanaPromoActiva.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerCampanaPromoActiva")
 public class ObtenerCampanaPromoActiva extends HttpServlet {

@@ -18,6 +18,25 @@ import com.google.gson.reflect.TypeToken;
 import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.ComentarioPqrs;
 
+/**
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.actualizarSolicitudPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarSolicitudPQRS   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): listaComentarios (string), fechasolicitud (string), tiposolicitud (string),
+ * nombres (string), apellidos (string), telefono (string), direccion (string), zona (string), tipo
+ * (string), arearesponsable (string), descuentoRedimido (boolean), ccVinculado (boolean), correo
+ * (string), envio_encuesta (boolean), observacion_ans (string), cambio_fecha_cierre (boolean).
+ * Devuelve: cuerpo vacio; claves: envioEncuesta, estadoEncuesta, idSolicitudPQRS,
+ * registroComentarios, telefono_valido.
+ * Lee: foco_pqrs, parametros, pqrs_comentario, solicitudpqrs, tienda.
+ * Escribe: pqrs_comentario (DELETE/INSERT/UPDATE), solicitudpqrs (UPDATE).
+ * Sistemas externos: Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarSolicitudPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ActualizarSolicitudPQRS")
 public class ActualizarSolicitudPQRS extends HttpServlet {
     private static final long serialVersionUID = 1L;

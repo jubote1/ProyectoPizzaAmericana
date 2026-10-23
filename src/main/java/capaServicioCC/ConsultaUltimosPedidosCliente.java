@@ -13,7 +13,26 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Lista los 3 ultimos pedidos de una direccion de cliente (idcliente) con tienda, valor, estado,
+ * forma de pago y si ya llegaron a la tienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultaUltimosPedidosCliente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idcliente (string).
+ * Devuelve: texto; claves: cliente, direccion, enviadopixel, estadoenviotienda, estadopedido,
+ * fechainsercion, formapago, idcliente, idformapago, idpedido, idtienda, numposheader, ....
+ * Lee: cliente, estado_pedido, forma_pago, pedido, pedido_forma_pago, tienda.
+ *
+ * Trampas y riesgos conocidos:
+ * - Expone la URL interna de la tienda y la cadena stringpixel completa del pedido.
+ * - Devuelve como maximo 3 pedidos (order by fechapedido desc limit 3): ordena por fecha, no por
+ *   hora, y si dos pedidos son del mismo dia no hay un criterio estable.
+ * - Une con pedido_forma_pago: un pedido que todavia no tiene forma de pago registrada no
+ *   aparece.
+ * - Mira una sola direccion (idcliente), no todos los pedidos del telefono.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultaUltimosPedidosCliente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultaUltimosPedidosCliente")
 public class ConsultaUltimosPedidosCliente extends HttpServlet {

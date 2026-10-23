@@ -16,6 +16,26 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
 
+/**
+ * Borra los campos de pedido del lead para empezar de nuevo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/LimpiarLeadCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json;charset=UTF-8; claves: custom_fields_values, enum_id, field_id, id,
+ * value, values.
+ * Lee: integracion_crm.
+ * Escribe: log_pedido_crmbot (INSERT).
+ * Sistemas externos: GloriaFood/Kuno, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - No valida la cabecera Authorization: quien conozca el numero de un lead puede vaciar sus
+ *   campos de pedido.
+ * - Responde {} aunque el borrado falle despues, porque trabaja en segundo plano.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha LimpiarLeadCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/LimpiarLeadCRMBOT")
 public class LimpiarLeadCRMBOT extends HttpServlet {
 

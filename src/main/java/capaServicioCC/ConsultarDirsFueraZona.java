@@ -12,8 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Servicio de consulta de Direccion y cobertura (administracion): invoca
+ * ParametrosCtrl.ConsultaDirFueraZona.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDirsFueraZona   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), municipio (string).
+ * Devuelve: texto; claves: apellido, direccion, fecha_ingreso, id, idcliente, latitud, longitud,
+ * municipio, nombre, telefono.
+ * Lee: direccion_fuera_zona, pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDirsFueraZona.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDirsFueraZona")
 public class ConsultarDirsFueraZona extends HttpServlet {

@@ -12,9 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ConsultaResumidaEstadoTienda
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio de consulta de Tiendas y operacion: invoca PedidoCtrl.consultaResumidaEstadoTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultaResumidaEstadoTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), fecha (string).
+ * Devuelve: texto; claves: resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultaResumidaEstadoTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultaResumidaEstadoTienda")
 public class ConsultaResumidaEstadoTienda extends HttpServlet {

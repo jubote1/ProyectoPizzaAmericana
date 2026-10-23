@@ -12,9 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.DesempenoDomiciliarioCtrl;
 
 /**
- * Servlet implementation class ConsultarDomiciliariosActivos
- * Los domiciliarios activos, para el selector del tablero de desempeno. Sale
- * de general.empleado cruzado con la marca tipo_empleado.es_domiciliario.
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * DesempenoDomiciliarioCtrl.obtenerDomiciliarios.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDomiciliariosActivos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; charset=UTF-8; claves: domiciliarios, id, nombre, nombrelargo, tipo.
+ * Lee: empleado, tipo_empleado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDomiciliariosActivos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDomiciliariosActivos")
 public class ConsultarDomiciliariosActivos extends HttpServlet {

@@ -17,7 +17,17 @@ import capaModeloCC.SolicitudFactura;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * PedidoCtrl.consultarSolicitudesCumple.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSolicitudesCumple   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string).
+ * Devuelve: texto; claves: fecha, idpedido, idsolicitudcumple, tienda.
+ * Lee: solicitud_cumple, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSolicitudesCumple.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSolicitudesCumple")
 public class ConsultarSolicitudesCumple extends HttpServlet {

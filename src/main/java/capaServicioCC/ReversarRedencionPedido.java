@@ -14,17 +14,23 @@ import capaControladorCC.FidelizacionCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Devuelve los puntos de un pedido que NO se finalizo, sin pasar por revision.
+ * Devuelve los puntos de una redencion cuando el pedido no se llego a hacer.
  *
- * Este es el caso en que no hubo entrega: el cajero abandono el pedido, se
- * cerro la pantalla de pago, fallo una validacion posterior. No hay nada que
- * revisar y devolver los puntos es lo unico correcto.
+ * Ruta: /ProyectoPizzaAmericana/ReversarRedencionPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idtienda (integer), idpedidotienda (integer), puntos (number), motivo
+ * (string), usuario (string), idredencion (integer).
+ * Devuelve: application/json; claves: detalle, idredencion, puntosdevueltos, respuesta.
+ * Lee: fidelizacion_redencion, fidelizacion_redencion_detalle.
+ * Escribe: cliente_fidelizacion (UPDATE), fidelizacion_redencion (UPDATE),
+ * fidelizacion_redencion_detalle (UPDATE), fidelizacion_transaccion (UPDATE).
  *
- * El pedido que SI se finalizo y luego se anula NO va por aqui: va por
- * SolicitarReversaRedencion, porque ahi el cliente pudo haber recibido el
- * producto y la devolucion necesita aprobacion.
+ * Trampas y riesgos conocidos:
+ * - Devolver puntos es dinero: cualquiera que conozca idredencion podria reversar. Revisar que
+ *   el servicio verifique el estado de la redencion.
  *
- * Parametros: idtienda, idpedidotienda, puntos (0 = todo), usuario, motivo
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ReversarRedencionPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ReversarRedencionPedido")
 public class ReversarRedencionPedido extends HttpServlet {

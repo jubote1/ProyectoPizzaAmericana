@@ -12,7 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el n�mero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.consultarInfoRappiCargo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarInfoRappiCargo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedidotienda (integer), idtienda (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: fechacancelacion, fechaentrega, idpedido,
+ * idpedidologistico, urlseguimiento.
+ * Lee: pedido, tercerizado_domicilio_evento.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarInfoRappiCargo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarInfoRappiCargo")
 public class ConsultarInfoRappiCargo extends HttpServlet {

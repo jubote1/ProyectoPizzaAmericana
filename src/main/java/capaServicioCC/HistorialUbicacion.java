@@ -15,6 +15,24 @@ import org.json.simple.JSONObject;
 
 import capaDAOCC.DomiciliarioPedidoDAO;
 
+/**
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * DomiciliarioPedidoDAO.HistorialActualUbicacion, DomiciliarioPedidoDAO.HistorialUsuariosPorFecha.
+ *
+ * Ruta: /ProyectoPizzaAmericana/HistorialUbicacion   Metodos: GET, POST.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): tiendaId (string), startDate (string), endDate (string), claveRapida
+ * (string), action (string).
+ * Devuelve: application/json; claves: bateria, clave_usuario, despacho_id, empresa_temporal,
+ * en_turno_biometria, estado, fecha, hora_entrega, hora_regreso, hora_salida, id_pedido, idtienda,
+ * ....
+ * Lee: datamart.despacho_real, datamart.despacho_real_det, date, domiciliario_ubicacion_actual,
+ * general.empleado, general.empleado_evento, general.empleado_temporal,
+ * general.empleado_temporal_dia_tienda, horaingreso, horasalida.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha HistorialUbicacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/HistorialUbicacion")
 public class HistorialUbicacion extends HttpServlet {
 

@@ -12,17 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.EncuestaMercadeoCtrl;
 
 /**
- * Servicio que retorna en formato JSON el reporte de respuestas de las encuestas de
- * mercadeo tomadas en el POS, en dos vistas a la vez: el resumen agrupado por
- * pregunta y respuesta con su porcentaje, y el detalle fila por fila.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * EncuestaMercadeoCtrl.consultarReporte.
  *
- * Parametros:
- *   idtienda      tienda a filtrar. 0 o ausente = todas.
- *   fechainicial  fecha inicial inclusive, formato aaaa-mm-dd. Obligatoria.
- *   fechafinal    fecha final inclusive, formato aaaa-mm-dd. Obligatoria.
- *   idpregunta    pregunta a filtrar. 0 o ausente = todas.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarEncuestaMercadeo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (string), idpregunta (string), fechainicial (string), fechafinal
+ * (string).
+ * Devuelve: application/json; claves: cantidad, detalle, encuestas, etiqueta, fecha, idcliente,
+ * idencuesta, idopcion, idpedidotienda, idpregunta, idtienda, idusuario, ....
+ * Lee: encuesta_mercadeo, pregunta_mercadeo, tienda.
  *
- * Servlet implementation class ConsultarEncuestaMercadeo
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarEncuestaMercadeo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarEncuestaMercadeo")
 public class ConsultarEncuestaMercadeo extends HttpServlet {

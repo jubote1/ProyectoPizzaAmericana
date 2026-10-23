@@ -16,9 +16,16 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.EmpleadoVale;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la informaci�n de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocaci�n a la clase en la capa Controladora.
+ * Servicio de consulta de Tiendas y operacion: invoca EmpleadoCtrl.validarEmpleadoVale.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarEmpleadoVale   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), idempleado (integer).
+ * Devuelve: texto; claves: respuesta.
+ * Lee: empleado_vale, periodo_nomina.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarEmpleadoVale.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarEmpleadoVale")
 public class ValidarEmpleadoVale extends HttpServlet {

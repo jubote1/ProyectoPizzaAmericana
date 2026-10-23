@@ -11,9 +11,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * PedidoCtrl.enviarCorreoPruebaEncuesta.
+ *
+ * Ruta: /ProyectoPizzaAmericana/parsingEncuestaServicio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: parametros, parametros_correo.
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ParsingEncuestaServicio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/parsingEncuestaServicio")
 public class ParsingEncuestaServicio extends HttpServlet {

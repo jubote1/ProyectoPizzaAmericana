@@ -12,9 +12,23 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class ObtenerUrlTienda
- * Este servicio nos permite dado un idtienda, retornar el URL Tienda, el cual es la base para invocar el servicio que
- * se encarga de insertar el pedido de la tienda.
+ * Da la direccion del servicio local de una tienda, su nombre de origen de datos y si tiene el POS
+ * nuevo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerUrlTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: texto; claves: dsnodbc, pos, urltienda.
+ * Lee: tienda.
+ *
+ * Trampas y riesgos conocidos:
+ * - El servlet no tiene try/catch: un idtienda ausente o no numerico lanza una excepcion y
+ *   Tomcat responde HTTP 500 con su pagina de error.
+ * - Si la tienda no existe devuelve valores nulos, no un error.
+ * - Expone las URLs internas de las tiendas a cualquiera que llame.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerUrlTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerUrlTienda")
 public class ObtenerUrlTienda extends HttpServlet {

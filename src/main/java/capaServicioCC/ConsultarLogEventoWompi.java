@@ -14,8 +14,18 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class AprobarBloqueoTienda
- * Servicio que implementa los métodos para soportar el CRUD de la entidad Tienda.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.consultarLogEventoWompi.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarLogEventoWompi   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idlink (string).
+ * Devuelve: texto; claves: estado, evento, fechahora, idlink.
+ * Lee: log_evento_wompi.
+ * Sistemas externos: Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarLogEventoWompi.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarLogEventoWompi")
 public class ConsultarLogEventoWompi extends HttpServlet {

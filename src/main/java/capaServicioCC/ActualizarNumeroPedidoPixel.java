@@ -12,7 +12,23 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el n�mero de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Marca un pedido como enviado a la tienda y guarda el numero con el que la tienda lo recibio.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarNumeroPedidoPixel   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), numpedidopixel (integer), creacliente (boolean),
+ * membercode (integer), idcliente (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Escribe: cliente (UPDATE), pedido (UPDATE).
+ *
+ * Trampas y riesgos conocidos:
+ * - SEGURIDAD y operacion: cualquiera puede marcar como enviado un pedido que la tienda no
+ *   tiene. Con numpedidopixel = 0 deja enviadopixel = 1 y numposheader = 0, que es el estado
+ *   "finalizado sin llegar a la tienda" que luego bloquea los reenvios.
+ * - No valida que el pedido exista.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarNumeroPedidoPixel.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarNumeroPedidoPixel")
 public class ActualizarNumeroPedidoPixel extends HttpServlet {

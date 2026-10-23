@@ -11,6 +11,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.CorreoPQRS;
 
 
+/**
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * CorreoPQRS.correoEncuestaPqrs.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CorreoEncuestaPqrs   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): cliente (string), correo (string), telefono (string).
+ * Devuelve: cuerpo vacio; claves: mail.smtp.host, mail.smtp.ssl.protocols, message, success.
+ * Lee: parametros, parametros_correo.
+ * Escribe: solicitudpqrs (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CorreoEncuestaPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/CorreoEncuestaPqrs")
 
 public class CorreoEncuestaPqrs extends HttpServlet {

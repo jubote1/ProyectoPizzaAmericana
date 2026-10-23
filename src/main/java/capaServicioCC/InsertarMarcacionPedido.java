@@ -14,8 +14,24 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.MarcacionPedido;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Registra la marcacion escogida para un pedido con su descuento, el motivo y otros valores.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarMarcacionPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): observacion (string), marketplace (string), descuentoasumido (string),
+ * idpedido (integer), idmarcacion (integer), descuento (number), descuentoplataforma (number),
+ * tarifaadicional (number), propina (number), motivo (string).
+ * Devuelve: texto; claves: resultado.
+ * Escribe: marcacion_pedido (INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - Responde OK aunque la insercion falle: el DAO no devuelve el resultado.
+ * - observacion y motivo van concatenados al SQL (inyectable; una comilla simple rompe la
+ *   insercion).
+ * - No valida que el descuento sea razonable ni que quien llama sea administrador.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarMarcacionPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarMarcacionPedido")
 public class InsertarMarcacionPedido extends HttpServlet {

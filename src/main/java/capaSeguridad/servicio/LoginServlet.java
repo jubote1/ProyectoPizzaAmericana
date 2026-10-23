@@ -22,6 +22,25 @@ import javax.servlet.annotation.WebServlet;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+/**
+ * Autentica a un usuario de sistema con usuario y contrasena y le entrega un par de tokens: uno de
+ * acceso (corto) y uno de renovacion (largo).
+ *
+ * Ruta: /ProyectoPizzaAmericana/login   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): username (string), password (string), session (string).
+ * Devuelve: application/json; claves: accessToken, accessTokenExpiration, refreshToken,
+ * refreshTokenExpiration, session.
+ *
+ * Trampas y riesgos conocidos:
+ * - No se ve limite de intentos fallidos: un atacante puede probar contrasenas sin freno.
+ * - Los errores salen como HTML del servidor; un cliente maquina debe tratarlos por codigo HTTP.
+ * - Si falta la variable SECRET_KEY en el servidor, el filtro JWT y los servicios de renovacion
+ *   no arrancan (error al desplegar).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha LoginServlet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 

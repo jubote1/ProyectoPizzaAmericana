@@ -16,9 +16,25 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Valida si la direccion del lead esta dentro de la cobertura de una tienda y escribe el resultado
+ * en el lead.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarCoberturaCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: cliente, integracion_crm, municipio, nomenclatura_direccion, parametros, pedido,
+ * pedido_anulado, tienda, tienda_bloqueada.
+ * Escribe: cliente (UPDATE), log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - El javadoc del servlet dice "retorna las tiendas o puntos de venta... en formato JSON": es
+ *   falso. No devuelve nada.
+ * - Si el geocodificador falla manda un correo de alerta a direcciones fijas.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarCoberturaCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarCoberturaCRMBOT")
 public class ConsultarCoberturaCRMBOT extends HttpServlet {

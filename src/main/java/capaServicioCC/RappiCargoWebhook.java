@@ -31,6 +31,21 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+/**
+ * Servicio con 2 operaciones que se escogen con el parametro idPedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/api/rappi-cargo/webhook/status   Metodos: POST.
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe: cuerpo de la peticion y cabecera x-rappi-cargo-secret.
+ * Operaciones (idPedido): 0, 0.
+ * Devuelve: application/json; claves: message, ok.
+ * Lee: cliente, estado_pedido, forma_pago, parametros, pedido, pedido_forma_pago, tienda.
+ * Escribe: notificaciones (INSERT), pedido (UPDATE), tercerizado_domicilio_evento (INSERT/UPDATE).
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RappiCargoWebhook.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/api/rappi-cargo/webhook/status")
 public class RappiCargoWebhook extends HttpServlet {
 

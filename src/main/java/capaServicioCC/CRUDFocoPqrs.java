@@ -13,8 +13,17 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;
 
 /**
- * Servlet implementation class CRUDFormaPago
- * Servicio que implementa el CRUD de la entidad Forma Pago.
+ * Servicio con 5 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDFocoPqrs   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string).
+ * Operaciones (operacion): 1 (vacia), 2 (vacia), 3 (vacia), 4 (vacia), 5.
+ * Devuelve: texto; claves: idfoco, nombrefoco.
+ * Lee: foco_pqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDFocoPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDFocoPqrs")
 public class CRUDFocoPqrs extends HttpServlet {

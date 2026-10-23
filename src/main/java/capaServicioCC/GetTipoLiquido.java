@@ -13,8 +13,16 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetTipoLiquido
- * Servicio que se encarga de retornar en formato JSON los tipos liquidos parámetrizados en el sistema.
+ * Servicio de consulta de Catalogo y productos (administracion): invoca
+ * ParametrosCtrl.ObtenerTiposLiquido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetTipoLiquido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: capacidad, idtipo_liquido, nombre.
+ * Lee: tipo_liquido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetTipoLiquido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetTipoLiquido")
 public class GetTipoLiquido extends HttpServlet {

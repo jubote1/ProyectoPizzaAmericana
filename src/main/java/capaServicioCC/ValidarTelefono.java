@@ -12,9 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Cuenta los pedidos que ese telefono ya tiene hoy en estado 2 (finalizado en el central).
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarTelefono   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string).
+ * Devuelve: application/json; claves: cantidad.
+ * Lee: cliente, pedido.
+ *
+ * Trampas y riesgos conocidos:
+ * - El nombre engana: no valida el telefono, cuenta pedidos del dia.
+ * - SQL concatenado, sin sesion.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarTelefono.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarTelefono")
 public class ValidarTelefono extends HttpServlet {

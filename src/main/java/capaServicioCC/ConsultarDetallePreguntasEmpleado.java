@@ -12,9 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PreguntaEmpleadoResultadoCtrl;
 
 /**
- * Servlet implementation class ConsultarDetallePreguntasEmpleado
- * Lo que respondio un empleado en el rango: por pregunta (veces y acierto) y
- * respuesta por respuesta. Parametros: idempleado, fechadesde y fechahasta.
+ * Servicio de consulta de Tiendas y operacion: invoca
+ * PreguntaEmpleadoResultadoCtrl.consultarDetalle.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDetallePreguntasEmpleado   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idempleado (integer), fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; charset=UTF-8; claves: correcta, correctas, desde, error, fecha,
+ * hasta, idempleado, idpregunta, idtienda, porcentaje, porpregunta, pregunta, ....
+ * Lee: opcion_respuesta, opcion_respuesta_pregunta, pregunta_empleado, respuesta_empleado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDetallePreguntasEmpleado.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDetallePreguntasEmpleado")
 public class ConsultarDetallePreguntasEmpleado extends HttpServlet {

@@ -16,7 +16,20 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio que modifica datos de Direccion y cobertura (administracion): invoca
+ * ClienteCtrl.actualizarClienteDireccion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarClienteDireccion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): direccion (string), zona (string), observacion (string), municipio
+ * (string), numnomenclatura1 (string), numnomenclatura2 (string), num3 (string), latitud (number),
+ * longitud (number), idcliente (integer), idnomenclatura (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: respuesta.
+ * Lee: municipio.
+ * Escribe: cliente (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarClienteDireccion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarClienteDireccion")
 public class ActualizarClienteDireccion extends HttpServlet {

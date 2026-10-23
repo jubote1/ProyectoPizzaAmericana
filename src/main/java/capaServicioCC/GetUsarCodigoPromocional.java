@@ -15,9 +15,23 @@ import capaControladorCC.PromocionesCtrl;
 import capaModeloCC.Usuario;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Marca una oferta del cliente como usada (todo o parte) al terminar el pedido, y deja el rastro
+ * en el log de redenciones.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetUsarCodigoPromocional   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idofertacliente (string), descuentosobrante (string), descuento (string),
+ * usuariouso (string).
+ * Devuelve: application/json; claves: resultado.
+ * Escribe: log_redencion_codigo (INSERT), oferta_cliente (UPDATE).
+ *
+ * Trampas y riesgos conocidos:
+ * - Cualquier persona sin sesion puede quemar los codigos de otros clientes enviando
+ *   idofertacliente y un usuariouso inventado.
+ * - Es el patron correcto de actualizacion atomica: sirve de modelo para servicios nuevos.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetUsarCodigoPromocional.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetUsarCodigoPromocional")
 public class GetUsarCodigoPromocional extends HttpServlet {

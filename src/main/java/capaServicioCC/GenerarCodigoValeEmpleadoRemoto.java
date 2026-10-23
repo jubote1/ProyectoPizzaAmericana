@@ -15,9 +15,18 @@ import capaModeloCC.PedidoPrecioEmpleado;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class InsertarEncabezadoPedido
- * Servicio que se encarga de insertar el encabezado de un pedido, se retorna en formato JSON el dato esperado que 
- * corresponde al idpedido.
+ * Servicio que modifica datos de Tiendas y operacion: invoca
+ * PedidoCtrl.generarCodigoValeEmpleadoRemoto.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GenerarCodigoValeEmpleadoRemoto   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idempleado (integer), fecha (string).
+ * Devuelve: texto; claves: codigo.
+ * Lee: empleado_remoto_vale.
+ * Escribe: empleado_remoto_vale (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GenerarCodigoValeEmpleadoRemoto.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GenerarCodigoValeEmpleadoRemoto")
 public class GenerarCodigoValeEmpleadoRemoto extends HttpServlet {

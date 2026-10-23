@@ -15,9 +15,20 @@ import capaControladorCC.AutenticacionCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ValidarUsuarioAplicacion
- * Servicio que es invocado siempre que es cargada una página con el fin de validar si quien accede esta logueado en el sistema
- * en caso negativo se redirecciona a la URL de logueo a la aplicació.
+ * Dice si la persona que tiene la cookie de sesion sigue autenticada y que perfil tiene.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarUsuarioAplicacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Lee la sesion pero no la exige.
+ * Devuelve: application/json;charset=UTF-8; claves: nombreusuario, plataforma, respuesta, roles,
+ * usu.
+ * Lee: rol, usuario, usuario_rol.
+ *
+ * Trampas y riesgos conocidos:
+ * - Responde siempre 200. Un error interno se registra y se devuelve el NOK por defecto.
+ * - Depende de una sesion de navegador: no sirve para una llamada maquina a maquina.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarUsuarioAplicacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarUsuarioAplicacion")
 public class ValidarUsuarioAplicacion extends HttpServlet {

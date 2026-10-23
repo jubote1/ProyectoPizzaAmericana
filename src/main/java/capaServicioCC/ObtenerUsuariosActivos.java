@@ -12,6 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.AutenticacionCtrl;
 
+/**
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca
+ * AutenticacionCtrl.obtenerUsuarioActivo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerUsuariosActivos   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: error.
+ * Lee: usuario.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerUsuariosActivos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerUsuariosActivos")
 public class ObtenerUsuariosActivos extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

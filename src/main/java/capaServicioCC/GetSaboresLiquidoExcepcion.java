@@ -12,9 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetSaboresLiquidoExcepcion
- * Servicio que toma parámetro el idexcepción pasado como parámetro y con base en este retorna en formato JSON
- * los liquidos parametrizados para la excepción de precio.
+ * Igual que el anterior, pero para la bebida que incluye una promocion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetSaboresLiquidoExcepcion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idExcepcion (string), idtienda (integer).
+ * Devuelve: application/json; claves: descripcionExcepcion, descripcionLiquido, descripcionSabor,
+ * idExcepcion, idLiquido, idSaborTipoLiquido, valorAdicional.
+ * Lee: excepcion_precio, producto_no_existente, sabor_x_tipo_liquido, tipo_liquido.
+ *
+ * Trampas y riesgos conocidos:
+ * - Mismos de GetSaboresLiquidoProducto.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetSaboresLiquidoExcepcion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetSaboresLiquidoExcepcion")
 public class GetSaboresLiquidoExcepcion extends HttpServlet {

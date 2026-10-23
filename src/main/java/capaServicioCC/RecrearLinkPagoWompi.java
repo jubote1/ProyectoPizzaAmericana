@@ -14,14 +14,27 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Recrea el link de pago de un pedido.
+ * Crea de nuevo el link de pago de un pedido (por ejemplo cuando vencio) y lo vuelve a enviar.
  *
- * Recibe solo el numero del pedido. El monto, la tienda y el cliente se leen de
- * la base: antes el navegador armaba el link con el valor que tuviera la reja en
- * pantalla, y eso se puede cambiar antes de mandarlo.
+ * Ruta: /ProyectoPizzaAmericana/RecrearLinkPagoWompi   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: application/json; charset=UTF-8; claves: amount_in_cents, collect_shipping, currency,
+ * description, expires_at, idlink, mensaje, name, redirect_url, respuesta, resultado, single_use,
+ * ....
+ * Lee: cliente, forma_pago, municipio, nomenclatura_direccion, parametros, parametros_correo,
+ * tienda.
+ * Escribe: cliente (UPDATE), pedido (UPDATE), pedido_idlink (INSERT), pedido_pago_virtual
+ * (INSERT).
+ * Sistemas externos: Brevo, Kommo (CRM), WhatsApp, Wompi.
  *
- * Pide sesion. La clave privada de Wompi se usa aqui adentro y no baja al
- * navegador, que era el problema de fondo de la pantalla anterior.
+ * Trampas y riesgos conocidos:
+ * - Sin sesion: cualquiera puede generar links y mandar correos a clientes de cualquier pedido.
+ * - Cada llamada puede generar un correo al cliente (el tope existe, pero hay que tenerlo
+ *   presente).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RecrearLinkPagoWompi.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RecrearLinkPagoWompi")
 public class RecrearLinkPagoWompi extends HttpServlet {

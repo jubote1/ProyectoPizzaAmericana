@@ -11,6 +11,20 @@ import javax.servlet.http.*;
 import capaControladorCC.CorreoPQRS;
 
 
+/**
+ * Servicio de consulta de PQRS y escalamiento: invoca CorreoPQRS.enviarRespuesta.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CorreoRespuestaPqrs   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): cliente (string), correo (string), contenido (string).
+ * Devuelve: cuerpo vacio; claves: mail.smtp.auth, mail.smtp.host, mail.smtp.port,
+ * mail.smtp.ssl.protocols, mail.smtp.starttls.enable, message, success.
+ * Lee: parametros.
+ * Sistemas externos: Correo SMTP.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CorreoRespuestaPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/CorreoRespuestaPqrs")
 public class CorreoRespuestaPqrs extends HttpServlet {
 	private static final long serialVersionUID = 1L;
