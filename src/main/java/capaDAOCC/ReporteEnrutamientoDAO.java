@@ -100,6 +100,8 @@ public class ReporteEnrutamientoDAO {
 		public int llevados = 0;
 		/** Los que NO acepto ni solto: salieron por fuera de la ruta. */
 		public int libres = 0;
+		/** De los libres, los que salieron con OTRO domiciliario (no con el que tenia la ruta). */
+		public int libresOtro = 0;
 	}
 
 	/**
@@ -118,8 +120,17 @@ public class ReporteEnrutamientoDAO {
 		public int reasignados = 0;
 		/** Un administrador anulo la sugerencia entera. */
 		public int anulados = 0;
-		/** La ruta no se acepto ni se solto, y el pedido SALIO por fuera de ella. */
+		/**
+		 * La ruta no se acepto ni se solto, y el pedido SALIO por fuera de ella. Es el total
+		 * de las tres partes siguientes: libresOtro + libresSinDueno + libresAsignado.
+		 */
 		public int libres = 0;
+		/** De los libres: salio con un domiciliario DISTINTO al que tenia la ruta. */
+		public int libresOtro = 0;
+		/** De los libres: la ruta era por turno de llegada y todavia no tenia dueno. */
+		public int libresSinDueno = 0;
+		/** De los libres: salio con el domiciliario de la ruta, que nunca la acepto. */
+		public int libresAsignado = 0;
 		/** La ruta se creo cuando el pedido YA HABIA SALIDO: llego tarde, no fue que se ignorara. */
 		public int rutasTardias = 0;
 		/** La sugerencia expiro y el pedido no salio (se anulo o no tiene salida registrada). */
@@ -140,6 +151,9 @@ public class ReporteEnrutamientoDAO {
 			reasignados += o.reasignados;
 			anulados += o.anulados;
 			libres += o.libres;
+			libresOtro += o.libresOtro;
+			libresSinDueno += o.libresSinDueno;
+			libresAsignado += o.libresAsignado;
 			rutasTardias += o.rutasTardias;
 			expiradasSinSalir += o.expiradasSinSalir;
 			enCurso += o.enCurso;
@@ -591,6 +605,32 @@ public class ReporteEnrutamientoDAO {
 	}
 
 	/**
+	 * El pedido salio con el MISMO domiciliario que tenia la ruta (despues de creada).
+	 * Solo tiene sentido cuando la ruta ya tiene dueno (c.id_domiciliario distinto de 0).
+	 */
+	private static String salioConElDuenoDeLaRuta(final boolean datamart) {
+		return ("EXISTS (SELECT 1 FROM despacho_real_det x INNER JOIN despacho_real r ON r.id = x.despacho_real_id"
+				+ (datamart ? " AND r.idtienda = x.idtienda" : "")
+				+ " WHERE x.id_pedido = d.id_pedido" + (datamart ? " AND x.idtienda = d.idtienda" : "")
+				+ " AND r.hora_salida >= c.creado_en AND r.id_domiciliario = c.id_domiciliario)");
+	}
+
+	/** Libre cuya ruta todavia no tenia dueno (sugerencia por turno de llegada sin resolver). */
+	private static String esLibreSinDueno(final boolean datamart) {
+		return ("(" + esLibre(datamart) + " AND IFNULL(c.id_domiciliario,0) = 0)");
+	}
+
+	/** Libre que salio con el domiciliario de la ruta: la tenia y nunca la acepto. */
+	private static String esLibreConElAsignado(final boolean datamart) {
+		return ("(" + esLibre(datamart) + " AND IFNULL(c.id_domiciliario,0) <> 0 AND " + salioConElDuenoDeLaRuta(datamart) + ")");
+	}
+
+	/** Libre que salio con OTRO domiciliario: la ruta tenia dueno y el pedido se fue con alguien mas. */
+	private static String esLibreConOtro(final boolean datamart) {
+		return ("(" + esLibre(datamart) + " AND IFNULL(c.id_domiciliario,0) <> 0 AND NOT " + salioConElDuenoDeLaRuta(datamart) + ")");
+	}
+
+	/**
 	 * Un pedido cuya ruta se creo CUANDO YA HABIA SALIDO: no se ignoro nada, la ruta
 	 * llego tarde (quien enruta lo hizo sobre un pedido que ya iba en la calle).
 	 */
@@ -627,6 +667,9 @@ public class ReporteEnrutamientoDAO {
 					+ " SUM(CASE WHEN " + esSoltado(datamart) + " THEN 1 ELSE 0 END) AS soltados,"
 					+ " SUM(CASE WHEN d.estado_det = 'LIBERADO' THEN 1 ELSE 0 END) AS liberados,"
 					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres,"
+					+ " SUM(CASE WHEN " + esLibreConOtro(datamart) + " THEN 1 ELSE 0 END) AS libres_otro,"
+					+ " SUM(CASE WHEN " + esLibreSinDueno(datamart) + " THEN 1 ELSE 0 END) AS libres_sin_dueno,"
+					+ " SUM(CASE WHEN " + esLibreConElAsignado(datamart) + " THEN 1 ELSE 0 END) AS libres_asignado,"
 					+ " SUM(CASE WHEN " + esRutaTardia(datamart) + " THEN 1 ELSE 0 END) AS rutas_tardias,"
 					+ " SUM(CASE WHEN d.estado_det = 'SUGERIDO' AND c.estado = 'EXPIRADA' AND NOT " + salio(datamart)
 					+ " THEN 1 ELSE 0 END) AS expiradas_sin_salir,"
@@ -645,6 +688,9 @@ public class ReporteEnrutamientoDAO {
 				g.soltados = rs.getInt("soltados");
 				g.anulados = Math.max(0, rs.getInt("liberados") - g.soltados);
 				g.libres = rs.getInt("libres");
+				g.libresOtro = rs.getInt("libres_otro");
+				g.libresSinDueno = rs.getInt("libres_sin_dueno");
+				g.libresAsignado = rs.getInt("libres_asignado");
 				g.rutasTardias = rs.getInt("rutas_tardias");
 				g.expiradasSinSalir = rs.getInt("expiradas_sin_salir");
 				g.enCurso = rs.getInt("en_curso");
@@ -685,7 +731,8 @@ public class ReporteEnrutamientoDAO {
 			s2.add("SELECT IFNULL(c.id_domiciliario,0) AS id_dom, COUNT(*) AS sugeridos,"
 					+ " SUM(CASE WHEN d.estado_det = 'LLEVADO' THEN 1 ELSE 0 END) AS llevados,"
 					+ " SUM(CASE WHEN " + esSoltado(datamart) + " THEN 1 ELSE 0 END) AS soltados,"
-					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres"
+					+ " SUM(CASE WHEN " + esLibre(datamart) + " THEN 1 ELSE 0 END) AS libres,"
+					+ " SUM(CASE WHEN " + esLibreConOtro(datamart) + " THEN 1 ELSE 0 END) AS libres_otro"
 					+ cruce + " WHERE c.fecha_jornada BETWEEN ? AND ?", desde, hasta);
 			if (datamart) {
 				s2.add(" AND d.idtienda = ?", Integer.valueOf(idTienda));
@@ -700,6 +747,7 @@ public class ReporteEnrutamientoDAO {
 				p.llevados = rs.getInt("llevados");
 				p.soltados = rs.getInt("soltados");
 				p.libres = rs.getInt("libres");
+				p.libresOtro = rs.getInt("libres_otro");
 				res.porDomiciliario.add(p);
 			}
 			rs.close();
