@@ -17,9 +17,20 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.PedidoMrTamalCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoMrTamalCtrl.tratarPedidoMrTamalKuno.
+ *
+ * Ruta: /ProyectoPizzaAmericana/TratarPedidoMrTamalKuno   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: amount_in_cents, collect_shipping, currency, description,
+ * expires_at, name, redirect_url, respuesta, single_use, sku.
+ * Lee: parametros, tienda_franquicia_wompi.
+ * Escribe: log_pedido_virtual_kuno (INSERT), pedido_link_wompi (INSERT).
+ * Sistemas externos: DiDi, GloriaFood/Kuno, Gmail, WhatsApp, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha TratarPedidoMrTamalKuno.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/TratarPedidoMrTamalKuno")
 public class TratarPedidoMrTamalKuno extends HttpServlet {

@@ -14,6 +14,17 @@ import capaControladorCC.SolicitudPQRSCtrl;
 
 
 
+/**
+ * Servicio de consulta de PQRS y escalamiento: invoca SolicitudPQRSCtrl.obtenerEstadoPqrs.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEstadoPqrs   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: error.
+ * Lee: estado_pqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEstadoPqrs.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerEstadoPqrs")
 public class ObtenerEstadoPqrs extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

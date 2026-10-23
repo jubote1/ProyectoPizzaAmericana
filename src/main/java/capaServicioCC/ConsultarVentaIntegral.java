@@ -14,10 +14,18 @@ import org.apache.log4j.Logger;
 import capaControladorCC.VentaIntegralCtrl;
 
 /**
- * Servlet implementation class ConsultarVentaIntegral
- * Consulta el cierre semanal de Venta Integral (ya calculado por el proceso
- * de Servicios) para un rango de semanas y una tienda o todas. Recibe las
- * fechas en dd/mm/yyyy, igual que ConsultarVentasEmpresariales.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * VentaIntegralCtrl.consultarResumenVentaIntegral.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarVentaIntegral   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), idtienda (integer).
+ * Devuelve: texto.
+ * Lee: tienda, venta_integral_categoria, venta_integral_categoria_item,
+ * venta_integral_resumen_semanal.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarVentaIntegral.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarVentaIntegral")
 public class ConsultarVentaIntegral extends HttpServlet {

@@ -12,10 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * Devuelve la campana "15 minutos o gratis" activa ahora mismo (fecha, dia y
- * hora dentro de ventana), con sus exclusiones. El POS la llama al abrir turno
- * y la cachea; si esta llamada falla o no hay campana activa, el POS sigue
- * normal sin mostrar el interceptor.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * Campana15MinCtrl.obtenerCampanaActiva.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerCampana15MinActiva   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: exclusiones, hayCampana, idcampana, mensajefactura,
+ * mensajeoperario, minutospromesa, nombre, porcentajeretencionmediovirtual.
+ * Lee: campana_15min_config, campana_15min_exclusion, campana_15min_horario_dia.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerCampana15MinActiva.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerCampana15MinActiva")
 public class ObtenerCampana15MinActiva extends HttpServlet {

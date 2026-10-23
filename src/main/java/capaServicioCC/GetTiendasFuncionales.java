@@ -11,9 +11,23 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Lista las tiendas que hoy toman domicilios (funcional = 'S').
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetTiendasFuncionales   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: alertarpedidos, destino, id, latitud, longitud, manejazonas,
+ * nombre, pos, urltienda.
+ * Lee: tienda.
+ *
+ * Trampas y riesgos conocidos:
+ * - Si alertarpedidos es nulo en alguna tienda, esa fila lanza una excepcion que el DAO captura:
+ *   la lista se corta ahi y el servicio devuelve solo las tiendas anteriores, sin avisar.
+ * - Devuelve tambien la URL interna de cada tienda.
+ * - Que una tienda sea funcional NO significa que este abierta ni que acepte pedidos ahora: eso
+ *   lo dicen horario_dia y tienda_bloqueada.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetTiendasFuncionales.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetTiendasFuncionales")
 public class GetTiendasFuncionales extends HttpServlet {

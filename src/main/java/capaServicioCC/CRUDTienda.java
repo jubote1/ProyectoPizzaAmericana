@@ -13,8 +13,19 @@ import capaControladorCC.ParametrosCtrl;
 import capaControladorCC.TiendaCtrl;
 
 /**
- * Servlet implementation class CRUDTienda
- * Servicio que implementa los métodos para soportar el CRUD de la entidad Tienda.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), dsn (string), idtienda (integer),
+ * alertarpedidos (string).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: alertarpedidos, dsn, idtienda, nombre, resultado.
+ * Lee: tienda.
+ * Escribe: tienda (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDTienda")
 public class CRUDTienda extends HttpServlet {

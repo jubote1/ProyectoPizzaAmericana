@@ -13,9 +13,18 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.registrarPagoVirtualTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/RegistrarPagoVirtualTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), idpedidotienda (integer), idlink (string),
+ * valorpagovirtual (number), valorpedido (number).
+ * Devuelve: application/json.
+ * Escribe: pedido_pago_virtual_consolidado (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RegistrarPagoVirtualTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RegistrarPagoVirtualTienda")
 public class RegistrarPagoVirtualTienda extends HttpServlet {

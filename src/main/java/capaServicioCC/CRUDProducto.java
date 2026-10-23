@@ -12,8 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDProducto
- * Servicio que se encarga de implementar el CRUD de la entidad Producto.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDProducto   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), idreceta (integer), nombre (string), descripcion
+ * (string), impuesto (number), tipo (string), preciogeneral (number), incluye_liquido (string),
+ * idtipoliquido (integer), habilitado (string), idproducto (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: descripcion, habilitado, idproducto, idreceta, idtipo_liquido,
+ * impuesto, incluye_liquido, nombre, nombreliquido, nombrereceta, preciogeneral, resultado, ....
+ * Lee: producto, receta, tipo_liquido.
+ * Escribe: producto (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDProducto.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDProducto")
 public class CRUDProducto extends HttpServlet {

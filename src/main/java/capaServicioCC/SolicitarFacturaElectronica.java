@@ -17,7 +17,21 @@ import capaModeloCC.SolicitudFactura;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio que modifica datos de Facturacion electronica: invoca
+ * PedidoCtrl.insertarSolicitudFactura.
+ *
+ * Ruta: /ProyectoPizzaAmericana/SolicitarFacturaElectronica   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): nit (string), correo (string), empresa (string), telefono (string),
+ * fechapedido (string), idpedidocontact (integer), idpedidotienda (integer), valor (number),
+ * usuario (string).
+ * Devuelve: texto; claves: idsolicitud, mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: parametros, parametros_correo.
+ * Escribe: solicitud_factura (INSERT).
+ * Sistemas externos: Correo SMTP, Gmail.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha SolicitarFacturaElectronica.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/SolicitarFacturaElectronica")
 public class SolicitarFacturaElectronica extends HttpServlet {

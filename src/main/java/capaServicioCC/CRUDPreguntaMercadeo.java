@@ -21,22 +21,19 @@ import capaModeloCC.OpcionMercadeo;
 import capaModeloCC.PreguntaMercadeo;
 
 /**
- * Servicio de administracion de las preguntas de encuesta de mercadeo. Lo consume el
- * maestro de configuracion del POS.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * EncuestaMercadeoCtrl.obtenerTodasLasPreguntas, EncuestaMercadeoCtrl.inactivarPregunta.
  *
- * Sigue la nomenclatura CRUD que ya existe en capaServicioCC (CRUDOferta, CRUDTienda).
+ * Ruta: /ProyectoPizzaAmericana/CRUDPreguntaMercadeo   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string), idpregunta (string), idopcion (string).
+ * Devuelve: application/json; claves: activo, aplicadomicilio, aplicapv, descripcion, fechafin,
+ * fechainicio, idopcion, idpregunta, mensaje, obligatoria, opciones, orden, ....
+ * Lee: opcion_mercadeo, pregunta_mercadeo.
+ * Escribe: opcion_mercadeo (INSERT/UPDATE), pregunta_mercadeo (INSERT/UPDATE).
  *
- * Acciones, en el parametro accion:
- *   LISTAR           GET.  Retorna todas las preguntas, vigentes o no.
- *   CREAR            POST. Cuerpo JSON con la pregunta y sus opciones.
- *   ACTUALIZAR       POST. Cuerpo JSON con idpregunta y los campos a cambiar.
- *   INACTIVAR        GET o POST con idpregunta.
- *   INACTIVAROPCION  GET o POST con idopcion.
- *
- * Las preguntas y opciones no se borran fisicamente: se inactivan, porque las
- * respuestas historicas de encuesta_mercadeo guardan idpregunta e idopcion.
- *
- * Servlet implementation class CRUDPreguntaMercadeo
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDPreguntaMercadeo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDPreguntaMercadeo")
 public class CRUDPreguntaMercadeo extends HttpServlet {

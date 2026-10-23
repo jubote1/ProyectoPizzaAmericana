@@ -13,7 +13,22 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.ConsultaIntegradaPedidosDomicom.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultaIntegradaPedidosDomicom   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), tienda (string), numeropedido
+ * (integer), estado (integer), estadotienda (integer), idplataforma (integer), integracion
+ * (integer).
+ * Devuelve: texto; claves: aceptadorappi, cliente, direccion, enviadopixel, estadoenviotienda,
+ * estadopedido, fechafinalizacion, fechainsercion, fechapagovirtual, fechapedido, formapago,
+ * idcliente, ....
+ * Lee: cliente, estado_pedido, forma_pago, marcacion_pedido, pedido, pedido_forma_pago, tienda.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultaIntegradaPedidosDomicom.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultaIntegradaPedidosDomicom")
 public class ConsultaIntegradaPedidosDomicom extends HttpServlet {

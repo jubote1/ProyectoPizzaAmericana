@@ -12,21 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.BiometriaNovedadCtrl;
 
 /**
- * Marca una novedad de biometria como ATENDIDA o RECHAZADA.
+ * Servicio que modifica datos de Tiendas y operacion: invoca BiometriaNovedadCtrl.error,
+ * BiometriaNovedadCtrl.cerrarNovedad.
  *
- * Se llama al final, cuando el supervisor ya aplico los cambios que hicieran
- * falta. Cerrar la novedad no cambia la jornada: los cambios los aplica
- * GuardarCambioBiometria, uno por uno. Una novedad se puede cerrar como
- * ATENDIDA sin ningun cambio, si el supervisor revisa y ve que la jornada ya
- * estaba bien.
+ * Ruta: /ProyectoPizzaAmericana/CerrarNovedadBiometria   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idnovedad (string), estado (string), usuario (string), observacion
+ * (string).
+ * Devuelve: application/json; claves: detalle, mensaje, resultado.
+ * Escribe: general.empleado_evento_novedad (UPDATE).
  *
- * Parametros:
- *   idnovedad    obligatorio.
- *   estado       ATENDIDA o RECHAZADA. Obligatorio.
- *   usuario      quien resuelve. Obligatorio.
- *   observacion  por que se resolvio asi. Obligatoria.
- *
- * Servlet implementation class CerrarNovedadBiometria
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CerrarNovedadBiometria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CerrarNovedadBiometria")
 public class CerrarNovedadBiometria extends HttpServlet {

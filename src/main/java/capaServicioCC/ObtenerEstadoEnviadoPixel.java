@@ -12,7 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ActualizarNumeroPedidoPixel Servicio que se encarga de actualizar el número de pedido que retorna la tienda PIXEL, luego de insertado un pedido.
+ * Servicio de consulta de Reportes y estadisticas: invoca PedidoCtrl.obtenerEstadoEnviadoPixel.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEstadoEnviadoPixel   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: texto; claves: enviadopixel.
+ * Lee: pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEstadoEnviadoPixel.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEstadoEnviadoPixel")
 public class ObtenerEstadoEnviadoPixel extends HttpServlet {

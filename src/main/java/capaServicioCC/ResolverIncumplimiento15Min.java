@@ -14,13 +14,18 @@ import capaControladorCC.Campana15MinCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Aprueba o rechaza un caso de incumplimiento de "15 minutos o gratis". Exige
- * sesion iniciada y toma de ahi el usuario que decide, igual que
- * ResolverSolicitudReversa. Al aprobar el sistema NO devuelve dinero, solo
- * deja el caso con el monto ya calculado para que Servicio al Cliente lo
- * ejecute por fuera.
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca Usuario.getNombreUsuario,
+ * Campana15MinCtrl.resolverIncumplimiento.
  *
- * Parametros: idsolicitud, aprobar (S o N), observacion
+ * Ruta: /ProyectoPizzaAmericana/ResolverIncumplimiento15Min   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idsolicitud (integer), aprobar (string), observacion (string).
+ * Devuelve: application/json; claves: detalle, respuesta.
+ * Lee: campana_15min_incumplimiento.
+ * Escribe: campana_15min_incumplimiento (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ResolverIncumplimiento15Min.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ResolverIncumplimiento15Min")
 public class ResolverIncumplimiento15Min extends HttpServlet {

@@ -18,7 +18,28 @@ import capaModeloCC.Usuario;
 import utilidadesCC.ContextoAuditoria;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Crea o actualiza la direccion del cliente con los datos de pantalla.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarCliente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): telefono (string), nombres (string), apellidos (string), nombreCompania
+ * (string), direccion (string), zona (string), observacion (string), tienda (string), municipio
+ * (string), telefonocelular (string), email (string), clientesiniden (string), emailfact (string),
+ * identificacion (string), politicadatos (string), numnomenclatura1 (string), numnomenclatura2
+ * (string), num3 (string), latitud (number), longitud (number), distanciatienda (number), memcode
+ * (integer), idcliente (integer), idnomenclatura (integer), idtipopersona (integer),
+ * fechanacimiento (string).
+ * Devuelve: application/json;charset=UTF-8; claves: idcliente.
+ * Lee: municipio, parametros, tienda.
+ * Escribe: cliente (INSERT/UPDATE).
+ * Sistemas externos: ArcGIS, Google Maps.
+ *
+ * Trampas y riesgos conocidos:
+ * - tienda y municipio van por NOMBRE.
+ * - Cualquier operario con acceso podria cambiar la direccion de cualquier cliente.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarCliente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarCliente")
 public class ActualizarCliente extends HttpServlet {

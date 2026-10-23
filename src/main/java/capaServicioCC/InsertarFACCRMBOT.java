@@ -16,9 +16,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class InsertarFACCRMBOT
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr� tomar un pedido, 
- * la informaci�n ser� retornada en formato JSON.
+ * Registra una solicitud de factura electronica con los datos de facturacion del lead.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarFACCRMBOT   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: idsolicitud, mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: integracion_crm, parametros, parametros_correo.
+ * Escribe: log_pedido_crmbot (INSERT/UPDATE), solicitud_factura (INSERT).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Trampas y riesgos conocidos:
+ * - No valida la cabecera Authorization.
+ * - Los datos fiscales (NIT, correo) viajan por Kommo y se guardan como llegan.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarFACCRMBOT.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarFACCRMBOT")
 public class InsertarFACCRMBOT extends HttpServlet {

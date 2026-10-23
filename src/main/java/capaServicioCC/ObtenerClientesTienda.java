@@ -13,9 +13,17 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetOtrosProductos
- * Método que retorna todos los productos parametrizados en el sistema y con base en estos se toma el pedido, esta información
- * es retornada en formato JSON.
+ * Servicio de consulta de Tiendas y operacion: invoca ClienteCtrl.ObtenerClientesTienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerClientesTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: application/json; claves: direccion, idcliente, idtienda, latitud, longitud,
+ * nombrecliente, nombremunicipio, nombretienda, observacion, telefono, zona.
+ * Lee: cliente, geolocaliza_masivo_tienda, municipio, nomenclatura_direccion, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerClientesTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerClientesTienda")
 public class ObtenerClientesTienda extends HttpServlet {

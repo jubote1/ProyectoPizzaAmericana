@@ -12,17 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.EncuestaMercadeoCtrl;
 
 /**
- * Servicio que retorna en formato JSON las preguntas de encuesta de mercadeo
- * vigentes el dia de hoy para el canal indicado, con sus opciones de respuesta.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * EncuestaMercadeoCtrl.obtenerPreguntasVigentes.
  *
- * El POS lo invoca al finalizar un pedido. Ademas de traer la configuracion, esta
- * llamada le sirve como prueba de conectividad: si falla o retorna el arreglo de
- * preguntas vacio, el POS no muestra nada y el pedido sigue su curso normal.
+ * Ruta: /ProyectoPizzaAmericana/ObtenerEncuestaMercadeoActiva   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): espuntoventa (string), idtienda (integer), idpedidotienda (integer).
+ * Devuelve: application/json; claves: preguntas.
+ * Lee: encuesta_mercadeo.
  *
- * Parametros:
- *   espuntoventa  S para pedidos de punto de venta, N para domicilio. Por defecto S.
- *
- * Servlet implementation class ObtenerEncuestaMercadeoActiva
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerEncuestaMercadeoActiva.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerEncuestaMercadeoActiva")
 public class ObtenerEncuestaMercadeoActiva extends HttpServlet {

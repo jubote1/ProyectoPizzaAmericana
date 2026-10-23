@@ -12,9 +12,15 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class GetUsuariosConRoles
- * Retorna los usuarios activos con sus roles actuales, para la pantalla de
- * asignacion de roles a usuario.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca RolCtrl.listarUsuariosConRoles.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetUsuariosConRoles   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: idusuario, nombrelargo, nombreusuario, roles.
+ * Lee: rol, usuario, usuario_rol.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetUsuariosConRoles.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetUsuariosConRoles")
 public class GetUsuariosConRoles extends HttpServlet {

@@ -14,13 +14,17 @@ import org.apache.log4j.Logger;
 import capaControladorCC.VentaIntegralCtrl;
 
 /**
- * Venta Integral calculada en vivo para un rango de fechas cualquiera.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * VentaIntegralCtrl.consultarVentaIntegralVivo.
  *
- * Hermano de ConsultarVentaIntegral, que lee las semanas ya cerradas por el
- * proceso de Servicios. Este le pregunta a las once tiendas en el momento, asi
- * que se demora; la pantalla avisa antes de lanzarlo.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarVentaIntegralVivo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), idtienda (integer).
+ * Devuelve: texto.
+ * Lee: detalle_pedido, pedido, tienda, venta_integral_categoria, venta_integral_categoria_item.
  *
- * Recibe las fechas en dd/mm/yyyy, igual que el otro.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarVentaIntegralVivo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarVentaIntegralVivo")
 public class ConsultarVentaIntegralVivo extends HttpServlet {

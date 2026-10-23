@@ -11,9 +11,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio de consulta de Tiendas y operacion: invoca TiendaCtrl.obtenerTiendas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetTiendas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: alertarpedidos, destino, id, manejazonas, nombre, pos,
+ * urltienda.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetTiendas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetTiendas")
 public class GetTiendas extends HttpServlet {

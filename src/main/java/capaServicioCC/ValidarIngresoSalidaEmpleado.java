@@ -12,9 +12,15 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Servicio de consulta de Tiendas y operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarIngresoSalidaEmpleado   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): cedula (string).
+ * Devuelve: application/json.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarIngresoSalidaEmpleado.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarIngresoSalidaEmpleado")
 public class ValidarIngresoSalidaEmpleado extends HttpServlet {

@@ -17,7 +17,18 @@ import capaModeloCC.SolicitudFactura;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio de consulta de Facturacion electronica: invoca
+ * PedidoCtrl.consultarSolicitudesFacturaElectronica.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSolicitudesFacturaElectronica   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), estado (string).
+ * Devuelve: texto; claves: correo, empresa, estado, fechapedido, fechasolicitud, idpedidocontact,
+ * idpedidotienda, idsolicitud, nit, telefono, usuario, valor.
+ * Lee: solicitud_factura.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSolicitudesFacturaElectronica.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSolicitudesFacturaElectronica")
 public class ConsultarSolicitudesFacturaElectronica extends HttpServlet {

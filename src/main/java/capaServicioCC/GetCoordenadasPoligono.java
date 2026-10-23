@@ -12,9 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.GeolocalizacionCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Devuelve los puntos de un poligono de cobertura para dibujarlo en el mapa de la pantalla de
+ * zonas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetCoordenadasPoligono   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpoligono (integer).
+ * Devuelve: application/json; claves: lat, lng.
+ * Lee: coordenadas_poligono.
+ *
+ * Trampas y riesgos conocidos:
+ * - Sin sesion: la geometria de las zonas de cobertura queda visible para cualquiera que conozca
+ *   el numero del poligono.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetCoordenadasPoligono.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetCoordenadasPoligono")
 public class GetCoordenadasPoligono extends HttpServlet {

@@ -12,8 +12,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetSaboresLiquidoProducto
- * Servicio que recibe un idproducto y con base en este retorna los liquidos asociados al producto en formato JSON.
+ * Lista los sabores de bebida que vienen con un producto (por ejemplo la gaseosa incluida en un
+ * combo) y el recargo de cada uno.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetSaboresLiquidoProducto   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idProducto (string), idtienda (integer).
+ * Devuelve: application/json; claves: descripcionLiquido, descripcionSabor, idLiquido, idProducto,
+ * idSaborTipoLiquido, nombreProducto, valorAdicional.
+ * Lee: producto, producto_no_existente, sabor_x_tipo_liquido, tipo_liquido.
+ *
+ * Trampas y riesgos conocidos:
+ * - idProducto ausente o no numerico: cuerpo vacio.
+ * - Las claves van en camelCase, distinto del resto del sistema.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetSaboresLiquidoProducto.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetSaboresLiquidoProducto")
 public class GetSaboresLiquidoProducto extends HttpServlet {

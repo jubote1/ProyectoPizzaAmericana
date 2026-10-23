@@ -17,10 +17,19 @@ import org.json.simple.parser.JSONParser;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * Horario por dia de semana de la campana 15 minutos. GET idoperacion=4
- * lista los 7 dias de una campana. POST guarda las 7 filas de una sola vez,
- * con el arreglo en el cuerpo JSON (no caben comodamente como parametros de
- * URL). Exige sesion, es pantalla de administracion.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * Campana15MinCtrl.obtenerHorarioSemana, Campana15MinCtrl.guardarHorarioSemana.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDCampana15MinHorario   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idcampana (integer).
+ * Devuelve: application/json; claves: activo, detalle, diasemana, horadesde, horahasta, respuesta,
+ * todoeldia.
+ * Lee: campana_15min_horario_dia.
+ * Escribe: campana_15min_horario_dia (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDCampana15MinHorario.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDCampana15MinHorario")
 public class CRUDCampana15MinHorario extends HttpServlet {

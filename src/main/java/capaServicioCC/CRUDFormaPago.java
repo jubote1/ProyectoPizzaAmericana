@@ -12,8 +12,25 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDFormaPago
- * Servicio que implementa el CRUD de la entidad Forma Pago.
+ * Lista las formas de pago.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDFormaPago   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), tipoformapago (string), idformapago
+ * (integer), tipopago (string).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: idformapago, mensajecorreo, mensajetexto, nombre, tipoformapago,
+ * virtual.
+ * Lee: forma_pago.
+ *
+ * Trampas y riesgos conocidos:
+ * - Un tipopago distinto de T o PV deja la consulta vacia y el servicio responde [] sin avisar.
+ * - Por lo que se ve en el codigo: la forma 1 es efectivo (la que admite "devuelta") y la 4 es
+ *   pago virtual (Wompi). La 2 tambien se envia sin esperar pago, pero en este codigo no se ve
+ *   su nombre.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDFormaPago.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDFormaPago")
 public class CRUDFormaPago extends HttpServlet {

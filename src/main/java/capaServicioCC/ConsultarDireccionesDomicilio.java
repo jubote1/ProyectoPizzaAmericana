@@ -12,10 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Las ubicaciones de los pedidos de domicilio de una tienda en un rango de fechas, para el mapa de calor
- * (MapaCalorDomicilios.html). Ver PedidoCtrl.consultarDireccionesDomicilio.
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * PedidoCtrl.consultarDireccionesDomicilio.
  *
- * Parametros: fechainicial, fechafinal (dd/MM/yyyy), idtienda.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDireccionesDomicilio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), idtienda (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: apellido, direccion, fechapedido, idpedido,
+ * latitud, longitud, municipio, nombre, valor.
+ * Lee: cliente, municipio, pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDireccionesDomicilio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDireccionesDomicilio")
 public class ConsultarDireccionesDomicilio extends HttpServlet {

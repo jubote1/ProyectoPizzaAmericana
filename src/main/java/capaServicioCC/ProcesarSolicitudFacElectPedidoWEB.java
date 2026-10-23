@@ -16,9 +16,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podr� tomar un pedido, 
- * la informaci�n ser� retornada en formato JSON.
+ * Servicio que modifica datos de Pedidos: invoca PedidoCtrl.procesarSolFacturaPedidoWebBOTNiv1.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ProcesarSolicitudFacElectPedidoWEB   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera authorization.
+ * Devuelve: application/json; claves: mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: cliente, estado_pedido, forma_pago, integracion_crm, parametros, pedido, pedido_forma_pago,
+ * tienda.
+ * Escribe: cliente (UPDATE), log_pedido_crmbot (INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, GloriaFood/Kuno, Gmail, Kommo (CRM).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ProcesarSolicitudFacElectPedidoWEB.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ProcesarSolicitudFacElectPedidoWEB")
 public class ProcesarSolicitudFacElectPedidoWEB extends HttpServlet {

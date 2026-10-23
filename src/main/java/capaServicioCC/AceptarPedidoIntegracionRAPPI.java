@@ -13,9 +13,19 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * PedidoCtrl.aceptarPedidoIntegracionRAPPI.
+ *
+ * Ruta: /ProyectoPizzaAmericana/AceptarPedidoIntegracionRAPPI   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idordencomercio (long).
+ * Devuelve: texto; claves: respuesta.
+ * Lee: integracion_crm.
+ * Escribe: pedido (UPDATE).
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AceptarPedidoIntegracionRAPPI.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AceptarPedidoIntegracionRAPPI")
 public class AceptarPedidoIntegracionRAPPI extends HttpServlet {

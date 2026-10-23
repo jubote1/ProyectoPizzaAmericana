@@ -22,6 +22,21 @@ import com.google.gson.JsonSyntaxException;
 
 import capaControladorCC.SegmentacionClienteCtrl;
 
+/**
+ * Servicio que modifica datos de Bot y CRM (Kommo): invoca EnvioBrevoDAO.registrar,
+ * AccesoCRM.usuarioEnSesion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/EnvioBrevo   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; charset=UTF-8.
+ * Lee: crm.persona, integracion_crm, parametros.
+ * Escribe: crm.envio_brevo (INSERT).
+ * Sistemas externos: Brevo, WhatsApp.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha EnvioBrevo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/EnvioBrevo")
 public class EnvioBrevo extends HttpServlet {
     private static final long serialVersionUID = 1L;

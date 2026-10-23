@@ -13,14 +13,20 @@ import capaControladorCC.OfertaReglasCtrl;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Reglas de uso de una oferta y su bitacora.
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * AccesoCRM.usuarioEnSesion, OfertaReglasCtrl.obtener.
  *
- *   accion=obtener   idoferta
- *   accion=guardar   idoferta, montominimo, topedescuento, tiendas, aplicaa, maxusoscliente, maxemision
- *   accion=bitacora  idoferta
+ * Ruta: /ProyectoPizzaAmericana/OfertaReglas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): accion (string), idoferta (string), montominimo (string), topedescuento
+ * (string), tiendas (string), aplicaa (string), maxusoscliente (string), maxemision (string).
+ * Devuelve: application/json; charset=UTF-8; claves: accion, aplica_a, cambios, detalle, error,
+ * fecha, max_emision, max_usos_cliente, mensaje, monto_minimo, tiendas, tope_descuento, ....
+ * Lee: oferta, oferta_bitacora.
+ * Escribe: oferta (UPDATE), oferta_bitacora (INSERT).
  *
- * A diferencia de CRUDOferta, pide sesion: cambiar las reglas de una oferta viva cambia lo que las tiendas
- * aceptan como descuento, y tiene que quedar a nombre de alguien.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha OfertaReglas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/OfertaReglas")
 public class OfertaReglas extends HttpServlet {

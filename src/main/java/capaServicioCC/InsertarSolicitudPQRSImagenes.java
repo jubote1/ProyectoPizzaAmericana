@@ -14,9 +14,17 @@ import capaControladorCC.SolicitudPQRSCtrl;
 import capaModeloCC.SolicitudPQRSImagenes;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la información de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocación a la clase en la capa Controladora.
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.insertarSolicitudPQRSImagen.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarSolicitudPQRSImagenes   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): rutaimagen (string), idsolicitudpqrs (integer).
+ * Devuelve: texto; claves: idimagen.
+ * Escribe: solicitudpqrs_imagenes (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarSolicitudPQRSImagenes.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarSolicitudPQRSImagenes")
 public class InsertarSolicitudPQRSImagenes extends HttpServlet {

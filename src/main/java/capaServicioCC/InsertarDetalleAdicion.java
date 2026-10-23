@@ -13,8 +13,21 @@ import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class InsertarDetalleAdicion
- * Este servicio se encarga de insertar en el sistema la información de adición a un producto especifico.
+ * Une un renglon de adicion con el renglon de la pizza a la que pertenece y reparte la cantidad
+ * entre las mitades.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarDetalleAdicion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): iddetallepedidopadre (integer), iddetallepedidoadicion (integer),
+ * idespecialidad1 (integer), idespecialidad2 (integer), cantidad1 (number), cantidad2 (number).
+ * Devuelve: texto; claves: idadicion.
+ *
+ * Trampas y riesgos conocidos:
+ * - Los dos ids obligatorios se leen sin try/catch: si faltan, HTTP 500.
+ * - No tiene efecto sobre el precio: el valor de la adicion ya esta en su propio renglon.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarDetalleAdicion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarDetalleAdicion")
 public class InsertarDetalleAdicion extends HttpServlet {

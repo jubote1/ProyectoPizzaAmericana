@@ -17,9 +17,25 @@ import capaModeloCC.CodigoRedencionPuntos;
 import capaModeloCC.Usuario;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Genera un codigo de redencion de puntos y se lo envia al cliente por correo, con copia al lider
+ * y al correo de PQRS del contact center.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CrearCodigoValidarRedencionPuntos   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): correo (string), fechasistema (string), puntosredimir (number), idtienda
+ * (integer), usuario (string).
+ * Devuelve: application/json; claves: codigo, mail.smtp.host, mail.smtp.ssl.protocols.
+ * Lee: codigo_redencion_puntos, parametros.
+ * Escribe: codigo_redencion_puntos (INSERT).
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
+ *
+ * Trampas y riesgos conocidos:
+ * - Devuelve el codigo en la misma respuesta: quien llama conoce el codigo sin tener acceso al
+ *   correo del cliente. Eso anula la prueba de posesion del correo.
+ * - puntosredimir ausente o no numerico: respuesta vacia.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CrearCodigoValidarRedencionPuntos.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CrearCodigoValidarRedencionPuntos")
 public class CrearCodigoValidarRedencionPuntos extends HttpServlet {

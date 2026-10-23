@@ -12,9 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class AprobarEgresoServicio
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio de consulta de Sin clasificar (revisar a mano): invoca
+ * PedidoCtrl.aprobarEgresoServicio.
+ *
+ * Ruta: /ProyectoPizzaAmericana/AprobarEgresoServicio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), idegreso (integer).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AprobarEgresoServicio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AprobarEgresoServicio")
 public class AprobarEgresoServicio extends HttpServlet {

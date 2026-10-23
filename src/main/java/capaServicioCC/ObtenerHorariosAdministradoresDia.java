@@ -12,9 +12,16 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.EmpleadoCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio de consulta de Tiendas y operacion: invoca
+ * EmpleadoCtrl.obtenerHorariosAdministradoresDia.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHorariosAdministradoresDia   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: fechahora, id, nombre, tienda, tipoevento.
+ * Lee: general.empleado, general.empleado_evento, pizzaamericana.tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHorariosAdministradoresDia.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerHorariosAdministradoresDia")
 public class ObtenerHorariosAdministradoresDia extends HttpServlet {

@@ -12,6 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.EmpleadoCtrl;
 
 
+/**
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * EmpleadoCtrl.obtenerResulEncuestaOperacionDetalle.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerResultadoEncuestaOperacionDet   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idempleadoencuesta (string).
+ * Devuelve: texto; claves: item, observacion, orden, porcentaje, respuesta, respuesta_no,
+ * respuesta_si, tipo_respuesta, valor_escala, valor_final, valor_inicial.
+ * Lee: empleado_encuesta_detalle, encuesta_laboral_detalle.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerResultadoEncuestaOperacionDet.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerResultadoEncuestaOperacionDet")
 public class ObtenerResultadoEncuestaOperacionDet extends HttpServlet {
 	private static final long serialVersionUID = 1L;

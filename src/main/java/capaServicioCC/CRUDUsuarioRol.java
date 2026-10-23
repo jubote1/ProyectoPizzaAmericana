@@ -14,9 +14,18 @@ import org.apache.log4j.Logger;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class CRUDUsuarioRol
- * Administra que rol(es) tiene un usuario. idoperacion 1 guardar (reemplaza
- * todo el set de roles del usuario) 4 consultar (ids de rol ya asignados).
+ * Servicio con 2 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDUsuarioRol   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (integer), idusuario (string), idsrol (string).
+ * Operaciones (operacion): 1, 4.
+ * Devuelve: texto; claves: idsrol, resultado.
+ * Lee: usuario_rol.
+ * Escribe: usuario_rol (DELETE/INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDUsuarioRol.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDUsuarioRol")
 public class CRUDUsuarioRol extends HttpServlet {

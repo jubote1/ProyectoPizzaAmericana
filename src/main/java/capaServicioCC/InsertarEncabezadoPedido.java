@@ -15,9 +15,19 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class InsertarEncabezadoPedido
- * Servicio que se encarga de insertar el encabezado de un pedido, se retorna en formato JSON el dato esperado que 
- * corresponde al idpedido.
+ * Servicio que modifica datos de Pedidos: invoca PedidoCtrl.InsertarEncabezadoPedido,
+ * Usuario.getNombreUsuario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarEncabezadoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): tienda (string), idcliente (integer), fechapedido (string), programado
+ * (string), idtipopedido (integer).
+ * Devuelve: texto; claves: descripcionestadopedido, idcliente, idestadopedido, idpedido.
+ * Lee: tienda.
+ * Escribe: pedido (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarEncabezadoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarEncabezadoPedido")
 public class InsertarEncabezadoPedido extends HttpServlet {

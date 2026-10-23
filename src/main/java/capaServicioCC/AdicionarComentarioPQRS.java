@@ -13,9 +13,18 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.SolicitudPQRSCtrl;
 
 /**
- * Servlet implementation class FinalizarPedido
- * Servicio que se encarga de cerrar un pedido, totalizar el valor del pedido,y cambiar el estado del pedido a finalizado.
- * 
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.adicionarComentarioPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/AdicionarComentarioPQRS   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): pqrs (integer), comentario (string).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado.
+ * Lee: parametros, parametros_correo.
+ * Escribe: solicitudpqrs (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha AdicionarComentarioPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/AdicionarComentarioPQRS")
 public class AdicionarComentarioPQRS extends HttpServlet {

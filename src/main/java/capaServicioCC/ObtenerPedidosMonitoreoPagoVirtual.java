@@ -14,11 +14,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * El listado del monitoreo de pagos virtuales.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.obtenerPedidosMonitoreoPagoVirtual.
  *
- * Recibe el rango de fechas. Antes no recibia nada y el rango estaba quemado en
- * la consulta como "hoy": despues de medianoche la pantalla quedaba vacia y no
- * habia forma de revisar un dia anterior.
+ * Ruta: /ProyectoPizzaAmericana/ObtenerPedidosMonitoreoPagoVirtual   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechaini (string), fechafin (string).
+ * Devuelve: application/json; charset=UTF-8; claves: avisos, cancelados, codigoestado, conrechazo,
+ * email, estado, eventos, fechafin, fechaini, fechainsercion, fechapago, fechapedido, ....
+ * Lee: parametros.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerPedidosMonitoreoPagoVirtual.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerPedidosMonitoreoPagoVirtual")
 public class ObtenerPedidosMonitoreoPagoVirtual extends HttpServlet {

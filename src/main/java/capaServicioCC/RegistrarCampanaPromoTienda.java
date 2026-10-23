@@ -12,17 +12,15 @@ import javax.servlet.http.HttpServletResponse;
 import capaDAOCC.CampanaPromoDAO;
 
 /**
- * El POS reporta lo que contesto el cliente en el mostrador.
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca CampanaPromoDAO.marcar.
  *
- * Se guarda en el central y no solo en la tienda porque la lista de "a quien
- * hay que enviarle la boleta" se arma alla: una marca que se quede en la tienda
- * es un cliente al que nadie le va a mandar su premio.
+ * Ruta: /ProyectoPizzaAmericana/RegistrarCampanaPromoTienda   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: detalle, respuesta.
+ * Escribe: pedido_campana_promo (INSERT).
  *
- * Sin sesion, igual que RegistrarCampana15MinAplicado: quien llama es el POS.
- *
- * El usuario que viaja es el de la caja, informativo. No se usa para decidir
- * nada, pero es lo que permite despues mirar si a alguien se le disparo la tasa
- * de "si" por encima del resto.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha RegistrarCampanaPromoTienda.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/RegistrarCampanaPromoTienda")
 public class RegistrarCampanaPromoTienda extends HttpServlet {

@@ -15,9 +15,17 @@ import capaModeloCC.PedidoPrecioEmpleado;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class InsertarEncabezadoPedido
- * Servicio que se encarga de insertar el encabezado de un pedido, se retorna en formato JSON el dato esperado que 
- * corresponde al idpedido.
+ * Servicio que modifica datos de Tiendas y operacion: invoca
+ * PedidoCtrl.marcarAutorizadoPedidoPrecioEmpleado.
+ *
+ * Ruta: /ProyectoPizzaAmericana/MarcarAutorizadoPedidoPrecioEmpleado   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): codigo (string).
+ * Devuelve: texto.
+ * Escribe: pedido_precio_empleado (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha MarcarAutorizadoPedidoPrecioEmpleado.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/MarcarAutorizadoPedidoPrecioEmpleado")
 public class MarcarAutorizadoPedidoPrecioEmpleado extends HttpServlet {

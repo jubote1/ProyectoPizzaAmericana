@@ -12,23 +12,24 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoEnCursoCtrl;
 
 /**
- * Retomar un pedido que quedo a medio tomar en la pantalla de tomar pedidos (Pedidos.html?reanudar=NNN), para
- * agregarle productos con todo lo que esa pantalla soporta: especialidades por mitad, adiciones, "con" y "sin",
- * excepciones de precio, productos incluidos, ofertas y descuentos.
+ * Abre un pedido que quedo a medio tomar (estado 1, sin numero en la tienda) para seguir
+ * agregandole productos, y lo reserva a nombre de quien lo abre.
  *
- * Aqui NO se agregan ni se quitan productos: eso lo hace la pantalla de tomar pedidos con sus servicios de
- * siempre (InsertarDetallePedido, EliminarDetallePedido...). Este servicio solo le entrega el pedido para
- * continuarlo y lo mantiene retenido mientras la persona trabaja.
+ * Ruta: /ProyectoPizzaAmericana/EditarPedidoEnCurso   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): accion (string), idpedido (string).
+ * Devuelve: application/json;charset=UTF-8; claves: adicion, cantidad, especialidad1,
+ * especialidad2, horaprogramado, idcliente, iddetallepedido, idpedido, idtienda, idtipopedido,
+ * lineas, mensaje, ....
+ * Lee: cliente, detalle_pedido, especialidad, pedido, producto, tienda.
+ * Escribe: pedido (UPDATE).
  *
- * ACCIONES
- *   reanudar  (GET)   idpedido    Retiene el pedido a nombre de la sesion y devuelve cliente, tienda, tipo de
- *                                 pedido y lo que ya tiene cargado.
- *   renovar   (POST)  idpedido    Alarga la retencion mientras la pantalla sigue abierta.
+ * Trampas y riesgos conocidos:
+ * - Es el servicio con mejores practicas del grupo (sesion obligatoria, codigos HTTP, mensajes
+ *   claros, proteccion contra concurrencia): sirve de modelo.
  *
- * El usuario sale de la sesion, no de un parametro.
- *
- * Acceso: P2 (usuario interno con sesion). A diferencia de la mayoria de los servicios antiguos, este si
- * verifica la sesion: toma un pedido que es de otra persona.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha EditarPedidoEnCurso.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/EditarPedidoEnCurso")
 public class EditarPedidoEnCurso extends HttpServlet {

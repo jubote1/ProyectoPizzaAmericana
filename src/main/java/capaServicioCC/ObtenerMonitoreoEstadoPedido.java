@@ -18,6 +18,17 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TiendaCtrl;
 
 
+/**
+ * Servicio de consulta de Tiendas y operacion: invoca TiendaCtrl.obtenerMonitoreoEstadoLocal.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerMonitoreoEstadoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: error, funcional, hosbd, idtienda, nombre.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerMonitoreoEstadoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerMonitoreoEstadoPedido")
 public class ObtenerMonitoreoEstadoPedido extends HttpServlet {
 	private static final long serialVersionUID = 1L;

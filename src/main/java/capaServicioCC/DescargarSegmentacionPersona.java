@@ -19,16 +19,17 @@ import capaDAOCC.SegmentacionPersonaDAO;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class DescargarSegmentacionPersona
- * Entrega en CSV la lista de personas que cumplen los filtros del CRM.
+ * Servicio de consulta de Bot y CRM (Kommo): invoca AccesoCRM.puede, AccesoCRM.negado.
  *
- * QUEDA ESCRITO QUIEN DESCARGO Y QUE
+ * Ruta: /ProyectoPizzaAmericana/DescargarSegmentacionPersona   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): segmentos (string), idtienda (string), canal (string), pedidosmin (string),
+ * valormin (string), diasmin (string), diasmax (string), concorreo (string), autorizados (string).
+ * Devuelve: application/json; charset=UTF-8; claves: error, mensaje.
+ * Lee: crm.persona_resumen, crm.segmento_definicion, usuario.
  *
- * Esto saca de la empresa un archivo con nombre, celular y correo de miles de
- * personas. No se bloquea -para eso esta la pantalla- pero si queda en el log
- * quien lo pidio, con que filtros y cuantas filas se llevo. Si manana aparece
- * una base de datos nuestra donde no debe, esa linea es la unica forma de
- * saber por donde salio.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha DescargarSegmentacionPersona.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/DescargarSegmentacionPersona")
 public class DescargarSegmentacionPersona extends HttpServlet {

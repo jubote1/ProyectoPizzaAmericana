@@ -12,8 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDEstadoPedido
- * Servicio que implementa los diferentes métodos para soportar el CRUD de la entidad Estado Pedido
+ * Servicio con 5 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDEstadoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), descripcion (string), idestadopedido (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5.
+ * Devuelve: texto; claves: descripcion, idestadopedido, resultado.
+ * Lee: estado_pedido.
+ * Escribe: estado_pedido (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDEstadoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDEstadoPedido")
 public class CRUDEstadoPedido extends HttpServlet {

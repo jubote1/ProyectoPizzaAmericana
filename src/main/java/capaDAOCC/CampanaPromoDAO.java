@@ -462,8 +462,12 @@ public class CampanaPromoDAO {
 			PreparedStatement pst = con1.prepareStatement("insert into pedido_campana_promo (idcampana, idtienda,"
 					+ " idpedidotienda, idpedido, idcliente, correo, solicito, usuario, estado, observacion)"
 					+ " values (?,?,?,?,?,?,?,?,?,?)"
+					//El estado sigue a la respuesta, salvo que la boleta ya se emitio o se
+					//envio: sin esto, un pedido marcado primero "no" y corregido a "si"
+					//quedaba con solicito S y estado DESCARTADO.
 					+ " on duplicate key update correo = values(correo), solicito = values(solicito),"
-					+ " usuario = values(usuario), observacion = values(observacion)");
+					+ " usuario = values(usuario), observacion = values(observacion),"
+					+ " estado = if(estado in ('EMITIDO','ENVIADO'), estado, values(estado))");
 			pst.setInt(1, idCampana);
 			pst.setInt(2, idTienda);
 			pst.setInt(3, idPedidoTienda);
@@ -620,7 +624,10 @@ public class CampanaPromoDAO {
 			return (filas);
 		}
 		try {
-			String sql = "select pc.*, t.nombre as nombretienda, cl.nombres, cl.apellidos"
+			//La tabla cliente del central se llama nombre/apellido (la del POS es
+			//nombres/apellidos): con el nombre equivocado esta consulta fallaba y
+			//la lista de envio salia siempre vacia, sin error visible.
+			String sql = "select pc.*, t.nombre as nombretienda, cl.nombre as nombrecliente, cl.apellido as apellidocliente"
 					+ " from pedido_campana_promo pc"
 					+ " left join tienda t on t.idtienda = pc.idtienda"
 					+ " left join cliente cl on cl.idcliente = pc.idcliente"
@@ -637,7 +644,7 @@ public class CampanaPromoDAO {
 				f.nombreTienda = texto(rs.getString("nombretienda"));
 				f.idPedido = rs.getInt("idpedido");
 				f.idPedidoTienda = rs.getInt("idpedidotienda");
-				f.nombreCliente = (texto(rs.getString("nombres")) + " " + texto(rs.getString("apellidos"))).trim();
+				f.nombreCliente = (texto(rs.getString("nombrecliente")) + " " + texto(rs.getString("apellidocliente"))).trim();
 				f.correo = texto(rs.getString("correo"));
 				f.estado = texto(rs.getString("estado"));
 				f.codigoBoleta = texto(rs.getString("codigo_boleta"));

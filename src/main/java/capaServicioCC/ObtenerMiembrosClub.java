@@ -20,6 +20,20 @@ import com.google.gson.JsonSyntaxException;
 import capaControladorCC.SegmentacionClienteCtrl;
 import capaModeloCC.Cliente; // Asegúrate de tener una clase Cliente para representar los datos
 
+/**
+ * Servicio de consulta de Ofertas y fidelizacion (administracion): invoca
+ * SegmentacionClienteCtrl.obtenerClientesClub.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerMiembrosClub   Metodos: GET, POST.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: activo, correo, error, fechaVinculacion, idcliente, nombre,
+ * nombreCompania, nombreTienda, puntosVigentes, telefono.
+ * Lee: cliente, cliente_fidelizacion, tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerMiembrosClub.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerMiembrosClub")
 public class ObtenerMiembrosClub extends HttpServlet {
     private static final long serialVersionUID = 1L;

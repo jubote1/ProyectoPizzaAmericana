@@ -25,22 +25,18 @@ import capaModeloCC.LogEventoBold;
 import capaSeguridad.FirmaBold;
 
 /**
- * Webhook de Bold (SONO QR y datafonos): recibe los eventos de pago y, por
- * ahora, solo los guarda en log_evento_bold. No actua sobre ellos.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca
+ * IntegracionCRMDAO.obtenerInformacionIntegracion, LogEventoBoldDAO.insertar.
  *
- * La llave secreta para validar la firma esta en integracion_crm
- * (crm = 'SONOQR', columna fresh_token). Un evento con firma no valida se
- * guarda igual, marcado: en esta fase lo que importa es ver que llega, y si
- * ademas se le respondiera 401 a Bold, reintentaria 5 veces un evento que
- * tampoco vamos a usar.
+ * Ruta: /ProyectoPizzaAmericana/api/bold/webhook   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion y cabecera X-Forwarded-For, x-bold-signature.
+ * Devuelve: application/json; claves: message, ok, servicio.
+ * Lee: bold_sede_tienda, integracion_crm, log_evento_bold, parametros, tienda.
+ * Escribe: log_evento_bold (INSERT/UPDATE).
  *
- * Bold exige un 200 en 2 segundos, asi que aqui no hay nada mas que validar,
- * guardar y responder. Si no se pudo guardar se responde 500 para que Bold
- * reintente (15 min, 1 h, 4 h, 8 h, 24 h).
- *
- * Es publico a proposito, como el de Wompi: Bold no tiene sesion. No es
- * necesario registrarlo en web.xml (SeguridadFilter solo actua sobre las URLs
- * mapeadas en pantalla_servlet).
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha BoldWebhook.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/api/bold/webhook")
 public class BoldWebhook extends HttpServlet {

@@ -14,6 +14,25 @@ import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.TercerizadoDomicilioCtrl;
 
+/**
+ * Servicio que modifica datos de Plataformas (Rappi, DiDi, Kuno): invoca
+ * TercerizadoDomicilioCtrl.crearOrdenRappiCargo.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CrearOrdenRappiCargo   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer), idtienda (integer), numposheader (integer), latitud
+ * (number), longitud (number), direccion (string).
+ * Devuelve: application/json;charset=UTF-8; claves: action_type, address, cargo_order_id, city,
+ * comments, complement, description, dsnodbc, email, exito, external_picking_point_id, first_name,
+ * ....
+ * Lee: cliente, detalle_pedido, especialidad, excepcion_precio, municipio, parametros, pedido,
+ * pedido_forma_pago, sabor_x_tipo_liquido, tienda.
+ * Escribe: cliente (UPDATE), pedido (UPDATE), tercerizado_domicilio_evento (INSERT).
+ * Sistemas externos: ArcGIS, Google Maps, Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CrearOrdenRappiCargo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/CrearOrdenRappiCargo")
 public class CrearOrdenRappiCargo extends HttpServlet {
 	private static final long serialVersionUID = 1L;

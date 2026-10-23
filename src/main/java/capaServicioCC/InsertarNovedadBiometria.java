@@ -12,25 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.BiometriaNovedadCtrl;
 
 /**
- * Registra una novedad de biometria. Lo llama el POS.
+ * Servicio que modifica datos de Tiendas y operacion: invoca BiometriaNovedadCtrl.error,
+ * BiometriaNovedadCtrl.insertarNovedad.
  *
- * La novedad NO cambia nada en la jornada: queda en estado REPORTADA esperando
- * que el supervisor la revise en el central. Por eso la pantalla del POS puede
- * ser abierta y cualquiera puede reportar: lo que se registra es una version de
- * lo que paso, no una correccion.
+ * Ruta: /ProyectoPizzaAmericana/InsertarNovedadBiometria   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): id (string), idtienda (string), fecha (string), tiponovedad (string),
+ * eventotipo (string), eventohora (string), horareportada (string), observacion (string),
+ * reportadopor (string), origen (string).
+ * Devuelve: application/json; claves: detalle, idnovedad, mensaje, resultado.
+ * Escribe: general.empleado_evento_novedad (INSERT).
  *
- * Parametros:
- *   id            id del empleado al que le pasa la novedad. Obligatorio.
- *   fecha         dia de la jornada, aaaa-mm-dd. Obligatorio.
- *   idtienda      tienda donde se reporta. Obligatorio.
- *   tiponovedad   CORREGIR HORA, FALTA LA SALIDA, FALTA EL INGRESO u OTRA. Obligatorio.
- *   eventotipo    INGRESO o SALIDA del registro que la persona selecciono. Opcional.
- *   eventohora    aaaa-mm-dd hh:mm:ss de ese registro. Opcional.
- *   horareportada aaaa-mm-dd hh:mm:ss, la hora real segun quien reporta. Opcional.
- *   observacion   la explicacion. Obligatoria.
- *   reportadopor  usuario del POS que reporta. Obligatorio.
- *
- * Servlet implementation class InsertarNovedadBiometria
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarNovedadBiometria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarNovedadBiometria")
 public class InsertarNovedadBiometria extends HttpServlet {

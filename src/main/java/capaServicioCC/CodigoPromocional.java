@@ -13,20 +13,22 @@ import capaControladorCC.CodigoPromoCtrl;
 import utilidadesCC.LimitadorIntentos;
 
 /**
- * Servlet implementation class CodigoPromocional
+ * Servicio que modifica datos de Ofertas y fidelizacion (administracion): invoca
+ * CodigoPromoCtrl.autorizado, CodigoPromoCtrl.sinAutorizacion.
  *
- * Redencion de codigos promocionales en tres pasos, para que el descuento lo calcule el servidor y
- * el codigo se consuma UNA sola vez y solo cuando el pedido se termina:
+ * Ruta: /ProyectoPizzaAmericana/CodigoPromocional   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Exige token de tienda.
+ * Recibe (query/form): accion (string), idtienda (string), codigo (string), usuario (string),
+ * total (string), esdomicilio (string), token (string), idpedido (string), descuento (string),
+ * origen (string).
+ * Devuelve: application/json; charset=UTF-8; claves: codigo, descuentopesos, fechacaducidad,
+ * idoferta, idofertacliente, mensaje, nombreoferta, redparcial, respuesta, saldoposterior,
+ * tipooferta, token.
+ * Lee: log_redencion_codigo, oferta, oferta_cliente, parametros.
+ * Escribe: log_redencion_codigo (INSERT), oferta_cliente (UPDATE).
  *
- *   accion=reservar   codigo, idtienda, usuario, total, esdomicilio (S/N), token (opcional)
- *                     Valida las reglas de la oferta, calcula el descuento y aparta el codigo 30 minutos.
- *   accion=confirmar  token, idpedido, idtienda, usuario, descuento
- *                     Consume el codigo y deja el registro con pedido, tienda y valor.
- *   accion=liberar    token
- *                     Devuelve el codigo (pedido cancelado o codigo quitado).
- *
- * Ver capaDAOCC.CodigoPromoDAO. Reemplaza a GetValidarCodigoPromocional + GetUsarCodigoPromocional, que
- * siguen ahi para los POS y pantallas que aun no se actualizan.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CodigoPromocional.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CodigoPromocional")
 public class CodigoPromocional extends HttpServlet {

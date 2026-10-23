@@ -17,8 +17,28 @@ import capaModeloCC.OfertaCliente;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class CRUDExcepcionPrecio
- * Servicio que implementa los servicios que responden al CRUD de la entidad Excepcion Precio.
+ * Gestiona las ofertas asignadas a un cliente.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDOfertaCliente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idoperacion (string), idoferta (integer), idcliente (integer), pqrs
+ * (integer), observacion (string), idofertacliente (integer), basedescuento (number), telefono
+ * (string), usuario (string).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6, 7, 8.
+ * Devuelve: texto; claves: avisocliente, codigopromocion, codigopromocional, fechacaducidad,
+ * fechamensaje, idcliente, idoferta, idofertacliente, ingresooferta, mail.smtp.host,
+ * mail.smtp.ssl.protocols, nombrecliente, ....
+ * Lee: cliente, oferta, oferta_cliente, parametros, parametros_correo, tienda.
+ * Escribe: cliente (UPDATE), log_redencion_codigo (INSERT), oferta_cliente (DELETE/INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail.
+ *
+ * Trampas y riesgos conocidos:
+ * - Asignar, borrar o consumir ofertas es por GET. Solo las operaciones 1 y 2 leen el usuario de
+ *   la sesion; las demas (3, 4, 5, 6, 7 y 8) no la leen en el servlet.
+ * - Con idoperacion invalido responde vacio.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDOfertaCliente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDOfertaCliente")
 public class CRUDOfertaCliente extends HttpServlet {

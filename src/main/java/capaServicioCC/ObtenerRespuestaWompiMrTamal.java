@@ -17,9 +17,19 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.PedidoMrTamalCtrl;
 import capaControladorCC.TiendaCtrl;
 /**
- * Servlet implementation class GetTiendas
- * Servicio que se encarga de retornar las tiendas o puntos de venta para los cuales se podrá tomar un pedido, 
- * la información será retornada en formato JSON.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca
+ * PedidoMrTamalCtrl.capturarEventoPagoWompiMrTamal.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerRespuestaWompiMrTamal   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: mail.smtp.host, mail.smtp.ssl.protocols, respuesta.
+ * Lee: pedido_link_wompi, tienda_franquicia_wompi.
+ * Escribe: log_evento_wompi (INSERT).
+ * Sistemas externos: Correo SMTP, Gmail, Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerRespuestaWompiMrTamal.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerRespuestaWompiMrTamal")
 public class ObtenerRespuestaWompiMrTamal extends HttpServlet {

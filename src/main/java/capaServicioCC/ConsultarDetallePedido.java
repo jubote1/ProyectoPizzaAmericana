@@ -13,7 +13,23 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaDetallePedido
+ * Devuelve los renglones de un pedido ya creado, con nombres legibles.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarDetallePedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): numeropedido (integer).
+ * Devuelve: texto; claves: adicion, cantidad, especialidad1, especialidad2, excepcion,
+ * iddetallepedido, liquido, modespecialidad1, modespecialidad2, nombreproducto, observacion,
+ * valortotal, ....
+ * Lee: detalle_pedido, especialidad, excepcion_precio, sabor_x_tipo_liquido.
+ *
+ * Trampas y riesgos conocidos:
+ * - Devuelve las adiciones, los productos incluidos y las bebidas como renglones sueltos, sin
+ *   indicar a que pizza pertenecen (no trae idproducto, ni tipo, ni el vinculo con el padre).
+ * - Cualquiera que conozca un numero de pedido puede ver su contenido (sin sesion).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarDetallePedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarDetallePedido")
 public class ConsultarDetallePedido extends HttpServlet {

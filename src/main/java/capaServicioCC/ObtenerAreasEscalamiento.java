@@ -14,6 +14,17 @@ import capaControladorCC.SolicitudPQRSCtrl;
 
 
 
+/**
+ * Servicio de consulta de PQRS y escalamiento: invoca SolicitudPQRSCtrl.obtenerAreasEscalamiento.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerAreasEscalamiento   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: error.
+ * Lee: area_escalamiento_pqrs.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerAreasEscalamiento.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerAreasEscalamiento")
 public class ObtenerAreasEscalamiento extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

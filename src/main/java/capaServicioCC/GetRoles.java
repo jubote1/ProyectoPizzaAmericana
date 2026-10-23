@@ -12,9 +12,15 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.RolCtrl;
 
 /**
- * Servlet implementation class GetRoles
- * Retorna el catalogo completo de roles (activos e inactivos) en JSON. No
- * toma parametros, mismo patron que GetEspecialidades.
+ * Servicio de consulta de Seguridad, usuarios y roles: invoca RolCtrl.listarRoles.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetRoles   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: activo, descripcion, idrol, nombre.
+ * Lee: rol.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetRoles.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetRoles")
 public class GetRoles extends HttpServlet {

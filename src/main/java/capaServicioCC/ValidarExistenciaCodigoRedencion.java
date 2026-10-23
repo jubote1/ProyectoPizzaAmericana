@@ -14,9 +14,19 @@ import capaControladorCC.FidelizacionCtrl;
 import capaControladorCC.PedidoCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como par�metro un tel�fono determinado.
+ * Comprueba que el codigo de redencion que dicta el cliente existe para ese correo y esa fecha.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ValidarExistenciaCodigoRedencion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): correo (string), codigo (string), fechasistema (string).
+ * Devuelve: application/json; claves: respuesta.
+ * Lee: codigo_redencion_puntos.
+ *
+ * Trampas y riesgos conocidos:
+ * - Sin limite de intentos (a diferencia de los codigos promocionales).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ValidarExistenciaCodigoRedencion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ValidarExistenciaCodigoRedencion")
 public class ValidarExistenciaCodigoRedencion extends HttpServlet {

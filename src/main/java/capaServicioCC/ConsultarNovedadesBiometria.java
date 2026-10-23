@@ -12,16 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.BiometriaNovedadCtrl;
 
 /**
- * Retorna en JSON las novedades de biometria reportadas en un rango de fechas.
+ * Servicio de consulta de Tiendas y operacion: invoca BiometriaNovedadCtrl.error,
+ * BiometriaNovedadCtrl.maximoDiasRango.
  *
- * Alimenta la pantalla de revision de novedades de biometria del central.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarNovedadesBiometria   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechadesde (string), fechahasta (string), estado (string).
+ * Devuelve: application/json; claves: atendidas, cambios, detalle, estado, eventohora, eventotipo,
+ * fecha, fechareporte, fecharesolucion, horareportada, id, idnovedad, ....
+ * Lee: general.empleado, general.empleado_evento_log, general.empleado_evento_novedad.
  *
- * Parametros:
- *   fechadesde  fecha inicial inclusive, aaaa-mm-dd. Obligatoria.
- *   fechahasta  fecha final inclusive, aaaa-mm-dd. Obligatoria.
- *   estado      REPORTADA, ATENDIDA o RECHAZADA. Opcional: vacio trae todas.
- *
- * Servlet implementation class ConsultarNovedadesBiometria
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarNovedadesBiometria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarNovedadesBiometria")
 public class ConsultarNovedadesBiometria extends HttpServlet {

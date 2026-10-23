@@ -13,6 +13,18 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * VacanteCtrl.obtenerVacantesActivas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerVacantes   Metodos: GET.
+ * Tipo: Consulta.  Acceso: Filtro JWT del web.xml.
+ * Devuelve: cuerpo vacio.
+ * Lee: categoria, lugar, vacante, vacante_lugar.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerVacantes.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerVacantes")
 public class ObtenerVacantes extends HttpServlet {
 

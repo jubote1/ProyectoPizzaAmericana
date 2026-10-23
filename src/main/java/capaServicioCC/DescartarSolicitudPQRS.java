@@ -13,9 +13,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.SolicitudPQRSCtrl;;
 
 /**
- * Servlet implementation class InseratarSolicitudPQRS
- * Este servicio se encarga de insertar en el sistema la información de una solicitud PQRS, este servlet hace las veces de front
- * y se encarga de la invocación a la clase en la capa Controladora.
+ * Servicio que modifica datos de PQRS y escalamiento: invoca
+ * SolicitudPQRSCtrl.descartarSolicitudPQRS.
+ *
+ * Ruta: /ProyectoPizzaAmericana/DescartarSolicitudPQRS   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idsolicitudpqrs (integer).
+ * Devuelve: texto; claves: idSolicitudPQRS.
+ * Lee: parametros, parametros_correo, solicitudpqrs.
+ * Escribe: solicitudpqrs (DELETE).
+ * Sistemas externos: Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha DescartarSolicitudPQRS.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/DescartarSolicitudPQRS")
 public class DescartarSolicitudPQRS extends HttpServlet {

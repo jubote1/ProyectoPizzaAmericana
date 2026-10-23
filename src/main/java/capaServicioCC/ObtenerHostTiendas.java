@@ -12,6 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.TiendaCtrl;
 
 
+/**
+ * Servicio de consulta de Tiendas y operacion: invoca TiendaCtrl.obtenerHostTiendas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHostTiendas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: funcional, hosbd, idtienda, nombre.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHostTiendas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/ObtenerHostTiendas")
 public class ObtenerHostTiendas extends HttpServlet {
 	private static final long serialVersionUID = 1L;

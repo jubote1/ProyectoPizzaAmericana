@@ -14,9 +14,24 @@ import org.apache.log4j.Logger;
 import capaControladorCC.VentaIntegralCtrl;
 
 /**
- * Servlet implementation class CRUDVentaIntegralCategoria
- * CRUD del catalogo de categorias de Venta Integral, mismo patron que
- * CRUDEspecialidad: idoperacion 1 insertar 2 editar 3 eliminar 4 consultar.
+ * Servicio con 4 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDVentaIntegralCategoria   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), abreviatura (string), tipodato
+ * (string), mediciontienda (string), excluyeanuladostienda (string), filtroestaciontienda
+ * (string), medicioncc (string), orden (string), itemstienda (string), itemscontactcenter
+ * (string), idcategoria (string).
+ * Operaciones (operacion): 1, 2, 3, 4.
+ * Devuelve: texto; claves: abreviatura, activo, excluyeanuladostienda, filtroestaciontienda,
+ * idcategoria, itemscontactcenter, itemstienda, medicioncc, mediciontienda, nombre, orden,
+ * resultado, ....
+ * Lee: venta_integral_categoria, venta_integral_categoria_item.
+ * Escribe: venta_integral_categoria (INSERT/UPDATE), venta_integral_categoria_item
+ * (DELETE/INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDVentaIntegralCategoria.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDVentaIntegralCategoria")
 public class CRUDVentaIntegralCategoria extends HttpServlet {

@@ -13,9 +13,17 @@ import capaControladorCC.EmpleadoCtrl;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class ObtenerTotalPedido
- * Servicio que permite dado un id de pedido, retornar el total de un pedido, sumando los detalles de pedido asociados
- * al pedido.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca
+ * EmpleadoCtrl.obtenerResultadoEncuesta.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerResultadoEncuesta   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer).
+ * Devuelve: texto; claves: cantidad, nombre, promedio.
+ * Lee: empleado, empleado_encuesta, empleado_encuesta_detalle.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerResultadoEncuesta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerResultadoEncuesta")
 public class ObtenerResultadoEncuesta extends HttpServlet {

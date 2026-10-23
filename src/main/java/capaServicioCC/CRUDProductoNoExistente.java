@@ -12,8 +12,20 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDProducto
- * Servicio que se encarga de implementar el CRUD de la entidad Producto.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDProductoNoExistente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), idtienda (integer), idproducto (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: idproducto, idtienda, insertado, mail.smtp.host,
+ * mail.smtp.ssl.protocols, producto, resultado, tienda.
+ * Lee: parametros, parametros_correo, producto, producto_no_existente, tienda.
+ * Escribe: log_bloqueo_producto_tienda (INSERT), producto_no_existente (DELETE/INSERT/UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDProductoNoExistente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDProductoNoExistente")
 public class CRUDProductoNoExistente extends HttpServlet {

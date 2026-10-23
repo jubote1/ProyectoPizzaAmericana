@@ -12,9 +12,17 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.HomologacionSalesManago;
 
 /**
- * Servicio que se encarga de retornar el precio adicional que tendran definidas especialidades. El servicio retorna en formato 
- * JSON el valor que se requiere.
- * Servlet implementation class ObtenerExcepcionEspecialidad
+ * Servicio de consulta de Bot y CRM (Kommo): invoca PedidoCtrl.obtenerHomologacionSalesManago.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerHomologacionSalesManago   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): tamano (string), name (string), especialidad (string).
+ * Devuelve: texto; claves: id, nombre.
+ * Lee: homologacion_sales_manago.
+ * Sistemas externos: SALESmanago.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerHomologacionSalesManago.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerHomologacionSalesManago")
 public class ObtenerHomologacionSalesManago extends HttpServlet {

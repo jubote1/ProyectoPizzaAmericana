@@ -12,8 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet que consulta el conteo real de pedidos entregados y pendientes
- * de un domiciliario en la tienda correspondiente.
+ * Servicio de consulta de Domiciliarios y enrutamiento: invoca
+ * PedidoCtrl.consultarConteoPedidosDomiciliario.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarConteoPedidosDomiciliario   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idtienda (integer), claveusuario (string).
+ * Devuelve: application/json;charset=UTF-8; claves: resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarConteoPedidosDomiciliario.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarConteoPedidosDomiciliario")
 public class ConsultarConteoPedidosDomiciliario extends HttpServlet {

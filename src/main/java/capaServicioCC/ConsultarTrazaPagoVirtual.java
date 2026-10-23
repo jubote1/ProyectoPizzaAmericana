@@ -12,12 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * La historia de un pago virtual: avisos al cliente, eventos de Wompi y gestion.
+ * Servicio de consulta de Pagos virtuales y conciliacion: invoca
+ * PedidoCtrl.consultarTrazaPagoVirtual.
  *
- * Reemplaza en la pantalla de monitoreo a ConsultarLogEventoWompi, que solo
- * mostraba la parte de Wompi. Con los eventos solos no se entiende nada: no se
- * sabe si al cliente se le alcanzo a mandar el link, ni a que correo, ni si
- * alguien lo llamo.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarTrazaPagoVirtual   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedido (integer).
+ * Devuelve: application/json; charset=UTF-8; claves: detalle, estado, fechahora, fuente.
+ * Lee: log_evento_wompi, pedido_gestion_link, pedido_pago_virtual.
+ * Sistemas externos: Wompi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarTrazaPagoVirtual.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarTrazaPagoVirtual")
 public class ConsultarTrazaPagoVirtual extends HttpServlet {

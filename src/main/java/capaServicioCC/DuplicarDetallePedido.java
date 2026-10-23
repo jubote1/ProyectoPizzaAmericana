@@ -14,7 +14,27 @@ import org.apache.log4j.Logger;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class DuplicarDetallePedido
+ * Copia un producto completo del pedido con sus adiciones, modificadores y productos incluidos (el
+ * boton de copiar de la pantalla).
+ *
+ * Ruta: /ProyectoPizzaAmericana/DuplicarDetallePedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): iddetallepedido (integer), idpedido (integer).
+ * Devuelve: texto; claves: adicion, cantidad, especialidad1, especialidad2, iddetallepedido,
+ * liquido, observacion, otroprod, pizza, tipo, valortotal, valorunitario.
+ * Lee: adicion_detalle_pedido, detalle_pedido, especialidad, excepcion_precio,
+ * modificador_detalle_pedido, sabor_x_tipo_liquido.
+ * Escribe: detalle_pedido (INSERT).
+ *
+ * Trampas y riesgos conocidos:
+ * - Guarda los ids viejos y nuevos en un arreglo de 20 posiciones: si el grupo tiene mas de 20
+ *   renglones falla con una excepcion.
+ * - Si la insercion de algun renglon falla (devuelve 0), el enlace posterior apunta a 0 sin
+ *   avisar.
+ * - No hay transaccion: puede quedar un grupo copiado a medias.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha DuplicarDetallePedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/DuplicarDetallePedido")
 public class DuplicarDetallePedido extends HttpServlet {

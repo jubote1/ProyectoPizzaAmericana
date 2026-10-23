@@ -13,7 +13,16 @@ import org.apache.log4j.Logger;
 
 import capaControladorCC.PedidoCtrl;
 /**
- * Servlet implementation class ConsultaIntegradaPedidos
+ * Servicio de consulta de Reportes y estadisticas: invoca PedidoCtrl.consultarVentasSemanaAsesor.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ConsultarVentasSemanaAsesor   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), asesor (string).
+ * Devuelve: texto; claves: ventatotal.
+ * Lee: pedido.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarVentasSemanaAsesor.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarVentasSemanaAsesor")
 public class ConsultarVentasSemanaAsesor extends HttpServlet {

@@ -14,13 +14,19 @@ import org.apache.log4j.Logger;
 import capaControladorCC.IdentificacionMostradorCtrl;
 
 /**
- * Identificacion del cliente en el mostrador, por tienda y cajero, a pedido.
+ * Servicio de consulta de Reportes y estadisticas: invoca
+ * IdentificacionMostradorCtrl.consultarIdentificacionMostrador.
  *
- * Lo mismo que publica el correo semanal de Servicios, pero con el rango que
- * escoja el lider de zona. Consulta las tiendas en el momento, asi que se
- * demora; la pantalla avisa antes de lanzarlo.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarIdentificacionMostrador   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechainicial (string), fechafinal (string), idtienda (integer).
+ * Devuelve: texto; claves: autpreguntadas, autsi, cajero, cajeros, filas, identificados, idtienda,
+ * minimopedidoscajero, pedidos, porcentaje, senegaron, senego, ....
+ * Lee: cliente, cliente_autorizacion_datos, information_schema.tables, pedido, pedido_sin_cliente,
+ * tienda, tipo_pedido.
  *
- * Recibe las fechas en dd/mm/yyyy, igual que las demas consultas por rango.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarIdentificacionMostrador.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarIdentificacionMostrador")
 public class ConsultarIdentificacionMostrador extends HttpServlet {

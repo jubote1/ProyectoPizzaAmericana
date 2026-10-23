@@ -16,7 +16,18 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class ActualizarCliente
+ * Servicio que modifica datos de Domiciliarios y enrutamiento: invoca
+ * ClienteCtrl.actualizarClienteCoordenadas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ActualizarClienteCoordenadas   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): latitud (number), longitud (number), idcliente (integer),
+ * direccion_proveedor (string).
+ * Devuelve: texto.
+ * Escribe: cliente (UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ActualizarClienteCoordenadas.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ActualizarClienteCoordenadas")
 public class ActualizarClienteCoordenadas extends HttpServlet {

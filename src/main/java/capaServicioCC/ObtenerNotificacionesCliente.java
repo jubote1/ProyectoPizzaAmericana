@@ -12,9 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Da los avisos de un cliente por su idcliente: PQRS que ha radicado y su ultimo pedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/ObtenerNotificacionesCliente   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idcliente (integer).
+ * Devuelve: application/json; claves: formapago, idpedido, pqrs, tiempopedido, ultimopedido.
+ * Lee: forma_pago, pedido, pedido_forma_pago, solicitudpqrs.
+ *
+ * Trampas y riesgos conocidos:
+ * - El texto pqrs es una frase armada en el servidor ("Ha radicado PQRS ,101,205"), no una
+ *   lista.
+ * - idcliente no numerico: respuesta vacia.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ObtenerNotificacionesCliente.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ObtenerNotificacionesCliente")
 public class ObtenerNotificacionesCliente extends HttpServlet {

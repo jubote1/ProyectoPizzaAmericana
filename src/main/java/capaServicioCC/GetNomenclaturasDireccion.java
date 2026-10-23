@@ -12,9 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class GetEspecialidades
- * Servicio que retorna todas la especialidades creadas en el sistemas, no se tiene filtro y por lo tanto no toma ningún
- * parámetro o filtro, el retorno de la información es formato JSON.
+ * Lista los tipos de via (Calle, Carrera, Transversal...) para armar la direccion estructurada.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetNomenclaturasDireccion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: idnomenclatura, nomenclatura.
+ * Lee: nomenclatura_direccion.
+ *
+ * Trampas y riesgos conocidos:
+ * - El tipo de via se guarda por id en cliente.idnomenclatura; el valor 0 significa "sin
+ *   nomenclatura".
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetNomenclaturasDireccion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetNomenclaturasDireccion")
 public class GetNomenclaturasDireccion extends HttpServlet {

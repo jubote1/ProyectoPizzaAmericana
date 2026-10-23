@@ -13,13 +13,19 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.FidelizacionCtrl;
 
 /**
- * Lista las solicitudes de devolucion de puntos para la pantalla de revision.
+ * Servicio de consulta de Reportes y estadisticas: invoca
+ * FidelizacionCtrl.obtenerSolicitudesReversa.
  *
- * Solo responde con sesion iniciada: es una pantalla administrativa y los
- * datos incluyen el correo del cliente.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarSolicitudesReversa   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): estado (string), fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; claves: correo, estado, estadoredencion, fecharevision,
+ * fechasolicitud, idpedidotienda, idredencion, idsolicitud, idtienda, motivo, observacion,
+ * observacionrevision, ....
+ * Lee: fidelizacion_redencion, fidelizacion_reversa_solicitud, tienda.
  *
- * Parametros: estado (PENDIENTE, APROBADA, RECHAZADA o vacio), fechadesde,
- *             fechahasta
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarSolicitudesReversa.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarSolicitudesReversa")
 public class ConsultarSolicitudesReversa extends HttpServlet {

@@ -15,20 +15,25 @@ import capaControladorCC.EnvioPublicidadCtrl;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Compensaciones por tiempo: los pedidos a domicilio que se demoraron, y la oferta de disculpa que se
- * les manda a quienes se escojan.
+ * Servicio que modifica datos de Sin clasificar (revisar a mano): invoca AccesoCRM.puede,
+ * AccesoCRM.negado.
  *
- * ACCIONES
+ * Ruta: /ProyectoPizzaAmericana/CompensacionTiempo   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string), fecha (string), minutos (string), idtienda (string),
+ * soloexceso (string), dias (string), idoferta (string), pedidos (string).
+ * Devuelve: application/json; charset=UTF-8; claves: asunto, cliente, desde, dias, email,
+ * emitidos, enviadas, error, exceso, general, hasta, hora_entrega, ....
+ * Lee: cliente, crm.campana, crm.campana_destinatario, crm.campana_envio, crm.compensacion_tiempo,
+ * crm.persona_resumen, crm.stage_cliente_tienda, datamart.despacho_real,
+ * datamart.despacho_real_det, datamart.pedido.
+ * Escribe: crm.campana (INSERT), crm.campana_destinatario (INSERT/UPDATE), crm.campana_envio
+ * (INSERT/UPDATE), crm.compensacion_tiempo (INSERT), oferta_bitacora (INSERT), oferta_cliente
+ * (INSERT/UPDATE), pizzaamericana.cliente (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail.
  *
- *   consultar  GET   fecha (aaaa-mm-dd, anterior a hoy), minutos, idtienda (0 = todas)
- *                    Los pedidos que se demoraron al menos esos minutos, con a quien se le puede escribir.
- *   ofertas    GET   Las ofertas que se pueden mandar (personales, con codigo y caducidad).
- *   vistaprevia GET  idoferta, fecha. El correo de disculpa con datos de ejemplo.
- *   enviar     POST  fecha, minutos, idoferta, pedidos (lista "idtienda:idpedido" separada por coma).
- *                    Manda el correo de disculpa con la oferta. Es lo unico que escribe.
- *
- * Acceso: el mismo del CRM (usuario.acceso_crm). Esta pantalla le escribe a clientes con una oferta que
- * cuesta plata, asi que la valida el servidor y no solo el menu. El usuario sale de la sesion.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CompensacionTiempo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CompensacionTiempo")
 public class CompensacionTiempo extends HttpServlet {

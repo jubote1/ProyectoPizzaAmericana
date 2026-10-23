@@ -20,6 +20,20 @@ import capaControladorCC.EncuestaCtrl;
 import capaModeloCC.EmpleadoEncuesta;
 import capaModeloCC.EmpleadoEncuestaDetalle;
 
+/**
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca
+ * EncuestaCtrl.insertarEmpleadoEncuestaDetalle.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarDetalleEncuestaTiendasAPP   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe: cuerpo de la peticion.
+ * Devuelve: application/json; claves: errors_insercion, failed_count, porcentaje_actualizado,
+ * success.
+ * Escribe: empleado_encuesta (UPDATE), empleado_encuesta_detalle (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarDetalleEncuestaTiendasAPP.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/InsertarDetalleEncuestaTiendasAPP")
 public class InsertarDetalleEncuestaTiendasAPP extends HttpServlet {
     private static final long serialVersionUID = 1L;

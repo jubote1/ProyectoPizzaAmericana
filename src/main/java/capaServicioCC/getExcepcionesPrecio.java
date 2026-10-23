@@ -12,9 +12,22 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.PedidoCtrl;
 
 /**
- * Servlet implementation class getExcepcionesPrecio 
- * Servicio que se encarga de retornar en formato JSON todas las excepciones de precio, parametrizadas en el sistema, 
- * no se toma ningún filtro para la información.
+ * Lista todas las promociones (excepciones de precio) habilitadas, con sus reglas.
+ *
+ * Ruta: /ProyectoPizzaAmericana/getExcepcionesPrecio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Devuelve: application/json; claves: cantidadingredientes, controlacantidadingredientes,
+ * controlaespecialidades, descripcion, domingo, horafinal, horainicial, idexcepcion, idproducto,
+ * idproductodepende, jueves, lunes, ....
+ * Lee: excepcion_precio.
+ *
+ * Trampas y riesgos conocidos:
+ * - Las validaciones de dia, hora, codigo, oferta y dependencia se hacen solo en el navegador:
+ *   el servidor no vuelve a comprobarlas al insertar el detalle.
+ * - La hora de la promocion se compara con el reloj del navegador, no con el del servidor.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha getExcepcionesPrecio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/getExcepcionesPrecio")
 public class getExcepcionesPrecio extends HttpServlet {

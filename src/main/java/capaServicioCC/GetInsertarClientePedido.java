@@ -12,9 +12,18 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ClienteCtrl;
 
 /**
- * Servlet implementation class GetInsertarClientePedido
- * Servicio que se encarga de recibir los parámetros de cliente con el fin de tomar alguna acción, que podrá ser actualización
- * o inserción. Se reciben todo lso parámetos del cliente.
+ * Servicio que modifica datos de Pedidos: invoca ClienteCtrl.InsertarClientePedido.
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetInsertarClientePedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): telefono (string), nombres (string), direccion (string), zona (string),
+ * observacion (string), tienda (string).
+ * Devuelve: texto; claves: idcliente, resultado.
+ * Lee: cliente, municipio, nomenclatura_direccion, tienda.
+ * Escribe: cliente (INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetInsertarClientePedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetInsertarClientePedido")
 public class GetInsertarClientePedido extends HttpServlet {

@@ -13,9 +13,26 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.PromocionesCtrl;;
 
 /**
- * Servlet implementation class GetCliente
- * Servicio que se encarga de consultar todos los registros que tiene asociado un cliente en la tabla de clientes, dando 
- * como parámetro un teléfono determinado.
+ * Verifica el codigo que el cliente da para una promocion cerrada (la que no es de oferta
+ * abierta).
+ *
+ * Ruta: /ProyectoPizzaAmericana/GetValidarExcepcionCerrada   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): codigo (string), idexcepcion (integer).
+ * Devuelve: application/json; claves: nombre.
+ * Lee: excepcion_cerrada.
+ *
+ * Trampas y riesgos conocidos:
+ * - El codigo se concatena en el SQL (inyectable). Si distingue o no mayusculas depende de la
+ *   collation de la base (no verificado).
+ * - Un idexcepcion no numerico cae en el catch y la respuesta sale vacia (cuerpo vacio, no
+ *   {"nombre":""}).
+ * - No hay limite de intentos: se pueden probar codigos sin freno.
+ * - La validacion solo la pide el navegador; al insertar el detalle el servidor no comprueba que
+ *   el codigo se haya validado.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha GetValidarExcepcionCerrada.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/GetValidarExcepcionCerrada")
 public class GetValidarExcepcionCerrada extends HttpServlet {

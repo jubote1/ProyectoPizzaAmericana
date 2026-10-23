@@ -12,8 +12,17 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * Método que se encarga recibir los parámetros para la inserción de una especialidad.
+ * Servicio que modifica datos de Catalogo y productos (administracion): invoca
+ * ParametrosCtrl.insertarEspecialidad.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarEspecialidad   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): nombre (string), abreviatura (string).
+ * Devuelve: texto; claves: idespecialidad.
+ * Escribe: especialidad (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarEspecialidad.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarEspecialidad")
 public class InsertarEspecialidad extends HttpServlet {

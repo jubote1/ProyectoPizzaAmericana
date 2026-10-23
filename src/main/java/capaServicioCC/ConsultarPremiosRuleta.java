@@ -12,18 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.RuletaCtrl;
 
 /**
- * Servicio que retorna en formato JSON los premios ganados en la ruleta de
- * encuestas dentro de un rango de fechas, con el estado de cada uno: si esta
- * pendiente de dispersar, si ya se disperso, si el cliente no tiene correo o si
- * al premio le falta configurar la oferta.
+ * Servicio de consulta de Campanas, publicidad y mercadeo: invoca RuletaCtrl.consultarPremios.
  *
- * Alimenta la pantalla de dispersion de premios.
+ * Ruta: /ProyectoPizzaAmericana/ConsultarPremiosRuleta   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fechadesde (string), fechahasta (string).
+ * Devuelve: application/json; claves: codigo_promocion, correo, detalle, dias_caducidad,
+ * dispersados, estado, falta_aviso, fecha, fecha_aviso, fecha_caducidad, fecha_dispersion,
+ * fechadesde, ....
+ * Lee: cliente, log_encuesta_servicio, oferta, oferta_cliente, opciones_ruleta, pedido,
+ * resultado_ruleta, ruleta_oferta, tienda.
  *
- * Parametros:
- *   fechadesde  fecha inicial inclusive, formato aaaa-mm-dd. Obligatoria.
- *   fechahasta  fecha final inclusive, formato aaaa-mm-dd. Obligatoria.
- *
- * Servlet implementation class ConsultarPremiosRuleta
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha ConsultarPremiosRuleta.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/ConsultarPremiosRuleta")
 public class ConsultarPremiosRuleta extends HttpServlet {

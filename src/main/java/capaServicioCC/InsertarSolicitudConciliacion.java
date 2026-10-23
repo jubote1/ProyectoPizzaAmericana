@@ -17,8 +17,18 @@ import capaControladorCC.PedidoCtrl;
 import capaModeloCC.SolicitudConciliacion;;
 
 /**
- * Servlet implementation class InsertarEspecialidad
- * M�todo que se encarga recibir los par�metros para la inserci�n de una especialidad.
+ * Servicio que modifica datos de Pagos virtuales y conciliacion: invoca ValorDigitado.leer,
+ * PedidoCtrl.insertarSolicitudConciliacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/InsertarSolicitudConciliacion   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): fecha (string), origen (string), idtienda (integer), numpedido (integer),
+ * descripcion (string), categoria (string), valoranalizar (string), telefono (string).
+ * Devuelve: texto; claves: error, respuesta.
+ * Escribe: solicitud_conciliacion (INSERT).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha InsertarSolicitudConciliacion.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/InsertarSolicitudConciliacion")
 public class InsertarSolicitudConciliacion extends HttpServlet {

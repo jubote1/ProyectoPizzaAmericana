@@ -12,8 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDMunicipio
- * Servicio que implementa el CRUD para la entidad Municipio.
+ * Lista los municipios atendidos.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDMunicipio   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), dsn (string), idtienda (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: idmunicipio, nombre.
+ * Lee: municipio.
+ *
+ * Trampas y riesgos conocidos:
+ * - El resto del sistema identifica el municipio por NOMBRE (por ejemplo
+ *   InsertarClienteEncabezadoPedido): hay que mandar el texto exacto de esta lista.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDMunicipio.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDMunicipio")
 public class CRUDMunicipio extends HttpServlet {

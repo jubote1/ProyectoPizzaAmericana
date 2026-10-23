@@ -14,8 +14,27 @@ import capaControladorCC.ParametrosCtrl;
 import capaModeloCC.Usuario;
 
 /**
- * Servlet implementation class CRUDFormaPago
- * Servicio que implementa el CRUD de la entidad Forma Pago.
+ * Gestiona el tiempo de entrega prometido de cada tienda.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDTiempoPedido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Lee la sesion pero no la exige.
+ * Recibe (query/form): idoperacion (string), nuevotiempo (integer), idtienda (integer).
+ * Operaciones (operacion): 1, 2, 3.
+ * Devuelve: texto; claves: estado, idtienda, mail.smtp.host, mail.smtp.ssl.protocols, resultado,
+ * tiempopedido, tienda.
+ * Lee: parametros, parametros_correo, tiempo_pedido_tienda, tienda, tienda_bloqueada.
+ * Escribe: log_tiempo_tienda (INSERT), tiempo_pedido_tienda (UPDATE).
+ * Sistemas externos: Correo SMTP, Gmail.
+ *
+ * Trampas y riesgos conocidos:
+ * - SEGURIDAD: cambiar el tiempo de una tienda es un GET sin validar sesion.
+ * - La respuesta de 1 mezcla HTML con JSON.
+ * - El 100 para tienda bloqueada es un valor magico: no se distingue de una tienda que de verdad
+ *   tarda 100 minutos.
+ * - En 3, una tienda sin fila en tiempo_pedido_tienda devuelve 0.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDTiempoPedido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDTiempoPedido")
 public class CRUDTiempoPedido extends HttpServlet {

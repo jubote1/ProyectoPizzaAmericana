@@ -12,8 +12,19 @@ import javax.servlet.http.HttpServletResponse;
 import capaControladorCC.ParametrosCtrl;
 
 /**
- * Servlet implementation class CRUDTipoLiquido
- * Servicio implementado para soportar las operaciones CRUD de la entidad tipo liquido.
+ * Servicio con 6 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDTipoLiquido   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Sin validacion propia.
+ * Recibe (query/form): idoperacion (string), nombre (string), capacidad (string), idtipoliquido
+ * (integer).
+ * Operaciones (operacion): 1, 2, 3, 4, 5, 6.
+ * Devuelve: texto; claves: capacidad, idtipoliquido, nombre, resultado.
+ * Lee: tipo_liquido.
+ * Escribe: tipo_liquido (DELETE/INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDTipoLiquido.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDTipoLiquido")
 public class CRUDTipoLiquido extends HttpServlet {

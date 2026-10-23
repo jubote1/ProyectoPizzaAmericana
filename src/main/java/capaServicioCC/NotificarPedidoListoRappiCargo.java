@@ -13,6 +13,20 @@ import org.json.simple.JSONObject;
 import capaControladorCC.TercerizadoDomicilioCtrl;
 import capaModeloCC.RespuestaRappiCargo;
 
+/**
+ * Servicio de consulta de Plataformas (Rappi, DiDi, Kuno): invoca
+ * TercerizadoDomicilioCtrl.notificarPedidoListo, RespuestaRappiCargo.isExito.
+ *
+ * Ruta: /ProyectoPizzaAmericana/NotificarPedidoListoRappiCargo   Metodos: POST.
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idPedidoTienda (string), idTienda (string).
+ * Devuelve: application/json; claves: exito, httpStatus, mensaje, message, respuestaRappi.
+ * Lee: parametros, pedido, tercerizado_domicilio_evento.
+ * Sistemas externos: Rappi.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha NotificarPedidoListoRappiCargo.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/NotificarPedidoListoRappiCargo")
 public class NotificarPedidoListoRappiCargo extends HttpServlet {
 

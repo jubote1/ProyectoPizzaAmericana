@@ -13,9 +13,21 @@ import javax.servlet.http.HttpSession;
 import capaControladorCC.Campana15MinCtrl;
 
 /**
- * CRUD de la configuracion de la campana 15 minutos: idoperacion 1 guardar
- * (inserta o actualiza segun traiga idcampana), 4 listar. Exige sesion, es
- * pantalla de administracion.
+ * Servicio con 3 operaciones que se escogen con el parametro operacion.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CRUDCampana15MinConfig   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Mixto (consulta y modifica).  Acceso: Exige sesion de usuario.
+ * Recibe (query/form): idoperacion (integer), idcampana (integer), nombre (string), activo
+ * (string), mensajeoperario (string), mensajefactura (string), fechadesde (string), fechahasta
+ * (string), minutospromesa (integer), porcentajeretencionmediovirtual (number).
+ * Operaciones (operacion): 1, 4, 5.
+ * Devuelve: application/json; claves: activo, detalle, fechadesde, fechahasta, fechahora,
+ * idcampana, idtienda, mensajefactura, mensajeoperario, minutospromesa, motivo, nombre, ....
+ * Lee: campana_15min_config, campana_15min_tienda_desactivada_dia, tienda.
+ * Escribe: campana_15min_config (INSERT/UPDATE).
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CRUDCampana15MinConfig.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/CRUDCampana15MinConfig")
 public class CRUDCampana15MinConfig extends HttpServlet {

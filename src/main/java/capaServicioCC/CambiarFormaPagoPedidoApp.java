@@ -14,6 +14,18 @@ import javax.servlet.http.HttpSession;
 
 import capaControladorCC.PedidoCtrl;
 
+/**
+ * Servicio de consulta de Pedidos: invoca PedidoCtrl.cambiarFormaPagoPedidoApp.
+ *
+ * Ruta: /ProyectoPizzaAmericana/CambiarFormaPagoPedidoApp   Metodos: GET, POST (doPost delega en doGet).
+ * Tipo: Consulta.  Acceso: Sin validacion propia.
+ * Recibe (query/form): idpedidotienda (string), idtienda (string).
+ * Devuelve: application/json;charset=UTF-8; claves: detalle, resultado, tipo_error.
+ * Lee: tienda.
+ *
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha CambiarFormaPagoPedidoApp.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
+ */
 @WebServlet("/CambiarFormaPagoPedidoApp")
 public class CambiarFormaPagoPedidoApp extends HttpServlet {
     private static final long serialVersionUID = 1L;

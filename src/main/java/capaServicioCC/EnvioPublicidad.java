@@ -14,24 +14,26 @@ import capaControladorCC.SegmentacionPersonaCtrl;
 import utilidadesCC.AccesoCRM;
 
 /**
- * Servlet implementation class EnvioPublicidad
+ * Servicio que modifica datos de Campanas, publicidad y mercadeo: invoca AccesoCRM.puede,
+ * AccesoCRM.negado.
  *
- * Todas las acciones de la pantalla de Envio de Publicidad, en un solo sitio y
- * distinguidas por el parametro "accion".
+ * Ruta: /ProyectoPizzaAmericana/EnvioPublicidad   Metodos: GET, POST.
+ * Tipo: Modifica datos.  Acceso: Sin validacion propia.
+ * Recibe (query/form): accion (string), idcampana (string), nombre (string), canalenvio (string),
+ * idplantilla (string), asunto (string), cuerpo (string), tope (string), esperados (string),
+ * idoferta (string), programar_para (string), idprogramacion (string), idenvio (string), cuantas
+ * (string), horas (string), destino (string).
+ * Devuelve: application/json; charset=UTF-8; claves: advertencia, anulados, asunto, campanas,
+ * canal, claras, codigos, compraron, con_celular, con_correo, consecutivo, creada_en, ....
+ * Lee: cliente, crm.campana, crm.campana_destinatario, crm.campana_envio, crm.compensacion_tiempo,
+ * crm.persona_resumen, crm.segmento_definicion, integracion_crm, oferta, oferta_cliente.
+ * Escribe: crm.campana (INSERT/UPDATE), crm.campana_destinatario (INSERT/UPDATE),
+ * crm.campana_envio (INSERT/UPDATE), crm.campana_programada (UPDATE), oferta_bitacora (INSERT),
+ * oferta_cliente (INSERT/UPDATE), pizzaamericana.cliente (UPDATE).
+ * Sistemas externos: Brevo, Correo SMTP, Gmail, Rappi, WhatsApp.
  *
- * Van juntas y no en siete servlets porque comparten exactamente la misma
- * guarda -acceso al CRM- y el mismo armado de filtro. Partirlas obligaria a
- * repetir esa guarda siete veces, y una guarda repetida siete veces es una
- * guarda que algun dia se olvida en la octava.
- *
- * ENVIOS PROGRAMADOS (accion = programar | programadas | cancelarprogramada)
- *
- *   programar           POST. Los mismos parametros de "enviar" mas programar_para
- *                       (yyyy-MM-ddTHH:mm). Guarda los parametros y deja el envio para esa hora.
- *   programadas         GET. Los que esperan y los de los ultimos dias.
- *   cancelarprogramada  POST. idprogramacion. Solo cancela uno que todavia espera.
- *
- * Las dos que cambian datos exigen POST: un enlace o un rastreador no puede programar ni cancelar.
+ * Documentacion detallada: "Catalogo de servicios del central" (carpeta INVENTARIO SERVICIOS), ficha EnvioPublicidad.
+ * Estado de esta descripcion: verificada a mano el 2026-10-23 leyendo servlet, controlador y DAO.
  */
 @WebServlet("/EnvioPublicidad")
 public class EnvioPublicidad extends HttpServlet {
