@@ -76,6 +76,11 @@ public class CostoTiendaCtrl {
 		acumular(celdas, CostoTiendaDAO.digitadoPorSemana(desde, hasta, idTienda));
 		acumular(celdas, this.cuotasDeArea(semanas, idTienda));
 		acumular(celdas, this.gastoPropio(semanas, idTienda));
+		// Bold: la unica comision virtual que ningun proceso concilia, asi que sale de
+		// lo que registro la tienda. Ver formaPagoPorSemana en el DAO.
+		for (final CostoTiendaDAO.FormaPagoDeConcepto f : CostoTiendaDAO.formasPagoDeConcepto()) {
+			acumular(celdas, CostoTiendaDAO.formaPagoPorSemana(desde, hasta, idTienda, f));
+		}
 
 		// tienda|semana -> venta, el denominador.
 		final HashMap<String, Double> ventas = new HashMap<String, Double>();
@@ -191,6 +196,14 @@ public class CostoTiendaCtrl {
 		}
 		if (CostoTiendaDAO.ORIGEN_AREA.equals(origen)) {
 			renglones.addAll(this.detalleCuotaArea(desde, hasta, idTienda, idConcepto));
+		}
+		// Una forma de pago puede alimentar un concepto que ademas viene de otra parte:
+		// Bold entra a COMISION VIRTUAL, que es SEMANAL. Por eso va aparte y no en un
+		// else, para que el detalle muestre las seis comisiones y no cinco.
+		for (final CostoTiendaDAO.FormaPagoDeConcepto f : CostoTiendaDAO.formasPagoDeConcepto()) {
+			if (f.idConcepto == idConcepto) {
+				renglones.addAll(CostoTiendaDAO.detalleFormaPago(desde, hasta, idTienda, f));
+			}
 		}
 
 		final JSONArray lista = new JSONArray();

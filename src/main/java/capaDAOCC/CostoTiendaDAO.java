@@ -356,6 +356,161 @@ public class CostoTiendaDAO {
 		return tiendas;
 	}
 
+	/** Un concepto que se alimenta de una forma de pago de la tienda, con su tarifa. */
+	public static class FormaPagoDeConcepto {
+		public int idConcepto = 0;
+		/** Del catalogo de la TIENDA, no del central. El 7 de la tienda es SONO QR. */
+		public int idFormaPago = 0;
+		/** La tarifa en porcentaje, ya resuelta desde general.parametros. */
+		public double tarifa = 0;
+	}
+
+	/**
+	 * Los conceptos que se alimentan de una forma de pago de la tienda.
+	 *
+	 * Hoy es uno solo: Bold, que es SONO QR y entra a la comision virtual. Bold es la
+	 * sexta comision virtual y la unica que ningun proceso de conciliacion calcula, asi
+	 * que no esta en gasto_semanal y hay que sacarla de lo que registro la tienda.
+	 *
+	 * El mapeo y la tarifa son datos, no codigo: concepto_costo_forma_pago dice que
+	 * forma de pago alimenta que concepto y en que parametro esta su tarifa.
+	 */
+	public static ArrayList<FormaPagoDeConcepto> formasPagoDeConcepto() {
+		final ArrayList<FormaPagoDeConcepto> lista = new ArrayList<FormaPagoDeConcepto>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			// La tarifa se trae con getDouble y no con ParametrosDAO.obtenerParametro, que
+			// la lee con getInt: 1,5 llegaria como 1 y la comision saldria un tercio por
+			// debajo sin que nada avise.
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT m.idconcepto, m.idforma_pago, IFNULL(p.valornumericod, 0) AS tarifa"
+					+ "  FROM pizzaamericana.concepto_costo_forma_pago m"
+					+ "  LEFT JOIN general.parametros p ON p.valorparametro = m.parametro_tarifa");
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final FormaPagoDeConcepto f = new FormaPagoDeConcepto();
+				f.idConcepto = rs.getInt("idconcepto");
+				f.idFormaPago = rs.getInt("idforma_pago");
+				f.tarifa = rs.getDouble("tarifa");
+				lista.add(f);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.formasPagoDeConcepto: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/**
+	 * La comision de una forma de pago de la tienda, por semana.
+	 *
+	 * SE LEE DE LA TIENDA, NO DEL LOG DEL WEBHOOK
+	 *
+	 * Para Bold la primera idea fue sumar pizzaamericana.log_evento_bold, que es lo que
+	 * el webhook recibio. No sirve: ese log es lo que Bold AVISO, no lo que la tienda
+	 * registro como pago. En San Antonio, del 1 al 18 de octubre, el log da 7.434.900 y
+	 * la tienda 7.834.190. Manda la tienda, que es donde se cuadra la caja. El log
+	 * ademas trae notificaciones repetidas: 68 pagos de 2.299 llegaron dos veces.
+	 *
+	 * datamart.pedido_forma_pago la llena la replica diaria de Servicios. Estuvo en
+	 * cero filas desde que existe; mientras no se haya corrido, esto devuelve vacio y
+	 * la pantalla dice que el concepto esta sin datos, que es la verdad.
+	 */
+	public static ArrayList<Valor> formaPagoPorSemana(final String desde, final String hasta,
+			final int idTienda, final FormaPagoDeConcepto forma) {
+		final ArrayList<Valor> lista = new ArrayList<Valor>();
+		if (forma == null || forma.tarifa <= 0) {
+			return lista;
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final StringBuilder sql = new StringBuilder()
+					.append("SELECT p.idtienda,")
+					.append("       DATE_ADD(p.fechapedido,")
+					.append("           INTERVAL MOD(8 - DAYOFWEEK(p.fechapedido), 7) DAY) AS semana,")
+					.append("       SUM(f.valorformapago) AS base")
+					.append("  FROM datamart.pedido_forma_pago f")
+					.append("  JOIN datamart.pedido p")
+					.append("    ON p.idpedidotienda = f.idpedidotienda AND p.idtienda = f.idtienda")
+					.append(" WHERE f.idforma_pago = ? AND p.fechapedido BETWEEN ? AND ?");
+			if (idTienda > 0) {
+				sql.append(" AND p.idtienda = ?");
+			}
+			sql.append(" GROUP BY p.idtienda, semana");
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			ps.setInt(1, forma.idFormaPago);
+			ps.setString(2, desde);
+			ps.setString(3, hasta);
+			if (idTienda > 0) {
+				ps.setInt(4, idTienda);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Valor v = new Valor();
+				v.idTienda = rs.getInt("idtienda");
+				v.idConcepto = forma.idConcepto;
+				v.semana = rs.getString("semana");
+				v.valor = rs.getDouble("base") * forma.tarifa / 100.0D;
+				lista.add(v);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.formaPagoPorSemana: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** El detalle de una forma de pago: lo recaudado cada dia y la comision que deja. */
+	public static ArrayList<Detalle> detalleFormaPago(final String desde, final String hasta,
+			final int idTienda, final FormaPagoDeConcepto forma) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		if (forma == null || forma.tarifa <= 0) {
+			return lista;
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT p.fechapedido, COUNT(*) AS pagos, SUM(f.valorformapago) AS base"
+					+ "  FROM datamart.pedido_forma_pago f"
+					+ "  JOIN datamart.pedido p"
+					+ "    ON p.idpedidotienda = f.idpedidotienda AND p.idtienda = f.idtienda"
+					+ " WHERE f.idforma_pago = ? AND p.idtienda = ?"
+					+ "   AND p.fechapedido BETWEEN ? AND ?"
+					+ " GROUP BY p.fechapedido ORDER BY p.fechapedido");
+			ps.setInt(1, forma.idFormaPago);
+			ps.setInt(2, idTienda);
+			ps.setString(3, desde);
+			ps.setString(4, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				d.fecha = rs.getString("fechapedido");
+				d.descripcion = "Recaudo del dia por la forma de pago " + forma.idFormaPago;
+				d.referencia = rs.getInt("pagos") + " pagos por " + Math.round(rs.getDouble("base"))
+						+ ", comision " + forma.tarifa + "% IVA incluido";
+				d.valor = rs.getDouble("base") * forma.tarifa / 100.0D;
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleFormaPago: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+
 	/**
 	 * Que fraccion de la venta de toda la operacion puso cada tienda en cada semana.
 	 *
