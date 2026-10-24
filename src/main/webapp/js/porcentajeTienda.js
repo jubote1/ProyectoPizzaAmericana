@@ -22,6 +22,11 @@ function pesos(valor) {
 	return signo + '$ ' + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+/* Un conteo no lleva signo de pesos: no es plata y no se suma con lo de arriba. */
+function numero(valor) {
+	return Math.round(Number(valor) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 function pct(valor) {
 	return (Number(valor) || 0).toFixed(2).replace('.', ',') + '%';
 }
@@ -156,10 +161,12 @@ function pintarUnaTienda(idtienda) {
 	}
 	$('#titulo-tabla').html('Costo por concepto &middot; ' + escapar(nombre));
 
-	// clave concepto|semana -> valor, y la venta de cada semana.
+	// clave concepto|semana -> valor, y la venta y los domicilios de cada semana.
 	var celdas = {};
 	var ventaSemana = {};
+	var domiSemana = {};
 	var ventaTotal = 0;
+	var domiTotal = 0;
 	for (var f = 0; f < datos.filas.length; f++) {
 		var fila = datos.filas[f];
 		if (fila.idtienda !== idtienda) {
@@ -168,16 +175,20 @@ function pintarUnaTienda(idtienda) {
 		celdas[fila.idconcepto + '|' + fila.semana] = (celdas[fila.idconcepto + '|' + fila.semana] || 0)
 			+ fila.valor;
 		ventaSemana[fila.semana] = fila.venta;
+		domiSemana[fila.semana] = fila.domicilios;
 	}
 	for (var s = 0; s < datos.semanas.length; s++) {
 		ventaTotal += Number(ventaSemana[datos.semanas[s]] || 0);
+		domiTotal += Number(domiSemana[datos.semanas[s]] || 0);
 	}
 
 	var str = '<table><thead><tr><th>Concepto</th><th>Origen</th>';
 	for (var k = 0; k < datos.semanas.length; k++) {
 		str += '<th class="ct-num">' + escapar(aDDMM(datos.semanas[k])) + '</th>';
 	}
-	str += '<th class="ct-num">Total</th><th class="ct-num">% venta</th></tr></thead><tbody>';
+	str += '<th class="ct-num">Total</th><th class="ct-num">% venta</th>'
+		+ '<th class="ct-num" title="Solo para los conceptos que dependen del domicilio">'
+		+ 'Por domicilio</th></tr></thead><tbody>';
 
 	var granTotal = 0;
 	var faltantes = 0;
@@ -207,7 +218,11 @@ function pintarUnaTienda(idtienda) {
 			+ '<td class="ct-num">' + (vacio ? '<span class="ct-cero">' + porQueVacio(concepto.origen)
 				+ '</span>' : '<b>' + pesos(totalConcepto) + '</b>') + '</td>'
 			+ '<td class="ct-num">' + (vacio || ventaTotal <= 0 ? '&mdash;'
-				: pct(totalConcepto * 100 / ventaTotal)) + '</td></tr>';
+				: pct(totalConcepto * 100 / ventaTotal)) + '</td>'
+			// Solo tiene sentido en lo que se gasta POR llevar un pedido. Dividir la
+			// publicidad entre los domicilios daria un numero, pero no significaria nada.
+			+ '<td class="ct-num">' + (!vacio && domiTotal > 0 && porDomicilio(concepto.idconcepto)
+				? pesos(totalConcepto / domiTotal) : '&mdash;') + '</td></tr>';
 	}
 
 	// La venta va de ultima porque es el denominador, no un costo mas.
@@ -225,9 +240,19 @@ function pintarUnaTienda(idtienda) {
 		str += '<td class="ct-num">' + pesos(tv) + '</td>';
 	}
 	str += '<td class="ct-num">' + pesos(granTotal) + '</td><td class="ct-num">'
-		+ (ventaTotal > 0 ? pct(granTotal * 100 / ventaTotal) : '&mdash;') + '</td></tr>';
+		+ (ventaTotal > 0 ? pct(granTotal * 100 / ventaTotal) : '&mdash;') + '</td>'
+		+ '<td class="ct-num">&mdash;</td></tr>';
 	str += '<tr class="ct-total"><td>VENTA</td><td></td>' + ventaHtml
-		+ '<td class="ct-num">' + pesos(ventaTotal) + '</td><td class="ct-num">100,00%</td></tr>';
+		+ '<td class="ct-num">' + pesos(ventaTotal) + '</td><td class="ct-num">100,00%</td>'
+		+ '<td class="ct-num">&mdash;</td></tr>';
+	// El conteo no es plata y va de ultimo, para que nadie lo sume con lo de arriba.
+	var domiHtml = '';
+	for (var w2 = 0; w2 < datos.semanas.length; w2++) {
+		domiHtml += '<td class="ct-num">' + numero(domiSemana[datos.semanas[w2]] || 0) + '</td>';
+	}
+	str += '<tr class="ct-total"><td>DOMICILIOS (cantidad)</td><td></td>' + domiHtml
+		+ '<td class="ct-num">' + numero(domiTotal) + '</td><td class="ct-num">&mdash;</td>'
+		+ '<td class="ct-num">&mdash;</td></tr>';
 	str += '</tbody></table>';
 	// El total de abajo no es el costo de la tienda mientras falten conceptos, y hay
 	// que decirlo donde se lee el numero, no solo arriba.
@@ -237,6 +262,17 @@ function pintarUnaTienda(idtienda) {
 			+ 'valor en este periodo. El costo real de la tienda es mayor que el que se ve aqu&iacute;.</p>';
 	}
 	$('#tabla').html(str);
+}
+
+/*
+ * Que conceptos se pueden dividir entre los domicilios.
+ *
+ * Solo los que se gastan POR llevar un pedido: el rodamiento del domiciliario de la
+ * tienda y lo que cobra la empresa temporal. Dividir la publicidad o el arriendo entre
+ * los domicilios tambien daria un numero, y no significaria nada.
+ */
+function porDomicilio(idconcepto) {
+	return idconcepto === 5 || idconcepto === 8;
 }
 
 /* Por que un concepto sale sin un solo peso. Un cero pelado no lo explica. */

@@ -80,6 +80,13 @@ public class CostoTiendaCtrl {
 			ventas.put(v.idTienda + "|" + v.semana, Double.valueOf(v.valor));
 		}
 
+		// tienda|semana -> cuantos domicilios, el otro denominador. Un DOMICILIOS de
+		// tres millones no se puede comparar entre tiendas sin saber cuantos fueron.
+		final HashMap<String, Double> domicilios = new HashMap<String, Double>();
+		for (final CostoTiendaDAO.Valor v : CostoTiendaDAO.domiciliosPorSemana(desde, hasta, idTienda)) {
+			domicilios.put(v.idTienda + "|" + v.semana, Double.valueOf(v.valor));
+		}
+
 		final JSONArray filas = new JSONArray();
 		for (final String clave : celdas.keySet()) {
 			final String[] partes = clave.split("\\|");
@@ -89,8 +96,10 @@ public class CostoTiendaCtrl {
 			j.put("idtienda", Integer.valueOf(partes[0]));
 			j.put("idconcepto", Integer.valueOf(partes[1]));
 			j.put("semana", partes[2]);
+			final Double cuantos = domicilios.get(partes[0] + "|" + partes[2]);
 			j.put("valor", Double.valueOf(valor));
 			j.put("venta", venta == null ? Double.valueOf(0) : venta);
+			j.put("domicilios", cuantos == null ? Double.valueOf(0) : cuantos);
 			// Sin venta no hay porcentaje. Mandar 0 seria decir que no costo nada.
 			if (venta != null && venta.doubleValue() > 0) {
 				j.put("porcentaje", Double.valueOf(valor * 100.0D / venta.doubleValue()));

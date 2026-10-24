@@ -354,6 +354,68 @@ public class CostoTiendaDAO {
 		return tiendas;
 	}
 
+	/**
+	 * Cuantos domicilios hizo cada tienda en cada semana.
+	 *
+	 * Sirve para dividir: un DOMICILIOS de tres millones no dice nada hasta que se sabe
+	 * si fueron mil domicilios o dos mil. Con esto la pantalla saca el costo por
+	 * domicilio, que es con lo que se comparan dos tiendas de tamanos distintos.
+	 *
+	 * SE CUENTA AQUI Y NO SE LEE DE gasto_semanal, A PROPOSITO
+	 *
+	 * El concepto 1 de gasto_configuracion, "Total domicilios", tiene este mismo
+	 * conteo. No se usa por dos razones. La primera es que ese catalogo tiene conceptos
+	 * marcados "NO USAR" y una bandera activo que otros reportes interpretan a su
+	 * manera; amarrar el costo por tienda a eso es quedar expuesto a que alguien apague
+	 * una fila por otro motivo y aqui desaparezca un numero sin aviso. La segunda es
+	 * que el conteo se calcula contra la base de cada tienda, y el datamart ya lo tiene
+	 * centralizado. Medido contra septiembre de 2026, las once tiendas, las dos fuentes
+	 * difieren a lo sumo en un pedido de cada mil setecientos.
+	 *
+	 * Por lo mismo, comisionesPorSemana NO filtra por activo: lo que decide que entra
+	 * al costo es concepto_costo_gasto_semanal, que es nuestra, y nada mas.
+	 */
+	public static ArrayList<Valor> domiciliosPorSemana(final String desde, final String hasta,
+			final int idTienda) {
+		final ArrayList<Valor> lista = new ArrayList<Valor>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final StringBuilder sql = new StringBuilder()
+					.append("SELECT idtienda,")
+					.append("       DATE_ADD(fechapedido, INTERVAL MOD(8 - DAYOFWEEK(fechapedido), 7) DAY)")
+					.append("         AS semana,")
+					.append("       COUNT(*) AS cuantos")
+					.append("  FROM datamart.pedido")
+					.append(" WHERE idtipopedido = 1 AND fechapedido BETWEEN ? AND ?");
+			if (idTienda > 0) {
+				sql.append(" AND idtienda = ?");
+			}
+			sql.append(" GROUP BY idtienda, semana");
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			ps.setString(1, desde);
+			ps.setString(2, hasta);
+			if (idTienda > 0) {
+				ps.setInt(3, idTienda);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Valor v = new Valor();
+				v.idTienda = rs.getInt("idtienda");
+				v.semana = rs.getString("semana");
+				v.valor = rs.getDouble("cuantos");
+				lista.add(v);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.domiciliosPorSemana: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
 	/** La venta de cada tienda en cada semana del rango: el denominador del porcentaje. */
 	public static ArrayList<Valor> ventaPorSemana(final String desde, final String hasta,
 			final int idTienda) {
