@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="css/jquery-confirm.min.css">
 <link rel="stylesheet"
 	href="https://js.arcgis.com/4.27/esri/themes/light/main.css">
-<link rel="stylesheet" href="css/pedidos_mapa.css?v=50">
+<link rel="stylesheet" href="css/pedidos_mapa.css?v=51">
 
 
 <!--<style>
@@ -382,8 +382,16 @@
 						</div>
 
 						<!-- Contenedor del Mapa ArcGIS Integrado (sin borde negro, altura ajustada) -->
-						<div class="panel-mapa-contenedor">
+						<div class="panel-mapa-contenedor" style="position: relative;">
 							<div id="map" style="height: 380px !important;"></div>
+							<div id="mapLoadingOverlay" class="map-loading-overlay" style="display: none;">
+								<div class="map-loader-spinner-box">
+									<div class="map-spinner-ring"></div>
+									<i class="fas fa-map-marked-alt map-loader-icon"></i>
+								</div>
+								<div class="map-loader-title">Consultando mapa y cobertura...</div>
+								<div class="map-loader-desc">Buscando dirección y validando zona de tienda</div>
+							</div>
 						</div>
 
 						<div style="margin-top: 8px; text-align: right;">
@@ -1169,8 +1177,8 @@
 </script>
 <script src="https://js.arcgis.com/4.27/"></script>
 
-<script src="./arcgis.js?v=51" type="text/javascript"></script>
-<script src="js/pedidos.js?v=57" type="text/javascript"></script>
+<script src="./arcgis.js?v=52" type="text/javascript"></script>
+<script src="js/pedidos.js?v=58" type="text/javascript"></script>
 
 <!-- Solo actua con Pedidos.html?reanudar=NNN (retomar un pedido a medio tomar); sin ese parametro no hace nada. -->
 <script src="js/pedidosreanudar.js?v=1" type="text/javascript"></script>

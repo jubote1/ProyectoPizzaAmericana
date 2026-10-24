@@ -660,10 +660,35 @@ function bloquearBusqueda(bloquear) {
   $btns.prop("disabled", bloquear);
   $("#loaderCobertura").toggle(bloquear);
 
+  var $overlay = $("#mapLoadingOverlay");
+  if ($overlay.length === 0) {
+    var $mapContainer = $(".panel-mapa-contenedor").first();
+    if ($mapContainer.length > 0) {
+      $mapContainer.css("position", "relative");
+      $mapContainer.prepend(
+        '<div id="mapLoadingOverlay" class="map-loading-overlay" style="display: none;">' +
+          '<div class="map-loader-spinner-box">' +
+            '<div class="map-spinner-ring"></div>' +
+            '<i class="fas fa-map-marked-alt map-loader-icon"></i>' +
+          '</div>' +
+          '<div class="map-loader-title">Consultando mapa y cobertura...</div>' +
+          '<div class="map-loader-desc">Buscando dirección y validando zona de tienda</div>' +
+        '</div>'
+      );
+      $overlay = $("#mapLoadingOverlay");
+    }
+  }
+
   if (bloquear) {
     $btns.addClass("disabled").html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
+    if ($overlay.length) {
+      $overlay.css("display", "flex").stop(true, true).fadeIn(120);
+    }
   } else {
     $btns.removeClass("disabled").html('<i class="fas fa-search"></i> Buscar');
+    if ($overlay.length) {
+      $overlay.stop(true, true).fadeOut(200);
+    }
   }
 }
 
@@ -730,7 +755,110 @@ function mostrarMensaje(mensaje) {
   }
 }
 
+/**
+ * Sincroniza la tienda detectada en el mapa con el campo selectTiendas del formulario.
+ */
+function sincronizarTiendaFormulario(nombreTienda) {
+  if (!nombreTienda) return;
+  var normTienda = nombreTienda.trim().toLowerCase();
+  var encontrada = false;
+  $('#selectTiendas option').each(function () {
+    var optVal = ($(this).val() || '').trim().toLowerCase();
+    var optText = ($(this).text() || '').trim().toLowerCase();
+    if (optVal === normTienda || optText === normTienda) {
+      $('#selectTiendas').val($(this).val());
+      encontrada = true;
+      return false;
+    }
+  });
+  if (!encontrada) {
+    $('#selectTiendas').val(nombreTienda);
+  }
+  $('#selectTiendas').attr('disabled', false);
+  $('#selectTiendas').trigger('change');
+}
+
+/**
+ * Pregunta claramente al asesor si desea cambiar la tienda a la sugerida por el mapa
+ * cuando difiere de la tienda actualmente seleccionada en el formulario.
+ * NUNCA modifica el selector a ciegas.
+ */
+function preguntarCambioTiendaSugerida(tiendaActual, tiendaMapa) {
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      title: '📍 Sugerencia de Cobertura en Mapa',
+      html:
+        '<div style="text-align: left; font-size: 13.5px; line-height: 1.5; color: #1e293b;">' +
+          '<p style="margin-bottom: 12px; font-size: 13px; color: #475569;">' +
+            'Al consultar la dirección en el mapa, el sistema detectó que corresponde a la zona de cobertura de la tienda:' +
+          '</p>' +
+          '<div style="background-color: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">' +
+            '<i class="fas fa-store-alt" style="font-size: 26px; color: #16a34a;"></i>' +
+            '<div>' +
+              '<div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #15803d; letter-spacing: 0.5px;">Tienda sugerida por Mapa</div>' +
+              '<div style="font-size: 16px; font-weight: 800; color: #14532d;">' + escaparHtml(tiendaMapa) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<p style="margin-bottom: 6px; font-size: 12.5px; color: #64748b;">' +
+            'Sin embargo, actualmente tienes seleccionada en el pedido:' +
+          '</p>' +
+          '<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">' +
+            '<i class="fas fa-exclamation-circle" style="font-size: 20px; color: #d97706;"></i>' +
+            '<div>' +
+              '<div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: #64748b;">Tienda actual en formulario</div>' +
+              '<div style="font-size: 14px; font-weight: 700; color: #334155;">' + escaparHtml(tiendaActual) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<p style="font-weight: 600; color: #0f172a; margin: 0; text-align: center; font-size: 14px;">' +
+            '¿Deseas cambiar la tienda del pedido a <b style="color:#16a34a;">' + escaparHtml(tiendaMapa) + '</b>?' +
+          '</p>' +
+        '</div>',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-check"></i> Sí, cambiar a ' + escaparHtml(tiendaMapa),
+      cancelButtonText: '<i class="fas fa-times"></i> No, mantener ' + escaparHtml(tiendaActual),
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#64748b',
+      focusCancel: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        sincronizarTiendaFormulario(tiendaMapa);
+        $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-store"></i> ' + escaparHtml(tiendaMapa) + ' (Actualizada)</span>');
+        if (typeof toastr !== "undefined") {
+          toastr.success('Tienda actualizada a ' + tiendaMapa + ' según la sugerencia del mapa.', 'Tienda Cambiada');
+        }
+      } else {
+        $('#mapaTxtTiendaCobertura').html(
+          '<span style="color:#64748b; font-weight:700;" title="El mapa sugería ' + escaparHtml(tiendaMapa) + '">' +
+          '<i class="fas fa-store"></i> ' + escaparHtml(tiendaActual) + ' <small>(mantenida manualmente)</small></span>'
+        );
+        if (typeof toastr !== "undefined") {
+          toastr.info('Se conservó la tienda ' + tiendaActual + ' seleccionada.', 'Tienda Conservada');
+        }
+      }
+    });
+  } else {
+    var deseaCambiar = confirm(
+      'SUGERENCIA DE MAPA:\n\n' +
+      'El mapa ubicó la dirección en la zona de: "' + tiendaMapa + '".\n' +
+      'Actualmente tienes seleccionada la tienda: "' + tiendaActual + '".\n\n' +
+      '¿Deseas cambiar la tienda a "' + tiendaMapa + '"?\n\n' +
+      '[Aceptar] = Cambiar a ' + tiendaMapa + '\n' +
+      '[Cancelar] = Mantener ' + tiendaActual
+    );
+    if (deseaCambiar) {
+      sincronizarTiendaFormulario(tiendaMapa);
+    }
+  }
+}
+
 async function findAddress(idcliente = null, esClicManual = false) {
+
+      if (esClicManual) {
+          window._ultimaConsultaTiendaDiscrepante = null;
+      }
 
       let coberturaRequest;
 
@@ -761,9 +889,10 @@ async function findAddress(idcliente = null, esClicManual = false) {
               municipio: muniVal,
               barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || ""
           };
-
-          bloquearBusqueda(true);
       }
+
+      // Activar overlay visible en el mapa y bloquear botones para AMBOS casos (cliente o dirección escrita)
+      bloquearBusqueda(true);
 
       try {
 
@@ -837,11 +966,36 @@ async function findAddress(idcliente = null, esClicManual = false) {
           actualizarTarjetaDireccionPedidoUI();
 
           if (data.infoAdicional) {
-              $('#mapaTxtTiendaCobertura').text(data.infoAdicional);
-              // Asignar automáticamente la tienda al campo selectTiendas si no tenía o estaba vacío
-              if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
-                  $("#selectTiendas").val(data.infoAdicional);
-                  $("#selectTiendas").trigger('change');
+              var tiendaMapa = (data.infoAdicional || '').trim();
+              var tiendaActual = ($('#selectTiendas option:selected').text() || $('#selectTiendas').val() || '').trim();
+              if (tiendaActual === 'Seleccione...' || tiendaActual === 'Seleccione' || tiendaActual === 'null') {
+                  tiendaActual = '';
+              }
+
+              var normTiendaActual = tiendaActual.toLowerCase();
+              var normTiendaMapa = tiendaMapa.toLowerCase();
+
+              // Caso 1: El formulario aún NO tiene ninguna tienda seleccionada -> Asignar automáticamente
+              if (!normTiendaActual) {
+                  sincronizarTiendaFormulario(tiendaMapa);
+                  $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-store"></i> ' + escaparHtml(tiendaMapa) + '</span>');
+              }
+              // Caso 2: La tienda seleccionada actualmente coincide con la del mapa
+              else if (normTiendaActual === normTiendaMapa) {
+                  $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-check-circle"></i> ' + escaparHtml(tiendaMapa) + ' (Coincide)</span>');
+              }
+              // Caso 3: La tienda seleccionada difiere de la sugerida por el mapa -> Preguntar al asesor, NUNCA cambiar a ciegas
+              else {
+                  $('#mapaTxtTiendaCobertura').html(
+                      '<span style="color:#d97706; font-weight:700;" title="El mapa sugiere ' + escaparHtml(tiendaMapa) + '">' +
+                      '<i class="fas fa-exclamation-triangle"></i> ' + escaparHtml(tiendaMapa) + ' <small style="color:#64748b;">(Actual: ' + escaparHtml(tiendaActual) + ')</small></span>'
+                  );
+
+                  var claveConsulta = normTiendaActual + '->' + normTiendaMapa;
+                  if (window._ultimaConsultaTiendaDiscrepante !== claveConsulta) {
+                      window._ultimaConsultaTiendaDiscrepante = claveConsulta;
+                      preguntarCambioTiendaSugerida(tiendaActual, tiendaMapa);
+                  }
               }
           } else {
               var tText = $('#selectTiendas option:selected').text();

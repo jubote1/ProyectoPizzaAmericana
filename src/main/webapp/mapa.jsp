@@ -120,7 +120,13 @@
 							<i class="fas fa-map-marked-alt text-primary mr-2"></i>
 							<strong class="text-dark small text-uppercase font-weight-bold">Flota en el Mapa</strong>
 						</div>
-						<div class="d-flex align-items-center">
+						<div class="d-flex align-items-center flex-wrap">
+							<div class="custom-control custom-switch d-inline-flex align-items-center mr-2 py-0 px-2 bg-light border rounded" style="cursor: pointer;">
+								<input type="checkbox" class="custom-control-input" id="chkVerTiendasLive" checked>
+								<label class="custom-control-label small font-weight-bold text-dark mb-0" for="chkVerTiendasLive" style="cursor:pointer;" title="Mostrar u ocultar los puntos de venta (tiendas)">
+									<i class="fas fa-home text-success mr-1"></i> Puntos de Venta
+								</label>
+							</div>
 							<span class="badge badge-light border text-muted small"><i class="fas fa-satellite text-primary mr-1"></i> Cobertura en Vivo</span>
 						</div>
 					</div>

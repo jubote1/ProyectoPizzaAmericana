@@ -436,6 +436,7 @@ $("#fechapedido").change(function(){
         // Resaltar visualmente la fila seleccionada para saber cuál cliente se escogió
         $('#grid-clientes tbody tr').removeClass('cliente-fila-activa');
         $(this).addClass('cliente-fila-activa');
+        window._ultimaConsultaTiendaDiscrepante = null;
         var tblGridClientes = $('#grid-clientes').DataTable();
         datos = tblGridClientes.row( this ).data();
         var tiendaCliente = (datos.tienda || '').trim();
