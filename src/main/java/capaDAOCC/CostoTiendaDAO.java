@@ -53,11 +53,12 @@ public class CostoTiendaDAO {
 
 	public static final String ORIGEN_EGRESO = "EGRESO";
 	public static final String ORIGEN_TEMPORAL = "TEMPORAL";
-	public static final String ORIGEN_DATAFONO = "DATAFONO";
 	public static final String ORIGEN_AREA = "AREA";
 	public static final String ORIGEN_DIGITADO = "DIGITADO";
 	/** Parte digitada y parte de egresos: hoy solo la nomina. */
 	public static final String ORIGEN_MIXTO = "MIXTO";
+	/** Sale de inventarioamericana.gasto_semanal: las comisiones y el datafono. */
+	public static final String ORIGEN_SEMANAL = "SEMANAL";
 
 	/** Un concepto de la pestana, con de donde sale su valor. */
 	public static class Concepto {
@@ -209,60 +210,6 @@ public class CostoTiendaDAO {
 		return lista;
 	}
 
-	/**
-	 * La comision de datafono: la venta con tarjeta de la semana por la tarifa.
-	 *
-	 * Se usa el cierre del POS y no el de Redeban porque el de Redeban trae lo que el
-	 * banco consigno, que en varias tiendas difiere del cierre de la tienda hasta en un
-	 * 12% -eso es un descuadre, no una comision-. La base de la comision es lo que la
-	 * tienda vendio con tarjeta.
-	 *
-	 * Si la tarifa esta en cero devuelve la lista vacia, para que la pantalla muestre
-	 * "sin parametrizar" en vez de un cero que se lee como "no hubo comision".
-	 */
-	public static ArrayList<Valor> datafonoPorSemana(final String desde, final String hasta,
-			final int idTienda, final int idConcepto, final double tarifaPorciento) {
-		final ArrayList<Valor> lista = new ArrayList<Valor>();
-		if (tarifaPorciento <= 0) {
-			return lista;
-		}
-		final ConexionBaseDatos con = new ConexionBaseDatos();
-		final Connection cn = con.obtenerConexionBDDatamartLocal();
-		try {
-			final StringBuilder sql = new StringBuilder()
-					.append("SELECT idtienda,")
-					.append("       DATE_ADD(fecha, INTERVAL MOD(8 - DAYOFWEEK(fecha), 7) DAY) AS semana,")
-					.append("       SUM(valor_cierre) AS base")
-					.append("  FROM datamart.cierre_datafono_pos")
-					.append(" WHERE fecha BETWEEN ? AND ?");
-			if (idTienda > 0) {
-				sql.append(" AND idtienda = ?");
-			}
-			sql.append(" GROUP BY idtienda, semana");
-			final PreparedStatement ps = cn.prepareStatement(sql.toString());
-			ps.setString(1, desde);
-			ps.setString(2, hasta);
-			if (idTienda > 0) {
-				ps.setInt(3, idTienda);
-			}
-			final ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				final Valor v = new Valor();
-				v.idTienda = rs.getInt("idtienda");
-				v.idConcepto = idConcepto;
-				v.semana = rs.getString("semana");
-				v.valor = rs.getDouble("base") * tarifaPorciento / 100.0D;
-				lista.add(v);
-			}
-			rs.close();
-			ps.close();
-		} catch (final Exception e) {
-			LOG.error("CostoTiendaDAO.datafonoPorSemana: " + e.toString());
-		} finally {
-			cerrar(cn);
-		}
-		return lista;
-	}
 
 	/**
 	 * Lo digitado del mes, repartido entre las semanas del rango.
@@ -445,6 +392,140 @@ public class CostoTiendaDAO {
 		return lista;
 	}
 
+	/**
+	 * Las comisiones y la comision de datafonos, que ya vienen calculadas por tienda y
+	 * por semana en inventarioamericana.gasto_semanal.
+	 *
+	 * LA SEMANA SE CRUZA CONTRA SU DOMINGO, Y ESO ES LO QUE EVITA DUPLICAR RAPPI
+	 *
+	 * El concepto 18 -comision de Rappi- lo escriben dos procesos con cortes distintos:
+	 * ReporteSemanalRappi corta domingo, de lunes a domingo, y ReporteSemanalPagoRappi
+	 * corta miercoles, de sabado a viernes. Los dos guardan en el mismo concepto, asi
+	 * que en gasto_semanal hay una fila de domingo y una de viernes por la MISMA plata.
+	 * En 2026 hasta septiembre el domingo sumaba 250 millones y el viernes 247.
+	 *
+	 * El JOIN contra las semanas -que son domingos- deja por fuera las del viernes. No
+	 * es casualidad y no se puede cambiar por un BETWEEN de fechas: con un BETWEEN,
+	 * Rappi se contaria dos veces.
+	 *
+	 * aplica_porcentaje distingue el concepto cuyo valor_gasto YA es la comision del
+	 * que trae la base. Hoy solo el 24, la venta con tarjeta, trae base.
+	 */
+	public static ArrayList<Valor> comisionesPorSemana(final ArrayList<String> semanas,
+			final int idTienda) {
+		final ArrayList<Valor> lista = new ArrayList<Valor>();
+		if (semanas == null || semanas.isEmpty()) {
+			return lista;
+		}
+		final StringBuilder enSemanas = new StringBuilder();
+		for (int i = 0; i < semanas.size(); i++) {
+			enSemanas.append(i == 0 ? "?" : ",?");
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final StringBuilder sql = new StringBuilder()
+					.append("SELECT g.idtienda, m.idconcepto, g.fecha AS semana,")
+					.append("       SUM(CASE WHEN m.aplica_porcentaje = 'S'")
+					.append("                THEN g.valor_gasto * c.porcentaje_gasto / 100")
+					.append("                ELSE g.valor_gasto END) AS valor")
+					.append("  FROM inventarioamericana.gasto_semanal g")
+					.append("  JOIN pizzaamericana.concepto_costo_gasto_semanal m")
+					.append("    ON m.idgasto_conf = g.idgasto_conf")
+					.append("  JOIN inventarioamericana.gasto_configuracion c")
+					.append("    ON c.idgasto_conf = g.idgasto_conf")
+					.append(" WHERE g.fecha IN (").append(enSemanas).append(")");
+			if (idTienda > 0) {
+				sql.append(" AND g.idtienda = ?");
+			}
+			sql.append(" GROUP BY g.idtienda, m.idconcepto, g.fecha");
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			int p = 1;
+			for (final String s : semanas) {
+				ps.setString(p++, s);
+			}
+			if (idTienda > 0) {
+				ps.setInt(p, idTienda);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Valor v = new Valor();
+				v.idTienda = rs.getInt("idtienda");
+				v.idConcepto = rs.getInt("idconcepto");
+				v.semana = rs.getString("semana");
+				v.valor = rs.getDouble("valor");
+				lista.add(v);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.comisionesPorSemana: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/**
+	 * El detalle de las comisiones: que puso cada concepto de gasto_semanal.
+	 *
+	 * Vale la pena verlo desarmado: COMISION VIRTUAL junta Wompi, Rapyd, Rappi, DiDi y
+	 * el QR de Bancolombia, y lo que hace subir el total casi siempre es una sola de
+	 * las cinco.
+	 */
+	public static ArrayList<Detalle> detalleComisiones(final ArrayList<String> semanas,
+			final int idTienda, final int idConcepto) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		if (semanas == null || semanas.isEmpty()) {
+			return lista;
+		}
+		final StringBuilder enSemanas = new StringBuilder();
+		for (int i = 0; i < semanas.size(); i++) {
+			enSemanas.append(i == 0 ? "?" : ",?");
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT g.fecha, c.nombre_gasto, c.porcentaje_gasto, m.aplica_porcentaje,"
+					+ "       g.valor_calculo, g.valor_gasto"
+					+ "  FROM inventarioamericana.gasto_semanal g"
+					+ "  JOIN pizzaamericana.concepto_costo_gasto_semanal m"
+					+ "    ON m.idgasto_conf = g.idgasto_conf AND m.idconcepto = ?"
+					+ "  JOIN inventarioamericana.gasto_configuracion c"
+					+ "    ON c.idgasto_conf = g.idgasto_conf"
+					+ " WHERE g.idtienda = ? AND g.fecha IN (" + enSemanas + ")"
+					+ " ORDER BY g.fecha, c.idgasto_conf");
+			ps.setInt(1, idConcepto);
+			ps.setInt(2, idTienda);
+			int p = 3;
+			for (final String s : semanas) {
+				ps.setString(p++, s);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				final boolean aplica = "S".equals(rs.getString("aplica_porcentaje"));
+				final double bruto = rs.getDouble("valor_gasto");
+				d.fecha = rs.getString("fecha");
+				d.descripcion = rs.getString("nombre_gasto");
+				d.referencia = aplica
+						? "Base " + Math.round(bruto) + " por "
+							+ rs.getDouble("porcentaje_gasto") + "%"
+						: "Comision ya liquidada";
+				d.valor = aplica ? bruto * rs.getDouble("porcentaje_gasto") / 100.0D : bruto;
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleComisiones: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
 	/** Un renglon del detalle: de donde salio un concepto en una tienda y un periodo. */
 	public static class Detalle {
 		public String fecha = "";
@@ -549,37 +630,6 @@ public class CostoTiendaDAO {
 		return lista;
 	}
 
-	/** El detalle de la comision de datafono: el cierre de tarjeta de cada dia. */
-	public static ArrayList<Detalle> detalleDatafono(final String desde, final String hasta,
-			final int idTienda, final double tarifaPorciento) {
-		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
-		final ConexionBaseDatos con = new ConexionBaseDatos();
-		final Connection cn = con.obtenerConexionBDDatamartLocal();
-		try {
-			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT fecha, valor_cierre FROM datamart.cierre_datafono_pos"
-					+ " WHERE idtienda = ? AND fecha BETWEEN ? AND ? ORDER BY fecha");
-			ps.setInt(1, idTienda);
-			ps.setString(2, desde);
-			ps.setString(3, hasta);
-			final ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				final Detalle d = new Detalle();
-				d.fecha = rs.getString("fecha");
-				d.descripcion = "Cierre de datafonos del dia";
-				d.referencia = "Venta con tarjeta " + Math.round(rs.getDouble("valor_cierre"));
-				d.valor = rs.getDouble("valor_cierre") * tarifaPorciento / 100.0D;
-				lista.add(d);
-			}
-			rs.close();
-			ps.close();
-		} catch (final Exception e) {
-			LOG.error("CostoTiendaDAO.detalleDatafono: " + e.toString());
-		} finally {
-			cerrar(cn);
-		}
-		return lista;
-	}
 
 	/** El detalle de un concepto digitado: el valor de cada mes y quien lo digito. */
 	public static ArrayList<Detalle> detalleDigitado(final String desde, final String hasta,
@@ -619,35 +669,6 @@ public class CostoTiendaDAO {
 		return lista;
 	}
 
-	/**
-	 * La tarifa del datafono, en porcentaje.
-	 *
-	 * No se lee con ParametrosDAO.obtenerParametro a proposito: ese metodo trae
-	 * valornumericod con getInt, asi que una tarifa de 1,5 llegaria como 1 y la
-	 * comision saldria un tercio por debajo sin que nada avise.
-	 */
-	public static double tarifaDatafono() {
-		final ConexionBaseDatos con = new ConexionBaseDatos();
-		final Connection cn = con.obtenerConexionBDDatamartLocal();
-		try {
-			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT valornumericod FROM general.parametros"
-					+ " WHERE valorparametro = 'COMISIONDATAFONO'");
-			final ResultSet rs = ps.executeQuery();
-			double tarifa = 0;
-			if (rs.next()) {
-				tarifa = rs.getDouble(1);
-			}
-			rs.close();
-			ps.close();
-			return tarifa;
-		} catch (final Exception e) {
-			LOG.error("CostoTiendaDAO.tarifaDatafono: " + e.toString());
-			return 0;
-		} finally {
-			cerrar(cn);
-		}
-	}
 
 	/** Guarda uno de los valores que toca digitar. */
 	public static boolean guardarDigitado(final int idTienda, final int idConcepto, final int anio,

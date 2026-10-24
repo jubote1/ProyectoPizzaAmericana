@@ -54,17 +54,12 @@ public class CostoTiendaCtrl {
 		// idconcepto -> origen, para marcar cada celda con de donde salio.
 		final HashMap<Integer, String> origenPorConcepto = new HashMap<Integer, String>();
 		int idMensajeria = 0;
-		int idDatafono = 0;
 		for (final CostoTiendaDAO.Concepto c : conceptos) {
 			origenPorConcepto.put(Integer.valueOf(c.idConcepto), c.origen);
 			if (CostoTiendaDAO.ORIGEN_TEMPORAL.equals(c.origen)) {
 				idMensajeria = c.idConcepto;
-			} else if (CostoTiendaDAO.ORIGEN_DATAFONO.equals(c.origen)) {
-				idDatafono = c.idConcepto;
 			}
 		}
-
-		final double tarifa = CostoTiendaDAO.tarifaDatafono();
 
 		// tienda|concepto|semana -> valor. Se junta todo en un solo mapa porque las
 		// fuentes son distintas pero la celda es la misma.
@@ -73,9 +68,10 @@ public class CostoTiendaCtrl {
 		if (idMensajeria > 0) {
 			acumular(celdas, CostoTiendaDAO.mensajeriaPorSemana(desde, hasta, idTienda, idMensajeria));
 		}
-		if (idDatafono > 0) {
-			acumular(celdas, CostoTiendaDAO.datafonoPorSemana(desde, hasta, idTienda, idDatafono, tarifa));
-		}
+		// Las comisiones se piden por la LISTA de semanas y no por rango: gasto_semanal
+		// guarda la comision de Rappi dos veces, el domingo y el viernes, y cruzar
+		// contra los domingos es lo que evita contarla doble. Ver el DAO.
+		acumular(celdas, CostoTiendaDAO.comisionesPorSemana(semanas, idTienda));
 		acumular(celdas, CostoTiendaDAO.digitadoPorSemana(desde, hasta, idTienda));
 
 		// tienda|semana -> venta, el denominador.
@@ -135,9 +131,6 @@ public class CostoTiendaCtrl {
 		salida.put("conceptos", jsonConceptos);
 		salida.put("semanas", jsonSemanas);
 		salida.put("filas", filas);
-		salida.put("tarifadatafono", Double.valueOf(tarifa));
-		// La pantalla necesita saberlo para no mostrar un cero enganoso.
-		salida.put("datafonoparametrizado", tarifa > 0 ? "S" : "N");
 		return salida.toJSONString();
 	}
 
@@ -171,11 +164,10 @@ public class CostoTiendaCtrl {
 		if (CostoTiendaDAO.ORIGEN_TEMPORAL.equals(origen)) {
 			renglones.addAll(CostoTiendaDAO.detalleTemporales(desde, hasta, idTienda));
 		}
-		if (CostoTiendaDAO.ORIGEN_DATAFONO.equals(origen)) {
-			final double tarifa = CostoTiendaDAO.tarifaDatafono();
-			if (tarifa > 0) {
-				renglones.addAll(CostoTiendaDAO.detalleDatafono(desde, hasta, idTienda, tarifa));
-			}
+		if (CostoTiendaDAO.ORIGEN_SEMANAL.equals(origen)) {
+			// Por la lista de semanas, no por rango: ver comisionesPorSemana en el DAO.
+			renglones.addAll(CostoTiendaDAO.detalleComisiones(
+					CostoTiendaDAO.semanasConVenta(desde, hasta), idTienda, idConcepto));
 		}
 
 		final JSONArray lista = new JSONArray();

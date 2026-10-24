@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS pizzaamericana.concepto_costo (
   -- De donde sale el valor:
   --   EGRESO  se suma de datamart.egreso_historico_tienda por tipo de egreso
   --   TEMPORAL  sale de inventarioamericana.gasto_empleado_temporal
-  --   DATAFONO  es un porcentaje de la venta con tarjeta del cierre de datafonos
+  --   SEMANAL   sale de inventarioamericana.gasto_semanal, que ya trae por tienda y
+  --             por semana lo que liquidaron las plataformas y los recaudadores
   --   AREA      se reparte desde gasto_area por participacion en la venta
   --   DIGITADO  no hay de donde sacarlo: se digita por tienda y mes
   --   MIXTO     parte digitada y parte de egresos. Hoy solo la nomina: la fija se
@@ -33,7 +34,7 @@ CREATE TABLE IF NOT EXISTS pizzaamericana.concepto_costo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO pizzaamericana.concepto_costo (idconcepto, nombre, orden, origen) VALUES
-  ( 1, 'COMISION VIRTUAL',               1, 'DIGITADO'),
+  ( 1, 'COMISION VIRTUAL',               1, 'SEMANAL'),
   ( 2, 'NOMINA PUNTO VENTA Y TEMPORAL',  2, 'MIXTO'),
   ( 3, 'VARIOS PUNTO VENTA',             3, 'EGRESO'),
   ( 4, 'PREMIOS',                        4, 'EGRESO'),
@@ -45,7 +46,7 @@ INSERT INTO pizzaamericana.concepto_costo (idconcepto, nombre, orden, origen) VA
   (10, 'CUOTA LOGISTICA Y PRODUCCION',  10, 'AREA'),
   (11, 'NOMINA CONTACT',                11, 'AREA'),
   (12, 'PUBLICIDAD Y MERCADEO',         12, 'AREA'),
-  (13, 'COMISION DATAFONOS',            13, 'DATAFONO')
+  (13, 'COMISION DATAFONOS',            13, 'SEMANAL')
 ON DUPLICATE KEY UPDATE
   nombre = VALUES(nombre), orden = VALUES(orden), origen = VALUES(origen);
 
@@ -121,14 +122,5 @@ CREATE TABLE IF NOT EXISTS pizzaamericana.costo_tienda_digitado (
   PRIMARY KEY (idtienda, idconcepto, anio, mes)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------------------------------------------------------------------
--- 4. La tarifa del datafono.
---
--- No estaba en ninguna parte: ni general.parametros ni el cierre de Redeban la
--- traen. El cierre de Redeban consigna el bruto, asi que la comision no se puede
--- despejar restando. Mientras no se parametrice, el concepto sale en cero y la
--- pantalla lo dice.
--- ---------------------------------------------------------------------------
-INSERT INTO general.parametros (valorparametro, valornumericod)
-     VALUES ('COMISIONDATAFONO', 0)
-ON DUPLICATE KEY UPDATE valorparametro = valorparametro;
+-- La comision de datafonos y la comision virtual NO se digitan: salen de
+-- gasto_semanal. Ver sql/costo_tienda_comisiones.sql.

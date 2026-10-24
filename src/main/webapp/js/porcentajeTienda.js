@@ -57,7 +57,7 @@ function claseOrigen(origen) {
 	switch (origen) {
 		case 'EGRESO':   return 'ct-egreso';
 		case 'TEMPORAL': return 'ct-temporal';
-		case 'DATAFONO': return 'ct-datafono';
+		case 'SEMANAL':  return 'ct-datafono';
 		case 'AREA':     return 'ct-area';
 		case 'MIXTO':    return 'ct-mixto';
 		default:         return 'ct-digitado';
@@ -126,12 +126,6 @@ function pintarSelectorTiendas() {
 
 function pintarAvisos() {
 	var avisos = '';
-	if (datos.datafonoparametrizado !== 'S') {
-		avisos += '<div class="ct-aviso"><b>La comisi&oacute;n de dat&aacute;fonos no aparece.</b> '
-			+ 'No hay tarifa parametrizada (par&aacute;metro COMISIONDATAFONO), y el cierre del banco '
-			+ 'consigna el bruto, as&iacute; que la comisi&oacute;n no se puede despejar restando. '
-			+ 'Prefiere no mostrarla a mostrarla en cero, que se leer&iacute;a como que no se pag&oacute;.</div>';
-	}
 	var semanas = datos.semanas.length;
 	avisos += '<div class="ct-aviso">El periodo tiene <b>' + semanas + ' semana'
 		+ (semanas === 1 ? '' : 's') + '</b> con venta: '
@@ -251,7 +245,7 @@ function porQueVacio(origen) {
 		case 'AREA':     return 'pendiente';
 		case 'DIGITADO': return 'sin digitar';
 		case 'MIXTO':    return 'sin digitar';
-		case 'DATAFONO': return 'sin tarifa';
+		case 'SEMANAL':  return 'sin liquidar';
 		default:         return 'sin movimientos';
 	}
 }
