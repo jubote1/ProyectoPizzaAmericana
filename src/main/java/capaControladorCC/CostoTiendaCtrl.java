@@ -8,6 +8,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.CostoTiendaDAO;
+import capaDAOCC.GastoAreaDAO;
 
 /**
  * El costo de las tiendas por concepto y por semana: lo que hoy es la pestana
@@ -73,6 +74,8 @@ public class CostoTiendaCtrl {
 		// contra los domingos es lo que evita contarla doble. Ver el DAO.
 		acumular(celdas, CostoTiendaDAO.comisionesPorSemana(semanas, idTienda));
 		acumular(celdas, CostoTiendaDAO.digitadoPorSemana(desde, hasta, idTienda));
+		acumular(celdas, this.cuotasDeArea(semanas, idTienda));
+		acumular(celdas, this.gastoPropio(semanas, idTienda));
 
 		// tienda|semana -> venta, el denominador.
 		final HashMap<String, Double> ventas = new HashMap<String, Double>();
@@ -178,6 +181,17 @@ public class CostoTiendaCtrl {
 			renglones.addAll(CostoTiendaDAO.detalleComisiones(
 					CostoTiendaDAO.semanasConVenta(desde, hasta), idTienda, idConcepto));
 		}
+		if (CostoTiendaDAO.ORIGEN_TIENDA.equals(origen)) {
+			for (final String mes : this.semanasPorMes(
+					CostoTiendaDAO.semanasConVenta(desde, hasta)).keySet()) {
+				renglones.addAll(CostoTiendaDAO.detalleGastoPropio(
+						Integer.parseInt(mes.substring(0, 4)),
+						Integer.parseInt(mes.substring(5, 7)), idTienda));
+			}
+		}
+		if (CostoTiendaDAO.ORIGEN_AREA.equals(origen)) {
+			renglones.addAll(this.detalleCuotaArea(desde, hasta, idTienda, idConcepto));
+		}
 
 		final JSONArray lista = new JSONArray();
 		double total = 0;
@@ -255,6 +269,183 @@ public class CostoTiendaCtrl {
 			return "El valor no puede ser negativo.";
 		}
 		return null;
+	}
+
+	/**
+	 * Cuantas de las semanas del rango cayeron en cada mes.
+	 *
+	 * Lo que es mensual -las areas, el gasto propio, lo digitado- hay que repartirlo
+	 * entre las semanas para mostrarlo semanal, y se reparte entre las del rango, no
+	 * entre cuatro fijas.
+	 */
+	private LinkedHashMap<String, Integer> semanasPorMes(final ArrayList<String> semanas) {
+		final LinkedHashMap<String, Integer> cuenta = new LinkedHashMap<String, Integer>();
+		for (final String s : semanas) {
+			final String mes = s.substring(0, 7);
+			final Integer n = cuenta.get(mes);
+			cuenta.put(mes, Integer.valueOf(n == null ? 1 : n.intValue() + 1));
+		}
+		return cuenta;
+	}
+
+	/**
+	 * Las cuotas de area, repartidas por participacion en la venta.
+	 *
+	 * El costo del area de ese mes se divide entre las semanas del mes, y cada tienda
+	 * paga la fraccion que le toca segun lo que vendio esa semana contra lo que
+	 * vendieron todas. El Excel lo reparte PAREJO, y por eso una tienda que vende la
+	 * mitad que otra se ve el doble de cara sin haber hecho nada mal.
+	 *
+	 * La participacion sale sobre las once aunque se este mirando una sola tienda; el
+	 * filtro por tienda se aplica despues, al quedarse con sus filas.
+	 */
+	private ArrayList<CostoTiendaDAO.Valor> cuotasDeArea(final ArrayList<String> semanas,
+			final int idTienda) {
+		final ArrayList<CostoTiendaDAO.Valor> lista = new ArrayList<CostoTiendaDAO.Valor>();
+		final LinkedHashMap<Integer, String> areas = CostoTiendaDAO.areasPorConcepto();
+		if (areas.isEmpty()) {
+			return lista;
+		}
+		final LinkedHashMap<String, Integer> porMes = this.semanasPorMes(semanas);
+
+		// mes -> concepto -> cuanto le toca a CADA semana de ese mes.
+		final HashMap<String, Double> costoSemanal = new HashMap<String, Double>();
+		for (final String mes : porMes.keySet()) {
+			final int anio = Integer.parseInt(mes.substring(0, 4));
+			final int numMes = Integer.parseInt(mes.substring(5, 7));
+			final int cuantas = porMes.get(mes).intValue();
+			for (final Integer idConcepto : areas.keySet()) {
+				final double total = GastoAreaDAO.totalDelMes(areas.get(idConcepto), anio, numMes);
+				if (total > 0 && cuantas > 0) {
+					costoSemanal.put(mes + "|" + idConcepto, Double.valueOf(total / cuantas));
+				}
+			}
+		}
+		if (costoSemanal.isEmpty()) {
+			return lista;
+		}
+
+		for (final CostoTiendaDAO.Valor parte : CostoTiendaDAO.participacionPorSemana(semanas)) {
+			if (idTienda > 0 && parte.idTienda != idTienda) {
+				continue;
+			}
+			final String mes = parte.semana.substring(0, 7);
+			for (final Integer idConcepto : areas.keySet()) {
+				final Double costo = costoSemanal.get(mes + "|" + idConcepto);
+				if (costo == null) {
+					continue;
+				}
+				final CostoTiendaDAO.Valor v = new CostoTiendaDAO.Valor();
+				v.idTienda = parte.idTienda;
+				v.idConcepto = idConcepto.intValue();
+				v.semana = parte.semana;
+				v.valor = costo.doubleValue() * parte.valor;
+				lista.add(v);
+			}
+		}
+		return lista;
+	}
+
+	/**
+	 * CUOTA PUNTO VENTA: el gasto propio de la tienda, repartido entre sus semanas.
+	 *
+	 * Esto NO se reparte entre tiendas. Es el arriendo, la alarma, el seguro y los
+	 * servicios de cada una, y ya viene por tienda.
+	 */
+	private ArrayList<CostoTiendaDAO.Valor> gastoPropio(final ArrayList<String> semanas,
+			final int idTienda) {
+		final ArrayList<CostoTiendaDAO.Valor> lista = new ArrayList<CostoTiendaDAO.Valor>();
+		final int idConcepto = this.conceptoDeOrigen(CostoTiendaDAO.ORIGEN_TIENDA);
+		if (idConcepto == 0) {
+			return lista;
+		}
+		final LinkedHashMap<String, Integer> porMes = this.semanasPorMes(semanas);
+		for (final String mes : porMes.keySet()) {
+			final int anio = Integer.parseInt(mes.substring(0, 4));
+			final int numMes = Integer.parseInt(mes.substring(5, 7));
+			final int cuantas = porMes.get(mes).intValue();
+			if (cuantas == 0) {
+				continue;
+			}
+			for (final CostoTiendaDAO.GastoPropio g
+					: CostoTiendaDAO.gastoPropioDelMes(anio, numMes, idTienda)) {
+				if (g.total() <= 0) {
+					continue;
+				}
+				final double porSemana = g.total() / cuantas;
+				for (final String s : semanas) {
+					if (!s.startsWith(mes)) {
+						continue;
+					}
+					final CostoTiendaDAO.Valor v = new CostoTiendaDAO.Valor();
+					v.idTienda = g.idTienda;
+					v.idConcepto = idConcepto;
+					v.semana = s;
+					v.valor = porSemana;
+					lista.add(v);
+				}
+			}
+		}
+		return lista;
+	}
+
+	/**
+	 * El detalle de una cuota de area: semana por semana, cuanto costo el area y que
+	 * fraccion le toco a esta tienda.
+	 *
+	 * Se muestra la participacion porque es lo que alguien va a discutir. El total en
+	 * pesos no explica nada por si solo; "el area costo tanto y usted puso el 9,4% de
+	 * la venta" si.
+	 */
+	private ArrayList<CostoTiendaDAO.Detalle> detalleCuotaArea(final String desde,
+			final String hasta, final int idTienda, final int idConcepto) {
+		final ArrayList<CostoTiendaDAO.Detalle> lista = new ArrayList<CostoTiendaDAO.Detalle>();
+		final String area = CostoTiendaDAO.areasPorConcepto().get(Integer.valueOf(idConcepto));
+		if (area == null) {
+			return lista;
+		}
+		final ArrayList<String> semanas = CostoTiendaDAO.semanasConVenta(desde, hasta);
+		final LinkedHashMap<String, Integer> porMes = this.semanasPorMes(semanas);
+		// El costo del area se consulta una vez por MES y no una por semana: son
+		// cuatro viajes a la base para traer cuatro veces el mismo numero.
+		final HashMap<String, Double> totalDelMes = new HashMap<String, Double>();
+		for (final String mes : porMes.keySet()) {
+			totalDelMes.put(mes, Double.valueOf(GastoAreaDAO.totalDelMes(area,
+					Integer.parseInt(mes.substring(0, 4)), Integer.parseInt(mes.substring(5, 7)))));
+		}
+		for (final CostoTiendaDAO.Valor parte : CostoTiendaDAO.participacionPorSemana(semanas)) {
+			if (parte.idTienda != idTienda) {
+				continue;
+			}
+			final String mes = parte.semana.substring(0, 7);
+			final Integer cuantas = porMes.get(mes);
+			if (cuantas == null || cuantas.intValue() == 0) {
+				continue;
+			}
+			final Double total = totalDelMes.get(mes);
+			if (total == null || total.doubleValue() <= 0) {
+				continue;
+			}
+			final double costoSemana = total.doubleValue() / cuantas.intValue();
+			final CostoTiendaDAO.Detalle d = new CostoTiendaDAO.Detalle();
+			d.fecha = parte.semana;
+			d.descripcion = "Area " + area + ", semana de " + Math.round(costoSemana);
+			d.referencia = "Esta tienda puso el "
+					+ String.format("%.2f", Double.valueOf(parte.valor * 100)) + "% de la venta";
+			d.valor = costoSemana * parte.valor;
+			lista.add(d);
+		}
+		return lista;
+	}
+
+	/** El concepto que tiene ese origen, o 0 si no hay ninguno. */
+	private int conceptoDeOrigen(final String origen) {
+		for (final CostoTiendaDAO.Concepto c : CostoTiendaDAO.listarConceptos()) {
+			if (origen.equals(c.origen)) {
+				return c.idConcepto;
+			}
+		}
+		return 0;
 	}
 
 	/** Suma los valores de una fuente en el mapa de celdas. */

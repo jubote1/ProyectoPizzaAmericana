@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS pizzaamericana.concepto_costo (
   --   SEMANAL   sale de inventarioamericana.gasto_semanal, que ya trae por tienda y
   --             por semana lo que liquidaron las plataformas y los recaudadores
   --   AREA      se reparte desde gasto_area por participacion en la venta
+  --   TIENDA    gasto propio de la tienda: gerencia_gasto_fijo_tienda mas
+  --             gerencia_gasto_servicio. No se reparte entre nadie
   --   DIGITADO  no hay de donde sacarlo: se digita por tienda y mes
   --   MIXTO     parte digitada y parte de egresos. Hoy solo la nomina: la fija se
   --             digita y el incentivo del temporal sale del egreso tipo 1
@@ -40,7 +42,7 @@ INSERT INTO pizzaamericana.concepto_costo (idconcepto, nombre, orden, origen) VA
   ( 4, 'PREMIOS',                        4, 'EGRESO'),
   ( 5, 'DOMICILIOS',                     5, 'EGRESO'),
   ( 6, 'MISCELANEA',                     6, 'DIGITADO'),
-  ( 7, 'CUOTA PUNTO VENTA',              7, 'AREA'),
+  ( 7, 'CUOTA PUNTO VENTA',              7, 'TIENDA'),
   ( 8, 'MENSAJERIA EXTERNA',             8, 'TEMPORAL'),
   ( 9, 'CUOTA ADMINISTRATIVA',           9, 'AREA'),
   (10, 'CUOTA LOGISTICA Y PRODUCCION',  10, 'AREA'),

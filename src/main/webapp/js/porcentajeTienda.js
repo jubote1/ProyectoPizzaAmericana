@@ -65,6 +65,7 @@ function claseOrigen(origen) {
 		case 'SEMANAL':  return 'ct-datafono';
 		case 'AREA':     return 'ct-area';
 		case 'MIXTO':    return 'ct-mixto';
+		case 'TIENDA':   return 'ct-tienda';
 		default:         return 'ct-digitado';
 	}
 }
@@ -278,7 +279,8 @@ function porDomicilio(idconcepto) {
 /* Por que un concepto sale sin un solo peso. Un cero pelado no lo explica. */
 function porQueVacio(origen) {
 	switch (origen) {
-		case 'AREA':     return 'pendiente';
+		case 'AREA':     return 'area sin cargar';
+		case 'TIENDA':   return 'sin cargar';
 		case 'DIGITADO': return 'sin digitar';
 		case 'MIXTO':    return 'sin digitar';
 		case 'SEMANAL':  return 'sin liquidar';

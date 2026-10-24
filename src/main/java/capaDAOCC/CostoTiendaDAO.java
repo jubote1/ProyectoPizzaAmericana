@@ -59,6 +59,8 @@ public class CostoTiendaDAO {
 	public static final String ORIGEN_MIXTO = "MIXTO";
 	/** Sale de inventarioamericana.gasto_semanal: las comisiones y el datafono. */
 	public static final String ORIGEN_SEMANAL = "SEMANAL";
+	/** Gasto propio de la tienda: los fijos de Gerencia mas los servicios del mes. */
+	public static final String ORIGEN_TIENDA = "TIENDA";
 
 	/** Un concepto de la pestana, con de donde sale su valor. */
 	public static class Concepto {
@@ -352,6 +354,219 @@ public class CostoTiendaDAO {
 			cerrar(cn);
 		}
 		return tiendas;
+	}
+
+	/**
+	 * Que fraccion de la venta de toda la operacion puso cada tienda en cada semana.
+	 *
+	 * Es el repartidor de las cuotas de area. Devuelve un numero entre 0 y 1, y la suma
+	 * de todas las tiendas de una semana da 1.
+	 *
+	 * SE CALCULA SIEMPRE SOBRE LAS ONCE, AUNQUE SE MIRE UNA SOLA
+	 *
+	 * No recibe idTienda a proposito. El denominador es la venta de toda la operacion:
+	 * si se filtrara por tienda, cada una daria 100% y se llevaria el area entera.
+	 */
+	public static ArrayList<Valor> participacionPorSemana(final ArrayList<String> semanas) {
+		final ArrayList<Valor> lista = new ArrayList<Valor>();
+		if (semanas == null || semanas.isEmpty()) {
+			return lista;
+		}
+		final StringBuilder en = new StringBuilder();
+		for (int i = 0; i < semanas.size(); i++) {
+			en.append(i == 0 ? "?" : ",?");
+		}
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT v.idtienda, v.fecha AS semana, v.valor / t.total AS parte"
+					+ "  FROM datamart.venta_semanal_tienda v"
+					+ "  JOIN (SELECT fecha, SUM(valor) AS total"
+					+ "          FROM datamart.venta_semanal_tienda"
+					+ "         WHERE fecha IN (" + en + ") AND valor > 0"
+					+ "         GROUP BY fecha) t ON t.fecha = v.fecha AND t.total > 0"
+					+ " WHERE v.fecha IN (" + en + ") AND v.valor > 0");
+			int p = 1;
+			for (final String s : semanas) {
+				ps.setString(p++, s);
+			}
+			for (final String s : semanas) {
+				ps.setString(p++, s);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Valor v = new Valor();
+				v.idTienda = rs.getInt("idtienda");
+				v.semana = rs.getString("semana");
+				v.valor = rs.getDouble("parte");
+				lista.add(v);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.participacionPorSemana: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** Lo que una tienda gasta en lo suyo en un mes: los fijos vigentes y los servicios. */
+	public static class GastoPropio {
+		public int idTienda = 0;
+		public double fijos = 0;
+		public double servicios = 0;
+		/** true si algun servicio del mes vino estimado y no leido de la factura. */
+		public boolean estimado = false;
+
+		public double total() {
+			return this.fijos + this.servicios;
+		}
+	}
+
+	/**
+	 * El gasto propio de cada tienda en un mes: CUOTA PUNTO VENTA.
+	 *
+	 * No es una cuota de area y no se reparte entre nadie: es el arriendo, la alarma,
+	 * el seguro, la fumigacion, el contador, el impuesto de industria y comercio, mas
+	 * los servicios del mes. Todo eso ya esta cargado por tienda en las tablas de
+	 * Gerencia, para las once.
+	 *
+	 * Cuadra con el Excel: Manrique, septiembre, 3.950.200 de fijos mas 2.765.900 de
+	 * servicios da 6.716.100, que es lo que dice la hoja MANRIQUE del libro.
+	 *
+	 * Un fijo cuenta si su vigencia TOCA el mes, no si empezo dentro de el: un arriendo
+	 * que viene corriendo desde el ano pasado sigue valiendo este mes.
+	 *
+	 * Si algun servicio del mes es estimado, el total del mes queda marcado estimado.
+	 * No se esconde ni se deja de sumar: se dice.
+	 */
+	public static ArrayList<GastoPropio> gastoPropioDelMes(final int anio, final int mes,
+			final int idTienda) {
+		final ArrayList<GastoPropio> lista = new ArrayList<GastoPropio>();
+		final String primero = String.format("%04d-%02d-01", Integer.valueOf(anio), Integer.valueOf(mes));
+		final String ultimo = String.format("%04d-%02d-31", Integer.valueOf(anio), Integer.valueOf(mes));
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final StringBuilder sql = new StringBuilder()
+					.append("SELECT t.idtienda,")
+					.append("       IFNULL(f.fijos, 0) AS fijos,")
+					.append("       IFNULL(s.servicios, 0) AS servicios,")
+					.append("       IFNULL(s.estimados, 0) AS estimados")
+					.append("  FROM pizzaamericana.tienda t")
+					.append("  LEFT JOIN (SELECT idtienda, SUM(valor_mensual) AS fijos")
+					.append("               FROM inventarioamericana.gerencia_gasto_fijo_tienda")
+					.append("              WHERE vigencia_desde <= ?")
+					.append("                AND (vigencia_hasta IS NULL OR vigencia_hasta >= ?)")
+					.append("              GROUP BY idtienda) f ON f.idtienda = t.idtienda")
+					.append("  LEFT JOIN (SELECT idtienda, SUM(valor) AS servicios,")
+					.append("                    SUM(origen <> 'REAL') AS estimados")
+					.append("               FROM inventarioamericana.gerencia_gasto_servicio")
+					.append("              WHERE anio = ? AND mes = ?")
+					.append("              GROUP BY idtienda) s ON s.idtienda = t.idtienda")
+					.append(" WHERE (f.fijos IS NOT NULL OR s.servicios IS NOT NULL)");
+			if (idTienda > 0) {
+				sql.append(" AND t.idtienda = ?");
+			}
+			final PreparedStatement ps = cn.prepareStatement(sql.toString());
+			ps.setString(1, ultimo);
+			ps.setString(2, primero);
+			ps.setInt(3, anio);
+			ps.setInt(4, mes);
+			if (idTienda > 0) {
+				ps.setInt(5, idTienda);
+			}
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final GastoPropio g = new GastoPropio();
+				g.idTienda = rs.getInt("idtienda");
+				g.fijos = rs.getDouble("fijos");
+				g.servicios = rs.getDouble("servicios");
+				g.estimado = rs.getInt("estimados") > 0;
+				lista.add(g);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.gastoPropioDelMes: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** El detalle del gasto propio de una tienda en un mes, concepto por concepto. */
+	public static ArrayList<Detalle> detalleGastoPropio(final int anio, final int mes,
+			final int idTienda) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		final String primero = String.format("%04d-%02d-01", Integer.valueOf(anio), Integer.valueOf(mes));
+		final String ultimo = String.format("%04d-%02d-31", Integer.valueOf(anio), Integer.valueOf(mes));
+		final String etiqueta = String.format("%04d-%02d", Integer.valueOf(anio), Integer.valueOf(mes));
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT c.nombre, f.valor_mensual AS valor, 'Fijo del mes' AS clase,"
+					+ "       CONCAT('Vigente desde ', f.vigencia_desde) AS nota"
+					+ "  FROM inventarioamericana.gerencia_gasto_fijo_tienda f"
+					+ "  LEFT JOIN inventarioamericana.gerencia_concepto_gasto c"
+					+ "         ON c.idconcepto = f.idconcepto"
+					+ " WHERE f.idtienda = ? AND f.vigencia_desde <= ?"
+					+ "   AND (f.vigencia_hasta IS NULL OR f.vigencia_hasta >= ?)"
+					+ " UNION ALL"
+					+ " SELECT c.nombre, s.valor, 'Servicio del mes' AS clase,"
+					+ "        CONCAT('Origen ', s.origen) AS nota"
+					+ "   FROM inventarioamericana.gerencia_gasto_servicio s"
+					+ "   LEFT JOIN inventarioamericana.gerencia_concepto_gasto c"
+					+ "          ON c.idconcepto = s.idconcepto"
+					+ "  WHERE s.idtienda = ? AND s.anio = ? AND s.mes = ?");
+			ps.setInt(1, idTienda);
+			ps.setString(2, ultimo);
+			ps.setString(3, primero);
+			ps.setInt(4, idTienda);
+			ps.setInt(5, anio);
+			ps.setInt(6, mes);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				d.fecha = etiqueta;
+				d.descripcion = rs.getString("clase") + ": " + rs.getString("nombre");
+				d.referencia = rs.getString("nota");
+				d.valor = rs.getDouble("valor");
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleGastoPropio: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** El area que alimenta cada concepto de cuota, para repartirla. */
+	public static LinkedHashMap<Integer, String> areasPorConcepto() {
+		final LinkedHashMap<Integer, String> mapa = new LinkedHashMap<Integer, String>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT idconcepto, area FROM pizzaamericana.concepto_costo_area");
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				mapa.put(Integer.valueOf(rs.getInt("idconcepto")), rs.getString("area"));
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.areasPorConcepto: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return mapa;
 	}
 
 	/**
