@@ -67,6 +67,8 @@ $(document).ready(function() {
 	var map_detalle;
 	let tiendaidH = 0
 	let markers = {};
+	let layerTiendasLive = null;
+	let markersTiendasLive = {};
 	const userDetails = document.getElementById("user-details");
 	const infoDetails = document.getElementById("info");
 	var marcadorDetalle;
@@ -127,6 +129,9 @@ $(document).ready(function() {
 		    [latitudInicial, longitudInicial],
 		    zoomInicial);
 		configurarCapasModernas(map);
+
+		layerTiendasLive = L.featureGroup().addTo(map);
+		renderizarPuntosDeVentaTiendas(selectTienda.val() || "0");
 
 		map_detalle = L.map('mapa-detalle').setView(
 		    [latitudInicial, longitudInicial],
@@ -388,6 +393,27 @@ $(document).ready(function() {
 		const batTexto = (reg.bateria !== null && reg.bateria !== undefined) ? `${reg.bateria}%` : 'N/D';
 		const velTexto = (typeof reg.velocidad === 'number') ? `${reg.velocidad} km/h` : '0 km/h';
 
+		const tInfo = obtenerInfoTiendaDomiciliario(reg.idtienda, reg.nombreTienda);
+		let distanciaTiendaHtml = '';
+		let distMetrosTienda = null;
+		if (tInfo && lat && lng) {
+			distMetrosTienda = Math.round(calcularDistanciaPuntosMetros(lat, lng, tInfo.lat, tInfo.lng));
+			if (distMetrosTienda <= 90) {
+				distanciaTiendaHtml = `
+					<div class="small text-success font-weight-bold mt-1" style="font-size: 11px;">
+						<i class="fas fa-check-circle mr-1"></i>A ${distMetrosTienda} m de ${tInfo.nombre} (En tienda &le; 90m)
+					</div>
+				`;
+			} else {
+				const distTxt = distMetrosTienda >= 1000 ? `${(distMetrosTienda / 1000).toFixed(2)} km` : `${distMetrosTienda} m`;
+				distanciaTiendaHtml = `
+					<div class="small text-danger font-weight-bold mt-1" style="font-size: 11px;">
+						<i class="fas fa-exclamation-triangle mr-1"></i>A ${distTxt} de sede ${tInfo.nombre} (Fuera de tienda &gt; 90m)
+					</div>
+				`;
+			}
+		}
+
 		const pedsCount = parseInt(reg.pedidos_activos || 0, 10);
 		let filaPedidos = '';
 		if (pedsCount > 0 || reg.pedidos_detalle) {
@@ -435,7 +461,10 @@ $(document).ready(function() {
 			</div>
 			<div class="item-dato-domi">
 				<span class="text-muted"><i class="fas fa-store mr-1 text-primary"></i> Tienda Actual:</span>
-				<span class="font-weight-bold text-dark">${reg.nombreTienda}</span>
+				<div class="text-right">
+					<div class="font-weight-bold text-dark">${reg.nombreTienda}</div>
+					${distanciaTiendaHtml}
+				</div>
 			</div>
 			<div class="item-dato-domi">
 				<span class="text-muted"><i class="far fa-clock mr-1 text-info"></i> Última Señal:</span>
@@ -467,7 +496,13 @@ $(document).ready(function() {
 		}
 
 		if (centrar && reg.marker) {
-			map.setView([lat, lng], 17);
+			if (tInfo && tInfo.lat && tInfo.lng && distMetrosTienda !== null && distMetrosTienda > 90) {
+				// Si está fuera de tienda (>90m), encuadrar ambos puntos para mostrar gráficamente la distancia
+				const bounds = L.latLngBounds([[lat, lng], [tInfo.lat, tInfo.lng]]);
+				map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+			} else {
+				map.setView([lat, lng], 17);
+			}
 			reg.marker.openPopup();
 		}
 
@@ -625,6 +660,7 @@ $(document).ready(function() {
 		3: { nombre: "America", lat: 6.248795464621254, lng: -75.6042451558178 },
 		4: { nombre: "Calasanz", lat: 6.266104483307567, lng: -75.59837327880433 },
 		5: { nombre: "Itagui", lat: 6.165763998154379, lng: -75.6215936733657 },
+		6: { nombre: "Poblado", lat: 6.206544, lng: -75.560035 },
 		7: { nombre: "La Mota", lat: 6.211386771165651, lng: -75.5952875746262 },
 		8: { nombre: "Envigado", lat: 6.167150830483641, lng: -75.58524990346257 },
 		9: { nombre: "Pilarica", lat: 6.273129787405367, lng: -75.5854100862619 },
@@ -632,6 +668,102 @@ $(document).ready(function() {
 		11: { nombre: "Manrique Piloto", lat: 6.263560956119886, lng: -75.55326141695326 },
 		13: { nombre: "Niquia", lat: 6.337781519121857, lng: -75.5499612076178 }
 	};
+
+	function crearIconoTienda(nombreTienda) {
+		return L.divIcon({
+			className: 'custom-tienda-marker',
+			html: `
+				<div class="tienda-marker-box" title="Tienda ${nombreTienda}">
+					<div class="tienda-marker-icon">
+						<i class="fas fa-home"></i>
+					</div>
+				</div>
+			`,
+			iconSize: [20, 20],
+			iconAnchor: [10, 10],
+			popupAnchor: [0, -12]
+		});
+	}
+
+	function renderizarPuntosDeVentaTiendas(filtroIdTienda = "0") {
+		if (!map || !layerTiendasLive) return;
+		layerTiendasLive.clearLayers();
+		markersTiendasLive = {};
+
+		const mostrar = $('#chkVerTiendasLive').is(':checked');
+		if (!mostrar) return;
+
+		const idSel = String(filtroIdTienda || "0");
+
+		if (idSel !== "0" && TIENDAS_POR_ID[parseInt(idSel, 10)]) {
+			const t = TIENDAS_POR_ID[parseInt(idSel, 10)];
+			agregarPuntoDeVentaALayer(t, layerTiendasLive);
+		} else {
+			for (const k in TIENDAS_POR_ID) {
+				const t = TIENDAS_POR_ID[k];
+				if (t && t.lat && t.lng) {
+					agregarPuntoDeVentaALayer(t, layerTiendasLive);
+				}
+			}
+		}
+	}
+
+	function agregarPuntoDeVentaALayer(t, layerGroup) {
+		const marker = L.marker([t.lat, t.lng], {
+			icon: crearIconoTienda(t.nombre),
+			zIndexOffset: 50 // Prioridad baja: las motos siempre se muestran por encima
+		});
+
+		marker.bindTooltip(`Tienda ${t.nombre}`, { direction: 'top', offset: [0, -11] });
+
+		const popupTiendaHtml = `
+			<div class="p-2 text-center" style="min-width: 155px;">
+				<div class="d-inline-flex align-items-center justify-content-center mb-1" style="width: 30px; height: 30px; border-radius: 50%; background: #ecfdf5; color: #059669; border: 1.5px solid #10b981;">
+					<i class="fas fa-home" style="font-size: 13px;"></i>
+				</div>
+				<div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">${t.nombre}</div>
+				<span class="badge badge-success px-2 py-0 mb-2 font-weight-bold" style="font-size: 10px;">
+					<i class="fas fa-store mr-1"></i>Punto de Venta
+				</span>
+				<div class="small text-muted border-top pt-1" style="font-size: 11px;">
+					<i class="fas fa-bullseye text-success mr-1"></i>Radio en tienda: <b>90 m</b>
+				</div>
+			</div>
+		`;
+		marker.bindPopup(popupTiendaHtml);
+		marker.addTo(layerGroup);
+		markersTiendasLive[t.nombre] = marker;
+
+		const circleRadio = L.circle([t.lat, t.lng], {
+			radius: 90,
+			color: '#059669',
+			weight: 1.2,
+			opacity: 0.60,
+			dashArray: '4, 4',
+			fill: true,
+			fillColor: '#10b981',
+			fillOpacity: 0.05
+		});
+		circleRadio.bindTooltip(`Radio de Tienda: ${t.nombre} (90 m)`, { direction: 'top', sticky: true });
+		circleRadio.addTo(layerGroup);
+	}
+
+	function obtenerInfoTiendaDomiciliario(idtienda, nombreTienda) {
+		const tId = parseInt(idtienda, 10);
+		if (tId && TIENDAS_POR_ID[tId]) {
+			return TIENDAS_POR_ID[tId];
+		}
+		if (nombreTienda) {
+			const nomNorm = String(nombreTienda).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+			for (const k in TIENDAS_POR_ID) {
+				const nomT = String(TIENDAS_POR_ID[k].nombre).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+				if (nomNorm.includes(nomT) || nomT.includes(nomNorm)) {
+					return TIENDAS_POR_ID[k];
+				}
+			}
+		}
+		return null;
+	}
 
 	function calcularDistanciaPuntosMetros(lat1, lon1, lat2, lon2) {
 		const R = 6371e3;
@@ -806,11 +938,23 @@ $(document).ready(function() {
 			if (reg.marker) {
 				animarMarcadorSuave(reg.marker, lat, lng, 1400);
 				reg.marker.setIcon(crearIconoMoto(nombre_usuario, esInactivo));
+				reg.marker.setZIndexOffset(1500);
 				const bioText = finalBiometria ? '<span class="badge badge-success small mb-1 mr-1"><i class="fas fa-fingerprint mr-1"></i>En Turno</span>' : '';
 				const inactivoText = esInactivo ? '<span class="badge-inactivo-tag mb-1 mr-1"><i class="fas fa-moon mr-1"></i>Sin señal (>2h)</span>' : '';
 				const lineaBadges = `<div class="d-flex align-items-center flex-wrap my-1" style="gap: 4px;">${badgeEstadoHtml}${inactivoText}${badgeBateriaHtml}${bioText}${badgeTipoHtml}</div>`;
 				const pedidosPopup = finalPedidosDetalle ? `<div class="mt-1"><small class="text-primary font-weight-bold"><i class="fas fa-box mr-1"></i>Pedidos: ${finalPedidosDetalle}</small></div>` : '';
-				reg.marker.getPopup()?.setContent(`<b>${nombre_usuario}</b><br>${lineaBadges}<span class="badge-tienda-tabla mb-1">${nombreTienda}</span>${pedidosPopup}<br><small class="text-muted"><i class="far fa-clock mr-1"></i>${fecha_hora}</small>`);
+				const tInfoDomi = obtenerInfoTiendaDomiciliario(idtienda, nombreTienda);
+				let distDomiPopup = '';
+				if (tInfoDomi && lat && lng) {
+					const dM = Math.round(calcularDistanciaPuntosMetros(lat, lng, tInfoDomi.lat, tInfoDomi.lng));
+					if (dM <= 90) {
+						distDomiPopup = `<div class="small text-success font-weight-bold mt-1"><i class="fas fa-check-circle mr-1"></i>En sede ${tInfoDomi.nombre} (${dM}m &le; 90m)</div>`;
+					} else {
+						const dTxt = dM >= 1000 ? `${(dM / 1000).toFixed(2)} km` : `${dM}m`;
+						distDomiPopup = `<div class="small text-danger font-weight-bold mt-1"><i class="fas fa-street-view mr-1"></i>A ${dTxt} de sede ${tInfoDomi.nombre}</div>`;
+					}
+				}
+				reg.marker.getPopup()?.setContent(`<b>${nombre_usuario}</b><br>${lineaBadges}<span class="badge-tienda-tabla mb-1">${nombreTienda}</span>${distDomiPopup}${pedidosPopup}<br><small class="text-muted"><i class="far fa-clock mr-1"></i>${fecha_hora}</small>`);
 			}
 
 			if (conductorSeleccionadoClave === claveStr) {
@@ -848,8 +992,19 @@ $(document).ready(function() {
 			const inactivoText = esInactivo ? '<span class="badge-inactivo-tag mb-1 mr-1"><i class="fas fa-moon mr-1"></i>Sin señal (>2h)</span>' : '';
 			const lineaBadges = `<div class="d-flex align-items-center flex-wrap my-1" style="gap: 4px;">${badgeEstadoHtml}${inactivoText}${badgeBateriaHtml}${bioText}${badgeTipoHtml}</div>`;
 			const pedidosPopup = finalPedidosDetalle ? `<div class="mt-1"><small class="text-primary font-weight-bold"><i class="fas fa-box mr-1"></i>Pedidos: ${finalPedidosDetalle}</small></div>` : '';
-			const popupContent = `<b>${nombre_usuario}</b><br>${lineaBadges}<span class="badge-tienda-tabla mb-1">${nombreTienda}</span>${pedidosPopup}<br><small class="text-muted"><i class="far fa-clock mr-1"></i>${fecha_hora}</small>`;
-			const marker = L.marker([lat, lng], { icon: crearIconoMoto(nombre_usuario, esInactivo) })
+			const tInfoDomi = obtenerInfoTiendaDomiciliario(idtienda, nombreTienda);
+			let distDomiPopup = '';
+			if (tInfoDomi && lat && lng) {
+				const dM = Math.round(calcularDistanciaPuntosMetros(lat, lng, tInfoDomi.lat, tInfoDomi.lng));
+				if (dM <= 90) {
+					distDomiPopup = `<div class="small text-success font-weight-bold mt-1"><i class="fas fa-check-circle mr-1"></i>En sede ${tInfoDomi.nombre} (${dM}m &le; 90m)</div>`;
+				} else {
+					const dTxt = dM >= 1000 ? `${(dM / 1000).toFixed(2)} km` : `${dM}m`;
+					distDomiPopup = `<div class="small text-danger font-weight-bold mt-1"><i class="fas fa-street-view mr-1"></i>A ${dTxt} de sede ${tInfoDomi.nombre}</div>`;
+				}
+			}
+			const popupContent = `<b>${nombre_usuario}</b><br>${lineaBadges}<span class="badge-tienda-tabla mb-1">${nombreTienda}</span>${distDomiPopup}${pedidosPopup}<br><small class="text-muted"><i class="far fa-clock mr-1"></i>${fecha_hora}</small>`;
+			const marker = L.marker([lat, lng], { icon: crearIconoMoto(nombre_usuario, esInactivo), zIndexOffset: 1500 })
 				.bindPopup(popupContent)
 				.addTo(map);
 
@@ -997,6 +1152,17 @@ $(document).ready(function() {
 	selectTienda.change(function() {
 		const tiendaId = String($(this).val() || "0");
 
+		// Actualizar visualmente los puntos de venta (tiendas) en el mapa
+		renderizarPuntosDeVentaTiendas(tiendaId);
+
+		// Enfocar mapa suavemente si es una tienda específica
+		if (tiendaId !== "0" && TIENDAS_POR_ID[parseInt(tiendaId, 10)]) {
+			const tSel = TIENDAS_POR_ID[parseInt(tiendaId, 10)];
+			map.setView([tSel.lat, tSel.lng], 15);
+		} else if (tiendaId === "0") {
+			map.setView([latitudInicial, longitudInicial], zoomInicial);
+		}
+
 		// 1. Limpieza visual inmediata para no dejar datos de la tienda previa
 		table.clear().draw();
 		mapaConductores.forEach(reg => {
@@ -1037,6 +1203,11 @@ $(document).ready(function() {
 
 	$('#chkSoloBiometriaLive').change(function() {
 		aplicarFiltrosLive(true);
+	});
+
+	// Toggle para mostrar u ocultar los marcadores de puntos de venta de tiendas
+	$('#chkVerTiendasLive').change(function() {
+		renderizarPuntosDeVentaTiendas(selectTienda.val() || "0");
 	});
 
 	// Filtro nativo de DataTables para Tiempo Real (compacta páginas, elimina huecos y páginas vacías)
@@ -3128,7 +3299,18 @@ $(document).ready(function() {
 					});
 				});
 
-				tiendas.forEach(tienda => tiendaMap[tienda.id] = tienda.nombre);
+				tiendas.forEach(tienda => {
+					tiendaMap[tienda.id] = tienda.nombre;
+					if (tienda.latitud && tienda.longitud && !TIENDAS_POR_ID[tienda.id]) {
+						TIENDAS_POR_ID[tienda.id] = {
+							nombre: tienda.nombre,
+							lat: parseFloat(tienda.latitud),
+							lng: parseFloat(tienda.longitud)
+						};
+					}
+				});
+
+				renderizarPuntosDeVentaTiendas(selectTienda.val() || "0");
 
 				// Actualizar nombres de tiendas en los registros ya cargados
 				mapaConductores.forEach(reg => {
