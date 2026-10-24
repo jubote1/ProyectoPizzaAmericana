@@ -118,14 +118,92 @@ public class CostoTiendaCtrl {
 			jsonSemanas.add(s);
 		}
 
+		// Las tiendas van siempre todas las que tengan venta, aunque se haya pedido una
+		// sola: es lo que llena el selector de la pantalla.
+		final JSONArray jsonTiendas = new JSONArray();
+		final LinkedHashMap<Integer, String> tiendas = CostoTiendaDAO.tiendasConVenta(desde, hasta);
+		for (final Integer id : tiendas.keySet()) {
+			final JSONObject j = new JSONObject();
+			j.put("idtienda", id);
+			j.put("nombre", tiendas.get(id));
+			jsonTiendas.add(j);
+		}
+
 		final JSONObject salida = new JSONObject();
 		salida.put("respuesta", "S");
+		salida.put("tiendas", jsonTiendas);
 		salida.put("conceptos", jsonConceptos);
 		salida.put("semanas", jsonSemanas);
 		salida.put("filas", filas);
 		salida.put("tarifadatafono", Double.valueOf(tarifa));
 		// La pantalla necesita saberlo para no mostrar un cero enganoso.
 		salida.put("datafonoparametrizado", tarifa > 0 ? "S" : "N");
+		return salida.toJSONString();
+	}
+
+	/**
+	 * El detalle de un concepto en una tienda y un rango: de donde salio el numero.
+	 *
+	 * Cada origen trae cosas distintas -los egresos traen movimientos, la mensajeria
+	 * trae turnos, el datafono trae cierres diarios- pero todos caben en fecha,
+	 * descripcion, referencia y valor, que es lo que pinta la pantalla.
+	 *
+	 * Un concepto MIXTO trae las dos cosas: lo digitado del mes y los egresos que le
+	 * correspondan. Por eso no es un if-else sino dos agregados.
+	 */
+	public String detalle(final String desde, final String hasta, final int idTienda,
+			final int idConcepto) {
+		String origen = "";
+		for (final CostoTiendaDAO.Concepto c : CostoTiendaDAO.listarConceptos()) {
+			if (c.idConcepto == idConcepto) {
+				origen = c.origen;
+				break;
+			}
+		}
+
+		final ArrayList<CostoTiendaDAO.Detalle> renglones = new ArrayList<CostoTiendaDAO.Detalle>();
+		if (CostoTiendaDAO.ORIGEN_EGRESO.equals(origen) || CostoTiendaDAO.ORIGEN_MIXTO.equals(origen)) {
+			renglones.addAll(CostoTiendaDAO.detalleEgresos(desde, hasta, idTienda, idConcepto));
+		}
+		if (CostoTiendaDAO.ORIGEN_DIGITADO.equals(origen) || CostoTiendaDAO.ORIGEN_MIXTO.equals(origen)) {
+			renglones.addAll(CostoTiendaDAO.detalleDigitado(desde, hasta, idTienda, idConcepto));
+		}
+		if (CostoTiendaDAO.ORIGEN_TEMPORAL.equals(origen)) {
+			renglones.addAll(CostoTiendaDAO.detalleTemporales(desde, hasta, idTienda));
+		}
+		if (CostoTiendaDAO.ORIGEN_DATAFONO.equals(origen)) {
+			final double tarifa = CostoTiendaDAO.tarifaDatafono();
+			if (tarifa > 0) {
+				renglones.addAll(CostoTiendaDAO.detalleDatafono(desde, hasta, idTienda, tarifa));
+			}
+		}
+
+		final JSONArray lista = new JSONArray();
+		double total = 0;
+		for (final CostoTiendaDAO.Detalle d : renglones) {
+			final JSONObject j = new JSONObject();
+			j.put("fecha", d.fecha);
+			j.put("descripcion", d.descripcion);
+			j.put("referencia", d.referencia);
+			j.put("valor", Double.valueOf(d.valor));
+			lista.add(j);
+			total += d.valor;
+		}
+
+		final JSONObject salida = new JSONObject();
+		salida.put("respuesta", "S");
+		salida.put("origen", origen);
+		salida.put("renglones", lista);
+		salida.put("total", Double.valueOf(total));
+		// La mensajeria se recalcula aqui para mostrarla, pero el total de la matriz lo
+		// escribio Servicios con las tarifas de ese dia. Pueden no dar igual, y la
+		// pantalla tiene que avisarlo en vez de dejar que alguien crea que hay un error.
+		salida.put("totalaproximado", CostoTiendaDAO.ORIGEN_TEMPORAL.equals(origen) ? "S" : "N");
+		// Lo digitado es del MES completo: si el rango corta el mes, el detalle muestra
+		// el mes entero mientras la matriz muestra solo las semanas del rango.
+		salida.put("digitadoesdelmes",
+				CostoTiendaDAO.ORIGEN_DIGITADO.equals(origen)
+						|| CostoTiendaDAO.ORIGEN_MIXTO.equals(origen) ? "S" : "N");
 		return salida.toJSONString();
 	}
 

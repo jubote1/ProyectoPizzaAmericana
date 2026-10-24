@@ -372,6 +372,41 @@ public class CostoTiendaDAO {
 		return lista;
 	}
 
+	/**
+	 * Las tiendas que tienen venta en el rango, con su nombre.
+	 *
+	 * Se sacan de la venta y no del catalogo de tiendas a proposito: la bodega y las
+	 * tiendas cerradas estan en el catalogo y no tienen nada que hacer en un costo por
+	 * punto de venta. Si una tienda abre, aparece sola.
+	 */
+	public static LinkedHashMap<Integer, String> tiendasConVenta(final String desde,
+			final String hasta) {
+		final LinkedHashMap<Integer, String> tiendas = new LinkedHashMap<Integer, String>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT DISTINCT v.idtienda, t.nombre"
+					+ "  FROM datamart.venta_semanal_tienda v"
+					+ "  JOIN pizzaamericana.tienda t ON t.idtienda = v.idtienda"
+					+ " WHERE v.fecha BETWEEN ? AND ? AND v.valor > 0"
+					+ " ORDER BY t.nombre");
+			ps.setString(1, desde);
+			ps.setString(2, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				tiendas.put(Integer.valueOf(rs.getInt("idtienda")), rs.getString("nombre"));
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.tiendasConVenta: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return tiendas;
+	}
+
 	/** La venta de cada tienda en cada semana del rango: el denominador del porcentaje. */
 	public static ArrayList<Valor> ventaPorSemana(final String desde, final String hasta,
 			final int idTienda) {
@@ -404,6 +439,180 @@ public class CostoTiendaDAO {
 			ps.close();
 		} catch (final Exception e) {
 			LOG.error("CostoTiendaDAO.ventaPorSemana: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** Un renglon del detalle: de donde salio un concepto en una tienda y un periodo. */
+	public static class Detalle {
+		public String fecha = "";
+		public String descripcion = "";
+		public String referencia = "";
+		public double valor = 0;
+	}
+
+	/**
+	 * El detalle de un concepto de egresos: los movimientos uno por uno.
+	 *
+	 * Esto es lo que sostiene el numero. Si alguien discute una cifra, aqui estan las
+	 * filas con su fecha, su descripcion y quien las registro.
+	 */
+	public static ArrayList<Detalle> detalleEgresos(final String desde, final String hasta,
+			final int idTienda, final int idConcepto) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT e.fecha, e.descripcion, e.usuario, e.valoregreso,"
+					+ "       t.nombre_tipo_egreso"
+					+ "  FROM datamart.egreso_historico_tienda e"
+					+ "  JOIN pizzaamericana.concepto_costo_tipo_egreso m"
+					+ "    ON m.idtipo_egreso = e.idtipo_egreso AND m.idconcepto = ?"
+					+ "  LEFT JOIN datamart.tipo_egreso t ON t.idtipo_egreso = e.idtipo_egreso"
+					+ " WHERE e.idtienda = ? AND e.fecha BETWEEN ? AND ?"
+					+ " ORDER BY e.fecha, e.idegreso");
+			ps.setInt(1, idConcepto);
+			ps.setInt(2, idTienda);
+			ps.setString(3, desde);
+			ps.setString(4, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				d.fecha = rs.getString("fecha");
+				d.descripcion = rs.getString("nombre_tipo_egreso") + " - " + rs.getString("descripcion");
+				d.referencia = rs.getString("usuario");
+				d.valor = rs.getDouble("valoregreso");
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleEgresos: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/**
+	 * El detalle de la mensajeria externa: los turnos de los domiciliarios temporales.
+	 *
+	 * Se muestran los turnos y no la suma semanal porque la suma ya esta arriba; lo que
+	 * se viene a ver aqui es quien, de que empresa y cuantas horas. Las horas se
+	 * calculan igual que en el POS -MOD con 24 horas- para que un turno que cruza la
+	 * medianoche no salga negativo.
+	 *
+	 * El valor del turno NO se recalcula aqui: la suma de estos renglones puede no dar
+	 * exactamente el total de la semana, porque el total lo escribio el proceso de
+	 * Servicios con las tarifas que estaban vigentes ese dia.
+	 */
+	public static ArrayList<Detalle> detalleTemporales(final String desde, final String hasta,
+			final int idTienda) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT d.fecha_sistema, d.nombre, d.empresa, d.horaingreso, d.horasalida,"
+					+ "       MOD(TIME_TO_SEC(d.horasalida) - TIME_TO_SEC(d.horaingreso) + 86400, 86400)"
+					+ "         / 3600 AS horas,"
+					+ "       IFNULL(e.valor_hora_normal, 0) AS valor_hora"
+					+ "  FROM datamart.empleado_temporal_dia d"
+					+ "  LEFT JOIN general.empresa_temporal e ON e.idempresa = d.idempresa"
+					+ " WHERE d.idtienda = ? AND d.fecha_sistema BETWEEN ? AND ?"
+					+ "   AND d.horasalida IS NOT NULL AND d.horasalida <> ''"
+					+ " ORDER BY d.fecha_sistema, d.horaingreso");
+			ps.setInt(1, idTienda);
+			ps.setString(2, desde);
+			ps.setString(3, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				final double horas = rs.getDouble("horas");
+				d.fecha = rs.getString("fecha_sistema");
+				d.descripcion = rs.getString("nombre") + " (" + rs.getString("empresa") + ")";
+				d.referencia = rs.getString("horaingreso") + " a " + rs.getString("horasalida")
+						+ ", " + String.format("%.1f", Double.valueOf(horas)) + " horas";
+				d.valor = horas * rs.getDouble("valor_hora");
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleTemporales: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** El detalle de la comision de datafono: el cierre de tarjeta de cada dia. */
+	public static ArrayList<Detalle> detalleDatafono(final String desde, final String hasta,
+			final int idTienda, final double tarifaPorciento) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT fecha, valor_cierre FROM datamart.cierre_datafono_pos"
+					+ " WHERE idtienda = ? AND fecha BETWEEN ? AND ? ORDER BY fecha");
+			ps.setInt(1, idTienda);
+			ps.setString(2, desde);
+			ps.setString(3, hasta);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				d.fecha = rs.getString("fecha");
+				d.descripcion = "Cierre de datafonos del dia";
+				d.referencia = "Venta con tarjeta " + Math.round(rs.getDouble("valor_cierre"));
+				d.valor = rs.getDouble("valor_cierre") * tarifaPorciento / 100.0D;
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleDatafono: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return lista;
+	}
+
+	/** El detalle de un concepto digitado: el valor de cada mes y quien lo digito. */
+	public static ArrayList<Detalle> detalleDigitado(final String desde, final String hasta,
+			final int idTienda, final int idConcepto) {
+		final ArrayList<Detalle> lista = new ArrayList<Detalle>();
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT anio, mes, valor, usuario, fecha_cambio"
+					+ "  FROM pizzaamericana.costo_tienda_digitado"
+					+ " WHERE idtienda = ? AND idconcepto = ?"
+					+ "   AND CONCAT(anio, '-', LPAD(mes, 2, '0')) BETWEEN ? AND ?"
+					+ " ORDER BY anio, mes");
+			ps.setInt(1, idTienda);
+			ps.setInt(2, idConcepto);
+			ps.setString(3, desde.substring(0, 7));
+			ps.setString(4, hasta.substring(0, 7));
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final Detalle d = new Detalle();
+				d.fecha = String.format("%04d-%02d", Integer.valueOf(rs.getInt("anio")),
+						Integer.valueOf(rs.getInt("mes")));
+				d.descripcion = "Valor digitado del mes";
+				d.referencia = "Lo digito " + rs.getString("usuario") + " el "
+						+ rs.getString("fecha_cambio");
+				d.valor = rs.getDouble("valor");
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.detalleDigitado: " + e.toString());
 		} finally {
 			cerrar(cn);
 		}

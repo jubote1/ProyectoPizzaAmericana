@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>COSTO POR TIENDA</title>
+		<meta charset="utf-8" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/marca.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" src="js/bootbox.min.js"></script>
+		  <style type="text/css">
+			/* Mismo lenguaje visual que GastoArea.html y VentaIntegral.html. */
+			.ct-caja { border:1px solid #E2E6EC; border-radius:6px; padding:12px 14px;
+				margin-bottom:16px; background-color:#FBFCFD; }
+			.ct-titulo { font-size:13px; color:#102F6F; font-weight:bold; text-transform:uppercase;
+				letter-spacing:.04em; margin-bottom:8px; }
+			.ct-pie { font-size:12px; color:#6C7482; }
+			.ct-chip { display:inline-block; padding:2px 8px; border-radius:11px; font-size:10px;
+				font-weight:bold; text-transform:uppercase; letter-spacing:.03em; }
+			.ct-egreso   { background:#E8F6EC; color:#1B8A4B; }
+			.ct-temporal { background:#E7F0FB; color:#1B4F9C; }
+			.ct-datafono { background:#F2ECFA; color:#5B3A9B; }
+			.ct-area     { background:#FDF3E0; color:#9A6508; }
+			.ct-digitado { background:#F4F4F6; color:#6C7482; }
+			.ct-mixto    { background:#FBEAEA; color:#A32020; }
+			#tabla table, #resumen table { border-collapse:collapse; width:100%; }
+			#tabla th, #tabla td, #resumen th, #resumen td { padding:6px 10px;
+				border-top:1px solid #E2E6EC; font-size:13px; }
+			#tabla thead th, #resumen thead th { background:#102F6F; color:#FFFFFF; font-size:12px;
+				white-space:nowrap; }
+			#tabla tbody tr:hover td, #resumen tbody tr:hover td { background:#F4F7FD; }
+			.ct-num { text-align:right; white-space:nowrap; }
+			.ct-clic { cursor:pointer; color:#102F6F; }
+			.ct-clic:hover { text-decoration:underline; }
+			.ct-total td { font-weight:bold; background:#F0F3F8; border-top:2px solid #102F6F; }
+			.ct-aviso { background:#FDF3E0; border:1px solid #F0D9A8; border-radius:6px;
+				padding:8px 12px; margin-bottom:12px; font-size:12px; color:#7A5208; }
+			.ct-cero { color:#B6BCC6; }
+			#detalle table { border-collapse:collapse; width:100%; }
+			#detalle th, #detalle td { padding:5px 9px; border-top:1px solid #E2E6EC; font-size:12px; }
+			#detalle thead th { background:#E7EBF2; color:#102F6F; }
+		  </style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta ='';
+			var usuario = "";
+			$.ajax({
+		    	url: server + 'ValidarUsuarioAplicacion',
+		    	dataType: 'json',
+		    	type: 'post',
+		    	async: false,
+		    	success: function(data){
+						    respuesta =  data[0].respuesta;
+						    usuario = data[0].nombreusuario;
+				}
+			});
+			switch(respuesta)
+		    		{
+		    			case 'OK':
+		    				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+		    				break;
+		    			case 'OKA':
+		    				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+		    				break;
+		    			default:
+		    				location.href = server +"Index.html";
+		    				break;
+		    		}
+		</script>
+
+		<div class="container-fluid">
+			<h1>COSTO POR TIENDA</h1>
+			<p class="ct-pie">Los trece conceptos de la pesta&ntilde;a PORCENTAJE, cada uno desde su fuente.
+			Las cifras <b>no van a dar iguales a las del Excel</b>: all&aacute; los trece valores est&aacute;n
+			digitados y cada tienda report&oacute; con un corte distinto. Aqu&iacute; las once salen del mismo
+			periodo. Oprima cualquier valor para ver de d&oacute;nde sali&oacute;.</p>
+
+			<div class="ct-caja">
+				<div class="ct-titulo">Qu&eacute; se est&aacute; mirando</div>
+				<div class="row">
+					<div class="col-sm-3">
+						<label for="desde">Desde</label>
+						<input type="text" id="desde" class="form-control" placeholder="dd/mm/aaaa" />
+					</div>
+					<div class="col-sm-3">
+						<label for="hasta">Hasta</label>
+						<input type="text" id="hasta" class="form-control" placeholder="dd/mm/aaaa" />
+					</div>
+					<div class="col-sm-4">
+						<label for="tienda">Tienda</label>
+						<select id="tienda" class="form-control" onchange="pintar()"></select>
+					</div>
+					<div class="col-sm-2">
+						<label>&nbsp;</label>
+						<button class="btn btn-primary form-control" onclick="cargar()">CONSULTAR</button>
+					</div>
+				</div>
+				<div class="ct-pie" style="margin-top:8px">La semana se identifica por su <b>domingo</b>, que
+				es el &uacute;ltimo d&iacute;a: la del 18 va del lunes 12 al domingo 18. El rango se recorta a
+				las semanas que tengan venta registrada.</div>
+			</div>
+
+			<div id="avisos"></div>
+
+			<div class="ct-caja">
+				<div class="ct-titulo" id="titulo-tabla">Costo por concepto</div>
+				<div id="tabla" class="table-responsive"></div>
+			</div>
+
+			<div class="ct-caja" id="caja-detalle" style="display:none">
+				<div class="ct-titulo" id="titulo-detalle">Detalle</div>
+				<div id="detalle" class="table-responsive"></div>
+				<button class="btn btn-default btn-sm" style="margin-top:10px" onclick="cerrarDetalle()">CERRAR</button>
+			</div>
+
+			<div style="height:40px;"></div>
+		</div>
+	</body>
+	<script src="js/porcentajeTienda.js?v=1" type="text/javascript"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#desde").datepicker($.datepicker.regional["es"]);
+		$("#hasta").datepicker($.datepicker.regional["es"]);
+	</script>
+</html>

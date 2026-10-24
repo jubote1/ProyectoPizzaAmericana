@@ -18,7 +18,8 @@ import capaControladorCC.CostoTiendaCtrl;
  *
  * Ruta: /ProyectoPizzaAmericana/CRUDCostoTienda   Metodos: GET, POST (doPost delega en doGet).
  * Tipo: Mixto (consulta y modifica).  Acceso: Exige sesion de usuario.
- * Operaciones (idoperacion): 1 matriz del rango, 2 conceptos, 3 guardar un digitado.
+ * Operaciones (idoperacion): 1 matriz del rango, 2 conceptos, 3 guardar un digitado,
+ * 4 detalle de un concepto en una tienda.
  * Devuelve: application/json.
  * Lee: datamart.egreso_historico_tienda, datamart.cierre_datafono_pos,
  *      datamart.venta_semanal_tienda, inventarioamericana.gasto_empleado_temporal,
@@ -72,6 +73,28 @@ public class CRUDCostoTienda extends HttpServlet {
 		return valor == null ? "" : valor.trim();
 	}
 
+	/**
+	 * Si la fecha viene en aaaa-mm-dd.
+	 *
+	 * Se valida antes de consultar porque el resto de la aplicacion muestra las fechas
+	 * en dd/mm/aaaa: si alguien manda ese formato, el BETWEEN no revienta, devuelve
+	 * cero filas, y la pantalla queda vacia sin decir por que. Mejor un mensaje.
+	 */
+	private boolean fechaValida(final String fecha) {
+		if (fecha == null || fecha.length() != 10) {
+			return false;
+		}
+		if (fecha.charAt(4) != '-' || fecha.charAt(7) != '-') {
+			return false;
+		}
+		for (int i = 0; i < 10; i++) {
+			if (i != 4 && i != 7 && !Character.isDigit(fecha.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	@Override
 	protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
 			throws ServletException, IOException {
@@ -93,8 +116,8 @@ public class CRUDCostoTienda extends HttpServlet {
 			if (operacion == 1) {
 				final String desde = this.texto(request, "desde");
 				final String hasta = this.texto(request, "hasta");
-				if (desde.length() < 10 || hasta.length() < 10) {
-					out.write("{\"respuesta\":\"N\",\"mensaje\":\"Faltan las fechas del rango.\"}");
+				if (!this.fechaValida(desde) || !this.fechaValida(hasta)) {
+					out.write("{\"respuesta\":\"N\",\"mensaje\":\"Las fechas tienen que ir en aaaa-mm-dd.\"}");
 					return;
 				}
 				out.write(ctrl.matriz(desde, hasta, this.entero(request, "idtienda")));
@@ -104,6 +127,15 @@ public class CRUDCostoTienda extends HttpServlet {
 				out.write(ctrl.guardarDigitado(this.entero(request, "idtienda"),
 						this.entero(request, "idconcepto"), this.entero(request, "anio"),
 						this.entero(request, "mes"), this.real(request, "valor"), usuario));
+			} else if (operacion == 4) {
+				final String desde = this.texto(request, "desde");
+				final String hasta = this.texto(request, "hasta");
+				final int idTienda = this.entero(request, "idtienda");
+				if (!this.fechaValida(desde) || !this.fechaValida(hasta) || idTienda <= 0) {
+					out.write("{\"respuesta\":\"N\",\"mensaje\":\"El detalle necesita tienda y rango en aaaa-mm-dd.\"}");
+					return;
+				}
+				out.write(ctrl.detalle(desde, hasta, idTienda, this.entero(request, "idconcepto")));
 			} else {
 				out.write("{\"respuesta\":\"NOK\",\"detalle\":\"Operacion no reconocida\"}");
 			}
