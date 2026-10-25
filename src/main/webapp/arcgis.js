@@ -109,6 +109,13 @@ require([
   map.add(zonasLayer);
   map.add(tiendasLayer);
 
+  view.when(function () {
+    if (window._puntoPendiente) {
+      ubicarClienteExistente(window._puntoPendiente.lat, window._puntoPendiente.lng);
+      window._puntoPendiente = null;
+    }
+  });
+
   // Paleta de colores oficiales extraída directamente de Google My Maps de Pizza Americana
   function getZonaColor(nombre) {
     if (!nombre) return [65, 105, 225, 0.35];
@@ -375,7 +382,7 @@ require([
       findAddress(null, true);
     });
 
-    $("#descDireccion, #direccion").on("keydown", function (event) {
+    $("#descDireccion, #direccion, #direccionact").on("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
         findAddress(null, true);
@@ -388,7 +395,7 @@ require([
     });
 
     // Actualizar en tiempo real Card 1 con la dirección que se guardará
-    $("#direccion, #zona, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
+    $("#direccion, #direccionact, #zona, #zonaact, #descDireccion, #numNomen, #numNomen2, #num3").on("input change", function () {
       actualizarTarjetaDireccionPedidoUI();
     });
 
@@ -536,28 +543,44 @@ function detectarYSincronizarMunicipio(texto) {
 }
 
 function obtenerDireccionCobertura() {
-  if ($("#validaDir").is(":checked")) {
-    return obtenerValor("#descDireccion");
+  if ($("#validaDir").length > 0) {
+    if ($("#validaDir").is(":checked")) {
+      return obtenerValor("#descDireccion") || obtenerValor("#direccionact") || obtenerValor("#direccion");
+    }
+    return obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
-  return obtenerValor("#direccion");
+  // Para ventanas sin checkbox #validaDir (ConsultaPedidosNuevaTienda, ConsultaPedidosCRMBOT, etc.)
+  var desc = (obtenerValor("#descDireccion") || "").trim();
+  if (desc && desc.length > 3 && !desc.startsWith("#") && !desc.startsWith("-")) {
+    return desc;
+  }
+  var dirAct = (obtenerValor("#direccionact") || "").trim();
+  if (dirAct && dirAct.length > 3) {
+    return dirAct;
+  }
+  return desc || dirAct || obtenerValor("#direccion");
 }
 
 function obtenerTextoDireccionPedidoUI() {
-  var usaNomenclatura = $("#validaDir").is(":checked");
+  var usaNomenclatura = $("#validaDir").length > 0 ? $("#validaDir").is(":checked") : true;
   var dir = "";
 
   if (usaNomenclatura) {
-    dir = obtenerValor("#descDireccion");
+    dir = obtenerValor("#descDireccion") || obtenerValor("#direccionact");
     if (!dir && typeof formarDireccionEstructurada === "function") {
       dir = formarDireccionEstructurada(false) || "";
     }
   } else {
-    dir = obtenerValor("#direccion");
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact");
+  }
+
+  if (!dir) {
+    dir = obtenerValor("#direccion") || obtenerValor("#direccionact") || obtenerValor("#descDireccion");
   }
 
   var texto = (dir || "").trim();
-  var complemento = obtenerValor("#zona") || obtenerValor("#barrio");
+  var complemento = obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact");
 
   // Detectar si el texto ya contiene el nombre de algún municipio (ej: "calle 20e #71-60, bello")
   var muniDetectado = detectarYSincronizarMunicipio(texto);
@@ -637,10 +660,35 @@ function bloquearBusqueda(bloquear) {
   $btns.prop("disabled", bloquear);
   $("#loaderCobertura").toggle(bloquear);
 
+  var $overlay = $("#mapLoadingOverlay");
+  if ($overlay.length === 0) {
+    var $mapContainer = $(".panel-mapa-contenedor").first();
+    if ($mapContainer.length > 0) {
+      $mapContainer.css("position", "relative");
+      $mapContainer.prepend(
+        '<div id="mapLoadingOverlay" class="map-loading-overlay" style="display: none;">' +
+          '<div class="map-loader-spinner-box">' +
+            '<div class="map-spinner-ring"></div>' +
+            '<i class="fas fa-map-marked-alt map-loader-icon"></i>' +
+          '</div>' +
+          '<div class="map-loader-title">Consultando mapa y cobertura...</div>' +
+          '<div class="map-loader-desc">Buscando dirección y validando zona de tienda</div>' +
+        '</div>'
+      );
+      $overlay = $("#mapLoadingOverlay");
+    }
+  }
+
   if (bloquear) {
     $btns.addClass("disabled").html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
+    if ($overlay.length) {
+      $overlay.css("display", "flex").stop(true, true).fadeIn(120);
+    }
   } else {
     $btns.removeClass("disabled").html('<i class="fas fa-search"></i> Buscar');
+    if ($overlay.length) {
+      $overlay.stop(true, true).fadeOut(200);
+    }
   }
 }
 
@@ -683,21 +731,22 @@ function obtenerUrlValidacionCobertura() {
   return "ValidacionCobertura";
 }
 
-function mostrarMensaje(mensaje) {
+function mostrarMensaje(mensaje, titulo) {
+  var tituloMostrar = titulo || "Búsqueda en Mapa";
   if (typeof Swal !== "undefined") {
     Swal.fire({
       toast: true,
       position: 'top',
-      icon: 'warning',
-      title: 'Validación de Cobertura',
+      icon: 'info',
+      title: tituloMostrar,
       text: mensaje,
       showConfirmButton: true,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#e11d48',
+      confirmButtonColor: '#2563eb',
       showCloseButton: true
     });
   } else if (typeof toastr !== "undefined") {
-    toastr.warning(mensaje, "Validación de Cobertura", {
+    toastr.info(mensaje, tituloMostrar, {
       timeOut: 0,
       extendedTimeOut: 0,
       closeButton: true
@@ -707,11 +756,195 @@ function mostrarMensaje(mensaje) {
   }
 }
 
+/**
+ * Alerta clara cuando una dirección NO se pudo ubicar en el mapa.
+ * Diferencia explícitamente entre "No encontrada en el mapa" y "Fuera de cobertura".
+ */
+function mostrarMensajeDireccionNoEncontrada(mensajeDetalle) {
+  var muni = ($('#selectMunicipio option:selected').text() || $('#selectMunicipio').val() || '').trim();
+  if (muni === 'Seleccione...' || muni === 'Seleccione' || muni === 'null' || !muni) {
+    muni = '';
+  }
+
+  var htmlContenido = 
+    '<div style="text-align: left; font-size: 13.5px; color: #334155; line-height: 1.55;">' +
+      '<p style="margin-bottom: 8px; font-weight: 700; color: #b91c1c;">' +
+        '<i class="fas fa-search-location"></i> No se encontró la dirección en el mapa' +
+      '</p>' +
+      '<p style="margin-bottom: 10px; font-size: 13px; color: #475569;">' +
+        'Los mapas no lograron identificar las coordenadas exactas de este texto. ' +
+        '<b>(Esto no significa que esté fuera de cobertura, sino que la dirección no fue reconocida).</b>' +
+      '</p>' +
+      '<div style="background-color: #f8fafc; border-left: 3.5px solid #2563eb; padding: 10px 14px; margin-bottom: 6px; font-size: 12.5px; border-radius: 4px;">' +
+        '<b style="color: #1e3a8a;">Sugerencias para el asesor:</b><br>' +
+        (muni ? '• <b>Municipio actual: ' + muni + '</b>. Si la dirección es de otra ciudad (ej: Medellín, Envigado), cámbialo en el selector o agrégalo al texto.<br>' : '• Escribe el municipio al final de la dirección (ej: <i>, Medellín</i> o <i>, Bello</i>).<br>') +
+        '• Verifica la nomenclatura (evita rangos o placas dobles como <i>"a 37-1"</i>).<br>' +
+        '• Si lo prefieres, puedes hacer clic directo sobre el mapa o arrastrar el marcador para fijar la ubicación del cliente.' +
+      '</div>' +
+    '</div>';
+
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      position: 'center',
+      icon: 'info',
+      title: 'Dirección No Encontrada en el Mapa',
+      html: htmlContenido,
+      showConfirmButton: true,
+      confirmButtonText: 'Entendido, voy a revisar',
+      confirmButtonColor: '#2563eb',
+      showCloseButton: true,
+      backdrop: true,
+      allowOutsideClick: false
+    });
+  } else if (typeof toastr !== "undefined") {
+    toastr.warning(mensajeDetalle || "No se encontró la dirección en el mapa. Revisa el municipio o la nomenclatura.", "Dirección No Encontrada", {
+      timeOut: 8000,
+      closeButton: true,
+      positionClass: "toast-top-center"
+    });
+  } else {
+    alert("Dirección No Encontrada: Los mapas no reconocieron la dirección. Por favor verifica el municipio o la nomenclatura.");
+  }
+}
+
+/**
+ * Alerta central destacada cuando la dirección queda fuera de cobertura.
+ */
+function mostrarMensajeFueraCobertura(mensaje) {
+  var texto = mensaje || "La dirección no se encuentra dentro del polígono de cobertura de ninguna tienda.";
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      position: 'center',
+      icon: 'warning',
+      title: '¡Dirección Fuera de Cobertura!',
+      html: '<div style="font-size:15px; color:#334155; line-height:1.5; margin-bottom:8px;">' +
+            texto +
+            '</div><div style="font-size:13px; color:#64748b;">El marcador fue ubicado en el mapa para que verifiques la proximidad con las tiendas cercanas.</div>',
+      showConfirmButton: true,
+      confirmButtonText: 'Entendido, verificar en mapa',
+      confirmButtonColor: '#e11d48',
+      backdrop: true,
+      allowOutsideClick: false
+    });
+  } else if (typeof toastr !== "undefined") {
+    toastr.warning(texto, "Validación de Cobertura", {
+      timeOut: 8000,
+      closeButton: true,
+      positionClass: "toast-top-center"
+    });
+  } else {
+    alert(texto);
+  }
+}
+
+/**
+ * Sincroniza la tienda detectada en el mapa con el campo selectTiendas del formulario.
+ */
+function sincronizarTiendaFormulario(nombreTienda) {
+  if (!nombreTienda) return;
+  var normTienda = nombreTienda.trim().toLowerCase();
+  var encontrada = false;
+  $('#selectTiendas option').each(function () {
+    var optVal = ($(this).val() || '').trim().toLowerCase();
+    var optText = ($(this).text() || '').trim().toLowerCase();
+    if (optVal === normTienda || optText === normTienda) {
+      $('#selectTiendas').val($(this).val());
+      encontrada = true;
+      return false;
+    }
+  });
+  if (!encontrada) {
+    $('#selectTiendas').val(nombreTienda);
+  }
+  $('#selectTiendas').attr('disabled', false);
+  $('#selectTiendas').trigger('change');
+}
+
+/**
+ * Pregunta claramente al asesor si desea cambiar la tienda a la sugerida por el mapa
+ * cuando difiere de la tienda actualmente seleccionada en el formulario.
+ * NUNCA modifica el selector a ciegas.
+ */
+function preguntarCambioTiendaSugerida(tiendaActual, tiendaMapa) {
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      title: '📍 Sugerencia de Cobertura en Mapa',
+      html:
+        '<div style="text-align: left; font-size: 13.5px; line-height: 1.5; color: #1e293b;">' +
+          '<p style="margin-bottom: 12px; font-size: 13px; color: #475569;">' +
+            'Al consultar la dirección en el mapa, el sistema detectó que corresponde a la zona de cobertura de la tienda:' +
+          '</p>' +
+          '<div style="background-color: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">' +
+            '<i class="fas fa-store-alt" style="font-size: 26px; color: #16a34a;"></i>' +
+            '<div>' +
+              '<div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #15803d; letter-spacing: 0.5px;">Tienda sugerida por Mapa</div>' +
+              '<div style="font-size: 16px; font-weight: 800; color: #14532d;">' + escaparHtml(tiendaMapa) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<p style="margin-bottom: 6px; font-size: 12.5px; color: #64748b;">' +
+            'Sin embargo, actualmente tienes seleccionada en el pedido:' +
+          '</p>' +
+          '<div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">' +
+            '<i class="fas fa-exclamation-circle" style="font-size: 20px; color: #d97706;"></i>' +
+            '<div>' +
+              '<div style="font-size: 11px; text-transform: uppercase; font-weight: 600; color: #64748b;">Tienda actual en formulario</div>' +
+              '<div style="font-size: 14px; font-weight: 700; color: #334155;">' + escaparHtml(tiendaActual) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<p style="font-weight: 600; color: #0f172a; margin: 0; text-align: center; font-size: 14px;">' +
+            '¿Deseas cambiar la tienda del pedido a <b style="color:#16a34a;">' + escaparHtml(tiendaMapa) + '</b>?' +
+          '</p>' +
+        '</div>',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-check"></i> Sí, cambiar a ' + escaparHtml(tiendaMapa),
+      cancelButtonText: '<i class="fas fa-times"></i> No, mantener ' + escaparHtml(tiendaActual),
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#64748b',
+      focusCancel: true,
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then(function (result) {
+      if (result.isConfirmed) {
+        sincronizarTiendaFormulario(tiendaMapa);
+        $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-store"></i> ' + escaparHtml(tiendaMapa) + ' (Actualizada)</span>');
+        if (typeof toastr !== "undefined") {
+          toastr.success('Tienda actualizada a ' + tiendaMapa + ' según la sugerencia del mapa.', 'Tienda Cambiada');
+        }
+      } else {
+        $('#mapaTxtTiendaCobertura').html(
+          '<span style="color:#64748b; font-weight:700;" title="El mapa sugería ' + escaparHtml(tiendaMapa) + '">' +
+          '<i class="fas fa-store"></i> ' + escaparHtml(tiendaActual) + ' <small>(mantenida manualmente)</small></span>'
+        );
+        if (typeof toastr !== "undefined") {
+          toastr.info('Se conservó la tienda ' + tiendaActual + ' seleccionada.', 'Tienda Conservada');
+        }
+      }
+    });
+  } else {
+    var deseaCambiar = confirm(
+      'SUGERENCIA DE MAPA:\n\n' +
+      'El mapa ubicó la dirección en la zona de: "' + tiendaMapa + '".\n' +
+      'Actualmente tienes seleccionada la tienda: "' + tiendaActual + '".\n\n' +
+      '¿Deseas cambiar la tienda a "' + tiendaMapa + '"?\n\n' +
+      '[Aceptar] = Cambiar a ' + tiendaMapa + '\n' +
+      '[Cancelar] = Mantener ' + tiendaActual
+    );
+    if (deseaCambiar) {
+      sincronizarTiendaFormulario(tiendaMapa);
+    }
+  }
+}
+
 async function findAddress(idcliente = null, esClicManual = false) {
+
+      if (esClicManual) {
+          window._ultimaConsultaTiendaDiscrepante = null;
+      }
 
       let coberturaRequest;
 
-      if (!idcliente && typeof idCliente !== 'undefined' && idCliente && idCliente > 0) {
+      if (!idcliente && typeof idCliente !== 'undefined' && idCliente && idCliente > 0 && !esClicManual) {
           idcliente = idCliente;
       }
 
@@ -728,14 +961,20 @@ async function findAddress(idcliente = null, esClicManual = false) {
               return;
           }
 
+          var muniVal = obtenerValor("#selectMunicipio");
+          if (!muniVal || muniVal === "Seleccione..." || muniVal === "null") {
+              muniVal = obtenerValor("#municipio") || "";
+          }
+
           coberturaRequest = {
               direccion,
-              municipio: obtenerValor("#selectMunicipio"),
-              barrio: obtenerValor("#zona") || obtenerValor("#barrio")
+              municipio: muniVal,
+              barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || ""
           };
-
-          bloquearBusqueda(true);
       }
+
+      // Activar overlay visible en el mapa y bloquear botones para AMBOS casos (cliente o dirección escrita)
+      bloquearBusqueda(true);
 
       try {
 
@@ -750,17 +989,61 @@ async function findAddress(idcliente = null, esClicManual = false) {
           const data = await response.json();
          
           if (!response.ok || !data.success) {
+              // Si el servicio geocodificó coordenadas válidas (aunque esté fuera de cobertura):
+              if (coordenadasValidas(data.latitud, data.longitud)) {
+                  const punto = {
+                      type: "point",
+                      latitude: Number(data.latitud),
+                      longitude: Number(data.longitud)
+                  };
+
+                  const direccionMostrar =
+                      data.direccion ??
+                      data.direccionCorregida ??
+                      data.direccionOriginalNormalizada ??
+                      obtenerTextoDireccionPedidoUI();
+
+                  showAddress(
+                      construirContenidoPopup(data, direccionMostrar),
+                      punto
+                  );
+
+                  fijarCoordenadasManualmente(
+                      punto.latitude,
+                      punto.longitude
+                  );
+
+                  actualizarInfoCoordenadasUI(punto.latitude, punto.longitude);
+
+                  if (data.municipioCorregido) {
+                      detectarYSincronizarMunicipio(data.municipioCorregido);
+                  }
+
+                  actualizarTarjetaDireccionPedidoUI();
+
+                  // Tarjeta informativa del mapa en rojo alertando fuera de cobertura
+                  $('#mapaTxtTiendaCobertura').html('<span style="color:#e11d48; font-weight:700;"><i class="fas fa-exclamation-triangle"></i> Fuera de cobertura</span>');
+                  $('#selectTiendas').attr('disabled', false);
+
+                  var dirServicio = data.direccionCorregida || data.direccion;
+                  if (dirServicio) {
+                      mostrarDireccionSugeridaServicio(dirServicio, data.proveedorGeocodificacion);
+                  }
+
+                  // Mostrar alerta central visible
+                  mostrarMensajeFueraCobertura(data.resultado || "La dirección se encuentra fuera de la zona de cobertura.");
+                  return;
+              }
+
+              // Si NO obtuvo coordenadas válidas del geocodificador:
               if (esClicManual) {
-                  mostrarMensaje(data.resultado || "No fue posible validar la cobertura.");
+                  mostrarMensajeDireccionNoEncontrada(data.resultado);
               }
               var dirActual = obtenerTextoDireccionPedidoUI();
               if (dirActual) {
                   $('#mapaTxtDireccionRegistrada').text(dirActual);
               }
-              // Habilitar selección de tienda para no bloquear al cajero
-              if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
-                  $('#selectTiendas').attr('disabled', false);
-              }
+              $('#selectTiendas').attr('disabled', false);
               if (marker && marker.geometry && marker.geometry.latitude && marker.geometry.longitude) {
                   geocodificarInversaArcGIS(marker.geometry.latitude, marker.geometry.longitude);
               } else {
@@ -772,7 +1055,7 @@ async function findAddress(idcliente = null, esClicManual = false) {
 
           if (!coordenadasValidas(data.latitud, data.longitud)) {
               if (esClicManual) {
-                  mostrarMensaje("El servicio no devolvió coordenadas válidas.");
+                  mostrarMensajeDireccionNoEncontrada("El servicio no devolvió coordenadas válidas.");
               }
               return;
           }
@@ -809,11 +1092,36 @@ async function findAddress(idcliente = null, esClicManual = false) {
           actualizarTarjetaDireccionPedidoUI();
 
           if (data.infoAdicional) {
-              $('#mapaTxtTiendaCobertura').text(data.infoAdicional);
-              // Asignar automáticamente la tienda al campo selectTiendas si no tenía o estaba vacío
-              if (!$("#selectTiendas").val() || $("#selectTiendas").val() == "") {
-                  $("#selectTiendas").val(data.infoAdicional);
-                  $("#selectTiendas").trigger('change');
+              var tiendaMapa = (data.infoAdicional || '').trim();
+              var tiendaActual = ($('#selectTiendas option:selected').text() || $('#selectTiendas').val() || '').trim();
+              if (tiendaActual === 'Seleccione...' || tiendaActual === 'Seleccione' || tiendaActual === 'null') {
+                  tiendaActual = '';
+              }
+
+              var normTiendaActual = tiendaActual.toLowerCase();
+              var normTiendaMapa = tiendaMapa.toLowerCase();
+
+              // Caso 1: El formulario aún NO tiene ninguna tienda seleccionada -> Asignar automáticamente
+              if (!normTiendaActual) {
+                  sincronizarTiendaFormulario(tiendaMapa);
+                  $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-store"></i> ' + escaparHtml(tiendaMapa) + '</span>');
+              }
+              // Caso 2: La tienda seleccionada actualmente coincide con la del mapa
+              else if (normTiendaActual === normTiendaMapa) {
+                  $('#mapaTxtTiendaCobertura').html('<span style="color:#059669; font-weight:700;"><i class="fas fa-check-circle"></i> ' + escaparHtml(tiendaMapa) + ' (Coincide)</span>');
+              }
+              // Caso 3: La tienda seleccionada difiere de la sugerida por el mapa -> Preguntar al asesor, NUNCA cambiar a ciegas
+              else {
+                  $('#mapaTxtTiendaCobertura').html(
+                      '<span style="color:#d97706; font-weight:700;" title="El mapa sugiere ' + escaparHtml(tiendaMapa) + '">' +
+                      '<i class="fas fa-exclamation-triangle"></i> ' + escaparHtml(tiendaMapa) + ' <small style="color:#64748b;">(Actual: ' + escaparHtml(tiendaActual) + ')</small></span>'
+                  );
+
+                  var claveConsulta = normTiendaActual + '->' + normTiendaMapa;
+                  if (window._ultimaConsultaTiendaDiscrepante !== claveConsulta) {
+                      window._ultimaConsultaTiendaDiscrepante = claveConsulta;
+                      preguntarCambioTiendaSugerida(tiendaActual, tiendaMapa);
+                  }
               }
           } else {
               var tText = $('#selectTiendas option:selected').text();
@@ -1228,6 +1536,9 @@ function aplicarDireccionDetectadaAlFormulario() {
   }
 
   $('#direccion').val(direccionAplicar);
+  if ($('#direccionact').length > 0) {
+    $('#direccionact').val(direccionAplicar);
+  }
   detectarYSincronizarMunicipio(direccionAplicar);
   actualizarTarjetaDireccionPedidoUI();
   $('#btnCopiarDireccionMapa').hide();
@@ -1330,3 +1641,73 @@ function aplicarDireccionDetectadaAlFormulario() {
 
   actualizarModoDireccionUI();
 }
+
+function fijarCoordenadasManualmente(lat, lon) {
+  var l1, l2;
+  if (typeof lat === 'object' && lat !== null) {
+    l1 = lat.lat !== undefined ? lat.lat : lat.latitude;
+    l2 = lat.lng !== undefined ? lat.lng : lat.longitude;
+  } else {
+    l1 = lat;
+    l2 = lon;
+  }
+
+  window.latitud = l1;
+  window.longitud = l2;
+  try {
+    latitud = l1;
+    longitud = l2;
+  } catch (e) {}
+
+  if (typeof window.fijarCoordenadasManualmenteHook === 'function') {
+    window.fijarCoordenadasManualmenteHook(l1, l2);
+  }
+}
+
+function ubicarClienteExistente(lat, lng) {
+  if (coordenadasValidas(lat, lng)) {
+    const punto = {
+      type: "point",
+      latitude: Number(lat),
+      longitude: Number(lng)
+    };
+    if (view && marker) {
+      showAddress("Ubicación del cliente", punto);
+      fijarCoordenadasManualmente(punto.latitude, punto.longitude);
+      actualizarInfoCoordenadasUI(punto.latitude, punto.longitude);
+      var dirActual = obtenerTextoDireccionPedidoUI();
+      if (dirActual) {
+        $('#mapaTxtDireccionRegistrada').text(dirActual);
+      }
+      var tVal = $('#tienda').val() || $('#selectTiendas option:selected').text();
+      if (tVal && tVal !== "Seleccione..." && tVal !== "") {
+        $('#mapaTxtTiendaCobertura').text(tVal);
+      }
+      geocodificarInversaArcGIS(punto.latitude, punto.longitude, dirActual);
+    } else {
+      window._puntoPendiente = { lat: Number(lat), lng: Number(lng) };
+    }
+  } else {
+    if (typeof idCliente !== 'undefined' && idCliente && idCliente > 0) {
+      findAddress(idCliente, false);
+    } else {
+      var dir = obtenerDireccionCobertura();
+      if (dir && dir.trim().length > 3) {
+        findAddress(null, false);
+      } else {
+        clarearMapa();
+      }
+    }
+  }
+}
+
+// Exportar globalmente a window para máxima compatibilidad
+window.findAddress = findAddress;
+window.showAddress = showAddress;
+window.cambiarBasemapArcgis = cambiarBasemapArcgis;
+window.toggleModoMoverMarcador = toggleModoMoverMarcador;
+window.aplicarDireccionDetectadaAlFormulario = aplicarDireccionDetectadaAlFormulario;
+window.actualizarInfoCoordenadasUI = actualizarInfoCoordenadasUI;
+window.clarearMapa = clarearMapa;
+window.ubicarClienteExistente = ubicarClienteExistente;
+window.fijarCoordenadasManualmente = fijarCoordenadasManualmente;

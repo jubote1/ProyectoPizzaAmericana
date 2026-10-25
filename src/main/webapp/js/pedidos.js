@@ -26,6 +26,7 @@ var idPedidoEmpresarial = 0;
 var memcode = 0;
 var insertado = 0;
 var idCliente = 0;
+var idClienteHistorico = 0;
 var idEstadoPedido = 0;
 var longitud = 0;
 var latitud = 0;
@@ -435,8 +436,9 @@ $("#fechapedido").change(function(){
         // Resaltar visualmente la fila seleccionada para saber cuál cliente se escogió
         $('#grid-clientes tbody tr').removeClass('cliente-fila-activa');
         $(this).addClass('cliente-fila-activa');
-        //cerramos la notificacion en caso de que esté abierta
-        datos = table.row( this ).data();
+        window._ultimaConsultaTiendaDiscrepante = null;
+        var tblGridClientes = $('#grid-clientes').DataTable();
+        datos = tblGridClientes.row( this ).data();
         var tiendaCliente = (datos.tienda || '').trim();
         $("#selectTiendas").val(tiendaCliente);
         var idtien = $("#selectTiendas option:selected").attr('id');
@@ -450,14 +452,8 @@ $("#fechapedido").change(function(){
     		}
 
     	}
-        // Si el cliente tiene una tienda válida ya asignada en base de datos, protegemos el campo
-        // para evitar cambios accidentales (para cambiarla usan el botón "Transferir Cliente").
-        // Si NO tiene tienda asignada (o está vacía), HABILITAMOS el select para que el cajero pueda elegirla.
-        if (tiendaCliente !== "" && idtien !== undefined && idtien !== null) {
-            $('#selectTiendas').attr('disabled', true);
-        } else {
-            $('#selectTiendas').attr('disabled', false);
-        }
+        // Mantenemos el select de tienda habilitado para permitir cambiarla si el cliente actualiza su dirección
+        $('#selectTiendas').attr('disabled', false);
         $('#nombres').val(datos.nombre);
         $('#apellidos').val(datos.apellido);
         $('#nombreCompania').val(datos.nombrecompania);
@@ -560,6 +556,7 @@ $("#fechapedido").change(function(){
         obtenerHomologacionProductoGaseosa(idtien);
         memcode = datos.memcode;
         idCliente = datos.idCliente;
+        idClienteHistorico = datos.idCliente;
         //Validaremos si el cliente seleccionado tiene ofertas vigentes
         $.getJSON(server + 'CRUDOfertaCliente?idoperacion=6&idcliente=' + idCliente, function(data1){
         	if(data1.length > 0)
@@ -774,6 +771,19 @@ $("#fechapedido").change(function(){
         getProductosTienda(idtien);
         //Traemos las gaseosas homologadas y disponibles para la tienda
         obtenerHomologacionProductoGaseosa(idtien);
+
+        // Si ya hay un pedido en curso en base de datos, sincronizamos inmediatamente la tienda del pedido en BD
+        if (typeof idPedido !== 'undefined' && idPedido && idPedido > 0 && idtien && idtien !== "0") {
+            var idCliActual = (typeof idCliente !== 'undefined' && idCliente > 0) ? idCliente : ($('#IdCliente').val() || 0);
+            $.ajax({
+                url: server + 'RealizarCambiosPedido?idtienda=' + idtien + '&idpedido=' + idPedido + '&idcliente=' + idCliActual,
+                dataType: 'json',
+                async: false,
+                success: function(resp) {
+                    console.log("Tienda de pedido " + idPedido + " sincronizada a:", idtien);
+                }
+            });
+        }
     });
 
      $('#clientesinidentificar').change(function() {
@@ -1332,7 +1342,8 @@ function getListaTiendas(){
 			str +='<option value="'+ cadaTienda.nombre +'" id ="'+ cadaTienda.id +'">' + cadaTienda.nombre +'</option>';
 		}
 		$('#selectTiendas').html(str);
-		$('#selectTiendasTrasladar').html(str);
+		var strTrasladar = '<option value="" id="0">Definir en formulario / por mapa</option>' + str;
+		$('#selectTiendasTrasladar').html(strTrasladar);
 		// Realizamos cambio para que la tienda no esté seleccionada por defecto
 		$("#selectTiendas").val('');
 		$("#selectTiendasTrasladar").val('');
@@ -4407,11 +4418,11 @@ function agregarEncabezadoPedido()
 			insertado = 1;
 			idCliente = idClienteTemporal;
 		}
-		//Realizamos intervención para bloquear que se cambie la tienda
-		$('#selectTiendas').attr('disabled', true);
+		// Mantenemos selectTiendas y transferircliente habilitados para permitir cambiar de dirección/tienda
+		$('#selectTiendas').attr('disabled', false);
         $('#selectTipoPedido').attr('disabled', true);
 		$('#limpiar').attr('disabled', true);
-		$('#transferircliente').attr('disabled', true);
+		$('#transferircliente').attr('disabled', false);
 		//		
 	}
 }
@@ -5671,6 +5682,7 @@ function limpiarSeleccionCliente()
         //$("#validaDir input[type=checkbox]").prop('checked', true);
         memcode = 0;
         idCliente = 0;
+        idClienteHistorico = 0;
         if ( $.fn.dataTable.isDataTable( '#grid-clientes' ) ) 
         {
 			table = $('#grid-clientes').DataTable();
@@ -5778,7 +5790,8 @@ function consultarUltimosPedidos()
      
 
      } );
-	$.getJSON(server + 'ConsultaUltimosPedidosCliente?idcliente=' + idCliente, function(data1){
+	var idConsulta = (typeof idClienteHistorico !== 'undefined' && idClienteHistorico && idClienteHistorico != 0) ? idClienteHistorico : idCliente;
+	$.getJSON(server + 'ConsultaUltimosPedidosCliente?idcliente=' + idConsulta, function(data1){
 	                		
 	                		dtEncabezadoPedido.clear().draw();
 							for(var i = 0; i < data1.length;i++){
@@ -5791,7 +5804,8 @@ function consultarUltimosPedidos()
 
 function mostrarNotificaciones()
 {
-    $.getJSON(server + 'ObtenerNotificacionesCliente?idcliente=' + idCliente , function(data2){
+    var idConsulta = (typeof idClienteHistorico !== 'undefined' && idClienteHistorico && idClienteHistorico != 0) ? idClienteHistorico : idCliente;
+    $.getJSON(server + 'ObtenerNotificacionesCliente?idcliente=' + idConsulta , function(data2){
         if(data2.pqrs == "NO")
         {
 
@@ -5806,121 +5820,328 @@ function mostrarNotificaciones()
     $('#modalNotificaciones').modal('show');
 }
 
+/**
+ * Función modular para limpiar la información de ubicación y tienda al duplicar cliente:
+ * - Limpia dirección, nomenclatura, municipio, zona, notas y coordenadas para la nueva ubicación.
+ * - Desbloquea la tienda para que el asesor o el mapa asignen la correspondiente.
+ * - Conserva productos del pedido, datos personales y de facturación.
+ * - CONSERVA el historial de pedidos y PQRS porque pertenecen a la misma persona.
+ */
+function limpiarDatosClienteTraslado(nuevaTienda)
+{
+    $('#direccion').val('');
+    $('#descDireccion').val('');
+    $('#numNomen').val('');
+    $('#numNomen2').val('');
+    $('#num3').val('');
+    $('#selectNomenclaturas').val('');
+    $('#selectMunicipio').val('');
+    $('#zona').val('');
+    $('#observacionDir').val('');
+    zonaCliente = '';
+    longitud = 0;
+    latitud = 0;
+    distanciaTienda = 0;
+
+    // Se desbloquea el select de tiendas para permitir cambiarla
+    if (nuevaTienda) {
+        $('#selectTiendas').val(nuevaTienda);
+    } else {
+        $('#selectTiendas').val('');
+    }
+    $('#selectTiendas').attr('disabled', false);
+
+    // Resetear marcador y textos del mapa
+    if (typeof clarearMapa === 'function') {
+        clarearMapa();
+    }
+    $('#mapaTxtTiendaCobertura').text(nuevaTienda || '-');
+    $('#mapaTxtDireccionRegistrada').text('Sin dirección especificada');
+
+    // Mantenemos habilitados los botones de historial y notificaciones
+    $('#ultimospedidos').attr('disabled', false);
+    $('#notificaciones').attr('disabled', false);
+}
+
 function transferirCliente()
 {
-	//Seleccionar la tienda origen
-	var tiendaOrigen = $("#selectTiendas option:selected").attr('id');
-	//Realiza la actualizacion
-	var telef = telefono.value;
-	var tempTienda =  $("#selectTiendasTrasladar option:selected").val();
-    //Variable en la que alojamos el id de la tienda
-    var tienda = $("#selectTiendasTrasladar option:selected").attr('id');
-    var idMunicipio = $("#selectMunicipio option:selected").attr('id');
-    //Realizamos la validación que la tienda origen y destino no sean las mismas
-    if(tiendaOrigen == tienda)
-    {
-    	$.alert('La tienda origen y destino no pueden ser las mismas.');
-    	$("#selectTiendasTrasladar").val('');
- 		return;
-    }
-    var tempMunicipio = $("#selectMunicipio option:selected").val();
-    var idClienteCreado;
-    var idClienteTienda;
-    var nombresEncode = encodeURIComponent(nombres.value);
-    var apellidosEncode = encodeURIComponent(apellidos.value);
-    var nombreCompaniaEncode = encodeURIComponent(nombreCompania.value);
-    var direccionEncode;
-    var validaDir = 'S';
-    var dirTemp = formarDireccionEstructurada(false);
-    if($('#validaDir').is(':checked'))
-    {
-        direccionEncode = encodeURIComponent(formarDireccionEstructurada(false));
-    }else
-    {
-        validaDir = 'N';
-        direccionEncode = encodeURIComponent(direccion.value);
-    }
-    var zonaEncode = encodeURIComponent(zona.value); 
-    var observacionDirEncode = encodeURIComponent(observacionDir.value);
-    var nomenclatura = limpiarValorFormulario($("#selectNomenclaturas option:selected").attr('id'));
-	var numNomenclatura1 = encodeURIComponent(limpiarTextoDireccion($("#numNomen").val()));
-	var numNomenclatura2 = encodeURIComponent(limpiarTextoDireccion($("#numNomen2").val()));
-	var num3 = encodeURIComponent(limpiarTextoDireccion($("#num3").val()));
-    var telCelular = ($("#telcelular").val() || $("#telefono").val() || telef || "").trim();
-    $("#telefono").val(telCelular);
-    telef = telCelular;
-    var email = $("#email").val();
-    var politicaDatos = "N";
-    if($('#politicadatos').is(':checked'))
-    {
-        politicaDatos = "S";
-    }
-    //Procesamos los datos de Facturación
-    var clienteSinIden = "N";
+	var telef = ($("#telcelular").val() || $("#telefono").val() || telefono.value || "").trim();
+    $("#telefono").val(telef);
+    var idClienteAnterior = idCliente;
+	var tempTienda = $("#selectTiendasTrasladar option:selected").val() || "";
+    // Variable en la que alojamos el id de la tienda destino (opcional)
+    var tienda = $("#selectTiendasTrasladar option:selected").attr('id') || "0";
+    var idMunicipio = $("#selectMunicipio option:selected").attr('id') || "0";
+
+    var tempMunicipio = "";
+    var idClienteCreado = 0;
+    var idClienteTienda = 0;
+    var nombresEncode = encodeURIComponent(nombres.value || "");
+    var apellidosEncode = encodeURIComponent(apellidos.value || "");
+    var nombreCompaniaEncode = encodeURIComponent(nombreCompania.value || "");
+
+    // Dejar la dirección completamente vacía para que se registre la nueva
+    var direccionEncode = "";
+    var zonaEncode = ""; 
+    var observacionDirEncode = "";
+    var nomenclatura = "";
+	var numNomenclatura1 = "";
+	var numNomenclatura2 = "";
+	var num3 = "";
+    var telCelular = telef;
+    var email = $("#email").val() || "";
+    var politicaDatos = $('#politicadatos').is(':checked') ? "S" : "N";
+
+    // Procesamos los datos de Facturación
+    var clienteSinIden = $('#clientesinidentificar').is(':checked') ? "S" : "N";
     var emailFact = "";
     var idTipoPersona = 0;
     var identificacion = "";
-    if($('#clientesinidentificar').is(':checked'))
-    {
-        clienteSinIden = "S";
-    }
     if(clienteSinIden == "N")
     {
-        emailFact = $("#emailfact").val();
-        idTipoPersona = $("#selectTipoPersona option:selected").val();
-        identificacion = $("#identificacion").val();
+        emailFact = $("#emailfact").val() || "";
+        idTipoPersona = $("#selectTipoPersona option:selected").val() || 0;
+        identificacion = $("#identificacion").val() || "";
     }
-                            $.ajax({ 
-                                url: server + 'ActualizarCliente?telefono=' + telef + "&nombres=" + nombresEncode + "&apellidos=" + apellidosEncode + "&nombreCompania=" + nombreCompaniaEncode +  "&direccion="  + direccionEncode  + "&tienda=" + tempTienda +  "&zona=" + zonaEncode + "&observacion=" + observacionDirEncode + "&municipio=" + tempMunicipio + "&longitud=" + longitud + "&latitud=" + latitud + "&distanciatienda=" + distanciaTienda + "&memcode=0" + "&idcliente=0" + "&idnomenclatura=" + nomenclatura + "&numnomenclatura1=" + numNomenclatura1 + "&numnomenclatura2=" + numNomenclatura2 +  "&num3=" + num3 + "&telefonocelular=" + telCelular + "&email=" + email + "&politicadatos=" + politicaDatos + "&clientesiniden=" + clienteSinIden + "&emailfact=" + emailFact + "&idtipopersona=" + idTipoPersona + "&identificacion=" + identificacion, 
-                                dataType: 'json', 
-                                async: false, 
-                                success: function(data){
 
-                                    idClienteCreado = data[0].idcliente;
-                                    //console.log("CLIENTE CREADO ACTUALIZADO " + idClienteCreado);
-                                    var urlTienda;
-                                    var pos;
-                                    var dsnodbc;
-                                     $.ajax({ 
-                                         url: server + 'ObtenerUrlTienda?idtienda=' + tienda, 
-                                         dataType: 'json', 
-                                         async: false, 
-                                         success: function(data2){ 
-                                            //console.log(data2);
-                                            urlTienda = data2[0].urltienda;
-                                            pos = data2[0].pos;
-                                            dsnodbc = data2[0].dsnodbc;
-                                        } 
-                                    });
-                                    //Se consume el servicio de la tienda para la actualización creación del cliente
-                                     $.ajax({ 
-                               			 url: urlTienda + 'ActualizarCliente?telefono=' + telef + "&nombres=" + nombresEncode + "&apellidos=" + apellidosEncode + "&nombreCompania=" + nombreCompaniaEncode +  "&direccion="  + direccionEncode  + "&tienda=" + tempTienda +  "&zona=" + zonaEncode + "&observacion=" + observacionDirEncode + "&municipio=" + tempMunicipio + "&longitud=" + longitud + "&latitud=" + latitud + "&memcode=0" + "&idcliente=0" + "&idnomenclatura=" + nomenclatura + "&numnomenclatura1=" + numNomenclatura1 + "&numnomenclatura2=" + numNomenclatura2 +  "&num3=" + num3 + "&dsnodbc=" + dsnodbc + "&pos=" + pos + "&idmunicipio=" + idMunicipio + "&idtienda=" + tienda, 
-                                		dataType: 'json', 
-                                		async: false, 
-                                		success: function(data1){
-                                			idClienteTienda = data1[0].idclitienda;
-                                			$.getJSON(server + 'ActualizarMemcode?membercode=' + idClienteTienda + "&idcliente=" + idClienteCreado, function(data3){
-	                                        	//console.log(data3);
-	                                   		 });
-	                                        $.alert('Se creó el nuevo cliente correctamente');
+    // 1. Crear el nuevo registro del cliente duplicado en el servidor central (DB MySQL)
+    $.ajax({ 
+        url: server + 'ActualizarCliente?telefono=' + telef + "&nombres=" + nombresEncode + "&apellidos=" + apellidosEncode + "&nombreCompania=" + nombreCompaniaEncode +  "&direccion="  + direccionEncode  + "&tienda=" + encodeURIComponent(tempTienda) +  "&zona=" + zonaEncode + "&observacion=" + observacionDirEncode + "&municipio=" + tempMunicipio + "&longitud=0&latitud=0&distanciatienda=0&memcode=0&idcliente=0&idnomenclatura=0&numnomenclatura1=&numnomenclatura2=&num3=&telefonocelular=" + telCelular + "&email=" + encodeURIComponent(email) + "&politicadatos=" + politicaDatos + "&clientesiniden=" + clienteSinIden + "&emailfact=" + encodeURIComponent(emailFact) + "&idtipopersona=" + idTipoPersona + "&identificacion=" + encodeURIComponent(identificacion), 
+        dataType: 'json', 
+        async: false, 
+        success: function(data){
+            if (data && data.length > 0 && data[0].idcliente) {
+                idClienteCreado = data[0].idcliente;
+                idCliente = idClienteCreado;
+                if (idClienteAnterior && idClienteAnterior !== 0) {
+                    idClienteHistorico = idClienteAnterior;
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error creando cliente duplicado en central:", error);
+        }
+    });
 
-	                                	}
-                                	});
-                                    
-                                } 
-                            }); 
-    limpiarSeleccionCliente();
-    $('#telefono').val(telef);
-    $('#telcelular').val(telef);
-    validarTelefono(); 
-	$("#selectTiendasTrasladar").val('');
-	$('#transferircliente').attr('disabled', true);
-	$('#transCliente').modal('hide');
+    if (!idClienteCreado || idClienteCreado === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                position: 'center',
+                icon: 'error',
+                title: 'Error al duplicar cliente',
+                text: 'No se pudo crear el registro duplicado en la base de datos central.',
+                confirmButtonColor: '#e11d48'
+            });
+        } else {
+            alert('No se pudo crear el registro duplicado en la base de datos.');
+        }
+        return;
+    }
+
+    // 2. Si ya existe un pedido en curso en base de datos (# PEDIDO > 0), reasignarlo en BD al nuevo cliente duplicado
+    if (typeof idPedido !== 'undefined' && idPedido && idPedido > 0 && idClienteCreado > 0) {
+        var idTienDest = "0";
+        if (tienda && tienda !== "0" && !isNaN(tienda)) {
+            idTienDest = String(tienda);
+        } else {
+            var idOpt = $("#selectTiendas option:selected").attr('id');
+            if (idOpt && !isNaN(idOpt)) {
+                idTienDest = String(idOpt);
+            }
+        }
+        $.ajax({
+            url: server + 'RealizarCambiosPedido?idtienda=' + idTienDest + '&idpedido=' + idPedido + '&idcliente=' + idClienteCreado,
+            dataType: 'json',
+            async: false,
+            success: function(rCambio) {
+                console.log("Pedido " + idPedido + " reasignado a nuevo cliente " + idClienteCreado, rCambio);
+            },
+            error: function(err) {
+                console.warn("Aviso en RealizarCambiosPedido:", err);
+            }
+        });
+        $('#IdCliente').val(idClienteCreado);
+    }
+
+    // 3. Limpieza selectiva: limpia dirección/tienda/mapa pero conserva productos, identidad e historial
+    limpiarDatosClienteTraslado(tempTienda);
+
+    // 4. Cerrar inmediatamente el modal y forzar remoción de cualquier backdrop para evitar pantalla bloqueada
+    $('#transCliente').modal('hide');
+    $('body').removeClass('modal-open');
+    $('.modal-backdrop').remove();
+    $("#selectTiendasTrasladar").val('');
+    $('#transferircliente').attr('disabled', false);
+
+    // 5. Refrescar el DataTable de clientes, paginar hasta el nuevo cliente y seleccionarlo automáticamente
+    if ($.fn.dataTable.isDataTable('#grid-clientes')) {
+        var tblClientes = $('#grid-clientes').DataTable();
+        $.getJSON(server + 'GetCliente?telefono=' + telef, function(data1) {
+            if (data1 && Array.isArray(data1)) {
+                tblClientes.clear();
+                for(var i = 0; i < data1.length; i++){
+                    tblClientes.row.add(data1[i]);
+                }
+                tblClientes.draw();
+
+                // Buscar el nuevo cliente duplicado en la lista recibida
+                var nuevoClienteObj = null;
+                var nuevoClienteIdx = -1;
+                for (var i = 0; i < data1.length; i++) {
+                    if (data1[i].idCliente == idClienteCreado) {
+                        nuevoClienteObj = data1[i];
+                        nuevoClienteIdx = i;
+                        break;
+                    }
+                }
+                // Si no coincidió exactamente por ID, tomar el que tenga dirección vacía o el último
+                if (!nuevoClienteObj && data1.length > 0) {
+                    for (var j = data1.length - 1; j >= 0; j--) {
+                        if (!data1[j].direccion || data1[j].direccion.trim() === "") {
+                            nuevoClienteObj = data1[j];
+                            nuevoClienteIdx = j;
+                            break;
+                        }
+                    }
+                }
+
+                // Navegar en la paginación de la tabla hasta la página donde quedó el nuevo cliente
+                if (nuevoClienteIdx >= 0) {
+                    var pageLen = tblClientes.page.len() || 10;
+                    var targetPage = Math.floor(nuevoClienteIdx / pageLen);
+                    tblClientes.page(targetPage).draw(false);
+
+                    // Resaltar visualmente la fila en la página visible
+                    $('#grid-clientes tbody tr').removeClass('cliente-fila-activa');
+                    tblClientes.rows({ page: 'current' }).every(function() {
+                        var d = this.data();
+                        if (d && nuevoClienteObj && d.idCliente == nuevoClienteObj.idCliente) {
+                            $(this.node()).addClass('cliente-fila-activa');
+                        }
+                    });
+                }
+
+                // Pasar automáticamente los datos del nuevo cliente al formulario
+                if (nuevoClienteObj) {
+                    idCliente = nuevoClienteObj.idCliente;
+                    $('#IdCliente').val(idCliente);
+                    if (idClienteAnterior && idClienteAnterior !== 0) {
+                        idClienteHistorico = idClienteAnterior;
+                    }
+
+                    // Datos personales del cliente
+                    $('#nombres').val(nuevoClienteObj.nombre || '');
+                    $('#apellidos').val(nuevoClienteObj.apellido || '');
+                    $('#nombreCompania').val(nuevoClienteObj.nombrecompania || '');
+                    var celCliente = nuevoClienteObj.telefonocelular || nuevoClienteObj.telefono || telef;
+                    $('#telcelular').val(celCliente);
+                    $('#telefono').val(celCliente);
+                    $('#email').val(nuevoClienteObj.email || '');
+
+                    // Facturación electrónica
+                    if (nuevoClienteObj.clientesiniden == 'N') {
+                        $('#clientesinidentificar').prop('checked', false);
+                        $('#emailfact').val(nuevoClienteObj.emailfact || '').attr('disabled', false);
+                        $('#selectTipoPersona').val(nuevoClienteObj.idtipopersona || 0).attr('disabled', false);
+                        $('#identificacion').val(nuevoClienteObj.identificacion || '').attr('disabled', false);
+                    } else {
+                        $('#clientesinidentificar').prop('checked', true);
+                        $('#emailfact').val('').attr('disabled', true);
+                        $('#selectTipoPersona').val(0).attr('disabled', true);
+                        $('#identificacion').val('').attr('disabled', true);
+                    }
+
+                    // Política de datos
+                    if (nuevoClienteObj.politicadatos == 'S') {
+                        $('#politicadatos').prop('checked', true);
+                    } else {
+                        $('#politicadatos').prop('checked', false);
+                    }
+
+                    // Fecha de nacimiento
+                    if (nuevoClienteObj.fechanacimiento) {
+                        var dateNaci = new Date(nuevoClienteObj.fechanacimiento + " 12:00:00 GMT-0500");
+                        $("#fechanaci").datepicker('setDate', dateNaci);
+                    } else {
+                        $("#fechanaci").val("");
+                    }
+
+                    // Asignar tienda destino si fue seleccionada, y habilitar el selector
+                    var tiendaDest = (nuevoClienteObj.tienda || tempTienda || '').trim();
+                    if (tiendaDest) {
+                        $("#selectTiendas").val(tiendaDest);
+                    } else {
+                        $("#selectTiendas").val('');
+                    }
+                    $('#selectTiendas').attr('disabled', false);
+
+                    // Dejar dirección limpia y lista para captura de la nueva ubicación
+                    $('#direccion').val('');
+                    $('#descDireccion').val('');
+                    $('#numNomen').val('');
+                    $('#numNomen2').val('');
+                    $('#num3').val('');
+                    $('#selectNomenclaturas').val('');
+                    $('#selectMunicipio').val('');
+                    $('#zona').val('');
+                    $('#observacionDir').val('');
+                    zonaCliente = '';
+                    longitud = 0;
+                    latitud = 0;
+                    distanciaTienda = 0;
+
+                    // Resetear vista del mapa ArcGIS
+                    if (typeof clarearMapa === 'function') {
+                        clarearMapa();
+                    }
+                    $('#mapaTxtTiendaCobertura').text(tiendaDest || '-');
+                    $('#mapaTxtDireccionRegistrada').text('Sin dirección especificada');
+                    $('#validaDir').prop('checked', false);
+                    if (typeof actualizarModoDireccionUI === 'function') {
+                        actualizarModoDireccionUI();
+                    }
+                }
+            }
+        });
+    }
+
+    // 6. Si hay un pedido en curso, refrescar su detalle para asegurar que la tabla del carrito esté intacta
+    if (typeof idPedido !== 'undefined' && idPedido && idPedido > 0 && typeof consultarDetallePedido === 'function') {
+        consultarDetallePedido(idPedido);
+    }
+
+    // 7. Notificación elegante de confirmación
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            position: 'center',
+            icon: 'success',
+            title: 'Cliente Duplicado y Seleccionado',
+            html: '<p style="font-size:14px;color:#334155;margin:0 0 8px;">Se creó el nuevo registro (ID: <b>' + idClienteCreado + '</b>) y se seleccionó automáticamente en el formulario.</p><p style="font-size:13px;color:#2563eb;font-weight:600;margin:0;">Por favor ingresa la nueva dirección de entrega y tienda.</p>',
+            confirmButtonText: 'Continuar',
+            confirmButtonColor: '#2563eb',
+            allowOutsideClick: false
+        }).then(function() {
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+            $('#direccion').focus();
+        });
+    } else {
+        alert('Cliente duplicado y seleccionado correctamente (ID: ' + idClienteCreado + '). Por favor ingresa la nueva dirección de entrega.');
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+        $('#direccion').focus();
+    }
 }
 
 function mostrarTransferirCliente()
 {
-	$('#transCliente').modal('show');
+    $('body').removeClass('modal-open');
+    $('.modal-backdrop').remove();
+    $('#transCliente').off('hidden.bs.modal').on('hidden.bs.modal', function () {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+    $('#transCliente').modal('show');
 }
 
 //Método que se encarga de limpiar la información de los pedidos clientes cada vez que se da sobre el botón consultar
