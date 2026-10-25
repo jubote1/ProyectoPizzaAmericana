@@ -8,7 +8,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.CostoTiendaDAO;
-import capaDAOCC.GastoAreaDAO;
 
 /**
  * El costo de las tiendas por concepto y por semana: lo que hoy es la pestana
@@ -328,7 +327,7 @@ public class CostoTiendaCtrl {
 			final int numMes = Integer.parseInt(mes.substring(5, 7));
 			final int cuantas = porMes.get(mes).intValue();
 			for (final Integer idConcepto : areas.keySet()) {
-				final double total = GastoAreaDAO.totalDelMes(areas.get(idConcepto), anio, numMes);
+				final double total = CostoTiendaDAO.totalAreaDelMes(areas.get(idConcepto), anio, numMes);
 				if (total > 0 && cuantas > 0) {
 					costoSemanal.put(mes + "|" + idConcepto, Double.valueOf(total / cuantas));
 				}
@@ -423,7 +422,7 @@ public class CostoTiendaCtrl {
 		// cuatro viajes a la base para traer cuatro veces el mismo numero.
 		final HashMap<String, Double> totalDelMes = new HashMap<String, Double>();
 		for (final String mes : porMes.keySet()) {
-			totalDelMes.put(mes, Double.valueOf(GastoAreaDAO.totalDelMes(area,
+			totalDelMes.put(mes, Double.valueOf(CostoTiendaDAO.totalAreaDelMes(area,
 					Integer.parseInt(mes.substring(0, 4)), Integer.parseInt(mes.substring(5, 7)))));
 		}
 		for (final CostoTiendaDAO.Valor parte : CostoTiendaDAO.participacionPorSemana(semanas)) {

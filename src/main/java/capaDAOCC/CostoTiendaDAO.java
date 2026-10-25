@@ -34,12 +34,13 @@ import conexionCC.ConexionBaseDatos;
  *             once tiendas al dia, asi que no hay que ir a los equipos de las tiendas.
  *   TEMPORAL  inventarioamericana.gasto_empleado_temporal, que ya trae por tienda y
  *             por semana lo que cobra la empresa temporal, desde 2022.
- *   DATAFONO  la venta con tarjeta de datamart.cierre_datafono_pos por la tarifa del
- *             parametro COMISIONDATAFONO. Mientras la tarifa este en cero el concepto
- *             no sale, y eso es mejor que sacarlo en cero: cero se lee como "no hubo
- *             comision", y lo que pasa es que nadie la ha parametrizado.
- *   AREA      se reparte desde gasto_area por participacion en la venta. Eso es de la
- *             fase 4 y todavia no lo hace este DAO.
+ *   SEMANAL   inventarioamericana.gasto_semanal, que ya trae por tienda y por semana
+ *             lo que liquidaron las plataformas y los recaudadores. Son las comisiones
+ *             y la comision de datafonos, esta ultima por el 5% de gasto_configuracion.
+ *   TIENDA    el gasto propio de la tienda: gerencia_gasto_fijo_tienda mas
+ *             gerencia_gasto_servicio. No se reparte entre nadie.
+ *   AREA      se reparte por participacion en la venta desde
+ *             inventarioamericana.gerencia_gasto_area, la tabla del cierre gerencial.
  *   DIGITADO  costo_tienda_digitado, por tienda y mes. Son los que el sistema no sabe.
  *   MIXTO     parte digitada y parte de egresos. Hoy solo la nomina: la fija se digita
  *             -general.empleado no dice en que tienda esta cada quien- y el incentivo
@@ -700,6 +701,57 @@ public class CostoTiendaDAO {
 			cerrar(cn);
 		}
 		return lista;
+	}
+
+	/**
+	 * Lo que cuesta un area en un mes, para repartirlo entre las tiendas.
+	 *
+	 * Sale de inventarioamericana.gerencia_gasto_area, que es la tabla del cierre
+	 * gerencial: la misma que leen GerenciaCierreDAO y GerenciaGastoDAO. Hubo un rato
+	 * en que esto leia pizzaamericana.gasto_area, una tabla que se creo aqui sin saber
+	 * que aquella ya existia; se retiro, porque dos tablas para el mismo dato terminan
+	 * diciendo cosas distintas.
+	 *
+	 * OJO: ESTO NO INCLUYE LA NOMINA DEL AREA
+	 *
+	 * gerencia_gasto_area tiene lo que NO es nomina. La nomina de un area la calcula
+	 * GerenciaCierreDAO.cargarPersonas desde general.empleado cruzado con
+	 * gerencia_nomina_cargo, y sumarla aqui la contaria dos veces. Mientras la cuota de
+	 * area de esta pantalla no incluya nomina, va a ser bastante menor que la del
+	 * Excel: en administrativa, 27,6 millones de 133,8.
+	 *
+	 * Un gasto cuenta si su vigencia TOCA el mes, no si empezo dentro de el.
+	 */
+	public static double totalAreaDelMes(final String area, final int anio, final int mes) {
+		final String primero = String.format("%04d-%02d-01", Integer.valueOf(anio), Integer.valueOf(mes));
+		final String ultimo = String.format("%04d-%02d-31", Integer.valueOf(anio), Integer.valueOf(mes));
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		final Connection cn = con.obtenerConexionBDDatamartLocal();
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT IFNULL(SUM(g.valor_mensual), 0)"
+					+ "  FROM inventarioamericana.gerencia_gasto_area g"
+					+ "  JOIN inventarioamericana.gerencia_concepto_gasto c"
+					+ "    ON c.idconcepto = g.idconcepto AND c.activo = 'S'"
+					+ " WHERE g.area = ? AND g.vigencia_desde <= ?"
+					+ "   AND (g.vigencia_hasta IS NULL OR g.vigencia_hasta >= ?)");
+			ps.setString(1, area);
+			ps.setString(2, ultimo);
+			ps.setString(3, primero);
+			final ResultSet rs = ps.executeQuery();
+			double total = 0;
+			if (rs.next()) {
+				total = rs.getDouble(1);
+			}
+			rs.close();
+			ps.close();
+			return total;
+		} catch (final Exception e) {
+			LOG.error("CostoTiendaDAO.totalAreaDelMes: " + e.toString());
+			return 0;
+		} finally {
+			cerrar(cn);
+		}
 	}
 
 	/** El area que alimenta cada concepto de cuota, para repartirla. */
