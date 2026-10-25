@@ -902,14 +902,14 @@ public String obtenerNotificacionesCliente(int idCliente)
 		return(respuesta.toJSONString());
 	}
 	
+	/**
+	 * La alerta de un telefono para quien toma el pedido (web y POS). Las claves de siempre
+	 * -telefono, tipo_alerta, mensaje- se conservan, y se suman las marcas. Ver ClienteMarcaCtrl.
+	 * Antes armaba el SQL concatenando el telefono; ahora lo resuelve ClienteMarcaDAO con parametros.
+	 */
 	public String obtenerClienteAlerta(String telefono)
 	{
-		ClienteAlerta clienteAlerta = ClienteAlertaDAO.obtenerClienteAlerta(telefono);
-		JSONObject respuesta = new JSONObject();
-		respuesta.put("telefono", clienteAlerta.getTelefono());
-		respuesta.put("tipo_alerta", clienteAlerta.getTipoAlerta());
-		respuesta.put("mensaje", clienteAlerta.getMensaje());
-		return(respuesta.toJSONString());
+		return(new ClienteMarcaCtrl().fichaPublica(telefono));
 	}
 	
 	

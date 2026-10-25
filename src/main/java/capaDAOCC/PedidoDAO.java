@@ -6837,6 +6837,14 @@ public class PedidoDAO {
 		            jsonRespuesta.put("nombreTienda", nombreTienda);
 		            jsonRespuesta.put("direccionCliente", direccionCliente);
 
+		            // Cliente marcado como que no desea Rappi Cargo: el pedido no es apto aunque cumpla todo lo demas.
+		            String motivoMarca = capaControladorCC.ClienteMarcaCtrl.motivoBloqueoCargo(idCliente, "");
+		            if (motivoMarca.length() > 0) {
+		                jsonRespuesta.put("resultado", false);
+		                jsonRespuesta.put("bloqueadoPorMarca", true);
+		                jsonRespuesta.put("mensaje", motivoMarca);
+		            }
+
 		        } else {
 		            jsonRespuesta.put("mensaje", "El pedido no existe o no cumple las condiciones base para Rappi Cargo.");
 		        }
@@ -7044,6 +7052,13 @@ public class PedidoDAO {
 					if (!aplicaRappiCargoDist) {
 					    cadaPedido.setMotivoNoAplicaRappiCargo(validacionDistancia.get("mensaje").toString()
 					    );
+					}
+
+					// Cliente marcado como que no desea Rappi Cargo: se avisa en la lista y el envio se niega.
+					String motivoMarca = capaControladorCC.ClienteMarcaCtrl.motivoBloqueoCargo(idcliente, telefono);
+					if (motivoMarca.length() > 0) {
+					    cadaPedido.setBloqueadoPorMarca(true);
+					    cadaPedido.setMotivoMarca(motivoMarca);
 					}
 
 

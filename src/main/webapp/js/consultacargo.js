@@ -195,6 +195,13 @@ $(document).ready(function() {
 	            "orderable": false,
 	            "render": function(data, type, row){
 
+	                // Cliente marcado como que NO desea Rappi Cargo (pantalla Marcas de cliente)
+	                if(row.bloqueadoPorMarca){
+	                    return '<i class="fa fa-ban text-danger" ' +
+	                           'title="' + String(row.motivoMarca || '').replace(/"/g, '&quot;') + '" ' +
+	                           'style="font-size:18px;"></i>';
+	                }
+
 	                if(row.aplicaRappiCargoDist){
 	                    return "";
 	                }
@@ -226,6 +233,10 @@ $(document).ready(function() {
 
 	        if(!data.aplicaRappiCargoDist){
 	            $(row).addClass("pedido-no-aplica");
+	        }
+
+	        if(data.bloqueadoPorMarca){
+	            $(row).addClass("pedido-no-aplica").css("background-color", "#fdecea");
 	        }
 
 	    }
@@ -1313,6 +1324,12 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
         return;
     }
 
+    // Cliente marcado como que NO desea Rappi Cargo: no se ofrece el envio, se le dice por que.
+    if (datospedido.bloqueadoPorMarca) {
+        avisarClienteMarcadoSinCargo(datospedido.motivoMarca);
+        return;
+    }
+
     // Validar pedidos con Pago Virtual sin confirmar
 	const esPagoVirtual =
 	    Number(datospedido.idformapago) === 4 ||
@@ -1411,8 +1428,26 @@ $('#grid-aplicabilidad-rappicargo').on('click', 'tr', function () {
 });
 
 
+/**
+ * Le dice a quien intenta enviar el pedido por Rappi Cargo que ese cliente fue marcado desde
+ * la pantalla "Marcas de cliente" (por ejemplo "No desea Rappi Cargo"). El servidor tambien se
+ * niega a crear la orden: este aviso solo explica por que.
+ */
+function avisarClienteMarcadoSinCargo(motivo) {
+    var texto = String(motivo || 'Este cliente fue marcado como que no desea Rappi Cargo.')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    Swal.fire({
+        icon: 'error',
+        title: 'Cliente marcado: no se envía por Rappi Cargo',
+        html: '<div style="text-align:left;font-size:15px;line-height:1.5">' + texto +
+              '<br><br><b>Envíe el pedido con el domicilio de la tienda.</b></div>',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#2563eb'
+    });
+}
+
 function crearOrdenRappiCargo(idpedido) {
-	
+
 	Swal.fire({
 	    title: 'Creando orden...',
 	    html: 'Validando dirección y coordenadas del cliente, esto puede tardar unos segundos.',
@@ -1493,6 +1528,10 @@ function crearOrdenRappiCargo(idpedido) {
                 consultarAplicabilidadRappiCargo();
 
 
+
+            } else if (respuesta.bloqueadoPorMarca === true) {
+
+                avisarClienteMarcadoSinCargo(respuesta.mensaje);
 
             } else {
 
@@ -2578,6 +2617,8 @@ function crearOrdenRappiCargoCandidatoTienda(datospedido, latitud, longitud, dir
                 }
 
                 consultarCandidatosRappiCargoTienda();
+            } else if (respuesta.bloqueadoPorMarca === true) {
+                avisarClienteMarcadoSinCargo(respuesta.mensaje);
             } else {
                 Swal.fire({
                     icon: 'warning',

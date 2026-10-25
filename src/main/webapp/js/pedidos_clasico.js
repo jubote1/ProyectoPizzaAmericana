@@ -6391,19 +6391,19 @@ function  obtenerClienteAlerta( telef)
         //Si la cantidad de pedidos para el teléfono es mayor a cero  lanzaremos la alerta
         if(mensaje != '')
         {
-            var rutaImagen = '';
-            if(data2.tipo_alerta == 'ALERTA_NEGATIVA')
-            {
-                rutaImagen = "images/Alerta.png";
-            }else if(data2.tipo_alerta == 'ALERTA_POSITIVA')
-            {
-                rutaImagen = "images/Ok.jpg";
-            }
-            if(data2)
+            //Las marcas (No desea Rappi Cargo, Posible fraude...) llegan en data2.marcas; el texto
+            //libre, en data2.texto. Un servidor viejo solo manda mensaje: se muestra igual.
+            var marcas = data2.marcas || [];
+            var negativa = (data2.tipo_alerta == 'ALERTA_NEGATIVA');
+            var positiva = (data2.tipo_alerta == 'ALERTA_POSITIVA');
+            var texto = (typeof data2.texto === 'string') ? data2.texto : data2.mensaje;
             $.confirm(
             {
-                    'title'     : 'OJO! REVISAR INFORMACIÓN DE ESTE CLIENTE',
-                    'content'   : '<img src="'+ rutaImagen +'"> ' + data2.mensaje,
+                    'title'     : negativa ? 'OJO! CLIENTE CON ALERTA' : 'REVISAR INFORMACIÓN DE ESTE CLIENTE',
+                    'type'      : negativa ? 'red' : (positiva ? 'green' : 'blue'),
+                    'typeAnimated' : true,
+                    'columnClass'  : 'medium',
+                    'content'   : construirHtmlAlertaCliente(marcas, texto, negativa),
                     'buttons'   : {
                         'Enterado'  : {
                             'class' : 'blue',
@@ -6415,6 +6415,41 @@ function  obtenerClienteAlerta( telef)
             });
         }
     });
+}
+
+/**
+ * El cuerpo del aviso que se muestra al elegir un cliente con alerta: una etiqueta de color por
+ * cada marca, lo que significa cada una, y la nota que dejó quien lo marcó. Todo el texto se
+ * escapa: es texto escrito por una persona.
+ */
+function construirHtmlAlertaCliente(marcas, texto, negativa)
+{
+    function esc(t){ return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    var colores = { N: ['#fdecea','#b71c1c'], P: ['#e6f4ea','#1e6b3a'], I: ['#e8f0fe','#1a4fa0'] };
+    var html = '<div style="font-size:15px;line-height:1.5">';
+    if(marcas.length > 0)
+    {
+        html += '<div style="margin-bottom:10px">';
+        for(var i = 0; i < marcas.length; i++)
+        {
+            var c = colores[marcas[i].severidad] || colores.I;
+            html += '<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 12px;border-radius:14px;font-weight:700;background:'
+                + c[0] + ';color:' + c[1] + ';border:1px solid ' + c[1] + '">' + esc(marcas[i].nombre)
+                + (marcas[i].bloquea_cargo ? ' &middot; sin Rappi Cargo' : '') + '</span>';
+        }
+        html += '</div><ul style="margin:0 0 10px 18px;padding:0;color:#444;font-size:13px">';
+        for(var j = 0; j < marcas.length; j++)
+        {
+            if(marcas[j].descripcion) { html += '<li>' + esc(marcas[j].descripcion) + '</li>'; }
+        }
+        html += '</ul>';
+    }
+    if(texto)
+    {
+        html += '<div style="padding:10px 12px;background:#f7f7f7;border-left:4px solid ' + (negativa ? '#b71c1c' : '#1a4fa0')
+            + ';border-radius:3px"><b>Nota:</b> ' + esc(texto) + '</div>';
+    }
+    return html + '</div>';
 }
 
 //Definimos el método de aplicar Descuentos del día

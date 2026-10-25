@@ -45,9 +45,24 @@ public class Pedido {
 	private String nombreCompania;
     private boolean aplicaRappiCargoDist = true;
     private String motivoNoAplicaRappiCargo = "";
-	
-	
-	
+    /** El cliente tiene una marca (Marcas de cliente) que impide enviar el pedido por Rappi Cargo. */
+    private boolean bloqueadoPorMarca = false;
+    private String motivoMarca = "";
+
+
+
+	public boolean isBloqueadoPorMarca() {
+		return bloqueadoPorMarca;
+	}
+	public void setBloqueadoPorMarca(boolean bloqueadoPorMarca) {
+		this.bloqueadoPorMarca = bloqueadoPorMarca;
+	}
+	public String getMotivoMarca() {
+		return motivoMarca;
+	}
+	public void setMotivoMarca(String motivoMarca) {
+		this.motivoMarca = motivoMarca;
+	}
 	public boolean isAplicaRappiCargoDist() {
 		return aplicaRappiCargoDist;
 	}

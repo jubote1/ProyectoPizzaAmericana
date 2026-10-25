@@ -14116,6 +14116,8 @@ public class PedidoCtrl {
 
             cadaPedidoJSON.put("aplicaRappiCargoDist", cadaPedido.isAplicaRappiCargoDist());
             cadaPedidoJSON.put("motivoNoAplicaRappiCargo", cadaPedido.getMotivoNoAplicaRappiCargo());
+            cadaPedidoJSON.put("bloqueadoPorMarca", cadaPedido.isBloqueadoPorMarca());
+            cadaPedidoJSON.put("motivoMarca", cadaPedido.getMotivoMarca());
 
 
             listJSON.add(cadaPedidoJSON);

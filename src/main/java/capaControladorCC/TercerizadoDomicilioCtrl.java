@@ -324,6 +324,21 @@ public class TercerizadoDomicilioCtrl {
 	            return listJSON.toJSONString();
 	        }
 
+	        // Cliente marcado desde "Marcas de cliente" como que NO desea Rappi Cargo (u otro
+	        // habilitador que bloquee Cargo). Es la puerta de verdad: aunque la pantalla de
+	        // Cargo o el web de pedidos ofrezcan el envío, aquí se niega, antes de gastar
+	        // geocodificación y antes de llamar a Rappi.
+	        String motivoMarca = ClienteMarcaCtrl.motivoBloqueoCargo(orden.getIdcliente(), orden.getPhone());
+	        if (motivoMarca.length() > 0) {
+	            respuestaJSON.put("resultado", false);
+	            respuestaJSON.put("bloqueadoPorMarca", true);
+	            respuestaJSON.put("mensaje", motivoMarca);
+
+	            listJSON.add(respuestaJSON);
+
+	            return listJSON.toJSONString();
+	        }
+
 	        // Si se recibe una nueva dirección modificada por el operador
 	        boolean direccionModificada = false;
 	        if (nuevaDireccion != null && !nuevaDireccion.trim().isEmpty()) {
