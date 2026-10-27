@@ -27,6 +27,10 @@ import capaModeloCC.Tienda;
  * el comentario de ese DAO. Las dos consultas tienen que dar lo mismo: si se
  * cambia una hay que cambiar la otra.
  *
+ * Los pedidos que son solo porciones NO cuentan en "pedidos" ni en
+ * "identificados" (decision del 27 de octubre de 2026); se informan aparte en
+ * "porcionessolas" para poder decir cuantos se dejaron por fuera.
+ *
  * Una tienda que no responda no tumba el reporte: no sale en la tabla y se
  * nombra aparte.
  */
@@ -50,6 +54,7 @@ public class IdentificacionMostradorCtrl {
 		int pedidos = 0;
 		int identificados = 0;
 		int seNegaron = 0;
+		int porcionesSolas = 0;
 		int autPreguntadas = 0;
 		int autSi = 0;
 		ArrayList<IdentificacionMostradorDAO.Cajero> cajeros =
@@ -94,6 +99,7 @@ public class IdentificacionMostradorCtrl {
 				fila.pedidos = fila.pedidos + c.pedidos;
 				fila.identificados = fila.identificados + c.identificados;
 				fila.seNegaron = fila.seNegaron + c.preguntadosSinDar;
+				fila.porcionesSolas = fila.porcionesSolas + c.porcionesSolas;
 				//La autorizacion de datos se suma siempre, tenga o no pedidos de
 				//mostrador el cajero: pudo haber preguntado en un pedido de otro
 				//tipo.
@@ -115,10 +121,12 @@ public class IdentificacionMostradorCtrl {
 
 		int totalPedidos = 0;
 		int totalIdentificados = 0;
+		int totalPorcionesSolas = 0;
 		JSONArray filasJSON = new JSONArray();
 		for (FilaTienda fila : filas) {
 			totalPedidos = totalPedidos + fila.pedidos;
 			totalIdentificados = totalIdentificados + fila.identificados;
+			totalPorcionesSolas = totalPorcionesSolas + fila.porcionesSolas;
 			JSONObject filaJSON = new JSONObject();
 			filaJSON.put("idtienda", fila.idTienda);
 			filaJSON.put("tienda", fila.nombre);
@@ -126,6 +134,7 @@ public class IdentificacionMostradorCtrl {
 			filaJSON.put("identificados", fila.identificados);
 			filaJSON.put("porcentaje", fila.porcentaje());
 			filaJSON.put("senegaron", fila.seNegaron);
+			filaJSON.put("porcionessolas", fila.porcionesSolas);
 			filaJSON.put("sinpreguntar", fila.sinPreguntar());
 			filaJSON.put("autpreguntadas", fila.autPreguntadas);
 			filaJSON.put("autsi", fila.autSi);
@@ -160,6 +169,7 @@ public class IdentificacionMostradorCtrl {
 		respuestaJSON.put("tiendassindatos", sinRespuestaJSON);
 		respuestaJSON.put("totalpedidos", totalPedidos);
 		respuestaJSON.put("totalidentificados", totalIdentificados);
+		respuestaJSON.put("totalporcionessolas", totalPorcionesSolas);
 		respuestaJSON.put("totalporcentaje",
 				totalPedidos > 0 ? (int) Math.round((totalIdentificados * 100.0) / totalPedidos) : 0);
 		respuestaJSON.put("minimopedidoscajero", MINIMO_PEDIDOS_CAJERO);

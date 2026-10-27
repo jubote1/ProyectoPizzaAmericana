@@ -30,8 +30,16 @@ public class IdentificacionMostradorDAO {
 	/** Lo que hizo una persona en el mostrador dentro del rango. */
 	public static class Cajero {
 		public String cajero = "";
+		/** Pedidos que CUENTAN: no incluye los que son solo porciones. */
 		public int pedidos = 0;
 		public int identificados = 0;
+
+		/**
+		 * Pedidos que son solo porciones y por eso NO estan en "pedidos" ni en
+		 * "identificados". Se devuelven aparte para poder decir cuantos se dejaron
+		 * por fuera.
+		 */
+		public int porcionesSolas = 0;
 
 		/**
 		 * De los NO identificados, a cuantos si se les pregunto y el cliente no
@@ -84,6 +92,27 @@ public class IdentificacionMostradorDAO {
 	}
 
 	/**
+	 * Un pedido que es SOLO de porciones: lleva al menos una porcion y ninguna
+	 * pizza. Decidido el 27 de octubre de 2026 para el reto de identificacion en
+	 * el mostrador: quien compra una porcion casi nunca da sus datos, asi que
+	 * esos pedidos no se cuentan. Si el pedido lleva una pizza, cuenta completo.
+	 *
+	 * Porcion = el producto se llama "Porci..."; pizza = tipo_producto = 'P'.
+	 * Las lineas anuladas no cuentan. Se escribe sobre el alias "p" de pedido.
+	 *
+	 * Es la misma condicion de capaDAOPOS.PedidoDAO.SQL_SOLO_PORCIONES: si se
+	 * cambia una hay que cambiar la otra.
+	 */
+	private static final String SQL_SOLO_PORCIONES = "(EXISTS (SELECT 1 FROM detalle_pedido dp"
+			+ " JOIN producto pp ON pp.idproducto = dp.idproducto"
+			+ " WHERE dp.idpedidotienda = p.idpedidotienda AND IFNULL(dp.idmotivoanulacion, 0) = 0"
+			+ " AND pp.descripcion LIKE 'Porci%')"
+			+ " AND NOT EXISTS (SELECT 1 FROM detalle_pedido dz"
+			+ " JOIN producto pz ON pz.idproducto = dz.idproducto"
+			+ " WHERE dz.idpedidotienda = p.idpedidotienda AND IFNULL(dz.idmotivoanulacion, 0) = 0"
+			+ " AND pz.tipo_producto = 'P'))";
+
+	/**
 	 * @param desde         fecha inicial, inclusive, en yyyy-MM-dd
 	 * @param hasta         fecha final, inclusive
 	 * @param hostBD        la tienda a la que se consulta
@@ -112,22 +141,27 @@ public class IdentificacionMostradorDAO {
 			//condicion lleva tambien "celular is null" por si un pedido quedo
 			//marcado y despues si se identifico, para que las tres cifras sumen
 			//los pedidos.
-			String consulta = "SELECT IFNULL(p.usuariopedido,'(sin usuario)') AS cajero,"
-					+ " COUNT(*) AS pedidos,"
-					+ " SUM(c.celular_norm IS NOT NULL) AS identificados,"
+			//Los pedidos que son solo porciones NO se cuentan (ver
+			//SQL_SOLO_PORCIONES), pero se devuelven aparte en "porciones_solas".
+			String consulta = "SELECT IFNULL(x.usuariopedido,'(sin usuario)') AS cajero,"
+					+ " SUM(x.solo_porciones = 0) AS pedidos,"
+					+ " SUM(x.solo_porciones = 0 AND c.celular_norm IS NOT NULL) AS identificados,"
 					+ (hayMotivos
-							? " SUM(sc.idpedidotienda IS NOT NULL AND c.celular_norm IS NULL) AS preguntados"
-							: " 0 AS preguntados")
-					+ " FROM pedido p"
-					+ " LEFT JOIN cliente c ON c.idcliente = p.idcliente"
-					+ " LEFT JOIN tipo_pedido t ON t.idtipopedido = p.idtipopedido"
+							? " SUM(x.solo_porciones = 0 AND sc.idpedidotienda IS NOT NULL AND c.celular_norm IS NULL) AS preguntados,"
+							: " 0 AS preguntados,")
+					+ " SUM(x.solo_porciones = 1) AS porciones_solas"
+					+ " FROM (SELECT p.idpedidotienda, p.idcliente, p.usuariopedido, "
+					+ SQL_SOLO_PORCIONES + " AS solo_porciones"
+					+ "       FROM pedido p"
+					+ "       LEFT JOIN tipo_pedido t ON t.idtipopedido = p.idtipopedido"
+					+ "       WHERE p.fechapedido BETWEEN '" + desde + "' AND '" + hasta + "'"
+					+ "         AND t.descripcion = '" + tipoMostrador + "'"
+					+ "         AND IFNULL(p.idmotivoanulacion, 0) = 0) x"
+					+ " LEFT JOIN cliente c ON c.idcliente = x.idcliente"
 					+ (hayMotivos
-							? " LEFT JOIN pedido_sin_cliente sc ON sc.idpedidotienda = p.idpedidotienda"
+							? " LEFT JOIN pedido_sin_cliente sc ON sc.idpedidotienda = x.idpedidotienda"
 							: "")
-					+ " WHERE p.fechapedido BETWEEN '" + desde + "' AND '" + hasta + "'"
-					+ "   AND t.descripcion = '" + tipoMostrador + "'"
-					+ "   AND IFNULL(p.idmotivoanulacion, 0) = 0"
-					+ " GROUP BY p.usuariopedido ORDER BY pedidos DESC";
+					+ " GROUP BY x.usuariopedido ORDER BY pedidos DESC";
 			Statement stm = con1.createStatement();
 			ResultSet rs = stm.executeQuery(consulta);
 			while (rs.next()) {
@@ -136,6 +170,7 @@ public class IdentificacionMostradorDAO {
 				fila.pedidos = rs.getInt("pedidos");
 				fila.identificados = rs.getInt("identificados");
 				fila.preguntadosSinDar = rs.getInt("preguntados");
+				fila.porcionesSolas = rs.getInt("porciones_solas");
 				filas.add(fila);
 			}
 			rs.close();
