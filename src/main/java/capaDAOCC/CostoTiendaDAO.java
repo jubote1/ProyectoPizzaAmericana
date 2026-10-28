@@ -728,16 +728,42 @@ public class CostoTiendaDAO {
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		final Connection cn = con.obtenerConexionBDDatamartLocal();
 		try {
+			//EL COSTO DE UN AREA SON SUS GASTOS **MAS** SU NOMINA
+			//
+			//Mientras esto sumo solo gerencia_gasto_area, la cuota
+			//administrativa repartia 27,6 millones cuando el area cuesta 133,8:
+			//los otros 106,2 son la nomina, que vive aparte en
+			//gerencia_nomina_area porque se digita por mes. A las tiendas se
+			//les estaba cobrando la quinta parte de lo que les toca.
+			//
+			//Las dos piezas van en una sola consulta, con UNION ALL en vez de
+			//dos viajes: son dos tablas del mismo servidor y lo unico que
+			//interesa es el total.
 			final PreparedStatement ps = cn.prepareStatement(
-					"SELECT IFNULL(SUM(g.valor_mensual), 0)"
-					+ "  FROM inventarioamericana.gerencia_gasto_area g"
-					+ "  JOIN inventarioamericana.gerencia_concepto_gasto c"
-					+ "    ON c.idconcepto = g.idconcepto AND c.activo = 'S'"
-					+ " WHERE g.area = ? AND g.vigencia_desde <= ?"
-					+ "   AND (g.vigencia_hasta IS NULL OR g.vigencia_hasta >= ?)");
+					"SELECT IFNULL(SUM(valor), 0) FROM ("
+					//Los gastos rigen por vigencia; el mes entra si la toca.
+					+ "   SELECT g.valor_mensual AS valor"
+					+ "     FROM inventarioamericana.gerencia_gasto_area g"
+					+ "     JOIN inventarioamericana.gerencia_concepto_gasto c"
+					+ "       ON c.idconcepto = g.idconcepto AND c.activo = 'S'"
+					+ "    WHERE g.area = ? AND g.vigencia_desde <= ?"
+					+ "      AND (g.vigencia_hasta IS NULL OR g.vigencia_hasta >= ?)"
+					+ "   UNION ALL"
+					//La nomina va por mes exacto. El costo es lo que de verdad
+					//sale de caja: el variable -no el basico- mas seguridad
+					//social y liquidacion. Es la misma suma que muestra el
+					//cierre de gerencia, para que las dos pantallas no digan
+					//cosas distintas del mismo mes.
+					+ "   SELECT (n.sueldo_variable + n.seguridad_social + n.liquidacion)"
+					+ "     FROM inventarioamericana.gerencia_nomina_area n"
+					+ "    WHERE n.area = ? AND n.anio = ? AND n.mes = ?"
+					+ " ) t");
 			ps.setString(1, area);
 			ps.setString(2, ultimo);
 			ps.setString(3, primero);
+			ps.setString(4, area);
+			ps.setInt(5, anio);
+			ps.setInt(6, mes);
 			final ResultSet rs = ps.executeQuery();
 			double total = 0;
 			if (rs.next()) {
