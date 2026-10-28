@@ -28,7 +28,7 @@ function autenticar()
 		success: function(data){
 				if(data == 'OK')
 				{
-					location.href = server + "Pedidos.html";
+					location.href = server + paginaDeInicio();
 				}
 				else
 				{
@@ -44,6 +44,35 @@ function autenticar()
 				bloquearBoton(false);
 			}
 	});
+}
+
+/**
+ * La pagina a la que se entra despues del login.
+ *
+ * Todos entran a Pedidos.html, salvo el administrador de tienda: su unico rol es
+ * "Administrador de Tienda" y solo ve reportes, asi que se le lleva derecho al de
+ * operacion de domiciliarios en vez de dejarlo en una pantalla de toma de pedidos
+ * que no es suya. Quien tiene ese rol MAS otros -un administrador del central-
+ * entra por Pedidos.html como siempre.
+ *
+ * Si la consulta de roles falla, se entra por Pedidos.html: nunca bloquea el ingreso.
+ */
+function paginaDeInicio()
+{
+	var pagina = 'Pedidos.html';
+	$.ajax({
+		url: server + 'ValidarUsuarioAplicacion',
+		dataType: 'json',
+		type: 'post',
+		async: false,
+		success: function(data){
+			var roles = (data && data[0] && data[0].roles) ? data[0].roles : [];
+			if (roles.length === 1 && roles[0] === 'Administrador de Tienda') {
+				pagina = 'ReporteOperacionDomiciliarios.html';
+			}
+		}
+	});
+	return pagina;
 }
 
 /**

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>OPERACION DOMICILIARIOS DIARIA</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		  <link href="css/marca.css" rel="stylesheet" type="text/css" />
+		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+		  <script type="text/javascript" src="js/bootbox.min.js"></script>
+		  <style type="text/css">
+			/* Mismo lenguaje visual de los otros reportes: azul de la marca, tarjetas con borde fino y una cifra grande por tarjeta. */
+			.rod-tarjeta { border:1px solid #E2E6EC; border-radius:8px; padding:12px 14px; margin-bottom:12px; background:#FFFFFF; }
+			.rod-rotulo { font-size:11px; color:#6C7482; text-transform:uppercase; letter-spacing:.05em; }
+			.rod-cifra { font-size:28px; font-weight:bold; color:#102F6F; line-height:1.15; }
+			.rod-pie { font-size:12px; color:#6C7482; }
+			.rod-filtros { margin:6px 0 16px; border:1px solid #E2E6EC; border-radius:8px; padding:10px 12px; background:#FBFCFD; }
+			.rod-aviso { border-radius:6px; padding:9px 12px; margin-bottom:10px; font-size:13px; }
+			.rod-aviso-alerta { background:#FFF6DC; border:1px solid #8a6d3b; color:#5c4a20; }
+			.rod-aviso-info { background:#EAF1FF; border:1px solid #102F6F; color:#102F6F; }
+			.rod-aviso-error { background:#FDECEC; border:1px solid #E42528; color:#8a1517; }
+			#rod-calculando { display:none; background:#EAF1FF; border:1px solid #102F6F; border-radius:6px; padding:10px 12px; margin-bottom:16px; }
+			#rod-resultado { display:none; }
+			h4.rod-seccion { margin-top:28px; color:#102F6F; font-weight:bold; }
+
+			.rod-tabla { border-collapse:collapse; width:100%; font-size:13px; }
+			.rod-tabla th, .rod-tabla td { padding:6px 9px; border-top:1px solid #E2E6EC; text-align:right; white-space:nowrap; }
+			.rod-tabla th:first-child, .rod-tabla td:first-child { text-align:left; }
+			.rod-tabla thead th { background:#102F6F; color:#FFFFFF; font-weight:600; }
+			.rod-tabla .rod-izq { text-align:left; }
+			.rod-tabla tr.rod-total td { font-weight:bold; background:#F4F4F6; border-top:2px solid #102F6F; }
+			.rod-tabla tr.rod-clic { cursor:pointer; }
+			.rod-tabla tr.rod-clic:hover td { background:#F4F7FD; }
+			.rod-tabla tr.rod-sel td { background:#EAF1FF; }
+			.rod-tabla tr.rod-sin td { color:#6C7482; background:#FAFAFB; }
+			.rod-envuelve { overflow-x:auto; }
+
+			.rod-chip { display:inline-block; font-size:10.5px; font-weight:700; border-radius:10px; padding:1px 8px; line-height:1.5; }
+			.rod-chip-int { color:#102F6F; background:#EAF1FF; border:1px solid #102F6F; }
+			.rod-chip-ext { color:#8a5200; background:#FFF1D6; border:1px solid #C46A00; }
+			.rod-rojo { color:#E42528; font-weight:700; }
+			.rod-naranja { color:#C46A00; font-weight:700; }
+			.rod-verde { color:#1B8A4B; font-weight:700; }
+			.rod-gris { color:#6C7482; }
+
+			/* Internos contra externos: dos tarjetas lado a lado. */
+			.rod-grupo { border:1px solid #E2E6EC; border-radius:8px; padding:12px 14px; background:#FFFFFF; height:100%; }
+			.rod-grupo h5 { margin:0 0 6px; font-size:14px; font-weight:bold; }
+			.rod-grupo-int { border-top:4px solid #102F6F; }
+			.rod-grupo-ext { border-top:4px solid #C46A00; }
+			.rod-grupo .rod-gran { font-size:30px; font-weight:bold; line-height:1.1; }
+			.rod-grupo dl { margin:8px 0 0; font-size:12.5px; }
+			.rod-grupo dt { float:left; clear:left; width:160px; font-weight:normal; color:#6C7482; }
+			.rod-grupo dd { margin:0 0 2px 160px; font-weight:600; color:#1F2430; }
+
+			/* La barra que reparte los pedidos tarde. */
+			.rod-reparto { display:flex; height:26px; border-radius:6px; overflow:hidden; background:#E3E8F1; margin:6px 0 4px; }
+			.rod-reparto span { display:block; height:100%; color:#FFFFFF; font-size:12px; font-weight:700; line-height:26px; text-align:center; overflow:hidden; }
+
+			.rod-filtro-tarde { margin:6px 0 8px; }
+			.rod-filtro-tarde a { display:inline-block; padding:3px 12px; border:1px solid #C9CFDA; border-radius:14px; margin-right:6px; font-size:12.5px; color:#4a5164; cursor:pointer; text-decoration:none; }
+			.rod-filtro-tarde a.rod-activo { background:#102F6F; color:#FFFFFF; border-color:#102F6F; }
+
+			.rod-grafica { border:1px solid #E2E6EC; border-radius:8px; padding:10px 12px 6px; margin-bottom:14px; background:#FFFFFF; }
+			.rod-grafica h5 { font-size:14px; font-weight:bold; color:#102F6F; margin:0 0 2px; }
+			.rod-svg { width:100%; height:auto; display:block; }
+			.rod-leyenda { display:flex; flex-wrap:wrap; gap:4px 16px; margin:8px 0 2px; font-size:12px; color:#4a5164; }
+			.rod-leyenda i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-2px; }
+
+			.rod-detalle { border:1px solid #102F6F; border-radius:8px; padding:10px 14px; margin-top:12px; background:#FBFCFF; }
+			.rod-detalle h5 { margin:0 0 6px; color:#102F6F; font-weight:bold; }
+			.rod-sub td { background:#FAFAFB; color:#4a5164; font-size:12.5px; }
+			.rod-salida td { background:#EEF2FA; font-weight:600; }
+
+			.rod-calor td.rod-celda { text-align:center; min-width:34px; padding:5px 4px; border-top:1px solid #FFFFFF; border-left:1px solid #FFFFFF; font-weight:600; }
+			.rod-nota { border:1px solid #E2E6EC; border-radius:8px; padding:10px 14px; margin-top:22px; background:#FBFCFD; font-size:12.5px; color:#4a5164; }
+			.rod-nota li { margin-bottom:3px; }
+		  </style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			var roles = [];
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function(data){
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+					roles = data[0].roles || [];
+				}
+			});
+			//El administrador de tienda ve el menu que sale de sus roles (solo sus pantallas); el resto, el menu de siempre.
+			if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
+				$('#cargarMenu').load("MenuDinamico.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+			} else {
+				switch(respuesta)
+				{
+					case 'OK':
+						$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKA':
+						$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKP':
+						$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					default:
+						location.href = server + "Index.html";
+						break;
+				}
+			}
+
+		</script>
+
+		<div class="container-fluid">
+			<h1>OPERACI&Oacute;N DOMICILIARIOS DIARIA</h1>
+			<p class="rod-pie">Qu&eacute; domiciliarios trabajaron en una tienda un d&iacute;a, cu&aacute;ntos pedidos llevaron, cu&aacute;nto se demoraron
+			<b>en ruta</b> y <b>regresando</b> a la tienda, y cu&aacute;ntos pedidos salieron <b>por hora</b>. Los pedidos que llegaron tarde se
+			separan entre domiciliarios <b>internos</b> (de n&oacute;mina) y <b>externos</b> (temporales de una empresa). Un d&iacute;a ya cerrado sale del
+			datamart; el d&iacute;a de hoy se le pregunta a la tienda en el momento.</p>
+
+			<div class="rod-filtros">
+				<div class="row">
+					<div class="col-md-2">
+						<label for="fecha">D&iacute;a</label>
+						<input type="text" id="fecha" name="fecha" class="form-control" autocomplete="off">
+					</div>
+					<div class="col-md-3">
+						<label for="idtienda">Tienda</label>
+						<select id="idtienda" class="form-control"><option value="0">Escoja la tienda</option></select>
+					</div>
+					<div class="col-md-5">
+						<label>&nbsp;</label><br/>
+						<input type="button" id="rod-boton-consultar" class="btn btn-primary" value="CONSULTAR" onclick="rodConsultar()">
+						<input type="button" class="btn btn-default" value="&laquo; D&iacute;a anterior" onclick="rodMoverDia(-1)">
+						<input type="button" class="btn btn-default" value="D&iacute;a siguiente &raquo;" onclick="rodMoverDia(1)">
+					</div>
+				</div>
+			</div>
+
+			<div id="rod-calculando"><b style="color:#102F6F">Consultando.</b> Si la tienda no responde, tarda unos segundos en decirlo.</div>
+			<div id="rod-avisos"></div>
+
+			<div id="rod-resultado">
+
+				<div class="row" id="rod-tarjetas"></div>
+
+				<h4 class="rod-seccion">Pedidos que llegaron tarde: internos y externos</h4>
+				<p class="rod-pie">Un pedido es <b>tarde</b> cuando se entreg&oacute; despu&eacute;s de la promesa al cliente (30 o 60 minutos desde que entr&oacute;).
+				Cada pedido cuenta una sola vez, en el grupo de quien lo llev&oacute;. Los pedidos programados no se juzgan por tiempo.</p>
+				<div id="rod-comparacion"></div>
+
+				<div class="rod-filtro-tarde" id="rod-filtro-tarde"></div>
+				<div class="rod-envuelve" id="rod-tarde"></div>
+
+				<h4 class="rod-seccion">Por domiciliario</h4>
+				<p class="rod-pie"><b>Haga clic en un domiciliario</b> para ver sus salidas, con cada pedido, su tiempo en ruta y su regreso.</p>
+				<div class="rod-envuelve" id="rod-domiciliarios"></div>
+				<div id="rod-detalle-domi"></div>
+
+				<h4 class="rod-seccion">Por hora del d&iacute;a</h4>
+				<p class="rod-pie">Pedidos que <b>salieron a ruta</b> en cada hora del reloj de la tienda, empezando a las 10:00. Lo rojo y lo naranja son los pedidos de esa
+				hora que llegaron tarde, llevados por internos y por externos.</p>
+				<div class="rod-grafica">
+					<h5>Pedidos que salieron, por hora</h5>
+					<div id="rod-g-horas"></div>
+					<div class="rod-leyenda"><span><i style="background:#102F6F"></i>A tiempo o sin medir</span><span><i style="background:#E42528"></i>Tarde, llevado por un interno</span><span><i style="background:#C46A00"></i>Tarde, llevado por un externo</span></div>
+				</div>
+				<div class="rod-envuelve" id="rod-horas"></div>
+
+				<h5 style="margin-top:18px;color:#102F6F;font-weight:bold;">Qui&eacute;n sali&oacute; en cada hora</h5>
+				<p class="rod-pie">Pedidos que llev&oacute; cada domiciliario en cada hora. Entre m&aacute;s oscuro, m&aacute;s pedidos.</p>
+				<div class="rod-envuelve rod-calor" id="rod-matriz"></div>
+
+				<div class="rod-nota">
+					<b>C&oacute;mo se cuenta</b>
+					<ul style="margin:6px 0 0 18px;padding:0">
+						<li><b>Quien trabaj&oacute;:</b> el que sali&oacute; a repartir ese d&iacute;a, y tambi&eacute;n el que marc&oacute; ingreso y no llev&oacute; ning&uacute;n pedido (sale al final, en gris).</li>
+						<li><b>Interno / externo:</b> el externo es el temporal de una empresa (RED, Domiciliarios Unidos, MESSENGER) que entra con un cupo &laquo;Domiciliario NN&raquo;
+						de la tienda. Su nombre y su empresa salen del registro de domiciliarios externos del d&iacute;a; si ese registro no lleg&oacute;, aparece como &laquo;Externo sin nombre&raquo;.</li>
+						<li><b>Tiempo en ruta:</b> de que el domiciliario sali&oacute; con el pedido a que lo entreg&oacute;. Es el tiempo que depende de &eacute;l.</li>
+						<li><b>Espera en tienda:</b> de que entr&oacute; el pedido a que sali&oacute; la ruta (cocina, horno y espera). No depende del domiciliario; va en la lista de pedidos tarde para
+						poder ver si la demora estuvo en la tienda o en la calle.</li>
+						<li><b>Tiempo total y promesa:</b> de que entr&oacute; el pedido a que se entreg&oacute;, contra la promesa al cliente. &laquo;A tiempo&raquo; es llegar dentro de la promesa.</li>
+						<li><b>Regreso:</b> de la &uacute;ltima entrega de la salida a que el domiciliario marc&oacute; su llegada a la tienda. Se considera demorado desde <span id="rod-alerta">15</span> minutos.
+						Los regresos sin marcar, de m&aacute;s de <span id="rod-tope">120</span> minutos o negativos <b>no entran al promedio</b>: se cuentan aparte como &laquo;sin dato&raquo;.</li>
+						<li><b>Horas en la tienda:</b> del primer ingreso a la &uacute;ltima salida marcados ese d&iacute;a. No es el tiempo en ruta: incluye la espera. Los pedidos por hora solo se calculan si estuvo m&aacute;s de media hora.</li>
+						<li><b>Jornada:</b> los pedidos se agrupan por la fecha de jornada de la tienda, no por la del reloj; una salida de las 00:30 pertenece a la jornada anterior.</li>
+						<li><b>De d&oacute;nde sale:</b> un d&iacute;a ya cerrado, del datamart (completo y r&aacute;pido). Hoy, de la tienda en vivo: si su computador est&aacute; apagado, no se puede ver.</li>
+					</ul>
+				</div>
+
+				<div style="height:40px;"></div>
+			</div>
+		</div>
+	</body>
+	<script src="js/reporteOperacionDomiciliarios.js" type="text/javascript"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="js/datepicker.js"></script>
+	<script>
+		$("#fecha").datepicker($.datepicker.regional["es"]);
+	</script>
+</html>
