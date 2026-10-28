@@ -13,6 +13,8 @@ public class MenuModulo {
 	private int orden;
 	private Integer idModuloPadre;
 	private ArrayList<Pantalla> pantallas = new ArrayList<>();
+	/** Submodulos (un nivel): el menu los pinta como secciones dentro del desplegable del modulo. */
+	private ArrayList<MenuModulo> submodulos = new ArrayList<>();
 
 	public MenuModulo() {
 	}
@@ -62,6 +64,14 @@ public class MenuModulo {
 
 	public void setPantallas(ArrayList<Pantalla> pantallas) {
 		this.pantallas = pantallas;
+	}
+
+	public ArrayList<MenuModulo> getSubmodulos() {
+		return submodulos;
+	}
+
+	public void setSubmodulos(ArrayList<MenuModulo> submodulos) {
+		this.submodulos = submodulos;
 	}
 
 }

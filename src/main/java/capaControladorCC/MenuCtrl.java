@@ -15,25 +15,39 @@ import capaModeloCC.Pantalla;
  */
 public class MenuCtrl {
 
-	@SuppressWarnings("unchecked")
 	public String obtenerMenuUsuario(int idUsuario) {
 		JSONArray modulosJSON = new JSONArray();
 		for (MenuModulo modulo : MenuDAO.obtenerMenuParaUsuario(idUsuario)) {
-			JSONObject moduloJSON = new JSONObject();
-			moduloJSON.put("idmodulo", modulo.getIdModulo());
-			moduloJSON.put("nombre", modulo.getNombre());
-			JSONArray pantallasJSON = new JSONArray();
-			for (Pantalla pantalla : modulo.getPantallas()) {
-				JSONObject pantallaJSON = new JSONObject();
-				pantallaJSON.put("idpantalla", pantalla.getIdPantalla());
-				pantallaJSON.put("nombre", pantalla.getNombre());
-				pantallaJSON.put("url_html", pantalla.getUrlHtml());
-				pantallasJSON.add(pantallaJSON);
-			}
-			moduloJSON.put("pantallas", pantallasJSON);
-			modulosJSON.add(moduloJSON);
+			modulosJSON.add(moduloAJSON(modulo));
 		}
 		return (modulosJSON.toJSONString());
+	}
+
+	/**
+	 * Un modulo con sus pantallas y, si es de primer nivel, sus submodulos (que
+	 * a su vez traen sus pantallas). Solo hay dos niveles: el menu no es un
+	 * arbol libre, es modulo -> submodulo -> pantalla.
+	 */
+	@SuppressWarnings("unchecked")
+	private JSONObject moduloAJSON(MenuModulo modulo) {
+		JSONObject moduloJSON = new JSONObject();
+		moduloJSON.put("idmodulo", modulo.getIdModulo());
+		moduloJSON.put("nombre", modulo.getNombre());
+		JSONArray pantallasJSON = new JSONArray();
+		for (Pantalla pantalla : modulo.getPantallas()) {
+			JSONObject pantallaJSON = new JSONObject();
+			pantallaJSON.put("idpantalla", pantalla.getIdPantalla());
+			pantallaJSON.put("nombre", pantalla.getNombre());
+			pantallaJSON.put("url_html", pantalla.getUrlHtml());
+			pantallasJSON.add(pantallaJSON);
+		}
+		moduloJSON.put("pantallas", pantallasJSON);
+		JSONArray submodulosJSON = new JSONArray();
+		for (MenuModulo sub : modulo.getSubmodulos()) {
+			submodulosJSON.add(moduloAJSON(sub));
+		}
+		moduloJSON.put("submodulos", submodulosJSON);
+		return moduloJSON;
 	}
 
 }

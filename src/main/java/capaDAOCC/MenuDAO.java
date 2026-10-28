@@ -23,27 +23,44 @@ public class MenuDAO {
 	public static ArrayList<MenuModulo> obtenerMenuParaUsuario(int idUsuario) {
 		Logger logger = Logger.getLogger("log_file");
 		LinkedHashMap<Integer, MenuModulo> modulos = new LinkedHashMap<>();
+		LinkedHashMap<Integer, MenuModulo> hijos = new LinkedHashMap<>();
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try {
 			Statement stm = con1.createStatement();
 			String consulta = "select distinct m.idmodulo, m.nombre modulo_nombre, m.orden modulo_orden, "
+					+ "m.idmodulo_padre, pm.nombre padre_nombre, pm.orden padre_orden, "
 					+ "p.idpantalla, p.nombre pantalla_nombre, p.url_html, p.orden pantalla_orden "
 					+ "from usuario_rol ur "
 					+ "join rol r on r.idrol = ur.idrol and r.activo = 'S' "
 					+ "join rol_pantalla rp on rp.idrol = ur.idrol "
 					+ "join pantalla p on p.idpantalla = rp.idpantalla and p.activo = 'S' "
 					+ "join menu_modulo m on m.idmodulo = p.idmodulo and m.activo = 'S' "
-					+ "where ur.idusuario = " + idUsuario + " "
-					+ "order by m.orden, p.orden";
+					+ "left join menu_modulo pm on pm.idmodulo = m.idmodulo_padre and pm.activo = 'S' "
+					+ "where ur.idusuario = " + idUsuario + " and (m.idmodulo_padre is null or pm.idmodulo is not null) "
+					+ "order by IFNULL(pm.orden, m.orden), m.orden, p.orden";
 			logger.info(consulta);
 			ResultSet rs = stm.executeQuery(consulta);
 			while (rs.next()) {
 				int idModulo = rs.getInt("idmodulo");
-				MenuModulo modulo = modulos.get(idModulo);
+				int idPadre = rs.getInt("idmodulo_padre");
+				boolean tienePadre = !rs.wasNull();
+				MenuModulo modulo = tienePadre ? hijos.get(idModulo) : modulos.get(idModulo);
 				if (modulo == null) {
-					modulo = new MenuModulo(idModulo, rs.getString("modulo_nombre"), rs.getInt("modulo_orden"), null);
-					modulos.put(idModulo, modulo);
+					modulo = new MenuModulo(idModulo, rs.getString("modulo_nombre"), rs.getInt("modulo_orden"),
+							tienePadre ? Integer.valueOf(idPadre) : null);
+					if (tienePadre) {
+						// El padre sale aunque no tenga pantallas propias: solo le cuelgan submodulos.
+						MenuModulo padre = modulos.get(idPadre);
+						if (padre == null) {
+							padre = new MenuModulo(idPadre, rs.getString("padre_nombre"), rs.getInt("padre_orden"), null);
+							modulos.put(idPadre, padre);
+						}
+						padre.getSubmodulos().add(modulo);
+						hijos.put(idModulo, modulo);
+					} else {
+						modulos.put(idModulo, modulo);
+					}
 				}
 				Pantalla pantalla = new Pantalla(rs.getInt("idpantalla"), rs.getString("pantalla_nombre"), idModulo,
 						rs.getString("url_html"), rs.getInt("pantalla_orden"), "S");
