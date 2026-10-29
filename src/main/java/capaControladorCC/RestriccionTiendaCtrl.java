@@ -10,6 +10,7 @@ import org.json.simple.JSONObject;
 
 import capaDAOCC.TiendaAdministradorDAO;
 import capaDAOCC.TiendaDAO;
+import capaDAOCC.UsuarioRolDAO;
 import capaModeloCC.Tienda;
 import capaModeloCC.Usuario;
 
@@ -116,10 +117,18 @@ public class RestriccionTiendaCtrl {
 
 	private static Restriccion calcular(final Usuario usuario) {
 		final Restriccion r = new Restriccion();
-		if (usuario == null || usuario.getRoles() == null) {
+		if (usuario == null || usuario.getId() <= 0) {
 			return (r);
 		}
-		if (usuario.getRoles().size() != 1 || !ROL_ADMINISTRADOR_TIENDA.equals(usuario.getRoles().get(0))) {
+		//Los roles se vuelven a leer de la base, NO se toma usuario.getRoles().
+		//
+		//Esa lista se llena al hacer login y queda congelada en la sesion. Una sesion
+		//abierta de antes del despliegue la trae vacia, y entonces el usuario pasaba
+		//como "no es administrador" y veia todas las tiendas: el 2026-10-29 Sara Salazar
+		//-San Antonio- alcanzo a consultar Pilarica por esto. Leer la base cuesta una
+		//consulta por sesion, porque el resultado queda guardado en ella.
+		final java.util.ArrayList<String> roles = UsuarioRolDAO.listarNombresRolPorUsuario(usuario.getId());
+		if (roles == null || roles.size() != 1 || !ROL_ADMINISTRADOR_TIENDA.equals(roles.get(0))) {
 			return (r);
 		}
 		final TiendaAdministradorDAO.Asignacion a = TiendaAdministradorDAO.asignacionDe(usuario.getId());

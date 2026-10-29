@@ -260,18 +260,25 @@ public class OperacionDomiciliariosDAO {
 	private static ArrayList<Salida> cargarSalidas(final Connection cn, final int idTienda, final String fecha,
 			final boolean datamart) throws Exception {
 		final ArrayList<Salida> lista = new ArrayList<Salida>();
+		//despacho_real.origen la trajo el enrutamiento y NO esta en todas las bases: la de
+		//Bodega, por ejemplo, se quedo atras. Antes eso tumbaba el reporte entero con un
+		//"Unknown column 'r.origen'". Si la columna no esta, se sigue sin ella: origen solo
+		//viaja al JSON, nada se calcula con el.
+		final boolean hayOrigen = existeColumna(cn, "despacho_real", "origen");
+		final String campoOrigen = (hayOrigen ? "ifnull(r.origen, '')" : "''");
 		//Los minutos los calcula MySQL: traer las fechas y restarlas en Java
 		//obligaria a parsear, y el formato de fecha ya ha dado guerra.
 		final String sql = "select r.id, r.id_domiciliario, date_format(r.hora_salida, '%H:%i') as hs, "
 				+ "hour(r.hora_salida) as h, date_format(r.hora_regreso, '%H:%i') as hr, "
-				+ "(r.hora_regreso is null) as sin_regreso, ifnull(r.origen, '') as origen, "
+				+ "(r.hora_regreso is null) as sin_regreso, " + campoOrigen + " as origen, "
 				+ "timestampdiff(minute, max(d.hora_entrega), r.hora_regreso) as min_regreso, "
 				+ "timestampdiff(minute, r.hora_salida, max(d.hora_entrega)) as min_hasta_ultima "
 				+ "from despacho_real r "
 				+ "left join despacho_real_det d on d.despacho_real_id = r.id"
 				+ (datamart ? " and d.idtienda = r.idtienda " : " ")
 				+ "where " + (datamart ? "r.idtienda = ? and " : "") + "r.fecha = ? "
-				+ "group by r.id, r.id_domiciliario, r.hora_salida, r.hora_regreso, r.origen "
+				+ "group by r.id, r.id_domiciliario, r.hora_salida, r.hora_regreso"
+				+ (hayOrigen ? ", r.origen " : " ")
 				+ "order by r.hora_salida, r.id";
 		final PreparedStatement ps = cn.prepareStatement(sql);
 		int k = 1;
@@ -627,6 +634,35 @@ public class OperacionDomiciliariosDAO {
 
 	private static String texto(final String valor) {
 		return (valor == null ? "" : valor);
+	}
+
+	/**
+	 * Si una tabla de ESTA conexion tiene esa columna.
+	 *
+	 * Las bases de las tiendas no van todas al mismo dia: una que se quedo atras no
+	 * tiene las columnas nuevas, y preguntarle por ellas tumba el reporte entero con un
+	 * "Unknown column". Aqui se pregunta antes y se sigue sin la columna.
+	 *
+	 * Ante la duda responde que NO existe: perder un dato opcional es mejor que que la
+	 * consulta reviente.
+	 */
+	private static boolean existeColumna(final Connection cn, final String tabla, final String columna) {
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"select count(*) from information_schema.columns "
+					+ "where table_schema = database() and table_name = ? and column_name = ?");
+			ps.setString(1, tabla);
+			ps.setString(2, columna);
+			final ResultSet rs = ps.executeQuery();
+			final boolean existe = (rs.next() && rs.getInt(1) > 0);
+			rs.close();
+			ps.close();
+			return (existe);
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("No se pudo mirar si " + tabla + "." + columna + " existe: "
+					+ e.getMessage());
+			return (false);
+		}
 	}
 
 	private static void cerrar(final Connection cn) {
