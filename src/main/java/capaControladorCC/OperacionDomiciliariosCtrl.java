@@ -99,6 +99,13 @@ public class OperacionDomiciliariosCtrl {
 					regresosValidos > 0 ? Double.valueOf(redondear(sumaRegreso / (double) regresosValidos)) : null);
 			o.put("regresos_demorados", regresosDemorados);
 			o.put("regresos_sin_dato", regresosSinDato);
+			//Los acumulados crudos, para que el reporte de toda la red pueda sumar las once
+			//tiendas de verdad. Promediar los promedios daria otro numero: una tienda con
+			//tres pedidos pesaria igual que una con cuarenta.
+			o.put("suma_ruta", sumaRuta);
+			o.put("con_ruta", conRuta);
+			o.put("suma_regreso", sumaRegreso);
+			o.put("regresos_validos", regresosValidos);
 			return (o);
 		}
 	}
