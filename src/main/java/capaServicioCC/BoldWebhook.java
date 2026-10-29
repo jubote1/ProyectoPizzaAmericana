@@ -48,6 +48,62 @@ public class BoldWebhook extends HttpServlet {
 	private static final int MAXIMO_CUERPO = 256 * 1024;
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
+	/**
+	 * Cada cuanto se vuelve a leer la configuracion de Bold de la base.
+	 *
+	 * Son las llaves de firma: cambian cuando alguien las rota, o sea casi
+	 * nunca. Cinco minutos es suficiente para que una rotacion entre sola y
+	 * corto para que nadie tenga que reiniciar nada.
+	 */
+	private static final long VIGENCIA_CONFIGURACION_MS = 5L * 60L * 1000L;
+
+	/** volatile y no synchronized: leer dos veces de mas no hace danio. */
+	private static volatile IntegracionCRM configuracion;
+	private static volatile long configuracionLeidaEn;
+
+	/**
+	 * La configuracion de Bold, de memoria mientras siga vigente.
+	 *
+	 * POR QUE NO SE LEE EN CADA NOTIFICACION
+	 *
+	 * Bold espera el 200 en dos segundos y reintenta si no llega. Antes del 200
+	 * habia DOS viajes a la base: este y el insert del evento. El insert no se
+	 * puede mover -es lo que hace durable el evento, y acusar antes de guardar
+	 * seria perderlo si falla-, pero este si: es un select de una fila de
+	 * configuracion que practicamente nunca cambia.
+	 *
+	 * El 16 de octubre de 2026, entre las 16:00 y las 23:00, el central iba
+	 * lento y Bold reintento 67 notificaciones. Con un viaje menos el camino
+	 * caliente es la mitad de largo.
+	 *
+	 * CUIDADO CON LO QUE SE GUARDA
+	 *
+	 * obtenerInformacionIntegracion NO devuelve null cuando falla: devuelve un
+	 * IntegracionCRM vacio. Guardar eso en memoria seria peor que no tener
+	 * cache, porque durante los cinco minutos siguientes todas las firmas se
+	 * validarian contra una llave en blanco y ninguna coincidiria. Por eso solo
+	 * se guarda lo que trae llave, y si una lectura sale vacia se sigue usando
+	 * la anterior aunque este vencida: una firma validada con llaves de hace
+	 * diez minutos es mejor que rechazar todo.
+	 */
+	private static IntegracionCRM configuracionBold() {
+		final long ahora = System.currentTimeMillis();
+		final IntegracionCRM enMemoria = configuracion;
+		if (enMemoria != null && ahora - configuracionLeidaEn < VIGENCIA_CONFIGURACION_MS) {
+			return enMemoria;
+		}
+		final IntegracionCRM leida = IntegracionCRMDAO.obtenerInformacionIntegracion(CRM_SONOQR);
+		if (leida == null || leida.getFreshToken() == null || leida.getFreshToken().trim().isEmpty()) {
+			//Lectura fallida o configuracion sin llave. Si habia una buena se
+			//sigue con ella; si nunca la hubo, se devuelve lo que vino y
+			//FirmaBold respondera SIN_LLAVE, que es lo que pasaba antes.
+			return enMemoria != null ? enMemoria : leida;
+		}
+		configuracion = leida;
+		configuracionLeidaEn = ahora;
+		return leida;
+	}
+
 	@Override
 	protected void doPost(final HttpServletRequest request, final HttpServletResponse response)
 			throws ServletException, IOException {
@@ -67,7 +123,7 @@ public class BoldWebhook extends HttpServlet {
 			return;
 		}
 
-		final IntegracionCRM integracion = IntegracionCRMDAO.obtenerInformacionIntegracion(CRM_SONOQR);
+		final IntegracionCRM integracion = configuracionBold();
 		final String motivoFirma = FirmaBold.validar(cuerpo, request.getHeader("x-bold-signature"),
 				integracion.getFreshToken(), integracion.getAccessToken());
 
