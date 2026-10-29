@@ -56,8 +56,11 @@ public class RestriccionTiendaCtrl {
 		/** La unica tienda que puede ver. 0 cuando restringido es true significa que no puede ver ninguna. */
 		public int idTienda = 0;
 		public String tienda = "";
-		/** De donde salio la tienda: SEMANA_PASADA, ULTIMO_MES, ROTA o SIN_DATOS. */
+		/** De donde salio la tienda: A_MANO, SEMANA_PASADA, ULTIMO_MES, ROTA o SIN_DATOS. */
 		public String origen = "";
+
+		/** De quien es esto. La sesion se reusa entre logueos, asi que hay que comprobarlo. */
+		public int idUsuario = 0;
 
 		/** true cuando es administrador y no se le pudo deducir tienda: no debe ver nada. */
 		public boolean sinTienda() {
@@ -65,18 +68,30 @@ public class RestriccionTiendaCtrl {
 		}
 	}
 
-	/** La restriccion del usuario de esta sesion. Nunca devuelve null. */
+	/**
+	 * La restriccion del usuario de esta sesion. Nunca devuelve null.
+	 *
+	 * Lo calculado se guarda en la sesion, pero SIEMPRE se comprueba que sea del mismo
+	 * usuario. Salir de la aplicacion no destruye la sesion -en el central no hay un solo
+	 * invalidate()-: el siguiente que entra en esa misma ventana reusa la sesion y solo se
+	 * reemplaza el atributo "usuario". Sin esta comprobacion heredaba la tienda del
+	 * anterior; el 2026-10-29 Juan David entro detras de Sara Salazar y quedo viendo San
+	 * Antonio.
+	 */
 	public static Restriccion de(final HttpServletRequest request) {
 		final HttpSession sesion = (request == null ? null : request.getSession(false));
 		if (sesion == null) {
 			return (new Restriccion());
 		}
+		final Object objUsuario = sesion.getAttribute("usuario");
+		final Usuario usuario = (objUsuario instanceof Usuario ? (Usuario) objUsuario : null);
+		final int idUsuario = (usuario == null ? 0 : usuario.getId());
 		final Object guardada = sesion.getAttribute(ATRIBUTO);
-		if (guardada instanceof Restriccion) {
+		if (guardada instanceof Restriccion && ((Restriccion) guardada).idUsuario == idUsuario) {
 			return ((Restriccion) guardada);
 		}
-		final Object objUsuario = sesion.getAttribute("usuario");
-		final Restriccion r = calcular(objUsuario instanceof Usuario ? (Usuario) objUsuario : null);
+		final Restriccion r = calcular(usuario);
+		r.idUsuario = idUsuario;
 		sesion.setAttribute(ATRIBUTO, r);
 		return (r);
 	}
