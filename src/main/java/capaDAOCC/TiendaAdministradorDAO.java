@@ -16,6 +16,10 @@ import conexionCC.ConexionBaseDatos;
  * (general.horario_trabajado: empleado, fecha, horas, tienda), asi que la
  * tienda se DEDUCE: la que mas horas le sumo la semana pasada.
  *
+ * A quien no se le puede deducir -acaba de entrar, lo trasladaron esta semana- se le
+ * fija la tienda a mano en general.empleado.idtienda_reportes, que manda sobre las
+ * horas (sql/2026_10_29_02_tienda_reportes_a_mano.sql).
+ *
  * Quien rota de verdad -los supernumerarios- no tiene una tienda que deducir y
  * se marca a mano con general.empleado.supernumerario = 1. Esa columna la crea
  * sql/2026_10_29_01_administrador_supernumerario.sql, que tambien explica por que
@@ -46,7 +50,7 @@ public class TiendaAdministradorDAO {
 			+ "GROUP BY h.idtienda ORDER BY horas DESC LIMIT 1";
 
 	private static final String SQL_EMPLEADO =
-			"SELECT u.idempleado, e.supernumerario "
+			"SELECT u.idempleado, e.supernumerario, e.idtienda_reportes "
 			+ "FROM usuario u LEFT JOIN general.empleado e ON e.id = u.idempleado "
 			+ "WHERE u.id = ?";
 
@@ -58,7 +62,7 @@ public class TiendaAdministradorDAO {
 		public boolean rota = false;
 		/** 0 = no se pudo deducir ninguna tienda. */
 		public int idTienda = 0;
-		/** "SEMANA_PASADA", "ULTIMO_MES", "ROTA" o "SIN_DATOS": para poder explicar lo que paso. */
+		/** "A_MANO", "SEMANA_PASADA", "ULTIMO_MES", "ROTA" o "SIN_DATOS": para explicar lo que paso. */
 		public String origen = "SIN_DATOS";
 	}
 
@@ -76,9 +80,11 @@ public class TiendaAdministradorDAO {
 			final PreparedStatement pst = con1.prepareStatement(SQL_EMPLEADO);
 			pst.setInt(1, idUsuario);
 			final ResultSet rs = pst.executeQuery();
+			int tiendaAMano = 0;
 			if (rs.next()) {
 				a.idEmpleado = rs.getInt("idempleado");
 				a.rota = (rs.getInt("supernumerario") == 1);
+				tiendaAMano = rs.getInt("idtienda_reportes");
 			}
 			rs.close();
 			pst.close();
@@ -88,6 +94,13 @@ public class TiendaAdministradorDAO {
 			}
 			if (a.rota) {
 				a.origen = "ROTA";
+				return (a);
+			}
+			//La tienda puesta a mano manda sobre las horas: es la salida para quien todavia
+			//no tiene horas de donde deducirla, o para un traslado que acaba de pasar.
+			if (tiendaAMano > 0) {
+				a.idTienda = tiendaAMano;
+				a.origen = "A_MANO";
 				return (a);
 			}
 			a.idTienda = tiendaCon(con1, SQL_SEMANA_PASADA, a.idEmpleado);

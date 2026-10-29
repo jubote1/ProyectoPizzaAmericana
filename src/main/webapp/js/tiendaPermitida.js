@@ -41,8 +41,7 @@ function tpRecortarCombo(selectorCombo, selectorAviso) {
 		combo.val(String(d.idtienda)).prop('disabled', true);
 		//Deshabilitado no se envia en un form; el servidor igual lo fuerza, pero asi el JS lo sigue leyendo.
 		combo.trigger('change');
-		tpAviso(selectorAviso, 'Usted ve el punto de venta <b>' + (d.tienda || d.idtienda) + '</b>, que es donde '
-			+ 'm&aacute;s trabaj&oacute; la semana pasada.');
+		tpAviso(selectorAviso, 'Usted ve el punto de venta <b>' + (d.tienda || d.idtienda) + '</b>' + tpPorQue(d) + '.');
 	});
 }
 
@@ -67,7 +66,20 @@ function tpAvisarTienda(selectorAviso) {
 				+ 'horas suyas registradas la semana pasada. Av&iacute;sele a Gesti&oacute;n Humana o a Sistemas.');
 			return;
 		}
-		tpAviso(selectorAviso, 'Usted ve solo el punto de venta <b>' + (d.tienda || d.idtienda) + '</b>, que es '
-			+ 'donde m&aacute;s trabaj&oacute; la semana pasada.');
+		tpAviso(selectorAviso, 'Usted ve solo el punto de venta <b>' + (d.tienda || d.idtienda) + '</b>' + tpPorQue(d) + '.');
 	});
+}
+
+/**
+ * De donde salio la tienda que se le esta mostrando. Se dice para que la persona
+ * sepa si es automatico -y cambia solo cuando cambie de tienda- o si se lo pusieron.
+ */
+function tpPorQue(d) {
+	if (d.origen === 'A_MANO') {
+		return (', que es el que le asignaron');
+	}
+	if (d.origen === 'ULTIMO_MES') {
+		return (', que es donde m&aacute;s trabaj&oacute; el &uacute;ltimo mes');
+	}
+	return (', que es donde m&aacute;s trabaj&oacute; la semana pasada');
 }
