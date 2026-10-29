@@ -73,9 +73,21 @@ public class DesempenoDomiciliarioCtrl {
 	 * decide si quiere verlas asi. El datamart solo llega hasta AYER, y mezclarlo en silencio le dejaria
 	 * pensar que tiene lo de hoy.
 	 */
-	@SuppressWarnings("unchecked")
 	public static String consultarDesempeno(final int idEmpleado, final String desde, final String hasta,
 			final java.util.Set<Integer> idsDatamart) {
+		return (consultarDesempeno(idEmpleado, desde, hasta, idsDatamart, 0));
+	}
+
+	/**
+	 * Igual, pero barriendo UNA sola tienda cuando idTiendaUnica es mayor que cero.
+	 *
+	 * Es lo que se le da al administrador de punto de venta: en esta pantalla el no
+	 * escoge tienda -se consultan las once-, asi que la unica forma de que no vea las
+	 * otras diez es no preguntarles.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String consultarDesempeno(final int idEmpleado, final String desde, final String hasta,
+			final java.util.Set<Integer> idsDatamart, final int idTiendaUnica) {
 		final Logger logger = Logger.getLogger("log_file");
 		final JSONObject respuesta = new JSONObject();
 		respuesta.put("desde", desde);
@@ -107,7 +119,7 @@ public class DesempenoDomiciliarioCtrl {
 		respuesta.put("domiciliario", jsonDomi);
 
 		final ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> resultados = barrerTiendas(idEmpleado, desde,
-				hasta, logger, idsDatamart);
+				hasta, logger, idsDatamart, idTiendaUnica);
 
 		//Todo junto, para los numeros consolidados.
 		final ArrayList<DesempenoDomiciliarioDAO.Entrega> entregas = new ArrayList<DesempenoDomiciliarioDAO.Entrega>();
@@ -180,7 +192,8 @@ public class DesempenoDomiciliarioCtrl {
 	// =======================================================================
 
 	private static ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> barrerTiendas(final int idEmpleado,
-			final String desde, final String hasta, final Logger logger, final java.util.Set<Integer> idsDatamart) {
+			final String desde, final String hasta, final Logger logger, final java.util.Set<Integer> idsDatamart,
+			final int idTiendaUnica) {
 		final ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda> resultados =
 				new ArrayList<DesempenoDomiciliarioDAO.ResultadoTienda>();
 		final ArrayList<Tienda> tiendas = TiendaDAO.obtenerTiendasFuncionales();
@@ -193,6 +206,10 @@ public class DesempenoDomiciliarioCtrl {
 			final List<Callable<DesempenoDomiciliarioDAO.ResultadoTienda>> tareas =
 					new ArrayList<Callable<DesempenoDomiciliarioDAO.ResultadoTienda>>();
 			for (final Tienda t : tiendas) {
+				//El administrador de punto de venta solo barre la suya.
+				if (idTiendaUnica > 0 && t.getIdTienda() != idTiendaUnica) {
+					continue;
+				}
 				final String hosbd = t.getHosbd();
 				//Las que se piden por datamart no necesitan el host de la tienda.
 				if (idsDatamart != null && idsDatamart.contains(Integer.valueOf(t.getIdTienda()))) {

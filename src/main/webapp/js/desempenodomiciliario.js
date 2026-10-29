@@ -23,6 +23,7 @@ $(document).ready(function () {
 	$('#ddDesde').val(ddFechaISO(hace30));
 
 	ddCargarDomiciliarios();
+	tpAvisarTienda('#avisoTiendaPermitida');
 
 	$('#ddConsultar').click(function () {
 		//Una consulta nueva empieza de cero: lo del datamart se pide solo despues de ver quien no contesto.

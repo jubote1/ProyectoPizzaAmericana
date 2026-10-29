@@ -48,6 +48,13 @@ public class ConsultarIdentificacionMostrador extends HttpServlet {
 		} catch (Exception e) {
 			idTienda = 0;
 		}
+		//Un administrador de punto de venta solo puede ver su propia tienda, pida lo que pida.
+		final int idTiendaForzada = capaControladorCC.RestriccionTiendaCtrl.tiendaForzada(request, idTienda);
+		if (idTiendaForzada < 0) {
+			response.getWriter().write(capaControladorCC.RestriccionTiendaCtrl.mensajeSinTienda());
+			return;
+		}
+		idTienda = idTiendaForzada;
 		String fechaInicialISO = fechaInicial.substring(6, 10) + "-" + fechaInicial.substring(3, 5) + "-"
 				+ fechaInicial.substring(0, 2);
 		String fechaFinalISO = fechaFinal.substring(6, 10) + "-" + fechaFinal.substring(3, 5) + "-"

@@ -47,6 +47,7 @@ function cargarTiendas()
 		for(var i = 0; i < data.length; i++){
 			combo.append($('<option>', { value: data[i].id, text: data[i].nombre }));
 		}
+		tpRecortarCombo('#idtienda', '#avisoTiendaPermitida');
 	});
 }
 

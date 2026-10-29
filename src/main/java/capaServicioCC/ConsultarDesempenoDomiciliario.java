@@ -60,8 +60,22 @@ public class ConsultarDesempenoDomiciliario extends HttpServlet {
 				}
 			}
 		}
-		String respuesta = DesempenoDomiciliarioCtrl.consultarDesempeno(idEmpleado, desde, hasta, idsDatamart);
 		PrintWriter out = response.getWriter();
+		//Un administrador de punto de venta solo barre su tienda. Tambien se le recorta
+		//tiendasdatamart: ese parametro llega de la pantalla y trae ids a voluntad.
+		final capaControladorCC.RestriccionTiendaCtrl.Restriccion restriccion =
+				capaControladorCC.RestriccionTiendaCtrl.de(request);
+		int idTiendaUnica = 0;
+		if (restriccion.restringido) {
+			if (restriccion.sinTienda()) {
+				out.write(capaControladorCC.RestriccionTiendaCtrl.mensajeSinTienda());
+				return;
+			}
+			idTiendaUnica = restriccion.idTienda;
+			idsDatamart.retainAll(java.util.Collections.singleton(Integer.valueOf(idTiendaUnica)));
+		}
+		String respuesta = DesempenoDomiciliarioCtrl.consultarDesempeno(idEmpleado, desde, hasta, idsDatamart,
+				idTiendaUnica);
 		out.write(respuesta);
 	}
 

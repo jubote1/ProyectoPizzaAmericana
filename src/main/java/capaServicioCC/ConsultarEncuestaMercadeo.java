@@ -48,7 +48,14 @@ public class ConsultarEncuestaMercadeo extends HttpServlet {
 		response.setCharacterEncoding("UTF-8");
 		final PrintWriter out = response.getWriter();
 		try {
-			final int idTienda = entero(request.getParameter("idtienda"));
+			//Un administrador de punto de venta solo puede ver su propia tienda, pida lo que pida.
+			final int idTiendaForzada = capaControladorCC.RestriccionTiendaCtrl.tiendaForzada(request,
+					entero(request.getParameter("idtienda")));
+			if (idTiendaForzada < 0) {
+				out.write(capaControladorCC.RestriccionTiendaCtrl.mensajeSinTienda());
+				return;
+			}
+			final int idTienda = idTiendaForzada;
 			final int idPregunta = entero(request.getParameter("idpregunta"));
 			final String fechaInicial = texto(request.getParameter("fechainicial"));
 			final String fechaFinal = texto(request.getParameter("fechafinal"));

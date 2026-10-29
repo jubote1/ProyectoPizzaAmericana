@@ -67,6 +67,7 @@ function rodCargarTiendas()
 		} catch (e) {
 			//Sin almacenamiento local la pantalla funciona igual.
 		}
+		tpRecortarCombo('#idtienda', '#avisoTiendaPermitida');
 	});
 }
 

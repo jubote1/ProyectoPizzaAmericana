@@ -51,6 +51,13 @@ public class ConsultarOperacionDomiciliarios extends HttpServlet {
 		} catch (final Exception e) {
 			idTienda = 0;
 		}
+		//Un administrador de punto de venta solo puede ver su propia tienda, pida lo que pida.
+		final int idTiendaForzada = capaControladorCC.RestriccionTiendaCtrl.tiendaForzada(request, idTienda);
+		if (idTiendaForzada < 0) {
+			out.write(capaControladorCC.RestriccionTiendaCtrl.mensajeSinTienda());
+			return;
+		}
+		idTienda = idTiendaForzada;
 		final String fecha = aFechaSql(request.getParameter("fecha"));
 		if (fecha.length() == 0) {
 			out.write("{\"error\":\"La fecha no tiene un formato valido\"}");
