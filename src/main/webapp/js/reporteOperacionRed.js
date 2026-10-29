@@ -137,6 +137,16 @@ function orrAvisos(d) {
 		html += '<div class="rod-aviso rod-aviso-alerta">No contestaron ' + nombres.join(', ')
 			+ '. <b>No entran en el Total Red</b>: no es que no hayan trabajado, es que no se pudieron leer.</div>';
 	}
+	var quietas = d.sin_operacion || [];
+	if (quietas.length > 0) {
+		//No se esconden: que una tienda no haya movido nada ese dia es un dato.
+		var lista = [];
+		for (var j = 0; j < quietas.length; j++) {
+			lista.push('<b>' + orrEscapar(quietas[j]) + '</b>');
+		}
+		html += '<div class="rod-aviso rod-aviso-info">Sin ning&uacute;n domicilio ese d&iacute;a: ' + lista.join(', ')
+			+ '. Contestaron, pero no tuvieron operaci&oacute;n, as&iacute; que no se les pone una fila en ceros.</div>';
+	}
 	$('#orr-avisos').html(html);
 }
 

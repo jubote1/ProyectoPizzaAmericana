@@ -103,6 +103,7 @@ public class OperacionRedCtrl {
 
 		final JSONArray filas = new JSONArray();
 		final JSONArray sinRespuesta = new JSONArray();
+		final JSONArray sinOperacion = new JSONArray();
 		final Total total = new Total();
 		String datosHasta = "";
 
@@ -119,6 +120,15 @@ public class OperacionRedCtrl {
 				continue;
 			}
 			final JSONObject r = (JSONObject) resumen;
+			//Una tienda que ese dia no movio NADA no merece una fila de ceros: se nombra en
+			//una linea aparte. La Bodega, por ejemplo, nunca despacha y saldria todos los
+			//dias en cero. No se esconde -saber que una tienda no movio nada importa-, pero
+			//no se mezcla con las que si operaron.
+			if (entero(r.get("domiciliarios")) == 0 && entero(r.get("salidas")) == 0
+					&& entero(r.get("pedidos")) == 0) {
+				sinOperacion.add(nombre);
+				continue;
+			}
 			final JSONObject fila = new JSONObject();
 			fila.put("idtienda", uno.get("idtienda"));
 			fila.put("tienda", nombre);
@@ -148,6 +158,7 @@ public class OperacionRedCtrl {
 
 		respuesta.put("tiendas", filas);
 		respuesta.put("sin_respuesta", sinRespuesta);
+		respuesta.put("sin_operacion", sinOperacion);
 		respuesta.put("total", total.aJSON());
 		respuesta.put("tiendas_consultadas", Integer.valueOf(tiendas.size()));
 		respuesta.put("datos_hasta", datosHasta);
