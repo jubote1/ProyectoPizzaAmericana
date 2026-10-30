@@ -10,10 +10,18 @@
 		  <style type="text/css">
 			.rm-pie { font-size:12px; color:#6C7482; }
 			.rm-marco { width:100%; border:0; display:block; }
-			.nav-tabs > li > a { color:#102F6F; }
+			/* Con este Bootstrap los <li> sin .nav-item quedan sin estilo y las tres pestanas se
+			   veian como un solo texto pegado ("Encuestas de MercadeoVenta IntegralIdentificacion...").
+			   Mismo arreglo que EnvioPublicidad.html: separadas y con la activa marcada. */
+			.nav-tabs { list-style:none; padding-left:0; margin-bottom:12px; border-bottom:1px solid #DEE2E6; }
+			.nav-tabs > li { display:inline-block; margin-right:4px; margin-bottom:-1px; }
+			.nav-tabs > li > a { display:block; padding:9px 18px; border:1px solid transparent;
+				border-radius:5px 5px 0 0; text-decoration:none; font-weight:600; color:#102F6F; }
+			.nav-tabs > li > a.active,
 			.nav-tabs > li.active > a,
 			.nav-tabs > li.active > a:hover,
-			.nav-tabs > li.active > a:focus { color:#102F6F; font-weight:bold; border-top:3px solid #FDC806; }
+			.nav-tabs > li.active > a:focus { background-color:#FFFFFF; color:#102F6F; font-weight:bold;
+				border-color:#DEE2E6 #DEE2E6 #FFFFFF; border-top:3px solid #FDC806; }
 		  </style>
 	</head>
 	<body>
