@@ -11313,77 +11313,22 @@ public class PedidoCtrl {
 				long deliveryStatus = (long) (jsonData.get("delivery_status"));
 				String nombreDomi = "";
 				String telDomi = "";
-				// && (appShopId.equals(new String("5")) || appShopId.equals(new String("2")))
-				if (deliveryStatus == 140) {
+				// El cambio se le lleva a la tienda por HTTP, y queda anotado en
+				// didi_estado_pendiente con su resultado. Antes esto iba suelto
+				// aqui y el catch hacia solo un println: si la tienda no
+				// contestaba, el pedido se quedaba sin subir de estado, no se
+				// reintentaba y no habia donde verlo. Ver DidiEntregaTiendaCtrl.
+				if (deliveryStatus == DidiEntregaTiendaCtrl.RECOGIO
+						|| deliveryStatus == DidiEntregaTiendaCtrl.ENTREGO) {
 					nombreDomi = (String) (jsonData.get("rider_name").toString());
 					telDomi = (String) (jsonData.get("rider_phone").toString());
 					Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
-					// Información para hacer el llamado al servicio en la tienda
-					String respuesta = "";
-					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = utilidadesCC.ClientesHttp.apache();
-					// Recuperamos la tienda que requerimos trabajar con el servicio
-					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
-					if (tienda != null) {
-						// Realizar invocación de servicio en tienda
-						String rutaURL = tienda.getUrl() + "DarSalidaDomicilioPlataforma?idpedido="
-								+ pedEvento.getNumposheader() + "&idusuario=180&usuario=Caja";
-						HttpGet request = new HttpGet(rutaURL);
-						try {
-							HttpResponse responseFinPed = client.execute(request);
-							try {
-								if (responseFinPed.getEntity() != null) {
-									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
-								}
-							} finally {
-								EntityUtils.consumeQuietly(responseFinPed.getEntity());
-							}
-							// Marcamos que el pedido fue entregado al domiciliario
-							PedidoDAO.marcarDomiciliarioPlataforma(idOrdenComercio);
-						} catch (Exception e) {
-							System.out.println(e.toString());
-						}
-					}
-					if (respuesta.equals(new String(""))) {
-						JSONObject resultado = new JSONObject();
-						resultado.put("resultado", "error");
-						resultado.put("tipo_error", "error servicio tienda");
-					} // && (appShopId.equals(new String("5")) || appShopId.equals(new String("2")))
-				} else if (deliveryStatus == 160) {
-					nombreDomi = (String) (jsonData.get("rider_name").toString());
-					telDomi = (String) (jsonData.get("rider_phone").toString());
-					Pedido pedEvento = PedidoDAO.ConsultaPedidoXOrden(idOrdenComercio);
-					// Información para hacer el llamado al servicio en la tienda
-					String respuesta = "";
-					// Realizamos la invocación mediante el uso de HTTPCLIENT
-					HttpClient client = utilidadesCC.ClientesHttp.apache();
-					// Recuperamos la tienda que requerimos trabajar con el servicio
-					Tienda tienda = TiendaDAO.obtenerTienda(pedEvento.getTienda().getIdTienda());
-					if (tienda != null) {
-						// Realizar invocación de servicio en tienda
-						String rutaURL = tienda.getUrl() + "DarEntregaDomicilio?idpedidotienda="
-								+ pedEvento.getNumposheader() + "&claveusuario=2&idtienda=" + tienda.getIdTienda()
-								+ "&observacion=PedidoEntregadoPorPlataforma";
-						HttpGet request = new HttpGet(rutaURL);
-						try {
-							HttpResponse responseFinPed = client.execute(request);
-							try {
-								if (responseFinPed.getEntity() != null) {
-									respuesta = EntityUtils.toString(responseFinPed.getEntity(), StandardCharsets.UTF_8);
-								}
-							} finally {
-								EntityUtils.consumeQuietly(responseFinPed.getEntity());
-							}
-							// Marcamos el entregado al pedido en sistema central
-							PedidoDAO.marcarEntregadoPlataforma(idOrdenComercio);
-						} catch (Exception e) {
-							System.out.println(e.toString());
-						}
-					}
-					if (respuesta.equals(new String(""))) {
-						JSONObject resultado = new JSONObject();
-						resultado.put("resultado", "error");
-						resultado.put("tipo_error", "error servicio tienda");
+					if (pedEvento != null && pedEvento.getTienda() != null) {
+						DidiEntregaTiendaCtrl.registrarYEntregar(idOrdenComercio, (int) deliveryStatus,
+								pedEvento.getTienda().getIdTienda(), pedEvento.getNumposheader());
+					} else {
+						System.out.println("DiDi deliveryStatus " + deliveryStatus
+								+ ": no se encontro el pedido de la orden " + idOrdenComercio);
 					}
 				}
 			} else if (tipoOrden.equals(new String("orderCancel"))) {
