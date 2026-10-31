@@ -417,6 +417,92 @@ public class RuletaDAO {
         }
     }
 
+    /** Lo que quedo despues de corregir el correo de un premio. */
+    public static class CorreoCorregido {
+        public boolean ok = false;
+        public String mensaje = "";
+        /** true si ademas se le puso el correo a la ficha del cliente. */
+        public boolean tocoCliente = false;
+    }
+
+    /**
+     * Corrige el correo con el que se le va a avisar al cliente de su premio.
+     *
+     * Escribe SIEMPRE en resultado_ruleta.correo, que es de donde lee la pantalla de
+     * dispersion: ese es el correo que el cliente tecleo al jugar y es el que manda en
+     * la consulta, asi que corregirlo en la pantalla de Clientes no cambiaba nada.
+     *
+     * A la ficha del cliente (cliente.email) solo se le escribe cuando esta VACIA o no
+     * tiene formato de correo. No se pisa un correo bueno: esa ficha puede ser de
+     * alguien que ademas hizo otros pedidos, y una correccion hecha para un premio no
+     * tiene por que cambiarle su registro oficial.
+     *
+     * @param idResultado el premio que se esta corrigiendo
+     * @param correo      el correo nuevo, ya validado por quien llama
+     */
+    public static CorreoCorregido corregirCorreo(final int idResultado, final String correo) {
+
+        final CorreoCorregido r = new CorreoCorregido();
+        final ConexionBaseDatos con = new ConexionBaseDatos();
+        Connection con1 = null;
+        try {
+            con1 = con.obtenerConexionBDPrincipal();
+
+            try (PreparedStatement pst = con1.prepareStatement(
+                    "UPDATE resultado_ruleta SET correo = ? WHERE idresultado = ?")) {
+                pst.setString(1, correo);
+                pst.setInt(2, idResultado);
+                if (pst.executeUpdate() != 1) {
+                    r.mensaje = "No se encontro el premio " + idResultado + ".";
+                    return (r);
+                }
+            }
+
+            //El cliente del pedido, con la misma regla de la consulta de dispersion: un
+            //solo pedido, elegido por llave primaria y acotado a 15 dias.
+            int idCliente = 0;
+            try (PreparedStatement pst = con1.prepareStatement(
+                    "SELECT IFNULL(p.idcliente,0) AS idcliente FROM resultado_ruleta r"
+                    + " LEFT JOIN pedido p ON p.idpedido = ("
+                    + "   SELECT p2.idpedido FROM pedido p2"
+                    + "    WHERE p2.numposheader = r.idpedido AND p2.idtienda = r.idtienda"
+                    + "      AND p2.fechapedido BETWEEN DATE_SUB(DATE(r.fecha), INTERVAL 15 DAY) AND DATE(r.fecha)"
+                    + "    ORDER BY p2.fechapedido DESC, p2.idpedido DESC LIMIT 1)"
+                    + " WHERE r.idresultado = ?")) {
+                pst.setInt(1, idResultado);
+                try (ResultSet rs = pst.executeQuery()) {
+                    if (rs.next()) {
+                        idCliente = rs.getInt("idcliente");
+                    }
+                }
+            }
+
+            if (idCliente > 1) {
+                try (PreparedStatement pst = con1.prepareStatement(
+                        "UPDATE cliente SET email = ? WHERE idcliente = ?"
+                        + " AND (email IS NULL OR TRIM(email) = '' OR email NOT LIKE '%_@_%._%')")) {
+                    pst.setString(1, correo);
+                    pst.setInt(2, idCliente);
+                    r.tocoCliente = (pst.executeUpdate() == 1);
+                }
+            }
+
+            r.ok = true;
+            r.mensaje = r.tocoCliente
+                    ? "Correo corregido. Tambien se le puso a la ficha del cliente, que no tenia uno valido."
+                    : "Correo corregido para este premio. La ficha del cliente se dejo como estaba.";
+            return (r);
+
+        } catch (final Exception e) {
+            System.out.println("No se pudo corregir el correo del premio " + idResultado + ": "
+                    + e.toString());
+            r.mensaje = "No se pudo guardar el correo.";
+            return (r);
+        } finally {
+            try { if (con1 != null) { con1.close(); } } catch (final Exception e1) { }
+        }
+    }
+
     /**
      * Busca el cliente activo que tenga ese telefono.
      *

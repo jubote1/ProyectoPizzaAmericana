@@ -111,6 +111,23 @@ public class PromocionesCtrl {
 	 */
 	public String insertarOfertaCliente(OfertaCliente ofer)
 	{
+		return (insertarOfertaCliente(ofer, true));
+	}
+
+	/**
+	 * Igual, pero pudiendo NO avisarle al cliente al crear la oferta.
+	 *
+	 * Lo necesita la dispersion de premios de la ruleta: ella manda su propio correo,
+	 * con el nombre del premio y su plantilla, asi que el aviso generico de aqui salia
+	 * ADEMAS del suyo. El cliente recibia dos correos por el mismo premio, y encima a
+	 * direcciones distintas -el generico va a cliente.email y el de la ruleta al correo
+	 * que el cliente escribio al jugar-. De paso duplicaba el trafico de la cuenta de
+	 * Gmail, que es por donde salen los dos.
+	 *
+	 * @param avisarCliente false cuando quien llama se encarga del aviso
+	 */
+	public String insertarOfertaCliente(OfertaCliente ofer, boolean avisarCliente)
+	{
 		//Validamos si la oferta maneja c�digo promocional
 		Oferta condicionesOferta = OfertaDAO.retornarOferta(ofer.getIdOferta());
 		boolean manejaCodigo;
@@ -167,8 +184,13 @@ public class PromocionesCtrl {
 		//Aca se le avisa al cliente: el correo es el canal por defecto. El mensaje de
 		//texto por Brevo quedo apagado por parametro porque es pago, y se controla con
 		//el parametro en vez de borrando la llamada, para retomarlo sin recompilar.
-		ResultadoJSON.put("avisocliente", this.notificarOfertaAsignada(respuesta));
-		this.notificarOfertaPorSMS(ofer.getIdOferta());
+		if (avisarCliente) {
+			ResultadoJSON.put("avisocliente", this.notificarOfertaAsignada(respuesta));
+			this.notificarOfertaPorSMS(ofer.getIdOferta());
+		} else {
+			//La ruleta manda su propio correo de premio; el generico de aqui seria el segundo.
+			ResultadoJSON.put("avisocliente", "No se avisa desde aqui: avisa quien llamo.");
+		}
 		listJSON.add(ResultadoJSON);
 		System.out.println(listJSON.toJSONString());
 		return listJSON.toJSONString();

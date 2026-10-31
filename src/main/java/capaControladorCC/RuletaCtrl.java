@@ -10,6 +10,7 @@ import org.json.simple.parser.JSONParser;
 import capaDAOCC.ClienteDAO;
 import capaDAOCC.OfertaClienteDAO;
 import capaDAOCC.ParametrosDAO;
+import capaDAOCC.LogEnvioPremioDAO;
 import capaDAOCC.RuletaDAO;
 import capaModeloCC.Cliente;
 import capaModeloCC.Correo;
@@ -189,6 +190,13 @@ public class RuletaCtrl {
 				// 2. Asignar la oferta. Se reusa insertarOfertaCliente para que el codigo,
 				// el saldo y la caducidad salgan del mismo lugar que en la pantalla manual.
 				// Mismos argumentos que usa CRUDOfertaCliente, que es la pantalla manual.
+				//
+				// Se le pasa avisarCliente = FALSE a proposito: ese metodo avisa por su
+				// cuenta, y como aqui abajo sale el correo del premio, el cliente recibia
+				// DOS correos por el mismo premio -y a direcciones distintas, porque el
+				// generico va a cliente.email y este va al correo que escribio al jugar-.
+				// Ademas duplicaba el trafico de la cuenta de Gmail, que es la misma para
+				// los dos.
 				final String observacion = recortar("Premio ruleta encuesta: " + premioTitulo
 						+ " - pedido " + texto(premio.get("idpedido"))
 						+ " tienda " + texto(premio.get("tienda")), 200);
@@ -196,7 +204,7 @@ public class RuletaCtrl {
 						idCliente, "", 0, "", "", observacion, ORIGEN_RULETA);
 
 				final int idOfertaCliente = extraerIdOfertaCliente(
-						promoCtrl.insertarOfertaCliente(oferta));
+						promoCtrl.insertarOfertaCliente(oferta, false));
 				if (idOfertaCliente == 0) {
 					novedades.add("Pedido " + texto(premio.get("idpedido"))
 							+ ": no se pudo asignar la oferta.");
@@ -237,13 +245,20 @@ public class RuletaCtrl {
 					continue;
 				}
 
-				if (enviarCorreo(texto(premio.get("correo")), texto(premio.get("nombre_cliente")),
-						premioTitulo, texto(premio.get("mensaje_premio")), codigo, vence)) {
+				final String correoDestino = texto(premio.get("correo"));
+				final String comoSalio = enviarCorreo(correoDestino, texto(premio.get("nombre_cliente")),
+						premioTitulo, texto(premio.get("mensaje_premio")), codigo, vence);
+				LogEnvioPremioDAO.anotar(idResultado, idOfertaCliente, correoDestino, codigo, comoSalio,
+						"Premio " + premioTitulo + ", pedido " + texto(premio.get("idpedido")),
+						LogEnvioPremioDAO.INTENTO_DISPERSION, usuario);
+				if ("ENVIADO".equals(comoSalio)) {
 					OfertaClienteDAO.actualizarMensajeOferta(idOfertaCliente);
 					correosEnviados++;
 				} else {
+					//Se dice el motivo, no "no salio": con eso se sabe si hay que corregir la
+					//direccion o si fue la cuota del proveedor y basta con reenviar.
 					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": oferta asignada "
-							+ "con codigo " + codigo + " pero el correo no salio.");
+							+ "con codigo " + codigo + " pero el correo no salio (" + comoSalio + ").");
 					conError++;
 				}
 
@@ -329,14 +344,20 @@ public class RuletaCtrl {
 					continue;
 				}
 
-				if (enviarCorreo(texto(premio.get("correo")), texto(premio.get("nombre_cliente")),
+				final String correoDestino = texto(premio.get("correo"));
+				final String comoSalio = enviarCorreo(correoDestino, texto(premio.get("nombre_cliente")),
 						texto(premio.get("premio")), texto(premio.get("mensaje_premio")),
-						codigo, vence)) {
+						codigo, vence);
+				LogEnvioPremioDAO.anotar(numero(premio.get("idresultado")), idOfertaCliente,
+						correoDestino, codigo, comoSalio,
+						"Reenvio, pedido " + texto(premio.get("idpedido")),
+						LogEnvioPremioDAO.INTENTO_REENVIO, usuario);
+				if ("ENVIADO".equals(comoSalio)) {
 					OfertaClienteDAO.actualizarMensajeOferta(idOfertaCliente);
 					correosEnviados++;
 				} else {
 					novedades.add("Pedido " + texto(premio.get("idpedido")) + ": el correo "
-							+ "tampoco salio esta vez.");
+							+ "tampoco salio esta vez (" + comoSalio + ").");
 					conError++;
 				}
 
@@ -441,15 +462,20 @@ public class RuletaCtrl {
 	 * @param mensajePremio explicacion del premio, solo para los que la necesitan
 	 * @param codigo        codigo promocional
 	 * @param vence         fecha de vencimiento aaaa-mm-dd
-	 * @return true si el envio no reporto error
+	 * @return el motivo: ENVIADO, DIRECCION_INVALIDA, FALLA_TRANSITORIA,
+	 *         SIN_DESTINATARIOS, FORMATO_INVALIDO, SIN_CUENTA o ERROR
+	 *
+	 * Antes devolvia un boolean y el motivo se perdia. Por eso de los 31 premios de
+	 * octubre que quedaron sin aviso nunca se supo si fue la direccion, la cuota de
+	 * Gmail o un timeout: el dato existia y se botaba.
 	 */
 	@SuppressWarnings("unchecked")
-	private boolean enviarCorreo(final String correo, final String nombreCliente,
+	private String enviarCorreo(final String correo, final String nombreCliente,
 			final String premio, final String mensajePremio, final String codigo,
 			final String vence) {
 
 		if (!RuletaDAO.correoValido(correo)) {
-			return (false);
+			return ("FORMATO_INVALIDO");
 		}
 
 		try {
@@ -461,7 +487,7 @@ public class RuletaCtrl {
 			}
 			if (cuenta.length() == 0 || clave.length() == 0) {
 				System.out.println("Dispersion de premios: no hay cuenta de correo configurada.");
-				return (false);
+				return ("SIN_CUENTA");
 			}
 
 			// URL publica del logo. Va por parametro y no quemada porque el logo se
@@ -480,11 +506,11 @@ public class RuletaCtrl {
 			final ArrayList<String> destinatarios = new ArrayList<String>();
 			destinatarios.add(correo);
 
-			return (new ControladorEnvioCorreo(mensaje, destinatarios).enviarCorreo());
+			return (new ControladorEnvioCorreo(mensaje, destinatarios).enviarConReintentos().name());
 
 		} catch (final Exception e) {
 			System.out.println("Error enviando correo de premio a " + correo + ": " + e.toString());
-			return (false);
+			return ("ERROR");
 		}
 	}
 
@@ -567,5 +593,55 @@ public class RuletaCtrl {
 		}
 		final String t = texto.trim();
 		return (t.length() <= largo ? t : t.substring(0, largo));
+	}
+
+	/**
+	 * Corrige el correo de un premio desde la pantalla de dispersion.
+	 *
+	 * Hacia falta porque corregirlo en la pantalla de Clientes NO servia: la consulta de
+	 * dispersion se queda con resultado_ruleta.correo -el que el cliente tecleo al
+	 * jugar- apenas tenga una arroba, aunque este mal escrito, y nunca llegaba a mirar
+	 * la ficha del cliente.
+	 *
+	 * Se valida con la misma regla que usa el envio, para no guardar algo que despues no
+	 * se pueda mandar.
+	 *
+	 * @param idResultado premio a corregir
+	 * @param correo      correo nuevo
+	 * @param usuario     quien lo corrige, para el registro
+	 */
+	@SuppressWarnings("unchecked")
+	public String corregirCorreo(final int idResultado, final String correo, final String usuario) {
+
+		final JSONObject respuesta = new JSONObject();
+		final String limpio = texto(correo).trim();
+
+		if (idResultado <= 0) {
+			respuesta.put("resultado", "ERROR");
+			respuesta.put("mensaje", "No se indico cual premio corregir.");
+			return (respuesta.toJSONString());
+		}
+		if (!RuletaDAO.correoValido(limpio)) {
+			respuesta.put("resultado", "ERROR");
+			respuesta.put("mensaje", "Ese correo no tiene formato valido. Revise que no tenga espacios "
+					+ "y que el dominio lleve punto.");
+			return (respuesta.toJSONString());
+		}
+
+		final RuletaDAO.CorreoCorregido r = RuletaDAO.corregirCorreo(idResultado, limpio);
+		respuesta.put("resultado", r.ok ? "OK" : "ERROR");
+		respuesta.put("mensaje", r.mensaje);
+		respuesta.put("toco_cliente", Boolean.valueOf(r.tocoCliente));
+		respuesta.put("correo", limpio);
+
+		if (r.ok) {
+			//Queda en el mismo registro de los envios: asi, cuando un premio se reenvia
+			//despues de corregir, se ve la historia completa en un solo lugar.
+			LogEnvioPremioDAO.anotar(idResultado, 0, limpio, "", "CORREO_CORREGIDO",
+					r.tocoCliente ? "Tambien se actualizo la ficha del cliente"
+							: "Solo el premio; la ficha del cliente ya tenia correo",
+					"CORRECCION", usuario);
+		}
+		return (respuesta.toJSONString());
 	}
 }

@@ -25,7 +25,7 @@ $(function () {
 			{ "mData": "idpedido" },
 			{ "mData": "premio" },
 			{ "mData": "nombre_cliente" },
-			{ "mData": "correo" },
+			{ "mData": "correo", "mRender": pintarCorreo },
 			{ "mData": "telefono" },
 			{ "mData": "estado", "mRender": pintarEstado },
 			{ "mData": "codigo_promocion" },
@@ -364,3 +364,63 @@ function limpiarCampo(valor) {
 	}
 	return String(valor).replace(/;/g, ',').replace(/[\r\n]+/g, ' ');
 }
+
+/**
+ * La celda del correo, con un lapiz para corregirlo.
+ *
+ * Corregir el correo en la pantalla de Clientes NO cambia nada aqui: la consulta se
+ * queda con el correo que el cliente tecleo al jugar apenas tenga una arroba, aunque
+ * este mal escrito. Por eso la correccion tiene que poder hacerse en esta pantalla.
+ *
+ * Solo se ofrece mientras el premio no se haya avisado: una vez salio el correo,
+ * cambiar la direccion aqui ya no le cambia nada al cliente y solo confunde.
+ */
+function pintarCorreo(dato, tipo, fila) {
+	if (tipo !== 'display') {
+		return dato;
+	}
+	var texto = dato ? dato : '<span style="color:#E42528">sin correo</span>';
+	if (fila.fecha_aviso) {
+		return texto;
+	}
+	return texto + ' <a href="#" class="corregir-correo" data-id="' + fila.idresultado
+		+ '" data-correo="' + (dato || '') + '" title="Corregir el correo de este premio"'
+		+ ' style="text-decoration:none">&#9998;</a>';
+}
+
+/**
+ * Pide el correo nuevo y lo guarda.
+ *
+ * Despues de guardar se vuelve a consultar: asi la fila queda con lo que de verdad
+ * quedo en la base, y no con lo que se escribio en la casilla.
+ */
+function corregirCorreoPremio(idresultado, correoActual) {
+	var nuevo = prompt('Correo al que se le debe avisar este premio:', correoActual || '');
+	if (nuevo === null) {
+		return;
+	}
+	nuevo = nuevo.replace(/^\s+|\s+$/g, '');
+	if (nuevo === '' || nuevo === correoActual) {
+		return;
+	}
+	$.ajax({
+		url: server + 'CorregirCorreoPremioRuleta',
+		dataType: 'json',
+		type: 'post',
+		data: { idresultado: idresultado, correo: nuevo },
+		success: function (data) {
+			alert(data && data.mensaje ? data.mensaje : 'No se pudo guardar el correo.');
+			if (data && data.resultado === 'OK') {
+				consultarPremios();
+			}
+		},
+		error: function () {
+			alert('No se pudo guardar el correo. Intente de nuevo.');
+		}
+	});
+}
+
+$(document).on('click', '.corregir-correo', function (e) {
+	e.preventDefault();
+	corregirCorreoPremio($(this).attr('data-id'), $(this).attr('data-correo'));
+});
