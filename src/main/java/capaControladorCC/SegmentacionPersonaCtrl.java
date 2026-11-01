@@ -61,6 +61,18 @@ public class SegmentacionPersonaCtrl {
 				}
 			}
 		}
+		//Gustos marcados (hincha de Nacional, del Medellin...). Igual que los segmentos:
+		//lista separada por comas. Vacio = no filtra.
+		final String marcas = p.get("marcas");
+		if (marcas != null && marcas.trim().length() > 0) {
+			final String[] trozos = marcas.split(",");
+			for (int i = 0; i < trozos.length; i++) {
+				final String m = trozos[i].trim();
+				if (m.length() > 0) {
+					f.marcas.add(m);
+				}
+			}
+		}
 		f.idTienda = entero(p.get("idtienda"), 0);
 		f.pedidosMin = entero(p.get("pedidosmin"), 0);
 		f.valorMin = decimal(p.get("valormin"), 0);

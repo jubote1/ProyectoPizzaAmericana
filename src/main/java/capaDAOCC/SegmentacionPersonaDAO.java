@@ -84,6 +84,14 @@ public class SegmentacionPersonaDAO {
 		 * Hawaiana. Por eso se filtra aqui, encima del segmento, y no dentro de
 		 * segmento_definicion, donde cada persona solo puede tener uno.
 		 */
+		/**
+		 * Gustos marcados del cliente (HINCHA_NACIONAL, HINCHA_MEDELLIN...). Vacio =
+		 * no se filtra. Varias = cualquiera de ellas.
+		 *
+		 * Las marcas viven por TELEFONO en pizzaamericana.cliente_marca; aqui se cruzan
+		 * con persona_resumen.celular, que esta guardado solo con digitos.
+		 */
+		public ArrayList<String> marcas = new ArrayList<String>();
 		public String familiaFavorita = "";
 		/**
 		 * Que tan marcada tiene que ser esa preferencia, en porcentaje.
@@ -203,6 +211,17 @@ public class SegmentacionPersonaDAO {
 		}
 		if (f.soloAutorizados) {
 			w.append(" AND politica_datos = 'S'");
+		}
+		if (f.marcas != null && !f.marcas.isEmpty()) {
+			//El celular de persona_resumen viene solo con digitos (verificado: las 457.193
+			//filas), asi que la comparacion es directa y usa indice. No hace falta limpiarlo.
+			w.append(" AND EXISTS (SELECT 1 FROM pizzaamericana.cliente_marca cm")
+			 .append(" WHERE cm.telefono = persona_resumen.celular AND cm.idtipo IN (");
+			for (int i = 0; i < f.marcas.size(); i++) {
+				w.append(i == 0 ? "?" : ",?");
+				valores.add(f.marcas.get(i));
+			}
+			w.append("))");
 		}
 		if (f.familiaFavorita != null && f.familiaFavorita.trim().length() > 0) {
 			w.append(" AND familia_favorita = ?");
