@@ -33,6 +33,14 @@ public class FiltroSegmentacion {
 	/** Deja fuera a los clientes de plataforma, cuyos datos de contacto no son nuestros. */
 	private boolean excluirPlataformas = true;
 
+	/**
+	 * Marcas de gusto que debe tener el cliente (idtipo de cliente_marca_tipo), por
+	 * ejemplo HINCHA_NACIONAL. Vacio = no se filtra por gusto. Varias = cualquiera de
+	 * ellas, no todas: quien manda publicidad del combo quiere a los hinchas de los dos
+	 * equipos cuando no hay partido de por medio.
+	 */
+	private List<String> marcas = new ArrayList<String>();
+
 	public String getFechaInicio() { return(this.fechaInicio); }
 	public void setFechaInicio(final String v) { this.fechaInicio = (v == null) ? "" : v.trim(); }
 	public String getFechaMaxima() { return(this.fechaMaxima); }
@@ -61,4 +69,7 @@ public class FiltroSegmentacion {
 	public void setTiposCliente(final List<String> v) { this.tiposCliente = (v == null) ? new ArrayList<String>() : v; }
 	public boolean isExcluirPlataformas() { return(this.excluirPlataformas); }
 	public void setExcluirPlataformas(final boolean v) { this.excluirPlataformas = v; }
+
+	public List<String> getMarcas() { return (this.marcas); }
+	public void setMarcas(final List<String> v) { this.marcas = (v == null) ? new ArrayList<String>() : v; }
 }

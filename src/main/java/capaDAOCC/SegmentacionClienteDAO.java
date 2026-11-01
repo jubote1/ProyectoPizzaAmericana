@@ -140,6 +140,23 @@ public class SegmentacionClienteDAO {
 			sql.append("AND LOWER(TRIM(b.email)) NOT IN ('notengo@gmail.com', 'notiene@gmail.com') ");
 		}
 
+		/*
+		 * Gustos del cliente (hincha de Nacional, hincha del Medellin...). Las marcas se
+		 * guardan por TELEFONO y solo con digitos, asi que hay que limpiarle el telefono
+		 * al cliente antes de comparar: en cliente vienen con guiones y espacios.
+		 *
+		 * Se miran el celular y el fijo, porque la marca pudo quedar con cualquiera de
+		 * los dos. Varias marcas significan "cualquiera de ellas", no todas.
+		 */
+		if (!filtro.getMarcas().isEmpty()) {
+			sql.append("AND EXISTS (SELECT 1 FROM cliente_marca cm WHERE cm.idtipo IN (")
+					.append(marcadores(filtro.getMarcas().size()))
+					.append(") AND cm.telefono IN (")
+					.append("REGEXP_REPLACE(IFNULL(b.telefono_celular,''), '[^0-9]', ''), ")
+					.append("REGEXP_REPLACE(IFNULL(b.telefono,''), '[^0-9]', ''))) ");
+			parametros.addAll(filtro.getMarcas());
+		}
+
 		if (!filtro.getTiendas().isEmpty()) {
 			sql.append("AND c.idtienda IN (").append(marcadores(filtro.getTiendas().size())).append(") ");
 			parametros.addAll(filtro.getTiendas());

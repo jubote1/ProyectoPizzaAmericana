@@ -105,6 +105,7 @@ public class ClienteMarcaCtrl {
 		o.put("bloquea_cargo", t.bloqueaCargo);
 		o.put("activo", t.activo);
 		o.put("orden", t.orden);
+		o.put("es_gusto", t.esGusto);
 		o.put("fecha_marca", t.fechaMarca);
 		o.put("usuario", t.usuario);
 		return (o);

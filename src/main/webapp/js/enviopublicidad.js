@@ -175,6 +175,9 @@ function epFiltro() {
 	if ($('#ep-comprodesde').val()) { d.comprodesde = $('#ep-comprodesde').val(); }
 	if ($('#ep-comprohasta').val()) { d.comprohasta = $('#ep-comprohasta').val(); }
 	epLista(d, 'tiposcliente', '#ep-tiposcliente');
+	//Gustos del cliente (hincha de Nacional, del Medellin...). Si no se escoge ninguno
+	//no se filtra, que es como se comportaba la pantalla antes de que existieran.
+	epLista(d, 'marcas', '#ep-marcas');
 	epLista(d, 'productos', '#ep-productos');
 	epLista(d, 'especialidades', '#ep-especialidades');
 	epLista(d, 'promociones', '#ep-promociones');

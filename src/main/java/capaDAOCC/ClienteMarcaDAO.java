@@ -47,6 +47,8 @@ public class ClienteMarcaDAO {
 		/** S: el sistema no deja enviar el pedido por Rappi Cargo. */
 		public String bloqueaCargo = "N";
 		public String activo = "S";
+		/** S: es un gusto del cliente (hinchada, por ejemplo), no una alerta: el POS no lo muestra. */
+		public String esGusto = "N";
 		public int orden = 10;
 		public String fechaMarca = "";
 		public String usuario = "";
@@ -133,10 +135,11 @@ public class ClienteMarcaDAO {
 		t.bloqueaCargo = rs.getString("bloquea_cargo");
 		t.activo = rs.getString("activo");
 		t.orden = rs.getInt("orden");
+		t.esGusto = rs.getString("es_gusto") == null ? "N" : rs.getString("es_gusto");
 		return (t);
 	}
 
-	private static final String COLUMNAS_TIPO = "t.idtipo, t.nombre, t.descripcion, t.severidad, t.bloquea_cargo, t.activo, t.orden";
+	private static final String COLUMNAS_TIPO = "t.idtipo, t.nombre, t.descripcion, t.severidad, t.bloquea_cargo, t.activo, t.orden, t.es_gusto";
 
 	/** Texto sin tildes y con guiones bajos, para armar el identificador de un habilitador nuevo. */
 	private static String identificador(final String nombre) {
@@ -201,7 +204,10 @@ public class ClienteMarcaDAO {
 		}
 		try {
 			if (cn != null) {
-				ficha.marcas = marcasDe(cn, ficha.telefono, true);
+				//Ficha PUBLICA: es la que ve el POS al elegir el cliente. Los gustos -de que
+				//equipo es hincha, por ejemplo- se dejan por fuera: no son advertencias y no
+				//tienen nada que hacerle perder tiempo a quien esta tomando el pedido.
+				ficha.marcas = marcasDe(cn, ficha.telefono, true, true);
 			}
 		} catch (final Exception e) {
 			//Las tablas nuevas pueden no existir todavia: se sigue con el texto.
@@ -233,19 +239,22 @@ public class ClienteMarcaDAO {
 			}
 			rs.close();
 			ps.close();
-			ficha.marcas = marcasDe(cn, ficha.telefono, false);
+			//Ficha de administracion: aqui SI se ven los gustos, que es donde se manejan.
+			ficha.marcas = marcasDe(cn, ficha.telefono, false, false);
 		} finally {
 			cerrar(cn);
 		}
 		return (ficha);
 	}
 
-	private static ArrayList<Tipo> marcasDe(final Connection cn, final String telefono, final boolean soloActivas) throws SQLException {
+	private static ArrayList<Tipo> marcasDe(final Connection cn, final String telefono,
+			final boolean soloActivas, final boolean excluirGustos) throws SQLException {
 		final ArrayList<Tipo> marcas = new ArrayList<Tipo>();
 		final PreparedStatement ps = cn.prepareStatement("SELECT " + COLUMNAS_TIPO
 				+ ", IFNULL(DATE_FORMAT(m.fecha_marca,'%Y-%m-%d %H:%i'),'') AS fecha_marca, m.usuario"
 				+ " FROM cliente_marca m INNER JOIN cliente_marca_tipo t ON t.idtipo = m.idtipo WHERE m.telefono = ?"
-				+ (soloActivas ? " AND t.activo = 'S'" : "") + " ORDER BY t.orden, t.nombre");
+				+ (soloActivas ? " AND t.activo = 'S'" : "")
+				+ (excluirGustos ? " AND t.es_gusto <> 'S'" : "") + " ORDER BY t.orden, t.nombre");
 		ps.setString(1, telefono);
 		final ResultSet rs = ps.executeQuery();
 		while (rs.next()) {

@@ -67,6 +67,8 @@ public class ObtenerClienteSegmentado extends HttpServlet {
             filtro.setEspecialidades(enteros(jsonObject, "especialidades"));
             filtro.setCanales(textos(jsonObject, "canales"));
             filtro.setTiposCliente(textos(jsonObject, "tiposcliente"));
+            //Gustos del cliente: hincha de Nacional, hincha del Medellin. Vacio = no filtra.
+            filtro.setMarcas(textos(jsonObject, "marcas"));
 
             //Compatibilidad: si alguien sigue mandando canal o tipocliente en
             //singular, se respeta. La pantalla nueva manda las listas.
