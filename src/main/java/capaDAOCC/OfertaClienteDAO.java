@@ -290,6 +290,16 @@ public class OfertaClienteDAO {
 				ofertaTemp.setCodigoPromocion(codigoPromocion);
 				ofertaTemp.setSaldo(saldo);
 				ofertaTemp.setRedParcial(redParcial);
+				//La consulta trae "a.*", o sea que fecha_caducidad SIEMPRE venia en el
+				//resultado, pero nadie la pasaba al objeto: getFechaCaducidad() devolvia
+				//null aunque la oferta tuviera su fecha bien puesta en la base.
+				//
+				//Eso rompia la dispersion de premios de la ruleta: antes de enviar el
+				//correo se exige la fecha de vencimiento -el correo lleva el codigo y el
+				//cliente tiene que saber hasta cuando le sirve-, y como siempre llegaba
+				//vacia, el premio quedaba con su codigo y SIN aviso, diciendo "sigue sin
+				//fecha de caducidad" aunque en la base la tuviera.
+				ofertaTemp.setFechaCaducidad(OfertaClienteDAO.textoSeguro(rs.getString("fecha_caducidad")));
 				break;
 			}
 			stm.close();
