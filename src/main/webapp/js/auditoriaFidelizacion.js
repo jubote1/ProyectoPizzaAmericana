@@ -13,8 +13,10 @@
  *
  *   EMPLEADO    -> el correo de la cuenta de puntos esta en la nomina.
  *   AUTO        -> ademas, quien proceso la redencion es esa misma persona.
- *   SOSPECHOSO  -> una sola PERSONA concentra 70% o mas de los pedidos que le dieron puntos
- *                  (sobre al menos 5 pedidos), o es un empleado que se auto-redime.
+ *   VARIOS/DIA  -> junto mas de un pedido con puntos en un mismo dia, en 2 o mas dias.
+ *   SOSPECHOSO  -> cualquiera de estas tres: concentracion de 70% o mas en una sola PERSONA
+ *                  (sobre al menos 5 pedidos), empleado que se auto-redime, o 2+ dias con
+ *                  varios pedidos.
  *
  * LO QUE NO ES SENAL: comprar mucho. Un cliente fiel compra mucho y eso es lo que se quiere.
  * La firma es la concentracion: a un frecuente legitimo lo atiende quien este en la caja ese
@@ -222,7 +224,7 @@ function afConsultarAcumuladores() {
 	}, function (data) {
 		$('#afCargando').hide();
 		if (!data || data.resultado !== 'OK') {
-			afVacio('#afCuerpoAcum', 8, data && data.mensaje ? data.mensaje : 'No se pudo consultar.');
+			afVacio('#afCuerpoAcum', 9, data && data.mensaje ? data.mensaje : 'No se pudo consultar.');
 			$('#afTarjetas').html('');
 			return;
 		}
@@ -234,7 +236,7 @@ function afConsultarAcumuladores() {
 			+ ', ordenadas por puntos');
 	}).fail(function () {
 		$('#afCargando').hide();
-		afVacio('#afCuerpoAcum', 8, 'No se pudo consultar. Revise la conexi\u00f3n y vuelva a intentar.');
+		afVacio('#afCuerpoAcum', 9, 'No se pudo consultar. Revise la conexi\u00f3n y vuelva a intentar.');
 	});
 }
 
@@ -243,8 +245,10 @@ function afTarjetasAcumuladores(t) {
 	var h = '';
 	h += afTarjeta('Personas', t.personas, 'con 3 o m\u00e1s compras', false);
 	h += afTarjeta('Puntos acumulados', afMiles(t.puntos), 'en el per\u00edodo', false);
-	h += afTarjeta('Sospechosos', t.sospechosos, 'concentraci\u00f3n ' + t.umbral + '% o m\u00e1s', t.sospechosos > 0);
+	h += afTarjeta('Sospechosos', t.sospechosos, 'por cualquiera de las se\u00f1ales', t.sospechosos > 0);
 	h += afTarjeta('Cuentas de empleados', t.de_empleados, 'el correo est\u00e1 en la n\u00f3mina', t.de_empleados > 0);
+	h += afTarjeta('Varios pedidos/d\u00eda', t.con_dias_cargados,
+		t.dias_cargados_umbral + ' d\u00edas o m\u00e1s', t.con_dias_cargados > 0);
 	$('#afTarjetas').html(h);
 }
 
@@ -268,8 +272,26 @@ function afPintarAcumuladores() {
 			senales += '<span class="etq etq-emp" title="' + afEsc(a.empleado_nombre) + '">EMPLEADO</span> ';
 		}
 		if (a.auto_redenciones > 0) {
-			senales += '<span class="etq etq-auto">' + a.auto_redenciones + ' AUTO</span>';
+			senales += '<span class="etq etq-auto">' + a.auto_redenciones + ' AUTO</span> ';
 		}
+		if (a.dias_con_varios >= 2) {
+			senales += '<span class="etq etq-emp" title="Junt\u00f3 m\u00e1s de un pedido con puntos en '
+				+ a.dias_con_varios + ' d\u00eda(s) distintos'
+				+ (a.max_pedidos_dia > 2 ? ', hasta ' + a.max_pedidos_dia + ' en uno solo' : '')
+				+ '">VARIOS/D\u00cdA</span>';
+		}
+
+		//Dias en que junto mas de un pedido con puntos. Un dia suelto no se resalta:
+		//almuerzo y comida el mismo dia pasa y es legitimo. Lo que llama la atencion
+		//es que se repita.
+		var dias = a.dias_con_varios || 0;
+		var diasTxt = dias === 0
+			? '<span style="color:#6C7482;">&mdash;</span>'
+			: '<span class="' + (dias >= 2 ? 'mal' : '') + '" style="font-weight:'
+				+ (dias >= 2 ? '700' : '400') + ';">' + dias + '</span>'
+				+ (a.max_pedidos_dia > 2
+					? ' <span style="color:#6C7482;font-size:11px;">(hasta ' + a.max_pedidos_dia + ')</span>'
+					: '');
 
 		//La concentracion se muestra en gris cuando no hay base suficiente: con 3 pedidos
 		//un 100% no significa nada y resaltarlo seria senalar a alguien por ruido.
@@ -290,12 +312,13 @@ function afPintarAcumuladores() {
 			+ '<td class="cen">' + a.tiendas + '</td>'
 			+ '<td>' + (base > 0 ? afEsc(a.top_nombre) : '<span style="color:#6C7482;">sin dato</span>') + '</td>'
 			+ '<td class="num">' + pct + '</td>'
+			+ '<td class="num">' + diasTxt + '</td>'
 			+ '<td>' + senales + '</td>'
 			+ '</tr>';
 	}
 
 	if (mostradas === 0) {
-		afVacio('#afCuerpoAcum', 8, solo
+		afVacio('#afCuerpoAcum', 9, solo
 			? 'Ninguna persona qued\u00f3 marcada como sospechosa en este per\u00edodo.'
 			: 'No hubo acumulaciones en este per\u00edodo.');
 		return;
@@ -360,6 +383,13 @@ function afPintarDetalle(d) {
 			+ 'Quien atendi\u00f3 el pedido de la redenci\u00f3n es el due\u00f1o de la cuenta.</div>';
 	}
 
+	if (r.dias_con_varios >= 2) {
+		h += '<div class="af-aviso"><strong>' + r.dias_con_varios
+			+ ' d\u00edas con m\u00e1s de un pedido con puntos</strong>'
+			+ (r.max_pedidos_dia > 2 ? ', hasta ' + r.max_pedidos_dia + ' en un solo d\u00eda' : '')
+			+ '. El detalle est\u00e1 abajo.</div>';
+	}
+
 	h += '<div class="af-tarjetas" style="margin-bottom:6px;">';
 	h += afTarjeta('Puntos vigentes', afMiles(r.puntos_vigentes), '', false);
 	h += afTarjeta('Acumulaciones', r.acumulaciones, afMiles(r.puntos_acumulados) + ' puntos', false);
@@ -371,6 +401,40 @@ function afPintarDetalle(d) {
 	}
 	h += '</div>';
 	h += '</div>';
+
+	// --- dias con varios pedidos ------------------------------------------------------
+	//Se muestra siempre que haya alguno, aunque sea uno solo: un dia suelto no marca
+	//pero el que revisa tiene derecho a verlo.
+	var dc = d.dias_cargados || [];
+	if (dc.length > 0) {
+		h += '<div class="af-bloque">';
+		h += '<h4>D\u00edas con m\u00e1s de un pedido con puntos</h4>';
+		h += '<div class="nota">' + dc.length + ' d\u00eda(s)'
+			+ (r.max_pedidos_dia > 1 ? ', el mayor con ' + r.max_pedidos_dia + ' pedidos' : '')
+			+ '. Comprar dos veces en un d\u00eda es normal; lo que vale mirar es que se repita, '
+			+ 'y sobre todo si los pedidos del mismo d\u00eda los tom\u00f3 la misma persona.</div>';
+		if (r.dias_con_varios >= 2) {
+			h += '<div class="af-aviso">Se repite en ' + r.dias_con_varios
+				+ ' d\u00edas distintos.</div>';
+		}
+		h += '<div class="af-scroll" style="max-height:220px;"><table class="af-tabla"><thead><tr>'
+			+ '<th>Fecha</th><th class="num">Pedidos</th><th class="num">Puntos</th>'
+			+ '<th class="num">Compras</th><th>Tienda(s)</th><th>Qui\u00e9n atendi\u00f3</th>'
+			+ '</tr></thead><tbody>';
+		for (var k = 0; k < dc.length; k++) {
+			var dd = dc[k];
+			h += '<tr style="cursor:default;">'
+				+ '<td>' + afEsc(dd.fecha) + '</td>'
+				+ '<td class="num"><strong>' + dd.pedidos + '</strong></td>'
+				+ '<td class="num">' + afMiles(dd.puntos) + '</td>'
+				+ '<td class="num">$' + afMiles(dd.valor) + '</td>'
+				+ '<td>' + afEsc(dd.tiendas) + '</td>'
+				+ '<td>' + (dd.usuarios ? afEsc(dd.usuarios)
+					: '<span style="color:#6C7482;">sin registro</span>') + '</td>'
+				+ '</tr>';
+		}
+		h += '</tbody></table></div></div>';
+	}
 
 	// --- la concentracion -------------------------------------------------------------
 	h += '<div class="af-bloque">';

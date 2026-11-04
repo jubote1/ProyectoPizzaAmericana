@@ -106,6 +106,20 @@ public class AuditoriaFidelizacionDAO {
 		public boolean esEmpleado;
 		public String empleadoNombre = "";
 		public int autoRedenciones;
+		/** Cuantos dias distintos tuvo MAS DE UN pedido con puntos. */
+		public int diasConVarios;
+		/** El peor de esos dias: cuantos pedidos junto en una sola fecha. */
+		public int maxPedidosDia;
+	}
+
+	/** Un dia en que la persona junto mas de un pedido con puntos. */
+	public static class DiaCargado {
+		public String fecha = "";
+		public int pedidos;
+		public double puntos;
+		public double valor;
+		public String tiendas = "";
+		public String usuarios = "";
 	}
 
 	/**
@@ -152,6 +166,8 @@ public class AuditoriaFidelizacionDAO {
 		public String empleadoCedula = "";
 		public boolean empleadoActivo;
 		public int autoRedenciones;
+		public int diasConVarios;
+		public int maxPedidosDia;
 	}
 
 	// ------------------------------------------------------------------
@@ -304,6 +320,7 @@ public class AuditoriaFidelizacionDAO {
 			rs.close();
 			ps.close();
 			nombreYCelular(cn, res);
+			diasCargadosResumen(cn, res);
 		} catch (final Exception e) {
 			logger.error("AuditoriaFidelizacionDAO.resumenCliente: " + e.toString(), e);
 		} finally {
@@ -335,6 +352,83 @@ public class AuditoriaFidelizacionDAO {
 		} catch (final Exception e) {
 			Logger.getLogger("log_file").error("AuditoriaFidelizacionDAO.nombreYCelular: " + e.toString());
 		}
+	}
+
+	/** Cuantos dias junto mas de un pedido con puntos, y cual fue el peor. */
+	private static void diasCargadosResumen(final Connection cn, final ResumenCliente res) {
+		try {
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT COUNT(*) AS dias, IFNULL(MAX(y.n),0) AS max_dia"
+					+ "  FROM (SELECT ft.fecha_transaccion, COUNT(*) AS n"
+					+ "          FROM pizzaamericana.fidelizacion_transaccion ft"
+					+ "         WHERE ft.correo = ?"
+					+ "         GROUP BY ft.fecha_transaccion"
+					+ "        HAVING COUNT(*) > 1) y");
+			ps.setString(1, res.correo);
+			final ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				res.diasConVarios = rs.getInt("dias");
+				res.maxPedidosDia = rs.getInt("max_dia");
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			Logger.getLogger("log_file").error("AuditoriaFidelizacionDAO.diasCargadosResumen: " + e.toString());
+		}
+	}
+
+	/**
+	 * Los dias en que la persona junto mas de un pedido con puntos, con el
+	 * detalle de en que tiendas y quien se los atendio.
+	 *
+	 * Una compra de almuerzo y otra de comida el mismo dia existe y es
+	 * legitima; por eso esto no condena solo, se muestra para revisar. Lo que
+	 * llama la atencion es el patron repetido, y sobre todo cuando los varios
+	 * pedidos del dia los tomo la MISMA persona: por eso va la columna de
+	 * quienes atendieron.
+	 */
+	public static ArrayList<DiaCargado> diasConVariosPedidos(final String correo) {
+		final ArrayList<DiaCargado> lista = new ArrayList<DiaCargado>();
+		final Logger logger = Logger.getLogger("log_file");
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final String sql =
+					"SELECT ft.fecha_transaccion, COUNT(*) AS pedidos,"
+					+ "       SUM(ft.puntos) AS puntos, SUM(ft.valor_neto) AS valor,"
+					+ "       GROUP_CONCAT(DISTINCT IFNULL(t.nombre,'?') ORDER BY t.nombre SEPARATOR ', ') AS tiendas,"
+					+ "       GROUP_CONCAT(DISTINCT IFNULL(NULLIF(emp.nombre_largo,''),"
+					+ "            IFNULL(usr.nombre_largo, NULLIF(ft.usuario,''))) SEPARATOR ', ') AS usuarios"
+					+ "  FROM pizzaamericana.fidelizacion_transaccion ft"
+					+ "  LEFT JOIN pizzaamericana.tienda t ON t.idtienda = ft.idtienda"
+					+ String.format(JOIN_NOMBRE_USUARIO, "ft", "ft")
+					+ " WHERE ft.correo = ?"
+					+ " GROUP BY ft.fecha_transaccion"
+					+ "HAVING COUNT(*) > 1"
+					+ " ORDER BY ft.fecha_transaccion DESC"
+					+ " LIMIT 100";
+			final PreparedStatement ps = cn.prepareStatement(sql);
+			ps.setString(1, correo);
+			final ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				final DiaCargado d = new DiaCargado();
+				d.fecha = texto(rs.getString("fecha_transaccion"));
+				d.pedidos = rs.getInt("pedidos");
+				d.puntos = rs.getDouble("puntos");
+				d.valor = rs.getDouble("valor");
+				d.tiendas = texto(rs.getString("tiendas"));
+				d.usuarios = texto(rs.getString("usuarios"));
+				lista.add(d);
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			logger.error("AuditoriaFidelizacionDAO.diasConVariosPedidos: " + e.toString(), e);
+		} finally {
+			cerrar(cn);
+		}
+		return (lista);
 	}
 
 	/** Las acumulaciones de una persona, de la mas reciente a la mas vieja. */
@@ -535,8 +629,21 @@ public class AuditoriaFidelizacionDAO {
 					+ "           WHERE ft.fecha_transaccion BETWEEN ? AND ?" + filtroTienda
 					+ "             AND " + soloPersonas("ft")
 					+ "           GROUP BY ft.correo, ft.usuario) x"
+					+ "), mismo_dia AS ("
+					//Dias en que la persona junto MAS DE UN pedido con puntos. Medido el
+					//2026-11-04 sobre 90 dias: pasa en el 1,7% de los dias-persona (228 de
+					//13.629), asi que discrimina de verdad. Y de las 12 personas con mas
+					//dias asi, 9 estaban en la nomina.
+					+ "  SELECT y.correo, COUNT(*) AS dias, MAX(y.n) AS max_dia"
+					+ "    FROM (SELECT ft.correo, ft.fecha_transaccion, COUNT(*) AS n"
+					+ "            FROM pizzaamericana.fidelizacion_transaccion ft"
+					+ "           WHERE ft.fecha_transaccion BETWEEN ? AND ?" + filtroTienda
+					+ "           GROUP BY ft.correo, ft.fecha_transaccion"
+					+ "          HAVING COUNT(*) > 1) y"
+					+ "   GROUP BY y.correo"
 					+ ")"
 					+ "SELECT b.correo, b.pedidos, b.puntos, b.valor, b.tiendas, b.cajeros, b.con_persona,"
+					+ "       IFNULL(md.dias,0) AS dias_varios, IFNULL(md.max_dia,0) AS max_dia,"
 					+ "       IFNULL(tc.usuario,'') AS top_usuario, IFNULL(tc.n,0) AS top_pedidos,"
 					+ "       IFNULL(NULLIF(emp.nombre_largo,''), IFNULL(usr.nombre_largo,'')) AS top_nombre,"
 					+ "       IF(empc.id IS NULL,'N','S') AS es_empleado,"
@@ -549,6 +656,7 @@ public class AuditoriaFidelizacionDAO {
 					+ "         WHERE LOWER(TRIM(pr.email)) = LOWER(TRIM(b.correo))"
 					+ "         ORDER BY pr.pedidos DESC LIMIT 1) AS nombre"
 					+ "  FROM base b"
+					+ "  LEFT JOIN mismo_dia md ON md.correo = b.correo"
 					+ "  LEFT JOIN top_cajero tc ON tc.correo = b.correo AND tc.rn = 1"
 					+ "  LEFT JOIN general.empleado emp ON emp.nombre = tc.usuario"
 					+ "  LEFT JOIN pizzaamericana.usuario usr ON usr.nombre = tc.usuario"
@@ -561,9 +669,13 @@ public class AuditoriaFidelizacionDAO {
 			ps.setString(2, fechaHasta);
 			ps.setString(3, fechaDesde);
 			ps.setString(4, fechaHasta);
+			ps.setString(5, fechaDesde);
+			ps.setString(6, fechaHasta);
 			final ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				final Acumulador a = new Acumulador();
+				a.diasConVarios = rs.getInt("dias_varios");
+				a.maxPedidosDia = rs.getInt("max_dia");
 				a.correo = texto(rs.getString("correo"));
 				a.nombre = texto(rs.getString("nombre"));
 				a.pedidos = rs.getInt("pedidos");

@@ -141,6 +141,8 @@ public class AuditoriaFidelizacionCtrl {
 				AuditoriaFidelizacionDAO.acumulacionesCliente(correo, 300);
 		final ArrayList<AuditoriaFidelizacionDAO.Redencion> redenciones =
 				AuditoriaFidelizacionDAO.redencionesCliente(correo, 200);
+		final ArrayList<AuditoriaFidelizacionDAO.DiaCargado> diasCargados =
+				AuditoriaFidelizacionDAO.diasConVariosPedidos(correo);
 
 		final JSONObject resumen = new JSONObject();
 		resumen.put("correo", res.correo);
@@ -162,6 +164,8 @@ public class AuditoriaFidelizacionCtrl {
 		resumen.put("empleado_cedula", res.empleadoCedula);
 		resumen.put("empleado_activo", Boolean.valueOf(res.empleadoActivo));
 		resumen.put("auto_redenciones", Integer.valueOf(res.autoRedenciones));
+		resumen.put("dias_con_varios", Integer.valueOf(res.diasConVarios));
+		resumen.put("max_pedidos_dia", Integer.valueOf(res.maxPedidosDia));
 
 		//La concentracion: que tanto de la atencion se la lleva una sola persona.
 		//El denominador son las acumulaciones CON usuario, no todas: las de antes
@@ -231,8 +235,22 @@ public class AuditoriaFidelizacionCtrl {
 			jsonRed.add(jsonRedencion(redenciones.get(i)));
 		}
 
+		final JSONArray jsonDias = new JSONArray();
+		for (int i = 0; i < diasCargados.size(); i++) {
+			final AuditoriaFidelizacionDAO.DiaCargado dc = diasCargados.get(i);
+			final JSONObject o = new JSONObject();
+			o.put("fecha", dc.fecha);
+			o.put("pedidos", Integer.valueOf(dc.pedidos));
+			o.put("puntos", Double.valueOf(dc.puntos));
+			o.put("valor", Double.valueOf(dc.valor));
+			o.put("tiendas", dc.tiendas);
+			o.put("usuarios", dc.usuarios);
+			jsonDias.add(o);
+		}
+
 		respuesta.put("resultado", "OK");
 		respuesta.put("resumen", resumen);
+		respuesta.put("dias_cargados", jsonDias);
 		respuesta.put("atienden", jsonAtienden);
 		respuesta.put("acumulaciones", jsonAcum);
 		respuesta.put("redenciones", jsonRed);
@@ -244,6 +262,18 @@ public class AuditoriaFidelizacionCtrl {
 
 	/** Y con menos pedidos que esto el porcentaje es ruido: 3 de 3 da 100% y no dice nada. */
 	private static final int MINIMO_PARA_JUZGAR = 5;
+
+	/**
+	 * Desde cuantos dias con MAS DE UN pedido con puntos se marca.
+	 *
+	 * Dos: un dia suelto con dos pedidos es normal -almuerzo y comida, o un
+	 * pedido que se repitio-, pero que se repita ya es un patron. Medido el
+	 * 2026-11-04 sobre 90 dias: juntar dos o mas pedidos en un mismo dia pasa
+	 * en el 1,7% de los dias-persona (228 de 13.629), asi que la senal
+	 * discrimina de verdad en vez de marcar a medio mundo. Y de las 12 personas
+	 * con mas dias asi, 9 estaban en la nomina.
+	 */
+	private static final int DIAS_CARGADOS_PARA_MARCAR = 2;
 
 	/**
 	 * Quien mas acumula puntos en el periodo, con las senales.
@@ -275,6 +305,7 @@ public class AuditoriaFidelizacionCtrl {
 		final JSONArray filas = new JSONArray();
 		int sospechosos = 0;
 		int deEmpleados = 0;
+		int conDiasCargados = 0;
 		double puntosTotal = 0;
 
 		for (int i = 0; i < top.size(); i++) {
@@ -284,13 +315,19 @@ public class AuditoriaFidelizacionCtrl {
 			final boolean concentrado = pct >= UMBRAL_CONCENTRACION
 					&& a.pedidosConPersona >= MINIMO_PARA_JUZGAR;
 			final boolean empleadoQueSeAutoRedime = a.esEmpleado && a.autoRedenciones > 0;
-			final boolean sospechoso = concentrado || empleadoQueSeAutoRedime;
+			//Varios pedidos con puntos EL MISMO DIA, repetido. Un dia suelto no dice
+			//nada -almuerzo y comida pasa-, lo que llama la atencion es el patron.
+			final boolean diasCargados = a.diasConVarios >= DIAS_CARGADOS_PARA_MARCAR;
+			final boolean sospechoso = concentrado || empleadoQueSeAutoRedime || diasCargados;
 
 			if (sospechoso) {
 				sospechosos++;
 			}
 			if (a.esEmpleado) {
 				deEmpleados++;
+			}
+			if (diasCargados) {
+				conDiasCargados++;
 			}
 			puntosTotal = puntosTotal + a.puntos;
 
@@ -310,8 +347,10 @@ public class AuditoriaFidelizacionCtrl {
 			o.put("es_empleado", Boolean.valueOf(a.esEmpleado));
 			o.put("empleado_nombre", a.empleadoNombre);
 			o.put("auto_redenciones", Integer.valueOf(a.autoRedenciones));
+			o.put("dias_con_varios", Integer.valueOf(a.diasConVarios));
+			o.put("max_pedidos_dia", Integer.valueOf(a.maxPedidosDia));
 			o.put("sospechoso", Boolean.valueOf(sospechoso));
-			o.put("motivo", motivo(concentrado, empleadoQueSeAutoRedime, pct, a));
+			o.put("motivo", motivo(concentrado, empleadoQueSeAutoRedime, diasCargados, pct, a));
 			filas.add(o);
 		}
 
@@ -320,8 +359,10 @@ public class AuditoriaFidelizacionCtrl {
 		totales.put("puntos", Double.valueOf(puntosTotal));
 		totales.put("sospechosos", Integer.valueOf(sospechosos));
 		totales.put("de_empleados", Integer.valueOf(deEmpleados));
+		totales.put("con_dias_cargados", Integer.valueOf(conDiasCargados));
 		totales.put("umbral", Double.valueOf(UMBRAL_CONCENTRACION));
 		totales.put("minimo_pedidos", Integer.valueOf(MINIMO_PARA_JUZGAR));
+		totales.put("dias_cargados_umbral", Integer.valueOf(DIAS_CARGADOS_PARA_MARCAR));
 
 		respuesta.put("resultado", "OK");
 		respuesta.put("desde", fechaDesde);
@@ -333,9 +374,15 @@ public class AuditoriaFidelizacionCtrl {
 
 	/** Por que quedo marcado. Se escribe en texto para que el reporte sea explicable. */
 	private static String motivo(final boolean concentrado, final boolean autoRedime,
-			final double pct, final AuditoriaFidelizacionDAO.Acumulador a) {
+			final boolean diasCargados, final double pct,
+			final AuditoriaFidelizacionDAO.Acumulador a) {
 
 		final StringBuilder sb = new StringBuilder();
+		if (diasCargados) {
+			sb.append(a.diasConVarios).append(" dia(s) con mas de un pedido con puntos")
+			  .append(a.maxPedidosDia > 2 ? " (hasta " + a.maxPedidosDia + " en un solo dia)" : "")
+			  .append(".");
+		}
 		if (concentrado) {
 			sb.append(redondear(pct)).append("% de sus pedidos con puntos (")
 			  .append(a.topPedidos).append(" de ").append(a.pedidosConPersona)
