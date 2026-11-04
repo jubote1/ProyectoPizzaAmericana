@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>AUDITORIA DE FIDELIZACION</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/marca.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<style type="text/css">
+			:root { --azul:#102F6F; --rojo:#E42528; --amarillo:#FDC806; --verde:#0b8a4a; --ambar:#d98c00; --gris:#6C7482; --borde:#DEE2E6; --fondo:#f4f6fb; }
+			body { background:#fff; }
+			.af-sub { color:var(--gris); margin:-4px 0 14px 0; font-size:14px; }
+			.af-filtros { background:var(--fondo); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+			.af-filtros label { font-size:12px; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; display:block; }
+			.af-rapidos { margin-top:8px; font-size:12.5px; color:var(--gris); }
+			.af-rapidos a { cursor:pointer; margin-right:12px; color:var(--azul); font-weight:600; }
+			.af-tarjetas { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+			.af-tarjeta { flex:1 1 150px; background:var(--fondo); border-radius:12px; padding:12px 16px; min-width:140px; }
+			.af-tarjeta.alerta { background:#fff6e0; box-shadow:inset 0 0 0 2px var(--amarillo); }
+			.af-tarjeta .k { font-size:11px; letter-spacing:1.2px; font-weight:700; color:var(--gris); text-transform:uppercase; }
+			.af-tarjeta .v { font-size:30px; font-weight:800; color:var(--azul); line-height:1.15; }
+			.af-tarjeta .p { font-size:12px; color:var(--gris); }
+			.mal { color:var(--rojo) !important; } .bien { color:var(--verde) !important; } .medio { color:var(--ambar) !important; }
+
+			.af-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+			.af-tabla th { background:var(--azul); color:#fff; padding:7px 8px; text-align:left; font-size:12px; position:sticky; top:0; z-index:2; }
+			.af-tabla td { padding:6px 8px; border-bottom:1px solid var(--borde); }
+			.af-tabla tbody tr:hover { background:#eef3ff; }
+			.af-tabla tbody tr { cursor:pointer; }
+			.af-tabla tbody tr.sel { background:#e3ecff; }
+			.af-scroll { max-height:520px; overflow:auto; border:1px solid var(--borde); border-radius:10px; }
+			.num { text-align:right; white-space:nowrap; }
+			.cen { text-align:center; }
+
+			.etq { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:700; }
+			.etq-emp { background:#fff1cc; color:#8a6100; }
+			.etq-auto { background:#ffd9d9; color:#9e1b1b; }
+			.etq-rev { background:#e6e9ef; color:#41495A; }
+			.etq-pos { background:#e0ecff; color:#102F6F; }
+			.etq-cc { background:#e2f4ea; color:#0b6b3c; }
+
+			.af-cols { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+			.af-izq { flex:1 1 560px; min-width:0; }
+			.af-der { flex:1 1 420px; min-width:0; }
+			.af-bloque { border:1px solid var(--borde); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+			.af-bloque h4 { margin:0 0 2px 0; font-size:16px; color:var(--azul); font-weight:800; }
+			.af-bloque .nota { color:var(--gris); font-size:12.5px; margin-bottom:10px; }
+			.af-vacio { color:var(--gris); font-size:13px; padding:18px; text-align:center; }
+
+			.af-barra { background:#eceff6; border-radius:5px; height:18px; position:relative; }
+			.af-barra i { display:block; height:18px; border-radius:5px; background:var(--azul); }
+			.af-barra i.rojo { background:var(--rojo); }
+			.af-fila { display:flex; align-items:center; margin:5px 0; font-size:13px; gap:8px; }
+			.af-fila .et { flex:0 0 190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+			.af-fila .bar { flex:1 1 auto; }
+			.af-fila .cif { flex:0 0 110px; text-align:right; white-space:nowrap; }
+
+			.af-tabs { list-style:none; padding-left:0; margin:0 0 12px 0; border-bottom:1px solid var(--borde); }
+			.af-tabs li { display:inline-block; margin-right:4px; margin-bottom:-1px; }
+			.af-tabs a { display:block; padding:8px 16px; border:1px solid transparent; border-radius:5px 5px 0 0; font-weight:700; color:var(--azul); cursor:pointer; text-decoration:none; font-size:13px; }
+			.af-tabs li.activo a { background:#fff; border-color:var(--borde) var(--borde) #fff var(--borde); border-top:3px solid var(--amarillo); }
+			.af-panel { display:none; } .af-panel.activo { display:block; }
+
+			.af-aviso { background:#fff6e0; border-left:4px solid var(--amarillo); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px; }
+			.af-rojo { background:#ffeaea; border-left-color:var(--rojo); }
+			#afCargando { display:none; color:var(--gris); font-size:13px; }
+		</style>
+	</head>
+	<body>
+		<div id="cargarMenu"></div>
+
+		<script type="text/javascript">
+			//El servidor sale de la URL con la que se abrio la pagina.
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = '';
+			var roles = [];
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function (data) {
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+					roles = data[0].roles || [];
+				}
+			});
+			if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
+				$('#cargarMenu').load('MenuDinamico.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+			} else {
+				switch (respuesta) {
+					case 'OK':
+						$('#cargarMenu').load('Menu.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKA':
+						$('#cargarMenu').load('MenuAdm.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKP':
+						$('#cargarMenu').load('MenuPQRS.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					default:
+						location.href = server + 'Index.html';
+						break;
+				}
+			}
+		</script>
+
+		<div class="container-fluid" style="padding:18px 22px;">
+
+			<h3 style="color:var(--azul); font-weight:800; margin-bottom:2px;">Auditoría de fidelización</h3>
+			<div class="af-sub">
+				Quién redimió puntos, qué redimió, cuándo y en qué tienda. Dé clic en una fila para ver
+				todo el historial de esa persona.
+			</div>
+
+			<div class="af-filtros">
+				<div class="row">
+					<div class="col-sm-2">
+						<label for="afDesde">Desde</label>
+						<input type="date" id="afDesde" class="form-control" />
+					</div>
+					<div class="col-sm-2">
+						<label for="afHasta">Hasta</label>
+						<input type="date" id="afHasta" class="form-control" />
+					</div>
+					<div class="col-sm-3">
+						<label for="afTienda">Tienda</label>
+						<select id="afTienda" class="form-control"><option value="0">Todas</option></select>
+					</div>
+					<div class="col-sm-3">
+						<label for="afSenal">Mostrar</label>
+						<select id="afSenal" class="form-control">
+							<option value="TODAS">Todas las redenciones</option>
+							<option value="EMPLEADO">Solo cuentas de empleados</option>
+							<option value="AUTO">Solo auto-redenciones</option>
+							<option value="REVERSADA">Solo reversadas</option>
+						</select>
+					</div>
+					<div class="col-sm-2">
+						<label>&nbsp;</label>
+						<button id="afBuscar" class="btn btn-primary btn-block">Consultar</button>
+					</div>
+				</div>
+				<div class="af-rapidos">
+					<a id="afSemanaPasada">Semana pasada</a>
+					<a id="afEstaSemana">Esta semana</a>
+					<a id="afMes">Últimos 30 días</a>
+					<a id="afTrim">Últimos 90 días</a>
+					<span id="afCargando">consultando…</span>
+				</div>
+			</div>
+
+			<ul class="af-tabs" id="afTabsPrin">
+				<li class="activo"><a data-vista="red">Redenciones</a></li>
+				<li><a data-vista="acum">Quién acumula puntos</a></li>
+			</ul>
+
+			<div class="af-tarjetas" id="afTarjetas"></div>
+
+			<div class="af-cols">
+				<div class="af-izq">
+
+					<div class="af-vista" data-vista="red">
+						<div class="af-bloque" style="padding:14px;">
+							<h4>Redenciones del período</h4>
+							<div class="nota" id="afRotuloRango">&nbsp;</div>
+							<div class="af-scroll">
+								<table class="af-tabla">
+									<thead>
+										<tr>
+											<th>Fecha y hora</th>
+											<th>Persona</th>
+											<th class="num">Puntos</th>
+											<th>Tienda</th>
+											<th class="num">Pedido</th>
+											<th>Quién atendió</th>
+											<th class="cen">Origen</th>
+											<th>Señales</th>
+										</tr>
+									</thead>
+									<tbody id="afCuerpo">
+										<tr><td colspan="8" class="af-vacio">Consultando…</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+
+					<div class="af-vista" data-vista="acum" style="display:none;">
+						<div class="af-bloque" style="padding:14px;">
+							<h4>Quién acumula puntos</h4>
+							<div class="nota" id="afRotuloAcum">&nbsp;</div>
+							<div style="margin-bottom:10px;">
+								<label style="font-weight:600; font-size:12.5px; color:var(--gris);">
+									<input type="checkbox" id="afSoloSospechosos" /> Mostrar solo los sospechosos
+								</label>
+							</div>
+							<div class="af-scroll">
+								<table class="af-tabla">
+									<thead>
+										<tr>
+											<th>Persona</th>
+											<th class="num">Pedidos</th>
+											<th class="num">Puntos</th>
+											<th class="num">Compras</th>
+											<th class="cen">Tiendas</th>
+											<th>Quién le atiende más</th>
+											<th class="num">Concentración</th>
+											<th>Señales</th>
+										</tr>
+									</thead>
+									<tbody id="afCuerpoAcum">
+										<tr><td colspan="8" class="af-vacio">Consultando…</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+				<div class="af-der" id="afDetalle">
+					<div class="af-bloque">
+						<h4>Historial de la persona</h4>
+						<div class="af-vacio">Dé clic en una redención para ver aquí su historial completo.</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<script src="js/auditoriaFidelizacion.js?v=20261104" type="text/javascript"></script>
+	</body>
+</html>
