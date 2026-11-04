@@ -33,6 +33,13 @@ public class FacturacionElectronicaCtrl {
 		final String desde = mes + "-01";
 		final String hasta = mes + "-31";
 		final int diasDelMes = diasDelMes(mes);
+		// Dias que se esperan ya replicados: el mes completo, o hasta AYER si es el mes en curso (el de hoy
+		// se copia esta noche, no es un hueco).
+		final java.time.YearMonth ym = java.time.YearMonth.of(Integer.parseInt(mes.substring(0, 4)),
+				Integer.parseInt(mes.substring(5, 7)));
+		final java.time.LocalDate ayer = java.time.LocalDate.now().minusDays(1);
+		final int diasEsperados = ym.isAfter(java.time.YearMonth.from(ayer)) ? 0
+				: (ym.equals(java.time.YearMonth.from(ayer)) ? ayer.getDayOfMonth() : diasDelMes);
 		final Map<Integer, ResumenTienda> resumen = FacturacionElectronicaDAO.resumen(desde, hasta);
 		if (resumen == null) {
 			respuesta.put("error", "No se pudo consultar el datamart. Si la tabla factura_electronica_generada no existe, "
@@ -59,8 +66,17 @@ public class FacturacionElectronicaCtrl {
 			f.put("facturas_no_aceptadas", r.facturasNoAceptadas);
 			f.put("notas_no_aceptadas", r.notasNoAceptadas);
 			f.put("dias_con_datos", r.diasConDatos);
+			// Los dias que faltan, nombrados: "26/31" no dice cual, y ese dato es lo que permite arreglarlo.
+			final JSONArray faltan = new JSONArray();
+			for (int dia = 1; dia <= diasEsperados; dia++) {
+				final String fecha = mes + "-" + (dia < 10 ? "0" : "") + dia;
+				if (!r.diasCubiertos.contains(fecha)) {
+					faltan.add(fecha);
+				}
+			}
+			f.put("dias_faltantes", faltan);
 			filas.add(f);
-			if (r.diasConDatos < diasDelMes) {
+			if (!faltan.isEmpty()) {
 				sinCobertura++;
 			}
 			sumar(totalFact, r.facturas);

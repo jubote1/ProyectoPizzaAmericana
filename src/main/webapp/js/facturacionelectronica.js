@@ -99,8 +99,13 @@ function fePintar(d) {
 	for (var i = 0; i < d.tiendas.length; i++) {
 		var f = d.tiendas[i];
 		var alertas = [];
-		if (f.dias_con_datos < d.dias_del_mes) {
-			alertas.push('réplica ' + f.dias_con_datos + '/' + d.dias_del_mes + ' días');
+		if (f.dias_faltantes && f.dias_faltantes.length > 0) {
+			// Se nombran los días (dd): saber cuál falta es lo que permite corregirlo.
+			var dd = [];
+			for (var k = 0; k < f.dias_faltantes.length && k < 8; k++) {
+				dd.push(f.dias_faltantes[k].substring(8));
+			}
+			alertas.push('sin datos el día ' + dd.join(', ') + (f.dias_faltantes.length > 8 ? '…' : ''));
 		}
 		if (f.facturas_no_aceptadas > 0) {
 			alertas.push(f.facturas_no_aceptadas + ' factura(s) no aceptada(s) por la DIAN');

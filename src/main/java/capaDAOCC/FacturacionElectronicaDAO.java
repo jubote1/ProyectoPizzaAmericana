@@ -56,6 +56,8 @@ public class FacturacionElectronicaDAO {
 		public int notasNoAceptadas;
 		/** Dias del mes que la replica tiene bien copiados (OK, YA o CERO) para las facturas. */
 		public int diasConDatos;
+		/** Los dias (yyyy-MM-dd) cubiertos: copiados por la replica o con facturas en el datamart. */
+		public java.util.TreeSet<String> diasCubiertos = new java.util.TreeSet<String>();
 	}
 
 	/** Una nota credito del mes, para el detalle. */
@@ -129,16 +131,27 @@ public class FacturacionElectronicaDAO {
 			// Lo que no suma: rechazadas o sin validar.
 			contarNoAceptadas(cn, mapa, desde, hasta, "factura_electronica_generada", true);
 			contarNoAceptadas(cn, mapa, desde, hasta, "nota_credito_electronica_generada", false);
-			// Cobertura de la replica: cuantos dias del mes estan copiados.
-			sql = "SELECT idtienda, COUNT(DISTINCT fecha_datos) dias FROM replica_log "
+			// Cobertura: un dia esta cubierto si el replica_log dice que se copio (OK, YA o CERO) O si el datamart
+			// ya tiene facturas de ese dia. Mirar solo el log daba falsas alertas: la tabla se empezo a replicar
+			// el 5-oct, pero los datos de antes ya estaban en el datamart; y un dia que dio ERROR por tienda
+			// apagada y se completo despues por otro camino seguia viendose como hueco.
+			sql = "SELECT idtienda, d FROM ("
+					+ "SELECT idtienda, fecha_datos d FROM replica_log "
 					+ "WHERE tabla = 'factura_electronica_generada' AND fecha_datos >= ? AND fecha_datos <= ? "
-					+ "AND estado IN ('OK', 'YA', 'CERO') GROUP BY idtienda";
+					+ "AND estado IN ('OK', 'YA', 'CERO') "
+					+ "UNION "
+					+ "SELECT idtienda, fecha d FROM factura_electronica_generada WHERE fecha >= ? AND fecha <= ?"
+					+ ") x";
 			try (PreparedStatement ps = cn.prepareStatement(sql)) {
 				ps.setString(1, desde);
 				ps.setString(2, hasta);
+				ps.setString(3, desde);
+				ps.setString(4, hasta);
 				try (ResultSet rs = ps.executeQuery()) {
 					while (rs.next()) {
-						de(mapa, rs.getInt("idtienda")).diasConDatos = rs.getInt("dias");
+						final ResumenTienda r = de(mapa, rs.getInt("idtienda"));
+						r.diasCubiertos.add(rs.getString("d"));
+						r.diasConDatos = r.diasCubiertos.size();
 					}
 				}
 			} catch (final Exception e) {
