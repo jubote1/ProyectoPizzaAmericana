@@ -27,7 +27,7 @@ import capaModeloCC.Tienda;
  * el comentario de ese DAO. Las dos consultas tienen que dar lo mismo: si se
  * cambia una hay que cambiar la otra.
  *
- * Los pedidos que son solo porciones NO cuentan en "pedidos" ni en
+ * Los pedidos SIN PIZZA (porciones, gaseosas solas, acompanantes sueltos) NO cuentan en "pedidos" ni en
  * "identificados" (decision del 27 de octubre de 2026); se informan aparte en
  * "porcionessolas" para poder decir cuantos se dejaron por fuera.
  *

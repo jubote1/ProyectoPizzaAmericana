@@ -30,12 +30,12 @@ public class IdentificacionMostradorDAO {
 	/** Lo que hizo una persona en el mostrador dentro del rango. */
 	public static class Cajero {
 		public String cajero = "";
-		/** Pedidos que CUENTAN: no incluye los que son solo porciones. */
+		/** Pedidos que CUENTAN: no incluye los que no llevan pizza. */
 		public int pedidos = 0;
 		public int identificados = 0;
 
 		/**
-		 * Pedidos que son solo porciones y por eso NO estan en "pedidos" ni en
+		 * Pedidos sin pizza y por eso NO estan en "pedidos" ni en
 		 * "identificados". Se devuelven aparte para poder decir cuantos se dejaron
 		 * por fuera.
 		 */
@@ -92,22 +92,21 @@ public class IdentificacionMostradorDAO {
 	}
 
 	/**
-	 * Un pedido que es SOLO de porciones: lleva al menos una porcion y ninguna
-	 * pizza. Decidido el 27 de octubre de 2026 para el reto de identificacion en
-	 * el mostrador: quien compra una porcion casi nunca da sus datos, asi que
-	 * esos pedidos no se cuentan. Si el pedido lleva una pizza, cuenta completo.
+	 * Un pedido SIN PIZZA: no lleva ninguna linea de pizza, tenga lo que tenga.
+	 * Decidido por Juan David el 4 de noviembre de 2026 para el reto de identificacion
+	 * en el mostrador: las ventas que no incluyen una pizza -porciones, gaseosas
+	 * solas, lecheritas, acompanantes sueltos- no piden los datos del cliente (el POS
+	 * las deja con el cliente generico) y no cuentan. Desde el 27 de octubre solo se
+	 * dejaban por fuera los pedidos que eran unicamente porciones.
 	 *
-	 * Porcion = el producto se llama "Porci..."; pizza = tipo_producto = 'P'.
-	 * Las lineas anuladas no cuentan. Se escribe sobre el alias "p" de pedido.
+	 * Pizza = tipo_producto = 'P' (incluye combos y promos). Las lineas anuladas no
+	 * cuentan. Se escribe sobre el alias "p" de pedido.
 	 *
-	 * Es la misma condicion de capaDAOPOS.PedidoDAO.SQL_SOLO_PORCIONES: si se
-	 * cambia una hay que cambiar la otra.
+	 * Es la misma condicion de capaDAOPOS.PedidoDAO.SQL_SIN_PIZZA: si se cambia una
+	 * hay que cambiar la otra. Y es la que decide, en la caja del POS, si se pregunta
+	 * por el cliente.
 	 */
-	private static final String SQL_SOLO_PORCIONES = "(EXISTS (SELECT 1 FROM detalle_pedido dp"
-			+ " JOIN producto pp ON pp.idproducto = dp.idproducto"
-			+ " WHERE dp.idpedidotienda = p.idpedidotienda AND IFNULL(dp.idmotivoanulacion, 0) = 0"
-			+ " AND pp.descripcion LIKE 'Porci%')"
-			+ " AND NOT EXISTS (SELECT 1 FROM detalle_pedido dz"
+	private static final String SQL_SIN_PIZZA = "(NOT EXISTS (SELECT 1 FROM detalle_pedido dz"
 			+ " JOIN producto pz ON pz.idproducto = dz.idproducto"
 			+ " WHERE dz.idpedidotienda = p.idpedidotienda AND IFNULL(dz.idmotivoanulacion, 0) = 0"
 			+ " AND pz.tipo_producto = 'P'))";
@@ -141,8 +140,8 @@ public class IdentificacionMostradorDAO {
 			//condicion lleva tambien "celular is null" por si un pedido quedo
 			//marcado y despues si se identifico, para que las tres cifras sumen
 			//los pedidos.
-			//Los pedidos que son solo porciones NO se cuentan (ver
-			//SQL_SOLO_PORCIONES), pero se devuelven aparte en "porciones_solas".
+			//Los pedidos SIN PIZZA no se cuentan (ver
+			//SQL_SIN_PIZZA), pero se devuelven aparte en "porciones_solas" (el nombre viene de cuando solo eran porciones).
 			String consulta = "SELECT IFNULL(x.usuariopedido,'(sin usuario)') AS cajero,"
 					+ " SUM(x.solo_porciones = 0) AS pedidos,"
 					+ " SUM(x.solo_porciones = 0 AND c.celular_norm IS NOT NULL) AS identificados,"
@@ -151,7 +150,7 @@ public class IdentificacionMostradorDAO {
 							: " 0 AS preguntados,")
 					+ " SUM(x.solo_porciones = 1) AS porciones_solas"
 					+ " FROM (SELECT p.idpedidotienda, p.idcliente, p.usuariopedido, "
-					+ SQL_SOLO_PORCIONES + " AS solo_porciones"
+					+ SQL_SIN_PIZZA + " AS solo_porciones"
 					+ "       FROM pedido p"
 					+ "       LEFT JOIN tipo_pedido t ON t.idtipopedido = p.idtipopedido"
 					+ "       WHERE p.fechapedido BETWEEN '" + desde + "' AND '" + hasta + "'"

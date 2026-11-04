@@ -104,7 +104,7 @@ function imPintarTarjetas(data)
 	$('#im-res-pedidos').text(imNumero(data.totalpedidos));
 	$('#im-res-identificados').text(imNumero(data.totalidentificados));
 	$('#im-res-pedidos-pie').text(data.totalporcionessolas > 0
-		? 'en el rango; no cuentan ' + imNumero(data.totalporcionessolas) + ' que son solo porciones'
+		? 'en el rango; no cuentan ' + imNumero(data.totalporcionessolas) + ' que no llevan pizza'
 		: 'en el rango');
 	$('#im-res-tiendas').text(data.filas.length);
 	if (data.totalpedidos > 0) {
