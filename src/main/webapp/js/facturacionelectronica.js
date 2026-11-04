@@ -107,6 +107,12 @@ function fePintar(d) {
 			}
 			alertas.push('sin datos el día ' + dd.join(', ') + (f.dias_faltantes.length > 8 ? '…' : ''));
 		}
+		if (f.despues_cierre_cantidad > 0) {
+			alertas.push(f.despues_cierre_cantidad + ' factura(s) de ventas del ' + feDia(f.despues_cierre_desde) + ' al ' + feDia(f.despues_cierre_hasta) + ' se emitieron el mes siguiente (' + fePesos(f.despues_cierre_total) + '): no están en este neto');
+		}
+		if (f.atrasadas_cantidad > 0) {
+			alertas.push(f.atrasadas_cantidad + ' factura(s) emitidas días después de la venta (' + fePesos(f.atrasadas_total) + ', ventas del ' + feDia(f.atrasadas_desde) + ' al ' + feDia(f.atrasadas_hasta) + ')');
+		}
 		if (f.facturas_no_aceptadas > 0) {
 			alertas.push(f.facturas_no_aceptadas + ' factura(s) no aceptada(s) por la DIAN');
 		}
@@ -153,4 +159,12 @@ function fePintar(d) {
 	$('#feNotas tbody').html(filas);
 
 	$('#feResultado').show();
+}
+
+/** "2026-10-31" -> "31/10" para los mensajes de alerta. */
+function feDia(fecha) {
+	if (!fecha || fecha.length < 10) {
+		return '?';
+	}
+	return fecha.substring(8, 10) + '/' + fecha.substring(5, 7);
 }

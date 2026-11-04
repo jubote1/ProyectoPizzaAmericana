@@ -75,6 +75,14 @@ public class FacturacionElectronicaCtrl {
 				}
 			}
 			f.put("dias_faltantes", faltan);
+			f.put("atrasadas_cantidad", r.atrasadas.cantidad);
+			f.put("atrasadas_total", r.atrasadas.total);
+			f.put("atrasadas_desde", r.atrasadasDesde);
+			f.put("atrasadas_hasta", r.atrasadasHasta);
+			f.put("despues_cierre_cantidad", r.despuesDelCierre.cantidad);
+			f.put("despues_cierre_total", r.despuesDelCierre.total);
+			f.put("despues_cierre_desde", r.despuesDelCierreDesde);
+			f.put("despues_cierre_hasta", r.despuesDelCierreHasta);
 			filas.add(f);
 			if (!faltan.isEmpty()) {
 				sinCobertura++;

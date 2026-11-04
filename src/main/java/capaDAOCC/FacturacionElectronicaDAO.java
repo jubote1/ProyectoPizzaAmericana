@@ -56,6 +56,14 @@ public class FacturacionElectronicaDAO {
 		public int notasNoAceptadas;
 		/** Dias del mes que la replica tiene bien copiados (OK, YA o CERO) para las facturas. */
 		public int diasConDatos;
+		/** Facturas emitidas en el mes por ventas de un dia anterior (el facturador se atranco), con su valor. */
+		public Cifras atrasadas = new Cifras();
+		public String atrasadasDesde = "";
+		public String atrasadasHasta = "";
+		/** Ventas DEL mes cuya factura se emitio despues del cierre del mes: no estan en el neto del mes. */
+		public Cifras despuesDelCierre = new Cifras();
+		public String despuesDelCierreDesde = "";
+		public String despuesDelCierreHasta = "";
 		/** Los dias (yyyy-MM-dd) cubiertos: copiados por la replica o con facturas en el datamart. */
 		public java.util.TreeSet<String> diasCubiertos = new java.util.TreeSet<String>();
 	}
@@ -131,6 +139,50 @@ public class FacturacionElectronicaDAO {
 			// Lo que no suma: rechazadas o sin validar.
 			contarNoAceptadas(cn, mapa, desde, hasta, "factura_electronica_generada", true);
 			contarNoAceptadas(cn, mapa, desde, hasta, "nota_credito_electronica_generada", false);
+			// Facturas emitidas DESPUES del dia de la venta. Normalmente son cero (en octubre, 26.280 de ~26.600 salieron
+			// el mismo dia). Cuando el facturador de una tienda se atranca, las facturas salen al dia siguiente y la
+			// venta de un dia cae en el mes de al lado: el neto del mes no cuadra contra lo vendido.
+			//  - atrasadas: emitidas dentro del mes pero de ventas de un dia anterior.
+			//  - despues del cierre: ventas DEL MES cuya factura se emitio en el mes siguiente (no estan en el neto).
+			final String atraso = "DATEDIFF(STR_TO_DATE(f.fecha, '%Y-%m-%d'), p.fechapedido)";
+			for (final boolean despuesDelCierre : new boolean[] {false, true}) {
+				sql = "SELECT f.idtienda, COUNT(*) cantidad, IFNULL(SUM(" + TOTAL_FACTURA + "), 0) total, "
+						+ "MIN(p.fechapedido) primera, MAX(p.fechapedido) ultima "
+						+ "FROM factura_electronica_generada f "
+						+ "JOIN pedido p ON p.idtienda = f.idtienda AND p.idpedidotienda = f.idpedidotienda "
+						+ "WHERE f.validacion_dian = 1 AND f.cufe <> '' AND " + atraso + " >= 1 AND "
+						+ (despuesDelCierre
+								? "p.fechapedido >= ? AND p.fechapedido <= LAST_DAY(?) AND f.fecha > ? "
+								: "f.fecha >= ? AND f.fecha <= ? ")
+						+ "GROUP BY f.idtienda";
+				try (PreparedStatement ps = cn.prepareStatement(sql)) {
+					ps.setString(1, desde);
+					if (despuesDelCierre) {
+						ps.setString(2, desde);
+						ps.setString(3, hasta);
+					} else {
+						ps.setString(2, hasta);
+					}
+					try (ResultSet rs = ps.executeQuery()) {
+						while (rs.next()) {
+							final ResumenTienda r = de(mapa, rs.getInt("idtienda"));
+							final Cifras c = despuesDelCierre ? r.despuesDelCierre : r.atrasadas;
+							c.cantidad = rs.getInt("cantidad");
+							c.total = rs.getDouble("total");
+							if (despuesDelCierre) {
+								r.despuesDelCierreDesde = texto(rs.getString("primera"));
+								r.despuesDelCierreHasta = texto(rs.getString("ultima"));
+							} else {
+								r.atrasadasDesde = texto(rs.getString("primera"));
+								r.atrasadasHasta = texto(rs.getString("ultima"));
+							}
+						}
+					}
+				} catch (final Exception e) {
+					// Es un aviso adicional: si falla, el reporte sale igual.
+					logger.info("FacturacionElectronicaDAO: sin dato de facturas con atraso: " + e);
+				}
+			}
 			// Cobertura: un dia esta cubierto si el replica_log dice que se copio (OK, YA o CERO) O si el datamart
 			// ya tiene facturas de ese dia. Mirar solo el log daba falsas alertas: la tabla se empezo a replicar
 			// el 5-oct, pero los datos de antes ya estaban en el datamart; y un dia que dio ERROR por tienda
@@ -312,6 +364,10 @@ public class FacturacionElectronicaDAO {
 		c.total = rs.getDouble("total");
 		c.impuesto = rs.getDouble("impuesto");
 		c.base = c.total - c.impuesto;
+	}
+
+	private static String texto(final String valor) {
+		return valor == null ? "" : valor;
 	}
 
 	private static ResumenTienda de(final Map<Integer, ResumenTienda> mapa, final int idTienda) {
