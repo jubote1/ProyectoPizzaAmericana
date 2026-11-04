@@ -78,10 +78,34 @@ public class FidelizacionCtrl {
 			    String senderEmail = "mercadeo@pizzaamericana.com.co";
 			    String senderName = "Pizza Americana";
 			    String subjectDefault = "Puntos, premios y mas sabor para ti🍕";
-			    int templateId = 14; // ID de la plantilla en Brevo
+			    /*
+			     * La plantilla sale de general.parametros.PLANTILLABIENVENIDAFIDELIZACION.
+			     * Estaba quemada en 14; la version nueva de Mercadeo es la 78.
+			     * Parametrizarla evita que cambiar el diseno de un correo obligue a
+			     * compilar y desplegar el war.
+			     *
+			     * Si el parametro falta o viene en cero se usa 14, la de antes: mas vale
+			     * mandar la plantilla vieja que no mandar nada.
+			     */
+			    int templateId = capaDAOCC.ParametrosDAO.retornarValorNumerico("PLANTILLABIENVENIDAFIDELIZACION");
+			    if(templateId <= 0)
+			    {
+			    	templateId = 14;
+			    	System.out.println("PLANTILLABIENVENIDAFIDELIZACION sin configurar, se usa la plantilla 14.");
+			    }
+			    /*
+			     * El nombre del cliente, para que la plantilla no salude con la palabra
+			     * "Correo". Asi estaba: paramsDefault, el destinatario y params llevaban
+			     * los tres el texto literal "Correo", de modo que el correo de bienvenida
+			     * decia "Hola Correo".
+			     *
+			     * Se busca por el correo y si no aparece se deja vacio, que la plantilla
+			     * maneja mejor que una palabra que no es el nombre de nadie.
+			     */
+			    String nombreCliente = ClienteFidelizacionDAO.obtenerNombrePorCorreo(correo);
 			    // Construcción del JSON principal
 				JSONObject paramsDefault = new JSONObject();
-				paramsDefault.put("nombre", "Correo");
+				paramsDefault.put("nombre", nombreCliente);
 		        JSONObject jsonRequest = new JSONObject();
 		        jsonRequest.put("subject", subjectDefault);
 		        JSONObject jsonObjectCorreo = new JSONObject();
@@ -96,10 +120,10 @@ public class FidelizacionCtrl {
 		        JSONArray jsonArrayCorreo = new JSONArray();
 		        JSONObject jsonObjectTO = new JSONObject();
 		        jsonObjectTO.put("email", correo);
-		        jsonObjectTO.put("name", "Correo");
+		        jsonObjectTO.put("name", nombreCliente);
 		        jsonArrayCorreo.add(jsonObjectTO);
 		        JSONObject params = new JSONObject();
-		        params.put("nombre", "Correo");
+		        params.put("nombre", nombreCliente);
 		        messageVersion.put("to", jsonArrayCorreo);
 		        messageVersion.put("params", params);
 		        messageVersion.put("subject", "Puntos, premios y mas sabor para ti🍕");  

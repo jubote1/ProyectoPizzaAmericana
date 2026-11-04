@@ -362,4 +362,65 @@ public class ClienteFidelizacionDAO {
 		return(puntosVigentes);
 	}
 	
+
+	/**
+	 * El nombre del cliente a partir de su correo, para saludarlo en el correo
+	 * de bienvenida.
+	 *
+	 * Existe porque enviarCorreoBienvenida le mandaba a la plantilla el texto
+	 * literal "Correo" como nombre, asi que ese correo decia "Hola Correo".
+	 *
+	 * Un mismo correo puede estar en varias fichas de cliente -comprobado- asi
+	 * que se toma la que tenga el nombre mas largo, que suele ser la mas
+	 * completa ("Juan David" sobre "Juan").
+	 *
+	 * Devuelve cadena vacia si no se encuentra: la plantilla maneja mejor un
+	 * vacio que una palabra que no es el nombre de nadie.
+	 */
+	public static String obtenerNombrePorCorreo(String correo)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		String nombre = "";
+		if(correo == null || correo.trim().length() == 0)
+		{
+			return(nombre);
+		}
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			PreparedStatement ps = con1.prepareStatement(
+					"select trim(concat(ifnull(nombre,''),' ',ifnull(apellido,''))) as nombre"
+					+ "  from cliente"
+					+ " where lower(trim(email)) = lower(trim(?))"
+					+ "   and trim(ifnull(nombre,'')) <> ''"
+					+ " order by char_length(trim(concat(ifnull(nombre,''),' ',ifnull(apellido,'')))) desc"
+					+ " limit 1");
+			ps.setString(1, correo);
+			ResultSet rs = ps.executeQuery();
+			if(rs.next())
+			{
+				nombre = rs.getString("nombre");
+				if(nombre == null)
+				{
+					nombre = "";
+				}
+			}
+			rs.close();
+			ps.close();
+			con1.close();
+		}
+		catch(Exception e)
+		{
+			logger.error("ClienteFidelizacionDAO.obtenerNombrePorCorreo: " + e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(nombre);
+	}
+
 }
