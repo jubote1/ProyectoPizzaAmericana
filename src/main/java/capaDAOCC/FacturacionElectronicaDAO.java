@@ -56,6 +56,8 @@ public class FacturacionElectronicaDAO {
 		public int notasNoAceptadas;
 		/** Dias del mes que la replica tiene bien copiados (OK, YA o CERO) para las facturas. */
 		public int diasConDatos;
+		/** De las facturas del mes, las que corresponden a ventas de MESES ANTERIORES (reprocesos, facturadores atrancados). */
+		public Cifras deOtrosMeses = new Cifras();
 		/** Facturas emitidas en el mes por ventas de un dia anterior (el facturador se atranco), con su valor. */
 		public Cifras atrasadas = new Cifras();
 		public String atrasadasDesde = "";
@@ -83,7 +85,7 @@ public class FacturacionElectronicaDAO {
 	}
 
 	/** Expresion SQL del valor con impuestos de una factura f, con respaldo en el total del pedido p. */
-	private static final String TOTAL_FACTURA = "COALESCE(f.valor_total, p.total_neto)";
+	private static final String TOTAL_FACTURA = "COALESCE(f.valor_total, NULLIF(p.total_neto, 0))";
 
 	/**
 	 * @param desde yyyy-MM-dd primer dia del mes
@@ -182,6 +184,27 @@ public class FacturacionElectronicaDAO {
 					// Es un aviso adicional: si falla, el reporte sale igual.
 					logger.info("FacturacionElectronicaDAO: sin dato de facturas con atraso: " + e);
 				}
+			}
+			// De las facturas aceptadas del mes, cuanto corresponde a ventas de meses anteriores: asi se separa lo
+			// que se vendio y facturo en el mes de lo que solo se facturo en el mes (reprocesos).
+			sql = "SELECT f.idtienda, COUNT(*) cantidad, IFNULL(SUM(" + TOTAL_FACTURA + "), 0) total "
+					+ "FROM factura_electronica_generada f "
+					+ "JOIN pedido p ON p.idtienda = f.idtienda AND p.idpedidotienda = f.idpedidotienda "
+					+ "WHERE f.fecha >= ? AND f.fecha <= ? AND f.validacion_dian = 1 AND f.cufe <> '' "
+					+ "AND p.fechapedido < ? GROUP BY f.idtienda";
+			try (PreparedStatement ps = cn.prepareStatement(sql)) {
+				ps.setString(1, desde);
+				ps.setString(2, hasta);
+				ps.setString(3, desde);
+				try (ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						final Cifras c = de(mapa, rs.getInt("idtienda")).deOtrosMeses;
+						c.cantidad = rs.getInt("cantidad");
+						c.total = rs.getDouble("total");
+					}
+				}
+			} catch (final Exception e) {
+				logger.info("FacturacionElectronicaDAO: sin dato de facturas de otros meses: " + e);
 			}
 			// Cobertura: un dia esta cubierto si el replica_log dice que se copio (OK, YA o CERO) O si el datamart
 			// ya tiene facturas de ese dia. Mirar solo el log daba falsas alertas: la tabla se empezo a replicar

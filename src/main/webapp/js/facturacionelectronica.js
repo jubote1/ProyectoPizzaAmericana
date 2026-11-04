@@ -90,6 +90,8 @@ function fePintar(d) {
 
 	$('#feKpis').html(
 		feKpi(fePesos(t.facturas.total), 'Facturado', t.facturas.cantidad + ' factura(s)') +
+		feKpi(fePesos(t.facturas.total - t.otros_meses.total), 'Facturado de ventas del mes', (t.facturas.cantidad - t.otros_meses.cantidad) + ' factura(s)') +
+		feKpi(fePesos(t.otros_meses.total), 'Facturado de ventas de otros meses', t.otros_meses.cantidad + ' factura(s) emitidas este mes (reprocesos)', t.otros_meses.cantidad > 0 ? 'fe-menos' : '') +
 		feKpi((t.notas.total > 0 ? '-' : '') + fePesos(t.notas.total), 'Notas crédito', t.notas.cantidad + ' nota(s)', 'fe-menos') +
 		feKpi(fePesos(t.neto_total), 'Neto facturado', 'con impuestos', 'fe-neto') +
 		feKpi(fePesos(t.neto_base), 'Neto sin impuestos', 'impuesto neto ' + fePesos(t.neto_impuesto))
@@ -125,6 +127,7 @@ function fePintar(d) {
 		cuerpo += '<tr><td>' + feEscapar(f.nombre) + '</td>' +
 			'<td class="fe-der">' + f.facturas.cantidad + '</td>' +
 			'<td class="fe-der">' + fePesos(f.facturas.total) + '</td>' +
+			'<td class="fe-der">' + (f.otros_meses.cantidad > 0 ? fePesos(f.otros_meses.total) + ' <small>(' + f.otros_meses.cantidad + ')</small>' : '$ 0') + '</td>' +
 			'<td class="fe-der">' + f.notas.cantidad + '</td>' +
 			'<td class="fe-der ' + (f.notas.total > 0 ? 'fe-menos' : '') + '">' + (f.notas.total > 0 ? '-' : '') + fePesos(f.notas.total) + '</td>' +
 			'<td class="fe-der fe-neto">' + fePesos(f.neto_total) + '</td>' +
@@ -135,6 +138,7 @@ function fePintar(d) {
 	$('#feTabla tfoot').html('<tr><td>TOTAL</td>' +
 		'<td class="fe-der">' + t.facturas.cantidad + '</td>' +
 		'<td class="fe-der">' + fePesos(t.facturas.total) + '</td>' +
+		'<td class="fe-der">' + fePesos(t.otros_meses.total) + ' <small>(' + t.otros_meses.cantidad + ')</small></td>' +
 		'<td class="fe-der">' + t.notas.cantidad + '</td>' +
 		'<td class="fe-der fe-menos">' + (t.notas.total > 0 ? '-' : '') + fePesos(t.notas.total) + '</td>' +
 		'<td class="fe-der">' + fePesos(t.neto_total) + '</td>' +

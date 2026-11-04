@@ -50,6 +50,7 @@ public class FacturacionElectronicaCtrl {
 		final JSONArray filas = new JSONArray();
 		final Cifras totalFact = new Cifras();
 		final Cifras totalNotas = new Cifras();
+		final Cifras totalOtros = new Cifras();
 		int sinCobertura = 0;
 		for (final Tienda t : tiendas) {
 			final ResumenTienda r = resumen.containsKey(Integer.valueOf(t.getIdTienda()))
@@ -60,6 +61,7 @@ public class FacturacionElectronicaCtrl {
 			f.put("nombre", t.getNombreTienda());
 			f.put("facturas", cifras(r.facturas));
 			f.put("notas", cifras(r.notas));
+			f.put("otros_meses", cifras(r.deOtrosMeses));
 			f.put("neto_base", r.facturas.base - r.notas.base);
 			f.put("neto_impuesto", r.facturas.impuesto - r.notas.impuesto);
 			f.put("neto_total", r.facturas.total - r.notas.total);
@@ -89,6 +91,7 @@ public class FacturacionElectronicaCtrl {
 			}
 			sumar(totalFact, r.facturas);
 			sumar(totalNotas, r.notas);
+			sumar(totalOtros, r.deOtrosMeses);
 		}
 		respuesta.put("mes", mes);
 		respuesta.put("dias_del_mes", diasDelMes);
@@ -97,6 +100,7 @@ public class FacturacionElectronicaCtrl {
 		final JSONObject totales = new JSONObject();
 		totales.put("facturas", cifras(totalFact));
 		totales.put("notas", cifras(totalNotas));
+		totales.put("otros_meses", cifras(totalOtros));
 		totales.put("neto_base", totalFact.base - totalNotas.base);
 		totales.put("neto_impuesto", totalFact.impuesto - totalNotas.impuesto);
 		totales.put("neto_total", totalFact.total - totalNotas.total);
