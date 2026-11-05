@@ -821,6 +821,59 @@ public class ConsultaPuntosClienteDAO {
 		return (v);
 	}
 
+	/** Que significa el segmento de una persona: el nombre, su explicacion y su color. */
+	public static class Segmento {
+		public boolean hay;
+		public String nombre = "";
+		public String descripcion = "";
+		public String color = "";
+	}
+
+	/**
+	 * La definicion del segmento, para poder decir que significa y no solo como
+	 * se llama.
+	 *
+	 * "ORO" no le dice nada a quien esta en la caja; "compra seguido y compro
+	 * hace poco" si. La explicacion y el color salen de crm.segmento_definicion,
+	 * que es la misma tabla con la que se arman los segmentos: asi, si manana se
+	 * cambia una regla o se renombra uno, las pantallas lo siguen solas y no hay
+	 * una lista de colores escrita a mano en ninguna parte.
+	 *
+	 * Se busca por nombre porque es lo unico que trae crm.persona_resumen.
+	 */
+	public static Segmento segmento(final String nombre) {
+		final Segmento s = new Segmento();
+		if (nombre == null || nombre.trim().length() == 0) {
+			return (s);
+		}
+		s.nombre = nombre.trim();
+		final Logger logger = Logger.getLogger("log_file");
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection cn = null;
+		try {
+			cn = con.obtenerConexionBDPrincipal();
+			final PreparedStatement ps = cn.prepareStatement(
+					"SELECT descripcion, color FROM crm.segmento_definicion"
+					+ " WHERE UPPER(TRIM(nombre)) = UPPER(TRIM(?)) LIMIT 1");
+			ps.setString(1, s.nombre);
+			final ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				s.hay = true;
+				s.descripcion = texto(rs.getString("descripcion"));
+				s.color = texto(rs.getString("color"));
+			}
+			rs.close();
+			ps.close();
+		} catch (final Exception e) {
+			//Que no se pueda leer la definicion no puede tumbar la ficha: se
+			//queda sin explicacion y ya, el nombre del segmento igual se ve.
+			logger.error("ConsultaPuntosClienteDAO.segmento: " + e.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return (s);
+	}
+
 	private static String texto(final String valor) {
 		return (valor == null ? "" : valor);
 	}

@@ -218,8 +218,19 @@ function cpPintar(d) {
 	} else {
 		estado = '<span class="etq etq-no">En el programa · Inactivo</span>';
 	}
-	if (c.hay && c.segmento) {
-		estado += '<span class="etq etq-seg">' + cpEscapar(c.segmento) + '</span>';
+	// El segmento, con su color y su explicacion. "ORO" solo no le dice nada a
+	// quien atiende; "compra seguido y compro hace poco" si. El color y el texto
+	// salen de crm.segmento_definicion, no escritos aqui: si manana se renombra
+	// un segmento o se cambia su color, esta pantalla lo sigue sola.
+	var seg = d.segmento || {};
+	var nombreSeg = seg.nombre || (c.hay ? c.segmento : '');
+	if (nombreSeg) {
+		var estilo = seg.color ? ' style="background:' + cpEscapar(seg.color) + ';color:#fff;"' : '';
+		estado += '<span class="etq etq-seg"' + estilo + ' title="' + cpEscapar(seg.descripcion || '') + '">'
+			+ cpEscapar(nombreSeg) + '</span>';
+		if (seg.descripcion) {
+			estado += '<div class="cp-segdesc">' + cpEscapar(seg.descripcion) + '</div>';
+		}
 	}
 	$('#cpEstado').html(estado);
 

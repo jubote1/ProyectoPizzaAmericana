@@ -190,6 +190,18 @@ public class ConsultaPuntosClienteCtrl {
 		}
 		r.put("catalogo", jc2);
 
+		//El segmento va APARTE y no solo dentro de comportamiento, a proposito:
+		//el POS recibe la ficha sin comportamiento -es historial que no se lee en
+		//caja- pero si necesita saber que clase de cliente tiene al frente. Asi
+		//las dos pantallas leen lo mismo del mismo lugar.
+		final ConsultaPuntosClienteDAO.Segmento seg = ConsultaPuntosClienteDAO.segmento(c.segmento);
+		final JSONObject js = new JSONObject();
+		js.put("hay", seg.hay);
+		js.put("nombre", seg.nombre);
+		js.put("descripcion", seg.descripcion);
+		js.put("color", seg.color);
+		r.put("segmento", js);
+
 		r.put("resultado", "OK");
 		return (r);
 	}
