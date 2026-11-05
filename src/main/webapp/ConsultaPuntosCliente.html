@@ -3,35 +3,92 @@
 	<head>
 		<title>CONSULTA DE PUNTOS CLIENTE</title>
 		<meta charset="utf-8" />
-		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
-		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
-		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
-		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
-		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
-		  <link rel="stylesheet" href="css/jquery-confirm.min.css">
-		  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css"
-        crossorigin="anonymous">
-	    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.min.css"
-	        crossorigin="anonymous">
-	    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
-	    <!-- el archivo CSS de estilo del complemento fileinput -->
-	    <link href="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/css/fileinput.min.css" media="all"
-	        rel="stylesheet" type="text/css" />
-	    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script> -->
-	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"
-	        crossorigin="anonymous"></script>
-	     <!-- el archivo JS del script principal fileinput plugin -->
-	    <script src="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.2/js/fileinput.min.js"></script>
-	    <script>$.fn.fileinput.defaults.theme = 'gly';</script>
-	    <link rel="stylesheet" href="js/mostrarImagen.css" crossorigin="anonymous">
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/marca.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<style type="text/css">
+			:root { --azul:#102F6F; --rojo:#E42528; --amarillo:#FDC806; --verde:#0b8a4a; --ambar:#d98c00; --gris:#6C7482; --borde:#DEE2E6; --fondo:#f4f6fb; }
+			body { background:#fff; }
+			.cp-sub { color:var(--gris); margin:-4px 0 14px 0; font-size:14px; }
+			.cp-busca { background:var(--fondo); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+			.cp-busca label { font-size:12px; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; display:block; }
+			.cp-msg { margin:10px 0; font-size:14px; }
+			.cp-cand { border:1px solid var(--borde); border-radius:10px; padding:10px 14px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+			.cp-cand:hover { background:#eef3ff; }
+			.cp-cand .n { font-weight:800; color:var(--azul); }
+			.cp-cand .s { color:var(--gris); font-size:13px; }
+
+			.cp-ficha { border:1px solid var(--borde); border-radius:12px; padding:14px 18px; margin-bottom:14px; display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between; }
+			.cp-ficha .nom { font-size:22px; font-weight:800; color:var(--azul); line-height:1.2; }
+			.cp-ficha .dat { color:var(--gris); font-size:13px; }
+			.cp-ficha .dat b { color:#33384a; }
+			.etq { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11.5px; font-weight:700; margin-left:4px; }
+			.etq-ok { background:#e2f4ea; color:#0b6b3c; }
+			.etq-no { background:#e6e9ef; color:#41495A; }
+			.etq-seg { background:#fff1cc; color:#8a6100; }
+			.etq-acu { background:#e2f4ea; color:#0b6b3c; }
+			.etq-red { background:#e0ecff; color:#102F6F; }
+			.etq-rev { background:#fff1cc; color:#8a6100; }
+			.etq-ven { background:#ffd9d9; color:#9e1b1b; }
+
+			.cp-tarjetas { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+			.cp-tarjeta { flex:1 1 150px; background:var(--fondo); border-radius:12px; padding:12px 16px; min-width:140px; }
+			.cp-tarjeta.grande { flex:2 1 230px; background:var(--azul); }
+			.cp-tarjeta.grande .k, .cp-tarjeta.grande .p { color:#cfd8f0; }
+			.cp-tarjeta.grande .v { color:#fff; font-size:40px; }
+			.cp-tarjeta.alerta { background:#fff6e0; box-shadow:inset 0 0 0 2px var(--amarillo); }
+			.cp-tarjeta.urgente { background:#ffeaea; box-shadow:inset 0 0 0 2px var(--rojo); }
+			.cp-vence { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; padding:2px 0; }
+			.cp-vence b { font-size:20px; color:var(--azul); }
+			.cp-vence b.menos { color:var(--rojo); }
+			.cp-tarjeta .k { font-size:11px; letter-spacing:1.2px; font-weight:700; color:var(--gris); text-transform:uppercase; }
+			.cp-tarjeta .v { font-size:28px; font-weight:800; color:var(--azul); line-height:1.15; }
+			.cp-tarjeta .p { font-size:12px; color:var(--gris); }
+
+			.cp-aviso { background:#fff6e0; border-left:4px solid var(--amarillo); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px; }
+			.cp-aviso.rojo { background:#ffeaea; border-left-color:var(--rojo); }
+
+			.cp-tabs { list-style:none; padding-left:0; margin:0 0 12px 0; border-bottom:1px solid var(--borde); }
+			.cp-tabs li { display:inline-block; margin-right:4px; margin-bottom:-1px; }
+			.cp-tabs a { display:block; padding:8px 16px; border:1px solid transparent; border-radius:5px 5px 0 0; font-weight:700; color:var(--azul); cursor:pointer; text-decoration:none; font-size:13px; }
+			.cp-tabs li.activo a { background:#fff; border-color:var(--borde) var(--borde) #fff var(--borde); border-top:3px solid var(--amarillo); }
+			.cp-panel { display:none; } .cp-panel.activo { display:block; }
+
+			.cp-filtros { margin-bottom:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+			.cp-chip { cursor:pointer; padding:4px 12px; border-radius:14px; border:1px solid var(--borde); font-size:12.5px; font-weight:700; color:var(--azul); background:#fff; }
+			.cp-chip.activo { background:var(--azul); color:#fff; border-color:var(--azul); }
+
+			.cp-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+			.cp-tabla th { background:var(--azul); color:#fff; padding:7px 8px; text-align:left; font-size:12px; position:sticky; top:0; z-index:2; }
+			.cp-tabla td { padding:6px 8px; border-bottom:1px solid var(--borde); vertical-align:top; }
+			.cp-tabla tbody tr:hover { background:#eef3ff; }
+			.cp-scroll { max-height:560px; overflow:auto; border:1px solid var(--borde); border-radius:10px; }
+			.num { text-align:right; white-space:nowrap; }
+			.mas { color:var(--verde); font-weight:800; } .menos { color:var(--rojo); font-weight:800; }
+			.cp-vacio { color:var(--gris); font-size:13px; padding:18px; text-align:center; }
+			.cp-nota { color:var(--gris); font-size:12.5px; margin:8px 0 0 0; }
+
+			.cp-cols { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+			.cp-col { flex:1 1 420px; min-width:0; }
+			.cp-bloque { border:1px solid var(--borde); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+			.cp-bloque h4 { margin:0 0 8px 0; font-size:16px; color:var(--azul); font-weight:800; }
+			.cp-fila { display:flex; align-items:center; margin:5px 0; font-size:13px; gap:8px; }
+			.cp-fila .et { flex:0 0 130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+			.cp-fila .bar { flex:1 1 auto; background:#eceff6; border-radius:5px; height:16px; }
+			.cp-fila .bar i { display:block; height:16px; border-radius:5px; background:var(--azul); }
+			.cp-fila .cif { flex:0 0 120px; text-align:right; white-space:nowrap; }
+			.cp-dato { display:flex; justify-content:space-between; border-bottom:1px solid var(--borde); padding:6px 0; font-size:13.5px; }
+			.cp-dato span:first-child { color:var(--gris); }
+			.cp-dato span:last-child { font-weight:700; color:#33384a; text-align:right; }
+			#cpCargando { display:none; color:var(--gris); font-size:13px; margin:8px 0; }
+		</style>
 	</head>
 	<body>
-
 		<div id="cargarMenu"></div>
 		<script type="text/javascript">
-			
-			var getImport; 
+			var getImport;
 			var getContent;
 			//Obtenemos el valor de la variable server, con base en la URL digitada
 			var loc = window.location;
@@ -39,18 +96,17 @@
 			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
 			var respuesta ='';
 			var usuario = "";
-			$.ajax({ 
-		    	url: server + 'ValidarUsuarioAplicacion', 
+			$.ajax({
+		    	url: server + 'ValidarUsuarioAplicacion',
 		    	dataType: 'json',
-		    	type: 'post', 
-		    	async: false, 
+		    	type: 'post',
+		    	async: false,
 		    	success: function(data){
-						    respuesta =  data[0].respuesta;	
-						    usuario = data[0].nombreusuario;	
-						    
-				} 
+						    respuesta =  data[0].respuesta;
+						    usuario = data[0].nombreusuario;
+				}
 			});
-						//Si se llego desde el area de CRM se conserva SU menu. Salirse del
+			//Si se llego desde el area de CRM se conserva SU menu. Salirse del
 			//area sin querer, al abrir una pantalla, desorienta: uno cree que
 			//se equivoco de sitio. El area marca su paso en sessionStorage.
 			function menuDelArea(porDefecto) {
@@ -78,65 +134,148 @@
 		    				location.href = server +"Index.html";
 		    				break;
 		    		}
-		    		
 		</script>
 
-		<div class="container">
-			<form>
-				<h1>CONSULTA DE PUNTOS CLIENTE</h1>
-				
-					<table class="table table-bordered">
-						<tbody>
-							
-								<tr>
-										<td class="active">Correo Electrónico Cliente</td>
-										<td><input type="text" id="correo" name="correo" class="form-control" placeholder="Correo Electrónico"></td>
-								</tr>
+		<div class="container-fluid" style="padding:18px 22px;">
 
-						</tbody>
-					</table>
-						<input type="button" class="btn btn-primary btn-lg" value="Consultar Puntos" onclick="consultarPuntosCliente()">
+			<h3 style="color:var(--azul); font-weight:800; margin-bottom:2px;">Consulta de puntos del cliente</h3>
+			<div class="cp-sub">
+				Escriba el correo o el celular del cliente: verá cuántos puntos tiene, cuáles se le vencen,
+				todo lo que ha acumulado y redimido, y cómo compra.
+			</div>
 
-				
-			</form>
-		</div>
-		<div class="container">
-			<table class="table table-bordered">
-				<tbody>
-							
-								<tr>
-										<td class="active">CANTIDAD DE PUNTOS ACTIVOS</td>
-										<td><input type="text" id="puntos" name="puntos" class="form-control" placeholder="Puntos activos" disabled></td>
-								</tr>
-
-				</tbody>
-			</table>
-		</div>
-				<div class="container">
-					<div>
-						<h1>Transacciones</h1>
-        				<table id="grid-puntos" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="tienda">Tienda</th>
-								                <th data-column-id="idpedidotienda">Id Pedido Tienda</th>
-								                <th data-column-id="fechatransaccion">Fecha Transaccion</th>
-								                <th data-column-id="valorneto">Valor Neto</th>
-								                <th data-column-id="puntos">Puntos</th>
-								            </tr>
-								        </thead>
-								      	<tbody>
-								      			
-								      	</tbody>
-								</table>
+			<div class="cp-busca">
+				<div class="row">
+					<div class="col-sm-8">
+						<label for="cpBusqueda">Correo o celular del cliente</label>
+						<input type="text" id="cpBusqueda" class="form-control" placeholder="ejemplo@correo.com  o  3001234567" autocomplete="off" />
+					</div>
+					<div class="col-sm-2">
+						<label>&nbsp;</label>
+						<button id="cpBuscar" class="btn btn-primary btn-block">Buscar</button>
+					</div>
+					<div class="col-sm-2">
+						<label>&nbsp;</label>
+						<button id="cpLimpiar" class="btn btn-default btn-block">Limpiar</button>
 					</div>
 				</div>
-		<div class="container">
+			</div>
+
+			<div id="cpCargando">Consultando...</div>
+			<div id="cpMensaje"></div>
+			<div id="cpCandidatos"></div>
+
+			<div id="cpResultado" style="display:none;">
+
+				<div class="cp-ficha">
+					<div>
+						<div class="nom" id="cpNombre"></div>
+						<div class="dat" id="cpDatos"></div>
+					</div>
+					<div id="cpEstado"></div>
+				</div>
+
+				<div id="cpAvisos"></div>
+
+				<div class="cp-tarjetas" id="cpTarjetas"></div>
+
+				<ul class="cp-tabs" id="cpTabs">
+					<li class="activo"><a data-panel="cpPMov">Movimientos</a></li>
+					<li><a data-panel="cpPVen">Puntos por vencer</a></li>
+					<li><a data-panel="cpPCom">Comportamiento</a></li>
+					<li><a data-panel="cpPCat">Premios con puntos</a></li>
+					<li><a data-panel="cpPBon">Bonos</a></li>
+				</ul>
+
+				<div id="cpPMov" class="cp-panel activo">
+					<div class="cp-filtros">
+						<span class="cp-chip activo" data-tipo="TODOS">Todos</span>
+						<span class="cp-chip" data-tipo="ACUMULA">Acumulaciones</span>
+						<span class="cp-chip" data-tipo="REDIME">Redenciones</span>
+						<span class="cp-chip" data-tipo="REVERSA">Devoluciones</span>
+						<span class="cp-chip" data-tipo="VENCE">Vencimientos</span>
+						<input type="text" id="cpFiltroTexto" class="form-control" style="max-width:260px; display:inline-block;" placeholder="Filtrar por tienda o pedido" />
+						<span id="cpConteo" class="cp-nota" style="margin:0;"></span>
+					</div>
+					<div class="cp-scroll">
+						<table class="cp-tabla">
+							<thead>
+								<tr>
+									<th>Fecha</th>
+									<th>Movimiento</th>
+									<th>Tienda</th>
+									<th class="num">Pedido</th>
+									<th class="num">Valor compra</th>
+									<th class="num">Puntos</th>
+									<th>Canal</th>
+									<th>Detalle</th>
+								</tr>
+							</thead>
+							<tbody id="cpMovimientos"></tbody>
+						</table>
+					</div>
+					<p class="cp-nota">Una redención reversada aparece dos veces: la redención y la devolución de los puntos.</p>
+				</div>
+
+				<div id="cpPVen" class="cp-panel">
+					<div class="cp-scroll" style="max-width:640px;">
+						<table class="cp-tabla">
+							<thead>
+								<tr><th>Se vencen el</th><th class="num">Puntos</th><th>Faltan</th></tr>
+							</thead>
+							<tbody id="cpVencimientos"></tbody>
+						</table>
+					</div>
+					<p class="cp-nota">Los puntos más viejos se vencen primero. Cada compra suma puntos que duran un año.</p>
+				</div>
+
+				<div id="cpPCom" class="cp-panel">
+					<div class="cp-cols">
+						<div class="cp-col">
+							<div class="cp-bloque">
+								<h4>Cómo compra</h4>
+								<div id="cpComportamiento"></div>
+							</div>
+						</div>
+						<div class="cp-col">
+							<div class="cp-bloque">
+								<h4>Por tienda (pedidos con puntos)</h4>
+								<div id="cpPorTienda"></div>
+							</div>
+							<div class="cp-bloque">
+								<h4>Últimos 12 meses (pedidos con puntos)</h4>
+								<div id="cpPorMes"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div id="cpPCat" class="cp-panel">
+					<div id="cpResumenPremios" class="cp-aviso" style="max-width:820px;"></div>
+					<div class="cp-scroll" style="max-width:820px;">
+						<table class="cp-tabla">
+							<thead>
+								<tr><th>Producto</th><th>Tipo</th><th class="num">Puntos</th><th>Con el saldo de este cliente</th></tr>
+							</thead>
+							<tbody id="cpPremios"></tbody>
+						</table>
+					</div>
+					<p class="cp-nota">Es el catálogo del sistema central (el del contact center). El punto de venta de cada tienda puede tener su propia lista de premios.</p>
+				</div>
+
+				<div id="cpPBon" class="cp-panel">
+					<div class="cp-scroll" style="max-width:820px;">
+						<table class="cp-tabla">
+							<thead>
+								<tr><th>Bono</th><th>Código</th><th class="num">Valor</th><th>Estado</th><th>Caduca</th></tr>
+							</thead>
+							<tbody id="cpBonos"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
 		</div>
+
+		<script src="js/consultapuntoscliente.js?v=20261105c" type="text/javascript"></script>
 	</body>
-	<script src="js/consultapuntoscliente.js" type="text/javascript"></script>
-	<script src="js/jquery-confirm.min.js"></script>
-	</script>
-	<script src="js/jquery-ui.min.js"></script>
-	<script type="text/javascript" src="js/datepicker.js"></script>
 </html>
