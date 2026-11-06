@@ -5113,10 +5113,25 @@ public class PedidoDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
+			//OJO CON LA COLUMNA: va valortotal, NO valorformapago.
+			//
+			//valorformapago es EL BILLETE CON QUE PAGA EL CLIENTE, no lo que vale
+			//el pedido: uno de $26.000 pagado con $50.000 guarda 50.000 ahi.
+			//valortotal es lo que de verdad se cobra.
+			//
+			//Importa porque el efectivo que recauda Rappi Cargo se SUMA a la
+			//"consignacion aproximada" del reporte semanal. Con valorformapago esa
+			//consignacion salia inflada y el descuadre contra lo que Rappi consigna
+			//era nuestro, no de ellos.
+			//
+			//Medido del 3 al 30 de octubre de 2026 sobre los 154 pedidos de Cargo
+			//en efectivo: valorformapago sumaba $9.854.240 y valortotal $7.728.990,
+			//$2.125.250 de mas (27,5%). Los $7.728.990 coinciden AL PESO con el
+			//order_value del portal de Cargo y con la suma de total_neto.
 			String consulta = "select a.idtienda,"
 					+ " count(distinct a.idpedido) as cantidad,"
-					+ " ifnull(sum(case when d.tipoformapago = 'EFECTIVO' then c.valorformapago else 0 end),0) as efectivo,"
-					+ " ifnull(sum(case when d.tipoformapago <> 'EFECTIVO' then c.valorformapago else 0 end),0) as no_efectivo"
+					+ " ifnull(sum(case when d.tipoformapago = 'EFECTIVO' then c.valortotal else 0 end),0) as efectivo,"
+					+ " ifnull(sum(case when d.tipoformapago <> 'EFECTIVO' then c.valortotal else 0 end),0) as no_efectivo"
 					+ " from pedido a"
 					+ " join razon_x_tienda b on b.idtienda = a.idtienda"
 					+ " left join pedido_forma_pago c on c.idpedido = a.idpedido"
