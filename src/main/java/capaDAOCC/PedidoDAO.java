@@ -5102,8 +5102,52 @@ public class PedidoDAO {
 	 * preguntar tienda por tienda, y el count es DISTINCT porque el join con las
 	 * formas de pago multiplica la fila cuando un pedido se paga con dos medios.
 	 *
-	 * Retorna por fila: idtienda, cantidad de pedidos, recaudo en efectivo,
-	 * recaudo que no es efectivo.
+	 * LA TARIFA SALE DEL WEBHOOK, NO DE UN PARAMETRO
+	 *
+	 * Hasta el 2026-11-06 el reporte semanal estimaba el costo de Cargo con una
+	 * tarifa PLANA por domicilio (parametro VALORDOMICILIOCARGO, $8.500). Medido
+	 * del 3 al 30 de octubre de 2026 contra el portal de Cargo, esa plana
+	 * subestimaba el costo en $384.600 (13,2%): solo el 24% de los pedidos
+	 * cuesta la tarifa base, y hubo siete de mas de $15.000.
+	 *
+	 * La tarifa real de cada pedido YA la venia mandando Cargo en el webhook y
+	 * nosotros YA la guardabamos: esta en
+	 * tercerizado_domicilio_evento.json_evento -> $.estimated_price. No hizo
+	 * falta tocar el webhook ni crear tabla: el dato estaba ahi y sirve tambien
+	 * para el historico. Se toma la del ULTIMO evento del pedido, que es la que
+	 * Cargo dio por buena.
+	 *
+	 * QUE INCLUYE Y QUE NO
+	 *
+	 * estimated_price = tarifa base + cobro por distancia + 2,85% del valor del
+	 * pedido cuando el repartidor recauda efectivo. Comprobado al peso contra
+	 * varios pedidos de octubre. Por eso QUIEN LLAME A ESTE METODO NO DEBE
+	 * VOLVER A RESTAR LA COMISION DE EFECTIVO APARTE: ya viene adentro.
+	 *
+	 * NO incluye el cobro por espera del repartidor, porque se calcula al crear
+	 * la orden y la espera ocurre despues. En octubre eso dejo una brecha del
+	 * 4,4% contra la factura ($192.400 de espera en 87 pedidos). Tampoco trae el
+	 * IVA: va sin IVA.
+	 *
+	 * LOS CANCELADOS SE DEVUELVEN APARTE
+	 *
+	 * La version anterior los excluia con "ifnull(cancelado,'0') <> '1'", pero
+	 * Rappi SI los cobra: $47.502 en 11 de las 26 cancelaciones de octubre, unas
+	 * a la tarifa base completa y otras al 35% de ella. Cual de las dos no se
+	 * sabe desde el webhook, asi que se devuelve la tarifa que HABRIA costado y
+	 * quien llame aplica el parametro PORCENTAJECANCELACIONCARGO.
+	 *
+	 * El universo se toma de tercerizado_domicilio_evento y no de
+	 * pedido.domicilio_tercerizado, porque al cancelarse una orden de Cargo la
+	 * marca del pedido no queda: en octubre los 264 pedidos con la marca estaban
+	 * todos sin cancelar y las 26 canceladas no aparecian por ningun lado.
+	 * Partiendo del evento salen 263 entregados y 26 cancelados, que es
+	 * EXACTAMENTE lo que reporta el portal de Cargo.
+	 *
+	 * Retorna por fila: idtienda, entregados, tarifa de los entregados,
+	 * cancelados, tarifa de los cancelados, pedidos sin tarifa (a los que hay
+	 * que aplicarles VALORDOMICILIOCARGO), recaudo en efectivo, recaudo que no
+	 * es efectivo.
 	 */
 	public static ArrayList obtenerTercerizadosPorTienda(int idRazon, String fechaAnterior, String fechaActual)
 	{
@@ -5113,7 +5157,7 @@ public class PedidoDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		try
 		{
-			//OJO CON LA COLUMNA: va valortotal, NO valorformapago.
+			//OJO CON LA COLUMNA DEL EFECTIVO: va valortotal, NO valorformapago.
 			//
 			//valorformapago es EL BILLETE CON QUE PAGA EL CLIENTE, no lo que vale
 			//el pedido: uno de $26.000 pagado con $50.000 guarda 50.000 ahi.
@@ -5128,19 +5172,44 @@ public class PedidoDAO {
 			//en efectivo: valorformapago sumaba $9.854.240 y valortotal $7.728.990,
 			//$2.125.250 de mas (27,5%). Los $7.728.990 coinciden AL PESO con el
 			//order_value del portal de Cargo y con la suma de total_neto.
-			String consulta = "select a.idtienda,"
-					+ " count(distinct a.idpedido) as cantidad,"
-					+ " ifnull(sum(case when d.tipoformapago = 'EFECTIVO' then c.valortotal else 0 end),0) as efectivo,"
-					+ " ifnull(sum(case when d.tipoformapago <> 'EFECTIVO' then c.valortotal else 0 end),0) as no_efectivo"
-					+ " from pedido a"
-					+ " join razon_x_tienda b on b.idtienda = a.idtienda"
-					+ " left join pedido_forma_pago c on c.idpedido = a.idpedido"
-					+ " left join forma_pago d on d.idforma_pago = c.idforma_pago"
-					+ " where b.idrazon = ?"
-					+ " and a.fechapedido >= ? and a.fechapedido <= ?"
-					+ " and a.domicilio_tercerizado = 'S'"
-					+ " and ifnull(a.cancelado,'0') <> '1'"
-					+ " group by a.idtienda";
+			//
+			//Las formas de pago se agrupan en su propio bloque ANTES de unirlas:
+			//un pedido pagado con dos medios tiene dos filas y, si se une directo,
+			//duplica la tarifa de Cargo de ese pedido.
+			String consulta = "with cargo as ("
+					+ "   select e.id_pedido,"
+					+ "          substring_index(group_concat("
+					+ "              json_unquote(json_extract(e.json_evento,'$.estimated_price'))"
+					+ "              order by e.id_evento desc), ',', 1) + 0 as tarifa,"
+					+ "          max(case when e.estado = 'canceled' then 1 else 0 end) as cancelada"
+					+ "     from tercerizado_domicilio_evento e"
+					+ "    where e.proveedor = 'RAPPICARGO'"
+					+ "      and json_extract(e.json_evento,'$.estimated_price') is not null"
+					+ "    group by e.id_pedido"
+					+ " ), pagos as ("
+					+ "   select c.idpedido,"
+					+ "          sum(case when d.tipoformapago =  'EFECTIVO' then c.valortotal else 0 end) as efectivo,"
+					+ "          sum(case when d.tipoformapago <> 'EFECTIVO' then c.valortotal else 0 end) as no_efectivo"
+					+ "     from pedido_forma_pago c"
+					+ "     join forma_pago d on d.idforma_pago = c.idforma_pago"
+					+ "    group by c.idpedido"
+					+ " )"
+					+ " select a.idtienda,"
+					+ "        sum(case when ifnull(g.cancelada,0) = 0 then 1 else 0 end) as entregados,"
+					+ "        ifnull(sum(case when ifnull(g.cancelada,0) = 0 then g.tarifa else 0 end),0) as tarifa_entregados,"
+					+ "        ifnull(sum(g.cancelada),0) as cancelados,"
+					+ "        ifnull(sum(case when g.cancelada = 1 then g.tarifa else 0 end),0) as tarifa_cancelados,"
+					+ "        sum(case when g.tarifa is null then 1 else 0 end) as sin_tarifa,"
+					+ "        ifnull(sum(case when ifnull(g.cancelada,0) = 0 then ifnull(p.efectivo,0) else 0 end),0) as efectivo,"
+					+ "        ifnull(sum(case when ifnull(g.cancelada,0) = 0 then ifnull(p.no_efectivo,0) else 0 end),0) as no_efectivo"
+					+ "   from pedido a"
+					+ "   join razon_x_tienda b on b.idtienda = a.idtienda"
+					+ "   left join cargo g on g.id_pedido = a.idpedido"
+					+ "   left join pagos p on p.idpedido = a.idpedido"
+					+ "  where b.idrazon = ?"
+					+ "    and a.fechapedido >= ? and a.fechapedido <= ?"
+					+ "    and (g.id_pedido is not null or a.domicilio_tercerizado = 'S')"
+					+ "  group by a.idtienda";
 			logger.info(consulta + " razon=" + idRazon + " " + fechaAnterior + " a " + fechaActual);
 			PreparedStatement pst = con1.prepareStatement(consulta);
 			pst.setInt(1, idRazon);
@@ -5148,11 +5217,15 @@ public class PedidoDAO {
 			pst.setString(3, fechaActual);
 			ResultSet rs = pst.executeQuery();
 			while(rs.next()){
-				String[] resTemp = new String[4];
+				String[] resTemp = new String[8];
 				resTemp[0] = rs.getString("idtienda");
-				resTemp[1] = rs.getString("cantidad");
-				resTemp[2] = rs.getString("efectivo");
-				resTemp[3] = rs.getString("no_efectivo");
+				resTemp[1] = rs.getString("entregados");
+				resTemp[2] = rs.getString("tarifa_entregados");
+				resTemp[3] = rs.getString("cancelados");
+				resTemp[4] = rs.getString("tarifa_cancelados");
+				resTemp[5] = rs.getString("sin_tarifa");
+				resTemp[6] = rs.getString("efectivo");
+				resTemp[7] = rs.getString("no_efectivo");
 				tercerizados.add(resTemp);
 			}
 			rs.close();
