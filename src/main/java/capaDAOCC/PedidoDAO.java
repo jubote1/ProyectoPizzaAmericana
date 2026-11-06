@@ -5244,7 +5244,86 @@ public class PedidoDAO {
 		}
 		return(tercerizados);
 	}
-	
+
+	/**
+	 * Los pedidos de la PLATAFORMA de Rappi que se cancelaron, por tienda.
+	 *
+	 * No confundir con los domicilios de Cargo cancelados, que son otra cosa y
+	 * salen de obtenerTercerizadosPorTienda: estos son pedidos de Rappi que no
+	 * se entregaron y por los que Rappi nos cobra un "Costo Canceladas"
+	 * (columna AC de la hoja Detalle de su reporte financiero).
+	 *
+	 * POR QUE EXISTE
+	 *
+	 * El reporte semanal nunca los descontaba y Rappi si los cobra: del 3 al 30
+	 * de octubre de 2026 fueron $1.483.658, uno de los dos renglones que mas
+	 * separaban la "consignacion aproximada" de lo que Rappi consigno de verdad.
+	 *
+	 * QUE TAN FIEL ES
+	 *
+	 * Rappi no nos dice cuanto va a cobrar por cada cancelado hasta que llega el
+	 * reporte, asi que quien llame aplica un porcentaje sobre el valor de los
+	 * pedidos. Medido en octubre: nuestra base tenia 34 pedidos Rappi cancelados
+	 * por $1.799.650 y Rappi cobro $1.483.658, o sea el 82,4%.
+	 *
+	 * OJO: Rappi cobro 46 cancelaciones y nosotros solo tenemos 34 marcadas. Hay
+	 * doce que nuestra base no sabe que se cancelaron, asi que el porcentaje
+	 * tambien absorbe ese hueco. Si algun dia cuadran los conteos, hay que
+	 * recalibrarlo.
+	 *
+	 * Retorna por fila: idtienda, cantidad de pedidos cancelados, valor.
+	 */
+	public static ArrayList obtenerCanceladosPlataformaPorTienda(int idRazon, String fechaAnterior,
+			String fechaActual, int idMarcacion)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ArrayList cancelados = new ArrayList();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		try
+		{
+			String consulta = "select a.idtienda,"
+					+ " count(distinct a.idpedido) as cantidad,"
+					+ " ifnull(sum(a.total_neto),0) as valor"
+					+ " from pedido a"
+					+ " join razon_x_tienda b on b.idtienda = a.idtienda"
+					+ " join marcacion_pedido f on f.idpedido = a.idpedido"
+					+ " where b.idrazon = ?"
+					+ " and f.idmarcacion = ?"
+					+ " and a.fechapedido >= ? and a.fechapedido <= ?"
+					+ " and ifnull(a.cancelado,'0') = '1'"
+					+ " group by a.idtienda";
+			logger.info(consulta + " razon=" + idRazon + " " + fechaAnterior + " a " + fechaActual);
+			PreparedStatement pst = con1.prepareStatement(consulta);
+			pst.setInt(1, idRazon);
+			pst.setInt(2, idMarcacion);
+			pst.setString(3, fechaAnterior);
+			pst.setString(4, fechaActual);
+			ResultSet rs = pst.executeQuery();
+			while(rs.next()){
+				String[] resTemp = new String[3];
+				resTemp[0] = rs.getString("idtienda");
+				resTemp[1] = rs.getString("cantidad");
+				resTemp[2] = rs.getString("valor");
+				cancelados.add(resTemp);
+			}
+			rs.close();
+			pst.close();
+			con1.close();
+		}catch (Exception e){
+			logger.info(e.toString());
+			System.out.println("falle lanzando la consulta de cancelados de plataforma " + e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+				logger.info(e1.toString());
+			}
+		}
+		return(cancelados);
+	}
+
 	public static ArrayList obtenerPedidosPlataformas(int idRazon,String fechaAnterior, String fechaActual, int idMarcacion)
 	{
 		Logger logger = Logger.getLogger("log_file");
