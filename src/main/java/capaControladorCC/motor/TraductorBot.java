@@ -96,7 +96,7 @@ public class TraductorBot {
 
 	/**
 	 * Igual que la comparacion de MySQL en la tabla de SKU: sin mayusculas ni acentos, de modo que lo que manda
-	 * el BOT ("Pollo con champinon") encuentre el SKU guardado ("Pollo con Champiñón"). Ademas el BOT
+	 * el BOT ("Pollo con champinon") encuentre el SKU guardado ("Pollo con Champinon con tilde"). Ademas el BOT
 	 * manda "." o "No desea" para decir "nada": se trata como vacio.
 	 */
 	static String normalizar(String t) {
