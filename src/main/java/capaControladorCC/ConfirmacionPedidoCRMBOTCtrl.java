@@ -136,6 +136,17 @@ public class ConfirmacionPedidoCRMBOTCtrl {
 			respuesta = cotizarPedidoBOTCRM(infLead);
 			respuesta.put("lead", lead);
 
+			// Sombra del motor nuevo de pedido (etapa 2). APAGADA por defecto: interruptor MOTORSOMBRABOT en
+			// general.parametros. Solo registra en pos_central.sombra_vivo; no cambia la respuesta al BOT, corre en
+			// otro hilo y nunca lanza excepciones.
+			try {
+				Object subtotalViejo = respuesta.get("subtotalProductos");
+				capaControladorCC.motor.MotorSombraBot.registrar(leadNum, idLog, infLead,
+						subtotalViejo instanceof Number ? ((Number) subtotalViejo).doubleValue() : 0.0);
+			} catch (Throwable ignorada) {
+				// el gancho de sombra jamas debe afectar al BOT
+			}
+
 			// Guardar el resumen en el log de BD para auditoría
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, (String) respuesta.get("mensaje"));
 
