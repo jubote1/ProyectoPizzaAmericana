@@ -305,9 +305,38 @@ public class DesempenoDomiciliarioCtrl {
 				aTiempo++;
 			}
 		}
-		o.put("pedidos", entregas.size());
+		//PEDIDOS DISTINTOS, no filas de despacho_real_det.
+		//
+		//Un pedido que el mismo domiciliario saca dos veces -salio, volvio sin
+		//entregar y volvio a salir- deja DOS filas en despacho_real_det, las dos
+		//con hora_entrega, y entregas.size() lo contaba dos veces. Medido del
+		//31-oct al 6-nov de 2026: 135 pedidos en la semana en las once tiendas.
+		//Por eso esta pantalla daba uno o dos domicilios mas que el informe que
+		//cuenta sobre pedido, y no habia forma de saber cual creer.
+		//
+		//Los promedios de tiempo SI siguen yendo por salida, a proposito: si le
+		//toco volver, las dos salidas gastaron calle y las dos cuentan para el
+		//tiempo. Lo que no se puede es contarle dos domicilios.
+		//
+		//La regla unica vive en capaDAOPOS.ConteoDomiciliosDAO (POS) y
+		//CapaDAOSer.ConteoDomiciliosDAO (Servicios); aqui se aplica la misma
+		//idea sobre lo que el DAO ya trajo, sin volver a la base.
+		//La llave lleva la tienda. Los idpedidotienda se repiten entre tiendas, y
+		//este mismo metodo arma tanto el resumen de UNA tienda como el
+		//consolidado de varias: con solo el id del pedido, dos pedidos distintos
+		//de dos tiendas se fundirian en uno y el consolidado saldria corto.
+		final java.util.HashSet<String> pedidosDistintos = new java.util.HashSet<String>();
+		for (final DesempenoDomiciliarioDAO.Entrega e : entregas) {
+			pedidosDistintos.add(e.idTienda + "-" + e.idPedido);
+		}
+		final int pedidos = pedidosDistintos.size();
+		o.put("pedidos", pedidos);
 		o.put("salidas", salidas);
-		o.put("pedidos_por_salida", salidas > 0 ? redondear((double) entregas.size() / salidas, 2) : 0);
+		o.put("pedidos_por_salida", salidas > 0 ? redondear((double) pedidos / salidas, 2) : 0);
+		//Cuantas veces hubo que volver a sacar un pedido ya despachado. Se
+		//publica para que la diferencia contra las filas de despacho quede a la
+		//vista en vez de parecer un error de conteo.
+		o.put("reintentos", entregas.size() - pedidos);
 		//Programados entregados: cumplieron (se entregaron), y quedan fuera de "medibles" porque no se
 		//juzgan por tiempo. Ojo, esto cuenta los que SI llegaron a salir con un domiciliario; un programado
 		//que nunca se despacho no aparece aqui (esta pantalla solo ve lo que paso por despacho_real).

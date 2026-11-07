@@ -54,6 +54,18 @@ public class OperacionDomiciliariosCtrl {
 		String salidaTurno = "";
 		int minutosTurno = -1;
 		int salidas;
+		/**
+		 * Pedidos DISTINTOS que llevo. Un pedido que el mismo domiciliario saca
+		 * dos veces -salio, volvio sin entregar y volvio a salir- aparece en dos
+		 * salidas y antes se contaba dos veces. Medido del 31-oct al 6-nov de
+		 * 2026: 135 pedidos en la semana en las once tiendas, y era una de las
+		 * razones de que este reporte y el informe que cuenta sobre pedido
+		 * dieran numeros distintos.
+		 *
+		 * El set lleva la tienda en la llave porque los idpedidotienda se
+		 * repiten entre tiendas.
+		 */
+		final java.util.HashSet<String> pedidosDistintos = new java.util.HashSet<String>();
 		int pedidos;
 		int entregados;
 		int medibles;
@@ -243,11 +255,18 @@ public class OperacionDomiciliariosCtrl {
 
 			final JSONArray pedidosJSON = new JSONArray();
 			for (final OperacionDomiciliariosDAO.Pedido p : s.pedidos) {
-				a.pedidos++;
-				g.pedidos++;
-				totalPedidos++;
-				if (h >= 0 && h < 24) {
-					horaPedidos[h]++;
+				//Un pedido que el domiciliario ya habia sacado y le toco volver a
+				//llevar aparece en dos salidas. Cuenta UNA sola vez como domicilio
+				//-decision de Juan David, 2026-11-07- aunque las dos salidas sigan
+				//contando para los tiempos y para el promedio por salida.
+				final boolean esNuevoParaEl = a.pedidosDistintos.add(res.idTienda + "-" + p.idPedido);
+				if (esNuevoParaEl) {
+					a.pedidos++;
+					g.pedidos++;
+					totalPedidos++;
+					if (h >= 0 && h < 24) {
+						horaPedidos[h]++;
+					}
 				}
 				if (p.entregado) {
 					a.entregados++;
