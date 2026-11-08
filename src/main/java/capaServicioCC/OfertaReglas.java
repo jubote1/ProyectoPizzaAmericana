@@ -58,7 +58,8 @@ public class OfertaReglas extends HttpServlet {
 			out.write(OfertaReglasCtrl.guardar(idOferta, decimal(request.getParameter("montominimo")),
 					decimal(request.getParameter("topedescuento")), texto(request.getParameter("tiendas")),
 					texto(request.getParameter("aplicaa")), entero(request.getParameter("maxusoscliente")),
-					entero(request.getParameter("maxemision")), usuario));
+					entero(request.getParameter("maxemision")), usuario,
+					texto(request.getParameter("canales"))));
 		} else if ("bitacora".equals(accion)) {
 			out.write(OfertaReglasCtrl.bitacora(idOferta));
 		} else {

@@ -64,8 +64,15 @@ public class GetValidarCodigoPromocional extends HttpServlet {
 				response.getWriter().write("{\"respuesta\":\"NOK\",\"mensaje\":\"Demasiados intentos.\"}");
 				return;
 			}
+			//El canal dice de donde viene el pedido, para el filtro de canales de la
+			//oferta: V tienda virtual, C contact center, M mostrador, P plataforma.
+			//Si NO llega, el filtro no rechaza a nadie: hay llamadores viejos que no lo
+			//mandan, y no se le puede negar el descuento a un cliente por un dato que
+			//nunca se le pidio a quien llama.
 			PromocionesCtrl promoCtrl = new PromocionesCtrl();
-			String respuesta = promoCtrl.retornarOfertaCodigoPromocional(codigoPromocional);
+			String canalRecibido = request.getParameter("canal");
+			String respuesta = promoCtrl.retornarOfertaCodigoPromocional(codigoPromocional,
+					canalRecibido == null ? "" : canalRecibido.trim());
 			if(respuesta.contains("\"respuesta\":\"NOK\""))
 			{
 				utilidadesCC.LimitadorIntentos.registrarFallo(origen);

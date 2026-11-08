@@ -428,6 +428,54 @@ public class OfertaDAO {
 	 * @param idOferta
 	 * @return
 	 */
+	/**
+	 * En que canales se puede redimir esta oferta. Vacio = cualquiera.
+	 *
+	 * 'V' tienda virtual, 'C' contact center, 'VC' los dos. El mostrador pasa
+	 * siempre, este o no en la lista; esa regla la aplica
+	 * CodigoPromoDAO.rechazoPorCanal, no esta consulta.
+	 *
+	 * Si algo falla devuelve vacio A PROPOSITO: ante la duda la oferta no se
+	 * restringe. Una consulta caida no puede dejar a un cliente sin su descuento.
+	 */
+	public static String obtenerCanalesOferta(int idOferta)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		String canales = "";
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = null;
+		try
+		{
+			con1 = con.obtenerConexionBDPrincipal();
+			PreparedStatement stm = con1.prepareStatement("select canales from oferta where idoferta = ?");
+			stm.setInt(1, idOferta);
+			ResultSet rs = stm.executeQuery();
+			if(rs.next())
+			{
+				canales = rs.getString("canales") == null ? "" : rs.getString("canales");
+			}
+			rs.close();
+			stm.close();
+		}catch(Exception e)
+		{
+			logger.error("OfertaDAO.obtenerCanalesOferta: la oferta " + idOferta
+					+ " se deja sin restriccion de canal, " + e.toString());
+		}finally
+		{
+			try
+			{
+				if(con1 != null)
+				{
+					con1.close();
+				}
+			}catch(Exception e)
+			{
+				logger.error("OfertaDAO.obtenerCanalesOferta: no cerro la conexion, " + e.toString());
+			}
+		}
+		return(canales);
+	}
+
 	public static Oferta retornarOfertaInfoHora(int idOferta)
 	{
 		Logger logger = Logger.getLogger("log_file");

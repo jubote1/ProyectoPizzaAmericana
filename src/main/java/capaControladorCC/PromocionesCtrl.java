@@ -506,11 +506,44 @@ public class PromocionesCtrl {
 		}
 	}
 
+	/**
+	 * Si este canal NO puede redimir esta oferta, el motivo; si puede, null.
+	 *
+	 * Delega en CodigoPromoDAO.rechazoPorCanal para que la regla viva en un solo
+	 * sitio: este camino -el viejo, el que usan el contact center y la tienda
+	 * virtual- y el de reservar tienen que decidir igual, o el mismo codigo
+	 * pasaria por un lado y no por el otro.
+	 *
+	 * Lee los canales de la oferta con una consulta propia porque el modelo
+	 * Oferta de este camino no los trae.
+	 */
+	private String rechazoPorCanal(int idOferta, String canal)
+	{
+		String canales = OfertaDAO.obtenerCanalesOferta(idOferta);
+		if(canales == null || canales.trim().length() == 0)
+		{
+			return(null);
+		}
+		capaDAOCC.CodigoPromoDAO.Codigo c = new capaDAOCC.CodigoPromoDAO.Codigo();
+		c.canales = canales.trim().toUpperCase();
+		return(capaDAOCC.CodigoPromoDAO.rechazoPorCanal(c, canal));
+	}
+
+	/** Sin canal: lo deja pasar por el filtro de canales. Para llamadores viejos. */
 	public String retornarOfertaCodigoPromocional(String codigoPromocional)
+	{
+		return(this.retornarOfertaCodigoPromocional(codigoPromocional, ""));
+	}
+
+	/**
+	 * @param canal de donde viene el pedido: V tienda virtual, C contact center,
+	 *              M mostrador, P plataforma. Vacio = no se sabe y no se rechaza.
+	 */
+	public String retornarOfertaCodigoPromocional(String codigoPromocional, String canal)
 	{
 		//Preparamos la respuesta del JSON
 		JSONObject ofertaJSON = new JSONObject();
-		
+
 		//Se validar� primero si la oferta corresponde a un c�digo promocional abierto
 		Oferta ofertaAbierta = OfertaDAO.obtenerOfertaCodigoPromocional(codigoPromocional);
 		if(ofertaAbierta.getIdOferta() > 0)
@@ -532,6 +565,13 @@ public class PromocionesCtrl {
 				ofertaJSON.put("motivo", "El codigo solo sirve entre las "
 						+ ofertaHoraAbierta.getHoraInicio() + " y las "
 						+ ofertaHoraAbierta.getHoraFin() + " horas.");
+				return(ofertaJSON.toJSONString());
+			}
+			String rechazoCanalAbierto = this.rechazoPorCanal(ofertaAbierta.getIdOferta(), canal);
+			if(rechazoCanalAbierto != null)
+			{
+				ofertaJSON.put("respuesta", "NOK");
+				ofertaJSON.put("motivo", rechazoCanalAbierto);
 				return(ofertaJSON.toJSONString());
 			}
 			ofertaJSON.put("respuesta", "OK");
@@ -600,6 +640,16 @@ public class PromocionesCtrl {
 						}
 						
 					}
+				}
+				//El canal se mira DESPUES de la vigencia y antes de dar el OK, para que el
+				//motivo que se le muestra a quien atiende sea el de verdad: si el codigo ya
+				//vencio, decirle "no aplica para este canal" lo manda a buscar donde no es.
+				String rechazoCanalPersona = this.rechazoPorCanal(ofertaCliente.getIdOferta(), canal);
+				if(vigente && rechazoCanalPersona != null)
+				{
+					ofertaJSON.put("respuesta", "NOK");
+					ofertaJSON.put("motivo", rechazoCanalPersona);
+					return(ofertaJSON.toJSONString());
 				}
 				if(vigente && ofertaCliente.getUtilizada().equals(new String("N")))
 				{

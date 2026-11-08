@@ -287,6 +287,22 @@
 								</div>
 							</div>
 							<div class="form-row">
+								<div class="form-group col-md-8">
+									<label for="reglaCanales">Canales donde se puede redimir</label>
+									<select id="reglaCanales" class="form-control">
+										<option value="">Cualquier canal</option>
+										<option value="V">Solo tienda virtual (y mostrador)</option>
+										<option value="C">Solo contact center (y mostrador)</option>
+										<option value="VC">Tienda virtual y contact center (y mostrador)</option>
+									</select>
+									<small class="form-text text-muted">
+										El <strong>mostrador siempre puede</strong> redimirla: si el cliente llega al punto
+										con su c&oacute;digo, se le aplica. Lo que estas opciones dejan por fuera son las
+										<strong>plataformas</strong> (Rappi, DiDi) y el canal que no se marque.
+									</small>
+								</div>
+							</div>
+							<div class="form-row">
 								<div class="form-group col-md-4">
 									<label for="reglaMaxUsos">Usos por cliente (0 = sin l&iacute;mite)</label>
 									<input type="number" min="0" class="form-control" id="reglaMaxUsos" value="0" />

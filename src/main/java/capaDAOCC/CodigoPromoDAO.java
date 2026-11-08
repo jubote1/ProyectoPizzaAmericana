@@ -72,6 +72,15 @@ public class CodigoPromoDAO {
 		public double tope;
 		public String tiendas = "";
 		public String aplicaA = "T";
+		/**
+		 * En que canales se puede redimir. Vacio = cualquiera.
+		 *
+		 * 'V' tienda virtual, 'C' contact center, 'VC' los dos. EL MOSTRADOR
+		 * SIEMPRE PUEDE, este o no en la lista: si el cliente se aparece en el
+		 * punto con su codigo no se le puede decir que no. Lo que la restriccion
+		 * deja por fuera son las plataformas y el canal que no se marco.
+		 */
+		public String canales = "";
 		public int maxUsosCliente;
 	}
 
@@ -112,7 +121,7 @@ public class CodigoPromoDAO {
 	private static final String CAMPOS_OFERTA = " o.idoferta, o.nombre_oferta, o.habilitado, o.red_parcial,"
 			+ " o.descuento_fijo_porcentaje, o.descuento_fijo_valor, o.controla_hora, o.hora_inicio, o.hora_fin,"
 			+ " o.fecha_desde, o.fecha_hasta, o.monto_minimo, o.tope_descuento, o.tiendas, o.aplica_a,"
-			+ " o.max_usos_cliente ";
+			+ " o.max_usos_cliente, o.canales ";
 
 	/** El codigo tal como esta hoy, o null si no existe. Distingue mayusculas solo en lo que la base distinga. */
 	public static Codigo buscar(final Connection cn, final String codigo) throws SQLException {
@@ -176,6 +185,7 @@ public class CodigoPromoDAO {
 		c.tope = rs.getDouble("tope_descuento");
 		c.tiendas = texto(rs.getString("tiendas"), "");
 		c.aplicaA = texto(rs.getString("aplica_a"), "T");
+		c.canales = texto(rs.getString("canales"), "").trim().toUpperCase();
 		c.maxUsosCliente = rs.getInt("max_usos_cliente");
 	}
 
@@ -188,8 +198,70 @@ public class CodigoPromoDAO {
 	 * que no. Trabaja con la hora y la fecha del SERVIDOR DE BASE DE DATOS, no la del equipo de la
 	 * tienda.
 	 */
+	/**
+	 * Codigos de canal. Son los que viajan desde quien pide la validacion.
+	 *
+	 * MOSTRADOR es el que digita la caja en el POS y SIEMPRE pasa, este o no en
+	 * la lista de la oferta: si el cliente se aparece en el punto con su codigo,
+	 * no se le puede decir que no. Esa fue la decision de Juan David el
+	 * 2026-11-08.
+	 */
+	public static final String CANAL_VIRTUAL = "V";
+
+	public static final String CANAL_CONTACT = "C";
+
+	public static final String CANAL_MOSTRADOR = "M";
+
+	public static final String CANAL_PLATAFORMA = "P";
+
+	/**
+	 * Si este canal puede redimir esta oferta. Devuelve el motivo, o null si pasa.
+	 *
+	 * La regla, en orden:
+	 *
+	 *   - Oferta sin restriccion (canales vacio): pasa cualquiera. Es como se
+	 *     venian comportando las 47 ofertas que habia, y por eso la migracion no
+	 *     le puso restriccion a ninguna.
+	 *   - MOSTRADOR: pasa siempre.
+	 *   - Canal desconocido o que no llego: PASA. A proposito. Quien no manda el
+	 *     parametro es un llamador viejo, y romperle la redencion a un cliente
+	 *     por un dato que el sistema no le pidio seria cobrarle al cliente un
+	 *     error nuestro. Cuando todos los llamadores manden el canal, esto se
+	 *     puede cerrar.
+	 *   - El resto: solo si esta en la lista.
+	 */
+	public static String rechazoPorCanal(final Codigo c, final String canal) {
+		if (c.canales == null || c.canales.trim().length() == 0) {
+			return null;
+		}
+		final String q = canal == null ? "" : canal.trim().toUpperCase();
+		if (q.length() == 0 || CANAL_MOSTRADOR.equals(q)) {
+			return null;
+		}
+		if (!CANAL_VIRTUAL.equals(q) && !CANAL_CONTACT.equals(q) && !CANAL_PLATAFORMA.equals(q)) {
+			return null;
+		}
+		if (c.canales.indexOf(q) >= 0) {
+			return null;
+		}
+		return "La oferta no aplica para pedidos de " + nombreCanal(q) + ".";
+	}
+
+	private static String nombreCanal(final String canal) {
+		if (CANAL_VIRTUAL.equals(canal)) {
+			return "la tienda virtual";
+		}
+		if (CANAL_CONTACT.equals(canal)) {
+			return "el contact center";
+		}
+		if (CANAL_PLATAFORMA.equals(canal)) {
+			return "plataformas";
+		}
+		return "este canal";
+	}
+
 	static String motivoDeRechazo(final Connection cn, final Codigo c, final int idTienda, final double total,
-			final boolean esDomicilio) throws SQLException {
+			final boolean esDomicilio, final String canal) throws SQLException {
 		if (!"S".equals(c.habilitado)) {
 			return "La oferta esta deshabilitada.";
 		}
@@ -227,6 +299,10 @@ public class CodigoPromoDAO {
 		}
 		if ("D".equals(c.aplicaA) && !esDomicilio) {
 			return "La oferta solo aplica para pedidos a domicilio.";
+		}
+		final String porElCanal = rechazoPorCanal(c, canal);
+		if (porElCanal != null) {
+			return porElCanal;
 		}
 		if (c.tiendas.trim().length() > 0 && !contiene(c.tiendas, idTienda)) {
 			return "La oferta no aplica en esta tienda.";
@@ -269,13 +345,22 @@ public class CodigoPromoDAO {
 	// Reservar
 	// =======================================================================
 
+	/**
+	 * Sin canal: lo trata como si no se supiera de donde viene, y el filtro de
+	 * canal no lo rechaza. Se deja para los llamadores que todavia no lo mandan.
+	 */
 	public static Reserva reservar(final String codigo, final int idTienda, final String usuario, final double total,
 			final boolean esDomicilio, final String tokenPrevio) {
+		return reservar(codigo, idTienda, usuario, total, esDomicilio, tokenPrevio, "");
+	}
+
+	public static Reserva reservar(final String codigo, final int idTienda, final String usuario, final double total,
+			final boolean esDomicilio, final String tokenPrevio, final String canal) {
 		final ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection cn = null;
 		try {
 			cn = con.obtenerConexionBDPrincipal();
-			return reservar(cn, codigo, idTienda, usuario, total, esDomicilio, tokenPrevio);
+			return reservar(cn, codigo, idTienda, usuario, total, esDomicilio, tokenPrevio, canal);
 		} catch (final Exception e) {
 			Logger.getLogger("log_file").error("CodigoPromoDAO.reservar: " + e.toString());
 			final Reserva r = new Reserva();
@@ -289,6 +374,12 @@ public class CodigoPromoDAO {
 
 	public static Reserva reservar(final Connection cn, final String codigo, final int idTienda, final String usuario,
 			final double total, final boolean esDomicilio, final String tokenPrevio) throws SQLException {
+		return reservar(cn, codigo, idTienda, usuario, total, esDomicilio, tokenPrevio, "");
+	}
+
+	public static Reserva reservar(final Connection cn, final String codigo, final int idTienda, final String usuario,
+			final double total, final boolean esDomicilio, final String tokenPrevio, final String canal)
+			throws SQLException {
 		final Reserva r = new Reserva();
 		final Codigo c = buscar(cn, codigo);
 		if (c == null) {
@@ -309,7 +400,7 @@ public class CodigoPromoDAO {
 				return r;
 			}
 		}
-		final String rechazo = motivoDeRechazo(cn, c, idTienda, total, esDomicilio);
+		final String rechazo = motivoDeRechazo(cn, c, idTienda, total, esDomicilio, canal);
 		if (rechazo != null) {
 			//Vencido y deshabilitado se distinguen del resto: la caja necesita saber si el problema es el
 			//codigo o es este pedido.

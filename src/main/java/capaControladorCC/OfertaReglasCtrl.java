@@ -131,7 +131,7 @@ public class OfertaReglasCtrl {
 		try {
 			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 			try (PreparedStatement ps = cn.prepareStatement("select monto_minimo, tope_descuento, tiendas, aplica_a,"
-					+ " max_usos_cliente, max_emision from oferta where idoferta = ?")) {
+					+ " max_usos_cliente, max_emision, canales from oferta where idoferta = ?")) {
 				ps.setInt(1, idOferta);
 				try (ResultSet rs = ps.executeQuery()) {
 					if (!rs.next()) {
@@ -144,6 +144,7 @@ public class OfertaReglasCtrl {
 					o.put("aplica_a", rs.getString(4) == null ? "T" : rs.getString(4));
 					o.put("max_usos_cliente", rs.getInt(5));
 					o.put("max_emision", rs.getInt(6));
+					o.put("canales", rs.getString(7) == null ? "" : rs.getString(7));
 				}
 			}
 		} catch (final Exception e) {
@@ -156,9 +157,22 @@ public class OfertaReglasCtrl {
 	}
 
 	@SuppressWarnings("unchecked")
+	/** Sin canales: no toca la restriccion de canal. Para llamadores viejos. */
 	public static String guardar(final int idOferta, final double montoMinimo, final double topeDescuento,
 			final String tiendas, final String aplicaA, final int maxUsosCliente, final int maxEmision,
 			final String usuario) {
+		return guardar(idOferta, montoMinimo, topeDescuento, tiendas, aplicaA, maxUsosCliente, maxEmision,
+				usuario, "");
+	}
+
+	/**
+	 * @param canales vacio = cualquier canal; "V" tienda virtual, "C" contact
+	 *                center, "VC" los dos. El mostrador pasa siempre.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String guardar(final int idOferta, final double montoMinimo, final double topeDescuento,
+			final String tiendas, final String aplicaA, final int maxUsosCliente, final int maxEmision,
+			final String usuario, final String canales) {
 		final JSONObject o = new JSONObject();
 		if (montoMinimo < 0 || topeDescuento < 0 || maxUsosCliente < 0 || maxEmision < 0) {
 			o.put("error", "Los valores no pueden ser negativos.");
@@ -167,6 +181,15 @@ public class OfertaReglasCtrl {
 		final String aplica = aplicaA == null ? "T" : aplicaA.trim().toUpperCase();
 		if (!aplica.equals("T") && !aplica.equals("M") && !aplica.equals("D")) {
 			o.put("error", "\"Aplica a\" debe ser todos, mostrador o domicilio.");
+			return o.toJSONString();
+		}
+		//Solo se aceptan las cuatro combinaciones que la pantalla ofrece. Un valor raro
+		//-"X", "VV", "CV"- se rechaza en vez de guardarse: una restriccion de canal mal
+		//escrita no bloquea nada y nadie se entera hasta que se pierde una venta.
+		final String canalesLimpios = canales == null ? "" : canales.trim().toUpperCase();
+		if (!canalesLimpios.equals("") && !canalesLimpios.equals("V") && !canalesLimpios.equals("C")
+				&& !canalesLimpios.equals("VC")) {
+			o.put("error", "Los canales deben ser: vacio (cualquiera), V, C o VC.");
 			return o.toJSONString();
 		}
 		// las tiendas son ids separados por coma; cualquier otra cosa se rechaza en vez de guardarla
@@ -199,7 +222,8 @@ public class OfertaReglasCtrl {
 		try {
 			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 			try (PreparedStatement ps = cn.prepareStatement("update oferta set monto_minimo = ?, tope_descuento = ?,"
-					+ " tiendas = ?, aplica_a = ?, max_usos_cliente = ?, max_emision = ? where idoferta = ?")) {
+					+ " tiendas = ?, aplica_a = ?, max_usos_cliente = ?, max_emision = ?, canales = ?"
+					+ " where idoferta = ?")) {
 				ps.setDouble(1, montoMinimo);
 				ps.setDouble(2, topeDescuento);
 				if (limpias.length() == 0) {
@@ -210,7 +234,8 @@ public class OfertaReglasCtrl {
 				ps.setString(4, aplica);
 				ps.setInt(5, maxUsosCliente);
 				ps.setInt(6, maxEmision);
-				ps.setInt(7, idOferta);
+				ps.setString(7, canalesLimpios);
+				ps.setInt(8, idOferta);
 				ps.executeUpdate();
 			}
 		} catch (final Exception e) {

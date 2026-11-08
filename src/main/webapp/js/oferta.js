@@ -275,6 +275,7 @@ function cargarReglas(idoferta) {
 		$('#reglaMontoMinimo').val(d.monto_minimo);
 		$('#reglaTope').val(d.tope_descuento);
 		$('#reglaAplicaA').val(d.aplica_a);
+		$("#reglaCanales").val(d.canales || "");
 		$('#reglaMaxUsos').val(d.max_usos_cliente);
 		$('#reglaMaxEmision').val(d.max_emision);
 		$('#reglaTiendas').val(d.tiendas);
@@ -292,6 +293,7 @@ function guardarReglas() {
 		accion: 'guardar', idoferta: id,
 		montominimo: $('#reglaMontoMinimo').val(), topedescuento: $('#reglaTope').val(),
 		aplicaa: $('#reglaAplicaA').val(), maxusoscliente: $('#reglaMaxUsos').val(),
+		canales: $("#reglaCanales").val(),
 		maxemision: $('#reglaMaxEmision').val(), tiendas: $('#reglaTiendas').val()
 	}, function (d) {
 		$.alert(d.error ? d.error : d.mensaje);

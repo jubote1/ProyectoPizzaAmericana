@@ -40,11 +40,22 @@ public class CodigoPromoCtrl {
 		return exigido.length() == 0 || exigido.equals(tokenRecibido == null ? "" : tokenRecibido.trim());
 	}
 
-	@SuppressWarnings("unchecked")
+	/** Sin canal: se deja para quien todavia no lo manda. Ver CodigoPromoDAO.rechazoPorCanal. */
 	public static String reservar(final String codigo, final int idTienda, final String usuario, final double total,
 			final boolean esDomicilio, final String tokenPrevio) {
+		return reservar(codigo, idTienda, usuario, total, esDomicilio, tokenPrevio, "");
+	}
+
+	/**
+	 * @param canal de donde viene el pedido: V tienda virtual, C contact center,
+	 *              M mostrador, P plataforma. Vacio = no se sabe, y entonces el
+	 *              filtro de canal no rechaza a nadie.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String reservar(final String codigo, final int idTienda, final String usuario, final double total,
+			final boolean esDomicilio, final String tokenPrevio, final String canal) {
 		final CodigoPromoDAO.Reserva r = CodigoPromoDAO.reservar(codigo, idTienda, usuario, total, esDomicilio,
-				tokenPrevio);
+				tokenPrevio, canal);
 		final JSONObject j = new JSONObject();
 		j.put("respuesta", r.estado);
 		j.put("mensaje", r.mensaje);

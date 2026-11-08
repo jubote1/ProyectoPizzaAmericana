@@ -56,10 +56,16 @@ public class CodigoPromocional extends HttpServlet {
 				out.write(CodigoPromoCtrl.bloqueado());
 				return;
 			}
+			//El canal dice de donde viene el pedido y lo usa el filtro de canales de la
+			//oferta: V tienda virtual, C contact center, M mostrador, P plataforma.
+			//Si NO llega, el filtro no rechaza a nadie: el POS que no se haya actualizado
+			//no lo manda, y no se le puede negar el descuento a un cliente por un dato que
+			//el sistema nunca le pidio.
 			final String respuesta = CodigoPromoCtrl.reservar(texto(request.getParameter("codigo")), idTienda,
 					texto(request.getParameter("usuario")), decimal(request.getParameter("total")),
 					"S".equalsIgnoreCase(texto(request.getParameter("esdomicilio"))),
-					texto(request.getParameter("token")));
+					texto(request.getParameter("token")),
+					texto(request.getParameter("canal")));
 			if (respuesta.contains("\"respuesta\":\"NOK\"")) {
 				LimitadorIntentos.registrarFallo(origen);
 			}
