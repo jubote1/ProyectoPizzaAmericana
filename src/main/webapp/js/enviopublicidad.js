@@ -49,8 +49,11 @@ $(document).ready(function () {
 	$('#ep-oferta').change(function () { epPintarCanal(); });
 
 	$('#ep-canales').on('click', '.ep-canal', function () {
-		//Con oferta el unico canal es el correo directo: es el que lleva el correo de la oferta con su codigo.
-		if (epIdOferta() > 0) { return; }
+		//Con oferta hay DOS canales posibles, y los dos emiten el codigo de cada persona:
+		//  correo directo  arma el correo de la oferta en Java; uno cada 30 s, tope 50
+		//  Brevo correo    manda la plantilla con el codigo en {{ params.codigo }}; masivo
+		//Por WhatsApp NO: esa plantilla no recibe el codigo por destinatario.
+		if (epIdOferta() > 0 && $(this).data('canal') === 'W') { return; }
 		$('#ep-canales .ep-canal').removeClass('sel');
 		$(this).addClass('sel');
 		epCanal = $(this).data('canal');
@@ -448,17 +451,30 @@ function epCargarOfertas() {
 function epPintarCanal() {
 	var oferta = epOfertaDe(epIdOferta());
 	if (oferta) {
-		//Con oferta todo sale por correo directo, con el correo de la oferta: no hay plantilla, asunto ni contenido que escribir.
-		epCanal = 'D';
-		$('#ep-canales .ep-canal').removeClass('sel').filter('[data-canal="D"]').addClass('sel');
+		//Con oferta se puede por correo directo o por Brevo correo. WhatsApp no, porque esa
+		//plantilla no recibe el codigo por destinatario: si estaba escogido, se pasa a Brevo.
+		if (epCanal === 'W') { epCanal = 'C'; }
+		$('#ep-canales .ep-canal').removeClass('sel')
+			.filter('[data-canal="' + epCanal + '"]').addClass('sel');
 		var cupo = oferta.max_emision > 0
 			? (' Quedan ' + epMiles(Math.max(0, oferta.max_emision - oferta.emitidos)) + ' de ' + epMiles(oferta.max_emision) + ' c\u00f3digos por emitir.')
 			: '';
-		$('#ep-oferta-nota').html('Cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los ' + oferta.dias +
-			' d\u00edas, dentro del correo de la oferta. Sale por correo directo: ' + (epAlcance ? (epAlcance.tope_directo || 50) : 50) +
-			' por tanda.' + cupo);
+		if (epCanal === 'D') {
+			$('#ep-oferta-nota').html('Cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los ' + oferta.dias +
+				' d\u00edas, dentro del correo de la oferta. Sale por correo directo: ' + (epAlcance ? (epAlcance.tope_directo || 50) : 50) +
+				' por tanda, uno cada 30 segundos.' + cupo);
+		} else {
+			//Por Brevo el codigo viaja en los params, asi que la plantilla TIENE que
+			//mostrarlos. Si no los lleva, el correo sale sin codigo y el cliente llega
+			//al mostrador con un descuento que nadie le puede aplicar.
+			$('#ep-oferta-nota').html('Cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los ' +
+				oferta.dias + ' d\u00edas. Sale por Brevo, masivo y por lotes.' + cupo +
+				'<br><b>La plantilla de Brevo tiene que mostrar</b> <code>{{ params.codigo }}</code>' +
+				' y <code>{{ params.vence }}</code>; tambi\u00e9n puede usar <code>{{ params.nombre }}</code>.' +
+				' Si la plantilla no los trae, el correo sale <b>sin c\u00f3digo</b>.');
+		}
 	} else {
-		$('#ep-oferta-nota').html('Con una oferta, cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los d\u00edas que tenga la oferta, dentro del correo de la oferta.');
+		$('#ep-oferta-nota').html('Con una oferta, cada persona recibe <b>su propio c\u00f3digo de un solo uso</b>, que vence a los d\u00edas que tenga la oferta.');
 	}
 	var directo = (epCanal === 'D');
 	$('#ep-caja-plantilla').toggle(!directo);

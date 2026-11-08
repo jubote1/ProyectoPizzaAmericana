@@ -472,6 +472,40 @@ public class PromocionesCtrl {
 	 * @param codigoPromocional
 	 * @return
 	 */
+	/**
+	 * Si la hora de ahora cae dentro de la franja que la oferta permite.
+	 *
+	 * Una sola regla para los dos tipos de codigo -abierto y por persona- en vez
+	 * de dos copias: la franja es inclusiva abajo y exclusiva arriba
+	 * (hora_inicio 12 y hora_fin 18 = de 12:00 a 17:59), igual que como se venia
+	 * validando para el codigo por persona.
+	 *
+	 * Sin controla_hora = 'S' no hay franja y siempre es true. Si la oferta dice
+	 * que controla la hora pero las horas estan mal escritas, se deja PASAR: el
+	 * dato malo es nuestro y no se le puede cobrar al cliente en el mostrador.
+	 */
+	private boolean horaDentroDeLaFranja(Oferta oferta)
+	{
+		if(oferta == null || oferta.getControlaHora() == null
+				|| !oferta.getControlaHora().equals(new String("S")))
+		{
+			return(true);
+		}
+		try
+		{
+			int horaActual = new Date().getHours();
+			int horaInicial = Integer.parseInt(oferta.getHoraInicio());
+			int horaFinal = Integer.parseInt(oferta.getHoraFin());
+			return(horaActual >= horaInicial && horaActual < horaFinal);
+		}catch(Exception e)
+		{
+			Logger.getLogger("log_file").error("PromocionesCtrl.horaDentroDeLaFranja:"
+					+ " la oferta " + oferta.getIdOferta() + " tiene mal la franja ("
+					+ oferta.getHoraInicio() + " a " + oferta.getHoraFin() + "), se deja pasar: " + e);
+			return(true);
+		}
+	}
+
 	public String retornarOfertaCodigoPromocional(String codigoPromocional)
 	{
 		//Preparamos la respuesta del JSON
@@ -481,6 +515,25 @@ public class PromocionesCtrl {
 		Oferta ofertaAbierta = OfertaDAO.obtenerOfertaCodigoPromocional(codigoPromocional);
 		if(ofertaAbierta.getIdOferta() > 0)
 		{
+			//EL CODIGO ABIERTO TAMBIEN RESPETA LA HORA.
+			//
+			//Antes este camino devolvia OK de una, sin mirar nada: un codigo abierto
+			//con controla_hora = 'S' y franja 12 a 18 servia a cualquier hora, porque
+			//la unica validacion de hora vivia en la rama de abajo, la del codigo por
+			//persona. Una oferta del 50% quedaba abierta todo el dia aunque la pantalla
+			//dijera otra cosa, y quien la configuraba no tenia como enterarse.
+			//
+			//Las fechas desde/hasta ya las hace cumplir obtenerOfertaCodigoPromocional
+			//en la consulta; lo que faltaba era la hora.
+			Oferta ofertaHoraAbierta = OfertaDAO.retornarOfertaInfoHora(ofertaAbierta.getIdOferta());
+			if(!horaDentroDeLaFranja(ofertaHoraAbierta))
+			{
+				ofertaJSON.put("respuesta", "NOK");
+				ofertaJSON.put("motivo", "El codigo solo sirve entre las "
+						+ ofertaHoraAbierta.getHoraInicio() + " y las "
+						+ ofertaHoraAbierta.getHoraFin() + " horas.");
+				return(ofertaJSON.toJSONString());
+			}
 			ofertaJSON.put("respuesta", "OK");
 			ofertaJSON.put("idoferta", ofertaAbierta.getIdOferta());
 			ofertaJSON.put("idofertacliente", 0);

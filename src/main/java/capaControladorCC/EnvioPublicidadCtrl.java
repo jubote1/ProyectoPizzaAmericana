@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.JsonObject;
 
+import capaDAOCC.CodigoPromoDAO;
 import capaDAOCC.CampanaDAO;
 import capaDAOCC.DefinicionSegmentoDAO;
 import capaDAOCC.SegmentacionPersonaDAO;
@@ -165,8 +166,9 @@ public class EnvioPublicidadCtrl {
 			return (r.toJSONString());
 		}
 		//Lo que depende del momento: el correo directo sale de a uno desde un solo reloj, y no
-		//caben dos tandas a la vez.
-		if (idOferta > 0 || CampanaDAO.CANAL_DIRECTO.equals(canal)) {
+		//caben dos tandas a la vez. Por Brevo SI caben varias, asi que una campana con oferta
+		//por Brevo ya no espera a que termine una tanda del correo directo.
+		if (CampanaDAO.CANAL_DIRECTO.equals(canal)) {
 			final long enCurso = CampanaDAO.envioDirectoEnCurso();
 			if (enCurso != 0) {
 				r.put("error", "Ya hay un envio de correo directo en curso (el " + enCurso
@@ -262,7 +264,7 @@ public class EnvioPublicidadCtrl {
 				return (r.toJSONString());
 			}
 		} else {
-			arrancarBrevo(idEnvio, canal, idPlantilla, asunto, usuario);
+			arrancarBrevo(idEnvio, canal, idPlantilla, asunto, usuario, idOferta);
 		}
 
 		r.put("idenvio", idEnvio);
@@ -278,9 +280,38 @@ public class EnvioPublicidadCtrl {
 	 *
 	 * Se marca lote por lote y no al final: si el servidor se cae a mitad, lo
 	 * enviado queda marcado y al reanudar nadie recibe dos veces.
+	 *
+	 * CON OFERTA: A CADA PERSONA SE LE EMITE SU PROPIO CODIGO
+	 *
+	 * Antes este camino mandaba solo nombre y correo, asi que una campana con
+	 * oferta por Brevo era imposible: el codigo tenia que ser ABIERTO -el mismo
+	 * para todos, puesto a mano en la plantilla- y un codigo abierto no valida
+	 * hora ni caducidad ni usos por cliente. La alternativa era el correo
+	 * directo, que si emite codigo por persona pero manda UNO CADA 30 SEGUNDOS
+	 * con tope de 50 por campana: el envio 183 del 29-oct tardo 26 minutos en 50
+	 * correos. Con 400 personas eran tres horas y media.
+	 *
+	 * Ahora se emite el codigo aqui, por destinatario, y viaja en los `params`
+	 * de su messageVersion. Brevo ya soportaba params por destinatario
+	 * (SegmentacionClienteCtrl.envioCorreoBrevo); lo que faltaba era alimentarlos.
+	 *
+	 * La emision es IDEMPOTENTE por (envio, cliente): CodigoPromoDAO.emitir
+	 * primero busca si ya existe uno para ese par y lo reusa. Si el servidor se
+	 * cae y la campana se reanuda, nadie recibe dos codigos distintos.
+	 *
+	 * Los params que recibe la plantilla de Brevo son:
+	 *
+	 *     {{ params.nombre }}   el nombre de la persona
+	 *     {{ params.codigo }}   SU codigo
+	 *     {{ params.vence }}    hasta cuando le sirve, en aaaa-MM-dd
+	 *
+	 * OJO CON LOS COMODINES: en una plantilla de Brevo son {{ params.x }}. Los
+	 * #NOMBRECLIENTE / #CODIGODESCUENTO son del correo directo (CorreoOferta) y
+	 * aqui saldrian impresos tal cual.
 	 */
 	private static void arrancarBrevo(final long idEnvio, final String canal,
-			final int idPlantilla, final String asunto, final String usuario) {
+			final int idPlantilla, final String asunto, final String usuario,
+			final int idOferta) {
 		CampanaDAO.cambiarEstado(idEnvio, "ENVIANDO");
 		final Thread hilo = new Thread(new Runnable() {
 			public void run() {
@@ -312,13 +343,63 @@ public class EnvioPublicidadCtrl {
 								continue;
 							}
 							final JsonObject j = new JsonObject();
+							final String nombrePersona = d.nombre == null || d.nombre.length() == 0
+									? "Cliente" : d.nombre;
 							if (porWhatsapp) {
 								j.addProperty("telefono", destino);
 							} else {
-								j.addProperty("name", d.nombre == null || d.nombre.length() == 0
-										? "Cliente" : d.nombre);
+								j.addProperty("name", nombrePersona);
 								j.addProperty("email", destino);
 							}
+
+							//CON OFERTA: su codigo, o se queda por fuera.
+							//
+							//Si no se le puede emitir el codigo NO se le manda el correo: un
+							//correo que promete un descuento sin codigo es peor que no
+							//mandarlo, porque la discusion la pierde el mostrador.
+							if (idOferta > 0) {
+								final JsonObject params = new JsonObject();
+								params.addProperty("nombre", nombrePersona);
+								final int idCliente = CodigoPromoDAO.clienteDePersona(d.idPersona, destino);
+								if (idCliente <= 0) {
+									CampanaDAO.marcar(idEnvio, d.idPersona, "FALLIDO",
+											"La persona no tiene un cliente al que ligarle el codigo");
+									continue;
+								}
+								final CodigoPromoDAO.Emision em =
+										CodigoPromoDAO.emitir(idOferta, idCliente, idEnvio, usuario);
+								if (em == null || em.idOfertaCliente <= 0
+										|| em.codigo == null || em.codigo.length() == 0) {
+									CampanaDAO.marcar(idEnvio, d.idPersona, "FALLIDO",
+											"No se pudo emitir el codigo de la oferta");
+									//Si la oferta ya no se puede emitir -tope alcanzado,
+									//deshabilitada- no tiene sentido seguir con los demas:
+									//se para la campana y queda dicho por que.
+									final String problema = CodigoPromoDAO.problemaParaEnviar(idOferta);
+									if (problema.length() > 0) {
+										logger.error("EnvioPublicidadCtrl: la campana " + idEnvio
+												+ " se detiene, " + problema);
+										CampanaDAO.cambiarEstado(idEnvio, "FALLIDA");
+										return;
+									}
+									continue;
+								}
+								CampanaDAO.marcarCodigo(idEnvio, d.idPersona, em.idOfertaCliente);
+								params.addProperty("codigo", em.codigo);
+								//Hasta cuando sirve NO es opcional: un codigo sin vigencia el
+								//cliente lo guarda y vuelve un mes despues. Misma regla que ya
+								//hace cumplir CorreoOferta en el correo directo.
+								if (em.fechaCaducidad == null || em.fechaCaducidad.length() == 0) {
+									CodigoPromoDAO.anularCodigo(em.idOfertaCliente,
+											"quedo sin fecha de caducidad", usuario);
+									CampanaDAO.marcar(idEnvio, d.idPersona, "FALLIDO",
+											"La oferta quedo sin fecha de caducidad");
+									continue;
+								}
+								params.addProperty("vence", em.fechaCaducidad);
+								j.add("params", params);
+							}
+
 							buenos.add(d);
 							destinos.add(j);
 						}
@@ -679,10 +760,20 @@ public class EnvioPublicidadCtrl {
 					+ " Sin campana no se puede medir despues si sirvio.");
 		}
 		if (idOferta > 0) {
-			//Con oferta cada persona recibe su propio codigo dentro del correo de la oferta, y ese correo sale por el
-			//correo directo: Brevo con una plantilla que lleve el codigo por destinatario queda para una segunda etapa.
-			if (!CampanaDAO.CANAL_DIRECTO.equals(canal)) {
-				return ("El envio con oferta sale por correo directo, con el correo de la oferta.");
+			//UNA OFERTA PUEDE SALIR POR LOS DOS CAMINOS DE CORREO, y cada uno emite el codigo de la persona:
+			//
+			//  CORREO DIRECTO  arma el correo de la oferta en Java (CorreoOferta) y manda uno cada 30 segundos,
+			//                  con tope de 50 por campana. Sirve para tandas chicas y no necesita plantilla.
+			//  BREVO CORREO    manda la plantilla de Brevo con el codigo en los params del destinatario
+			//                  ({{ params.codigo }}). Es el canal masivo: hasta 231.354, por lotes.
+			//
+			//Por WhatsApp NO: esa plantilla no recibe el codigo por destinatario.
+			if (!CampanaDAO.CANAL_DIRECTO.equals(canal) && !CampanaDAO.CANAL_CORREO.equals(canal)) {
+				return ("El envio con oferta sale por correo directo o por Brevo correo, no por WhatsApp.");
+			}
+			//Por Brevo el codigo viaja dentro de la plantilla, asi que sin plantilla no hay donde ponerlo.
+			if (CampanaDAO.CANAL_CORREO.equals(canal) && idPlantilla <= 0) {
+				return ("El envio con oferta por Brevo necesita una plantilla que muestre {{ params.codigo }}.");
 			}
 			return (capaDAOCC.CodigoPromoDAO.problemaParaEnviar(idOferta));
 		}
