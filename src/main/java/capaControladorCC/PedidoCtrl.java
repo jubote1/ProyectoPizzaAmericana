@@ -830,6 +830,8 @@ public class PedidoCtrl {
 		respuesta.put("idpedido", idpedido);
 		respuesta.put("valortotal", valortotal);
 		respuesta.put("descuento", pedidoPixel.getDescuento());
+		respuesta.put("motivodescuento", "DESCUENTOS-GENERALES-DIARIOS");
+		respuesta.put("reintegro", "S");
 		respuesta.put("insertado", "true");
 		respuesta.put("url", tiendaPixel);
 		respuesta.put("dsntienda", pedidoPixel.getDsnTienda());
