@@ -329,3 +329,43 @@ body {
     font-size: 0.70rem;
     opacity: 0.88;
 }
+
+.opcion-btn:hover {
+    border-color: #102F6F;
+    background-color: #f7f9fc;
+}
+
+.opcion-btn.selected:hover {
+    background: #0d265a;
+    color: #fff;
+}
+
+/* Modos de Pizza: Entera vs Mitad y Mitad */
+.selector-modo-mitad .btn {
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.contenedor-mitades {
+    display: flex;
+    gap: 12px;
+}
+
+.col-mitad {
+    flex: 1;
+    background: #f4f6fa;
+    border: 1px solid #dce1eb;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.col-mitad-tit {
+    font-size: 0.80rem;
+    font-weight: 700;
+    color: #102F6F;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+

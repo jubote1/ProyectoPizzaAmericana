@@ -31,6 +31,7 @@ public class MotorResultado {
 	public static class Linea {
 		public int ref;
 		public int idproducto;
+		public String descripcion = "";
 		public double cantidad;
 		public double valorUnitario;
 		public double valorTotal;

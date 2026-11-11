@@ -257,6 +257,10 @@ public class MotorPedidoV1 implements MotorPedido {
 		MotorResultado.Linea x = new MotorResultado.Linea();
 		x.ref = ref++;
 		x.idproducto = idProducto;
+		Producto prod = catalogo != null && catalogo.productos != null ? catalogo.productos.get(idProducto) : null;
+		if (prod != null && prod.descripcion != null) {
+			x.descripcion = prod.descripcion;
+		}
 		x.cantidad = cantidad;
 		x.valorUnitario = unitario;
 		x.valorTotal = cantidad * unitario;

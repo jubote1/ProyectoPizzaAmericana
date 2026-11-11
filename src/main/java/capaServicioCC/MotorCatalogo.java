@@ -163,17 +163,17 @@ public class MotorCatalogo extends HttpServlet {
 		}
 
 		// Productos incluidos por defecto (ej. salsas $0)
-		String sqlInc = "select pi.idproductoincluido, p.descripcion, pi.columna_precio "
+		String sqlInc = "select pi.idproductoincluye, p.descripcion, pi.precio as columna_precio "
 				+ "from pos_central.producto_incluido pi "
-				+ "join pos_central.producto p on p.idproducto = pi.idproductoincluido "
-				+ "where pi.idproductoincluye = ?";
+				+ "join pos_central.producto p on p.idproducto = pi.idproductoincluye "
+				+ "where pi.idproductoincluido = ?";
 		List<Map<String, Object>> incluidos = new ArrayList<Map<String, Object>>();
 		try (PreparedStatement ps = con.prepareStatement(sqlInc)) {
 			ps.setInt(1, idProducto);
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					Map<String, Object> inc = new HashMap<String, Object>();
-					inc.put("idproducto", rs.getInt("idproductoincluido"));
+					inc.put("idproducto", rs.getInt("idproductoincluye"));
 					inc.put("descripcion", rs.getString("descripcion"));
 					inc.put("columnaPrecio", rs.getString("columna_precio"));
 					incluidos.add(inc);
@@ -188,37 +188,32 @@ public class MotorCatalogo extends HttpServlet {
 			if (idPregunta <= 0) {
 				continue;
 			}
-			String sqlPreg = "select idpregunta, descripcion, obliga_eleccion, minimo, maximo, permite_dividir, precio "
+			String sqlPreg = "select idpregunta, titulopregunta, descripcion, obliga_eleccion, "
+					+ "numero_minimo_eleccion, numero_maximo_eleccion, permite_dividir "
 					+ "from pos_central.pregunta where idpregunta = ?";
 			Map<String, Object> preg = new HashMap<String, Object>();
-			String colPrecio = "precio1";
 			try (PreparedStatement ps = con.prepareStatement(sqlPreg)) {
 				ps.setInt(1, idPregunta);
 				try (ResultSet rs = ps.executeQuery()) {
 					if (rs.next()) {
 						preg.put("idpregunta", rs.getInt("idpregunta"));
+						preg.put("titulo", rs.getString("titulopregunta"));
 						preg.put("descripcion", rs.getString("descripcion"));
 						preg.put("obligaEleccion", rs.getInt("obliga_eleccion"));
-						preg.put("minimo", rs.getInt("minimo"));
-						preg.put("maximo", rs.getInt("maximo"));
+						preg.put("minimo", rs.getInt("numero_minimo_eleccion"));
+						preg.put("maximo", rs.getInt("numero_maximo_eleccion"));
 						preg.put("permiteDividir", rs.getInt("permite_dividir"));
-						colPrecio = rs.getString("precio");
-						if (colPrecio == null || colPrecio.trim().isEmpty()) {
-							colPrecio = "precio1";
-						} else {
-							colPrecio = colPrecio.trim();
-						}
-						preg.put("columnaPrecio", colPrecio);
 					}
 				}
 			}
 
 			// Opciones de esta pregunta
-			String sqlOp = "select ef.idproducto, p.descripcion, p." + colPrecio + " as precio "
+			String sqlOp = "select ef.idproducto, p.descripcion, ef.precio as col_precio, "
+					+ "p.precio1, p.precio2, p.precio3, p.precio4, p.precio5, p.precio6, p.precio7, p.precio8, p.precio9, p.precio10 "
 					+ "from pos_central.eleccion_forzada ef "
 					+ "join pos_central.producto p on p.idproducto = ef.idproducto "
-					+ "where ef.idpregunta = ? and (p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30) "
-					+ "order by ef.posicion, p.descripcion";
+					+ "where ef.idpregunta = ? and ef.estado = 1 and (p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30) "
+					+ "order by ef.ideleccion_forzada, p.descripcion";
 			List<Map<String, Object>> opciones = new ArrayList<Map<String, Object>>();
 			try (PreparedStatement ps = con.prepareStatement(sqlOp)) {
 				ps.setInt(1, idPregunta);
@@ -227,7 +222,19 @@ public class MotorCatalogo extends HttpServlet {
 						Map<String, Object> op = new HashMap<String, Object>();
 						op.put("idproducto", rs.getInt("idproducto"));
 						op.put("descripcion", rs.getString("descripcion"));
-						op.put("precio", rs.getDouble("precio"));
+						String colPrecio = rs.getString("col_precio");
+						if (colPrecio == null || colPrecio.trim().isEmpty()) {
+							colPrecio = "precio1";
+						} else {
+							colPrecio = colPrecio.trim().toLowerCase();
+						}
+						double valorPrecio = 0.0;
+						try {
+							valorPrecio = rs.getDouble(colPrecio);
+						} catch (Exception ex) {
+							valorPrecio = rs.getDouble("precio1");
+						}
+						op.put("precio", valorPrecio);
 						opciones.add(op);
 					}
 				}

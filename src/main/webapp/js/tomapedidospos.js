@@ -391,46 +391,150 @@ function renderizarModalProducto(prod) {
     if (prod.preguntas && prod.preguntas.length > 0) {
         $.each(prod.preguntas, function (idx, preg) {
             var $pBox = $("<div></div>").addClass("pregunta-seccion").attr("data-idpregunta", preg.idpregunta);
-            var minMaxTxt = (preg.minimo > 0) ? " (Min: " + preg.minimo + " / Max: " + preg.maximo + ")" : "";
-            $pBox.append("<div class='pregunta-titulo'><i class='fas fa-question-circle text-primary mr-1'></i>" + preg.descripcion + "<small class='text-muted ml-1'>" + minMaxTxt + "</small></div>");
+            var tituloPreg = preg.titulo || preg.descripcion || ("Pregunta " + (idx + 1));
+            var descPreg = (preg.descripcion && preg.descripcion !== preg.titulo) ? " - " + preg.descripcion : "";
+            var minMaxTxt = (preg.minimo > 0 || preg.maximo > 1) ? " (Min: " + preg.minimo + " / Max: " + preg.maximo + ")" : "";
 
-            var $opGrid = $("<div></div>").addClass("opciones-grid");
-            var esRadio = (preg.maximo === 1);
+            $pBox.append("<div class='pregunta-titulo'><i class='fas fa-question-circle text-primary mr-1'></i>" + tituloPreg + "<small class='text-muted ml-1'>" + descPreg + minMaxTxt + "</small></div>");
 
-            $.each(preg.opciones, function (j, op) {
-                var $btn = $("<div></div>")
-                    .addClass("opcion-btn")
-                    .attr("data-idopcion", op.idproducto)
-                    .attr("data-idpregunta", preg.idpregunta)
-                    .html("<span>" + op.descripcion + "</span>" + (op.precio > 0 ? "<span class='opcion-precio text-danger'>+$ " + formatearPesos(op.precio) + "</span>" : ""));
+            // Caso A: Pregunta que permite dividir en dos (Mitad y Mitad para Pizzas)
+            if (preg.permiteDividir >= 2 && preg.maximo === 1) {
+                $pBox.attr("data-permite-dividir", "2");
 
-                $btn.on("click", function () {
-                    if (esRadio) {
-                        $opGrid.find(".opcion-btn").removeClass("selected");
+                var idPreg = preg.idpregunta;
+                var $switchModo = $("<div class='selector-modo-mitad btn-group btn-group-toggle w-100 mb-2' data-toggle='buttons'></div>");
+                var $btnEntera = $("<label class='btn btn-outline-danger btn-sm active' style='cursor:pointer;'><input type='radio' name='modo_preg_" + idPreg + "' value='entera' checked> <i class='fas fa-pizza-slice mr-1'></i> 1 Sabor Completo (100%)</label>");
+                var $btnMitad = $("<label class='btn btn-outline-danger btn-sm' style='cursor:pointer;'><input type='radio' name='modo_preg_" + idPreg + "' value='mitad'> <i class='fas fa-adjust mr-1'></i> Mitad y Mitad (50% / 50%)</label>");
+                $switchModo.append($btnEntera).append($btnMitad);
+                $pBox.append($switchModo);
+
+                // Contenedor 1: Entera (1 Sabor)
+                var $boxEntera = $("<div></div>").addClass("box-entera").attr("id", "box-entera-" + idPreg);
+                var $gridEntera = $("<div></div>").addClass("opciones-grid");
+                $.each(preg.opciones, function (j, op) {
+                    var $btn = $("<div></div>")
+                        .addClass("opcion-btn")
+                        .attr("data-idopcion", op.idproducto)
+                        .attr("data-mitad", "0")
+                        .html("<span>" + op.descripcion + "</span>" + (op.precio > 0 ? "<span class='opcion-precio text-danger'>+$ " + formatearPesos(op.precio) + "</span>" : ""));
+                    $btn.on("click", function () {
+                        $gridEntera.find(".opcion-btn").removeClass("selected");
                         $(this).addClass("selected");
-                    } else {
-                        var totalSel = $opGrid.find(".opcion-btn.selected").length;
-                        if ($(this).hasClass("selected")) {
-                            $(this).removeClass("selected");
-                        } else {
-                            if (preg.maximo > 0 && totalSel >= preg.maximo) {
-                                alert("Solo puedes elegir maximo " + preg.maximo + " opciones para: " + preg.descripcion);
-                                return;
-                            }
-                            $(this).addClass("selected");
-                        }
+                    });
+                    if (preg.obligaEleccion === 1 && j === 0) {
+                        $btn.addClass("selected");
                     }
+                    $gridEntera.append($btn);
+                });
+                $boxEntera.append($gridEntera);
+                $pBox.append($boxEntera);
+
+                // Contenedor 2: Mitades (Mitad 1 y Mitad 2)
+                var $boxMitades = $("<div></div>").addClass("contenedor-mitades").attr("id", "box-mitades-" + idPreg).hide();
+
+                // Columna Mitad 1
+                var $colM1 = $("<div></div>").addClass("col-mitad");
+                $colM1.append("<div class='col-mitad-tit'><span><i class='fas fa-adjust text-danger mr-1'></i> Mitad 1</span><span class='badge badge-light border'>50%</span></div>");
+                var $gridM1 = $("<div></div>").addClass("opciones-grid");
+                $.each(preg.opciones, function (j, op) {
+                    var $btn = $("<div></div>")
+                        .addClass("opcion-btn")
+                        .attr("data-idopcion", op.idproducto)
+                        .attr("data-mitad", "1")
+                        .html("<span>" + op.descripcion + "</span>" + (op.precio > 0 ? "<span class='opcion-precio text-danger'>+$ " + formatearPesos(op.precio / 2) + "</span>" : ""));
+                    $btn.on("click", function () {
+                        $gridM1.find(".opcion-btn").removeClass("selected");
+                        $(this).addClass("selected");
+                    });
+                    if (preg.obligaEleccion === 1 && j === 0) {
+                        $btn.addClass("selected");
+                    }
+                    $gridM1.append($btn);
+                });
+                $colM1.append($gridM1);
+
+                // Columna Mitad 2
+                var $colM2 = $("<div></div>").addClass("col-mitad");
+                $colM2.append("<div class='col-mitad-tit'><span><i class='fas fa-adjust text-primary mr-1'></i> Mitad 2</span><span class='badge badge-light border'>50%</span></div>");
+                var $gridM2 = $("<div></div>").addClass("opciones-grid");
+                $.each(preg.opciones, function (j, op) {
+                    var $btn = $("<div></div>")
+                        .addClass("opcion-btn")
+                        .attr("data-idopcion", op.idproducto)
+                        .attr("data-mitad", "2")
+                        .html("<span>" + op.descripcion + "</span>" + (op.precio > 0 ? "<span class='opcion-precio text-danger'>+$ " + formatearPesos(op.precio / 2) + "</span>" : ""));
+                    $btn.on("click", function () {
+                        $gridM2.find(".opcion-btn").removeClass("selected");
+                        $(this).addClass("selected");
+                    });
+                    if (preg.obligaEleccion === 1 && j === 1) {
+                        $btn.addClass("selected");
+                    } else if (preg.obligaEleccion === 1 && preg.opciones.length === 1 && j === 0) {
+                        $btn.addClass("selected");
+                    }
+                    $gridM2.append($btn);
+                });
+                $colM2.append($gridM2);
+
+                $boxMitades.append($colM1).append($colM2);
+                $pBox.append($boxMitades);
+
+                // Toggle click
+                $btnEntera.on("click", function () {
+                    $boxEntera.show();
+                    $boxMitades.hide();
+                    $pBox.attr("data-modo-activo", "entera");
+                });
+                $btnMitad.on("click", function () {
+                    $boxEntera.hide();
+                    $boxMitades.show();
+                    $pBox.attr("data-modo-activo", "mitad");
+                });
+                $pBox.attr("data-modo-activo", "entera");
+
+            } else {
+                // Caso B: Pregunta estándar (Gaseosas, Bebidas, Acompañantes o Adiciones)
+                $pBox.attr("data-permite-dividir", "0");
+                var $opGrid = $("<div></div>").addClass("opciones-grid");
+                var esRadio = (preg.maximo === 1);
+
+                $.each(preg.opciones, function (j, op) {
+                    var $btn = $("<div></div>")
+                        .addClass("opcion-btn")
+                        .attr("data-idopcion", op.idproducto)
+                        .attr("data-idpregunta", preg.idpregunta)
+                        .attr("data-mitad", "0")
+                        .html("<span>" + op.descripcion + "</span>" + (op.precio > 0 ? "<span class='opcion-precio text-danger'>+$ " + formatearPesos(op.precio) + "</span>" : ""));
+
+                    $btn.on("click", function () {
+                        if (esRadio) {
+                            $opGrid.find(".opcion-btn").removeClass("selected");
+                            $(this).addClass("selected");
+                        } else {
+                            var totalSel = $opGrid.find(".opcion-btn.selected").length;
+                            if ($(this).hasClass("selected")) {
+                                $(this).removeClass("selected");
+                            } else {
+                                if (preg.maximo > 0 && totalSel >= preg.maximo) {
+                                    alert("Solo puedes elegir maximo " + preg.maximo + " opciones para: " + tituloPreg);
+                                    return;
+                                }
+                                $(this).addClass("selected");
+                            }
+                        }
+                    });
+
+                    // Preseleccionar primera opción si es radio obligatorio
+                    if (esRadio && preg.obligaEleccion === 1 && j === 0) {
+                        $btn.addClass("selected");
+                    }
+
+                    $opGrid.append($btn);
                 });
 
-                // Preseleccionar primera opción si es radio obligatorio
-                if (esRadio && preg.obligaEleccion === 1 && j === 0) {
-                    $btn.addClass("selected");
-                }
+                $pBox.append($opGrid);
+            }
 
-                $opGrid.append($btn);
-            });
-
-            $pBox.append($opGrid);
             $c.append($pBox);
         });
     }
@@ -461,33 +565,98 @@ function renderizarModalProducto(prod) {
 function guardarProductoDesdeModal() {
     if (!productoEnEdicion) return;
 
-    var opcionesElegidas = [];
-    var faltanObligatorias = false;
+    var selecciones = [];
+    var errorValidacion = null;
 
     if (productoEnEdicion.preguntas) {
         $.each(productoEnEdicion.preguntas, function (i, preg) {
+            if (errorValidacion) return false;
+
             var $pBox = $(".pregunta-seccion[data-idpregunta='" + preg.idpregunta + "']");
-            var $sel = $pBox.find(".opcion-btn.selected");
-            if (preg.obligaEleccion === 1 && preg.minimo > 0 && $sel.length < preg.minimo) {
-                alert("Debes seleccionar al menos " + preg.minimo + " opcion(es) para: " + preg.descripcion);
-                faltanObligatorias = true;
-                return false;
+            var permiteDividir = (preg.permiteDividir >= 2 && preg.maximo === 1);
+            var tituloPreg = preg.titulo || preg.descripcion || ("Pregunta " + (i + 1));
+
+            if (permiteDividir) {
+                var modo = $pBox.attr("data-modo-activo") || "entera";
+                if (modo === "entera") {
+                    var $selEntera = $pBox.find("#box-entera-" + preg.idpregunta + " .opcion-btn.selected");
+                    if (preg.obligaEleccion === 1 && $selEntera.length === 0) {
+                        errorValidacion = "Debes seleccionar un sabor completo para: " + tituloPreg;
+                        return false;
+                    }
+                    $selEntera.each(function () {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 0,
+                            idproductoOpcion: parseInt($(this).attr("data-idopcion")),
+                            cantidad: 1.0
+                        });
+                    });
+                } else {
+                    // Modo mitad y mitad
+                    var $selM1 = $pBox.find("#box-mitades-" + preg.idpregunta + " .col-mitad:first .opcion-btn.selected");
+                    var $selM2 = $pBox.find("#box-mitades-" + preg.idpregunta + " .col-mitad:last .opcion-btn.selected");
+
+                    if (preg.obligaEleccion === 1) {
+                        if ($selM1.length === 0) {
+                            errorValidacion = "Debes seleccionar el sabor de la Mitad 1 para: " + tituloPreg;
+                            return false;
+                        }
+                        if ($selM2.length === 0) {
+                            errorValidacion = "Debes seleccionar el sabor de la Mitad 2 para: " + tituloPreg;
+                            return false;
+                        }
+                    }
+
+                    if ($selM1.length > 0) {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 1,
+                            idproductoOpcion: parseInt($selM1.attr("data-idopcion")),
+                            cantidad: 0.5
+                        });
+                    }
+                    if ($selM2.length > 0) {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 2,
+                            idproductoOpcion: parseInt($selM2.attr("data-idopcion")),
+                            cantidad: 0.5
+                        });
+                    }
+                }
+            } else {
+                // Pregunta regular o adiciones
+                var $selReg = $pBox.find(".opciones-grid .opcion-btn.selected");
+                if (preg.obligaEleccion === 1 && preg.minimo > 0 && $selReg.length < preg.minimo) {
+                    errorValidacion = "Debes seleccionar al menos " + preg.minimo + " opcion(es) para: " + tituloPreg;
+                    return false;
+                }
+                $selReg.each(function () {
+                    selecciones.push({
+                        idpregunta: preg.idpregunta,
+                        mitad: 0,
+                        idproductoOpcion: parseInt($(this).attr("data-idopcion")),
+                        cantidad: 1.0
+                    });
+                });
             }
-            $sel.each(function () {
-                opcionesElegidas.push(parseInt($(this).attr("data-idopcion")));
-            });
         });
     }
 
-    if (faltanObligatorias) return;
+    if (errorValidacion) {
+        alert(errorValidacion);
+        return;
+    }
 
     var cant = parseInt($("#cantModal").val()) || 1;
 
     draftLineas.push({
         idproducto: productoEnEdicion.idproducto,
         cantidad: cant,
-        opciones: opcionesElegidas,
-        modificadores: []
+        selecciones: selecciones,
+        modificadores: [],
+        observacion: ""
     });
 
     $("#modalProductoConfig").modal("hide");
@@ -571,9 +740,9 @@ function renderizarComanda(res) {
             var $item = $("<div></div>").addClass("item-comanda");
 
             var $m = $("<div></div>").addClass("item-comanda-maestro");
-            $m.append("<span>" + l.cantidad + "x " + l.descripcion + "</span>");
+            $m.append("<span>" + l.cantidad + "x " + (l.descripcion || ("Producto #" + l.idproducto)) + "</span>");
             var $der = $("<span></span>").text("$ " + formatearPesos(l.valorTotal));
-            var $del = $("<i class='fas fa-trash-alt btn-eliminar-item' title='Quitar producto'></i>").on("click", function () {
+            var $del = $("<i class='fas fa-trash-alt btn-eliminar-item ml-2' title='Quitar producto'></i>").on("click", function () {
                 eliminarItemDraft(itemDraftIdx);
             });
             $der.append($del);
@@ -584,8 +753,8 @@ function renderizarComanda(res) {
                 $.each(hijasMap[l.ref], function (j, h) {
                     var isInc = (h.origen === "INCLUIDO");
                     var $h = $("<div></div>").addClass(isInc ? "item-comanda-incluido" : "item-comanda-hija");
-                    var pref = isInc ? "[Inc] " : "• ";
-                    $h.append("<span>" + pref + h.descripcion + "</span>");
+                    var pref = isInc ? "[Inc] " : (h.cantidad === 0.5 ? "• (1/2) " : "• ");
+                    $h.append("<span>" + pref + (h.descripcion || ("Opcion #" + h.idproducto)) + "</span>");
                     $h.append("<span>" + (h.valorTotal > 0 ? "+$ " + formatearPesos(h.valorTotal) : "$ 0") + "</span>");
                     $item.append($h);
                 });
