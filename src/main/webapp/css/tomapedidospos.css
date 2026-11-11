@@ -8,15 +8,15 @@ body {
 .pos-header {
     background: #102F6F;
     color: #fff;
-    padding: 12px 20px;
+    padding: 10px 18px;
     border-radius: 8px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
 .pos-header h2 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -26,52 +26,123 @@ body {
 .pos-header .badge-piloto {
     background: #FDC806;
     color: #102F6F;
-    font-weight: 700;
-    font-size: 0.8rem;
-    padding: 4px 8px;
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 4px 10px;
     border-radius: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* Tarjeta de Cliente */
+.card-cliente-pos {
+    background: #fff;
+    border: 1px solid #dce1eb;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.card-cliente-pos .seccion-tit {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #102F6F;
+    border-bottom: 2px solid #FDC806;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.label-campo {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Tabla de clientes encontrados */
+.tabla-clientes-box {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    background: #fff;
+}
+
+.tabla-clientes-box table {
+    margin-bottom: 0;
+    font-size: 0.82rem;
+}
+
+.tabla-clientes-box tr {
+    cursor: pointer;
+}
+
+.tabla-clientes-box tr:hover {
+    background-color: #f1f5fd;
+}
+
+.tabla-clientes-box tr.seleccionado {
+    background-color: #d8e6ff;
+    font-weight: 700;
 }
 
 /* Tabs de Menú */
+.nav-pills-pos {
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .nav-pills-pos .nav-link {
     color: #102F6F;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.88rem;
     border-radius: 6px;
-    margin-right: 6px;
     background: #fff;
-    border: 1px solid #dee2e6;
-    transition: all 0.2s ease;
+    border: 1px solid #ced4da;
+    padding: 6px 14px;
+    transition: all 0.18s ease;
+}
+
+.nav-pills-pos .nav-link:hover {
+    background: #eef2f9;
 }
 
 .nav-pills-pos .nav-link.active {
     background: #E42528;
     color: #fff;
     border-color: #E42528;
-    box-shadow: 0 2px 4px rgba(228, 37, 40, 0.3);
+    box-shadow: 0 2px 6px rgba(228, 37, 40, 0.35);
 }
 
 /* Grilla de Productos */
 .grid-productos {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 12px;
-    max-height: 68vh;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 10px;
+    max-height: 58vh;
     overflow-y: auto;
-    padding: 6px;
+    padding: 4px;
 }
 
 .card-prod {
     background: #fff;
-    border: 1px solid #e0e4ec;
+    border: 1px solid #dce1eb;
     border-radius: 8px;
-    padding: 12px 10px;
+    padding: 10px 10px;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 110px;
+    min-height: 100px;
     position: relative;
+    user-select: none;
 }
 
 .card-prod:hover {
@@ -81,23 +152,23 @@ body {
 }
 
 .card-prod .prod-title {
-    font-size: 0.92rem;
+    font-size: 0.90rem;
     font-weight: 700;
     color: #1a1a1a;
     line-height: 1.25;
 }
 
 .card-prod .prod-tipo {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #777;
     margin-top: 2px;
 }
 
 .card-prod .prod-precio {
     font-size: 1.05rem;
-    font-weight: 700;
+    font-weight: 800;
     color: #E42528;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 .badge-promo {
@@ -106,10 +177,10 @@ body {
     right: 6px;
     background: #FDC806;
     color: #222;
-    font-size: 0.68rem;
-    font-weight: 700;
+    font-size: 0.65rem;
+    font-weight: 800;
     padding: 2px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 /* Panel Comanda / Carrito */
@@ -117,32 +188,33 @@ body {
     background: #fff;
     border: 1px solid #dce1eb;
     border-radius: 8px;
-    padding: 16px;
+    padding: 14px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 120px);
+    min-height: 520px;
 }
 
 .panel-comanda h4 {
-    font-size: 1.15rem;
+    font-size: 1.12rem;
     font-weight: 700;
     color: #102F6F;
     border-bottom: 2px solid #FDC806;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
 }
 
 .lista-comanda {
     flex: 1;
+    max-height: 340px;
     overflow-y: auto;
     border-bottom: 1px dashed #ccc;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .item-comanda {
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 6px 0;
+    border-bottom: 1px solid #f2f2f2;
 }
 
 .item-comanda-maestro {
@@ -150,21 +222,21 @@ body {
     color: #111;
     display: flex;
     justify-content: space-between;
-    font-size: 0.95rem;
+    font-size: 0.90rem;
 }
 
 .item-comanda-hija {
-    font-size: 0.82rem;
+    font-size: 0.80rem;
     color: #555;
-    padding-left: 14px;
+    padding-left: 12px;
     display: flex;
     justify-content: space-between;
 }
 
 .item-comanda-incluido {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: #28a745;
-    padding-left: 14px;
+    padding-left: 12px;
     display: flex;
     justify-content: space-between;
 }
@@ -174,22 +246,27 @@ body {
     cursor: pointer;
     margin-left: 8px;
     font-size: 0.85rem;
+    transition: opacity 0.15s;
+}
+
+.btn-eliminar-item:hover {
+    opacity: 0.75;
 }
 
 /* Totales */
 .totales-box {
-    background: #fdfdfd;
-    padding: 10px;
+    background: #fafbfd;
+    padding: 8px 10px;
     border-radius: 6px;
     border: 1px solid #eee;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .fila-total {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
-    margin-bottom: 4px;
+    font-size: 0.88rem;
+    margin-bottom: 3px;
 }
 
 .fila-total.gran-total {
@@ -197,8 +274,8 @@ body {
     font-weight: 800;
     color: #E42528;
     border-top: 1px solid #ddd;
-    padding-top: 6px;
-    margin-top: 6px;
+    padding-top: 5px;
+    margin-top: 5px;
 }
 
 /* Modal de Opciones */
@@ -212,13 +289,13 @@ body {
     background: #fbfbfb;
     border: 1px solid #e9ecef;
     border-radius: 6px;
-    padding: 10px 12px;
-    margin-bottom: 12px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
 }
 
 .pregunta-titulo {
     font-weight: 700;
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     color: #102F6F;
     margin-bottom: 6px;
 }
@@ -230,7 +307,7 @@ body {
 }
 
 .opcion-btn {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     text-align: left;
     padding: 5px 8px;
     border: 1px solid #ced4da;
@@ -244,11 +321,11 @@ body {
     background: #102F6F;
     color: #fff;
     border-color: #102F6F;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .opcion-btn .opcion-precio {
     display: block;
-    font-size: 0.72rem;
-    opacity: 0.85;
+    font-size: 0.70rem;
+    opacity: 0.88;
 }

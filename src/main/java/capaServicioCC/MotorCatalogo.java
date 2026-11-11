@@ -95,10 +95,10 @@ public class MotorCatalogo extends HttpServlet {
 
 		// 2. Obtener productos configurados en la cuadricula de cada multimenu
 		String sqlItems = "select cm.multimenu, cm.menu, cm.fila, cm.columna, cm.idproducto, "
-				+ "p.descripcion, p.tipo, p.precio1, p.precio_pila, p.promocion "
+				+ "p.descripcion, p.tipo_producto as tipo, p.precio1, p.precio_pila, p.promocion "
 				+ "from pos_central.configuracion_menu cm "
 				+ "join pos_central.producto p on p.idproducto = cm.idproducto "
-				+ "where p.no_venta = 0 "
+				+ "where p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30 "
 				+ "order by cm.multimenu, cm.menu, cm.fila, cm.columna";
 
 		try (PreparedStatement ps = con.prepareStatement(sqlItems); ResultSet rs = ps.executeQuery()) {
@@ -136,8 +136,8 @@ public class MotorCatalogo extends HttpServlet {
 		Map<String, Object> resp = new HashMap<String, Object>();
 
 		// Datos basicos del producto
-		String sqlP = "select idproducto, descripcion, tipo, precio1, precio_pila, id_producto_depende, precio_puntos, promocion, "
-				+ "idpregunta1, idpregunta2, idpregunta3, idpregunta4, idpregunta5 "
+		String sqlP = "select idproducto, descripcion, tipo_producto as tipo, precio1, precio_pila, id_producto_depende, precio_puntos, promocion, "
+				+ "idpreguntaforzada1, idpreguntaforzada2, idpreguntaforzada3, idpreguntaforzada4, idpreguntaforzada5 "
 				+ "from pos_central.producto where idproducto = ?";
 		int[] idPreguntas = new int[5];
 
@@ -157,7 +157,7 @@ public class MotorCatalogo extends HttpServlet {
 				resp.put("promocion", rs.getString("promocion"));
 
 				for (int i = 0; i < 5; i++) {
-					idPreguntas[i] = rs.getInt("idpregunta" + (i + 1));
+					idPreguntas[i] = rs.getInt("idpreguntaforzada" + (i + 1));
 				}
 			}
 		}
@@ -217,7 +217,7 @@ public class MotorCatalogo extends HttpServlet {
 			String sqlOp = "select ef.idproducto, p.descripcion, p." + colPrecio + " as precio "
 					+ "from pos_central.eleccion_forzada ef "
 					+ "join pos_central.producto p on p.idproducto = ef.idproducto "
-					+ "where ef.idpregunta = ? and p.no_venta = 0 "
+					+ "where ef.idpregunta = ? and (p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30) "
 					+ "order by ef.posicion, p.descripcion";
 			List<Map<String, Object>> opciones = new ArrayList<Map<String, Object>>();
 			try (PreparedStatement ps = con.prepareStatement(sqlOp)) {
