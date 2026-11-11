@@ -369,3 +369,95 @@ body {
     justify-content: space-between;
 }
 
+/* =========================================================================
+   BLOQUEO PREVIO DEL MENÚ (EXIGENCIA DE UBICACIÓN DEL CLIENTE)
+   ========================================================================= */
+.contenedor-catalogo-relativo {
+    position: relative;
+    min-height: 480px;
+}
+
+.bloqueo-menu-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(244, 246, 250, 0.94);
+    backdrop-filter: blur(3px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 2px dashed #b0bec5;
+    padding: 20px;
+    transition: all 0.25s ease;
+}
+
+.bloqueo-menu-mensaje {
+    background: #fff;
+    border: 1px solid #dce1eb;
+    border-radius: 12px;
+    padding: 30px 35px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(16, 47, 111, 0.12);
+}
+
+.bloqueo-menu-mensaje h5 {
+    color: #102F6F;
+    font-weight: 800;
+    font-size: 1.15rem;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* Badges y botones de estado de ubicación */
+.badge-ubicacion-pendiente {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    font-weight: 700;
+    font-size: 0.80rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-ubicacion-ok {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    font-weight: 700;
+    font-size: 0.80rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-pulsing-map {
+    animation: pulseMap 2.2s infinite;
+}
+
+@keyframes pulseMap {
+    0% {
+        box-shadow: 0 0 0 0 rgba(228, 37, 40, 0.65);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(228, 37, 40, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(228, 37, 40, 0);
+    }
+}
+
+.modal-header-mapa {
+    background: #102F6F;
+    color: #fff;
+    border-radius: calc(0.3rem - 1px) calc(0.3rem - 1px) 0 0;
+}
+
+

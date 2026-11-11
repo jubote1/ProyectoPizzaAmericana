@@ -158,6 +158,33 @@ public class MotorFinalizarPedido extends HttpServlet {
 
 			if (esPiloto) {
 				Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
+				if (cli == null && root.has("cliente")) {
+					try {
+						JsonObject clJson = root.getAsJsonObject("cliente");
+						if (clJson != null) {
+							cli = new Cliente();
+							cli.setIdcliente(idCliente);
+							cli.setNombres(clJson.has("nombres") ? clJson.get("nombres").getAsString() : "Cliente Mostrador");
+							cli.setApellidos(clJson.has("apellidos") ? clJson.get("apellidos").getAsString() : "");
+							cli.setTelefonoCelular(clJson.has("telefono") ? clJson.get("telefono").getAsString() : "");
+							cli.setDireccion(clJson.has("direccion") ? clJson.get("direccion").getAsString() : "");
+							cli.setMunicipio(clJson.has("municipio") ? clJson.get("municipio").getAsString() : "Medellin");
+							cli.setZonaDireccion(clJson.has("zona") ? clJson.get("zona").getAsString() : "");
+							cli.setObservacion(clJson.has("observacion") ? clJson.get("observacion").getAsString() : "");
+							if (clJson.has("latitud")) {
+								cli.setLatitud((float) clJson.get("latitud").getAsDouble());
+							}
+							if (clJson.has("longitud")) {
+								cli.setLontitud((float) clJson.get("longitud").getAsDouble());
+							}
+							if (clJson.has("distanciatienda")) {
+								cli.setDistanciaTienda(clJson.get("distanciatienda").getAsDouble());
+							}
+						}
+					} catch (Exception exCli) {
+						// Ignorado si no viene estructura completa
+					}
+				}
 				dr = ConectorTiendaPos.despachar(con, idPedidoCentral, idTienda, cli, solicitud, res, idFormaPagoTienda,
 						valorFormaPago, usuario, tiempoPedido, origen);
 			}
