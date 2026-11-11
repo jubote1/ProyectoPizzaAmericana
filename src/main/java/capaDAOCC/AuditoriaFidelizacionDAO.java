@@ -137,7 +137,7 @@ public class AuditoriaFidelizacionDAO {
 	 * perfectamente normales.
 	 */
 	private static final String NO_PERSONA =
-			" ('CONTACT','TIEVIRTUALKUNO','BOT','APP','CAJA') ";
+			" ('CONTACT','TIEVIRTUALKUNO','BOT','APP','CAJA','AJUSTE') ";
 
 	/** La condicion SQL que deja solo a las personas de carne y hueso. */
 	private static String soloPersonas(final String alias) {
