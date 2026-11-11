@@ -748,9 +748,11 @@ public class ArnesSombra {
 				arnes.extraerCasosBot(Long.parseLong(args[1]), Long.parseLong(args[2]), Integer.parseInt(args[3]));
 				break;
 			case "repetir":
-				MotorPedido motor = "v1".equals(args[1]) ? new MotorPedidoV1(arnes.catalogo)
+				String vArg = args[1];
+				String vMotor = "v1".equals(vArg) ? MotorPedidoV1.VERSION : vArg;
+				MotorPedido motor = vArg.startsWith("v") ? new MotorPedidoV1(arnes.catalogo, vMotor)
 						: new MotorPedidoNoImplementado();
-				arnes.repetir(motor, "eco".equals(args[1]), Integer.parseInt(args[2]), args.length > 3 ? args[3] : "");
+				arnes.repetir(motor, "eco".equals(vArg), Integer.parseInt(args[2]), args.length > 3 ? args[3] : "");
 				break;
 			case "limpiar":
 				arnes.limpiarCasos(args.length > 1 ? args[1] : "TIENDA_HIST");

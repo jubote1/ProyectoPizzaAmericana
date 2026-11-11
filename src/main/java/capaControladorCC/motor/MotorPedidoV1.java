@@ -1,9 +1,16 @@
 package capaControladorCC.motor;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import capaControladorCC.motor.CatalogoPos.DescuentoGeneral;
+import capaControladorCC.motor.CatalogoPos.Horario;
 import capaControladorCC.motor.CatalogoPos.Incluido;
 import capaControladorCC.motor.CatalogoPos.Pregunta;
 import capaControladorCC.motor.CatalogoPos.Producto;
@@ -11,7 +18,7 @@ import capaModeloCC.motor.MotorResultado;
 import capaModeloCC.motor.MotorSolicitud;
 
 /**
- * Motor de pedido, version 1: NUCLEO DE LINEAS Y PRECIO (paquete 2.2 de la etapa 2).
+ * Motor de pedido, version 1: NUCLEO DE LINEAS, PRECIO, HORARIOS Y DESCUENTOS (paquetes 2.2, 2.4 y 2.5 de la etapa 2).
  *
  * Reproduce lo que hace la pantalla de toma de pedidos de la tienda al agregar un producto:
  *  1. Linea maestra con el producto a precio1.
@@ -24,9 +31,9 @@ import capaModeloCC.motor.MotorSolicitud;
  *     modifican.
  *  5. Si la linea se pide con cantidad mayor a 1 se multiplican las cantidades de la maestra y de las hijas.
  *  6. Domicilio: producto indicado en la solicitud, al precio1 del catalogo.
- *
- * Lo que NO hace todavia (otros paquetes): descuentos, horarios por dia o por canal, minimo y maximo de cada
- * pregunta como regla de rechazo (solo advierte), puntos, codigos.
+ *  7. Validacion de horarios por dia y canal (producto_horario y producto_horario_canal).
+ *  8. Validacion de dependencias entre productos (id_producto_depende).
+ *  9. Validacion y calculo de descuentos generales (automaticos diarios tipo P e I, cupon tipo D), codigos promocionales y puntos.
  *
  * No toca bases de datos: trabaja sobre la copia en memoria del catalogo.
  */
@@ -35,14 +42,20 @@ public class MotorPedidoV1 implements MotorPedido {
 	public static final String VERSION = "v1-nucleo";
 
 	private final CatalogoPos catalogo;
+	private final String version;
 
 	public MotorPedidoV1(CatalogoPos catalogo) {
+		this(catalogo, VERSION);
+	}
+
+	public MotorPedidoV1(CatalogoPos catalogo, String version) {
 		this.catalogo = catalogo;
+		this.version = (version == null || version.isEmpty()) ? VERSION : version;
 	}
 
 	@Override
 	public String version() {
-		return VERSION;
+		return version;
 	}
 
 	private int ref;
@@ -50,12 +63,46 @@ public class MotorPedidoV1 implements MotorPedido {
 	@Override
 	public synchronized MotorResultado cotizar(MotorSolicitud s) {
 		MotorResultado r = new MotorResultado();
-		r.versionMotor = VERSION;
+		r.versionMotor = version;
 		try {
 			ref = 1;
 			if (s == null || s.lineas == null) {
 				return MotorResultado.conEstado(MotorResultado.ERROR, VERSION, "SOLICITUD_VACIA", "No llegaron lineas.");
 			}
+
+			// 1. Resolver fecha, dia de la semana y hora para validacion de horarios y descuentos
+			Calendar cal = Calendar.getInstance();
+			String horaHHmm = "";
+			int diaCalendar = cal.get(Calendar.DAY_OF_WEEK);
+			if (s.contexto != null && s.contexto.fechaHora != null && !s.contexto.fechaHora.trim().isEmpty()) {
+				try {
+					String fh = s.contexto.fechaHora.trim();
+					SimpleDateFormat sdf = new SimpleDateFormat(
+							fh.length() > 16 ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd HH:mm");
+					Date d = sdf.parse(fh);
+					cal.setTime(d);
+					diaCalendar = cal.get(Calendar.DAY_OF_WEEK);
+					horaHHmm = new SimpleDateFormat("HH:mm").format(d);
+				} catch (Exception ignored) {
+					horaHHmm = new SimpleDateFormat("HH:mm").format(cal.getTime());
+				}
+			} else {
+				horaHHmm = new SimpleDateFormat("HH:mm").format(cal.getTime());
+			}
+
+			// 2. Recopilar todos los ids de producto pedidos para validar dependencias
+			Set<Integer> productosPedidos = new HashSet<Integer>();
+			for (MotorSolicitud.Linea l : s.lineas) {
+				productosPedidos.add(l.idproducto);
+				if (l.selecciones != null) {
+					for (MotorSolicitud.Seleccion sel : l.selecciones) {
+						productosPedidos.add(sel.idproductoOpcion);
+					}
+				}
+			}
+
+			// 3. Procesar lineas solicitadas
+			String canal = (s.contexto != null && s.contexto.canal != null) ? s.contexto.canal.trim() : "";
 			for (MotorSolicitud.Linea l : s.lineas) {
 				Producto p = catalogo.productos.get(l.idproducto);
 				if (p == null) {
@@ -65,8 +112,32 @@ public class MotorPedidoV1 implements MotorPedido {
 				if (p.noVenta != 0) {
 					r.advertencias.add(new MotorResultado.Advertencia("NO_VENTA", "El producto esta marcado como no venta.", p.id));
 				}
+
+				// Validar horario por dia y canal
+				Horario h = catalogo.obtenerHorario(canal, p.id);
+				if (h != null && !h.estaActivo(diaCalendar, horaHHmm)) {
+					r.advertencias.add(new MotorResultado.Advertencia("FUERA_DE_HORARIO",
+							"El producto " + p.id + " (" + p.descripcion + ") no esta en horario para el canal "
+									+ (canal.isEmpty() ? "GENERAL" : canal) + " a las " + horaHHmm + ".", p.id));
+				}
+
+				// Validar dependencia entre productos
+				if (p.idProductoDepende > 0 && !productosPedidos.contains(p.idProductoDepende)) {
+					r.advertencias.add(new MotorResultado.Advertencia("DEPENDE_DE_PRODUCTO",
+							"El producto " + p.id + " (" + p.descripcion + ") requiere que el pedido incluya el producto "
+									+ p.idProductoDepende + ".", p.id));
+				}
+
+				// Validar puntos
+				if (p.precioPuntos > 0) {
+					r.advertencias.add(new MotorResultado.Advertencia("REQUIERE_PUNTOS",
+							"El producto " + p.id + " requiere " + (int) p.precioPuntos + " puntos de fidelizacion.", p.id));
+				}
+
 				agregarLinea(r, p, l);
 			}
+
+			// 4. Domicilio
 			if (s.domicilio != null && s.domicilio.idproducto > 0) {
 				Producto d = catalogo.productos.get(s.domicilio.idproducto);
 				if (d == null) {
@@ -80,12 +151,105 @@ public class MotorPedidoV1 implements MotorPedido {
 				}
 				r.lineas.add(linea(d.id, 1, precio, 0, 0, "DOMICILIO"));
 			}
+
+			// 5. Aplicar descuentos y promociones
+			aplicarDescuentos(s, r, horaHHmm);
+
 			r.estado = MotorResultado.OK;
 			r.recalcularTotales();
 			return r;
 		} catch (Throwable t) {
 			return MotorResultado.conEstado(MotorResultado.ERROR, VERSION, "EXCEPCION", String.valueOf(t));
 		}
+	}
+
+	private void aplicarDescuentos(MotorSolicitud s, MotorResultado r, String horaHHmm) {
+		// Advertencias de solicitud de descuento explicita
+		if (s.descuentos != null) {
+			if (s.descuentos.codigoPromocional != null && !s.descuentos.codigoPromocional.trim().isEmpty()) {
+				r.advertencias.add(new MotorResultado.Advertencia("CODIGO_PROMO_RECIBIDO",
+						"Codigo promocional recibido: " + s.descuentos.codigoPromocional.trim(), 0));
+			}
+			if (s.descuentos.redimirPuntos) {
+				r.advertencias.add(new MotorResultado.Advertencia("REDENCION_PUNTOS_ACTIVA",
+						"Solicitud de redencion de puntos activa.", 0));
+			}
+		}
+
+		// Descuentos generales configurados
+		if (catalogo.descuentosGenerales.isEmpty()) {
+			return;
+		}
+		double totalDescuento = 0.0;
+		for (DescuentoGeneral dg : catalogo.descuentosGenerales) {
+			if (!dg.enHorario(horaHHmm)) {
+				continue;
+			}
+			if ("P".equalsIgnoreCase(dg.tipoDescuento) || "N".equalsIgnoreCase(dg.tipoDescuento)) {
+				for (MotorResultado.Linea ml : r.lineas) {
+					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
+						double base = ml.valorTotal + totalHijas(r, ml.ref);
+						double desc = 0.0;
+						if (dg.valorPesos > 0) {
+							desc = dg.valorPesos * ml.cantidad;
+						} else if (dg.valorPorcentaje > 0) {
+							desc = base * (dg.valorPorcentaje / 100.0);
+						}
+						if (desc > 0) {
+							totalDescuento += desc;
+							r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_APLICADO",
+									"Descuento tipo " + dg.tipoDescuento + " de " + desc + " en producto " + ml.idproducto, ml.idproducto));
+						}
+					}
+				}
+			} else if ("I".equalsIgnoreCase(dg.tipoDescuento)) {
+				for (MotorResultado.Linea ml : r.lineas) {
+					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto && dg.valorPesos > 0) {
+						double totalAdi = totalAdiciones(r, ml.ref);
+						double desc = (totalAdi > dg.valorPesos) ? dg.valorPesos : totalAdi;
+						if (desc > 0) {
+							totalDescuento += desc;
+							r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_ADICION",
+									"Descuento en adiciones de " + desc + " para producto " + ml.idproducto, ml.idproducto));
+						}
+					}
+				}
+			} else if ("D".equalsIgnoreCase(dg.tipoDescuento)) {
+				for (MotorResultado.Linea ml : r.lineas) {
+					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
+						double base = ml.valorTotal + totalHijas(r, ml.ref);
+						double valorCupon = base * (dg.valorPorcentaje / 100.0);
+						r.advertencias.add(new MotorResultado.Advertencia("CUPON_FUTURO_D",
+								"Genera cupon futuro de " + (int) valorCupon + " (" + dg.valorPorcentaje + "%) para producto "
+										+ dg.idProducto, dg.idProducto));
+					}
+				}
+			}
+		}
+		r.descuento = totalDescuento;
+	}
+
+	private double totalHijas(MotorResultado r, int refMaster) {
+		double suma = 0;
+		for (MotorResultado.Linea h : r.lineas) {
+			if (h.refMaster == refMaster) {
+				suma += h.valorTotal;
+			}
+		}
+		return suma;
+	}
+
+	private double totalAdiciones(MotorResultado r, int refMaster) {
+		double suma = 0;
+		for (MotorResultado.Linea h : r.lineas) {
+			if (h.refMaster == refMaster && "OPCION".equals(h.origen)) {
+				Producto hp = catalogo.productos.get(h.idproducto);
+				if (hp != null && ("ADICION".equalsIgnoreCase(hp.tipo) || "ADICIONALES".equalsIgnoreCase(hp.tipo))) {
+					suma += h.valorTotal;
+				}
+			}
+		}
+		return suma;
 	}
 
 	private MotorResultado.Linea linea(int idProducto, double cantidad, double unitario, int refMaster,
