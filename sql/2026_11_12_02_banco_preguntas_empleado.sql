@@ -49,3 +49,32 @@ FROM pizzaamericana.rol r
 LEFT JOIN pizzaamericana.usuario_rol ur ON ur.idrol = r.idrol
 LEFT JOIN pizzaamericana.usuario u ON u.id = ur.idusuario
 WHERE r.nombre = 'Banco de Preguntas a Empleados';
+
+-- =====================================================================
+-- PANTALLA "REPORTE DE PREGUNTAS POR EMPLEADO" (como le ha ido a un empleado en un rango)
+-- Mismos permisos que "Resultado Preguntas a Empleados": quien ya ve esa pantalla ve esta.
+-- =====================================================================
+INSERT INTO pizzaamericana.pantalla (nombre, idmodulo, url_html, orden, activo)
+SELECT 'Reporte Preguntas por Empleado', 3, 'ReporteEmpleadoPreguntas.html', 112, 'S'
+WHERE NOT EXISTS (SELECT 1 FROM pizzaamericana.pantalla WHERE url_html = 'ReporteEmpleadoPreguntas.html');
+
+INSERT INTO pizzaamericana.rol_pantalla (idrol, idpantalla)
+SELECT rp.idrol, nueva.idpantalla
+FROM pizzaamericana.rol_pantalla rp
+JOIN pizzaamericana.pantalla vieja ON vieja.idpantalla = rp.idpantalla AND vieja.url_html = 'ResultadoPreguntasEmpleado.html'
+JOIN pizzaamericana.pantalla nueva ON nueva.url_html = 'ReporteEmpleadoPreguntas.html'
+WHERE NOT EXISTS (SELECT 1 FROM pizzaamericana.rol_pantalla x WHERE x.idrol = rp.idrol AND x.idpantalla = nueva.idpantalla);
+
+INSERT INTO pizzaamericana.pantalla_servlet (idpantalla, patron_url)
+SELECT p.idpantalla, '/ConsultarReporteEmpleadoPreguntas'
+FROM pizzaamericana.pantalla p
+WHERE p.url_html = 'ReporteEmpleadoPreguntas.html'
+  AND NOT EXISTS (SELECT 1 FROM pizzaamericana.pantalla_servlet ps WHERE ps.idpantalla = p.idpantalla AND ps.patron_url = '/ConsultarReporteEmpleadoPreguntas');
+-- La lista de empleados la alimenta un servlet que la otra pantalla ya registro.
+INSERT INTO pizzaamericana.pantalla_servlet (idpantalla, patron_url)
+SELECT p.idpantalla, '/ConsultarResumenPreguntasEmpleado'
+FROM pizzaamericana.pantalla p
+WHERE p.url_html = 'ReporteEmpleadoPreguntas.html'
+  AND NOT EXISTS (SELECT 1 FROM pizzaamericana.pantalla_servlet ps WHERE ps.idpantalla = p.idpantalla AND ps.patron_url = '/ConsultarResumenPreguntasEmpleado');
+
+SELECT p.idpantalla, p.nombre, p.url_html FROM pizzaamericana.pantalla p WHERE p.url_html = 'ReporteEmpleadoPreguntas.html';

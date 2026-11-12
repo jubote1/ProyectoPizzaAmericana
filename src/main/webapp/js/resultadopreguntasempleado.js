@@ -227,7 +227,9 @@ function peElegirEmpleado(id) {
 			nombre = peEmpleados[i].nombrelargo;
 		}
 	}
-	$('#peDetalleTitulo').text('Detalle de ' + nombre + ', del ' + $('#peDesde').val() + ' al ' + $('#peHasta').val());
+	$('#peDetalleTitulo').html('Detalle de ' + peEscapar(nombre) + ', del ' + $('#peDesde').val() + ' al ' + $('#peHasta').val()
+		+ ' &nbsp; <a class="btn btn-xs btn-primary" style="text-transform:none;" href="ReporteEmpleadoPreguntas.html?idempleado=' + id
+		+ '&desde=' + $('#peDesde').val() + '&hasta=' + $('#peHasta').val() + '">Ver reporte completo del empleado</a>');
 	$('#peDetalleMensaje').html('<div class="alert alert-info">Consultando...</div>');
 	$('#peTablaPorPregunta tbody').html('');
 	$('#peTablaRespuestas tbody').html('');

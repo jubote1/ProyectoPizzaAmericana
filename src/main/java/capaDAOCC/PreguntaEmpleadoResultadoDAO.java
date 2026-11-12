@@ -214,6 +214,232 @@ public class PreguntaEmpleadoResultadoDAO {
 		return (lista);
 	}
 
+	// =======================================================================
+	// Reporte de UN empleado en un rango (pantalla ReporteEmpleadoPreguntas)
+	// =======================================================================
+
+	public static class Empleado {
+		public int id;
+		public int idTipo;
+		public String nombre = "";
+		public String nombreLargo = "";
+		public String cargo = "";
+		public boolean activo;
+	}
+
+	/** Lo global del rango: cuantas contesto, cuantas acerto, cuantas preguntas distintas y desde/hasta cuando. */
+	public static class Totales {
+		public int respondidas;
+		public int correctas;
+		public int distintas;
+		public String primera = "";
+		public String ultima = "";
+	}
+
+	/** Una semana (lunes a domingo) con lo que contesto. */
+	public static class Semana {
+		public String inicio = "";
+		public int respondidas;
+		public int correctas;
+	}
+
+	/** Contra quien compararlo: su cargo y toda la empresa, en el mismo rango. */
+	public static class Comparativo {
+		public int cargoEmpleados;
+		public int cargoRespondidas;
+		public int cargoCorrectas;
+		public int empresaRespondidas;
+		public int empresaCorrectas;
+	}
+
+	/** Una pregunta vigente para su cargo que no contesto en el rango. */
+	public static class Pendiente {
+		public int idPregunta;
+		public String descripcion = "";
+		/** Cuantas veces la ha contestado en toda su historia (0 = nunca la ha visto). */
+		public int vecesHistorico;
+	}
+
+	/** El empleado (activo o no), o null si no existe. */
+	public static Empleado obtenerEmpleado(final int idEmpleado) throws Exception {
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			if (cn == null) {
+				throw new Exception("No hay conexion a la base general.");
+			}
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select e.id, e.nombre, e.nombre_largo, e.idtipoempleado, e.activo, t.descripcion as cargo "
+							+ "from empleado e left join tipo_empleado t on t.idtipoempleado = e.idtipoempleado where e.id = ?")) {
+				ps.setInt(1, idEmpleado);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (!rs.next()) {
+						return (null);
+					}
+					final Empleado e = new Empleado();
+					e.id = rs.getInt("id");
+					e.idTipo = rs.getInt("idtipoempleado");
+					e.nombre = texto(rs.getString("nombre"));
+					e.nombreLargo = texto(rs.getString("nombre_largo"));
+					e.cargo = texto(rs.getString("cargo"));
+					e.activo = "1".equals(rs.getString("activo"));
+					return (e);
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+	}
+
+	public static Totales obtenerTotales(final int idEmpleado, final String desde, final String hasta) throws Exception {
+		final Totales t = new Totales();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			if (cn == null) {
+				throw new Exception("No hay conexion a la base general.");
+			}
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select count(*) as respondidas, coalesce(sum(coalesce(r.correcta, orp.correcta)), 0) as correctas, "
+							+ "count(distinct r.idpregunta) as distintas, "
+							+ "date_format(min(r.fecha_respuesta), '%Y-%m-%d %H:%i') as primera, "
+							+ "date_format(max(r.fecha_respuesta), '%Y-%m-%d %H:%i') as ultima "
+							+ "from respuesta_empleado r "
+							+ "left join opcion_respuesta_pregunta orp on orp.idpregunta = r.idpregunta and orp.idopcion = r.idopcion "
+							+ "where r.idempleado = ? and r.fecha_respuesta >= ? and r.fecha_respuesta < date_add(?, interval 1 day)")) {
+				ps.setInt(1, idEmpleado);
+				ps.setString(2, desde);
+				ps.setString(3, hasta);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						t.respondidas = rs.getInt("respondidas");
+						t.correctas = rs.getInt("correctas");
+						t.distintas = rs.getInt("distintas");
+						t.primera = texto(rs.getString("primera"));
+						t.ultima = texto(rs.getString("ultima"));
+					}
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+		return (t);
+	}
+
+	/** Por semana (la semana empieza el lunes), de la mas antigua a la mas reciente. */
+	public static ArrayList<Semana> obtenerSemanas(final int idEmpleado, final String desde, final String hasta)
+			throws Exception {
+		final ArrayList<Semana> lista = new ArrayList<Semana>();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			if (cn == null) {
+				throw new Exception("No hay conexion a la base general.");
+			}
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select date_format(date_sub(date(r.fecha_respuesta), interval weekday(r.fecha_respuesta) day), '%Y-%m-%d') as inicio, "
+							+ "count(*) as respondidas, coalesce(sum(coalesce(r.correcta, orp.correcta)), 0) as correctas "
+							+ "from respuesta_empleado r "
+							+ "left join opcion_respuesta_pregunta orp on orp.idpregunta = r.idpregunta and orp.idopcion = r.idopcion "
+							+ "where r.idempleado = ? and r.fecha_respuesta >= ? and r.fecha_respuesta < date_add(?, interval 1 day) "
+							+ "group by inicio order by inicio")) {
+				ps.setInt(1, idEmpleado);
+				ps.setString(2, desde);
+				ps.setString(3, hasta);
+				try (ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						final Semana s = new Semana();
+						s.inicio = texto(rs.getString("inicio"));
+						s.respondidas = rs.getInt("respondidas");
+						s.correctas = rs.getInt("correctas");
+						lista.add(s);
+					}
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+		return (lista);
+	}
+
+	/** Lo mismo del rango para los empleados del mismo cargo y para toda la empresa. */
+	public static Comparativo obtenerComparativo(final int idTipo, final String desde, final String hasta) throws Exception {
+		final Comparativo c = new Comparativo();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			if (cn == null) {
+				throw new Exception("No hay conexion a la base general.");
+			}
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select count(*) as respondidas, coalesce(sum(coalesce(r.correcta, orp.correcta)), 0) as correctas, "
+							+ "coalesce(sum(e.idtipoempleado = ?), 0) as respondidas_cargo, "
+							+ "coalesce(sum(case when e.idtipoempleado = ? then coalesce(r.correcta, orp.correcta) else 0 end), 0) as correctas_cargo, "
+							+ "count(distinct case when e.idtipoempleado = ? then r.idempleado end) as empleados_cargo "
+							+ "from respuesta_empleado r join empleado e on e.id = r.idempleado "
+							+ "left join opcion_respuesta_pregunta orp on orp.idpregunta = r.idpregunta and orp.idopcion = r.idopcion "
+							+ "where r.fecha_respuesta >= ? and r.fecha_respuesta < date_add(?, interval 1 day)")) {
+				ps.setInt(1, idTipo);
+				ps.setInt(2, idTipo);
+				ps.setInt(3, idTipo);
+				ps.setString(4, desde);
+				ps.setString(5, hasta);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						c.empresaRespondidas = rs.getInt("respondidas");
+						c.empresaCorrectas = rs.getInt("correctas");
+						c.cargoRespondidas = rs.getInt("respondidas_cargo");
+						c.cargoCorrectas = rs.getInt("correctas_cargo");
+						c.cargoEmpleados = rs.getInt("empleados_cargo");
+					}
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+		return (c);
+	}
+
+	/** Las preguntas vigentes HOY para su cargo (o para todos) que no contesto en el rango. */
+	public static ArrayList<Pendiente> obtenerPendientes(final int idEmpleado, final int idTipo, final String desde,
+			final String hasta) throws Exception {
+		final ArrayList<Pendiente> lista = new ArrayList<Pendiente>();
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			if (cn == null) {
+				throw new Exception("No hay conexion a la base general.");
+			}
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select p.id, p.descripcion, "
+							+ "(select count(*) from respuesta_empleado h where h.idempleado = ? and h.idpregunta = p.id) as historico "
+							+ "from pregunta_empleado p "
+							+ "where p.activo = 1 and current_date between p.fecha_inicio and p.fecha_final "
+							+ "  and exists (select 1 from pregunta_empleado_tipo t where t.idpregunta = p.id and t.idtipoempleado in (?, 0)) "
+							+ "  and not exists (select 1 from respuesta_empleado r where r.idempleado = ? and r.idpregunta = p.id "
+							+ "      and r.fecha_respuesta >= ? and r.fecha_respuesta < date_add(?, interval 1 day)) "
+							+ "order by historico, p.id")) {
+				ps.setInt(1, idEmpleado);
+				ps.setInt(2, idTipo);
+				ps.setInt(3, idEmpleado);
+				ps.setString(4, desde);
+				ps.setString(5, hasta);
+				try (ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						final Pendiente pe = new Pendiente();
+						pe.idPregunta = rs.getInt("id");
+						pe.descripcion = texto(rs.getString("descripcion"));
+						pe.vecesHistorico = rs.getInt("historico");
+						lista.add(pe);
+					}
+				}
+			}
+		} finally {
+			cerrar(cn);
+		}
+		return (lista);
+	}
+
 	private static String texto(final String valor) {
 		return (valor == null ? "" : valor);
 	}
