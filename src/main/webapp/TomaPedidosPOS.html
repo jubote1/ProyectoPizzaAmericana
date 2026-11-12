@@ -24,6 +24,10 @@
             </h2>
 
             <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm" id="btnAbrirManualUsuario" title="Consultar Manual de Usuario y Guía del Sistema">
+                    <i class="fas fa-book-open mr-1"></i> Manual de Usuario
+                </button>
+
                 <div class="d-flex align-items-center">
                     <label for="tiendaSelect" class="mr-2 mb-0 font-weight-bold text-white"><i class="fas fa-store mr-1"></i>Tienda:</label>
                     <select id="tiendaSelect" class="form-control form-control-sm font-weight-bold" style="min-width: 200px;">
@@ -701,7 +705,390 @@
         </div>
     </div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <!-- Modal Completo de Manual de Usuario y Guía Operativa -->
+    <div class="modal fade" id="modalManualUsuario" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header modal-header-manual py-2 d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title font-weight-bold text-white mb-0" style="font-size: 1.15rem;">
+                        <i class="fas fa-book-open text-warning mr-2"></i>Manual de Usuario - Toma de Pedidos POS
+                    </h5>
+                    <div class="d-flex align-items-center" style="gap: 10px;">
+                        <span class="badge badge-warning font-weight-bold px-3 py-1 text-dark">
+                            <i class="fas fa-bolt mr-1"></i>Motor POS V1
+                        </span>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body p-3 bg-light">
+                    <div class="row">
+                        <!-- Pestañas Laterales del Manual -->
+                        <div class="col-md-3 border-right pr-2">
+                            <div class="nav flex-column nav-pills manual-nav-pills" id="manual-tab" role="tablist" aria-orientation="vertical">
+                                <a class="nav-link active" id="tab-flujo-link" data-toggle="pill" href="#tab-flujo" role="tab">
+                                    <i class="fas fa-project-diagram mr-2 text-danger"></i>1. Flujo General
+                                </a>
+                                <a class="nav-link" id="tab-clientes-link" data-toggle="pill" href="#tab-clientes" role="tab">
+                                    <i class="fas fa-map-marked-alt mr-2 text-primary"></i>2. Cliente & Mapa
+                                </a>
+                                <a class="nav-link" id="tab-facturacion-link" data-toggle="pill" href="#tab-facturacion" role="tab">
+                                    <i class="fas fa-file-invoice-dollar mr-2 text-success"></i>3. Facturación DIAN
+                                </a>
+                                <a class="nav-link" id="tab-productos-link" data-toggle="pill" href="#tab-productos" role="tab">
+                                    <i class="fas fa-pizza-slice mr-2 text-warning"></i>4. Menú & Mitades
+                                </a>
+                                <a class="nav-link" id="tab-descuentos-link" data-toggle="pill" href="#tab-descuentos" role="tab">
+                                    <i class="fas fa-tags mr-2 text-info"></i>5. Descuentos & Auditoría
+                                </a>
+                                <a class="nav-link" id="tab-pagos-link" data-toggle="pill" href="#tab-pagos" role="tab">
+                                    <i class="fas fa-coins mr-2 text-success"></i>6. Pagos & Devuelta
+                                </a>
+                                <a class="nav-link" id="tab-operaciones-link" data-toggle="pill" href="#tab-operaciones" role="tab">
+                                    <i class="fas fa-clock mr-2 text-secondary"></i>7. Tiempos & Programación
+                                </a>
+                                <a class="nav-link" id="tab-confirmacion-link" data-toggle="pill" href="#tab-confirmacion" role="tab">
+                                    <i class="fas fa-clipboard-check mr-2 text-danger"></i>8. Resumen & Despacho
+                                </a>
+                                <a class="nav-link" id="tab-faq-link" data-toggle="pill" href="#tab-faq" role="tab">
+                                    <i class="fas fa-question-circle mr-2 text-dark"></i>9. Preguntas Frecuentes
+                                </a>
+                            </div>
+                            <div class="mt-3 p-2 bg-white rounded border small text-muted">
+                                <b class="text-dark"><i class="fas fa-headset mr-1"></i>Soporte Operativo:</b><br>
+                                Departamento de Tecnología<br>
+                                Pizza Americana Colombia
+                            </div>
+                        </div>
+
+                        <!-- Contenido de las Secciones -->
+                        <div class="col-md-9 pl-3">
+                            <div class="tab-content" id="manual-tabContent">
+
+                                <!-- SECCIÓN 1: Flujo General -->
+                                <div class="tab-pane fade show active" id="tab-flujo" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-primary font-weight-bold mb-2">
+                                            <i class="fas fa-project-diagram mr-2"></i>Flujo Operativo de Toma y Despacho
+                                        </h5>
+                                        <p class="text-muted small">
+                                            El sistema se comunica directamente con el <b>Motor de Pedidos Central</b> y el punto de venta de la tienda, eliminando la necesidad de tablas manuales de homologación y asegurando que los precios, promociones e inventarios se apliquen fielmente.
+                                        </p>
+                                        <div class="p-3 bg-light rounded border mb-3">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">1</span>
+                                                <b>Identificar al Cliente:</b> Digite el teléfono celular (10 dígitos) y presione Enter o la lupa.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">2</span>
+                                                <b>Georreferenciación Obligatoria:</b> Para domicilios, valide la dirección en el mapa para asignar la tienda correcta.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">3</span>
+                                                <b>Facturación Electrónica:</b> Indique si es Consumidor Final o Factura Electrónica DIAN.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">4</span>
+                                                <b>Seleccionar Productos:</b> Elija pizzas, combos o bebidas configurando mitades, sabores y salsas.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">5</span>
+                                                <b>Descuentos o Cupones:</b> Aplique códigos de mercadeo o descuentos manuales autorizados.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">6</span>
+                                                <b>Forma de Pago & Devuelta:</b> Seleccione efectivo, datáfono o transferencia y verifique el cambio.
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <span class="manual-step-badge">7</span>
+                                                <b>Revisar y Despachar:</b> Abra la ventana resumen, verifique los datos y despache directamente al POS.
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-info py-2 small mb-0">
+                                            <i class="fas fa-info-circle mr-1"></i><b>Recuerde:</b> El catálogo permanecerá bloqueado hasta que el cliente esté georreferenciado o marcado como venta física en mostrador.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 2: Cliente y Mapa -->
+                                <div class="tab-pane fade" id="tab-clientes" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-primary font-weight-bold mb-2">
+                                            <i class="fas fa-map-marked-alt mr-2"></i>Búsqueda de Cliente y Mapa Desacoplado
+                                        </h5>
+                                        <h6 class="font-weight-bold text-dark mt-2">Búsqueda Telefónica y Autocompletado</h6>
+                                        <ul class="small text-muted pl-3">
+                                            <li>Digite el número de celular del cliente (10 dígitos). El sistema buscará en la base de datos histórica.</li>
+                                            <li>Si el cliente tiene direcciones anteriores, se desplegará una tabla con el histórico para elegir la dirección preferida con un solo clic en <b>«Elegir»</b>.</li>
+                                            <li>Para clientes presenciales en tienda o sin datos, marque la casilla <b>«Cliente sin identificar / Mostrador»</b> para habilitar la toma inmediata sin mapa.</li>
+                                        </ul>
+
+                                        <h6 class="font-weight-bold text-dark mt-2">Georreferenciación y Polígonos de Cobertura</h6>
+                                        <p class="small text-muted mb-2">
+                                            Al hacer clic en <b>`[ 📍 Ubicar en Mapa / Validar Cobertura ]`</b>, se abre el modal desacoplado con mapa Leaflet:
+                                        </p>
+                                        <div class="p-2 rounded bg-light border small mb-2">
+                                            <ol class="mb-0 pl-3">
+                                                <li>Ingrese la dirección a validar (ej: <i>Calle 70 # 45 - 20</i>) y el municipio.</li>
+                                                <li>Presione <b>«Validar»</b>. El servicio HERE/ArcGIS calculará las coordenadas y la tienda asignada.</li>
+                                                <li><b>Ajuste Fino:</b> Puede arrastrar con el mouse el marcador rojo 📍 para ubicar la portería o entrada exacta del conjunto o vivienda.</li>
+                                                <li>Haga clic en <b>«Confirmar Ubicación y Habilitar Pedido»</b> para desbloquear el menú de productos.</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 3: Facturación DIAN -->
+                                <div class="tab-pane fade" id="tab-facturacion" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-success font-weight-bold mb-2">
+                                            <i class="fas fa-file-invoice-dollar mr-2"></i>Facturación Electrónica (DIAN)
+                                        </h5>
+                                        <p class="small text-muted">
+                                            La pantalla permite alternar fácilmente entre compras como Consumidor Final y emisión de Factura Electrónica con validez fiscal:
+                                        </p>
+
+                                        <div class="table-responsive small mb-3">
+                                            <table class="table table-bordered table-sm mb-0">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>Modalidad</th>
+                                                        <th>Casilla DIAN</th>
+                                                        <th>Campos Solicitados</th>
+                                                        <th>Destino Fiscal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><b>Consumidor Final</b> (Por Defecto)</td>
+                                                        <td>Desmarcada</td>
+                                                        <td>Ninguno adicional requerido.</td>
+                                                        <td>Emisión automática bajo Cédula DIAN `222222222222`.</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><b>Factura Electrónica</b></td>
+                                                        <td><span class="badge badge-primary">Activada [x]</span></td>
+                                                        <td>Tipo Persona (Natural / Jurídica), Cédula/NIT y Correo DIAN.</td>
+                                                        <td>Envío directo a la DIAN y al correo electrónico tributario del cliente.</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="alert alert-warning py-2 small mb-0">
+                                            <i class="fas fa-lightbulb mr-1"></i><b>Atajo «Copiar Correo»:</b> Si el cliente ya tenía su correo personal en el campo de contacto, haga clic en el botón <b>`[ 📋 Copiar Correo ]`</b> para copiarlo instantáneamente al correo de facturación DIAN sin volverlo a digitar.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 4: Menú y Mitades -->
+                                <div class="tab-pane fade" id="tab-productos" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-warning font-weight-bold mb-2">
+                                            <i class="fas fa-pizza-slice mr-2"></i>Catálogo POS y Personalización de Productos
+                                        </h5>
+                                        <h6 class="font-weight-bold text-dark mt-2">Modalidad Pizza Entera vs. Mitad y Mitad</h6>
+                                        <p class="small text-muted mb-2">
+                                            Para cualquier pizza que permita división de sabores, la ventana de personalización ofrece dos pestañas superiores:
+                                        </p>
+                                        <div class="row small mb-3">
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <b>🍕 Pizza Entera (100%):</b><br>
+                                                    Selecciona un solo sabor para toda la pizza completa. Requiere elegir un solo sabor obligatorio.
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <b>🍕 Mitad y Mitad (50% / 50%):</b><br>
+                                                    Divide la pantalla en dos columnas: <i>Mitad 1</i> y <i>Mitad 2</i>. Permite combinar dos especialidades diferentes en la misma pizza.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="font-weight-bold text-dark">Inclusiones [Inc] y Preguntas Forzadas</h6>
+                                        <ul class="small text-muted pl-3 mb-0">
+                                            <li><b>Bebidas de Combo:</b> Si el producto incluye gaseosa (ej. 1.5L), seleccione el sabor deseado sin costo extra.</li>
+                                            <li><b>Salsas y Acompañantes Incluidos:</b> Productos como Deditos o Nuggets permiten elegir salsas (Arequipe, Chocolate, BBQ) que se agregan como <code>[Inc] $0</code>.</li>
+                                            <li><b>Adiciones con Costo:</b> Las adiciones especiales (tocineta, queso extra, etc.) liquidan su precio de lista automáticamente en la comanda.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 5: Descuentos y Cupones -->
+                                <div class="tab-pane fade" id="tab-descuentos" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-info font-weight-bold mb-2">
+                                            <i class="fas fa-tags mr-2"></i>Descuentos, Cupones y Auditoría
+                                        </h5>
+                                        <p class="small text-muted">
+                                            Ubicado en la columna derecha de la comanda, ofrece dos opciones de liquidación promocional:
+                                        </p>
+
+                                        <div class="p-2 rounded bg-light border small mb-3">
+                                            <b>1. Códigos Promocionales y Cupones:</b><br>
+                                            Ingrese el código comercial (ej: <code>AMERICANA50</code>, <code>PIZZAYDEDOS</code>) y presione <b>«Aplicar»</b>. El motor calcula las reglas de descuento vigentes y las deduce del total.
+                                        </div>
+
+                                        <div class="p-2 rounded bg-light border small mb-3">
+                                            <b>2. Descuento Manual / Especial con Auditoría:</b><br>
+                                            Al hacer clic en <b>`[ + Descuento Manual ]`</b> se abre el diálogo de autorización:
+                                            <ul class="pl-3 mt-1 mb-0">
+                                                <li><b>Modalidad:</b> Valor en Pesos ($) o Porcentaje (%).</li>
+                                                <li><b>Motivo Obligatorio:</b> Garantía / Retraso, Cortesía Comercial, Convenio Empresarial, Error Anterior, etc.</li>
+                                                <li><b>Justificación:</b> Breve nota explicativa para control administrativo y auditoría.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="alert alert-success py-2 small mb-0">
+                                            <i class="fas fa-check-circle mr-1"></i>Los descuentos se reflejan en tiempo real en la comanda con una etiqueta verde y se pueden retirar en cualquier momento haciendo clic en el icono ✖.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 6: Pagos y Devuelta -->
+                                <div class="tab-pane fade" id="tab-pagos" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-success font-weight-bold mb-2">
+                                            <i class="fas fa-coins mr-2"></i>Formas de Pago y Cálculo de Devuelta
+                                        </h5>
+                                        <p class="small text-muted mb-2">
+                                            Seleccione el medio de pago acordado con el cliente:
+                                        </p>
+                                        <ul class="small text-muted pl-3 mb-3">
+                                            <li><b>1 - Efectivo:</b> Habilita la caja de cálculo de devuelta y liquidación rápida de billetes.</li>
+                                            <li><b>2 - Datáfono:</b> Indica que el domiciliario debe llevar el datáfono inalámbrico. Devuelta \$0.</li>
+                                            <li><b>3 - Transferencia / Bancolombia:</b> Pago por QR o transferencia bancaria directa. Devuelta \$0.</li>
+                                            <li><b>4 - Link de Pago Wompi:</b> Pago con tarjeta de crédito o PSE vía pasarela virtual.</li>
+                                        </ul>
+
+                                        <h6 class="font-weight-bold text-dark">Botones de Cálculo Rápido para Efectivo</h6>
+                                        <div class="p-2 rounded bg-light border small mb-2">
+                                            <div class="d-flex flex-wrap" style="gap: 8px;">
+                                                <span class="badge badge-secondary p-2">Exacto: Asigna el total del pedido</span>
+                                                <span class="badge badge-secondary p-2">Redondear: Al siguiente múltiplo de 10 mil</span>
+                                                <span class="badge badge-secondary p-2">+10k, +20k, +50k, +100k: Suma billetes</span>
+                                            </div>
+                                            <p class="mt-2 mb-0 text-muted">
+                                                El sistema muestra la <b>Devuelta en color verde</b> si el pago cubre la cuenta, o una <b>alerta roja con el faltante</b> si el monto ingresado es menor al total.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 7: Tiempos y Programados -->
+                                <div class="tab-pane fade" id="tab-operaciones" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-secondary font-weight-bold mb-2">
+                                            <i class="fas fa-clock mr-2"></i>Tiempos de Entrega y Pedidos Programados
+                                        </h5>
+                                        <h6 class="font-weight-bold text-dark mt-2">Tiempo Estimado de Entrega</h6>
+                                        <p class="small text-muted">
+                                            Seleccione en el desplegable el tiempo acordado: <b>30 min</b> (estándar), <b>40 min</b>, <b>45 min</b>, <b>60 min</b> o <b>90 min</b>. Este valor se imprime en la cabecera de la comanda de cocina.
+                                        </p>
+
+                                        <h6 class="font-weight-bold text-dark">Pedidos Programados (Para Más Tarde)</h6>
+                                        <div class="p-2 rounded bg-light border small mb-3">
+                                            <ol class="mb-0 pl-3">
+                                                <li>Active la casilla <b>`[x] Pedido Programado`</b>.</li>
+                                                <li>Aparecerá un selector de hora (`HH:mm`) predeterminado con la hora actual más 1 hora.</li>
+                                                <li>Ajuste la hora exacta requerida por el cliente.</li>
+                                                <li>La cocina de la tienda organizará la producción para despachar el pedido en el momento justo.</li>
+                                            </ol>
+                                        </div>
+
+                                        <h6 class="font-weight-bold text-dark">Instrucciones Especiales para Cocina</h6>
+                                        <p class="small text-muted mb-0">
+                                            En la ventana de confirmación podrá ingresar instrucciones adicionales como: <i>«Masa bien tostada»</i>, <i>«Poco orégano»</i> o <i>«Enviar servilletas y platos plásticos»</i>.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 8: Resumen y Despacho -->
+                                <div class="tab-pane fade" id="tab-confirmacion" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-danger font-weight-bold mb-2">
+                                            <i class="fas fa-clipboard-check mr-2"></i>Ventana Resumen y Despacho Directo al POS
+                                        </h5>
+                                        <p class="small text-muted">
+                                            Al hacer clic en <b>`[ 📋 Revisar y Confirmar Pedido ]`</b> se despliega el resumen integral antes de enviar a cocina:
+                                        </p>
+
+                                        <div class="row small mb-3">
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <b>Verificación de Datos:</b>
+                                                    <ul class="pl-3 mb-0 mt-1">
+                                                        <li>Cliente, teléfono, dirección y barrio.</li>
+                                                        <li>Coordenadas y tienda de despacho asignada.</li>
+                                                        <li>Estado y datos de facturación DIAN.</li>
+                                                        <li>Tiempo estimado y programación horaria.</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <b>Comanda y Liquidación:</b>
+                                                    <ul class="pl-3 mb-0 mt-1">
+                                                        <li>Lista de productos con mitades y salsas.</li>
+                                                        <li>Subtotal, valor de domicilio y descuento.</li>
+                                                        <li><b>Total a pagar</b> en tipografía destacada.</li>
+                                                        <li>Valor recibido en efectivo y <b>devuelta exacta</b>.</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p class="small text-muted mb-2">
+                                            Al presionar <b>`[ 🚀 Confirmar y Despachar a Tienda ]`</b>:
+                                        </p>
+                                        <div class="alert alert-success py-2 small mb-0">
+                                            El pedido se inserta en el servidor Central y viaja directamente por red HTTP al POS de la tienda piloto (Manrique), imprimiendo la comanda en cocina y caja con su respectivo número de factura.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 9: Preguntas Frecuentes -->
+                                <div class="tab-pane fade" id="tab-faq" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-dark font-weight-bold mb-2">
+                                            <i class="fas fa-question-circle mr-2"></i>Preguntas Frecuentes (FAQ)
+                                        </h5>
+                                        <div class="accordion small" id="accordionFaq">
+                                            <div class="border-bottom py-2">
+                                                <b>P: ¿Por qué aparece el mensaje rojo de bloqueo sobre el menú?</b><br>
+                                                <span class="text-muted">R: Es obligatorio ubicar al cliente en el mapa para asegurar que la tienda tenga cobertura y garantizar el precio exacto de domicilio. Haga clic en «Abrir Mapa» o marque «Cliente Mostrador» si es venta presencial.</span>
+                                            </div>
+                                            <div class="border-bottom py-2">
+                                                <b>P: ¿Qué ocurre si el cliente no desea suministrar su Cédula o NIT?</b><br>
+                                                <span class="text-muted">R: Deje desmarcada la casilla «Requiere Factura Electrónica (DIAN)». El sistema registrará el pedido automáticamente como Consumidor Final bajo el código DIAN 222222222222.</span>
+                                            </div>
+                                            <div class="border-bottom py-2">
+                                                <b>P: ¿Cómo elimino un producto que ingresé por equivocación?</b><br>
+                                                <span class="text-muted">R: En el panel de comanda a la derecha, cada producto principal tiene un icono de caneca roja 🗑️ a su derecha. Al hacer clic se eliminan el producto y sus mitades o adiciones.</span>
+                                            </div>
+                                            <div class="py-2">
+                                                <b>P: ¿Dónde ve el domiciliario cuánto cambio debe llevar?</b><br>
+                                                <span class="text-muted">R: Los valores de «Paga con» y «Devuelta» viajan en la petición del pedido y se imprimen claramente en la tirilla física de comanda de la tienda.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white py-2 d-flex justify-content-between">
+                    <span class="small text-muted"><i class="fas fa-shield-alt mr-1"></i>Pizza Americana - Sistema de Pedidos POS</span>
+                    <button type="button" class="btn btn-secondary font-weight-bold px-4" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cerrar Manual
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="text/javascript" src="js/tomapedidospos.js"></script>

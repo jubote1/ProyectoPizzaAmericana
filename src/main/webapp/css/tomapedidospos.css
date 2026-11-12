@@ -501,5 +501,51 @@ body {
     background: #fdfdfd;
 }
 
+/* Modal de Manual de Usuario */
+.modal-header-manual {
+    background: linear-gradient(135deg, #102F6F 0%, #173f8a 100%);
+    color: #fff;
+    border-radius: calc(0.3rem - 1px) calc(0.3rem - 1px) 0 0;
+}
+
+.manual-nav-pills .nav-link {
+    color: #102F6F;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 9px 12px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #dce1eb;
+    margin-bottom: 6px;
+    transition: all 0.18s ease;
+}
+
+.manual-nav-pills .nav-link:hover {
+    background: #eef2f9;
+}
+
+.manual-nav-pills .nav-link.active {
+    background: #102F6F;
+    color: #fff;
+    border-color: #102F6F;
+    box-shadow: 0 2px 6px rgba(16, 47, 111, 0.25);
+}
+
+.manual-step-badge {
+    background: #E42528;
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.76rem;
+    margin-right: 8px;
+}
+
+
 
 

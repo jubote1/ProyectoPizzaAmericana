@@ -244,6 +244,11 @@ $(document).ready(function () {
         ejecutarDespachoTiendaDefinitivo();
     });
 
+    // Manual de Usuario
+    $("#btnAbrirManualUsuario").on("click", function () {
+        $("#modalManualUsuario").modal("show");
+    });
+
     $("#btnAgregarProductoModal").on("click", function () {
         guardarProductoDesdeModal();
     });
