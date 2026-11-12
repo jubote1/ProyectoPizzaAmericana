@@ -11,6 +11,8 @@ var clienteUbicado = false;
 var leafletMap = null;
 var leafletMarker = null;
 var coberturaTemporal = null;
+var esAdministrador = false; // Rol verificado con ValidarUsuarioAplicacion (solo líderes y admin aplican descuentos manuales)
+var tiempoEstimadoTienda = 30; // Tiempo promesa configurado en la tienda seleccionada
 
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
@@ -49,8 +51,10 @@ $(document).ready(function () {
         // Cargar menu superior si esta disponible
     });
 
+    verificarRolUsuario();
     cargarTiendas();
     cargarMenuPOS();
+    consultarTiempoTienda();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -146,6 +150,7 @@ $(document).ready(function () {
 
     $("#tiendaSelect").on("change", function () {
         verificarTiendaPiloto();
+        consultarTiempoTienda(parseInt($(this).val()));
         cotizarEnVivo();
     });
 
@@ -220,18 +225,15 @@ $(document).ready(function () {
     // Eventos de Pedido Programado
     $("#chkPedidoProgramado").on("change", function () {
         if ($(this).is(":checked")) {
-            var now = new Date();
-            now.setHours(now.getHours() + 1);
-            var hh = String(now.getHours()).padStart(2, '0');
-            var mm = String(now.getMinutes()).padStart(2, '0');
-            $("#horaPedidoProgramado").val(hh + ":" + mm).fadeIn(150);
+            cargarHorariosProgramados();
+            $("#wrapperHoraProgramada").fadeIn(150);
         } else {
-            $("#horaPedidoProgramado").fadeOut(150);
+            $("#wrapperHoraProgramada").fadeOut(150);
         }
         cotizarEnVivo();
     });
 
-    $("#horaPedidoProgramado").on("change", function () {
+    $("#selectHoraProgramada").on("change", function () {
         cotizarEnVivo();
     });
 
@@ -380,6 +382,7 @@ function seleccionarClienteDeTabla(cli) {
             if ($(this).text().toUpperCase().indexOf(cli.tienda.toUpperCase()) !== -1) {
                 $(this).prop("selected", true);
                 verificarTiendaPiloto();
+            consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
                 return false;
             }
         });
@@ -620,6 +623,8 @@ function confirmarUbicacionDesdeMapa() {
             if ($(this).text().toUpperCase().indexOf(tNom) !== -1) {
                 $(this).prop("selected", true);
                 verificarTiendaPiloto();
+            consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
+                consultarTiempoTienda(parseInt($(this).val()));
                 return false;
             }
         });
@@ -686,6 +691,7 @@ function cargarTiendas() {
                 $sel.append($opt);
             });
             verificarTiendaPiloto();
+            consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
         }
     });
 }
@@ -1117,7 +1123,104 @@ function aplicarCodigoCupon() {
     cotizarEnVivo();
 }
 
+function verificarRolUsuario() {
+    $.ajax({
+        url: "ValidarUsuarioAplicacion",
+        dataType: "json",
+        type: "POST",
+        success: function (data) {
+            if (data && data.length > 0) {
+                var resp = data[0].respuesta;
+                if (resp === "OKA") {
+                    esAdministrador = true;
+                    $("#btnAbrirModalDescuentoManual").show();
+                } else {
+                    esAdministrador = false;
+                    $("#btnAbrirModalDescuentoManual").hide();
+                }
+            }
+        },
+        error: function () {
+            // Por defecto en caso de error, no permitir descuentos manuales a nivel de asesor
+            esAdministrador = false;
+            $("#btnAbrirModalDescuentoManual").hide();
+        }
+    });
+}
+
+function consultarTiempoTienda(idTienda) {
+    if (!idTienda) {
+        idTienda = parseInt($("#tiendaSelect").val()) || 11;
+    }
+    $.ajax({
+        url: "CRUDTiempoPedido?idoperacion=3&idtienda=" + idTienda,
+        dataType: "json",
+        type: "GET",
+        success: function (data) {
+            var t = 30;
+            if (data && data.tiempopedido && !isNaN(parseInt(data.tiempopedido))) {
+                t = parseInt(data.tiempopedido);
+            }
+            if (t <= 0) t = 30;
+            tiempoEstimadoTienda = t;
+            $("#txtTiempoTiendaFijo").val(t + " min");
+            $("#txtModalTiempoEntrega").text(t + " minutos");
+        },
+        error: function () {
+            tiempoEstimadoTienda = 30;
+            $("#txtTiempoTiendaFijo").val("30 min");
+            $("#txtModalTiempoEntrega").text("30 minutos");
+        }
+    });
+}
+
+function cargarHorariosProgramados() {
+    var $sel = $("#selectHoraProgramada");
+    $sel.empty();
+
+    var horaInicio = 11;
+    var minInicio = 30;
+    var horaFin = 23;
+    var minFin = 0;
+
+    var ahora = new Date();
+    var minActuales = ahora.getHours() * 60 + ahora.getMinutes();
+
+    // Regla Contact Center: Se requieren al menos 60 minutos de anticipación hacia adelante.
+    // Ej: Si son las 5:05 PM (17:05 = 1025 min), 6:00 PM (18:00 = 1080 min) queda excluida (faltan solo 55 min).
+    // La primera franja programable disponible será 6:30 PM (18:30 = 1110 min >= 1085 min).
+    var minMinimosProgramables = minActuales + 60;
+
+    var hayOpciones = false;
+    for (var m = (horaInicio * 60 + minInicio); m <= (horaFin * 60 + minFin); m += 30) {
+        if (m >= minMinimosProgramables) {
+            var hh = Math.floor(m / 60);
+            var mm = m % 60;
+            var hhStr = (hh < 10 ? "0" : "") + hh;
+            var mmStr = (mm < 10 ? "0" : "") + mm;
+            var val24 = hhStr + ":" + mmStr;
+
+            var sufijo = hh >= 12 ? "PM" : "AM";
+            var hh12 = hh % 12;
+            if (hh12 === 0) hh12 = 12;
+            var hh12Str = (hh12 < 10 ? "0" : "") + hh12;
+            var texto12 = hh12Str + ":" + mmStr + " " + sufijo;
+
+            $sel.append('<option value="' + val24 + '">' + texto12 + '</option>');
+            hayOpciones = true;
+        }
+    }
+
+    if (!hayOpciones) {
+        $sel.append('<option value="">Sin franjas disponibles hoy</option>');
+    }
+}
+
 function abrirModalDescuentoManual() {
+    if (!esAdministrador) {
+        alert("Los descuentos manuales solo están autorizados para líderes y administradores. Los asesores deben aplicar cupones u ofertas autorizadas.");
+        return;
+    }
     if (!resultadoMotor || draftLineas.length === 0) {
         alert("Debe agregar al menos un producto a la comanda antes de aplicar un descuento.");
         return;
@@ -1239,7 +1342,7 @@ function cotizarEnVivo() {
     var idTienda = parseInt($("#tiendaSelect").val()) || 11;
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1; // 1 = Domicilio
     var esProg = $("#chkPedidoProgramado").is(":checked");
-    var horaProg = esProg ? ($("#horaPedidoProgramado").val() || "") : "";
+    var horaProg = esProg ? ($("#selectHoraProgramada").val() || "") : "";
 
     var solicitud = {
         contexto: {
@@ -1431,12 +1534,11 @@ function abrirModalConfirmacionPedido() {
     // 4. Condiciones Operativas
     var tipoPedTxt = $("#tipoPedidoSelect option:selected").text();
     $("#txtModalTipoPedido").text(tipoPedTxt);
-    var tiempoMin = $("#tiempoPedidoSelect").val() || 30;
-    $("#txtModalTiempoEntrega").text(tiempoMin + " minutos");
+    $("#txtModalTiempoEntrega").text(tiempoEstimadoTienda + " minutos");
 
     var esProg = $("#chkPedidoProgramado").is(":checked");
     if (esProg) {
-        var hProg = $("#horaPedidoProgramado").val() || "Hora no definida";
+        var hProg = $("#selectHoraProgramada option:selected").text() || "Hora no definida";
         $("#txtModalProgramacion").removeClass("badge-success").addClass("badge-warning text-dark").html("<i class='far fa-clock mr-1'></i>Programado para: <b>" + hProg + "</b>");
     } else {
         $("#txtModalProgramacion").removeClass("badge-warning text-dark").addClass("badge-success").html("<i class='fas fa-bolt mr-1'></i>Para Inmediato (Ya)");
@@ -1523,10 +1625,9 @@ function ejecutarDespachoTiendaDefinitivo() {
     var idTienda = parseInt($("#tiendaSelect").val()) || 11;
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
     var idFormaPago = parseInt($("#formaPagoSelect").val()) || 1;
-    var tiempoPed = parseInt($("#tiempoPedidoSelect").val()) || 30;
+    var tiempoPed = tiempoEstimadoTienda || 30;
     var esProg = $("#chkPedidoProgramado").is(":checked");
-    var horaProg = esProg ? ($("#horaPedidoProgramado").val() || "") : "";
-    var notasCocina = $("#txtModalNotasCocina").val().trim();
+    var horaProg = esProg ? ($("#selectHoraProgramada").val() || "") : "";
 
     var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
     var valPago = parseFloat(valPagoStr) || resultadoMotor.total;
@@ -1549,7 +1650,7 @@ function ejecutarDespachoTiendaDefinitivo() {
             direccion: clienteActual.direccion,
             municipio: clienteActual.municipio,
             zona: clienteActual.zona,
-            observacion: (clienteActual.observacion ? clienteActual.observacion + (notasCocina ? " | Notas Cocina: " + notasCocina : "") : notasCocina),
+            observacion: clienteActual.observacion || "",
             latitud: clienteActual.latitud,
             longitud: clienteActual.longitud,
             distanciatienda: clienteActual.distanciatienda,
@@ -1607,7 +1708,8 @@ function ejecutarDespachoTiendaDefinitivo() {
                 // Limpiar comanda y formulario
                 draftLineas = [];
                 removerDescuentoActivo();
-                $("#txtModalNotasCocina").val("");
+                $("#chkPedidoProgramado").prop("checked", false);
+                $("#wrapperHoraProgramada").hide();
                 cotizarEnVivo();
             } else {
                 alert("Error al finalizar el pedido: " + (resp.mensaje || "Error desconocido"));

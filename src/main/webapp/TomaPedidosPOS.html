@@ -260,8 +260,8 @@
                             <span class="font-weight-bold" style="font-size: 0.8rem; color: #102F6F;">
                                 <i class="fas fa-tags text-warning mr-1"></i> Descuentos & Cupones
                             </span>
-                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 font-weight-bold" id="btnAbrirModalDescuentoManual">
-                                <i class="fas fa-plus-circle mr-1"></i> Descuento Manual
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 font-weight-bold" id="btnAbrirModalDescuentoManual" style="display:none;" title="Solo Administradores y Líderes">
+                                <i class="fas fa-lock mr-1"></i> Descuento Manual (Admin)
                             </button>
                         </div>
                         <div class="input-group input-group-sm mb-1">
@@ -310,26 +310,30 @@
                             </select>
                         </div>
                         <div class="form-group col-5 mb-1">
-                            <label for="tiempoPedidoSelect" class="mb-1 font-weight-bold" style="font-size: 0.8rem;">Tiempo Entrega:</label>
-                            <select id="tiempoPedidoSelect" class="form-control form-control-sm font-weight-bold">
-                                <option value="30">30 min</option>
-                                <option value="40">40 min</option>
-                                <option value="45">45 min</option>
-                                <option value="60">60 min</option>
-                                <option value="90">90 min</option>
-                            </select>
+                            <label class="mb-1 font-weight-bold text-muted" style="font-size: 0.8rem;">Tiempo Tienda:</label>
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white"><i class="fas fa-stopwatch text-danger"></i></span>
+                                </div>
+                                <input type="text" id="txtTiempoTiendaFijo" class="form-control form-control-sm font-weight-bold bg-light" value="30 min" readonly disabled title="Tiempo de entrega configurado por la tienda">
+                            </div>
                         </div>
                     </div>
 
                     <!-- Programación del Pedido -->
-                    <div class="d-flex align-items-center justify-content-between mb-2 px-1">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="chkPedidoProgramado">
-                            <label class="custom-control-label font-weight-bold" for="chkPedidoProgramado" style="font-size: 0.8rem; cursor:pointer;">
-                                <i class="far fa-clock text-info mr-1"></i> Pedido Programado
-                            </label>
+                    <div class="p-1 mb-2 rounded bg-light border">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 5px;">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="chkPedidoProgramado">
+                                <label class="custom-control-label font-weight-bold text-dark" for="chkPedidoProgramado" style="font-size: 0.8rem; cursor:pointer;">
+                                    <i class="far fa-clock text-info mr-1"></i> Pedido Programado
+                                </label>
+                            </div>
+                            <div id="wrapperHoraProgramada" style="display: none; min-width: 140px;">
+                                <select id="selectHoraProgramada" class="form-control form-control-sm font-weight-bold text-primary" title="Seleccione hora programada (intervalos de 30 min)">
+                                </select>
+                            </div>
                         </div>
-                        <input type="time" id="horaPedidoProgramado" class="form-control form-control-sm ml-2" style="max-width: 110px; display: none;">
                     </div>
 
                     <!-- Caja de Devuelta y Paga Con (Solo para Efectivo) -->
@@ -618,15 +622,11 @@
                                             <b>Tipo de Pedido:</b> <span id="txtModalTipoPedido" class="badge badge-dark">1 - Domicilio</span>
                                         </div>
                                         <div class="col-6">
-                                            <b>Tiempo Estimado:</b> <span id="txtModalTiempoEntrega" class="font-weight-bold text-danger">30 minutos</span>
+                                            <b>Tiempo Promesa:</b> <span id="txtModalTiempoEntrega" class="font-weight-bold text-danger">30 minutos</span>
                                         </div>
                                     </div>
-                                    <div class="mb-2">
+                                    <div class="mb-1">
                                         <b>Programación:</b> <span id="txtModalProgramacion" class="badge badge-success">Para Inmediato (Ya)</span>
-                                    </div>
-                                    <div class="form-group mb-1">
-                                        <label for="txtModalNotasCocina" class="label-campo mb-0">Instrucciones Especiales para Cocina / Comanda</label>
-                                        <input type="text" id="txtModalNotasCocina" class="form-control form-control-sm" placeholder="Ej: Masa bien tostada / Enviar orégano y servilletas adicionales">
                                     </div>
                                 </div>
                             </div>
@@ -920,29 +920,30 @@
                                 <div class="tab-pane fade" id="tab-descuentos" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-info font-weight-bold mb-2">
-                                            <i class="fas fa-tags mr-2"></i>Descuentos, Cupones y Auditoría
+                                            <i class="fas fa-tags mr-2"></i>Descuentos, Cupones y Políticas Comerciales
                                         </h5>
                                         <p class="small text-muted">
-                                            Ubicado en la columna derecha de la comanda, ofrece dos opciones de liquidación promocional:
+                                            En el Contact Center de Pizza Americana, las políticas de descuento se gestionan de forma controlada y estricta:
                                         </p>
 
                                         <div class="p-2 rounded bg-light border small mb-3">
-                                            <b>1. Códigos Promocionales y Cupones:</b><br>
-                                            Ingrese el código comercial (ej: <code>AMERICANA50</code>, <code>PIZZAYDEDOS</code>) y presione <b>«Aplicar»</b>. El motor calcula las reglas de descuento vigentes y las deduce del total.
+                                            <b>1. Cupones de Descuento y Ofertas Comerciales (Rol Asesor):</b><br>
+                                            Es el canal autorizado para la toma de pedidos estándar. Ingrese el código promocional (ej: <code>AMERICANA50</code>, <code>PIZZAYDEDOS</code>) y presione <b>«Aplicar»</b>. El motor calcula las reglas de descuento vigentes y las deduce automáticamente del total.
                                         </div>
 
                                         <div class="p-2 rounded bg-light border small mb-3">
-                                            <b>2. Descuento Manual / Especial con Auditoría:</b><br>
-                                            Al hacer clic en <b>`[ + Descuento Manual ]`</b> se abre el diálogo de autorización:
-                                            <ul class="pl-3 mt-1 mb-0">
-                                                <li><b>Modalidad:</b> Valor en Pesos ($) o Porcentaje (%).</li>
-                                                <li><b>Motivo Obligatorio:</b> Garantía / Retraso, Cortesía Comercial, Convenio Empresarial, Error Anterior, etc.</li>
-                                                <li><b>Justificación:</b> Breve nota explicativa para control administrativo y auditoría.</li>
-                                            </ul>
+                                            <b>2. Descuento Manual / Especial (Exclusivo Administradores y Líderes):</b><br>
+                                            <span class="badge badge-warning text-dark mb-1"><i class="fas fa-lock mr-1"></i>Acceso Restringido</span>
+                                            <p class="mb-1 text-muted">
+                                                Los asesores de Contact Center <b>no tienen permitido</b> aplicar descuentos manuales libres. Esta opción permanece oculta y deshabilitada para el perfil operativo.
+                                            </p>
+                                            <p class="mb-0 text-muted">
+                                                Solo los <b>Administradores y Líderes</b> autorizados pueden visualizar y activar el modal de descuento manual bajo auditoría (motivo formal y justificación obligatoria).
+                                            </p>
                                         </div>
 
                                         <div class="alert alert-success py-2 small mb-0">
-                                            <i class="fas fa-check-circle mr-1"></i>Los descuentos se reflejan en tiempo real en la comanda con una etiqueta verde y se pueden retirar en cualquier momento haciendo clic en el icono ✖.
+                                            <i class="fas fa-check-circle mr-1"></i>Los cupones válidos se reflejan en tiempo real en la comanda con una etiqueta verde y se pueden retirar en cualquier momento haciendo clic en el icono ✖.
                                         </div>
                                     </div>
                                 </div>
@@ -983,25 +984,24 @@
                                         <h5 class="text-secondary font-weight-bold mb-2">
                                             <i class="fas fa-clock mr-2"></i>Tiempos de Entrega y Pedidos Programados
                                         </h5>
-                                        <h6 class="font-weight-bold text-dark mt-2">Tiempo Estimado de Entrega</h6>
+                                        <h6 class="font-weight-bold text-dark mt-2">Tiempo Promesa de la Tienda (Fijo)</h6>
                                         <p class="small text-muted">
-                                            Seleccione en el desplegable el tiempo acordado: <b>30 min</b> (estándar), <b>40 min</b>, <b>45 min</b>, <b>60 min</b> o <b>90 min</b>. Este valor se imprime en la cabecera de la comanda de cocina.
+                                            El tiempo estimado de entrega <b>no es editable por el asesor</b>. La pantalla consulta y muestra automáticamente el tiempo operativo fijado por la tienda correspondiente (ej: <b>30 min</b>, <b>45 min</b>). Este valor viaja al POS y se imprime en la comanda.
                                         </p>
 
                                         <h6 class="font-weight-bold text-dark">Pedidos Programados (Para Más Tarde)</h6>
                                         <div class="p-2 rounded bg-light border small mb-3">
                                             <ol class="mb-0 pl-3">
                                                 <li>Active la casilla <b>`[x] Pedido Programado`</b>.</li>
-                                                <li>Aparecerá un selector de hora (`HH:mm`) predeterminado con la hora actual más 1 hora.</li>
-                                                <li>Ajuste la hora exacta requerida por el cliente.</li>
-                                                <li>La cocina de la tienda organizará la producción para despachar el pedido en el momento justo.</li>
+                                                <li>Se desplegará una lista de selección con intervalos de <b>30 minutos</b> (ej: <i>06:30 PM</i>, <i>07:00 PM</i>, <i>07:30 PM</i>).</li>
+                                                <li><b>Control de Anticipación:</b> Por directriz operativa, no se permiten horas pasadas ni franjas con menos de 1 hora de anticipación. Por ejemplo, a las 5:05 PM la franja de las 6:00 PM no está disponible; la primera opción seleccionable será a partir de las 6:30 PM.</li>
+                                                <li>La cocina de la tienda organizará la producción para despachar el pedido en el horario pactado.</li>
                                             </ol>
                                         </div>
 
-                                        <h6 class="font-weight-bold text-dark">Instrucciones Especiales para Cocina</h6>
-                                        <p class="small text-muted mb-0">
-                                            En la ventana de confirmación podrá ingresar instrucciones adicionales como: <i>«Masa bien tostada»</i>, <i>«Poco orégano»</i> o <i>«Enviar servilletas y platos plásticos»</i>.
-                                        </p>
+                                        <div class="alert alert-info py-2 small mb-0">
+                                            <i class="fas fa-info-circle mr-1"></i><b>Observaciones Especiales de Cocina:</b> Temporalmente deshabilitadas en esta fase para estandarizar los tiempos y despachos directos a cocina.
+                                        </div>
                                     </div>
                                 </div>
 
