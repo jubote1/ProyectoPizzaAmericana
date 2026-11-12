@@ -8,6 +8,44 @@ public class EmpleadoEncuesta {
 	private int idEncuesta;
 	private String fechaIngreso;
 	private int idTienda;
+	private String nombreRecibe;
+	private String cargoRecibe;
+	private String medidasCorrectivas;
+	private String firmaRecibe;
+	private String firmaInspector;
+
+	public String getCargoRecibe() {
+		return cargoRecibe;
+	}
+	public void setCargoRecibe(String cargoRecibe) {
+		this.cargoRecibe = cargoRecibe;
+	}
+
+	public String getFirmaInspector() {
+		return firmaInspector;
+	}
+	public void setFirmaInspector(String firmaInspector) {
+		this.firmaInspector = firmaInspector;
+	}
+
+	public String getNombreRecibe() {
+		return nombreRecibe;
+	}
+	public void setNombreRecibe(String nombreRecibe) {
+		this.nombreRecibe = nombreRecibe;
+	}
+	public String getMedidasCorrectivas() {
+		return medidasCorrectivas;
+	}
+	public void setMedidasCorrectivas(String medidasCorrectivas) {
+		this.medidasCorrectivas = medidasCorrectivas;
+	}
+	public String getFirmaRecibe() {
+		return firmaRecibe;
+	}
+	public void setFirmaRecibe(String firmaRecibe) {
+		this.firmaRecibe = firmaRecibe;
+	}
 	
 	
 
