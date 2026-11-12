@@ -203,7 +203,12 @@ public class EmpleadoEncuestaDAO {
 					+ "    e.fecha_ingreso,\n"
 					+ "    e.idtienda AS tienda_id,\n"
 					+ "    l.descripcion AS descripcion_encuesta,\n"
-					+ "    e.porcentaje_total\n"
+					+ "    e.porcentaje_total,\n"
+					+ "    COALESCE(e.nombre_recibe, '') AS nombre_recibe,\n"
+					+ "    COALESCE(e.cargo_recibe, '') AS cargo_recibe,\n"
+					+ "    COALESCE(e.medidas_correctivas, '') AS medidas_correctivas,\n"
+					+ "    (CASE WHEN e.firma_recibe IS NOT NULL AND TRIM(e.firma_recibe) != '' THEN 1 ELSE 0 END) AS tiene_firma_recibe,\n"
+					+ "    (CASE WHEN e.firma_inspector IS NOT NULL AND TRIM(e.firma_inspector) != '' THEN 1 ELSE 0 END) AS tiene_firma_inspector\n"
 					+ "\n"
 					+ "FROM \n"
 					+ "    empleado_encuesta AS e\n"
@@ -214,7 +219,7 @@ public class EmpleadoEncuestaDAO {
 					+ "WHERE \n"
 					+ "    e.idencuesta = "+idencuesta+"\n"
 					+ "    AND DATE(e.fecha_ingreso) BETWEEN '"+fecha1+"' AND '"+fecha2+"'\n"
-					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion";
+					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion, e.porcentaje_total, e.nombre_recibe, e.cargo_recibe, e.medidas_correctivas, e.firma_recibe, e.firma_inspector";
 			
 	            statement = con1.createStatement();
 	            // Ejecutar la consulta SQL
@@ -229,6 +234,12 @@ public class EmpleadoEncuestaDAO {
 	                int tiendaId = resultSet.getInt("tienda_id");
 	                float porcentaje_total =  resultSet.getFloat("porcentaje_total");
 	                String descripcionEncuesta = resultSet.getString("descripcion_encuesta");
+	                String nombreRecibe = resultSet.getString("nombre_recibe");
+	                String cargoRecibe = resultSet.getString("cargo_recibe");
+	                String medidasCorrectivas = resultSet.getString("medidas_correctivas");
+	                int tieneFirmaRecibe = resultSet.getInt("tiene_firma_recibe");
+	                int tieneFirmaInspector = resultSet.getInt("tiene_firma_inspector");
+
 	                JSONObject json = new JSONObject();
 	                json.put("idempleadoencuesta", idempleadoencuesta);
 	                json.put("nombre_empleado", nombreEmpleado);
@@ -236,6 +247,11 @@ public class EmpleadoEncuestaDAO {
 	                json.put("idtienda", tiendaId);
 	                json.put("descripcion_encuesta", descripcionEncuesta);
 	                json.put("porcentaje_total", porcentaje_total);
+	                json.put("nombre_recibe", nombreRecibe != null ? nombreRecibe : "");
+	                json.put("cargo_recibe", cargoRecibe != null ? cargoRecibe : "");
+	                json.put("medidas_correctivas", medidasCorrectivas != null ? medidasCorrectivas : "");
+	                json.put("tiene_firma_recibe", tieneFirmaRecibe == 1);
+	                json.put("tiene_firma_inspector", tieneFirmaInspector == 1);
 	                repResultadoEncuesta.add(json);
 
 	            }
