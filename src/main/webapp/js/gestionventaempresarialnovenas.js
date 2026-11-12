@@ -105,8 +105,8 @@ function inicializarTablaLeads() {
             { 
                 "data": "estado_gestion",
                 "render": function(data) {
-                    if (data === "APARTADO_CON_5%") {
-                        return "<span class='label label-success' style='font-size:11px;'><i class='fas fa-check-circle'></i> APARTADO 5%</span>";
+                    if (data === "APARTADO_CON_20%") {
+                        return "<span class='label label-success' style='font-size:11px;'><i class='fas fa-check-circle'></i> APARTADO 20%</span>";
                     } else if (data === "INTERESADO") {
                         return "<span class='label label-info'><i class='fas fa-star'></i> INTERESADO</span>";
                     } else if (data === "VOLVER_A_LLAMAR") {
