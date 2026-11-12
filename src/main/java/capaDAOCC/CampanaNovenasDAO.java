@@ -182,9 +182,18 @@ public class CampanaNovenasDAO {
      * Guarda una nueva entrada en la bitácora y actualiza el estado del lead.
      */
     public static boolean guardarBitacora(CampanaNovenasBitacora bitacora) {
+        return guardarBitacoraDetalle(bitacora).length() == 0;
+    }
+
+    /**
+     * Igual que guardarBitacora, pero dice POR QUE fallo: devuelve "" si quedo guardada y, si no, el motivo
+     * (el mensaje de la base). Antes el fallo solo quedaba en el log del servidor y la pantalla decia
+     * "No se pudo guardar" sin mas, asi que nadie podia saber que fallaba.
+     */
+    public static String guardarBitacoraDetalle(CampanaNovenasBitacora bitacora) {
         ConexionBaseDatos con = new ConexionBaseDatos();
         Connection conn = con.obtenerConexionBDPrincipal();
-        if (conn == null) return false;
+        if (conn == null) return "No hay conexion con la base de datos.";
 
         String sqlInsert = "INSERT INTO campana_novenas_bitacora "
                 + "(idlead, idcliente, usuario_asesor, fecha_contacto, estado_contacto, fecha_tentativa_evento, pizzas_estimadas, observacion) "
@@ -219,11 +228,13 @@ public class CampanaNovenasDAO {
             }
 
             conn.commit();
-            return true;
+            return "";
         } catch (Exception e) {
             try { conn.rollback(); } catch (Exception ignored) {}
             logger.error("Error en guardarBitacora: " + e.getMessage(), e);
-            return false;
+            String motivo = String.valueOf(e.getMessage()).replaceAll("[\\r\\n]+", " ").trim();
+            if (motivo.length() > 220) motivo = motivo.substring(0, 220);
+            return motivo.length() == 0 ? e.getClass().getSimpleName() : motivo;
         } finally {
             try { conn.close(); } catch (Exception ignored) {}
         }

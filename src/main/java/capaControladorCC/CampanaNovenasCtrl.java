@@ -106,17 +106,32 @@ public class CampanaNovenasCtrl {
         CampanaNovenasBitacora b = new CampanaNovenasBitacora();
         b.setIdlead(idlead);
         b.setIdcliente(idcliente);
-        b.setUsuarioAsesor(usuarioAsesor);
-        b.setEstadoContacto(estadoContacto);
+        // Las dos columnas son VARCHAR(50): un valor mas largo hace fallar el INSERT completo.
+        b.setUsuarioAsesor(usuarioAsesor != null && usuarioAsesor.length() > 50 ? usuarioAsesor.substring(0, 50) : usuarioAsesor);
+        b.setEstadoContacto(estadoContacto != null && estadoContacto.length() > 50 ? estadoContacto.substring(0, 50) : estadoContacto);
         b.setFechaTentativaEvento(fechaTentativa);
         b.setPizzasEstimadas(pizzasEstimadas);
         b.setObservacion(observacion);
 
-        boolean ok = CampanaNovenasDAO.guardarBitacora(b);
-        if (ok) {
+        // La fecha tentativa se valida aqui: un campo de fecha del navegador deja escribir anos de 5 o 6
+        // digitos, y la base rechaza el INSERT entero con un error que el asesor no entiende.
+        if (fechaTentativa != null && !fechaTentativa.trim().isEmpty()) {
+            try {
+                java.time.LocalDate f = java.time.LocalDate.parse(fechaTentativa.trim());
+                if (f.getYear() < 2020 || f.getYear() > 2100) {
+                    return "{\"resultado\":\"ERROR\",\"mensaje\":\"La fecha tentativa del evento no es valida: revise el ano.\"}";
+                }
+            } catch (Exception e) {
+                return "{\"resultado\":\"ERROR\",\"mensaje\":\"La fecha tentativa del evento no es valida. Use el calendario o deje el campo vacio.\"}";
+            }
+        }
+
+        String motivo = CampanaNovenasDAO.guardarBitacoraDetalle(b);
+        if (motivo.length() == 0) {
             return "{\"resultado\":\"OK\",\"mensaje\":\"Contacto y bitácora guardados exitosamente\"}";
         } else {
-            return "{\"resultado\":\"ERROR\",\"mensaje\":\"No se pudo guardar la bitácora\"}";
+            String limpio = motivo.replace("\\", "/").replace("\"", "'");
+            return "{\"resultado\":\"ERROR\",\"mensaje\":\"No se pudo guardar la bitacora: " + limpio + "\"}";
         }
     }
 
