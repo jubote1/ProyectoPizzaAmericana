@@ -40,31 +40,39 @@ function inicializarTablaLeads() {
             "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
         },
         "pageLength": 25,
-        "order": [[6, "desc"]], // Ordenar por Total Pizzas
+        "order": [[2, "desc"]], // Ordenar por Total Pizzas (era la 6 cuando habia 11 columnas)
         "columns": [
-            { "data": "idlead" },
-            { 
+            // El telefono y el correo van DENTRO del contacto, y la direccion
+            // debajo de la empresa: son el mismo dato de la misma persona y
+            // separarlos en seis columnas era lo que estiraba la tabla hasta
+            // sacarla de la pantalla.
+            {
                 "data": "nombre_cliente",
                 "render": function(data, type, row) {
-                    return "<strong>" + data + "</strong><br><small class='text-muted'>ID Cliente: " + row.idcliente + "</small>";
+                    if (type !== 'display') { return data; }
+                    var h = "<strong>" + data + "</strong>";
+                    if (row.telefono) {
+                        h += "<br><a href='tel:" + row.telefono + "' style='color:#0e2963;'>"
+                           + "<i class='fas fa-phone text-success'></i> " + row.telefono + "</a>";
+                    }
+                    if (row.email) {
+                        h += "<br><small class='text-muted'><i class='fas fa-envelope'></i> " + row.email + "</small>";
+                    }
+                    return h;
                 }
             },
-            { 
+            {
                 "data": "empresa",
                 "render": function(data, type, row) {
                     var emp = data && data !== 'N/A' ? data : (row.razon_social ? row.razon_social : 'Persona Natural');
-                    return "<span style='font-weight:600; color:#0e2963;'>" + emp + "</span>";
+                    if (type !== 'display') { return emp; }
+                    var h = "<span style='font-weight:600; color:#0e2963;'>" + emp + "</span>";
+                    if (row.direccion) {
+                        h += "<br><small class='text-muted'>" + row.direccion + "</small>";
+                    }
+                    return h;
                 }
             },
-            { 
-                "data": "telefono",
-                "render": function(data) {
-                    if (!data) return "N/A";
-                    return "<a href='tel:" + data + "' class='btn btn-xs btn-default'><i class='fas fa-phone text-success'></i> " + data + "</a>";
-                }
-            },
-            { "data": "email" },
-            { "data": "direccion" },
             { 
                 "data": "total_pizzas",
                 "render": function(data, type, row) {
@@ -115,7 +123,7 @@ function inicializarTablaLeads() {
                 "data": null,
                 "orderable": false,
                 "render": function(data, type, row) {
-                    return "<button class='btn btn-xs btn-primary' onclick='abrirModalBitacora(" + row.idlead + ")' style='background:#0e2963;'>" +
+                    return "<button class='btn btn-sm btn-primary' onclick='abrirModalBitacora(" + row.idlead + ")' style='background:#0e2963;'>" +
                            "<i class='fas fa-headset'></i> Contactar</button>";
                 }
             }
