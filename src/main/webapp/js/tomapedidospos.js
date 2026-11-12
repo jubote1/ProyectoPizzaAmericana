@@ -5,12 +5,21 @@
 
 var catalogoMenu = null;
 var productoEnEdicion = null;
-var draftLineas = []; // [{ idproducto, cantidad, opciones: [idproducto], modificadores: [{idproducto, tipo, cantidad}] }]
+var draftLineas = []; // [{ idproducto, cantidad, selecciones: [{idpregunta, mitad, idproductoOpcion, cantidad}], modificadores: [], observacion }]
 var resultadoMotor = null;
 var clienteUbicado = false;
 var leafletMap = null;
 var leafletMarker = null;
 var coberturaTemporal = null;
+
+// Objeto de control de Descuentos & Cupones
+var descuentoAplicado = {
+    tipo: "", // "CUPON" o "MANUAL"
+    codigoPromocional: "",
+    descuentoManual: 0.0,
+    motivoDescuento: "",
+    justificacion: ""
+};
 
 var clienteActual = {
     idcliente: 0,
@@ -27,7 +36,12 @@ var clienteActual = {
     latitud: 0.0,
     longitud: 0.0,
     distanciatienda: 0.0,
-    nombreTienda: ""
+    nombreTienda: "",
+    // Facturación Electrónica DIAN
+    emailfact: "",
+    clientesiniden: "S",
+    idtipopersona: 2,
+    identificacion: "222222222222"
 };
 
 $(document).ready(function () {
@@ -67,8 +81,34 @@ $(document).ready(function () {
         }
     });
 
+    // Facturación Electrónica DIAN
+    $("#chkFacturaElectronica").on("change", function () {
+        if ($(this).is(":checked")) {
+            $("#seccionFacturaElectronica").slideDown(180);
+            $("#badgeEstadoFactura").removeClass("badge-light text-muted").addClass("badge-primary text-white").html("<i class='fas fa-file-invoice-dollar mr-1'></i>Factura Electrónica (DIAN)");
+            if (!$("#cliEmailFacturacion").val().trim() && $("#cliEmail").val().trim()) {
+                $("#cliEmailFacturacion").val($("#cliEmail").val().trim());
+            }
+        } else {
+            $("#seccionFacturaElectronica").slideUp(180);
+            $("#badgeEstadoFactura").removeClass("badge-primary text-white").addClass("badge-light text-muted").html("<i class='fas fa-user-tag mr-1'></i>Consumidor Final (Sin Identificación)");
+        }
+        sincronizarDatosCliente();
+    });
+
+    $("#btnCopiarEmailCliente").on("click", function () {
+        var em = $("#cliEmail").val().trim();
+        if (em) {
+            $("#cliEmailFacturacion").val(em);
+            sincronizarDatosCliente();
+        } else {
+            alert("El correo principal de contacto aún no ha sido ingresado.");
+            $("#cliEmail").focus();
+        }
+    });
+
     // Sincronizar inputs del cliente con el estado y la comanda
-    $("#cliNombres, #cliApellidos, #cliDireccion, #cliZona, #cliMunicipio, #cliObservacion, #cliEmail").on("input change", function () {
+    $("#cliNombres, #cliApellidos, #cliDireccion, #cliZona, #cliMunicipio, #cliObservacion, #cliEmail, #cliTipoPersona, #cliIdentificacion, #cliEmailFacturacion").on("input change", function () {
         sincronizarDatosCliente();
     });
 
@@ -96,7 +136,6 @@ $(document).ready(function () {
     $("#tipoPedidoSelect").on("change", function () {
         var tipo = parseInt($(this).val());
         if (tipo !== 1 && $("#chkClienteSinIdentificar").is(":checked")) {
-            // Mostrador o Mesa
             clienteUbicado = true;
         } else if (tipo === 1 && !clienteActual.latitud) {
             clienteUbicado = false;
@@ -110,8 +149,99 @@ $(document).ready(function () {
         cotizarEnVivo();
     });
 
+    // Eventos de Descuentos & Cupones
+    $("#btnAplicarCupon").on("click", function () {
+        aplicarCodigoCupon();
+    });
+
+    $("#txtCodigoCupon").on("keypress", function (e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            aplicarCodigoCupon();
+        }
+    });
+
+    $("#btnAbrirModalDescuentoManual").on("click", function () {
+        abrirModalDescuentoManual();
+    });
+
+    $("input[name='rdTipoDesc']").on("change", function () {
+        var tipo = $("input[name='rdTipoDesc']:checked").val();
+        if (tipo === "VALOR") {
+            $("#addonSimboloDesc").text("$");
+            $("#txtValorDescuentoManual").attr("placeholder", "Ej: 5000");
+        } else {
+            $("#addonSimboloDesc").text("%");
+            $("#txtValorDescuentoManual").attr("placeholder", "Ej: 10");
+        }
+    });
+
+    $("#btnGuardarDescuentoManual").on("click", function () {
+        guardarDescuentoManualModal();
+    });
+
+    $("#btnRemoverDescuento").on("click", function () {
+        removerDescuentoActivo();
+    });
+
+    // Eventos de Pago y Cálculo de Devuelta
+    $("#formaPagoSelect").on("change", function () {
+        ajustarFormaPagoUI();
+    });
+
+    $("#txtValorPago").on("input change", function () {
+        calcularDevuelta();
+    });
+
+    $("#btnPagoExacto").on("click", function () {
+        if (resultadoMotor && resultadoMotor.total) {
+            $("#txtValorPago").val(formatearPesos(resultadoMotor.total));
+            calcularDevuelta();
+        }
+    });
+
+    $(".btn-sumar-efectivo").on("click", function () {
+        var sumar = parseInt($(this).attr("data-sumar")) || 0;
+        var act = parseFloat(($("#txtValorPago").val() || "").toString().replace(/\D/g, "")) || (resultadoMotor ? resultadoMotor.total : 0);
+        var nuevo = act + sumar;
+        $("#txtValorPago").val(formatearPesos(nuevo));
+        calcularDevuelta();
+    });
+
+    $("#badgeSiguienteRedondeo").on("click", function () {
+        if (resultadoMotor && resultadoMotor.total > 0) {
+            var total = resultadoMotor.total;
+            var redondeo = Math.ceil((total + 1) / 10000) * 10000;
+            $("#txtValorPago").val(formatearPesos(redondeo));
+            calcularDevuelta();
+        }
+    });
+
+    // Eventos de Pedido Programado
+    $("#chkPedidoProgramado").on("change", function () {
+        if ($(this).is(":checked")) {
+            var now = new Date();
+            now.setHours(now.getHours() + 1);
+            var hh = String(now.getHours()).padStart(2, '0');
+            var mm = String(now.getMinutes()).padStart(2, '0');
+            $("#horaPedidoProgramado").val(hh + ":" + mm).fadeIn(150);
+        } else {
+            $("#horaPedidoProgramado").fadeOut(150);
+        }
+        cotizarEnVivo();
+    });
+
+    $("#horaPedidoProgramado").on("change", function () {
+        cotizarEnVivo();
+    });
+
+    // Confirmación y Despacho
     $("#btnConfirmarPedido").on("click", function () {
-        confirmarYDespacharPedido();
+        abrirModalConfirmacionPedido();
+    });
+
+    $("#btnDespacharPedidoDefinitivo").on("click", function () {
+        ejecutarDespachoTiendaDefinitivo();
     });
 
     $("#btnAgregarProductoModal").on("click", function () {
@@ -120,6 +250,7 @@ $(document).ready(function () {
 
     // Estado inicial de ubicación y bloqueo de menú
     actualizarEstadoUbicacionUI();
+    ajustarFormaPagoUI();
 });
 
 /* =========================================================================
@@ -228,6 +359,16 @@ function seleccionarClienteDeTabla(cli) {
     $("#telcelular").val(clienteActual.telefono);
     $("#chkClienteSinIdentificar").prop("checked", false);
 
+    // Facturación Electrónica DIAN
+    if (cli.identificacion && cli.identificacion !== "222222222222" && cli.identificacion !== "") {
+        $("#chkFacturaElectronica").prop("checked", true).trigger("change");
+        $("#cliIdentificacion").val(cli.identificacion);
+        if (cli.idTipoPersona) $("#cliTipoPersona").val(cli.idTipoPersona);
+        if (cli.emailFacturacion || cli.emailFact) $("#cliEmailFacturacion").val(cli.emailFacturacion || cli.emailFact);
+    } else {
+        $("#chkFacturaElectronica").prop("checked", false).trigger("change");
+    }
+
     // Si el cliente tiene tienda asignada en texto, intentar seleccionarla si coincide
     if (cli.tienda) {
         $("#tiendaSelect option").each(function () {
@@ -274,7 +415,11 @@ function establecerClienteGenerico() {
         latitud: 0.0,
         longitud: 0.0,
         distanciatienda: 0.0,
-        nombreTienda: "Mostrador"
+        nombreTienda: "Mostrador",
+        emailfact: "",
+        clientesiniden: "S",
+        idtipopersona: 2,
+        identificacion: "222222222222"
     };
     clienteUbicado = true;
     $("#telcelular").val("3000000000");
@@ -285,6 +430,7 @@ function establecerClienteGenerico() {
     $("#cliMunicipio").val("Medellin");
     $("#cliEmail").val("");
     $("#cliObservacion").val("");
+    $("#chkFacturaElectronica").prop("checked", false).trigger("change");
     $("#contenedorTablaClientes").hide();
     actualizarEstadoUbicacionUI();
     actualizarResumenClienteComanda();
@@ -493,6 +639,20 @@ function sincronizarDatosCliente() {
     clienteActual.municipio = $("#cliMunicipio").val();
     clienteActual.email = $("#cliEmail").val().trim();
     clienteActual.observacion = $("#cliObservacion").val().trim();
+
+    // Facturación Electrónica DIAN
+    if ($("#chkFacturaElectronica").is(":checked")) {
+        clienteActual.clientesiniden = "N";
+        clienteActual.idtipopersona = parseInt($("#cliTipoPersona").val()) || 2;
+        clienteActual.identificacion = $("#cliIdentificacion").val().trim();
+        clienteActual.emailfact = $("#cliEmailFacturacion").val().trim();
+    } else {
+        clienteActual.clientesiniden = "S";
+        clienteActual.idtipopersona = 2;
+        clienteActual.identificacion = "222222222222";
+        clienteActual.emailfact = "";
+    }
+
     actualizarResumenClienteComanda();
 }
 
@@ -933,29 +1093,156 @@ function guardarProductoDesdeModal() {
 }
 
 /* =========================================================================
+   GESTIÓN DE DESCUENTOS Y CUPONES
+   ========================================================================= */
+function aplicarCodigoCupon() {
+    var cupon = $("#txtCodigoCupon").val().trim().toUpperCase();
+    if (!cupon) {
+        alert("Por favor ingrese un código de cupón o promoción.");
+        $("#txtCodigoCupon").focus();
+        return;
+    }
+
+    descuentoAplicado.tipo = "CUPON";
+    descuentoAplicado.codigoPromocional = cupon;
+    descuentoAplicado.descuentoManual = 0.0;
+    descuentoAplicado.motivoDescuento = "CUPÓN: " + cupon;
+    descuentoAplicado.justificacion = "";
+
+    cotizarEnVivo();
+}
+
+function abrirModalDescuentoManual() {
+    if (!resultadoMotor || draftLineas.length === 0) {
+        alert("Debe agregar al menos un producto a la comanda antes de aplicar un descuento.");
+        return;
+    }
+    $("#txtValorDescuentoManual").val("");
+    $("#txtJustificacionDescuento").val("");
+    $("#modalDescuentoManual").modal("show");
+}
+
+function guardarDescuentoManualModal() {
+    var valDesc = parseFloat($("#txtValorDescuentoManual").val());
+    if (isNaN(valDesc) || valDesc <= 0) {
+        alert("Debe ingresar un valor de descuento válido mayor a cero.");
+        $("#txtValorDescuentoManual").focus();
+        return;
+    }
+
+    var tipo = $("input[name='rdTipoDesc']:checked").val();
+    var motivo = $("#selectMotivoDescuento").val();
+    var just = $("#txtJustificacionDescuento").val().trim();
+
+    if (motivo === "Otro" && !just) {
+        alert("Para la opción 'Otro Motivo' es obligatorio indicar la justificación.");
+        $("#txtJustificacionDescuento").focus();
+        return;
+    }
+
+    var subtotalActual = (resultadoMotor && resultadoMotor.subtotal) ? resultadoMotor.subtotal : 0;
+    var valorPesos = 0;
+
+    if (tipo === "VALOR") {
+        valorPesos = valDesc;
+    } else {
+        // Porcentaje
+        if (valDesc > 100) {
+            alert("El porcentaje de descuento no puede ser superior al 100%.");
+            return;
+        }
+        valorPesos = (subtotalActual * (valDesc / 100.0));
+    }
+
+    descuentoAplicado.tipo = "MANUAL";
+    descuentoAplicado.codigoPromocional = "";
+    descuentoAplicado.descuentoManual = valorPesos;
+    descuentoAplicado.motivoDescuento = motivo + (just ? " (" + just + ")" : "");
+    descuentoAplicado.justificacion = just;
+
+    $("#modalDescuentoManual").modal("hide");
+    cotizarEnVivo();
+}
+
+function removerDescuentoActivo() {
+    descuentoAplicado.tipo = "";
+    descuentoAplicado.codigoPromocional = "";
+    descuentoAplicado.descuentoManual = 0.0;
+    descuentoAplicado.motivoDescuento = "";
+    descuentoAplicado.justificacion = "";
+    $("#txtCodigoCupon").val("");
+    $("#contenedorDescuentoActivo").hide();
+    cotizarEnVivo();
+}
+
+/* =========================================================================
+   PAGO Y CÁLCULO DE DEVUELTA
+   ========================================================================= */
+function ajustarFormaPagoUI() {
+    var idForma = parseInt($("#formaPagoSelect").val()) || 1;
+    if (idForma === 1) {
+        // Efectivo
+        $("#cajaDevueltaComanda").slideDown(150);
+        calcularDevuelta();
+    } else {
+        $("#cajaDevueltaComanda").slideUp(150);
+        if (resultadoMotor) {
+            $("#txtValorPago").val(formatearPesos(resultadoMotor.total));
+        }
+    }
+}
+
+function calcularDevuelta() {
+    if (!resultadoMotor) return;
+
+    var idForma = parseInt($("#formaPagoSelect").val()) || 1;
+    if (idForma !== 1) {
+        $("#lblValorDevuelta").text("$ 0");
+        return;
+    }
+
+    var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
+    var valPago = parseFloat(valPagoStr) || 0;
+    var total = resultadoMotor.total || 0;
+
+    if (valPago >= total) {
+        var dev = valPago - total;
+        $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("$ " + formatearPesos(dev));
+    } else {
+        var falta = total - valPago;
+        $("#lblValorDevuelta").removeClass("text-success").addClass("text-danger").text("Faltan $ " + formatearPesos(falta));
+    }
+}
+
+/* =========================================================================
    COTIZADOR EN VIVO (MOTOR DE PEDIDO SERVER-SIDE)
    ========================================================================= */
 function cotizarEnVivo() {
     $("#badgeItemCount").text(draftLineas.length + " item(s)");
 
     if (draftLineas.length === 0) {
-        $("#listaComanda").html("<p class='text-muted text-center py-4'>La comanda esta vacia.<br><small>Selecciona productos en el menu.</small></p>");
+        $("#listaComanda").html("<p class='text-muted text-center py-4'>La comanda está vacía.<br><small>Selecciona productos en el menú.</small></p>");
         $("#subtotalTxt").text("$ 0");
-        $("#descuentoTxt").text("$ 0");
+        $("#descuentoTxt").text("-$ 0");
         $("#domicilioTxt").text("$ 0");
         $("#totalTxt").text("$ 0");
+        $("#contenedorDescuentoActivo").hide();
         $("#btnConfirmarPedido").prop("disabled", true);
         return;
     }
 
     var idTienda = parseInt($("#tiendaSelect").val()) || 11;
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1; // 1 = Domicilio
+    var esProg = $("#chkPedidoProgramado").is(":checked");
+    var horaProg = esProg ? ($("#horaPedidoProgramado").val() || "") : "";
 
     var solicitud = {
         contexto: {
             idtienda: idTienda,
             canal: "T", // T = Contact Center
             idtipopedido: idTipoPedido,
+            programado: esProg,
+            horaProgramado: horaProg,
             fechaHora: new Date().toISOString().replace("T", " ").substring(0, 19)
         },
         cliente: {
@@ -965,6 +1252,12 @@ function cotizarEnVivo() {
         },
         domicilio: {
             idproducto: (idTipoPedido === 1 ? 412 : 0) // 412 = Domicilio POS
+        },
+        descuentos: {
+            codigoPromocional: descuentoAplicado.codigoPromocional || "",
+            redimirPuntos: false,
+            descuentoManual: descuentoAplicado.descuentoManual || 0.0,
+            motivoDescuento: descuentoAplicado.motivoDescuento || ""
         },
         lineas: draftLineas
     };
@@ -1040,6 +1333,27 @@ function renderizarComanda(res) {
     $("#domicilioTxt").text("$ " + formatearPesos(domVal));
     $("#descuentoTxt").text("-$ " + formatearPesos(res.descuento));
     $("#totalTxt").text("$ " + formatearPesos(res.total));
+
+    // Estado visual del Descuento activo
+    if (res.descuento > 0) {
+        var textoDesc = "Descuento aplicado: -$ " + formatearPesos(res.descuento);
+        if (descuentoAplicado.tipo === "CUPON") {
+            textoDesc = "Cupón " + descuentoAplicado.codigoPromocional + ": -$ " + formatearPesos(res.descuento);
+        } else if (descuentoAplicado.tipo === "MANUAL") {
+            textoDesc = "Descuento manual: -$ " + formatearPesos(res.descuento) + " (" + (descuentoAplicado.motivoDescuento || "Auditoría") + ")";
+        }
+        $("#lblDetalleDescuentoActivo").html("<i class='fas fa-tag mr-1'></i>" + textoDesc);
+        $("#contenedorDescuentoActivo").show();
+    } else {
+        $("#contenedorDescuentoActivo").hide();
+    }
+
+    // Actualizar valor pago por defecto si está vacío
+    var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
+    if (!valPagoStr || parseFloat(valPagoStr) === 0) {
+        $("#txtValorPago").val(formatearPesos(res.total));
+    }
+    calcularDevuelta();
 }
 
 function eliminarItemDraft(index) {
@@ -1050,9 +1364,9 @@ function eliminarItemDraft(index) {
 }
 
 /* =========================================================================
-   CONFIRMACIÓN Y DESPACHO DEL PEDIDO
+   MODAL DE RESUMEN Y CONFIRMACIÓN DE PEDIDO (Reemplaza confirm simple)
    ========================================================================= */
-function confirmarYDespacharPedido() {
+function abrirModalConfirmacionPedido() {
     if (!clienteUbicado) {
         alert("¡Atención! Debe ubicar al cliente en el mapa antes de despachar el pedido.");
         abrirModalMapa();
@@ -1066,23 +1380,161 @@ function confirmarYDespacharPedido() {
 
     sincronizarDatosCliente();
 
-    if (!confirm("¿Deseas confirmar este pedido para " + clienteActual.nombres + " por un total de $ " + formatearPesos(resultadoMotor.total) + "?")) {
-        return;
+    // Validar facturación electrónica si fue solicitada
+    if (clienteActual.clientesiniden === "N") {
+        if (!clienteActual.identificacion || clienteActual.identificacion === "222222222222") {
+            alert("Para factura electrónica DIAN debe ingresar el número de identificación (Cédula o NIT).");
+            $("#cliIdentificacion").focus();
+            return;
+        }
+        if (!clienteActual.emailfact) {
+            alert("Para factura electrónica DIAN debe ingresar el correo electrónico de facturación.");
+            $("#cliEmailFacturacion").focus();
+            return;
+        }
     }
 
-    $("#btnConfirmarPedido").prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i>Despachando a tienda...");
+    // 1. Cabecera y Tienda
+    var nombreTiendaSel = $("#tiendaSelect option:selected").text();
+    $("#txtModalTiendaDestino").html("<i class='fas fa-store mr-1'></i>" + nombreTiendaSel);
 
+    // 2. Datos del Cliente y Entrega
+    var nomCompleto = clienteActual.nombres + (clienteActual.apellidos ? " " + clienteActual.apellidos : "");
+    $("#txtModalClienteNombre").text(nomCompleto);
+    $("#txtModalClienteTel").text(clienteActual.telefono);
+    $("#txtModalClienteDir").text(clienteActual.direccion);
+    $("#txtModalClienteMun").text(clienteActual.municipio || "Medellín");
+    $("#txtModalClienteBarrio").text(clienteActual.zona || "No especificado");
+    $("#txtModalClienteObs").text(clienteActual.observacion || "Sin observaciones especiales");
+    $("#txtModalCoords").text(clienteActual.latitud.toFixed(6) + ", " + clienteActual.longitud.toFixed(6));
+    $("#txtModalDistancia").text(clienteActual.distanciatienda ? clienteActual.distanciatienda.toFixed(1) + " km" : "-");
+
+    // 3. Facturación Electrónica DIAN
+    if (clienteActual.clientesiniden === "N") {
+        $("#badgeModalFacturaTipo").removeClass("badge-info").addClass("badge-primary").text("Factura Electrónica (DIAN)");
+        $("#txtModalFactTipoPersona").text(clienteActual.idtipopersona === 1 ? "1 - Persona Jurídica (NIT)" : "2 - Persona Natural (Cédula)");
+        $("#txtModalFactIdentificacion").text(clienteActual.identificacion);
+        $("#txtModalFactEmail").text(clienteActual.emailfact);
+        $("#bodyModalFactura").show();
+    } else {
+        $("#badgeModalFacturaTipo").removeClass("badge-primary").addClass("badge-secondary").text("Consumidor Final (Sin Identificación)");
+        $("#txtModalFactTipoPersona").text("No aplica");
+        $("#txtModalFactIdentificacion").text("222222222222");
+        $("#txtModalFactEmail").text("No registrado (Consumidor Final)");
+    }
+
+    // 4. Condiciones Operativas
+    var tipoPedTxt = $("#tipoPedidoSelect option:selected").text();
+    $("#txtModalTipoPedido").text(tipoPedTxt);
+    var tiempoMin = $("#tiempoPedidoSelect").val() || 30;
+    $("#txtModalTiempoEntrega").text(tiempoMin + " minutos");
+
+    var esProg = $("#chkPedidoProgramado").is(":checked");
+    if (esProg) {
+        var hProg = $("#horaPedidoProgramado").val() || "Hora no definida";
+        $("#txtModalProgramacion").removeClass("badge-success").addClass("badge-warning text-dark").html("<i class='far fa-clock mr-1'></i>Programado para: <b>" + hProg + "</b>");
+    } else {
+        $("#txtModalProgramacion").removeClass("badge-warning text-dark").addClass("badge-success").html("<i class='fas fa-bolt mr-1'></i>Para Inmediato (Ya)");
+    }
+
+    // 5. Tabla de Comanda Detallada
+    var $tbody = $("#tbodyModalComanda");
+    $tbody.empty();
+
+    var hijasMap = {};
+    $.each(resultadoMotor.lineas, function (i, l) {
+        if (l.refMaster > 0) {
+            if (!hijasMap[l.refMaster]) hijasMap[l.refMaster] = [];
+            hijasMap[l.refMaster].push(l);
+        }
+    });
+
+    var totalItemsCount = 0;
+    $.each(resultadoMotor.lineas, function (i, l) {
+        if (l.refMaster === 0 && l.origen !== "DOMICILIO") {
+            totalItemsCount++;
+            var $tr = $("<tr></tr>");
+            $tr.append("<td class='font-weight-bold text-center'>" + l.cantidad + "x</td>");
+
+            var $tdDesc = $("<td></td>");
+            $tdDesc.append("<div class='font-weight-bold text-dark'>" + (l.descripcion || ("Producto #" + l.idproducto)) + "</div>");
+
+            if (hijasMap[l.ref]) {
+                var $subList = $("<div class='pl-2 text-muted small mt-1'></div>");
+                $.each(hijasMap[l.ref], function (j, h) {
+                    var isInc = (h.origen === "INCLUIDO");
+                    var pref = isInc ? "<span class='text-success font-weight-bold'>[Inc]</span> " : (h.cantidad === 0.5 ? "• (1/2) " : "• ");
+                    var precioExtra = h.valorTotal > 0 ? " (+$" + formatearPesos(h.valorTotal) + ")" : "";
+                    $subList.append("<div>" + pref + (h.descripcion || ("Opción #" + h.idproducto)) + precioExtra + "</div>");
+                });
+                $tdDesc.append($subList);
+            }
+            $tr.append($tdDesc);
+            $tr.append("<td class='text-right font-weight-bold'>$" + formatearPesos(l.valorTotal) + "</td>");
+            $tbody.append($tr);
+        }
+    });
+
+    $("#badgeModalTotalItems").text(totalItemsCount + " item(s)");
+
+    // 6. Totales Financieros
+    var domVal = 0;
+    $.each(resultadoMotor.lineas, function (i, l) {
+        if (l.origen === "DOMICILIO") domVal += l.valorTotal;
+    });
+
+    $("#txtModalSubtotal").text("$ " + formatearPesos(resultadoMotor.subtotal - domVal));
+    $("#txtModalDomicilio").text("$ " + formatearPesos(domVal));
+    $("#txtModalDescuento").text("-$ " + formatearPesos(resultadoMotor.descuento));
+    if (descuentoAplicado.motivoDescuento) {
+        $("#lblModalDescLabel").text("Descuento (" + descuentoAplicado.motivoDescuento + "):");
+    } else {
+        $("#lblModalDescLabel").text("Descuento:");
+    }
+    $("#txtModalGranTotal").text("$ " + formatearPesos(resultadoMotor.total));
+
+    // 7. Pago y Devuelta
+    var formaPagoId = parseInt($("#formaPagoSelect").val()) || 1;
+    var formaPagoNom = $("#formaPagoSelect option:selected").text();
+    $("#txtModalFormaPago").text(formaPagoNom);
+
+    var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
+    var valPago = parseFloat(valPagoStr) || resultadoMotor.total;
+
+    if (formaPagoId === 1) {
+        // Efectivo
+        $("#filaModalEfectivoDevuelta").show();
+        $("#txtModalPagaCon").text("$ " + formatearPesos(valPago));
+        var dev = (valPago >= resultadoMotor.total) ? (valPago - resultadoMotor.total) : 0;
+        $("#txtModalDevuelta").text("$ " + formatearPesos(dev));
+    } else {
+        $("#filaModalEfectivoDevuelta").hide();
+    }
+
+    $("#modalConfirmarPedido").modal("show");
+}
+
+function ejecutarDespachoTiendaDefinitivo() {
     var idTienda = parseInt($("#tiendaSelect").val()) || 11;
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
     var idFormaPago = parseInt($("#formaPagoSelect").val()) || 1;
+    var tiempoPed = parseInt($("#tiempoPedidoSelect").val()) || 30;
+    var esProg = $("#chkPedidoProgramado").is(":checked");
+    var horaProg = esProg ? ($("#horaPedidoProgramado").val() || "") : "";
+    var notasCocina = $("#txtModalNotasCocina").val().trim();
+
+    var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
+    var valPago = parseFloat(valPagoStr) || resultadoMotor.total;
+
+    $("#btnDespacharPedidoDefinitivo").prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-2'></i>Despachando a Tienda...");
 
     var payload = {
         idTienda: idTienda,
         idCliente: clienteActual.idcliente,
         usuario: "PILOTO",
         idFormaPagoTienda: idFormaPago,
-        valorFormaPago: resultadoMotor.total,
-        tiempoPedido: 30,
+        valorFormaPago: (idFormaPago === 1) ? valPago : resultadoMotor.total,
+        tiempoPedido: tiempoPed,
         origen: "T",
         cliente: {
             idcliente: clienteActual.idcliente,
@@ -1092,16 +1544,23 @@ function confirmarYDespacharPedido() {
             direccion: clienteActual.direccion,
             municipio: clienteActual.municipio,
             zona: clienteActual.zona,
-            observacion: clienteActual.observacion,
+            observacion: (clienteActual.observacion ? clienteActual.observacion + (notasCocina ? " | Notas Cocina: " + notasCocina : "") : notasCocina),
             latitud: clienteActual.latitud,
             longitud: clienteActual.longitud,
-            distanciatienda: clienteActual.distanciatienda
+            distanciatienda: clienteActual.distanciatienda,
+            email: clienteActual.email,
+            emailfact: clienteActual.emailfact,
+            clientesiniden: clienteActual.clientesiniden,
+            idtipopersona: clienteActual.idtipopersona,
+            identificacion: clienteActual.identificacion
         },
         solicitud: {
             contexto: {
                 idtienda: idTienda,
                 canal: "T",
                 idtipopedido: idTipoPedido,
+                programado: esProg,
+                horaProgramado: horaProg,
                 fechaHora: new Date().toISOString().replace("T", " ").substring(0, 19)
             },
             cliente: {
@@ -1111,6 +1570,12 @@ function confirmarYDespacharPedido() {
             },
             domicilio: {
                 idproducto: (idTipoPedido === 1 ? 412 : 0)
+            },
+            descuentos: {
+                codigoPromocional: descuentoAplicado.codigoPromocional || "",
+                redimirPuntos: false,
+                descuentoManual: descuentoAplicado.descuentoManual || 0.0,
+                motivoDescuento: descuentoAplicado.motivoDescuento || ""
             },
             lineas: draftLineas
         }
@@ -1122,27 +1587,30 @@ function confirmarYDespacharPedido() {
         contentType: "application/json;charset=UTF-8",
         data: JSON.stringify(payload),
         success: function (resp) {
-            $("#btnConfirmarPedido").prop("disabled", false).html("<i class='fas fa-paper-plane mr-1'></i>Confirmar y Despachar a Tienda");
+            $("#btnDespacharPedidoDefinitivo").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i>Confirmar y Despachar a Tienda");
+            $("#modalConfirmarPedido").modal("hide");
 
             if (resp.exito) {
-                var msj = "¡Pedido registrado con exito en Central con id #" + resp.idPedido + "!";
+                var msj = "🎉 ¡Pedido registrado con éxito en Central con id #" + resp.idPedido + "!";
                 if (resp.despachoTienda && resp.despachoTienda.exito) {
-                    msj += "\n\nSe despacho directamente al POS de la tienda (sin tabla de homologacion).\nComanda generada en tienda: #" + resp.despachoTienda.numeroFactura;
+                    msj += "\n\nSe despachó directamente al POS de la tienda (sin tabla de homologación).\nComanda generada en tienda: #" + resp.despachoTienda.numeroFactura;
                 } else if (resp.despachoTienda && !resp.despachoTienda.exito) {
-                    msj += "\n\nAtencion en tienda: " + resp.despachoTienda.mensaje;
+                    msj += "\n\nAtención en tienda: " + resp.despachoTienda.mensaje;
                 }
                 alert(msj);
 
-                // Limpiar comanda para el siguiente pedido
+                // Limpiar comanda y formulario
                 draftLineas = [];
+                removerDescuentoActivo();
+                $("#txtModalNotasCocina").val("");
                 cotizarEnVivo();
             } else {
                 alert("Error al finalizar el pedido: " + (resp.mensaje || "Error desconocido"));
             }
         },
         error: function (xhr) {
-            $("#btnConfirmarPedido").prop("disabled", false).html("<i class='fas fa-paper-plane mr-1'></i>Confirmar y Despachar a Tienda");
-            alert("Error en el servidor al enviar pedido: " + xhr.responseText);
+            $("#btnDespacharPedidoDefinitivo").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i>Confirmar y Despachar a Tienda");
+            alert("Error en el servidor al enviar pedido: " + (xhr.responseText || "Error de red"));
         }
     });
 }

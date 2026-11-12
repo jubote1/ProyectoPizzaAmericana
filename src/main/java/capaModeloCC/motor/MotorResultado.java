@@ -71,6 +71,6 @@ public class MotorResultado {
 			suma += l.valorTotal;
 		}
 		this.subtotal = suma;
-		this.total = suma - descuento;
+		this.total = Math.max(0.0, suma - descuento);
 	}
 }

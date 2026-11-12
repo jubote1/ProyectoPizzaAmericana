@@ -122,7 +122,7 @@ public class ConectorTiendaPos {
 					cliente != null && cliente.getEmailFacturacion() != null ? cliente.getEmailFacturacion() : "");
 			mapCliente.put("clientesiniden",
 					cliente != null && cliente.getClienteSinIden() != null ? cliente.getClienteSinIden() : "S");
-			mapCliente.put("idtipopersona", cliente != null ? cliente.getIdTipoPersona() : 1);
+			mapCliente.put("idtipopersona", (cliente != null && cliente.getIdTipoPersona() > 0) ? cliente.getIdTipoPersona() : 2);
 			mapCliente.put("identificacion",
 					cliente != null && cliente.getIdentificacion() != null ? cliente.getIdentificacion() : "");
 
@@ -134,14 +134,27 @@ public class ConectorTiendaPos {
 			mapPedido.put("idpedido", idPedidoCentral);
 			mapPedido.put("valortotal", resultado.total);
 			mapPedido.put("descuento", resultado.descuento);
-			mapPedido.put("motivodescuento", resultado.descuento > 0 ? "DESCUENTO MOTOR" : "");
-			mapPedido.put("reintegro", "");
+
+			String motivoDesc = "";
+			if (solicitud != null && solicitud.descuentos != null && solicitud.descuentos.motivoDescuento != null
+					&& !solicitud.descuentos.motivoDescuento.trim().isEmpty()) {
+				motivoDesc = solicitud.descuentos.motivoDescuento.trim();
+			} else if (resultado.descuento > 0) {
+				motivoDesc = "DESCUENTO MOTOR";
+			}
+			mapPedido.put("motivodescuento", motivoDesc);
+
+			double reintegroVal = 0.0;
+			if (idFormaPagoTienda == 1 && valorFormaPago > resultado.total) {
+				reintegroVal = valorFormaPago - resultado.total;
+			}
+			mapPedido.put("reintegro", reintegroVal > 0 ? String.valueOf((long) reintegroVal) : "");
 			mapPedido.put("insertado", "true");
 			mapPedido.put("dsntienda", dsnTienda);
 			mapPedido.put("pos", pos);
 			mapPedido.put("memcode", cliente != null ? cliente.getMemcode() : 0);
 			mapPedido.put("indicadoract", cliente == null || cliente.getMemcode() == 0);
-			mapPedido.put("valorformapago", valorFormaPago > 0 ? valorFormaPago : resultado.total);
+			mapPedido.put("valorformapago", (idFormaPagoTienda == 1 && valorFormaPago > 0) ? valorFormaPago : resultado.total);
 			mapPedido.put("idformapagotienda", idFormaPagoTienda > 0 ? idFormaPagoTienda : 1);
 			mapPedido.put("usuariopedido", usuario != null && !usuario.trim().isEmpty() ? usuario : "MOTOR");
 			mapPedido.put("tiempopedido", (int) tiempoPedido);

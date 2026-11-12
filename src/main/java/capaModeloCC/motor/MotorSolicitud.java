@@ -97,5 +97,7 @@ public class MotorSolicitud {
 	public static class Descuentos {
 		public String codigoPromocional = "";
 		public boolean redimirPuntos;
+		public double descuentoManual = 0.0;
+		public String motivoDescuento = "";
 	}
 }

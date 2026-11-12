@@ -158,19 +158,21 @@ public class MotorFinalizarPedido extends HttpServlet {
 
 			if (esPiloto) {
 				Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
-				if (cli == null && root.has("cliente")) {
+				if (root.has("cliente")) {
 					try {
 						JsonObject clJson = root.getAsJsonObject("cliente");
 						if (clJson != null) {
-							cli = new Cliente();
-							cli.setIdcliente(idCliente);
-							cli.setNombres(clJson.has("nombres") ? clJson.get("nombres").getAsString() : "Cliente Mostrador");
-							cli.setApellidos(clJson.has("apellidos") ? clJson.get("apellidos").getAsString() : "");
-							cli.setTelefonoCelular(clJson.has("telefono") ? clJson.get("telefono").getAsString() : "");
-							cli.setDireccion(clJson.has("direccion") ? clJson.get("direccion").getAsString() : "");
-							cli.setMunicipio(clJson.has("municipio") ? clJson.get("municipio").getAsString() : "Medellin");
-							cli.setZonaDireccion(clJson.has("zona") ? clJson.get("zona").getAsString() : "");
-							cli.setObservacion(clJson.has("observacion") ? clJson.get("observacion").getAsString() : "");
+							if (cli == null) {
+								cli = new Cliente();
+								cli.setIdcliente(idCliente);
+							}
+							if (clJson.has("nombres")) cli.setNombres(clJson.get("nombres").getAsString());
+							if (clJson.has("apellidos")) cli.setApellidos(clJson.get("apellidos").getAsString());
+							if (clJson.has("telefono")) cli.setTelefonoCelular(clJson.get("telefono").getAsString());
+							if (clJson.has("direccion")) cli.setDireccion(clJson.get("direccion").getAsString());
+							if (clJson.has("municipio")) cli.setMunicipio(clJson.get("municipio").getAsString());
+							if (clJson.has("zona")) cli.setZonaDireccion(clJson.get("zona").getAsString());
+							if (clJson.has("observacion")) cli.setObservacion(clJson.get("observacion").getAsString());
 							if (clJson.has("latitud")) {
 								cli.setLatitud((float) clJson.get("latitud").getAsDouble());
 							}
@@ -179,6 +181,21 @@ public class MotorFinalizarPedido extends HttpServlet {
 							}
 							if (clJson.has("distanciatienda")) {
 								cli.setDistanciaTienda(clJson.get("distanciatienda").getAsDouble());
+							}
+							if (clJson.has("email")) {
+								cli.setEmail(clJson.get("email").getAsString());
+							}
+							if (clJson.has("emailfact")) {
+								cli.setEmailFacturacion(clJson.get("emailfact").getAsString());
+							}
+							if (clJson.has("clientesiniden")) {
+								cli.setClienteSinIden(clJson.get("clientesiniden").getAsString());
+							}
+							if (clJson.has("idtipopersona")) {
+								cli.setIdTipoPersona(clJson.get("idtipopersona").getAsInt());
+							}
+							if (clJson.has("identificacion")) {
+								cli.setIdentificacion(clJson.get("identificacion").getAsString());
 							}
 						}
 					} catch (Exception exCli) {

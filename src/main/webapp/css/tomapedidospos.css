@@ -460,4 +460,46 @@ body {
     border-radius: calc(0.3rem - 1px) calc(0.3rem - 1px) 0 0;
 }
 
+/* Modal de Confirmación y Resumen de Pedido */
+.modal-header-confirm {
+    background: linear-gradient(135deg, #102F6F 0%, #173f8a 100%);
+    color: #fff;
+    border-radius: calc(0.3rem - 1px) calc(0.3rem - 1px) 0 0;
+}
+
+.caja-devuelta-box {
+    background: #f8fafc;
+    border: 1px solid #dce1eb !important;
+}
+
+.quick-cash-btns .btn {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 5px;
+    background: #fff;
+    border-color: #ced4da;
+    color: #495057;
+    transition: all 0.15s ease;
+}
+
+.quick-cash-btns .btn:hover {
+    background: #102F6F;
+    border-color: #102F6F;
+    color: #fff;
+}
+
+.descuentos-comanda-box {
+    border: 1px solid #dce1eb !important;
+    background: #fafbfd;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.facturacion-header-bar {
+    background: #fdfdfd;
+}
+
+
 

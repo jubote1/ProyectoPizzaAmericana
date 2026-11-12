@@ -164,7 +164,9 @@ public class MotorPedidoV1 implements MotorPedido {
 	}
 
 	private void aplicarDescuentos(MotorSolicitud s, MotorResultado r, String horaHHmm) {
-		// Advertencias de solicitud de descuento explicita
+		double totalDescuento = 0.0;
+
+		// Advertencias de solicitud de descuento explicita y descuento manual
 		if (s.descuentos != null) {
 			if (s.descuentos.codigoPromocional != null && !s.descuentos.codigoPromocional.trim().isEmpty()) {
 				r.advertencias.add(new MotorResultado.Advertencia("CODIGO_PROMO_RECIBIDO",
@@ -174,54 +176,59 @@ public class MotorPedidoV1 implements MotorPedido {
 				r.advertencias.add(new MotorResultado.Advertencia("REDENCION_PUNTOS_ACTIVA",
 						"Solicitud de redencion de puntos activa.", 0));
 			}
+			if (s.descuentos.descuentoManual > 0) {
+				totalDescuento += s.descuentos.descuentoManual;
+				String mot = (s.descuentos.motivoDescuento != null && !s.descuentos.motivoDescuento.trim().isEmpty())
+						? s.descuentos.motivoDescuento.trim() : "DESCUENTO MANUAL";
+				r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_MANUAL",
+						"Descuento manual aplicado: $" + (int) s.descuentos.descuentoManual + " (" + mot + ")", 0));
+			}
 		}
 
-		// Descuentos generales configurados
-		if (catalogo.descuentosGenerales.isEmpty()) {
-			return;
-		}
-		double totalDescuento = 0.0;
-		for (DescuentoGeneral dg : catalogo.descuentosGenerales) {
-			if (!dg.enHorario(horaHHmm)) {
-				continue;
-			}
-			if ("P".equalsIgnoreCase(dg.tipoDescuento) || "N".equalsIgnoreCase(dg.tipoDescuento)) {
-				for (MotorResultado.Linea ml : r.lineas) {
-					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
-						double base = ml.valorTotal + totalHijas(r, ml.ref);
-						double desc = 0.0;
-						if (dg.valorPesos > 0) {
-							desc = dg.valorPesos * ml.cantidad;
-						} else if (dg.valorPorcentaje > 0) {
-							desc = base * (dg.valorPorcentaje / 100.0);
-						}
-						if (desc > 0) {
-							totalDescuento += desc;
-							r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_APLICADO",
-									"Descuento tipo " + dg.tipoDescuento + " de " + desc + " en producto " + ml.idproducto, ml.idproducto));
+		// Descuentos generales configurados en pos_central
+		if (catalogo.descuentosGenerales != null && !catalogo.descuentosGenerales.isEmpty()) {
+			for (DescuentoGeneral dg : catalogo.descuentosGenerales) {
+				if (!dg.enHorario(horaHHmm)) {
+					continue;
+				}
+				if ("P".equalsIgnoreCase(dg.tipoDescuento) || "N".equalsIgnoreCase(dg.tipoDescuento)) {
+					for (MotorResultado.Linea ml : r.lineas) {
+						if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
+							double base = ml.valorTotal + totalHijas(r, ml.ref);
+							double desc = 0.0;
+							if (dg.valorPesos > 0) {
+								desc = dg.valorPesos * ml.cantidad;
+							} else if (dg.valorPorcentaje > 0) {
+								desc = base * (dg.valorPorcentaje / 100.0);
+							}
+							if (desc > 0) {
+								totalDescuento += desc;
+								r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_APLICADO",
+										"Descuento tipo " + dg.tipoDescuento + " de " + desc + " en producto " + ml.idproducto, ml.idproducto));
+							}
 						}
 					}
-				}
-			} else if ("I".equalsIgnoreCase(dg.tipoDescuento)) {
-				for (MotorResultado.Linea ml : r.lineas) {
-					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto && dg.valorPesos > 0) {
-						double totalAdi = totalAdiciones(r, ml.ref);
-						double desc = (totalAdi > dg.valorPesos) ? dg.valorPesos : totalAdi;
-						if (desc > 0) {
-							totalDescuento += desc;
-							r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_ADICION",
-									"Descuento en adiciones de " + desc + " para producto " + ml.idproducto, ml.idproducto));
+				} else if ("I".equalsIgnoreCase(dg.tipoDescuento)) {
+					for (MotorResultado.Linea ml : r.lineas) {
+						if (ml.refMaster == 0 && ml.idproducto == dg.idProducto && dg.valorPesos > 0) {
+							double totalAdi = totalAdiciones(r, ml.ref);
+							double desc = (totalAdi > dg.valorPesos) ? dg.valorPesos : totalAdi;
+							if (desc > 0) {
+								totalDescuento += desc;
+								r.advertencias.add(new MotorResultado.Advertencia("DESCUENTO_ADICION",
+										"Descuento en adiciones de " + desc + " para producto " + ml.idproducto, ml.idproducto));
+							}
 						}
 					}
-				}
-			} else if ("D".equalsIgnoreCase(dg.tipoDescuento)) {
-				for (MotorResultado.Linea ml : r.lineas) {
-					if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
-						double base = ml.valorTotal + totalHijas(r, ml.ref);
-						double valorCupon = base * (dg.valorPorcentaje / 100.0);
-						r.advertencias.add(new MotorResultado.Advertencia("CUPON_FUTURO_D",
-								"Genera cupon futuro de " + (int) valorCupon + " (" + dg.valorPorcentaje + "%) para producto "
-										+ dg.idProducto, dg.idProducto));
+				} else if ("D".equalsIgnoreCase(dg.tipoDescuento)) {
+					for (MotorResultado.Linea ml : r.lineas) {
+						if (ml.refMaster == 0 && ml.idproducto == dg.idProducto) {
+							double base = ml.valorTotal + totalHijas(r, ml.ref);
+							double valorCupon = base * (dg.valorPorcentaje / 100.0);
+							r.advertencias.add(new MotorResultado.Advertencia("CUPON_FUTURO_D",
+									"Genera cupon futuro de " + (int) valorCupon + " (" + dg.valorPorcentaje + "%) para producto "
+											+ dg.idProducto, dg.idProducto));
+						}
 					}
 				}
 			}
