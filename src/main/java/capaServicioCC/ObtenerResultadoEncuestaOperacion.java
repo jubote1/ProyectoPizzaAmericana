@@ -49,6 +49,9 @@ public class ObtenerResultadoEncuestaOperacion extends HttpServlet {
 		// TODO Auto-generated method stub
 		try {
 			response.addHeader("Access-Control-Allow-Origin", "*");
+			request.setCharacterEncoding("UTF-8");
+			response.setCharacterEncoding("UTF-8");
+			response.setContentType("application/json; charset=UTF-8");
 			int idTienda = Integer.parseInt(request.getParameter("idtienda"));
 			String fecha1 = request.getParameter("fecha1");
 			String fecha2 = request.getParameter("fecha2");

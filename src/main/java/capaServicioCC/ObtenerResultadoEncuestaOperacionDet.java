@@ -47,6 +47,9 @@ public class ObtenerResultadoEncuestaOperacionDet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
+		response.setContentType("application/json; charset=UTF-8");
 		
 		String paramEncuesta = request.getParameter("idempleadoencuesta");
 		int idempleadoencuesta = 0;
