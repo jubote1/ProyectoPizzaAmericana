@@ -13503,7 +13503,7 @@ public class PedidoCtrl {
 			int antiguas = SolicitudConciliacionDAO.contarPendientesAntiguas(idTienda);
 			respuesta = "La tienda tiene " + pendientes + (pendientes == 1 ? " solicitud" : " solicitudes")
 					+ " de conciliaci\u00f3n pendiente" + (pendientes == 1 ? "" : "s") + " de solucionar (de los \u00faltimos "
-					+ SolicitudConciliacionDAO.DIAS_ALCANCE_AVISO + " d\u00edas)"
+					+ SolicitudConciliacionDAO.diasAlcanceAviso() + " d\u00edas)"
 					+ (antiguas > 0 ? ": " + antiguas + " con m\u00e1s de " + SolicitudConciliacionDAO.DIAS_RECIENTE + " d\u00edas sin resolver" : "")
 					+ ".";
 		}

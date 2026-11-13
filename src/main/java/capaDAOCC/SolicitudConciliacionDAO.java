@@ -69,7 +69,7 @@ public class SolicitudConciliacionDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		int respuesta = 0;
 		Calendar calendario = Calendar.getInstance();
-		calendario.add(Calendar.DAY_OF_YEAR, -DIAS_ALCANCE_AVISO);
+		calendario.add(Calendar.DAY_OF_YEAR, -diasAlcanceAviso());
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String fecha = dateFormat.format(calendario.getTime());
 		try
@@ -97,7 +97,53 @@ public class SolicitudConciliacionDAO {
 	}
 
 	/** Hasta cuantos dias atras mira el aviso de solicitudes pendientes (antes 7; desde el 2026-11-13, 45). */
-	public static final int DIAS_ALCANCE_AVISO = 45;
+	/** Valor si el parametro DIASAVISOCONCILIACION no existe o es invalido. */
+	public static final int DIAS_ALCANCE_DEFECTO = 45;
+	private static volatile int diasAlcanceCache = 0;
+	private static volatile long diasAlcanceLeidoEn = 0;
+
+	/**
+	 * Hasta cuantos dias atras mira el aviso de solicitudes pendientes: parametro DIASAVISOCONCILIACION de
+	 * general.parametros (valornumerico), 45 si no esta. Antes estaba fijo en 7. Se relee cada minuto, asi que
+	 * cambiarlo en la base se nota sin reiniciar el central.
+	 */
+	public static int diasAlcanceAviso()
+	{
+		long ahora = System.currentTimeMillis();
+		if (diasAlcanceCache > 0 && ahora - diasAlcanceLeidoEn < 60000L)
+		{
+			return(diasAlcanceCache);
+		}
+		int dias = DIAS_ALCANCE_DEFECTO;
+		Connection cn = null;
+		try
+		{
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			Statement stm = cn.createStatement();
+			ResultSet rs = stm.executeQuery("select valornumerico from parametros where valorparametro = 'DIASAVISOCONCILIACION'");
+			if (rs.next() && rs.getInt(1) > 0)
+			{
+				dias = rs.getInt(1);
+			}
+			rs.close();
+			stm.close();
+		}catch (Exception e){
+			Logger.getLogger("log_file").error("SolicitudConciliacionDAO.diasAlcanceAviso: " + e.toString());
+		}finally{
+			try
+			{
+				if (cn != null)
+				{
+					cn.close();
+				}
+			}catch(Exception e1)
+			{
+			}
+		}
+		diasAlcanceCache = dias;
+		diasAlcanceLeidoEn = ahora;
+		return(dias);
+	}
 	/** Lo que pasa de estos dias sin resolverse se avisa aparte como "antigua". */
 	public static final int DIAS_RECIENTE = 7;
 
@@ -113,7 +159,7 @@ public class SolicitudConciliacionDAO {
 		int respuesta = 0;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar desde = Calendar.getInstance();
-		desde.add(Calendar.DAY_OF_YEAR, -DIAS_ALCANCE_AVISO);
+		desde.add(Calendar.DAY_OF_YEAR, -diasAlcanceAviso());
 		Calendar hasta = Calendar.getInstance();
 		hasta.add(Calendar.DAY_OF_YEAR, -DIAS_RECIENTE);
 		try
