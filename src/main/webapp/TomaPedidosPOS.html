@@ -1089,6 +1089,10 @@
             </div>
         </div>
     </div>
+    <!-- jQuery va PRIMERO: lo necesitan Bootstrap y todo tomapedidospos.js.
+         Se sirve desde el propio servidor, no desde un CDN, para que la pantalla
+         de toma de pedidos no dependa de que haya internet. -->
+    <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="text/javascript" src="js/tomapedidospos.js"></script>
