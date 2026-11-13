@@ -135,11 +135,17 @@ public class MotorCatalogo extends HttpServlet {
 
 		Map<String, Object> resp = new HashMap<String, Object>();
 
+		// Cuantas preguntas forzadas tiene el producto en pos_central: 5, o 10 con la migracion 2026_11_12_01
+		final int nPreg = capaControladorCC.motor.CatalogoPos.cantidadPreguntas(con);
+		final StringBuilder cp = new StringBuilder();
+		for (int i = 1; i <= nPreg; i++) {
+			cp.append(i > 1 ? ", " : "").append("idpreguntaforzada").append(i);
+		}
 		// Datos basicos del producto
 		String sqlP = "select idproducto, descripcion, tipo_producto as tipo, precio1, precio_pila, id_producto_depende, precio_puntos, promocion, "
-				+ "idpreguntaforzada1, idpreguntaforzada2, idpreguntaforzada3, idpreguntaforzada4, idpreguntaforzada5 "
+				+ cp + " "
 				+ "from pos_central.producto where idproducto = ?";
-		int[] idPreguntas = new int[5];
+		int[] idPreguntas = new int[nPreg];
 
 		try (PreparedStatement ps = con.prepareStatement(sqlP)) {
 			ps.setInt(1, idProducto);
@@ -156,7 +162,7 @@ public class MotorCatalogo extends HttpServlet {
 				resp.put("precioPuntos", rs.getDouble("precio_puntos"));
 				resp.put("promocion", rs.getString("promocion"));
 
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < nPreg; i++) {
 					idPreguntas[i] = rs.getInt("idpreguntaforzada" + (i + 1));
 				}
 			}
