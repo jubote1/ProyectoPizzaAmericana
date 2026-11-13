@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>PLANIFICADOR DE EVENTOS ESPECIALES</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/marca.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="css/jquery-confirm.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+
+    <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+    <script src="js/jquery-confirm.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header-eventos {
+            background: linear-gradient(135deg, #0e2963 0%, #102f6f 60%, #c41224 100%);
+            color: #ffffff;
+            padding: 18px 25px;
+            border-radius: 8px;
+            margin-top: 15px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        /* El color va forzado: marca.css pinta todos los h1-h4 de azul oscuro
+           (--marca-azul), y sobre este degradado el titulo desaparecia. */
+        .header-eventos h2 { margin: 0 0 4px 0; font-weight: 800; letter-spacing: 0.4px; color: #ffffff; }
+        .header-eventos .logo-25 { height: 100px; }
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+        .kpi-card .valor { font-size: 24px; font-weight: 800; color: #0e2963; line-height: 1.1; }
+        .kpi-card .rotulo { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.7px; color: #718096; font-weight: 700; }
+
+        /* ---------------- Calendario ---------------- */
+        .barra-mes {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+        }
+        .titulo-mes { font-size: 20px; font-weight: 800; color: #0e2963; text-transform: capitalize; margin: 0 14px; }
+        table.calendario { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 6px; }
+        table.calendario th {
+            font-size: 11.5px; text-transform: uppercase; letter-spacing: 1px;
+            color: #718096; text-align: center; padding-bottom: 2px; font-weight: 700;
+        }
+        td.dia {
+            vertical-align: top;
+            height: 118px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 5px 6px;
+            transition: box-shadow .12s;
+        }
+        td.dia:hover { box-shadow: 0 2px 10px rgba(14,41,99,0.18); }
+        td.dia.vacio { background: #eef1f5; border-color: #eef1f5; }
+        td.dia.hoy { border: 2px solid #e42528; }
+        td.dia.domingo .numero { color: #c41224; }
+        .numero { font-weight: 800; color: #2d3748; font-size: 14px; }
+        .numero .add {
+            float: right; color: #a0aec0; cursor: pointer; font-size: 12px; visibility: hidden;
+        }
+        td.dia:hover .numero .add { visibility: visible; }
+        .numero .add:hover { color: #0e2963; }
+        .pizzas-dia { float: right; font-size: 10.5px; font-weight: 700; color: #b7791f; margin-right: 6px; }
+        .chip {
+            display: block; cursor: pointer; margin-top: 3px; padding: 3px 5px;
+            border-radius: 4px; font-size: 11px; line-height: 1.25;
+            border-left: 4px solid #a0aec0; background: #f7fafc; color: #2d3748;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .chip:hover { filter: brightness(0.96); }
+        .chip .hora { font-weight: 800; }
+        .chip.TENTATIVO  { border-left-color: #a0aec0; background: #f7fafc; }
+        .chip.APARTADO   { border-left-color: #fdc806; background: #fff8e1; }
+        .chip.CONFIRMADO { border-left-color: #16704f; background: #e5f1ec; }
+        .chip.ENTREGADO  { border-left-color: #102f6f; background: #e9edf7; }
+        .chip.CANCELADO  { border-left-color: #e42528; background: #fdecec; text-decoration: line-through; color: #9b2c2c; }
+
+        .leyenda span { font-size: 11.5px; margin-right: 14px; color: #4a5568; }
+        .leyenda i { font-size: 10px; margin-right: 4px; }
+
+        .badge-estado { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 10px; }
+        .badge-TENTATIVO  { background: #edf2f7; color: #4a5568; }
+        .badge-APARTADO   { background: #fdc806; color: #5a4300; }
+        .badge-CONFIRMADO { background: #16704f; color: #ffffff; }
+        .badge-ENTREGADO  { background: #102f6f; color: #ffffff; }
+        .badge-CANCELADO  { background: #fdecec; color: #9b2c2c; }
+
+        .aviso-ayuda {
+            background: #fff3cd; border-left: 5px solid #ffc107; padding: 10px 14px;
+            border-radius: 4px; margin-bottom: 16px; font-size: 13px; color: #856404;
+        }
+        .obligatorio { color: #e42528; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <div id="cargarMenu"></div>
+    <script type="text/javascript">
+        var loc = window.location;
+        var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+        server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+        var respuesta = '';
+        var usuario = "";
+        $.ajax({
+            url: server + 'ValidarUsuarioAplicacion',
+            dataType: 'json',
+            type: 'post',
+            async: false,
+            success: function (data) {
+                respuesta = data[0].respuesta;
+                usuario = data[0].nombreusuario;
+            }
+        });
+        switch (respuesta) {
+            case 'OK':
+                $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            case 'OKA':
+                $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            case 'OKP':
+                $('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            default:
+                location.href = server + "Index.html";
+                break;
+        }
+    </script>
+
+    <div class="container-fluid" style="padding: 0 30px 40px 30px;">
+
+        <!-- Encabezado -->
+        <div class="header-eventos">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <img src="images/logo-25-anos.png" alt="25 Años Pizza Americana" class="logo-25">
+                </div>
+                <div class="col-md-7">
+                    <h2><i class="fas fa-calendar-check"></i> Planificador de Eventos Especiales</h2>
+                    <p style="margin: 0; color: #e2e8f0; font-size: 13.5px;">
+                        Aquí queda planillado cada evento apartado: quién es el cliente, a qué teléfono se le confirma,
+                        cuántas pizzas y a qué hora. Mes a mes, a la vista de todos.
+                    </p>
+                </div>
+                <div class="col-md-3 text-right">
+                    <button class="btn btn-warning font-weight-bold" id="btn-nuevo" style="background:#fdc806; border-color:#e0a800; color:#0e2963;">
+                        <i class="fas fa-plus-circle"></i> Registrar evento
+                    </button>
+                    <div style="margin-top: 8px; font-size: 12.5px; color: #fdc806;">
+                        <i class="fas fa-user-circle"></i> <span id="label-usuario">Conectando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="aviso-ayuda">
+            <strong><i class="fas fa-info-circle"></i> Cómo se usa:</strong>
+            registre el evento apenas el cliente lo aparte, aunque todavía no haya abonado (queda <strong>TENTATIVO</strong>).
+            Cuando pague el <strong>20%</strong> páselo a <strong>APARTADO</strong>, y cuando la tienda lo cierre, a <strong>CONFIRMADO</strong>.
+            ¿Dudas? <a href="AyudaEventosEspeciales.html" target="_blank"><strong>Abrir la ayuda de Eventos Especiales</strong></a>.
+        </div>
+
+        <!-- Resumen del mes -->
+        <div class="row">
+            <div class="col-md-3"><div class="kpi-card"><div class="valor" id="kpi-eventos">0</div><div class="rotulo">Eventos del mes</div></div></div>
+            <div class="col-md-3"><div class="kpi-card"><div class="valor" id="kpi-pizzas">0</div><div class="rotulo">Pizzas comprometidas</div></div></div>
+            <div class="col-md-3"><div class="kpi-card"><div class="valor" id="kpi-valor">$0</div><div class="rotulo">Valor estimado</div></div></div>
+            <div class="col-md-3"><div class="kpi-card"><div class="valor" id="kpi-anticipos">$0</div><div class="rotulo">Anticipos recibidos</div></div></div>
+        </div>
+
+        <!-- Barra de mes y filtros -->
+        <div class="barra-mes">
+            <div class="row align-items-center">
+                <div class="col-md-5 d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-primary" id="btn-mes-anterior" title="Mes anterior"><i class="fas fa-chevron-left"></i></button>
+                    <h4 class="titulo-mes" id="titulo-mes">...</h4>
+                    <button class="btn btn-sm btn-outline-primary" id="btn-mes-siguiente" title="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-link" id="btn-hoy">Hoy</button>
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select id="filtro-estado" class="form-control form-control-sm">
+                                <option value="">Todos los estados</option>
+                                <option value="TENTATIVO">Tentativos</option>
+                                <option value="APARTADO">Apartados</option>
+                                <option value="CONFIRMADO">Confirmados</option>
+                                <option value="ENTREGADO">Entregados</option>
+                                <option value="CANCELADO">Cancelados</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filtro-tipo" class="form-control form-control-sm">
+                                <option value="">Todo tipo</option>
+                                <option value="NOVENA">Novena</option>
+                                <option value="EMPRESARIAL">Empresarial</option>
+                                <option value="CUMPLEANOS">Cumpleaños</option>
+                                <option value="INSTITUCIONAL">Institucional</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filtro-tienda" class="form-control form-control-sm">
+                                <option value="0">Todas las tiendas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="filtro-texto" class="form-control form-control-sm" placeholder="Cliente, empresa o teléfono">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="leyenda" style="margin-top: 10px;">
+                <span><i class="fas fa-square" style="color:#a0aec0;"></i>Tentativo</span>
+                <span><i class="fas fa-square" style="color:#fdc806;"></i>Apartado (pagó el 20%)</span>
+                <span><i class="fas fa-square" style="color:#16704f;"></i>Confirmado con la tienda</span>
+                <span><i class="fas fa-square" style="color:#102f6f;"></i>Entregado</span>
+                <span><i class="fas fa-square" style="color:#e42528;"></i>Cancelado</span>
+            </div>
+        </div>
+
+        <!-- Vistas -->
+        <ul class="nav nav-tabs" id="pestanas">
+            <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#tab-calendario"><i class="fas fa-calendar-alt"></i> Calendario</a></li>
+            <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#tab-listado"><i class="fas fa-list-ul"></i> Listado</a></li>
+        </ul>
+
+        <div class="tab-content" style="background:#ffffff; border:1px solid #dee2e6; border-top:0; padding:16px; border-radius:0 0 8px 8px;">
+
+            <div class="tab-pane fade show active" id="tab-calendario">
+                <table class="calendario">
+                    <thead>
+                        <tr>
+                            <th>Lunes</th><th>Martes</th><th>Miércoles</th><th>Jueves</th>
+                            <th>Viernes</th><th>Sábado</th><th>Domingo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-calendario"></tbody>
+                </table>
+            </div>
+
+            <div class="tab-pane fade" id="tab-listado">
+                <table id="tabla-eventos" class="table table-striped table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Fecha y hora</th>
+                            <th>Cliente</th>
+                            <th>Evento</th>
+                            <th>Pizzas</th>
+                            <th>Tienda</th>
+                            <th>Valor / Anticipo</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== Modal de registro / edición ================== -->
+    <div class="modal fade" id="modal-evento" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#0e2963; color:#ffffff;">
+                    <h5 class="modal-title"><i class="fas fa-calendar-plus"></i> <span id="modal-titulo">Registrar evento</span></h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-evento">
+                        <input type="hidden" id="ev-idevento" value="0">
+                        <input type="hidden" id="ev-idcliente" value="0">
+                        <input type="hidden" id="ev-idlead" value="0">
+
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>Cliente <span class="obligatorio">*</span></label>
+                                    <input type="text" id="ev-cliente" class="form-control" maxlength="150" placeholder="Nombre de quien responde por el evento" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Teléfono <span class="obligatorio">*</span></label>
+                                    <input type="text" id="ev-telefono" class="form-control" maxlength="50" placeholder="A este número se confirma" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Tipo de evento</label>
+                                    <select id="ev-tipo" class="form-control">
+                                        <option value="NOVENA">Novena</option>
+                                        <option value="EMPRESARIAL">Empresarial</option>
+                                        <option value="CUMPLEANOS">Cumpleaños</option>
+                                        <option value="INSTITUCIONAL">Institucional</option>
+                                        <option value="OTRO">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>Empresa o grupo</label>
+                                    <input type="text" id="ev-empresa" class="form-control" maxlength="150" placeholder="Opcional: oficina, conjunto, familia...">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Correo</label>
+                                    <input type="email" id="ev-email" class="form-control" maxlength="100" placeholder="Para mandarle la propuesta">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Nombre del evento</label>
+                                    <input type="text" id="ev-nombre" class="form-control" maxlength="150" placeholder="Ej: Novena de la oficina">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Fecha del evento <span class="obligatorio">*</span></label>
+                                    <input type="date" id="ev-fecha" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Hora <span class="obligatorio">*</span></label>
+                                    <input type="time" id="ev-hora" class="form-control" value="19:00" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Pizzas <span class="obligatorio">*</span></label>
+                                    <input type="number" id="ev-pizzas" class="form-control" min="1" value="3" required>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label>Tienda que atiende</label>
+                                    <select id="ev-tienda" class="form-control">
+                                        <option value="0">Por definir</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Dirección de entrega</label>
+                            <input type="text" id="ev-direccion" class="form-control" maxlength="250" placeholder="Dónde se entrega el pedido">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Qué pidió</label>
+                            <textarea id="ev-detalle" class="form-control" rows="2" placeholder="Ej: 4 XL (2 hawaianas, 2 americanas) + las 4 gaseosas de obsequio"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Valor estimado</label>
+                                    <input type="number" id="ev-valor" class="form-control" min="0" step="1000" value="0">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Anticipo recibido <small class="text-muted">(20% sugerido)</small></label>
+                                    <input type="number" id="ev-anticipo" class="form-control" min="0" step="1000" value="0">
+                                    <small class="text-muted" id="ev-sugerido"></small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <select id="ev-estado" class="form-control">
+                                        <option value="TENTATIVO">Tentativo (hablado, sin abono)</option>
+                                        <option value="APARTADO">Apartado (pagó el 20%)</option>
+                                        <option value="CONFIRMADO">Confirmado con la tienda</option>
+                                        <option value="ENTREGADO">Entregado</option>
+                                        <option value="CANCELADO">Cancelado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Observación</label>
+                            <textarea id="ev-observacion" class="form-control" rows="2" placeholder="Lo que la tienda necesita saber: con quién hablar al llegar, parqueadero, hora tope..."></textarea>
+                        </div>
+
+                        <div id="ev-pie" class="text-muted" style="font-size:12px;"></div>
+
+                        <div class="text-right" style="margin-top: 10px;">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" style="background:#0e2963; border-color:#0e2963;">
+                                <i class="fas fa-save"></i> Guardar evento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/planificadoreventos.js?v=20261113" type="text/javascript"></script>
+</body>
+</html>
