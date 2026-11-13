@@ -78,3 +78,34 @@ WHERE p.url_html = 'ReporteEmpleadoPreguntas.html'
   AND NOT EXISTS (SELECT 1 FROM pizzaamericana.pantalla_servlet ps WHERE ps.idpantalla = p.idpantalla AND ps.patron_url = '/ConsultarResumenPreguntasEmpleado');
 
 SELECT p.idpantalla, p.nombre, p.url_html FROM pizzaamericana.pantalla p WHERE p.url_html = 'ReporteEmpleadoPreguntas.html';
+
+-- =====================================================================
+-- El rol tambien VE las respuestas: se le dan las pantallas de resultados (todos los empleados y uno por uno).
+-- Quien crea las preguntas tiene que poder ver como les va.
+-- =====================================================================
+INSERT INTO pizzaamericana.rol_pantalla (idrol, idpantalla)
+SELECT r.idrol, p.idpantalla
+FROM pizzaamericana.rol r, pizzaamericana.pantalla p
+WHERE r.nombre = 'Banco de Preguntas a Empleados'
+  AND p.url_html IN ('ResultadoPreguntasEmpleado.html', 'ReporteEmpleadoPreguntas.html')
+  AND NOT EXISTS (SELECT 1 FROM pizzaamericana.rol_pantalla x WHERE x.idrol = r.idrol AND x.idpantalla = p.idpantalla);
+
+-- =====================================================================
+-- QUIEN LO TIENE (decision del 2026-11-13): los lideres de zona (cargo "Supervisor de Operaciones Zona": Dairon
+-- Miranda y Vivian Salazar), la direccion (Ana Maria Foronda) y Juan David Botero (arriba). Para sumar o quitar a
+-- alguien: "Asignar rol a usuario" > "Banco de Preguntas a Empleados".
+-- =====================================================================
+INSERT INTO pizzaamericana.usuario_rol (idusuario, idrol)
+SELECT u.id, r.idrol
+FROM pizzaamericana.usuario u, pizzaamericana.rol r
+WHERE u.nombre IN ('ddmirandap', 'vpsalazar', 'amforonda')
+  AND r.nombre = 'Banco de Preguntas a Empleados'
+  AND NOT EXISTS (SELECT 1 FROM pizzaamericana.usuario_rol ur WHERE ur.idusuario = u.id AND ur.idrol = r.idrol);
+
+SELECT r.nombre AS rol, u.nombre AS usuario, u.nombre_largo
+FROM pizzaamericana.rol r
+JOIN pizzaamericana.usuario_rol ur ON ur.idrol = r.idrol
+JOIN pizzaamericana.usuario u ON u.id = ur.idusuario
+WHERE r.nombre = 'Banco de Preguntas a Empleados' ORDER BY u.nombre_largo;
+SELECT p.url_html FROM pizzaamericana.rol_pantalla rp JOIN pizzaamericana.rol r ON r.idrol = rp.idrol
+JOIN pizzaamericana.pantalla p ON p.idpantalla = rp.idpantalla WHERE r.nombre = 'Banco de Preguntas a Empleados' ORDER BY 1;
