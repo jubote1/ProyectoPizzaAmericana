@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Eventos Especiales</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --hoja:       #F7F8FA;
+    --tarjeta:    #FFFFFF;
+    --tinta:      #12161F;
+    --tinta-2:    #4B5464;
+    --tinta-3:    #7B8494;
+    --linea:      #DEE2E9;
+    --linea-2:    #EDEFF4;
+    --azul:       #102F6F;
+    --azul-suave: #E9EDF7;
+    --rojo:       #E42528;
+    --rojo-suave: #FDECEC;
+    --amarillo:   #FDC806;
+    --amar-suave: #FFF5D6;
+    --amar-tinta: #7A5A00;
+    --verde:      #16704F;
+    --verde-suave:#E5F1EC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --hoja:       #0B0F19;
+      --tarjeta:    #141A27;
+      --tinta:      #EDF0F6;
+      --tinta-2:    #AEB6C6;
+      --tinta-3:    #828B9C;
+      --linea:      #29313F;
+      --linea-2:    #1D2431;
+      --azul:       #86A6E4;
+      --azul-suave: #18213A;
+      --rojo:       #FF7375;
+      --rojo-suave: #38191B;
+      --amarillo:   #FDC806;
+      --amar-suave: #332807;
+      --amar-tinta: #FFD75E;
+      --verde:      #4FBA8D;
+      --verde-suave:#11291F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --hoja:       #0B0F19;
+    --tarjeta:    #141A27;
+    --tinta:      #EDF0F6;
+    --tinta-2:    #AEB6C6;
+    --tinta-3:    #828B9C;
+    --linea:      #29313F;
+    --linea-2:    #1D2431;
+    --azul:       #86A6E4;
+    --azul-suave: #18213A;
+    --rojo:       #FF7375;
+    --rojo-suave: #38191B;
+    --amarillo:   #FDC806;
+    --amar-suave: #332807;
+    --amar-tinta: #FFD75E;
+    --verde:      #4FBA8D;
+    --verde-suave:#11291F;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--hoja);
+    color: var(--tinta);
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hoja { max-width: 880px; margin: 0 auto; padding: 0 22px 90px; }
+  .angosto { max-width: 66ch; }
+  h1, h2, h3, .paso-n, .tot .n { font-family: Manrope, system-ui, sans-serif; }
+  .cifras { font-variant-numeric: tabular-nums; }
+
+  /* portada */
+  header.tapa { padding: 46px 0 4px; border-bottom: 3px solid var(--azul); margin-bottom: 8px; }
+  .marca {
+    display: flex; align-items: center; gap: 11px; margin-bottom: 20px;
+    font-size: 12px; font-weight: 700; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--tinta-3);
+  }
+  .marca .tres { display: flex; gap: 3px; }
+  .marca .tres i { width: 13px; height: 13px; border-radius: 2px; display: block; }
+  h1 {
+    font-weight: 800; font-size: clamp(2.2rem, 6.4vw, 3.6rem); line-height: 1;
+    letter-spacing: -.03em; margin: 0 0 16px; text-wrap: balance;
+  }
+  .lema { font-size: 1.18rem; line-height: 1.45; color: var(--tinta-2); max-width: 46ch; margin: 0 0 22px; }
+  .fichas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .ficha {
+    padding: 5px 12px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: var(--azul-suave); color: var(--azul);
+  }
+  .ficha.viva { background: var(--verde-suave); color: var(--verde); }
+
+  /* vistazo */
+  .vistazo {
+    background: var(--tarjeta); border: 1px solid var(--linea);
+    border-left: 5px solid var(--azul); border-radius: 6px;
+    padding: 22px 26px; margin: 28px 0 0;
+  }
+  .vistazo h2 { font-size: 1.02rem; font-weight: 700; margin: 0 0 12px; }
+  .vistazo ol { margin: 0; padding-left: 20px; }
+  .vistazo li { margin-bottom: 8px; color: var(--tinta-2); }
+  .vistazo li:last-child { margin-bottom: 0; }
+  .vistazo b { color: var(--tinta); font-weight: 700; }
+
+  /* secciones */
+  section { margin-top: 62px; }
+  .rotulo {
+    font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--rojo); margin: 0 0 8px;
+  }
+  h2 {
+    font-weight: 700; font-size: clamp(1.55rem, 3.8vw, 2.1rem); line-height: 1.1;
+    letter-spacing: -.022em; margin: 0 0 16px; text-wrap: balance;
+  }
+  h3 { font-weight: 700; font-size: 1.18rem; line-height: 1.28; letter-spacing: -.012em; margin: 36px 0 10px; }
+  h4.sub { font-family: "Source Sans 3", sans-serif; font-size: 1rem; font-weight: 700; margin: 26px 0 8px; }
+  p { margin: 0 0 15px; }
+  .angosto ul, .angosto ol { margin: 0 0 16px; padding-left: 22px; }
+  .angosto li { margin-bottom: 8px; }
+  strong { font-weight: 700; }
+  .campo {
+    font-weight: 600; background: var(--linea-2); padding: .08em .38em;
+    border-radius: 3px; font-size: .94em;
+  }
+
+  /* ilustraciones */
+  figure { margin: 30px 0; padding: 20px 20px 14px; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 8px; overflow-x: auto; }
+  figure.pantalla { background: #EFF1F6; border-color: #D3D8E2; overflow-x: auto; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 520px; }
+  figure figcaption { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--linea-2); font-size: 14.5px; color: var(--tinta-2); }
+  figure.pantalla figcaption { border-top-color: #D3D8E2; color: #4E5768; }
+  figure figcaption b { font-weight: 700; }
+  figure.pantalla figcaption b { color: #1B2436; }
+  .svg-t { font-family: "Source Sans 3", system-ui, sans-serif; }
+
+  /* pasos numerados */
+  .pasos { margin: 28px 0 0; }
+  .paso {
+    display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 20px;
+    padding: 22px 0; border-top: 1px solid var(--linea);
+  }
+  .paso:last-child { border-bottom: 1px solid var(--linea); }
+  .paso-n { font-size: 1.9rem; font-weight: 800; line-height: .9; color: var(--azul); letter-spacing: -.04em; }
+  .paso h4 { font-family: "Source Sans 3", sans-serif; font-size: 1.05rem; font-weight: 700; margin: 0 0 8px; }
+  .paso p { font-size: 15.5px; color: var(--tinta-2); margin: 0 0 10px; max-width: 62ch; }
+  .paso p:last-child { margin-bottom: 0; }
+  .paso ul { margin: 0; padding-left: 20px; font-size: 15px; color: var(--tinta-2); }
+  .paso li { margin-bottom: 6px; }
+
+  /* avisos */
+  .aviso { border-radius: 6px; padding: 17px 21px; margin: 24px 0; background: var(--azul-suave); border-left: 5px solid var(--azul); }
+  .aviso.ojo { background: var(--amar-suave); border-left-color: var(--amarillo); }
+  .aviso.alerta { background: var(--rojo-suave); border-left-color: var(--rojo); }
+  .aviso.bien { background: var(--verde-suave); border-left-color: var(--verde); }
+  .aviso h4 { font-family: "Source Sans 3", sans-serif; font-size: 15px; font-weight: 700; margin: 0 0 6px; }
+  .aviso p { margin: 0; font-size: 15.5px; color: var(--tinta-2); }
+  .aviso p + p { margin-top: 9px; }
+
+  /* tablas */
+  .caja-tabla { overflow-x: auto; margin: 24px 0; border: 1px solid var(--linea); border-radius: 6px; background: var(--tarjeta); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px; }
+  th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--linea-2); vertical-align: top; }
+  thead th {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--tinta-2); background: var(--linea-2); border-bottom: 1px solid var(--linea); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td b { font-weight: 700; }
+
+  .marbete { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .marbete.pend { background: var(--amar-suave); color: var(--amar-tinta); }
+  .marbete.ok { background: var(--verde-suave); color: var(--verde); }
+  .marbete.no { background: var(--rojo-suave); color: var(--rojo); }
+  .marbete.auto { background: var(--azul-suave); color: var(--azul); }
+
+  /* tipos */
+  .tipos { display: grid; gap: 14px; margin: 26px 0; }
+  @media (min-width: 700px) { .tipos { grid-template-columns: repeat(3, 1fr); } }
+  .tipo { background: var(--tarjeta); border: 1px solid var(--linea); border-top: 4px solid var(--azul); border-radius: 8px; padding: 16px 18px 18px; }
+  .tipo.manual { border-top-color: var(--amarillo); }
+  .tipo h4 { font-family: "Source Sans 3", sans-serif; font-size: 15.5px; font-weight: 700; margin: 0 0 7px; }
+  .tipo p { font-size: 14.5px; color: var(--tinta-2); margin: 0; }
+  .tipo .quien { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 6px; }
+
+  /* reglas */
+  .reglas { list-style: none; margin: 26px 0 0; padding: 0; counter-reset: r; }
+  .reglas li {
+    display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 16px;
+    padding: 15px 0; border-bottom: 1px solid var(--linea-2);
+  }
+  .reglas li::before {
+    counter-increment: r; content: counter(r);
+    font-family: Manrope, sans-serif; font-weight: 800; font-size: 1.2rem;
+    color: var(--rojo); line-height: 1.2;
+  }
+  .reglas b { display: block; font-weight: 700; margin-bottom: 2px; }
+  .reglas span { color: var(--tinta-2); font-size: 15.5px; }
+
+  /* preguntas */
+  .faq { margin: 26px 0 0; border-top: 1px solid var(--linea); }
+  .faq details { border-bottom: 1px solid var(--linea); }
+  .faq summary { cursor: pointer; padding: 15px 32px 15px 0; font-weight: 600; font-size: 16.5px; list-style: none; position: relative; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; position: absolute; right: 4px; top: 12px; font-size: 22px; font-weight: 400; color: var(--rojo); line-height: 1; }
+  .faq details[open] summary::after { content: "\2013"; }
+  .faq summary:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
+  .faq .resp { padding: 0 0 18px; color: var(--tinta-2); font-size: 15.5px; max-width: 64ch; }
+  .faq .resp p { margin: 0 0 10px; }
+  .faq .resp p:last-child { margin: 0; }
+
+  footer { margin-top: 68px; padding-top: 20px; border-top: 3px solid var(--azul); font-size: 14px; color: var(--tinta-3); }
+  footer b { color: var(--tinta-2); font-weight: 600; }
+
+  @media print {
+    body { background: #FFFFFF; font-size: 11pt; }
+    .hoja { max-width: none; padding: 0; }
+    section { margin-top: 24pt; }
+    figure, .paso, .tipo, .reglas li { page-break-inside: avoid; }
+    .faq details { page-break-inside: avoid; }
+    .faq summary::after { content: ""; }
+    .faq .resp { display: block !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="hoja">
+
+<header class="tapa">
+  <div class="marca">
+    <span class="tres"><i style="background:#E42528"></i><i style="background:#FDC806"></i><i style="background:#102F6F"></i></span>
+    <span>Pizza Americana &middot; Contact Center</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:26px; flex-wrap:wrap;">
+    <img src="images/logo-25-anos.png" alt="25 Años Pizza Americana" style="height:140px; flex:0 0 auto;">
+    <div style="flex:1 1 320px;">
+      <h1>Eventos Especiales</h1>
+      <p class="lema">
+        Cómo se vende, se aparta y se deja planillado un evento de fin de año: las dos pantallas
+        del sistema central, los cinco estados y lo que la tienda necesita saber para que las
+        pizzas lleguen calientes el día pactado.
+      </p>
+    </div>
+  </div>
+  <div class="fichas">
+    <span class="ficha viva">Temporada de novenas 2026</span>
+    <span class="ficha">Menú &laquo;Eventos Especiales&raquo;</span>
+    <span class="ficha">Base de 230 clientes</span>
+  </div>
+</header>
+
+<div class="vistazo">
+  <h2>En cinco frases</h2>
+  <ol>
+    <li>En el menú del sistema central hay una opción nueva, <b>Eventos Especiales</b>, con las dos pantallas de la temporada.</li>
+    <li>En <b>Novenas de Fin de Año y 25 Años</b> está la base de clientes a llamar y ahí se registra cada llamada.</li>
+    <li>En el <b>Planificador de Eventos</b> queda planillado el evento: cliente, teléfono, cuántas pizzas, qué día y a qué hora.</li>
+    <li>El planificador se ve como un <b>calendario del mes</b>, así que todo el mundo ve de un vistazo lo que hay programado.</li>
+    <li>Un evento va cambiando de estado: nace <b>TENTATIVO</b>, pasa a <b>APARTADO</b> cuando el cliente abona el 20%, y a <b>CONFIRMADO</b> cuando la tienda lo cierra.</li>
+  </ol>
+</div>
+
+<!-- ===================== 1 ===================== -->
+<section>
+  <p class="rotulo">Dónde queda</p>
+  <h2>La opción del menú</h2>
+  <div class="angosto">
+    <p>
+      Entre al sistema central con su usuario y contraseña. En la barra de arriba, al lado de las
+      opciones de siempre, aparece <span class="campo">Eventos Especiales</span>, resaltada en
+      amarillo y rojo. Al abrirla salen tres cosas:
+    </p>
+  </div>
+
+  <div class="tipos">
+    <div class="tipo">
+      <span class="quien">Pantalla 1</span>
+      <h4>Novenas de Fin de Año y 25 Años</h4>
+      <p>La base de clientes para llamar y la bitácora de cada llamada. Es el trabajo del día.</p>
+    </div>
+    <div class="tipo">
+      <span class="quien">Pantalla 2</span>
+      <h4>Planificador de Eventos</h4>
+      <p>El calendario con todo lo que está programado, y donde se registra cada evento apartado.</p>
+    </div>
+    <div class="tipo manual">
+      <span class="quien">Documento</span>
+      <h4>Ayuda: cómo funciona</h4>
+      <p>Este mismo documento. Queda siempre a la mano desde el menú, se abre en otra pestaña.</p>
+    </div>
+  </div>
+
+  <div class="aviso">
+    <h4>La opción la ve todo el mundo</h4>
+    <p>
+      No depende del rol ni de permisos especiales: Eventos Especiales está fija en el menú para
+      todos los usuarios del sistema central, porque la programación de eventos la necesitan ver
+      tanto el Contact Center como las tiendas y la Gerencia.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section>
+  <p class="rotulo">Lo que se vende</p>
+  <h2>La propuesta de la temporada</h2>
+  <div class="angosto">
+    <p>
+      Antes de tocar el sistema hay que tener clara la oferta, porque es lo que se registra
+      después. Es la misma del guion telefónico de la campaña.
+    </p>
+  </div>
+
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Punto</th><th>Cómo es</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>El obsequio</b></td>
+          <td>De <strong>3 pizzas en adelante</strong>, en cada pizza se regala una bebida de 1.5 L
+              (gaseosa o agua saborizada). 3 pizzas = 3 bebidas, 4 = 4, 5 = 5. Por debajo de 3 pizzas
+              el pedido no entra en la campaña.</td>
+        </tr>
+        <tr>
+          <td><b>Cómo se aparta</b></td>
+          <td>Abonando el <strong>20%</strong> del pedido. El saldo se paga contra entrega. Apartar
+              es lo que le garantiza al cliente turno de horno y despacho a la hora pactada.</td>
+        </tr>
+        <tr>
+          <td><b>Horarios para llamar</b></td>
+          <td>Lunes a viernes de <strong>4:00 p.m. a 6:00 p.m.</strong>; sábados y domingos de
+              <strong>12:00 m. a 5:00 p.m.</strong> Prohibido llamar después de las 6:30 p.m.:
+              es la hora pico de cena y despacho.</td>
+        </tr>
+        <tr>
+          <td><b>Para calcular cuántas</b></td>
+          <td>La pizza grande rinde <strong>8 porciones</strong> y la extragrande
+              <strong>12 porciones</strong>. Con eso se le ayuda al cliente a sacar la cuenta para
+              su grupo.</td>
+        </tr>
+        <tr>
+          <td><b>Para que lo devuelvan a llamar</b></td>
+          <td>El número único es el <strong>604 44 44 553</strong>, pidiendo que lo comuniquen con
+              su asesor.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section>
+  <p class="rotulo">Pantalla 1</p>
+  <h2>Novenas de Fin de Año y 25 Años</h2>
+  <div class="angosto">
+    <p>
+      Esta pantalla trae la base calificada de <strong>230 clientes</strong> que en los últimos
+      meses compraron 3 o más pizzas en un solo pedido. Tiene dos pestañas: la
+      <span class="campo">Base de Clientes Objetivo</span>, que es la lista para llamar, y
+      <span class="campo">Ventas Atribuidas al Asesor</span>, donde se ve lo que ya se cerró.
+    </p>
+  </div>
+
+  <div class="pasos">
+    <div class="paso">
+      <span class="paso-n">1</span>
+      <div>
+        <h4>Busque el cliente</h4>
+        <p>
+          Escriba el teléfono, el correo o el nombre en la barra de búsqueda. Mire antes de llamar
+          lo que ya tiene registrado: cuántas pizzas ha comprado, cuándo fue la última vez y si
+          alguien ya habló con él.
+        </p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">2</span>
+      <div>
+        <h4>Llame y registre la llamada</h4>
+        <p>
+          Terminada la llamada, abra el cliente y guarde la bitácora. <strong>Toda llamada se
+          registra</strong>, haya contestado o no: es lo que evita que al mismo cliente lo llamen
+          tres personas distintas.
+        </p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">3</span>
+      <div>
+        <h4>Tipifique con el estado correcto</h4>
+        <p>
+          Los estados de la bitácora son <span class="campo">INTERESADO</span>,
+          <span class="campo">APARTADO CON 20%</span>, <span class="campo">VOLVER A LLAMAR</span>,
+          <span class="campo">NO INTERESADO</span> y <span class="campo">NO CONTESTA</span>.
+          Si acordó una fecha, anótela en <span class="campo">Fecha Tentativa Evento</span>, y
+          ponga las <span class="campo">Pizzas Estimadas</span>.
+        </p>
+      </div>
+    </div>
+    <div class="paso">
+      <span class="paso-n">4</span>
+      <div>
+        <h4>Escriba la observación como si la fuera a leer otro</h4>
+        <p>
+          Porque la va a leer otro. &laquo;Hablé con Sandra, novena el 18 de diciembre, 5 XL,
+          enviar propuesta al WhatsApp, volver a llamar el viernes&raquo; sirve.
+          &laquo;Interesado&raquo; no sirve para nada.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section>
+  <p class="rotulo">Pantalla 2</p>
+  <h2>El Planificador de Eventos</h2>
+  <div class="angosto">
+    <p>
+      Aquí es donde el evento queda planillado de verdad. La bitácora de la pantalla anterior
+      cuenta la <em>conversación</em>; el planificador cuenta el <em>compromiso</em>: qué día, a
+      qué hora, cuántas pizzas y qué tienda responde.
+    </p>
+    <p>
+      Arriba hay cuatro números del mes que se está viendo: cuántos eventos hay, cuántas pizzas
+      están comprometidas, el valor estimado y cuánta plata se ha recibido en anticipos.
+    </p>
+  </div>
+
+  <h3>Las dos vistas</h3>
+  <div class="tipos">
+    <div class="tipo">
+      <span class="quien">Vista</span>
+      <h4>Calendario</h4>
+      <p>
+        El mes completo, día por día. Cada evento aparece con su hora, el cliente y las pizzas
+        entre paréntesis, y de un color según el estado. En la esquina de cada día va el total de
+        pizzas comprometidas ese día.
+      </p>
+    </div>
+    <div class="tipo">
+      <span class="quien">Vista</span>
+      <h4>Listado</h4>
+      <p>
+        La misma información en tabla, para buscar, ordenar y editar. De aquí se abre un evento, o
+        se le pasa al siguiente estado con el botón de la flecha.
+      </p>
+    </div>
+  </div>
+
+  <h3>Registrar un evento</h3>
+  <div class="angosto">
+    <p>
+      Hay dos caminos: el botón <span class="campo">Registrar evento</span> de arriba a la
+      derecha, o el signo <strong>+</strong> que aparece al pasar el mouse por encima de un día
+      del calendario &mdash; ese ya le pone la fecha.
+    </p>
+  </div>
+
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Campo</th><th>Qué se pone</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Cliente</b> <span style="color:#E42528;font-weight:800;">obligatorio</span></td>
+          <td>El nombre de quien responde por el evento. No el de la empresa: una persona.</td>
+        </tr>
+        <tr>
+          <td><b>Teléfono</b> <span style="color:#E42528;font-weight:800;">obligatorio</span></td>
+          <td>El número al que la tienda va a llamar para confirmar. Sin esto el evento no se guarda.</td>
+        </tr>
+        <tr>
+          <td><b>Tipo de evento</b></td>
+          <td>Novena, Empresarial, Cumpleaños, Institucional u Otro.</td>
+        </tr>
+        <tr>
+          <td><b>Empresa o grupo</b></td>
+          <td>La oficina, el conjunto, el colegio o la familia. Es lo que se muestra en el calendario cuando está diligenciado.</td>
+        </tr>
+        <tr>
+          <td><b>Fecha y hora</b> <span style="color:#E42528;font-weight:800;">obligatorias</span></td>
+          <td>El día del evento y <strong>la hora a la que hay que entregar</strong>, no la hora en que se llamó.</td>
+        </tr>
+        <tr>
+          <td><b>Pizzas</b> <span style="color:#E42528;font-weight:800;">obligatorio</span></td>
+          <td>Cuántas pizzas. Es el número con el que la tienda planea el horno, así que una cifra inflada le hace daño a la operación.</td>
+        </tr>
+        <tr>
+          <td><b>Tienda que atiende</b></td>
+          <td>La que va a despachar. Si todavía no se sabe, se deja en <span class="campo">Por definir</span>.</td>
+        </tr>
+        <tr>
+          <td><b>Qué pidió</b></td>
+          <td>El detalle en palabras: tamaños, sabores y las bebidas de obsequio. Ej: &laquo;4 XL (2 hawaianas, 2 americanas) + las 4 gaseosas&raquo;.</td>
+        </tr>
+        <tr>
+          <td><b>Valor estimado y anticipo</b></td>
+          <td>Lo que vale el pedido y lo que el cliente ya abonó. Al escribir el valor, la pantalla le dice cuánto es el 20%.</td>
+        </tr>
+        <tr>
+          <td><b>Observación</b></td>
+          <td>Lo que la tienda necesita saber: con quién preguntar al llegar, si hay parqueadero, la hora tope.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="aviso">
+    <h4>Si guarda un evento de otro mes, el calendario lo sigue</h4>
+    <p>
+      Registre hoy una novena del 18 de diciembre y la pantalla salta sola a diciembre para
+      mostrársela. No es un error: es para que vea que quedó guardada y dónde quedó.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section>
+  <p class="rotulo">Lo que hay que entender bien</p>
+  <h2>Los cinco estados</h2>
+  <div class="angosto">
+    <p>
+      El estado no es una etiqueta decorativa: es lo que le dice a la tienda qué tan en firme está
+      el evento. Un evento mal tipificado es una tienda que no se prepara, o que se prepara de más.
+    </p>
+  </div>
+
+  <div class="caja-tabla">
+    <table>
+      <thead>
+        <tr><th>Estado</th><th>Qué significa</th><th>Cuándo se pone</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>TENTATIVO</b></td>
+          <td>Está hablado, pero el cliente no ha puesto plata.</td>
+          <td>Apenas el cliente muestra intención con fecha. Es como nace todo evento.</td>
+        </tr>
+        <tr>
+          <td><b>APARTADO</b></td>
+          <td>Ya abonó el 20%. La fecha está reservada.</td>
+          <td>Cuando entra el anticipo. <strong>El sistema no deja poner APARTADO con el anticipo en cero.</strong></td>
+        </tr>
+        <tr>
+          <td><b>CONFIRMADO</b></td>
+          <td>La tienda lo tiene en firme y sabe qué tiene que hornear.</td>
+          <td>Cuando la tienda ya quedó enterada y con el pedido cuadrado.</td>
+        </tr>
+        <tr>
+          <td><b>ENTREGADO</b></td>
+          <td>El evento se cumplió.</td>
+          <td>El mismo día, después de la entrega.</td>
+        </tr>
+        <tr>
+          <td><b>CANCELADO</b></td>
+          <td>Se cayó.</td>
+          <td>Cuando el cliente desiste. <strong>El evento no se borra</strong>: queda cancelado y deja de aparecer en el calendario.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="angosto">
+    <p>
+      En el listado, el botón de la <strong>flecha verde</strong> pasa el evento al siguiente
+      estado, que es el camino normal: TENTATIVO &rarr; APARTADO &rarr; CONFIRMADO &rarr;
+      ENTREGADO. Para cancelar o para devolverse hay que abrir el evento y cambiar el estado a
+      mano.
+    </p>
+  </div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section>
+  <p class="rotulo">Las reglas</p>
+  <h2>Cinco cosas que no se negocian</h2>
+  <ol class="reglas">
+    <li><div><b>Un evento sin teléfono no existe</b><span>La tienda confirma por teléfono el día anterior. Sin número, el pedido se cae y nadie se entera a tiempo.</span></div></li>
+    <li><div><b>APARTADO es con plata</b><span>Si no entró el 20%, el evento es TENTATIVO, por muy seguro que le haya sonado el cliente. Poner APARTADO sin abono le hace creer a la tienda que tiene un pedido firme.</span></div></li>
+    <li><div><b>La hora es la de entrega</b><span>No la hora en que se llamó ni la hora en que empieza la fiesta del cliente: la hora a la que las pizzas tienen que estar allá.</span></div></li>
+    <li><div><b>Nada se borra</b><span>Un evento que se cae se marca CANCELADO. Saber que un cliente apartó y después desistió vale tanto como saber que compró.</span></div></li>
+    <li><div><b>Las pizzas que se registren son las que se van a hornear</b><span>Ese número es con el que la tienda planea masa, queso y personal para ese día. Redondear hacia arriba &laquo;por si acaso&raquo; es botar producto.</span></div></li>
+  </ol>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section>
+  <p class="rotulo">Dudas de todos los días</p>
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq">
+    <details>
+      <summary>¿Registro el evento en la bitácora de Novenas o en el Planificador?</summary>
+      <div class="resp">
+        <p>
+          En las dos, y no es repetir trabajo: son dos cosas distintas. En la
+          <strong>bitácora</strong> queda la llamada &mdash; con quién habló, qué dijo, cuándo
+          volver a llamar. En el <strong>planificador</strong> queda el compromiso &mdash; el día,
+          la hora y las pizzas que alguien tiene que hornear. La bitácora es del asesor; el
+          planificador lo lee la tienda.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>El cliente no me dio fecha exacta todavía</summary>
+      <div class="resp">
+        <p>
+          Entonces todavía no hay evento que planificar. Deje la bitácora con
+          <span class="campo">VOLVER A LLAMAR</span> y la fecha tentativa si la insinuó. Al
+          planificador se sube cuando hay un día, así sea TENTATIVO.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>El cliente cambió la fecha o pidió más pizzas</summary>
+      <div class="resp">
+        <p>
+          Abra el evento desde el calendario o desde el listado, cámbielo y guarde. El sistema
+          guarda quién lo modificó y cuándo, y eso se ve en el pie del formulario. Si la tienda ya
+          estaba en CONFIRMADO, avísele además por el canal de siempre: el sistema no la llama.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>¿Puedo ver los eventos de todas las tiendas?</summary>
+      <div class="resp">
+        <p>
+          Sí. El calendario arranca mostrando todas. Con el filtro
+          <span class="campo">Todas las tiendas</span> puede dejar solo una, y con los otros
+          filtros ver únicamente los apartados, los de un tipo, o buscar por cliente o teléfono.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>Dos eventos el mismo día a la misma hora en la misma tienda</summary>
+      <div class="resp">
+        <p>
+          El sistema los deja registrar: no es su trabajo decidir si la cocina alcanza. Por eso el
+          calendario muestra el total de pizzas comprometidas en la esquina de cada día &mdash;
+          para que al ver un día cargado se hable con la tienda antes de prometer una hora.
+        </p>
+      </div>
+    </details>
+    <details>
+      <summary>Me equivoqué y guardé un evento que no era</summary>
+      <div class="resp">
+        <p>
+          Ábralo y póngalo en <span class="campo">CANCELADO</span>, con una observación que diga
+          qué pasó. No hay borrar, a propósito.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<footer style="margin-top:46px; padding-top:18px; border-top:2px solid var(--linea); color:var(--tinta-3); font-size:13px;">
+  <p style="margin:0;">
+    Pizza Americana &middot; Gerencia de Tecnología y Mercadeo &middot; Documento de apoyo para el
+    Contact Center. Complementa el <em>Guion y Protocolo de Venta Empresarial y Novenas</em>: ese
+    explica qué decirle al cliente, este explica qué hacer en el sistema.
+  </p>
+</footer>
+
+</div>
+
+</body>
+</html>

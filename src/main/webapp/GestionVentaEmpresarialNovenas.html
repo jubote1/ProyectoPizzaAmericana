@@ -36,6 +36,9 @@
             margin: 0 0 5px 0;
             font-weight: 800;
             letter-spacing: 0.5px;
+            /* Forzado: marca.css pinta todos los h1-h4 con --marca-azul, y sobre
+               este degradado azul el titulo quedaba invisible. */
+            color: #ffffff;
         }
         .badge-25 {
             background-color: #fdc806;
@@ -168,12 +171,25 @@
         
         <!-- Header Institucional -->
         <div class="header-campana">
-            <div class="row">
-                <div class="col-md-9">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <img src="images/logo-25-anos.png" alt="25 Años Pizza Americana"
+                         style="height: 110px;">
+                </div>
+                <div class="col-md-7">
                     <span class="badge-25"><i class="fas fa-award"></i> 25 AÑOS PIZZA AMERICANA (2001 - 2026)</span>
-                    <h2><i class="fas fa-building"></i> Gestión Comercial: Venta Empresarial & Novenas</h2>
+                    <h2><i class="fas fa-building"></i> Gestión Comercial: Venta Empresarial &amp; Novenas</h2>
                     <p style="margin: 0; color: #e2e8f0; font-size: 13.5px;">
                         Módulo de contacto en horas suaves, registro de bitácora y monitoreo de ventas atribuidas (mínimo 3 pizzas).
+                    </p>
+                    <p style="margin: 6px 0 0 0; font-size: 13px;">
+                        <a href="PlanificadorEventos.html" style="color:#fdc806; font-weight:700;">
+                            <i class="fas fa-calendar-check"></i> Planificar un evento apartado
+                        </a>
+                        <span style="color:#8fa3cc;"> · </span>
+                        <a href="AyudaEventosEspeciales.html" target="_blank" style="color:#fdc806; font-weight:700;">
+                            <i class="fas fa-question-circle"></i> Ayuda
+                        </a>
                     </p>
                 </div>
                 <div class="col-md-3 text-right" style="padding-top: 10px;">
