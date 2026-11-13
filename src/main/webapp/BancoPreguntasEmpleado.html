@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>BANCO DE PREGUNTAS A EMPLEADOS</title>
+		<meta charset="utf-8" />
+		<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/marca.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<script type="text/javascript" src="js/bootstrap.min.js"></script>
+		<style type="text/css">
+			body { background:#f4f6f8; }
+			.bp-wrap { padding:15px 25px 40px; }
+			.bp-sub { color:#666; font-size:12.5px; margin:0 0 14px; }
+			.bp-barra { background:#fff; border:1px solid #ddd; border-radius:6px; padding:12px 14px; margin-bottom:14px; }
+			.bp-filtro { display:inline-block; padding:5px 13px; border:1px solid #cfd6e4; border-radius:16px; margin:0 6px 6px 0;
+				cursor:pointer; font-size:12.5px; color:#102F6F; background:#fff; user-select:none; }
+			.bp-filtro.activo { background:#102F6F; color:#fff; border-color:#102F6F; }
+			.bp-kpis { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+			.bp-kpi { flex:1 1 150px; background:#fff; border:1px solid #e2e6ec; border-radius:6px; padding:10px 14px; }
+			.bp-kpi .v { font-size:26px; font-weight:700; color:#102F6F; line-height:1.1; }
+			.bp-kpi .r { font-size:11px; color:#777; text-transform:uppercase; letter-spacing:.5px; }
+			.bp-tarjetas { display:flex; flex-wrap:wrap; gap:14px; }
+			.bp-tarjeta { flex:1 1 440px; max-width:640px; background:#fff; border:1px solid #ddd; border-radius:8px; padding:14px 16px;
+				border-top:4px solid #102F6F; }
+			.bp-tarjeta.inactiva { border-top-color:#aaa; opacity:.85; }
+			.bp-tarjeta.vencida { border-top-color:#ef6c00; }
+			.bp-tarjeta.programada { border-top-color:#1976d2; }
+			.bp-estado { display:inline-block; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:10px; text-transform:uppercase; letter-spacing:.4px; }
+			.bp-estado.vigente { background:#d5f5e3; color:#1e6b3a; }
+			.bp-estado.inactiva { background:#e5e5e5; color:#666; }
+			.bp-estado.vencida { background:#fdebd0; color:#a04000; }
+			.bp-estado.programada { background:#d6eaf8; color:#1a5276; }
+			.bp-pregunta { font-size:15.5px; font-weight:700; color:#102F6F; margin:8px 0 10px; line-height:1.3; }
+			.bp-opcion { padding:6px 10px; border-radius:5px; margin-bottom:5px; font-size:13px; border:1px solid #e5e8ee; background:#fafbfc; }
+			.bp-opcion.ok { background:#e8f6ee; border-color:#b6dec9; color:#1e6b3a; font-weight:600; }
+			.bp-opcion .marca { display:inline-block; width:18px; font-weight:700; }
+			.bp-chip { display:inline-block; font-size:11px; background:#eef1f8; color:#102F6F; border-radius:10px; padding:2px 9px; margin:0 4px 4px 0; }
+			.bp-chip.todos { background:#FDC806; color:#102F6F; font-weight:700; }
+			.bp-meta { font-size:11.5px; color:#777; margin-top:8px; }
+			.bp-barra-acierto { height:8px; background:#e9ecf2; border-radius:4px; overflow:hidden; margin-top:4px; }
+			.bp-barra-acierto > span { display:block; height:100%; background:#2e7d32; }
+			.bp-acciones { margin-top:10px; border-top:1px solid #eee; padding-top:10px; }
+			.bp-acciones .btn { margin-right:6px; }
+			.bp-vacio { text-align:center; color:#888; padding:40px 10px; background:#fff; border:1px dashed #ccd; border-radius:8px; }
+			#bpAviso { display:none; margin-bottom:12px; }
+			/* Editor */
+			.bp-cargos label { display:inline-block; margin:0 8px 6px 0; padding:4px 10px; border:1px solid #cfd6e4; border-radius:14px; cursor:pointer;
+				font-weight:normal; font-size:12.5px; background:#fff; }
+			.bp-cargos label.sel { background:#102F6F; color:#fff; border-color:#102F6F; }
+			.bp-cargos label.todos { border-color:#FDC806; background:#fff8dc; font-weight:700; color:#102F6F; }
+			.bp-cargos label.todos.sel { background:#FDC806; color:#102F6F; }
+			.bp-fila-op { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
+			.bp-fila-op input[type=text] { flex:1; }
+			.bp-fila-op .bp-correcta { white-space:nowrap; font-size:12px; font-weight:normal; margin:0; cursor:pointer; color:#1e6b3a; }
+			.bp-previa { background:#fff; border:1px solid #9d9d9d; border-radius:2px; padding:16px; text-align:center; }
+			.bp-previa .t { color:#202875; font-weight:700; font-size:15px; margin-bottom:8px; }
+			.bp-previa .q { font-size:14px; margin-bottom:12px; }
+			.bp-previa .o { display:inline-block; min-width:110px; margin:4px; padding:12px 10px; background:#202875; color:#fff; border-radius:4px; font-weight:700; font-size:13px; }
+			input[type=date].form-control { padding-left:6px; padding-right:2px; font-size:13px; }
+			.bp-contador { font-size:11px; color:#888; float:right; }
+		</style>
+	</head>
+	<body>
+
+		<div id="cargarMenu"></div>
+		<script type="text/javascript">
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = "";
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function (data) {
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+				}
+			});
+			switch (respuesta) {
+				case 'OK':
+					$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKA':
+					$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				case 'OKP':
+					$('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+					break;
+				default:
+					location.href = server + "Index.html";
+					break;
+			}
+		</script>
+
+		<div class="container-fluid bp-wrap">
+
+			<h1 style="font-size:24px;">BANCO DE PREGUNTAS A EMPLEADOS</h1>
+			<p class="bp-sub">
+				Las preguntas que el huellero del POS le hace al empleado cada vez que da ingreso. Cada ingreso lleva <b>una pregunta</b>
+				del banco que le aplique a su cargo, la que <b>menos ha contestado</b> (primero las que nunca ha visto), y debe
+				contestarla para seguir. Lo que responde queda guardado y se ve en
+				<a href="ResultadoPreguntasEmpleado.html">Resultado de las preguntas por empleado</a>.
+			</p>
+
+			<div id="bpAviso" class="alert"></div>
+
+			<div class="bp-kpis">
+				<div class="bp-kpi"><div class="v" id="kVigentes">-</div><div class="r">Preguntas vigentes</div></div>
+				<div class="bp-kpi"><div class="v" id="kTotal">-</div><div class="r">Preguntas en el banco</div></div>
+				<div class="bp-kpi"><div class="v" id="kRespuestas">-</div><div class="r">Respuestas dadas</div></div>
+				<div class="bp-kpi"><div class="v" id="kAcierto">-</div><div class="r">% de acierto</div></div>
+			</div>
+
+			<div class="bp-barra">
+				<div class="row">
+					<div class="col-md-5">
+						<span class="bp-filtro activo" data-estado="todas">Todas</span>
+						<span class="bp-filtro" data-estado="vigentes">Vigentes</span>
+						<span class="bp-filtro" data-estado="inactivas">Inactivas</span>
+						<span class="bp-filtro" data-estado="vencidas">Vencidas</span>
+					</div>
+					<div class="col-md-3">
+						<select id="fCargo" class="form-control input-sm"><option value="0">Todos los cargos</option></select>
+					</div>
+					<div class="col-md-2">
+						<input type="text" id="fBuscar" class="form-control input-sm" placeholder="Buscar en la pregunta...">
+					</div>
+					<div class="col-md-2 text-right">
+						<button id="btnNueva" class="btn btn-primary btn-sm">+ Nueva pregunta</button>
+					</div>
+				</div>
+			</div>
+
+			<div id="bpTarjetas" class="bp-tarjetas"></div>
+			<div id="bpVacio" class="bp-vacio" style="display:none;">No hay preguntas con ese filtro.</div>
+		</div>
+
+		<!-- ================= EDITOR ================= -->
+		<div class="modal fade" id="modalPregunta" tabindex="-1" role="dialog" data-backdrop="static">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title" id="mpTitulo">Pregunta</h4>
+					</div>
+					<div class="modal-body">
+						<div id="mpAviso" class="alert alert-danger" style="display:none;"></div>
+						<input type="hidden" id="mpId" value="0">
+						<div class="row">
+							<div class="col-md-7">
+								<div class="form-group">
+									<label>La pregunta <span class="bp-contador" id="mpContador"></span></label>
+									<textarea id="mpDescripcion" class="form-control" rows="3" maxlength="500"
+										placeholder="Por ejemplo: ¿Cuánto tiempo prometemos para entregar un domicilio?"></textarea>
+								</div>
+
+								<div class="form-group">
+									<label>Opciones de respuesta <small style="font-weight:normal;color:#888;">(de 2 a 6; marque cuál es la correcta)</small></label>
+									<div id="mpOpciones"></div>
+									<button type="button" id="mpAgregarOpcion" class="btn btn-default btn-xs">+ Agregar opción</button>
+								</div>
+
+								<div class="form-group">
+									<label>¿A qué cargos les aplica?</label>
+									<div id="mpCargos" class="bp-cargos"></div>
+									<small style="color:#888;">Puede escoger varios cargos o &laquo;Todos los cargos&raquo;. &laquo;Todos&raquo; incluye también los cargos que se creen después.</small>
+								</div>
+
+								<div class="row">
+									<div class="col-sm-4">
+										<div class="form-group">
+											<label>Vigente desde</label>
+											<input type="date" id="mpDesde" class="form-control">
+										</div>
+									</div>
+									<div class="col-sm-4">
+										<div class="form-group">
+											<label>Hasta</label>
+											<input type="date" id="mpHasta" class="form-control">
+										</div>
+									</div>
+									<div class="col-sm-4">
+										<div class="form-group">
+											<label>&nbsp;</label>
+											<div class="checkbox" style="margin-top:0;"><label><input type="checkbox" id="mpActiva" checked> Activa</label></div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-md-5">
+								<label>Así la ve el empleado en el huellero</label>
+								<div class="bp-previa" id="mpPrevia"></div>
+								<p class="bp-sub" style="margin-top:10px;">
+									El cuadro del huellero no se puede cerrar sin contestar. Si el empleado falla, se le muestra la respuesta
+									correcta. Todo queda guardado con la fecha, la tienda y si acertó.
+								</p>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+						<button type="button" class="btn btn-primary" id="mpGuardar">Guardar pregunta</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript" src="js/bancopreguntasempleado.js"></script>
+	</body>
+</html>

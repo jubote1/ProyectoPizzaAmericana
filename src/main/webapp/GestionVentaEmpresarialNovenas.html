@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>CAMPAÑA 25 AÑOS - GESTIÓN VENTA EMPRESARIAL Y NOVENAS</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/marca.css" rel="stylesheet" type="text/css" />
+    <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
+    <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="css/jquery-confirm.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" crossorigin="anonymous">
+    
+    <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+    <script src="js/jquery-confirm.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="js/datepicker.js"></script>
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header-campana {
+            background: linear-gradient(135deg, #0e2963 0%, #102f6f 60%, #c41224 100%);
+            color: #ffffff;
+            padding: 22px 25px;
+            border-radius: 8px;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header-campana h2 {
+            margin: 0 0 5px 0;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            /* Forzado: marca.css pinta todos los h1-h4 con --marca-azul, y sobre
+               este degradado azul el titulo quedaba invisible. */
+            color: #ffffff;
+        }
+        .badge-25 {
+            background-color: #fdc806;
+            color: #0e2963;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .banner-gancho {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            color: #856404;
+        }
+        .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover {
+            color: #0e2963;
+            font-weight: 800;
+            border-top: 3px solid #e42528;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
+        .kpi-card h3 {
+            margin: 5px 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: #0e2963;
+        }
+        .kpi-card p {
+            margin: 0;
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .badge-empresa {
+            background-color: #e42528;
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .badge-potencial {
+            background-color: #3182ce;
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .badge-volumen {
+            background-color: #d69e2e;
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .badge-grupal {
+            background-color: #718096;
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .timeline-item {
+            border-left: 3px solid #3182ce;
+            padding-left: 14px;
+            margin-bottom: 14px;
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 2px;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: #3182ce;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cargarMenu"></div>
+    <script type="text/javascript">
+        var loc = window.location;
+        var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+        server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+        var respuesta = '';
+        var usuario = "";
+        $.ajax({ 
+            url: server + 'ValidarUsuarioAplicacion', 
+            dataType: 'json',
+            type: 'post', 
+            async: false, 
+            success: function(data){
+                respuesta = data[0].respuesta;	
+                usuario = data[0].nombreusuario;	
+            } 
+        });
+        switch(respuesta) {
+            case 'OK':
+                $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            case 'OKA':
+                $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            case 'OKP':
+                $('#cargarMenu').load("MenuPQRS.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            default:
+                location.href = server +"Index.html";
+                break;
+        }
+    </script>
+
+    <div class="container-fluid" style="padding: 0 35px 40px 35px;">
+        
+        <!-- Header Institucional -->
+        <div class="header-campana">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <img src="images/logo-25-anos.png" alt="25 Años Pizza Americana"
+                         style="height: 110px;">
+                </div>
+                <div class="col-md-7">
+                    <span class="badge-25"><i class="fas fa-award"></i> 25 AÑOS PIZZA AMERICANA (2001 - 2026)</span>
+                    <h2><i class="fas fa-building"></i> Gestión Comercial: Venta Empresarial &amp; Novenas</h2>
+                    <p style="margin: 0; color: #e2e8f0; font-size: 13.5px;">
+                        Módulo de contacto en horas suaves, registro de bitácora y monitoreo de ventas atribuidas (mínimo 3 pizzas).
+                    </p>
+                    <p style="margin: 6px 0 0 0; font-size: 13px;">
+                        <a href="PlanificadorEventos.html" style="color:#fdc806; font-weight:700;">
+                            <i class="fas fa-calendar-check"></i> Planificar un evento apartado
+                        </a>
+                        <span style="color:#8fa3cc;"> · </span>
+                        <a href="AyudaEventosEspeciales.html" target="_blank" style="color:#fdc806; font-weight:700;">
+                            <i class="fas fa-question-circle"></i> Ayuda
+                        </a>
+                    </p>
+                </div>
+                <div class="col-md-3 text-right" style="padding-top: 10px;">
+                    <span style="font-size: 14px; color: #fdc806;"><i class="fas fa-user-circle"></i> Asesor Activo:</span>
+                    <h4 id="label-asesor" style="margin: 3px 0 0 0; color: #ffffff; font-weight: 800;">Conectando...</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner de Gancho Comercial -->
+        <div class="banner-gancho">
+            <strong><i class="fas fa-gift"></i> PROPUESTA COMERCIAL ACTIVA:</strong>
+            Por pedidos de <strong>3 o más pizzas</strong> para novenas y despedidas de año, obsequiamos la <strong>gaseosa familiar gratis</strong>.
+            ¡Anime al cliente a <strong>apartar (pisar) su pedido y fecha con solo el 20% de anticipo</strong> para garantizar turno de horneado y despacho caliente!
+        </div>
+
+        <!-- Pestañas de Navegación -->
+        <ul class="nav nav-tabs" style="margin-bottom: 20px;">
+            <li class="active"><a data-toggle="tab" href="#tab-leads"><i class="fas fa-users"></i> Base de Clientes Objetivo (Leads)</a></li>
+            <li><a data-toggle="tab" href="#tab-ventas"><i class="fas fa-chart-line"></i> Ventas Atribuidas al Asesor (&ge; 3 Pizzas)</a></li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <!-- PESTAÑA 1: LEADS Y BITÁCORA -->
+            <div id="tab-leads" class="tab-pane fade in active">
+                
+                <!-- Barra de Búsqueda y Filtros -->
+                <div class="card mb-3">
+                    <div class="card-body" style="background: #ffffff;">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <label><i class="fas fa-search"></i> Búsqueda Rápida:</label>
+                                <input type="text" id="filtro-texto" class="form-control" placeholder="Buscar por Teléfono, Correo, Nombre o Empresa..." onkeyup="if(event.keyCode==13) cargarLeads();">
+                            </div>
+                            <div class="col-md-3">
+                                <label><i class="fas fa-filter"></i> Clasificación:</label>
+                                <select id="filtro-clasificacion" class="form-control" onchange="cargarLeads()">
+                                    <option value="TODAS">-- Todas las Clasificaciones --</option>
+                                    <option value="Empresa / Organizacion Confirmada">Empresas Confirmadas (NIT / Razón Social)</option>
+                                    <option value="Potencial Empresa / Sede / Oficina">Potencial Empresa / Sede / Oficina</option>
+                                    <option value="Comprador Grupal / Familiar de Volumen">Comprador Grupal / Familiar de Volumen (&ge; 3 pizzas)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label><i class="fas fa-phone"></i> Estado Gestión:</label>
+                                <select id="filtro-estado" class="form-control" onchange="cargarLeads()">
+                                    <option value="TODOS">-- Todos los Estados --</option>
+                                    <option value="PENDIENTE">Pendiente por Llamar</option>
+                                    <option value="INTERESADO">Interesado</option>
+                                    <option value="APARTADO_CON_20%">Apartado con 20%</option>
+                                    <option value="VOLVER_A_LLAMAR">Volver a Llamar</option>
+                                    <option value="NO_INTERESADO">No Interesado</option>
+                                    <option value="NO_CONTESTA">No Contesta</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2" style="padding-top: 25px;">
+                                <button type="button" class="btn btn-primary btn-block" onclick="cargarLeads()">
+                                    <i class="fas fa-filter"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Leads -->
+                <div class="card mb-3">
+                    <div class="card-header" style="background: #0e2963; color: white;">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4 style="margin: 0; font-weight: 700;"><i class="fas fa-address-book"></i> Clientes Precargados Calificados (&ge; 3 Pizzas)</h4>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <span id="contador-leads" class="badge" style="background: #fdc806; color: #0e2963; font-size: 13px;">0 Clientes</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 15px;">
+                        <div class="table-responsive">
+                            <table id="tabla-leads" class="table table-striped table-hover table-bordered" style="width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: #f1f5f9; color: #0e2963;">
+                                        <th>Contacto / Cliente</th>
+                                        <th>Organización / Dirección</th>
+                                        <th>Pizzas en Pedido (Calificación)</th>
+                                        <th>Factura Electrónica</th>
+                                        <th>Clasificación</th>
+                                        <th>Estado Gestión</th>
+                                        <th style="text-align: center;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PESTAÑA 2: VENTAS ATRIBUIDAS -->
+            <div id="tab-ventas" class="tab-pane fade">
+                
+                <!-- Filtros de Ventas Atribuidas -->
+                <div class="card mb-3">
+                    <div class="card-body" style="background: #ffffff;">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label><i class="fas fa-user"></i> Asesor:</label>
+                                <input type="text" id="ventas-asesor" class="form-control" placeholder="Todos o usuario...">
+                            </div>
+                            <div class="col-md-3">
+                                <label><i class="fas fa-calendar-alt"></i> Fecha Inicial:</label>
+                                <input type="text" id="ventas-fechaini" class="form-control" placeholder="YYYY-MM-DD">
+                            </div>
+                            <div class="col-md-3">
+                                <label><i class="fas fa-calendar-alt"></i> Fecha Final:</label>
+                                <input type="text" id="ventas-fechafin" class="form-control" placeholder="YYYY-MM-DD">
+                            </div>
+                            <div class="col-md-3" style="padding-top: 25px;">
+                                <button type="button" class="btn btn-success btn-block" onclick="cargarVentasAtribuidas()">
+                                    <i class="fas fa-calculator"></i> Consultar Ventas Atribuidas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjetas KPI de Ventas -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="kpi-card" style="border-top: 4px solid #3182ce;">
+                            <p>Pedidos Calificados (&ge; 3 pizzas)</p>
+                            <h3 id="kpi-pedidos">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card" style="border-top: 4px solid #e42528;">
+                            <p>Total Pizzas Vendidas</p>
+                            <h3 id="kpi-pizzas">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card" style="border-top: 4px solid #38a169;">
+                            <p>Ventas Netas Totales</p>
+                            <h3 id="kpi-ventas">$ 0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="kpi-card" style="border-top: 4px solid #d69e2e;">
+                            <p>Comisiones Estimadas (2%)</p>
+                            <h3 id="kpi-comisiones">$ 0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="font-size: 12.5px;">
+                    <i class="fas fa-info-circle"></i> <strong>Regla de Atribución Comercial:</strong> Solo se computan y comisionan pedidos cerrados que contengan <strong>tres (3) o más pizzas</strong> realizadas por clientes contactados previamente por el asesor. Pedidos individuales con 1 o 2 pizzas quedan estrictamente excluidos.
+                </div>
+
+                <!-- Tabla de Ventas Atribuidas -->
+                <div class="card mb-3">
+                    <div class="card-header" style="background: #2b6cb0; color: white;">
+                        <h4 style="margin: 0; font-weight: 700;"><i class="fas fa-receipt"></i> Detalle de Pedidos Atribuidos Calificados</h4>
+                    </div>
+                    <div class="card-body" style="padding: 15px;">
+                        <div class="table-responsive">
+                            <table id="tabla-ventas" class="table table-striped table-hover table-bordered" style="width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: #f1f5f9; color: #0e2963;">
+                                        <th>Id Pedido</th>
+                                        <th>Tienda</th>
+                                        <th>Fecha Pedido</th>
+                                        <th>Cliente / Empresa</th>
+                                        <th>Teléfono</th>
+                                        <th>Asesor Contacto</th>
+                                        <th>Fecha Contacto</th>
+                                        <th>Pizzas (&ge; 3)</th>
+                                        <th>Valor Neto</th>
+                                        <th>Comisión (2%)</th>
+                                        <th>Detalle Pizzas</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL DE BITÁCORA Y REGISTRO DE CONTACTO -->
+    <div id="modalBitacora" class="modal fade" role="dialog" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #0e2963; color: white;">
+                    <h4 class="modal-title"><i class="fas fa-headset"></i> Registro de Bitácora &amp; Llamada Contact Center</h4>
+                    <button type="button" class="close" data-dismiss="modal" style="color: white; opacity: 1;">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    
+                    <!-- Ficha Resumen del Cliente -->
+                    <div class="well well-sm" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4 id="modal-nombre" style="margin: 0 0 5px 0; font-weight: 800; color: #0e2963;"></h4>
+                                <p style="margin: 0; font-size: 12px; color: #4a5568;">
+                                    <i class="fas fa-building"></i> <strong id="modal-empresa"></strong><br>
+                                    <i class="fas fa-map-marker-alt"></i> <span id="modal-direccion"></span>
+                                </p>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <p style="margin: 0; font-size: 13px;">
+                                    <i class="fas fa-phone-alt"></i> <strong id="modal-telefono" style="font-size: 15px; color: #e42528;"></strong><br>
+                                    <i class="fas fa-envelope"></i> <span id="modal-email"></span><br>
+                                    <span id="modal-fe-badge" class="badge" style="background: #38a169;"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <hr style="margin: 8px 0;">
+                        <div style="font-size: 11.5px; color: #718096;">
+                            <strong>Historial:</strong> <span id="modal-historial"></span> | 
+                            <strong>Pizzas preferidas:</strong> <span id="modal-pizzas"></span>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de Registro -->
+                    <form id="form-bitacora">
+                        <input type="hidden" id="modal-idlead">
+                        <input type="hidden" id="modal-idcliente">
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><i class="fas fa-tag"></i> Resultado de la Llamada: *</label>
+                                    <select id="modal-estado" class="form-control" required>
+                                        <option value="INTERESADO">Interesado (En seguimiento)</option>
+                                        <option value="APARTADO_CON_20%">¡APARTADO CON 20%! (Cierre)</option>
+                                        <option value="VOLVER_A_LLAMAR">Volver a Llamar</option>
+                                        <option value="NO_INTERESADO">No Interesado</option>
+                                        <option value="NO_CONTESTA">No Contesta / Buzón</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><i class="fas fa-calendar-day"></i> Fecha Tentativa Evento:</label>
+                                    <input type="date" id="modal-fechatentativa" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label><i class="fas fa-pizza-slice"></i> Pizzas Estimadas (&ge; 3):</label>
+                                    <input type="number" id="modal-pizzasestimadas" class="form-control" min="0" value="4">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label><i class="fas fa-edit"></i> Bitácora / Notas de la Conversación: *</label>
+                            <textarea id="modal-observacion" class="form-control" rows="3" placeholder="Ej: Hablé con el encargado de compras, celebran novena el 18 de dic, interesados en combo de 5 pizzas XL con gaseosa gratis. Solicita propuesta al correo..." required></textarea>
+                        </div>
+
+                        <div class="text-right">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" style="background: #0e2963; border-color: #0e2963;">
+                                <i class="fas fa-save"></i> Guardar en Bitácora
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Historial previo en bitácora -->
+                    <hr>
+                    <h5 style="font-weight: 800; color: #0e2963;"><i class="fas fa-history"></i> Historial de Contactos Previos:</h5>
+                    <div id="modal-timeline" style="max-height: 180px; overflow-y: auto; padding: 5px;"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/gestionventaempresarialnovenas.js?v=20261112b" type="text/javascript"></script>
+</body>
+</html>

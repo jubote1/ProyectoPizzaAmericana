@@ -30,7 +30,7 @@ public class CatalogoPos {
 		/** precio1..precio10 por nombre de columna. */
 		public Map<String, Double> precios = new HashMap<String, Double>();
 		/** Ids de las preguntas forzadas, en orden (0 = sin pregunta). */
-		public int[] preguntas = new int[5];
+		public int[] preguntas = new int[10];
 
 		public double precio(String columna) {
 			Double v = precios.get(columna);
@@ -155,11 +155,28 @@ public class CatalogoPos {
 		return horarios.get(idProducto);
 	}
 
+	/** Cuantas columnas idpreguntaforzadaN tiene pos_central.producto: 5, o 10 con la migracion 2026_11_12_01. */
+	public static int cantidadPreguntas(Connection con) {
+		try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery("select count(*) from information_schema.columns "
+				+ "where table_schema = 'pos_central' and table_name = 'producto' and column_name in ('idpreguntaforzada6', "
+				+ "'idpreguntaforzada7', 'idpreguntaforzada8', 'idpreguntaforzada9', 'idpreguntaforzada10')")) {
+			if (rs.next() && rs.getInt(1) == 5) {
+				return 10;
+			}
+		} catch (Exception e) {
+			// si no se puede saber, se asume lo de siempre
+		}
+		return 5;
+	}
+
 	public static CatalogoPos cargar(Connection con) throws Exception {
 		CatalogoPos cat = new CatalogoPos();
+		final int nPreg = cantidadPreguntas(con);
 		StringBuilder sel = new StringBuilder("select idproducto, descripcion, tipo_producto, precio_pila, no_venta, "
-				+ "id_producto_depende, precio_puntos, promocion, "
-				+ "idpreguntaforzada1, idpreguntaforzada2, idpreguntaforzada3, idpreguntaforzada4, idpreguntaforzada5");
+				+ "id_producto_depende, precio_puntos, promocion");
+		for (int i = 1; i <= nPreg; i++) {
+			sel.append(", idpreguntaforzada").append(i);
+		}
 		for (String c : COLUMNAS) {
 			sel.append(", ").append(c);
 		}
@@ -175,11 +192,11 @@ public class CatalogoPos {
 				p.idProductoDepende = rs.getInt(6);
 				p.precioPuntos = rs.getDouble(7);
 				p.promocion = rs.getString(8);
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < nPreg; i++) {
 					p.preguntas[i] = rs.getInt(9 + i);
 				}
 				for (int i = 0; i < COLUMNAS.length; i++) {
-					p.precios.put(COLUMNAS[i], rs.getDouble(14 + i));
+					p.precios.put(COLUMNAS[i], rs.getDouble(9 + nPreg + i));
 				}
 				cat.productos.put(p.id, p);
 			}

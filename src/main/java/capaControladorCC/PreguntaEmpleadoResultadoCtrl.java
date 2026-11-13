@@ -92,6 +92,109 @@ public class PreguntaEmpleadoResultadoCtrl {
 		return (respuesta.toJSONString());
 	}
 
+	/**
+	 * El reporte completo de UN empleado en un rango: quien es, cuanto contesto y acerto, como le fue frente a su
+	 * cargo y a la empresa, semana a semana, por pregunta, lo que fallo, lo que no ha contestado y cada respuesta.
+	 */
+	@SuppressWarnings("unchecked")
+	public static String consultarReporte(final int idEmpleado, final String desde, final String hasta) {
+		final JSONObject respuesta = new JSONObject();
+		if (idEmpleado <= 0 || desde == null || desde.length() == 0 || hasta == null || hasta.length() == 0) {
+			respuesta.put("error", "Falta el empleado o el rango de fechas.");
+			return (respuesta.toJSONString());
+		}
+		try {
+			final PreguntaEmpleadoResultadoDAO.Empleado emp = PreguntaEmpleadoResultadoDAO.obtenerEmpleado(idEmpleado);
+			if (emp == null) {
+				respuesta.put("error", "El empleado " + idEmpleado + " no existe.");
+				return (respuesta.toJSONString());
+			}
+			final JSONObject e = new JSONObject();
+			e.put("id", emp.id);
+			e.put("nombre", emp.nombre);
+			e.put("nombrelargo", emp.nombreLargo);
+			e.put("cargo", emp.cargo);
+			e.put("activo", emp.activo);
+			respuesta.put("empleado", e);
+			respuesta.put("desde", desde);
+			respuesta.put("hasta", hasta);
+
+			final PreguntaEmpleadoResultadoDAO.Totales t = PreguntaEmpleadoResultadoDAO.obtenerTotales(idEmpleado, desde, hasta);
+			final JSONObject k = new JSONObject();
+			k.put("respondidas", t.respondidas);
+			k.put("correctas", t.correctas);
+			k.put("incorrectas", t.respondidas - t.correctas);
+			k.put("porcentaje", porcentaje(t.correctas, t.respondidas));
+			k.put("distintas", t.distintas);
+			k.put("primera", t.primera);
+			k.put("ultima", t.ultima);
+			respuesta.put("kpis", k);
+
+			final PreguntaEmpleadoResultadoDAO.Comparativo c = PreguntaEmpleadoResultadoDAO.obtenerComparativo(emp.idTipo, desde,
+					hasta);
+			final JSONObject cmp = new JSONObject();
+			cmp.put("cargoempleados", c.cargoEmpleados);
+			cmp.put("cargorespondidas", c.cargoRespondidas);
+			cmp.put("cargoporcentaje", porcentaje(c.cargoCorrectas, c.cargoRespondidas));
+			cmp.put("empresarespondidas", c.empresaRespondidas);
+			cmp.put("empresaporcentaje", porcentaje(c.empresaCorrectas, c.empresaRespondidas));
+			respuesta.put("comparativo", cmp);
+
+			final JSONArray semanas = new JSONArray();
+			for (final PreguntaEmpleadoResultadoDAO.Semana s : PreguntaEmpleadoResultadoDAO.obtenerSemanas(idEmpleado, desde, hasta)) {
+				final JSONObject o = new JSONObject();
+				o.put("inicio", s.inicio);
+				o.put("respondidas", s.respondidas);
+				o.put("correctas", s.correctas);
+				o.put("porcentaje", porcentaje(s.correctas, s.respondidas));
+				semanas.add(o);
+			}
+			respuesta.put("semanas", semanas);
+
+			final JSONArray porPregunta = new JSONArray();
+			for (final PreguntaEmpleadoResultadoDAO.PorPregunta p : PreguntaEmpleadoResultadoDAO.obtenerPorPregunta(idEmpleado, desde,
+					hasta)) {
+				final JSONObject o = new JSONObject();
+				o.put("idpregunta", p.idPregunta);
+				o.put("pregunta", p.descripcion);
+				o.put("respuestacorrecta", p.respuestaCorrecta);
+				o.put("veces", p.veces);
+				o.put("correctas", p.correctas);
+				o.put("porcentaje", porcentaje(p.correctas, p.veces));
+				porPregunta.add(o);
+			}
+			respuesta.put("porpregunta", porPregunta);
+
+			final JSONArray respuestas = new JSONArray();
+			for (final PreguntaEmpleadoResultadoDAO.Respuesta r : PreguntaEmpleadoResultadoDAO.obtenerRespuestas(idEmpleado, desde,
+					hasta)) {
+				final JSONObject o = new JSONObject();
+				o.put("fecha", r.fecha);
+				o.put("pregunta", r.pregunta);
+				o.put("respuesta", r.respuesta);
+				o.put("respuestacorrecta", r.respuestaCorrecta);
+				o.put("correcta", r.correcta);
+				o.put("idtienda", r.idTienda);
+				respuestas.add(o);
+			}
+			respuesta.put("respuestas", respuestas);
+
+			final JSONArray pendientes = new JSONArray();
+			for (final PreguntaEmpleadoResultadoDAO.Pendiente p : PreguntaEmpleadoResultadoDAO.obtenerPendientes(idEmpleado,
+					emp.idTipo, desde, hasta)) {
+				final JSONObject o = new JSONObject();
+				o.put("idpregunta", p.idPregunta);
+				o.put("pregunta", p.descripcion);
+				o.put("vecesHistorico", p.vecesHistorico);
+				pendientes.add(o);
+			}
+			respuesta.put("pendientes", pendientes);
+		} catch (final Exception e) {
+			respuesta.put("error", mensajeDeError(e));
+		}
+		return (respuesta.toJSONString());
+	}
+
 	/** Entero de 0 a 100, o null si no hay nada que medir. */
 	private static Object porcentaje(final int correctas, final int total) {
 		if (total <= 0) {
