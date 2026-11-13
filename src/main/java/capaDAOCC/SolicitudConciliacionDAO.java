@@ -69,13 +69,103 @@ public class SolicitudConciliacionDAO {
 		Connection con1 = con.obtenerConexionBDPrincipal();
 		int respuesta = 0;
 		Calendar calendario = Calendar.getInstance();
-		calendario.add(Calendar.DAY_OF_YEAR, -7);
+		calendario.add(Calendar.DAY_OF_YEAR, -diasAlcanceAviso());
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String fecha = dateFormat.format(calendario.getTime());
 		try
 		{
 			Statement stm = con1.createStatement();
 			String select = "select count(*) from solicitud_conciliacion where idtienda = " + idTienda + " and fecha >= '" + fecha +"' and estado = 'PENDIENTE'";
+			logger.info(select);
+			ResultSet rs = stm.executeQuery(select);
+			while(rs.next())
+			{
+				respuesta = rs.getInt(1);
+			}
+			stm.close();
+			con1.close();
+		}catch (Exception e){
+			logger.error(e.toString());
+			try
+			{
+				con1.close();
+			}catch(Exception e1)
+			{
+			}
+		}
+		return(respuesta);
+	}
+
+	/** Hasta cuantos dias atras mira el aviso de solicitudes pendientes (antes 7; desde el 2026-11-13, 45). */
+	/** Valor si el parametro DIASAVISOCONCILIACION no existe o es invalido. */
+	public static final int DIAS_ALCANCE_DEFECTO = 45;
+	private static volatile int diasAlcanceCache = 0;
+	private static volatile long diasAlcanceLeidoEn = 0;
+
+	/**
+	 * Hasta cuantos dias atras mira el aviso de solicitudes pendientes: parametro DIASAVISOCONCILIACION de
+	 * general.parametros (valornumerico), 45 si no esta. Antes estaba fijo en 7. Se relee cada minuto, asi que
+	 * cambiarlo en la base se nota sin reiniciar el central.
+	 */
+	public static int diasAlcanceAviso()
+	{
+		long ahora = System.currentTimeMillis();
+		if (diasAlcanceCache > 0 && ahora - diasAlcanceLeidoEn < 60000L)
+		{
+			return(diasAlcanceCache);
+		}
+		int dias = DIAS_ALCANCE_DEFECTO;
+		Connection cn = null;
+		try
+		{
+			cn = new ConexionBaseDatos().obtenerConexionBDGeneral();
+			Statement stm = cn.createStatement();
+			ResultSet rs = stm.executeQuery("select valornumerico from parametros where valorparametro = 'DIASAVISOCONCILIACION'");
+			if (rs.next() && rs.getInt(1) > 0)
+			{
+				dias = rs.getInt(1);
+			}
+			rs.close();
+			stm.close();
+		}catch (Exception e){
+			Logger.getLogger("log_file").error("SolicitudConciliacionDAO.diasAlcanceAviso: " + e.toString());
+		}finally{
+			try
+			{
+				if (cn != null)
+				{
+					cn.close();
+				}
+			}catch(Exception e1)
+			{
+			}
+		}
+		diasAlcanceCache = dias;
+		diasAlcanceLeidoEn = ahora;
+		return(dias);
+	}
+	/** Lo que pasa de estos dias sin resolverse se avisa aparte como "antigua". */
+	public static final int DIAS_RECIENTE = 7;
+
+	/**
+	 * De las pendientes que mira el aviso (ultimos DIAS_ALCANCE_AVISO dias), cuantas llevan mas de DIAS_RECIENTE dias
+	 * sin resolverse.
+	 */
+	public static int contarPendientesAntiguas(int idTienda)
+	{
+		Logger logger = Logger.getLogger("log_file");
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDPrincipal();
+		int respuesta = 0;
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		Calendar desde = Calendar.getInstance();
+		desde.add(Calendar.DAY_OF_YEAR, -diasAlcanceAviso());
+		Calendar hasta = Calendar.getInstance();
+		hasta.add(Calendar.DAY_OF_YEAR, -DIAS_RECIENTE);
+		try
+		{
+			Statement stm = con1.createStatement();
+			String select = "select count(*) from solicitud_conciliacion where idtienda = " + idTienda + " and fecha >= '" + dateFormat.format(desde.getTime()) + "' and fecha < '" + dateFormat.format(hasta.getTime()) + "' and estado = 'PENDIENTE'";
 			logger.info(select);
 			ResultSet rs = stm.executeQuery(select);
 			while(rs.next())
