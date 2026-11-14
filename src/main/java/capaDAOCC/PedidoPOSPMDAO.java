@@ -18,8 +18,78 @@ import capaModeloCC.Tienda;
 import conexionCC.ConexionBaseDatos;
 
 public class PedidoPOSPMDAO {
-	
-		
+
+	/**
+	 * Las adiciones que le tocan a UNA unidad del renglon, cuando el renglon trae
+	 * varias.
+	 *
+	 * POR QUE EXISTE ESTE METODO
+	 *
+	 * adicion_detalle_pedido ya viene COMPLETA para todo el renglon: si son dos
+	 * pizzas con queso, trae dos grupos -uno por pizza-, cada uno partido en sus
+	 * dos mitades. El ciclo que arma el pixel repite el combo una vez por unidad,
+	 * y antes recorria TODAS las adiciones en cada vuelta, asi que mandaba el
+	 * doble de lineas. Como viajan con valor 0 y la tienda las tasa con su propio
+	 * catalogo, el total le salia inflado y no habia ningun error: solo un
+	 * descuadre de caja esa noche.
+	 *
+	 * Medido en el pedido 2412685 (Envigado, 2026-11-12): el central cobro
+	 * $156.800 y la tienda $170.800, $14.000 de mas, que son 4 medias adiciones
+	 * de $3.500 que sobraban.
+	 *
+	 * LA REGLA ES UNA ADICION POR UNIDAD
+	 *
+	 * Verificado contra 60 dias y todos los canales: cuando un renglon de
+	 * cantidad mayor que 1 trae adiciones, los grupos SIEMPRE son tantos como
+	 * unidades (2 y 2, 3 y 3). Nunca llegan menos. La tienda virtual no puede
+	 * siquiera expresar "dos pizzas y adicion en una sola": la opcion va pegada
+	 * al item y se cobra por cada unidad.
+	 *
+	 * SI ALGUN DIA NO CUADRA, NO SE INVENTA
+	 *
+	 * Si los grupos no coinciden con las unidades se devuelve la lista completa,
+	 * que es como venia funcionando, y queda dicho en el log. Repartir a ojo
+	 * cambiaria lo que ve la cocina sin que nadie lo pida.
+	 */
+	private static ArrayList<DetallePedidoAdicion> adicionesDeLaUnidad(
+			final ArrayList<DetallePedidoAdicion> todas, final int unidad, final int cantidad)
+	{
+		if (todas == null || todas.isEmpty() || cantidad <= 1)
+		{
+			return todas;
+		}
+		//Los grupos, en el orden en que llegan, sin repetir.
+		final ArrayList<Integer> grupos = new ArrayList<Integer>();
+		for (DetallePedidoAdicion cadaAdicion : todas)
+		{
+			final Integer idGrupo = Integer.valueOf(cadaAdicion.getIddetallepedidoadicion());
+			if (!grupos.contains(idGrupo))
+			{
+				grupos.add(idGrupo);
+			}
+		}
+		if (grupos.size() != cantidad)
+		{
+			//El logger de esta clase es local a cada metodo, no un campo: se pide aqui.
+			Logger.getLogger("log_file").warn(
+					"PedidoPOSPMDAO.adicionesDeLaUnidad: el renglon trae " + grupos.size()
+					+ " grupos de adicion para " + cantidad + " unidades. Se mandan todas, como antes,"
+					+ " y hay que revisar ese pedido: el total de la tienda puede no coincidir con el del central.");
+			return todas;
+		}
+		final Integer grupoDeEstaUnidad = grupos.get(unidad - 1);
+		final ArrayList<DetallePedidoAdicion> deLaUnidad = new ArrayList<DetallePedidoAdicion>();
+		for (DetallePedidoAdicion cadaAdicion : todas)
+		{
+			if (grupoDeEstaUnidad.intValue() == cadaAdicion.getIddetallepedidoadicion())
+			{
+				deLaUnidad.add(cadaAdicion);
+			}
+		}
+		return deLaUnidad;
+	}
+
+
 	public static InsertarPedidoPixel confirmarPedidoPOSPM(int idpedido, int idformapago, double valorformapago, double valortotal, int idcliente, int insertado,int idformapagotienda)
 	{
 		int numFactura = 0;
@@ -189,7 +259,7 @@ public class PedidoPOSPMDAO {
 						logger.debug(idproductopizza + " , " + cantidadPixel);
 						
 						//Aqui se ingresan la adiciones y los modificadores
-						for(DetallePedidoAdicion cadaAdicion: adicionDetallePedido)
+						for(DetallePedidoAdicion cadaAdicion: adicionesDeLaUnidad(adicionDetallePedido, i, cantidad))
 						{
 							if(cadaAdicion.getIdespecialidad1() > 0)
 							{
@@ -218,7 +288,7 @@ public class PedidoPOSPMDAO {
 						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductopizza, cantidadPixel,false,idDetalleMaster,0,0));
 						logger.debug(idproductopizza + " , " + cantidadPixel);
 						
-						for(DetallePedidoAdicion cadaAdicion: adicionDetallePedido)
+						for(DetallePedidoAdicion cadaAdicion: adicionesDeLaUnidad(adicionDetallePedido, i, cantidad))
 						{
 							if(cadaAdicion.getIdespecialidad2() > 0)
 							{
@@ -280,7 +350,7 @@ public class PedidoPOSPMDAO {
 						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductoext, cantidadPixel, false, idDetalleMaster,0,0));
 						logger.debug(idproductoext + " , " + cantidadPixel);
 						
-						for(DetallePedidoAdicion cadaAdicion: adicionDetallePedido)
+						for(DetallePedidoAdicion cadaAdicion: adicionesDeLaUnidad(adicionDetallePedido, i, cantidad))
 						{
 							if(cadaAdicion.getIdespecialidad1() > 0)
 							{
@@ -309,7 +379,7 @@ public class PedidoPOSPMDAO {
 						pedidoDefinitivoPOSMP.add(new DetallePedidoPixel(idproductoext, cantidadPixel, false,idDetalleMaster,0,0));
 						logger.debug(idproductoext + " , " + cantidadPixel);
 						
-						for(DetallePedidoAdicion cadaAdicion: adicionDetallePedido)
+						for(DetallePedidoAdicion cadaAdicion: adicionesDeLaUnidad(adicionDetallePedido, i, cantidad))
 						{
 							if(cadaAdicion.getIdespecialidad2() > 0)
 							{
@@ -431,7 +501,11 @@ public class PedidoPOSPMDAO {
 		Logger logger = Logger.getLogger("log_file");
 		ArrayList<DetallePedidoAdicion> consultaAdiciones = new ArrayList();
 		String consulta = "select a.iddetallepedidopadre, a.iddetallepedidoadicion, a.idespecialidad1, a.cantidad1, a.idespecialidad2, "
-				+ "a.cantidad2, b.idproducto from adicion_detalle_pedido a, detalle_pedido b where a.iddetallepedidoadicion = b.iddetalle_pedido and a.iddetallepedidopadre =" + iddetallepedido; 
+				+ "a.cantidad2, b.idproducto from adicion_detalle_pedido a, detalle_pedido b where a.iddetallepedidoadicion = b.iddetalle_pedido and a.iddetallepedidopadre =" + iddetallepedido
+				//El orden NO es decorativo: adicionesDeLaUnidad reparte un grupo por unidad
+				//en el orden en que llegan. Sin order by, MySQL puede devolverlos en
+				//cualquier orden y la adicion de la pizza 1 terminaria en la pizza 2.
+				+ " order by a.iddetallepedidoadicion, a.idespecialidad1 desc, a.idespecialidad2";
 		logger.info(consulta);
 		ConexionBaseDatos con = new ConexionBaseDatos();
 		Connection con1 = con.obtenerConexionBDPrincipal();
