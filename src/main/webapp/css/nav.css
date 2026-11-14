@@ -22,3 +22,45 @@
     padding: 10px;
     border-radius: 0 !important;
   }
+/* ===================================================================
+   El menu de un superadministrador puede traer diez modulos o mas.
+   Sin esto los ultimos se salen de la pantalla, se pierden, y de paso
+   empujan el bloque de Usuario/Salir y le meten scroll horizontal a
+   TODA la pagina. Medido con los 10 modulos de jdbotero a 1536px.
+   =================================================================== */
+
+/* 1. Que la fila de modulos pueda pasar a un segundo renglon en vez de
+      desbordarse. Es lo que garantiza que no se pierda ninguno. */
+#menuprincipal .navbar-nav {
+  flex-wrap: wrap;
+}
+
+/* 2. Cada modulo en una sola linea: sin esto "Pagina Web" y "Clientes y
+      CRM" se parten en dos y la barra crece de alto sin necesidad. */
+#menuprincipal .navbar-nav .nav-link {
+  white-space: nowrap;
+  padding-left: .6rem;
+  padding-right: .6rem;
+}
+
+/* 3. La marca ocupaba 80px de logo mas el texto: casi un cuarto de la
+      barra. Con 52px se sigue leyendo bien y caben dos modulos mas. */
+#menuprincipal .navbar-brand img {
+  height: 52px !important;
+  width: 52px !important;
+}
+#menuprincipal .navbar-brand span {
+  font-size: .95rem;
+}
+
+/* 4. Usuario y Salir no se parten ni se encogen. */
+#menuprincipal #notf {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 5. En pantallas angostas se esconde el texto de la marca (el logo
+      queda) antes que sacrificar opciones del menu. */
+@media (max-width: 1300px) {
+  #menuprincipal .navbar-brand span { display: none; }
+}
