@@ -58,7 +58,15 @@ public class MotorCatalogo extends HttpServlet {
 
 		try (Connection con = new ConexionBaseDatos().obtenerConexionBDPrincipal()) {
 			if ("menu".equalsIgnoreCase(accion)) {
-				out.write(obtenerMenuCompleto(con));
+				// El menu dejo de ser uno solo: cada canal tiene el suyo en
+				// pos_central.configuracion_menu. Esta pantalla la usa el Contact
+				// Center, asi que ese es el canal por defecto; el parametro queda
+				// para poder pedir el de las tiendas sin tocar codigo.
+				String canal = request.getParameter("canal");
+				if (canal == null || canal.trim().isEmpty()) {
+					canal = "CONTACT";
+				}
+				out.write(obtenerMenuCompleto(con, canal.trim().toUpperCase()));
 			} else if ("producto".equalsIgnoreCase(accion)) {
 				String idStr = request.getParameter("id");
 				int idProducto = (idStr != null && !idStr.trim().isEmpty()) ? Integer.parseInt(idStr.trim()) : 0;
@@ -75,7 +83,7 @@ public class MotorCatalogo extends HttpServlet {
 		}
 	}
 
-	private String obtenerMenuCompleto(Connection con) throws Exception {
+	private String obtenerMenuCompleto(Connection con, String canal) throws Exception {
 		// 1. Obtener categorias (multimenus)
 		String sqlMulti = "select idmultimenu, nombre from pos_central.nombre_multimenu order by idmultimenu";
 		List<Map<String, Object>> listaMulti = new ArrayList<Map<String, Object>>();
@@ -98,27 +106,34 @@ public class MotorCatalogo extends HttpServlet {
 				+ "p.descripcion, p.tipo_producto as tipo, p.precio1, p.precio_pila, p.promocion "
 				+ "from pos_central.configuracion_menu cm "
 				+ "join pos_central.producto p on p.idproducto = cm.idproducto "
-				+ "where p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30 "
-				+ "order by cm.multimenu, cm.menu, cm.fila, cm.columna";
+				// El parentesis alrededor del no_venta no es adorno: sin el, el OR
+				// se comia el filtro de canal y el menu salia con los dos canales
+				// mezclados.
+				+ "where cm.canal = ? "
+				+ "  and (p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30) "
+				+ "order by cm.multimenu, cm.fila, cm.columna";
 
-		try (PreparedStatement ps = con.prepareStatement(sqlItems); ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				int idMulti = rs.getInt("multimenu");
-				Map<String, Object> multi = mapaMulti.get(idMulti);
-				if (multi != null) {
-					@SuppressWarnings("unchecked")
-					List<Map<String, Object>> items = (List<Map<String, Object>>) multi.get("items");
-					Map<String, Object> item = new HashMap<String, Object>();
-					item.put("idproducto", rs.getInt("idproducto"));
-					item.put("descripcion", rs.getString("descripcion"));
-					item.put("tipo", rs.getString("tipo"));
-					item.put("precio", rs.getDouble("precio1"));
-					item.put("precioPila", rs.getInt("precio_pila"));
-					item.put("promocion", rs.getString("promocion"));
-					item.put("menu", rs.getInt("menu"));
-					item.put("fila", rs.getInt("fila"));
-					item.put("columna", rs.getInt("columna"));
-					items.add(item);
+		try (PreparedStatement ps = con.prepareStatement(sqlItems)) {
+			ps.setString(1, canal);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					int idMulti = rs.getInt("multimenu");
+					Map<String, Object> multi = mapaMulti.get(idMulti);
+					if (multi != null) {
+						@SuppressWarnings("unchecked")
+						List<Map<String, Object>> items = (List<Map<String, Object>>) multi.get("items");
+						Map<String, Object> item = new HashMap<String, Object>();
+						item.put("idproducto", rs.getInt("idproducto"));
+						item.put("descripcion", rs.getString("descripcion"));
+						item.put("tipo", rs.getString("tipo"));
+						item.put("precio", rs.getDouble("precio1"));
+						item.put("precioPila", rs.getInt("precio_pila"));
+						item.put("promocion", rs.getString("promocion"));
+						item.put("menu", rs.getInt("menu"));
+						item.put("fila", rs.getInt("fila"));
+						item.put("columna", rs.getInt("columna"));
+						items.add(item);
+					}
 				}
 			}
 		}
