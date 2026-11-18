@@ -451,7 +451,7 @@ function establecerClienteGenerico() {
 function actualizarEstadoUbicacionUI() {
     if (clienteUbicado) {
         $("#bloqueoMenuCliente").fadeOut(250);
-        var tNom = clienteActual.nombreTienda || $("#tiendaSelect option:selected").text();
+        var tNom = clienteActual.nombreTienda || (idTiendaSeleccionada() ? $("#tiendaSelect option:selected").text() : "tienda sin seleccionar");
         var coordsTxt = (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001) ? " (" + clienteActual.latitud.toFixed(4) + ", " + clienteActual.longitud.toFixed(4) + ")" : "";
         $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente").addClass("badge-ubicacion-ok").html(
             "<i class='fas fa-check-circle mr-1 text-success'></i><span>Ubicado en Mapa: <b>" + tNom + "</b>" + coordsTxt + "</span>"
@@ -681,15 +681,15 @@ function cargarTiendas() {
         if (data && data.tiendas) {
             var $sel = $("#tiendaSelect");
             $sel.empty();
+            // La tienda NO viene marcada: quien toma el pedido debe escogerla (o la
+            // fija la busqueda del cliente). Asi un pedido no sale a la tienda de otro.
+            $sel.append($("<option></option>").val("").text("-- Seleccione la tienda --"));
             $.each(data.tiendas, function (i, t) {
                 var isPiloto = (t.idtienda === 11); // 11 = Manrique Piloto
                 var label = t.nombre + (isPiloto ? " [PILOTO DIRECTO]" : "");
-                var $opt = $("<option></option>").val(t.idtienda).text(label);
-                if (isPiloto) {
-                    $opt.attr("selected", "selected");
-                }
-                $sel.append($opt);
+                $sel.append($("<option></option>").val(t.idtienda).text(label));
             });
+            $sel.val("");
             verificarTiendaPiloto();
             consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
         }
@@ -1148,9 +1148,20 @@ function verificarRolUsuario() {
     });
 }
 
+/** Id de la tienda marcada, o 0 si no hay ninguna (ya no se asume la 11). */
+function idTiendaSeleccionada() {
+    return parseInt($("#tiendaSelect").val()) || 0;
+}
+
 function consultarTiempoTienda(idTienda) {
     if (!idTienda) {
-        idTienda = parseInt($("#tiendaSelect").val()) || 11;
+        idTienda = idTiendaSeleccionada();
+    }
+    if (!idTienda) {
+        tiempoEstimadoTienda = 30;
+        $("#txtTiempoTiendaFijo").val("");
+        $("#txtModalTiempoEntrega").text("-");
+        return;
     }
     $.ajax({
         url: "CRUDTiempoPedido?idoperacion=3&idtienda=" + idTienda,
@@ -1339,7 +1350,13 @@ function cotizarEnVivo() {
         return;
     }
 
-    var idTienda = parseInt($("#tiendaSelect").val()) || 11;
+    var idTienda = idTiendaSeleccionada();
+    if (!idTienda) {
+        // Sin tienda no hay precios ni cobertura que cotizar
+        $("#listaComanda").html("<p class='text-danger text-center py-4 font-weight-bold'><i class='fas fa-store mr-1'></i>Seleccione la tienda para cotizar el pedido.</p>");
+        $("#btnConfirmarPedido").prop("disabled", true);
+        return;
+    }
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1; // 1 = Domicilio
     var esProg = $("#chkPedidoProgramado").is(":checked");
     var horaProg = esProg ? ($("#selectHoraProgramada").val() || "") : "";
@@ -1475,6 +1492,11 @@ function eliminarItemDraft(index) {
    MODAL DE RESUMEN Y CONFIRMACIÓN DE PEDIDO (Reemplaza confirm simple)
    ========================================================================= */
 function abrirModalConfirmacionPedido() {
+    if (!idTiendaSeleccionada()) {
+        alert("Seleccione la tienda a la que va el pedido.");
+        $("#tiendaSelect").focus();
+        return;
+    }
     if (!clienteUbicado) {
         alert("¡Atención! Debe ubicar al cliente en el mapa antes de despachar el pedido.");
         abrirModalMapa();
@@ -1622,7 +1644,11 @@ function abrirModalConfirmacionPedido() {
 }
 
 function ejecutarDespachoTiendaDefinitivo() {
-    var idTienda = parseInt($("#tiendaSelect").val()) || 11;
+    var idTienda = idTiendaSeleccionada();
+    if (!idTienda) {
+        alert("Seleccione la tienda a la que va el pedido.");
+        return;
+    }
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
     var idFormaPago = parseInt($("#formaPagoSelect").val()) || 1;
     var tiempoPed = tiempoEstimadoTienda || 30;
@@ -1637,7 +1663,8 @@ function ejecutarDespachoTiendaDefinitivo() {
     var payload = {
         idTienda: idTienda,
         idCliente: clienteActual.idcliente,
-        usuario: "PILOTO",
+        // El usuario del pedido NO viaja desde aqui: el servidor lo toma de la
+        // sesion de quien esta logueado (antes iba "PILOTO" quemado).
         idFormaPagoTienda: idFormaPago,
         valorFormaPago: (idFormaPago === 1) ? valPago : resultadoMotor.total,
         tiempoPedido: tiempoPed,
@@ -1705,12 +1732,8 @@ function ejecutarDespachoTiendaDefinitivo() {
                 }
                 alert(msj);
 
-                // Limpiar comanda y formulario
-                draftLineas = [];
-                removerDescuentoActivo();
-                $("#chkPedidoProgramado").prop("checked", false);
-                $("#wrapperHoraProgramada").hide();
-                cotizarEnVivo();
+                // Pedido listo para el siguiente cliente: nada del anterior debe quedar
+                limpiarPantallaTrasDespacho();
             } else {
                 alert("Error al finalizar el pedido: " + (resp.mensaje || "Error desconocido"));
             }
@@ -1720,6 +1743,79 @@ function ejecutarDespachoTiendaDefinitivo() {
             alert("Error en el servidor al enviar pedido: " + (xhr.responseText || "Error de red"));
         }
     });
+}
+
+/**
+ * Deja la pantalla como recien abierta para tomar el pedido SIGUIENTE.
+ *
+ * Antes solo se vaciaba la comanda, el descuento y el programado: el cliente
+ * (con su idcliente), la direccion, la ubicacion en el mapa, la forma de pago y
+ * el valor pagado se quedaban del pedido anterior. Con la comanda ya vacia y el
+ * menu desbloqueado, un pedido nuevo salia a nombre del cliente anterior.
+ *
+ * Se conservan a proposito la tienda y el tipo de pedido: son el contexto de
+ * trabajo de quien toma pedidos, no datos del cliente.
+ */
+function limpiarPantallaTrasDespacho() {
+    // 1. Comanda, descuento y programado
+    draftLineas = [];
+    resultadoMotor = null;
+    removerDescuentoActivo();
+    $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
+    $("#selectMotivoDescuento").prop("selectedIndex", 0);
+    $("#chkPedidoProgramado").prop("checked", false);
+    $("#wrapperHoraProgramada").hide();
+
+    // 2. El cliente: objeto, casillas, ubicacion y resultados de la busqueda
+    clienteActual = {
+        idcliente: 0,
+        memcode: 0,
+        nombres: "Cliente Mostrador",
+        apellidos: "",
+        telefono: "3000000000",
+        direccion: "Mostrador Directo",
+        idmunicipio: 1,
+        municipio: "Medellin",
+        zona: "",
+        email: "",
+        observacion: "",
+        latitud: 0.0,
+        longitud: 0.0,
+        distanciatienda: 0.0,
+        nombreTienda: "",
+        emailfact: "",
+        clientesiniden: "S",
+        idtipopersona: 2,
+        identificacion: "222222222222"
+    };
+    clienteUbicado = false;
+    coberturaTemporal = null;
+
+    $("#telcelular, #cliNombres, #cliApellidos, #cliEmail, #cliDireccion, #cliZona, #cliObservacion").val("");
+    $("#cliIdentificacion, #cliEmailFacturacion").val("");
+    $("#cliMunicipio, #cliTipoPersona").prop("selectedIndex", 0);
+    $("#mapaBusqDireccion, #mapaBusqBarrio").val("");
+    $("#chkClienteSinIdentificar").prop("checked", false);
+    $("#chkFacturaElectronica").prop("checked", false).trigger("change");
+    $("#tbodyClientesEncontrados").empty();
+    $("#contenedorTablaClientes").hide();
+
+    // 2b. La tienda vuelve a "sin marcar": la fija la busqueda del cliente o quien toma el pedido
+    $("#tiendaSelect").val("");
+    verificarTiendaPiloto();
+    consultarTiempoTienda(0);
+
+    // 3. El pago
+    $("#formaPagoSelect").val("1");
+    $("#txtValorPago").val("");
+    $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("$ 0");
+    ajustarFormaPagoUI();
+
+    // 4. Repintar: sin ubicar el menu se bloquea hasta buscar al cliente nuevo
+    actualizarResumenClienteComanda();
+    actualizarEstadoUbicacionUI();
+    cotizarEnVivo();
+    $("#telcelular").focus();
 }
 
 function formatearPesos(val) {

@@ -15,6 +15,9 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import capaModeloCC.Usuario;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -81,7 +84,17 @@ public class MotorFinalizarPedido extends HttpServlet {
 
 			int idTienda = root.has("idTienda") ? root.get("idTienda").getAsInt() : 1;
 			int idCliente = root.has("idCliente") ? root.get("idCliente").getAsInt() : 0;
+			// El pedido queda a nombre de QUIEN LO TOMA: el usuario de la sesion. No se
+			// confia en lo que mande el navegador (antes la pantalla mandaba "PILOTO"
+			// quemado y todo quedaba a ese nombre). Solo si no hay sesion -llamadas de
+			// maquina a maquina- se usa el "usuario" del cuerpo, y por defecto CONTACT.
 			String usuario = root.has("usuario") ? root.get("usuario").getAsString() : "CONTACT";
+			HttpSession sesionPedido = request.getSession(false);
+			Usuario usuarioSesion = (sesionPedido != null) ? (Usuario) sesionPedido.getAttribute("usuario") : null;
+			if (usuarioSesion != null && usuarioSesion.getNombreUsuario() != null
+					&& !usuarioSesion.getNombreUsuario().trim().isEmpty()) {
+				usuario = usuarioSesion.getNombreUsuario().trim();
+			}
 			int idFormaPagoTienda = root.has("idFormaPagoTienda") ? root.get("idFormaPagoTienda").getAsInt() : 1;
 			double valorFormaPago = root.has("valorFormaPago") ? root.get("valorFormaPago").getAsDouble() : 0.0;
 			double tiempoPedido = root.has("tiempoPedido") ? root.get("tiempoPedido").getAsDouble() : 30.0;
