@@ -1705,12 +1705,8 @@ function ejecutarDespachoTiendaDefinitivo() {
                 }
                 alert(msj);
 
-                // Limpiar comanda y formulario
-                draftLineas = [];
-                removerDescuentoActivo();
-                $("#chkPedidoProgramado").prop("checked", false);
-                $("#wrapperHoraProgramada").hide();
-                cotizarEnVivo();
+                // Pedido listo para el siguiente cliente: nada del anterior debe quedar
+                limpiarPantallaTrasDespacho();
             } else {
                 alert("Error al finalizar el pedido: " + (resp.mensaje || "Error desconocido"));
             }
@@ -1720,6 +1716,74 @@ function ejecutarDespachoTiendaDefinitivo() {
             alert("Error en el servidor al enviar pedido: " + (xhr.responseText || "Error de red"));
         }
     });
+}
+
+/**
+ * Deja la pantalla como recien abierta para tomar el pedido SIGUIENTE.
+ *
+ * Antes solo se vaciaba la comanda, el descuento y el programado: el cliente
+ * (con su idcliente), la direccion, la ubicacion en el mapa, la forma de pago y
+ * el valor pagado se quedaban del pedido anterior. Con la comanda ya vacia y el
+ * menu desbloqueado, un pedido nuevo salia a nombre del cliente anterior.
+ *
+ * Se conservan a proposito la tienda y el tipo de pedido: son el contexto de
+ * trabajo de quien toma pedidos, no datos del cliente.
+ */
+function limpiarPantallaTrasDespacho() {
+    // 1. Comanda, descuento y programado
+    draftLineas = [];
+    resultadoMotor = null;
+    removerDescuentoActivo();
+    $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
+    $("#selectMotivoDescuento").prop("selectedIndex", 0);
+    $("#chkPedidoProgramado").prop("checked", false);
+    $("#wrapperHoraProgramada").hide();
+
+    // 2. El cliente: objeto, casillas, ubicacion y resultados de la busqueda
+    clienteActual = {
+        idcliente: 0,
+        memcode: 0,
+        nombres: "Cliente Mostrador",
+        apellidos: "",
+        telefono: "3000000000",
+        direccion: "Mostrador Directo",
+        idmunicipio: 1,
+        municipio: "Medellin",
+        zona: "",
+        email: "",
+        observacion: "",
+        latitud: 0.0,
+        longitud: 0.0,
+        distanciatienda: 0.0,
+        nombreTienda: "",
+        emailfact: "",
+        clientesiniden: "S",
+        idtipopersona: 2,
+        identificacion: "222222222222"
+    };
+    clienteUbicado = false;
+    coberturaTemporal = null;
+
+    $("#telcelular, #cliNombres, #cliApellidos, #cliEmail, #cliDireccion, #cliZona, #cliObservacion").val("");
+    $("#cliIdentificacion, #cliEmailFacturacion").val("");
+    $("#cliMunicipio, #cliTipoPersona").prop("selectedIndex", 0);
+    $("#mapaBusqDireccion, #mapaBusqBarrio").val("");
+    $("#chkClienteSinIdentificar").prop("checked", false);
+    $("#chkFacturaElectronica").prop("checked", false).trigger("change");
+    $("#tbodyClientesEncontrados").empty();
+    $("#contenedorTablaClientes").hide();
+
+    // 3. El pago
+    $("#formaPagoSelect").val("1");
+    $("#txtValorPago").val("");
+    $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("$ 0");
+    ajustarFormaPagoUI();
+
+    // 4. Repintar: sin ubicar el menu se bloquea hasta buscar al cliente nuevo
+    actualizarResumenClienteComanda();
+    actualizarEstadoUbicacionUI();
+    cotizarEnVivo();
+    $("#telcelular").focus();
 }
 
 function formatearPesos(val) {
