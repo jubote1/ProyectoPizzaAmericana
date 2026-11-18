@@ -872,8 +872,43 @@ function renderizarModalProducto(prod) {
 
                 // Columna Mitad 1
                 var $colM1 = $("<div></div>").addClass("col-mitad");
-                $colM1.append("<div class='col-mitad-tit'><span><i class='fas fa-adjust text-danger mr-1'></i> Mitad 1</span><span class='badge badge-light border'>50%</span></div>");
+                var $titM1 = $("<div class='col-mitad-tit'></div>");
+                $titM1.append("<span><i class='fas fa-adjust text-danger mr-1'></i> Mitad 1</span>");
+                var $btnClonarM1 = $("<button type='button' class='btn btn-xs btn-outline-warning ml-auto py-0 px-2' style='font-size:0.75rem; font-weight:700;' title='Copiar sabor a Mitad 2 (Toda la Pizza)'><i class='fas fa-clone mr-1'></i>Toda la Pizza</button>");
+                $titM1.append($btnClonarM1);
+                $titM1.append("<span class='badge badge-light border ml-1'>50%</span>");
+                $colM1.append($titM1);
+
                 var $gridM1 = $("<div></div>").addClass("opciones-grid");
+                var $gridM2 = $("<div></div>").addClass("opciones-grid");
+
+                function clonarM1aM2() {
+                    var $selM1 = $gridM1.find(".opcion-btn.selected");
+                    if ($selM1.length > 0) {
+                        var idSel = $selM1.attr("data-idopcion");
+                        $gridM2.find(".opcion-btn").removeClass("selected");
+                        var $m2Target = $gridM2.find(".opcion-btn[data-idopcion='" + idSel + "']");
+                        if ($m2Target.length > 0) {
+                            $m2Target.addClass("selected");
+                            $btnClonarM1.removeClass("btn-outline-warning").addClass("btn-success").html("<i class='fas fa-check mr-1'></i>Copiado a Mitad 2");
+                            setTimeout(function () {
+                                $btnClonarM1.removeClass("btn-success").addClass("btn-outline-warning").html("<i class='fas fa-clone mr-1'></i>Toda la Pizza");
+                            }, 1800);
+                        }
+                    } else {
+                        var $primero = $gridM1.find(".opcion-btn").first();
+                        if ($primero.length > 0) {
+                            $primero.addClass("selected");
+                            clonarM1aM2();
+                        }
+                    }
+                }
+
+                $btnClonarM1.on("click", function (e) {
+                    e.preventDefault();
+                    clonarM1aM2();
+                });
+
                 $.each(preg.opciones, function (j, op) {
                     var $btn = $("<div></div>")
                         .addClass("opcion-btn")
@@ -883,6 +918,11 @@ function renderizarModalProducto(prod) {
                     $btn.on("click", function () {
                         $gridM1.find(".opcion-btn").removeClass("selected");
                         $(this).addClass("selected");
+                    });
+                    $btn.on("dblclick", function () {
+                        $gridM1.find(".opcion-btn").removeClass("selected");
+                        $(this).addClass("selected");
+                        clonarM1aM2();
                     });
                     if (preg.obligaEleccion === 1 && j === 0) {
                         $btn.addClass("selected");
@@ -894,7 +934,6 @@ function renderizarModalProducto(prod) {
                 // Columna Mitad 2
                 var $colM2 = $("<div></div>").addClass("col-mitad");
                 $colM2.append("<div class='col-mitad-tit'><span><i class='fas fa-adjust text-primary mr-1'></i> Mitad 2</span><span class='badge badge-light border'>50%</span></div>");
-                var $gridM2 = $("<div></div>").addClass("opciones-grid");
                 $.each(preg.opciones, function (j, op) {
                     var $btn = $("<div></div>")
                         .addClass("opcion-btn")
@@ -917,16 +956,28 @@ function renderizarModalProducto(prod) {
                 $boxMitades.append($colM1).append($colM2);
                 $pBox.append($boxMitades);
 
-                // Toggle click
+                // Toggle click con sincronizacion bidireccional
                 $btnEntera.on("click", function () {
                     $boxEntera.show();
                     $boxMitades.hide();
                     $pBox.attr("data-modo-activo", "entera");
+                    var $selM1 = $gridM1.find(".opcion-btn.selected");
+                    if ($selM1.length > 0) {
+                        var idM1 = $selM1.attr("data-idopcion");
+                        $gridEntera.find(".opcion-btn").removeClass("selected");
+                        $gridEntera.find(".opcion-btn[data-idopcion='" + idM1 + "']").addClass("selected");
+                    }
                 });
                 $btnMitad.on("click", function () {
                     $boxEntera.hide();
                     $boxMitades.show();
                     $pBox.attr("data-modo-activo", "mitad");
+                    var $selEnt = $gridEntera.find(".opcion-btn.selected");
+                    if ($selEnt.length > 0) {
+                        var idEnt = $selEnt.attr("data-idopcion");
+                        $gridM1.find(".opcion-btn").removeClass("selected");
+                        $gridM1.find(".opcion-btn[data-idopcion='" + idEnt + "']").addClass("selected");
+                    }
                 });
                 $pBox.attr("data-modo-activo", "entera");
 
