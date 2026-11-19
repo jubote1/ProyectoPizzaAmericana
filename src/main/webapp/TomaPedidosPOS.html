@@ -52,9 +52,14 @@
         <div class="card-cliente-pos">
             <div class="seccion-tit">
                 <span><i class="fas fa-user-circle text-primary mr-1"></i> Datos del Cliente & Entrega</span>
-                <label style="font-size: 0.82rem; cursor: pointer; margin: 0; font-weight: 600;" class="text-muted">
-                    <input type="checkbox" id="chkClienteSinIdentificar" style="margin-right: 5px;"> Cliente sin identificar / Mostrador
-                </label>
+                <div class="d-flex align-items-center flex-wrap" style="gap: 14px;">
+                    <label style="font-size: 0.82rem; cursor: pointer; margin: 0; font-weight: 700;" class="text-success" title="Autorización expresa del cliente para el tratamiento de sus datos personales (Habeas Data)">
+                        <input type="checkbox" id="chkPoliticaDatos" name="politicadatos" checked style="margin-right: 5px; transform: scale(1.15); cursor: pointer;"> <i class="fas fa-shield-alt mr-1"></i>Acepta Política de Datos
+                    </label>
+                    <label style="font-size: 0.82rem; cursor: pointer; margin: 0; font-weight: 600;" class="text-muted">
+                        <input type="checkbox" id="chkClienteSinIdentificar" style="margin-right: 5px;"> Cliente sin identificar / Mostrador
+                    </label>
+                </div>
             </div>
 
             <!-- Fila 1: Búsqueda por Teléfono Celular y Datos Principales -->
@@ -339,29 +344,62 @@
                     <!-- Caja de Devuelta y Paga Con (Solo para Efectivo) -->
                     <div id="cajaDevueltaComanda" class="caja-devuelta-box mb-2 p-2 rounded border">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="txtValorPago" class="mb-0 font-weight-bold text-dark" style="font-size: 0.82rem;">
-                                <i class="fas fa-money-bill-wave text-success mr-1"></i> Paga con (Efectivo):
-                            </label>
-                            <span class="badge badge-light border text-primary" id="badgeSiguienteRedondeo" style="cursor:pointer;" title="Redondear al siguiente múltiplo de 10 mil">Redondear</span>
-                        </div>
-                        <div class="input-group input-group-sm mb-1">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text font-weight-bold">$</span>
+                            <span class="font-weight-bold text-dark" style="font-size: 0.82rem;">
+                                <i class="fas fa-money-bill-wave text-success mr-1"></i> Liquidación Efectivo:
+                            </span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-outline-secondary btn-xs py-0 active" id="lblModoPagoCompleto" style="cursor: pointer; font-size: 0.72rem; font-weight: 700;">
+                                    <input type="radio" name="radioModoPagoEfectivo" id="optPagoExacto" value="exacto" checked> Paga Exacto
+                                </label>
+                                <label class="btn btn-outline-secondary btn-xs py-0" id="lblModoPagoDevuelta" style="cursor: pointer; font-size: 0.72rem; font-weight: 700;">
+                                    <input type="radio" name="radioModoPagoEfectivo" id="optPagoDevuelta" value="devuelta"> Con Devuelta
+                                </label>
                             </div>
-                            <input type="text" id="txtValorPago" class="form-control font-weight-bold text-dark text-right" placeholder="0">
                         </div>
-                        <!-- Botones de Cálculo Rápido -->
-                        <div class="d-flex flex-wrap quick-cash-btns mb-2" style="gap: 4px;">
-                            <button type="button" class="btn btn-xs btn-outline-secondary flex-fill py-0 font-weight-bold" id="btnPagoExacto">Exacto</button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary flex-fill py-0 btn-sumar-efectivo" data-sumar="10000">+10k</button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary flex-fill py-0 btn-sumar-efectivo" data-sumar="20000">+20k</button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary flex-fill py-0 btn-sumar-efectivo" data-sumar="50000">+50k</button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary flex-fill py-0 btn-sumar-efectivo" data-sumar="100000">+100k</button>
+
+                        <!-- Campos Bidireccionales: Paga Con vs Devuelta Requerida -->
+                        <div class="form-row align-items-center mb-1">
+                            <div class="col-6">
+                                <label for="txtValorPago" class="mb-0 font-weight-bold text-muted" style="font-size:0.75rem;">Paga con ($):</label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text font-weight-bold" style="padding: 2px 6px;">$</span>
+                                    </div>
+                                    <input type="text" id="txtValorPago" class="form-control font-weight-bold text-dark text-right" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label for="txtValorDevuelta" class="mb-0 font-weight-bold text-muted" style="font-size:0.75rem;">Devuelta a llevar ($):</label>
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text font-weight-bold text-success" style="padding: 2px 6px;">$</span>
+                                    </div>
+                                    <input type="text" id="txtValorDevuelta" class="form-control font-weight-bold text-success text-right" placeholder="0">
+                                </div>
+                            </div>
                         </div>
-                        <!-- Cuadro de Devuelta Calculada -->
-                        <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light border" id="boxDevueltaResumen">
-                            <span class="font-weight-bold" style="font-size: 0.82rem;">Devuelta / Cambio:</span>
-                            <span class="font-weight-bold text-success" id="lblValorDevuelta" style="font-size: 1.1rem;">$ 0</span>
+
+                        <!-- Botones Rápidos de Billetes Comunes entregados por el cliente -->
+                        <div class="d-flex flex-wrap quick-cash-btns mb-1" style="gap: 4px;">
+                            <span class="text-muted small align-self-center mr-1" style="font-size:0.70rem; font-weight:700;">Billetes:</span>
+                            <button type="button" class="btn btn-xs btn-outline-primary flex-fill py-0 font-weight-bold btn-set-billete" data-monto="20000" title="Cliente paga con billete de $20.000">$20k</button>
+                            <button type="button" class="btn btn-xs btn-outline-primary flex-fill py-0 font-weight-bold btn-set-billete" data-monto="50000" title="Cliente paga con billete de $50.000">$50k</button>
+                            <button type="button" class="btn btn-xs btn-outline-primary flex-fill py-0 font-weight-bold btn-set-billete" data-monto="100000" title="Cliente paga con billete de $100.000">$100k</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 font-weight-bold" id="badgeSiguienteRedondeo" title="Redondear al siguiente billete de $10.000">Redondear</button>
+                        </div>
+
+                        <!-- Botones Rápidos de Monto de Devuelta solicitado por el cliente -->
+                        <div class="d-flex flex-wrap quick-cash-btns mb-1" style="gap: 4px;">
+                            <span class="text-muted small align-self-center mr-1" style="font-size:0.70rem; font-weight:700;">Llevar Dev:</span>
+                            <button type="button" class="btn btn-xs btn-outline-success flex-fill py-0 font-weight-bold btn-set-devuelta" data-dev="10000" title="Llevar $10.000 de devuelta">$10k</button>
+                            <button type="button" class="btn btn-xs btn-outline-success flex-fill py-0 font-weight-bold btn-set-devuelta" data-dev="20000" title="Llevar $20.000 de devuelta">$20k</button>
+                            <button type="button" class="btn btn-xs btn-outline-success flex-fill py-0 font-weight-bold btn-set-devuelta" data-dev="50000" title="Llevar $50.000 de devuelta">$50k</button>
+                        </div>
+
+                        <!-- Estado / Resumen de Devuelta Calculada -->
+                        <div class="d-flex justify-content-between align-items-center p-1 rounded bg-light border" id="boxDevueltaResumen">
+                            <span class="font-weight-bold text-muted" style="font-size: 0.76rem;">Resultado:</span>
+                            <span class="font-weight-bold text-success" id="lblValorDevuelta" style="font-size: 0.95rem;">Devuelta: $ 0</span>
                         </div>
                     </div>
 

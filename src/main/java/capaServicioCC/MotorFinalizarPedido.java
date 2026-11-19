@@ -210,6 +210,19 @@ public class MotorFinalizarPedido extends HttpServlet {
 							if (clJson.has("identificacion")) {
 								cli.setIdentificacion(clJson.get("identificacion").getAsString());
 							}
+							if (clJson.has("politicadatos")) {
+								cli.setPoliticaDatos(clJson.get("politicadatos").getAsString());
+							}
+							if (cli.getIdcliente() > 0 && clJson.has("politicadatos")) {
+								try (PreparedStatement psUpdPol = con.prepareStatement(
+										"update pizzaamericana.cliente set politica_datos = ? where idcliente = ?")) {
+									psUpdPol.setString(1, cli.getPoliticaDatos() != null ? cli.getPoliticaDatos() : "S");
+									psUpdPol.setInt(2, cli.getIdcliente());
+									psUpdPol.executeUpdate();
+								} catch (Exception exPol) {
+									// Ignorado si falla el update puntual
+								}
+							}
 						}
 					} catch (Exception exCli) {
 						// Ignorado si no viene estructura completa

@@ -162,6 +162,9 @@ public class ProyectorPedidoLegacy {
 									String nomH = descripciones.containsKey(h.idproducto)
 											? descripciones.get(h.idproducto)
 											: "Item " + h.idproducto;
+									if (h.cantidad < 1.0) {
+										nomH += " (1/2)";
+									}
 									if (h.refModificador == 1) {
 										adiciones.append("CON ").append(nomH);
 									} else if (h.refModificador == 2) {

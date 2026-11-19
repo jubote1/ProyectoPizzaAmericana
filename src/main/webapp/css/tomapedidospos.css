@@ -546,6 +546,70 @@ body {
     margin-right: 8px;
 }
 
+/* =========================================================================
+   ADICIONES DIVISIBLES (ENTERA O MITAD DE PIZZA)
+   ========================================================================= */
+.adiciones-divisibles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.opcion-adicion-card {
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 6px 8px;
+    transition: all 0.15s ease-in-out;
+}
+
+.opcion-adicion-card:hover {
+    border-color: #102F6F;
+    box-shadow: 0 2px 6px rgba(16, 47, 111, 0.08);
+}
+
+.opcion-adicion-card.selected-entera {
+    border-color: #102F6F;
+    background: #f0f4fc;
+    box-shadow: 0 0 0 1px #102F6F;
+}
+
+.opcion-adicion-card.selected-m1 {
+    border-color: #E42528;
+    background: #fdf2f2;
+    box-shadow: 0 0 0 1px #E42528;
+}
+
+.opcion-adicion-card.selected-m2 {
+    border-color: #007bff;
+    background: #f0f7ff;
+    box-shadow: 0 0 0 1px #007bff;
+}
+
+.adicion-card-head {
+    cursor: pointer;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    min-height: 28px;
+}
+
+.adicion-card-head .adicion-titulo {
+    color: #212529;
+    flex: 1;
+}
+
+.adicion-portion-btns .btn {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 4px;
+}
+
+.caja-devuelta-box {
+    background: #fdfefe;
+    border-color: #cbd5e1 !important;
+}
+
 
 
 
