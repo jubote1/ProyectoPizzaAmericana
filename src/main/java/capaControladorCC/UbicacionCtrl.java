@@ -14,11 +14,13 @@ import capaModeloCC.CorreoElectronico;
 import capaModeloCC.Parametro;
 import capaModeloCC.Resultado;
 import capaModeloCC.Ubicacion;
+import utilidadesCC.AlertaCobertura;
 import utilidadesCC.ControladorEnvioCorreo;
 import capaDAOCC.ClienteDAO;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +39,10 @@ public class UbicacionCtrl {
 	private static String API_KEY_HERE = "";
 	private static String API_KEY_ARCGIS = "";
 	private static String API_KEY_GOOGLE = "";
+
+	/** Despues de una falla de conexion con ArcGIS, tiempo en que se salta ArcGIS y se usan HERE/Google. */
+	private static final long PAUSA_ARCGIS_MS = 60_000L;
+	private static volatile long arcgisGeocodificacionPausadaHasta = 0L;
 	private static String serviceUrl = "https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 	private static String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
 
@@ -93,6 +99,9 @@ public class UbicacionCtrl {
 	    Integer idcliente = coberturaRequest.getIdcliente();
 	    String telefono = coberturaRequest.getTelefono();
 	    String referencia  = "";
+
+	    // Datos de la consulta para que una alerta de falla llegue con direccion, lead y cliente.
+	    AlertaCobertura.iniciarContexto(direccion, lead, idcliente, telefono);
 	    
 	
 	    Resultado resultado = new Resultado();
@@ -135,6 +144,8 @@ public class UbicacionCtrl {
 	            referencia = cliente.getObservacion();
 	            barrioBD = cliente.getZonaDireccion();
 	            municipioBD = cliente.getMunicipio();
+
+	            AlertaCobertura.actualizarCliente(idcliente, nombreCliente(cliente), cliente.getTelefono(), direccion);
 	     
 	        }
 	        
@@ -219,10 +230,12 @@ public class UbicacionCtrl {
 	    } catch (Exception e) {
 	        System.err.println("Error al geocodificar: " + e.getMessage());
 	        e.printStackTrace();
-	        EnvioCorreo(direccion, lead, e.getMessage());
+	        AlertaCobertura.registrar("Consulta de cobertura (geocodificacion)", direccion, lead, mensajeDe(e));
 
 	        resultado.setSuccess(false);
 	        resultado.setResultado("Error interno al intentar ubicar la direccion.");
+	    } finally {
+	        AlertaCobertura.limpiarContexto();
 	    }
 
 	    return resultado;
@@ -588,6 +601,13 @@ public class UbicacionCtrl {
 
 	private static JsonObject obtenerCoordenadasDesdeArcGIS(String direccion, String municipioPedido) throws Exception {
 	    JsonObject coords = crearCoordsVacias();
+
+	    // Si ArcGIS acaba de fallar por conexion, no se insiste durante un minuto: se pasa
+	    // directo a HERE/Google en vez de esperar otro timeout por cada candidato.
+	    if (System.currentTimeMillis() < arcgisGeocodificacionPausadaHasta) {
+	        coords.addProperty("error", "ArcGIS en pausa por falla de conexion reciente");
+	        return coords;
+	    }
 	    
 	    String url = serviceUrl + "/findAddressCandidates"
 	            + "?f=json"
@@ -602,7 +622,18 @@ public class UbicacionCtrl {
 	    
 
 	    
-	    JsonObject json = ejecutarGetJson(url);
+	    JsonObject json;
+	    try {
+	        json = ejecutarGetJson(url);
+	    } catch (Exception e) {
+	        // Antes esta excepcion cortaba toda la consulta y HERE/Google nunca se intentaban.
+	        // Ahora se registra la alerta y se continua con los proveedores de respaldo.
+	        arcgisGeocodificacionPausadaHasta = System.currentTimeMillis() + PAUSA_ARCGIS_MS;
+	        AlertaCobertura.registrar("ArcGIS geocodificacion (" + hostDe(serviceUrl)
+	                + ") - se continuo con HERE/Google", null, null, mensajeDe(e));
+	        coords.addProperty("error", "ArcGIS no respondio: " + mensajeDe(e));
+	        return coords;
+	    }
 
 	    if (json.has("error")) {
 	        coords.addProperty("error", json.getAsJsonObject("error").toString());
@@ -783,7 +814,7 @@ public class UbicacionCtrl {
 
 	    } catch (Exception e) {
 	        System.out.println("Error al realizar la consulta: " + e.getMessage());
-	        EnvioCorreo(direccion, lead, e.getMessage());
+	        AlertaCobertura.registrar("ArcGIS zonas de cobertura (" + hostDe(queryUrl) + ")", direccion, lead, mensajeDe(e));
 	        resultado.setSuccess(false);
 	    }
 
@@ -823,34 +854,36 @@ public class UbicacionCtrl {
 		return ubicacion;
 	}
 
+	/**
+	 * @deprecated se conserva por compatibilidad. Las alertas ahora se agrupan en
+	 *             {@link AlertaCobertura}: primer aviso inmediato y luego un correo cada 10 minutos
+	 *             con el detalle de todas las fallas.
+	 */
+	@Deprecated
 	public static void EnvioCorreo(String direccion,String  lead, String error) {
-		
-		Correo correo = new Correo();
-		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-		ArrayList<String> correos = new ArrayList<String>();
+		AlertaCobertura.registrar("Geocodificacion", direccion, lead, error);
+	}
 
-		correo.setAsunto("TENEMOS PROBLEMA CON LA CONSULTA DE LA COBERTURA");
+	/** Mensaje legible de una excepcion (algunas, como los timeouts, pueden traer mensaje nulo). */
+	private static String mensajeDe(Exception e) {
+		String m = e.getMessage();
+		return (m == null || m.isBlank()) ? e.getClass().getSimpleName() : e.getClass().getSimpleName() + ": " + m;
+	}
 
-		correos.add("jubote1@gmail.com");
-		correos.add("a.desarrollosi@gmail.com");
-
-		correo.setContrasena(infoCorreo.getClaveCorreo());
-		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-
-		String mensCorreo = "Se encontro un problema al invocar uno de los servicios de Geocodificacion. " + error;
-
-		if (lead != null && !lead.trim().isEmpty()) {
-		    mensCorreo += "<br> Numero de Lead: " + lead.trim();
+	/** Host de una URL, para que la alerta diga exactamente que servidor de ArcGIS fallo. */
+	private static String hostDe(String url) {
+		try {
+			String host = URI.create(url).getHost();
+			return host == null ? String.valueOf(url) : host;
+		} catch (Exception e) {
+			return String.valueOf(url);
 		}
-		
-		if (direccion != null && !direccion.trim().isEmpty()) {
-		    mensCorreo += "<br>Dirección a consultar: " + direccion.trim();
-		}
+	}
 
-		correo.setMensaje(mensCorreo);
-
-		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();
+	private static String nombreCliente(Cliente cliente) {
+		String nombres = cliente.getNombres() == null ? "" : cliente.getNombres().trim();
+		String apellidos = cliente.getApellidos() == null ? "" : cliente.getApellidos().trim();
+		return (nombres + " " + apellidos).trim();
 	}
 
 
@@ -2157,6 +2190,10 @@ public class UbicacionCtrl {
 	    try {
 	        response = utilidadesCC.ClientesHttp.jdk()
 	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    } catch (HttpConnectTimeoutException e) {
+	        // El servidor remoto no acepto la conexion en el tiempo limite: reintentar de inmediato
+	        // solo duplica la espera. Se falla rapido para pasar a los proveedores de respaldo.
+	        throw e;
 	    } catch (java.io.IOException e) {
 	        // Si la conexión previa fue cerrada por inactividad (GOAWAY / reset), reintentar una vez con conexión fresca
 	        System.out.println("ejecutarGetJson: Advertencia de conexion (" + e.getMessage() + "), reintentando...");
