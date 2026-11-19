@@ -39,6 +39,7 @@ var clienteActual = {
     longitud: 0.0,
     distanciatienda: 0.0,
     nombreTienda: "",
+    politicaDatos: "S",
     // Facturación Electrónica DIAN
     emailfact: "",
     clientesiniden: "S",
@@ -189,36 +190,62 @@ $(document).ready(function () {
         removerDescuentoActivo();
     });
 
+    // Evento Política de Datos (Habeas Data)
+    $("#chkPoliticaDatos").on("change", function () {
+        clienteActual.politicaDatos = $(this).is(":checked") ? "S" : "N";
+    });
+
     // Eventos de Pago y Cálculo de Devuelta
     $("#formaPagoSelect").on("change", function () {
         ajustarFormaPagoUI();
     });
 
-    $("#txtValorPago").on("input change", function () {
-        calcularDevuelta();
-    });
-
-    $("#btnPagoExacto").on("click", function () {
-        if (resultadoMotor && resultadoMotor.total) {
-            $("#txtValorPago").val(formatearPesos(resultadoMotor.total));
-            calcularDevuelta();
+    $("input[name='radioModoPagoEfectivo']").on("change", function () {
+        var modo = $(this).val();
+        if (modo === "exacto") {
+            if (resultadoMotor && resultadoMotor.total) {
+                $("#txtValorPago").val(formatearPesos(resultadoMotor.total));
+                $("#txtValorDevuelta").val("0");
+            }
+            calcularDevuelta("exacto");
+        } else {
+            $("#txtValorDevuelta").focus();
+            calcularDevuelta("pago");
         }
     });
 
-    $(".btn-sumar-efectivo").on("click", function () {
-        var sumar = parseInt($(this).attr("data-sumar")) || 0;
-        var act = parseFloat(($("#txtValorPago").val() || "").toString().replace(/\D/g, "")) || (resultadoMotor ? resultadoMotor.total : 0);
-        var nuevo = act + sumar;
-        $("#txtValorPago").val(formatearPesos(nuevo));
-        calcularDevuelta();
+    $("#txtValorPago").on("input change", function () {
+        calcularDevuelta("pago");
+    });
+
+    $("#txtValorDevuelta").on("input change", function () {
+        calcularDevuelta("devuelta");
+    });
+
+    $(".btn-set-billete").on("click", function () {
+        var monto = parseInt($(this).attr("data-monto")) || 0;
+        $("#optPagoDevuelta").prop("checked", true);
+        $("#lblModoPagoDevuelta").addClass("active").siblings().removeClass("active");
+        $("#txtValorPago").val(formatearPesos(monto));
+        calcularDevuelta("pago");
+    });
+
+    $(".btn-set-devuelta").on("click", function () {
+        var dev = parseInt($(this).attr("data-dev")) || 0;
+        $("#optPagoDevuelta").prop("checked", true);
+        $("#lblModoPagoDevuelta").addClass("active").siblings().removeClass("active");
+        $("#txtValorDevuelta").val(formatearPesos(dev));
+        calcularDevuelta("devuelta");
     });
 
     $("#badgeSiguienteRedondeo").on("click", function () {
         if (resultadoMotor && resultadoMotor.total > 0) {
             var total = resultadoMotor.total;
             var redondeo = Math.ceil((total + 1) / 10000) * 10000;
+            $("#optPagoDevuelta").prop("checked", true);
+            $("#lblModoPagoDevuelta").addClass("active").siblings().removeClass("active");
             $("#txtValorPago").val(formatearPesos(redondeo));
-            calcularDevuelta();
+            calcularDevuelta("pago");
         }
     });
 
@@ -366,6 +393,11 @@ function seleccionarClienteDeTabla(cli) {
     $("#telcelular").val(clienteActual.telefono);
     $("#chkClienteSinIdentificar").prop("checked", false);
 
+    // Política de Tratamiento de Datos (Habeas Data)
+    var tienePol = (cli.politicadatos === "S" || cli.politica_datos === "S" || cli.politicadatos === undefined);
+    clienteActual.politicaDatos = tienePol ? "S" : "N";
+    $("#chkPoliticaDatos").prop("checked", tienePol);
+
     // Facturación Electrónica DIAN
     if (cli.identificacion && cli.identificacion !== "222222222222" && cli.identificacion !== "") {
         $("#chkFacturaElectronica").prop("checked", true).trigger("change");
@@ -424,12 +456,14 @@ function establecerClienteGenerico() {
         longitud: 0.0,
         distanciatienda: 0.0,
         nombreTienda: "Mostrador",
+        politicaDatos: "S",
         emailfact: "",
         clientesiniden: "S",
         idtipopersona: 2,
         identificacion: "222222222222"
     };
     clienteUbicado = true;
+    $("#chkPoliticaDatos").prop("checked", true);
     $("#telcelular").val("3000000000");
     $("#cliNombres").val("Cliente Mostrador");
     $("#cliApellidos").val("");
@@ -981,8 +1015,100 @@ function renderizarModalProducto(prod) {
                 });
                 $pBox.attr("data-modo-activo", "entera");
 
+            } else if (preg.permiteDividir >= 2 && (preg.maximo > 1 || preg.maximo === 0)) {
+                // Caso B: Adiciones divisibles de Pizza (Permite elegir Toda la Pizza, Mitad 1 o Mitad 2)
+                $pBox.attr("data-permite-dividir", "2");
+                $pBox.attr("data-es-adicion-divisible", "1");
+
+                var $adicionesGrid = $("<div></div>").addClass("adiciones-divisibles-grid");
+
+                $.each(preg.opciones, function (j, op) {
+                    var $card = $("<div></div>")
+                        .addClass("opcion-adicion-card")
+                        .attr("data-idopcion", op.idproducto)
+                        .attr("data-idpregunta", preg.idpregunta)
+                        .attr("data-precio-base", op.precio)
+                        .attr("data-porcion", "none");
+
+                    var $head = $("<div class='adicion-card-head d-flex justify-content-between align-items-center'></div>");
+                    $head.append("<span class='adicion-titulo font-weight-bold text-dark'>" + op.descripcion + "</span>");
+                    var $badgePrecio = $("<span class='opcion-precio text-danger font-weight-bold'>+$ " + formatearPesos(op.precio) + "</span>");
+                    $head.append($badgePrecio);
+                    $card.append($head);
+
+                    var $btnGroup = $("<div class='btn-group btn-group-toggle w-100 mt-1 adicion-portion-btns'></div>");
+                    var $btnToda = $("<button type='button' class='btn btn-xs btn-outline-secondary py-0 flex-fill' data-val='entera' title='Adición en toda la pizza (100%)'>Toda (1.0)</button>");
+                    var $btnM1 = $("<button type='button' class='btn btn-xs btn-outline-danger py-0 flex-fill' data-val='m1' title='Adición solo en Mitad 1 (50%)'>Mitad 1 (0.5)</button>");
+                    var $btnM2 = $("<button type='button' class='btn btn-xs btn-outline-primary py-0 flex-fill' data-val='m2' title='Adición solo en Mitad 2 (50%)'>Mitad 2 (0.5)</button>");
+
+                    $btnGroup.append($btnToda).append($btnM1).append($btnM2);
+                    $card.append($btnGroup);
+
+                    function actualizarEstadoCard(modo) {
+                        $card.attr("data-porcion", modo);
+                        $btnToda.removeClass("active btn-dark").addClass("btn-outline-secondary");
+                        $btnM1.removeClass("active btn-danger").addClass("btn-outline-danger");
+                        $btnM2.removeClass("active btn-primary").addClass("btn-outline-primary");
+                        $card.removeClass("selected-entera selected-m1 selected-m2");
+
+                        if (modo === "entera") {
+                            $btnToda.removeClass("btn-outline-secondary").addClass("active btn-dark");
+                            $card.addClass("selected-entera");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio) + " <small class='badge badge-dark'>100%</small>");
+                        } else if (modo === "m1") {
+                            $btnM1.removeClass("btn-outline-danger").addClass("active btn-danger");
+                            $card.addClass("selected-m1");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-danger'>1/2 M1</small>");
+                        } else if (modo === "m2") {
+                            $btnM2.removeClass("btn-outline-primary").addClass("active btn-primary");
+                            $card.addClass("selected-m2");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-primary'>1/2 M2</small>");
+                        } else {
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio));
+                        }
+                    }
+
+                    $btnToda.on("click", function (e) {
+                        e.stopPropagation();
+                        if ($card.attr("data-porcion") === "entera") {
+                            actualizarEstadoCard("none");
+                        } else {
+                            actualizarEstadoCard("entera");
+                        }
+                    });
+
+                    $btnM1.on("click", function (e) {
+                        e.stopPropagation();
+                        if ($card.attr("data-porcion") === "m1") {
+                            actualizarEstadoCard("none");
+                        } else {
+                            actualizarEstadoCard("m1");
+                        }
+                    });
+
+                    $btnM2.on("click", function (e) {
+                        e.stopPropagation();
+                        if ($card.attr("data-porcion") === "m2") {
+                            actualizarEstadoCard("none");
+                        } else {
+                            actualizarEstadoCard("m2");
+                        }
+                    });
+
+                    $head.on("click", function () {
+                        if ($card.attr("data-porcion") === "entera") {
+                            actualizarEstadoCard("none");
+                        } else {
+                            actualizarEstadoCard("entera");
+                        }
+                    });
+
+                    $adicionesGrid.append($card);
+                });
+
+                $pBox.append($adicionesGrid);
             } else {
-                // Caso B: Pregunta estándar (Gaseosas, Bebidas, Acompañantes o Adiciones)
+                // Caso C: Pregunta estándar no divisible (Gaseosas, Bebidas, Acompañantes o Salsas)
                 $pBox.attr("data-permite-dividir", "0");
                 var $opGrid = $("<div></div>").addClass("opciones-grid");
                 var esRadio = (preg.maximo === 1);
@@ -1114,8 +1240,46 @@ function guardarProductoDesdeModal() {
                         });
                     }
                 }
+            } else if (preg.permiteDividir >= 2 && (preg.maximo > 1 || preg.maximo === 0)) {
+                // Adiciones divisibles de Pizza (Entera 100%, Mitad 1 50% o Mitad 2 50%)
+                var $adCards = $pBox.find(".opcion-adicion-card");
+                var totalSelAd = 0;
+                $adCards.each(function () {
+                    var porcion = $(this).attr("data-porcion");
+                    var idOpcion = parseInt($(this).attr("data-idopcion"));
+                    if (porcion === "entera") {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 0,
+                            idproductoOpcion: idOpcion,
+                            cantidad: 1.0
+                        });
+                        totalSelAd++;
+                    } else if (porcion === "m1") {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 1,
+                            idproductoOpcion: idOpcion,
+                            cantidad: 0.5
+                        });
+                        totalSelAd++;
+                    } else if (porcion === "m2") {
+                        selecciones.push({
+                            idpregunta: preg.idpregunta,
+                            mitad: 2,
+                            idproductoOpcion: idOpcion,
+                            cantidad: 0.5
+                        });
+                        totalSelAd++;
+                    }
+                });
+
+                if (preg.obligaEleccion === 1 && preg.minimo > 0 && totalSelAd < preg.minimo) {
+                    errorValidacion = "Debes seleccionar al menos " + preg.minimo + " adicion(es) para: " + tituloPreg;
+                    return false;
+                }
             } else {
-                // Pregunta regular o adiciones
+                // Pregunta regular o adiciones no divisibles
                 var $selReg = $pBox.find(".opciones-grid .opcion-btn.selected");
                 if (preg.obligaEleccion === 1 && preg.minimo > 0 && $selReg.length < preg.minimo) {
                     errorValidacion = "Debes seleccionar al menos " + preg.minimo + " opcion(es) para: " + tituloPreg;
@@ -1358,29 +1522,54 @@ function ajustarFormaPagoUI() {
         $("#cajaDevueltaComanda").slideUp(150);
         if (resultadoMotor) {
             $("#txtValorPago").val(formatearPesos(resultadoMotor.total));
+            $("#txtValorDevuelta").val("0");
         }
     }
 }
 
-function calcularDevuelta() {
+function calcularDevuelta(origen) {
     if (!resultadoMotor) return;
 
     var idForma = parseInt($("#formaPagoSelect").val()) || 1;
     if (idForma !== 1) {
-        $("#lblValorDevuelta").text("$ 0");
+        $("#lblValorDevuelta").text("Devuelta: $ 0");
         return;
     }
 
-    var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
-    var valPago = parseFloat(valPagoStr) || 0;
     var total = resultadoMotor.total || 0;
+    var esModoExacto = $("input[name='radioModoPagoEfectivo']:checked").val() === "exacto";
 
-    if (valPago >= total) {
-        var dev = valPago - total;
-        $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("$ " + formatearPesos(dev));
+    if (esModoExacto || origen === "exacto") {
+        $("#txtValorPago").val(formatearPesos(total)).prop("disabled", true);
+        $("#txtValorDevuelta").val("0").prop("disabled", true);
+        $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("Pago Exacto ($ " + formatearPesos(total) + ")");
+        return;
+    }
+
+    $("#txtValorPago").prop("disabled", false);
+    $("#txtValorDevuelta").prop("disabled", false);
+
+    if (origen === "devuelta") {
+        // El usuario digitó directamente la devuelta que desea llevar
+        var devStr = ($("#txtValorDevuelta").val() || "").toString().replace(/\D/g, "");
+        var devVal = parseFloat(devStr) || 0;
+        var pagaCon = total + devVal;
+        $("#txtValorPago").val(formatearPesos(pagaCon));
+        $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("Llevar devuelta de $ " + formatearPesos(devVal));
     } else {
-        var falta = total - valPago;
-        $("#lblValorDevuelta").removeClass("text-success").addClass("text-danger").text("Faltan $ " + formatearPesos(falta));
+        // El usuario digitó el monto con el que paga el cliente o usó atajo de billete
+        var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
+        var valPago = parseFloat(valPagoStr) || 0;
+
+        if (valPago >= total) {
+            var dev = valPago - total;
+            $("#txtValorDevuelta").val(formatearPesos(dev));
+            $("#lblValorDevuelta").removeClass("text-danger").addClass("text-success").text("Devuelta: $ " + formatearPesos(dev));
+        } else {
+            var falta = total - valPago;
+            $("#txtValorDevuelta").val("0");
+            $("#lblValorDevuelta").removeClass("text-success").addClass("text-danger").text("Faltan $ " + formatearPesos(falta));
+        }
     }
 }
 
@@ -1736,7 +1925,8 @@ function ejecutarDespachoTiendaDefinitivo() {
             emailfact: clienteActual.emailfact,
             clientesiniden: clienteActual.clientesiniden,
             idtipopersona: clienteActual.idtipopersona,
-            identificacion: clienteActual.identificacion
+            identificacion: clienteActual.identificacion,
+            politicadatos: clienteActual.politicaDatos || "S"
         },
         solicitud: {
             contexto: {
