@@ -880,6 +880,59 @@ public class CodigoPromoDAO {
 	}
 
 	/**
+	 * Si esa plantilla de Brevo entrega un codigo y por lo tanto NO puede salir sin oferta.
+	 *
+	 * EL 19-NOV SALIERON 500 CORREOS VACIOS
+	 *
+	 * El envio 265 uso la plantilla 84 -la del cupon del 50%- sin oferta seleccionada.
+	 * EnvioPublicidadCtrl solo arma los params (nombre/codigo/vence) cuando hay oferta, asi
+	 * que Brevo pinto los comodines vacios: 500 personas recibieron el correo sin nombre,
+	 * sin codigo y sin fecha. No se quemo ningun codigo, pero el correo quedo inservible y
+	 * nadie se entero hasta que los clientes reclamaron.
+	 *
+	 * La validacion de entonces solo miraba cosas CUANDO habia oferta; al reves no habia nada.
+	 *
+	 * POR QUE UNA COLUMNA Y NO PREGUNTARLE A BREVO
+	 *
+	 * Lo exacto seria bajar el html de la plantilla y buscar {{ params.codigo }}, pero eso
+	 * pone a Brevo en el camino critico de una validacion: si Brevo no responde, no se podria
+	 * mandar NADA. La marca la pone quien registra la plantilla, que es quien sabe.
+	 *
+	 * Ante la duda NO bloquea: si la plantilla no esta en la tabla, o la consulta falla, se
+	 * devuelve false y el envio sigue como antes. Es un seguro, no una aduana.
+	 */
+	public static boolean plantillaExigeOferta(final int idPlantilla) {
+		if (idPlantilla <= 0) {
+			return false;
+		}
+		Connection cn = null;
+		try {
+			cn = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+			//Sin calificar el esquema, como el resto de este archivo y como
+			//SegmentacionClienteDAO: la conexion principal ya viene parada en la base buena,
+			//y calificarla a mano falla en los ambientes donde se llama distinto.
+			try (PreparedStatement ps = cn.prepareStatement(
+					"select exige_oferta from plantilla_brevo"
+					+ " where idplantilla = ? and categoria = 'C' limit 1")) {
+				ps.setInt(1, idPlantilla);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						return "S".equalsIgnoreCase(texto(rs.getString(1), ""));
+					}
+				}
+			}
+		} catch (final Throwable t) {
+			//Incluye el caso de que la columna todavia no exista en ese ambiente.
+			Logger.getLogger("log_file").warn(
+					"CodigoPromoDAO.plantillaExigeOferta: no se pudo leer la marca de la plantilla "
+					+ idPlantilla + ", el envio sigue sin bloquearse. " + t.toString());
+		} finally {
+			cerrar(cn);
+		}
+		return false;
+	}
+
+	/**
 	 * Dice, ANTES de abrir la tanda, si la oferta se puede mandar en una campana. "" si se puede, o el motivo.
 	 * Son las mismas reglas de emitir: si se dejaran para el primer destinatario, la tanda se abriria, cargaria
 	 * toda la gente y fallaria una por una.
