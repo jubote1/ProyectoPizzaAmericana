@@ -16,6 +16,7 @@ import capaModeloCC.Resultado;
 import capaModeloCC.Ubicacion;
 import utilidadesCC.AlertaCobertura;
 import utilidadesCC.ControladorEnvioCorreo;
+import utilidadesCC.ZonasCoberturaCache;
 import capaDAOCC.ClienteDAO;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -43,6 +44,7 @@ public class UbicacionCtrl {
 	/** Despues de una falla de conexion con ArcGIS, tiempo en que se salta ArcGIS y se usan HERE/Google. */
 	private static final long PAUSA_ARCGIS_MS = 60_000L;
 	private static volatile long arcgisGeocodificacionPausadaHasta = 0L;
+	private static volatile long arcgisZonasPausadaHasta = 0L;
 	private static String serviceUrl = "https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 	private static String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
 
@@ -718,6 +720,29 @@ public class UbicacionCtrl {
 	    Resultado resultado = new Resultado();
 	    String tipoCliente = tipo_cliente == null ? "" : tipo_cliente.toLowerCase().trim();
 
+	    // 1. EVALUAR PRIMERO CON LA CACHE LOCAL DE POLIGONOS (0 ms, sin llamadas HTTP ni riesgo de timeout)
+	    try {
+	        ZonasCoberturaCache.Zona zonaLocal = ZonasCoberturaCache.buscarZona(longitud, latitud, idTiendaEsperada);
+	        if (zonaLocal != null) {
+	            String nombre = zonaLocal.getNombre();
+	            int idTiendaZona = zonaLocal.getIdTienda();
+
+	            if (idTiendaEsperada == null || idTiendaEsperada <= 0 || idTiendaZona == idTiendaEsperada) {
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente);
+	            }
+	        }
+	    } catch (Exception e) {
+	        System.err.println("consultarZonas: Advertencia al evaluar cache local de zonas: " + e.getMessage());
+	    }
+
+	    // 2. Si no cayó en la caché local y ArcGIS remoto está pausado por fallas recientes,
+	    //    evitamos esperar otro timeout de 10 segundos contra un servidor caído.
+	    if (System.currentTimeMillis() < arcgisZonasPausadaHasta) {
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
+	        resultado.setSuccess(false);
+	        return resultado;
+	    }
+
 	    try {
 	        JsonObject geometry = new JsonObject();
 	        geometry.addProperty("x", longitud);
@@ -740,7 +765,6 @@ public class UbicacionCtrl {
 	                + "&returnGeometry=false"
 	                + "&token=" + urlEncode(API_KEY_ARCGIS);
 
-		    
 	        JsonObject json = ejecutarGetJson(url);
 
 	        if (json.has("error")) {
@@ -757,7 +781,6 @@ public class UbicacionCtrl {
 
 	                JsonObject attributes = feature.getAsJsonObject("attributes");
 	                String nombre = obtenerAtributo(attributes, "nombre");
-	                
 
 	                if (nombre.isBlank()) {
 	                    continue;
@@ -769,56 +792,62 @@ public class UbicacionCtrl {
 	                    continue;
 	                }
 
-	                String mensaje = switch (tipoCliente) {
-	                    case "informacion" ->
-	                            "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
-	                                    + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
-
-	                    case "programado" ->
-	                            "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
-	                                    + nombre;
-
-	                    default ->
-	                            "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
-	                };
-
-	                resultado.setResultado(mensaje);
-	                resultado.setInfoAdicional(nombre);
-	                resultado.setEstadoTienda(
-	                        TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona)
-	                                ? "BLOQUEADO"
-	                                : "DISPONIBLE"
-	                );
-	                
-	                resultado.setIdtienda(idTiendaZona);
-	                resultado.setSuccess(true);
-	               
-
-	                return resultado;
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente);
 	            }
 	        }
 
-	        String mensajeSinCobertura = switch (tipoCliente) {
-	            case "informacion" ->
-	                    "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
-
-	            case "programado" ->
-	                    "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
-
-	            default ->
-	                    "La direccion no se encuentra dentro de cobertura.";
-	        };
-
-	        resultado.setResultado(mensajeSinCobertura);
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
 	        resultado.setSuccess(false);
 
 	    } catch (Exception e) {
-	        System.out.println("Error al realizar la consulta: " + e.getMessage());
+	        arcgisZonasPausadaHasta = System.currentTimeMillis() + PAUSA_ARCGIS_MS;
+	        System.out.println("Error al realizar la consulta de zonas en ArcGIS: " + e.getMessage());
 	        AlertaCobertura.registrar("ArcGIS zonas de cobertura (" + hostDe(queryUrl) + ")", direccion, lead, mensajeDe(e));
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
 	        resultado.setSuccess(false);
 	    }
 
 	    return resultado;
+	}
+
+	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente) {
+	    String mensaje = switch (tipoCliente) {
+	        case "informacion" ->
+	                "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
+	                        + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
+
+	        case "programado" ->
+	                "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
+	                        + nombre;
+
+	        default ->
+	                "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
+	    };
+
+	    resultado.setResultado(mensaje);
+	    resultado.setInfoAdicional(nombre);
+	    resultado.setEstadoTienda(
+	            TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona)
+	                    ? "BLOQUEADO"
+	                    : "DISPONIBLE"
+	    );
+	    
+	    resultado.setIdtienda(idTiendaZona);
+	    resultado.setSuccess(true);
+	    return resultado;
+	}
+
+	private static String obtenerMensajeSinCobertura(String tipoCliente) {
+	    return switch (tipoCliente) {
+	        case "informacion" ->
+	                "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
+
+	        case "programado" ->
+	                "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
+
+	        default ->
+	                "La direccion no se encuentra dentro de cobertura.";
+	    };
 	}
 
 	public Ubicacion ubicarDireccionEnTiendaBatch(String direccion, String municipio, String barrio) {

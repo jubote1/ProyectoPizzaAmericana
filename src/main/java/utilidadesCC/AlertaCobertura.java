@@ -141,10 +141,22 @@ public final class AlertaCobertura {
 				EJECUTOR.execute(() -> enviarSeguro(una, 0, false));
 				return;
 			}
-			if (pendientes.size() < MAXIMO_DETALLES) {
-				pendientes.add(f);
-			} else {
-				omitidas++;
+			boolean yaExiste = false;
+			for (Falla p : pendientes) {
+				if (esMismaFalla(p, f)) {
+					p.hora = f.hora;
+					p.error = f.error;
+					p.reintentos++;
+					yaExiste = true;
+					break;
+				}
+			}
+			if (!yaExiste) {
+				if (pendientes.size() < MAXIMO_DETALLES) {
+					pendientes.add(f);
+				} else {
+					omitidas++;
+				}
 			}
 			if (envioProgramado == null) {
 				long espera = Math.max(0, ultimoEnvioMs + ventanaMs - ahora);
@@ -205,7 +217,7 @@ public final class AlertaCobertura {
 					.append(celda(f.direccion))
 					.append(celda(f.lead))
 					.append(celda(describirCliente(f)))
-					.append(celda(f.error))
+					.append(celda(f.reintentos > 0 ? f.error + " (reintentos: " + (f.reintentos + 1) + ")" : f.error))
 					.append("</tr>");
 		}
 		sb.append("</table>");
@@ -272,6 +284,25 @@ public final class AlertaCobertura {
 		new ControladorEnvioCorreo(correo, correos).enviarCorreo();
 	}
 
+	private static boolean esMismaFalla(Falla a, Falla b) {
+		if (a == null || b == null) {
+			return false;
+		}
+		if (noVacio(a.servicio) && !a.servicio.equals(b.servicio)) {
+			return false;
+		}
+		if (noVacio(a.lead) && noVacio(b.lead) && a.lead.equalsIgnoreCase(b.lead)) {
+			return true;
+		}
+		if (a.idcliente != null && a.idcliente > 0 && b.idcliente != null && a.idcliente.equals(b.idcliente)) {
+			return true;
+		}
+		if (noVacio(a.direccion) && noVacio(b.direccion) && a.direccion.equalsIgnoreCase(b.direccion)) {
+			return true;
+		}
+		return false;
+	}
+
 	private static boolean noVacio(String s) {
 		return s != null && !s.trim().isEmpty();
 	}
@@ -298,6 +329,7 @@ public final class AlertaCobertura {
 		String nombreCliente;
 		String telefono;
 		String error;
+		int reintentos;
 	}
 
 	private static final class Contexto {
