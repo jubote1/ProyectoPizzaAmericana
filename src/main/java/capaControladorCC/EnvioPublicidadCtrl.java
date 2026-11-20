@@ -786,6 +786,15 @@ public class EnvioPublicidadCtrl {
 		if (idPlantilla <= 0) {
 			return ("Escoja la plantilla de Brevo.");
 		}
+		//AQUI LLEGA SOLO SI NO SE ESCOGIO OFERTA. Una plantilla que entrega codigo no puede
+		//salir asi: los params (nombre/codigo/vence) se arman mas arriba unicamente cuando
+		//idOferta > 0, de modo que Brevo pintaria los comodines vacios y el correo saldria
+		//sin nombre, sin codigo y sin fecha. Paso el 19-nov con 500 personas, envio 265.
+		if (capaDAOCC.CodigoPromoDAO.plantillaExigeOferta(idPlantilla)) {
+			return ("Esa plantilla entrega un codigo, asi que necesita una oferta."
+					+ " Escoja la oferta en 'Oferta con codigo' o use otra plantilla:"
+					+ " sin oferta el correo sale sin nombre, sin codigo y sin fecha.");
+		}
 		return ("");
 	}
 
