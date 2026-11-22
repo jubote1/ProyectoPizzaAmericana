@@ -266,7 +266,8 @@ public class ConectorTiendaPos {
 	}
 
 	private static void actualizarEstadoCentral(Connection con, int idPedidoCentral, int numFactura) {
-		String sql = "update pizzaamericana.pedido set enviadopixel = 1, numposheader = ?, fechaenviotienda = current_timestamp where idpedido = ?";
+		String sql = "update pizzaamericana.pedido set enviadopixel = 1, numposheader = ?, fechaenviotienda = current_timestamp, "
+				+ "idestadopedido = 2, fechafinalizacion = current_timestamp where idpedido = ?";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			ps.setInt(1, numFactura);
 			ps.setInt(2, idPedidoCentral);
