@@ -162,6 +162,19 @@ public class MotorFinalizarPedido extends HttpServlet {
 				return;
 			}
 
+			// 2.1 Registrar forma de pago en pizzaamericana.pedido_forma_pago (requerido para visualizacion en pantallas y reportes)
+			String sqlInsFP = "insert into pizzaamericana.pedido_forma_pago (idpedido, idforma_pago, valortotal, valorformapago) "
+					+ "values (?, ?, ?, ?)";
+			try (PreparedStatement psFP = con.prepareStatement(sqlInsFP)) {
+				psFP.setInt(1, idPedidoCentral);
+				psFP.setInt(2, idFormaPagoTienda > 0 ? idFormaPagoTienda : 1);
+				psFP.setDouble(3, res.total);
+				psFP.setDouble(4, (idFormaPagoTienda == 1 && valorFormaPago > 0) ? valorFormaPago : res.total);
+				psFP.executeUpdate();
+			} catch (Exception exFP) {
+				System.err.println("Advertencia insertando pedido_forma_pago para pedido " + idPedidoCentral + ": " + exFP.getMessage());
+			}
+
 			// 3. Proyectar en pos_central y pizzaamericana.detalle_pedido
 			ProyectorPedidoLegacy.proyectarPedido(con, idPedidoCentral, idTienda, idCliente, solicitud, res, usuario);
 

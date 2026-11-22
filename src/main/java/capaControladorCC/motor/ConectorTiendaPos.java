@@ -173,13 +173,22 @@ public class ConectorTiendaPos {
 			mapPedido.put("cliente", GSON.toJson(arrayCliente));
 
 			// 4. Agregar cada linea de MotorResultado indexada 1..N
+			Map<Integer, Integer> refToIdProducto = new HashMap<Integer, Integer>();
+			for (MotorResultado.Linea l : resultado.lineas) {
+				refToIdProducto.put(l.ref, l.idproducto);
+			}
+
 			int contador = 1;
 			for (MotorResultado.Linea l : resultado.lineas) {
+				int idModificadorProd = 0;
+				if (l.refModificador > 0 && refToIdProducto.containsKey(l.refModificador)) {
+					idModificadorProd = refToIdProducto.get(l.refModificador);
+				}
 				mapPedido.put("idproductoext" + contador, l.idproducto);
 				mapPedido.put("cantidad" + contador, l.cantidad);
 				mapPedido.put("esmaster" + contador, l.refMaster == 0);
 				mapPedido.put("idmaster" + contador, l.refMaster);
-				mapPedido.put("idmodificador" + contador, l.refModificador);
+				mapPedido.put("idmodificador" + contador, idModificadorProd);
 				mapPedido.put("iddetalle" + contador, l.ref);
 				mapPedido.put("valor" + contador, l.valorUnitario);
 				contador++;
@@ -257,7 +266,8 @@ public class ConectorTiendaPos {
 	}
 
 	private static void actualizarEstadoCentral(Connection con, int idPedidoCentral, int numFactura) {
-		String sql = "update pizzaamericana.pedido set enviadopixel = 1, numposheader = ?, fechaenviotienda = current_timestamp where idpedido = ?";
+		String sql = "update pizzaamericana.pedido set enviadopixel = 1, numposheader = ?, fechaenviotienda = current_timestamp, "
+				+ "idestadopedido = 2, fechafinalizacion = current_timestamp where idpedido = ?";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			ps.setInt(1, numFactura);
 			ps.setInt(2, idPedidoCentral);
