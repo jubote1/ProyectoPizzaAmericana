@@ -4,6 +4,7 @@ public class LogBloqueoTienda {
 	
 	private int idLogBloqueo;
 	private int idTienda;
+	private String canal = "TODOS";
 	private String accion;
 	private String fechaAccion;
 	private String motivo;
@@ -13,8 +14,12 @@ public class LogBloqueoTienda {
 	private String tienda;
 	private String aprobado; 
 	
-	
-	
+	public String getCanal() {
+		return canal == null || canal.trim().isEmpty() ? "TODOS" : canal;
+	}
+	public void setCanal(String canal) {
+		this.canal = canal;
+	}
 	public String getTienda() {
 		return tienda;
 	}
@@ -81,6 +86,20 @@ public class LogBloqueoTienda {
 		super();
 		this.idLogBloqueo = idLogBloqueo;
 		this.idTienda = idTienda;
+		this.canal = "TODOS";
+		this.accion = accion;
+		this.fechaAccion = fechaAccion;
+		this.motivo = motivo;
+		this.observacion = observacion;
+		this.debloqueoEn = debloqueoEn;
+		this.urlTienda = urlTienda;
+	}
+	public LogBloqueoTienda(int idLogBloqueo, int idTienda, String canal, String accion, String fechaAccion, String motivo,
+			String observacion, String debloqueoEn, String urlTienda) {
+		super();
+		this.idLogBloqueo = idLogBloqueo;
+		this.idTienda = idTienda;
+		this.canal = (canal == null || canal.trim().isEmpty()) ? "TODOS" : canal;
 		this.accion = accion;
 		this.fechaAccion = fechaAccion;
 		this.motivo = motivo;

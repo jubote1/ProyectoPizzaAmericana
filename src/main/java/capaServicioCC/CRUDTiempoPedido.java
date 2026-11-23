@@ -89,7 +89,8 @@ public class CRUDTiempoPedido extends HttpServlet {
 		}else if (operacion ==3)
 		{
 			int idtienda = Integer.parseInt(request.getParameter("idtienda"));
-			respuesta = ParametrosCtrl.retornarTiempoPedidoTienda(idtienda);
+			String canal = request.getParameter("canal");
+			respuesta = ParametrosCtrl.retornarTiempoPedidoTienda(idtienda, canal);
 		}
 		//System.out.println(respuesta);
 		PrintWriter out = response.getWriter();

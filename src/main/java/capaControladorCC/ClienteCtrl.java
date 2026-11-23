@@ -945,6 +945,7 @@ public String obtenerNotificacionesCliente(int idCliente)
         String clienteRecurrente  ="NEGATIVO";
         CoberturaRequest coberturaRequest = new  CoberturaRequest(); 
         coberturaRequest.setTelefono(telefono);
+        coberturaRequest.setCanal("BOT");
 
 	    Resultado result  = UbicacionCtrl.ubicarDireccionEnTienda(coberturaRequest);
 	        

@@ -3,14 +3,19 @@ package capaModeloCC;
 public class TiendaBloqueada {
 	
 	private int idtienda;
+	private String canal = "TODOS";
 	private String nombreTienda;
 	private String comentario;
 	private String fechaAuditoria;
 	private String motivo;
 	private String desbloqueoEn;
 	
-	
-	
+	public String getCanal() {
+		return canal == null || canal.trim().isEmpty() ? "TODOS" : canal;
+	}
+	public void setCanal(String canal) {
+		this.canal = canal;
+	}
 	public String getMotivo() {
 		return motivo;
 	}
@@ -50,12 +55,18 @@ public class TiendaBloqueada {
 	public TiendaBloqueada(int idtienda, String nombreTienda, String comentario, String fechaAuditoria) {
 		super();
 		this.idtienda = idtienda;
+		this.canal = "TODOS";
 		this.nombreTienda = nombreTienda;
 		this.comentario = comentario;
 		this.fechaAuditoria = fechaAuditoria;
 	}
-	
-	
-	
+	public TiendaBloqueada(int idtienda, String canal, String nombreTienda, String comentario, String fechaAuditoria) {
+		super();
+		this.idtienda = idtienda;
+		this.canal = (canal == null || canal.trim().isEmpty()) ? "TODOS" : canal;
+		this.nombreTienda = nombreTienda;
+		this.comentario = comentario;
+		this.fechaAuditoria = fechaAuditoria;
+	}
 
 }

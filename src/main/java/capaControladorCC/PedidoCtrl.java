@@ -807,7 +807,7 @@ public class PedidoCtrl {
 		Tienda tienda = PedidoDAO.obtenerTiendaPedido(idpedido);
 		// Hacemos una validación si el tiempo llegó en cero
 		if (tiempoPedido == 0) {
-			tiempoPedido = (double) TiempoPedidoDAO.retornarTiempoPedidoTienda(tienda.getIdTienda());
+			tiempoPedido = (double) TiempoPedidoDAO.retornarTiempoPedidoTienda(tienda.getIdTienda(), "CALL_CENTER");
 		}
 		String tiendaPixel = tienda.getUrl();
 		// Capturamos el parámetro de para que POS irá el destino del pedido, con base
@@ -2781,7 +2781,7 @@ public class PedidoCtrl {
 							}
 						}
 						// Posteriormente realizamos los pasos para la finalización del pedido
-						int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
+						int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda, "TIENDA_VIRTUAL");
 						// Consultaremos el tiempo que la tienda está dando en el momento
 						valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedidoCreado);
 						long longDescuento = descuentoPedido.longValue();
@@ -8425,7 +8425,7 @@ public class PedidoCtrl {
 
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
-			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
+			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda, "BOT");
 			// Consultaremos el tiempo que la tienda está dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
 			long valorTotalPedido = valorTotalContact;
@@ -9328,7 +9328,7 @@ public class PedidoCtrl {
 			LogPedidoVirtualKunoDAO.actualizarLogCRMBOTInfLog(idLog, log);
 			// Luego de insertar el pedido haremos las últimas validaciones
 			// Posteriormente realizamos los pasos para la finalización del pedido
-			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
+			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda, "BOT");
 			// Consultaremos el tiempo que la tienda está dando en el momento
 			long valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedido);
 			String horaProgramado = "AHORA";
@@ -10572,7 +10572,7 @@ public class PedidoCtrl {
 			}
 			int idEstadoPedido = 2;
 			// Posteriormente realizamos los pasos para la finalización del pedido
-			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
+			int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda, "BOT");
 
 			// VALIDAMOS LA INFORMACIÓN DEL DESCUENTO
 			double descuentoPedido = 0;

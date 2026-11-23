@@ -98,6 +98,14 @@ public class UbicacionCtrl {
 	    String barrio = coberturaRequest.getBarrio();
 	    String tipo_cliente = coberturaRequest.getTipoCliente();
 	    String lead = coberturaRequest.getLead();
+	    String canal = coberturaRequest.getCanal();
+	    if (canal == null || canal.trim().isEmpty()) {
+	        if ("informacion".equalsIgnoreCase(tipo_cliente) || "programado".equalsIgnoreCase(tipo_cliente) || (lead != null && !lead.isEmpty())) {
+	            canal = "BOT";
+	        } else {
+	            canal = "TIENDA_VIRTUAL";
+	        }
+	    }
 	    Integer idcliente = coberturaRequest.getIdcliente();
 	    String telefono = coberturaRequest.getTelefono();
 	    String referencia  = "";
@@ -162,7 +170,8 @@ public class UbicacionCtrl {
 	                    lead,
 	                    direccion,
 	                    queryUrl,
-	                    coberturaRequest.getIdTienda()
+	                    coberturaRequest.getIdTienda(),
+	                    canal
 	            );
 	            
 
@@ -194,7 +203,8 @@ public class UbicacionCtrl {
 		                    coords,
 		                    tipo_cliente,
 		                    lead,
-		                    direccion
+		                    direccion,
+		                    canal
 		            );
 
 		            if (idcliente != null
@@ -511,14 +521,14 @@ public class UbicacionCtrl {
 	 * ese punto y agrega informacion adicional como proveedor, correcciones y
 	 * direccion devuelta por la geocodificacion.
 	 */
-	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion) {
+	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion, String canal) {
 		double lat = coords.get("Latitud").getAsDouble();
 		double lng = coords.get("Longitud").getAsDouble();
 		String address = coords.get("Direccion").getAsString();
 		
 	
 
-		Resultado resultado = consultarZonas(lng, lat, tipo_cliente, lead, direccion, queryUrl);
+		Resultado resultado = consultarZonas(lng, lat, tipo_cliente, lead, direccion, queryUrl, null, canal);
 
 		resultado.setLatitud(lat);
 		resultado.setLongitud(lng);
@@ -555,6 +565,10 @@ public class UbicacionCtrl {
 		}
 
 		return resultado;
+	}
+
+	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion) {
+		return crearResultadoConCoordenadas(coords, tipo_cliente, lead, direccion, null);
 	}
 
 	private static JsonObject crearCoordsVacias() {
@@ -716,6 +730,11 @@ public class UbicacionCtrl {
 
 	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
 	        String lead, String direccion, String queryUrl, Integer idTiendaEsperada) {
+	    return consultarZonas(longitud, latitud, tipo_cliente, lead, direccion, queryUrl, idTiendaEsperada, null);
+	}
+
+	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
+	        String lead, String direccion, String queryUrl, Integer idTiendaEsperada, String canal) {
 
 	    Resultado resultado = new Resultado();
 	    String tipoCliente = tipo_cliente == null ? "" : tipo_cliente.toLowerCase().trim();
@@ -728,7 +747,7 @@ public class UbicacionCtrl {
 	            int idTiendaZona = zonaLocal.getIdTienda();
 
 	            if (idTiendaEsperada == null || idTiendaEsperada <= 0 || idTiendaZona == idTiendaEsperada) {
-	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente);
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, canal);
 	            }
 	        }
 	    } catch (Exception e) {
@@ -792,7 +811,7 @@ public class UbicacionCtrl {
 	                    continue;
 	                }
 
-	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente);
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, canal);
 	            }
 	        }
 
@@ -810,7 +829,7 @@ public class UbicacionCtrl {
 	    return resultado;
 	}
 
-	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente) {
+	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente, String canal) {
 	    String mensaje = switch (tipoCliente) {
 	        case "informacion" ->
 	                "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
@@ -826,8 +845,18 @@ public class UbicacionCtrl {
 
 	    resultado.setResultado(mensaje);
 	    resultado.setInfoAdicional(nombre);
+
+	    String canalFinal = canal;
+	    if (canalFinal == null || canalFinal.trim().isEmpty()) {
+	        if ("informacion".equalsIgnoreCase(tipoCliente) || "programado".equalsIgnoreCase(tipoCliente)) {
+	            canalFinal = "BOT";
+	        } else {
+	            canalFinal = "TIENDA_VIRTUAL";
+	        }
+	    }
+
 	    resultado.setEstadoTienda(
-	            TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona)
+	            TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona, canalFinal)
 	                    ? "BLOQUEADO"
 	                    : "DISPONIBLE"
 	    );
@@ -835,6 +864,10 @@ public class UbicacionCtrl {
 	    resultado.setIdtienda(idTiendaZona);
 	    resultado.setSuccess(true);
 	    return resultado;
+	}
+
+	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente) {
+	    return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, null);
 	}
 
 	private static String obtenerMensajeSinCobertura(String tipoCliente) {

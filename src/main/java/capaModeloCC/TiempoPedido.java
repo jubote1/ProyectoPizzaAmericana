@@ -6,9 +6,14 @@ public class TiempoPedido {
 	private String Tienda;
 	private int minutosPedido;
 	private String estado;
+	private String canalesBloqueados = "";
 	
-	
-	
+	public String getCanalesBloqueados() {
+		return canalesBloqueados;
+	}
+	public void setCanalesBloqueados(String canalesBloqueados) {
+		this.canalesBloqueados = canalesBloqueados;
+	}
 	public String getEstado() {
 		return estado;
 	}
@@ -39,6 +44,15 @@ public class TiempoPedido {
 		Tienda = tienda;
 		this.minutosPedido = minutosPedido;
 		this.estado = estado;
+	}
+
+	public TiempoPedido(int idtienda, String tienda, int minutosPedido, String estado, String canalesBloqueados) {
+		super();
+		this.idtienda = idtienda;
+		Tienda = tienda;
+		this.minutosPedido = minutosPedido;
+		this.estado = estado;
+		this.canalesBloqueados = (canalesBloqueados != null) ? canalesBloqueados : "";
 	}
 	
 	

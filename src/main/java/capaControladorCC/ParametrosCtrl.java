@@ -935,6 +935,7 @@ public class ParametrosCtrl {
 					Respuesta.put("tienda", tiempo.getTienda());
 					Respuesta.put("idtienda", tiempo.getIdtienda());
 					Respuesta.put("estado", tiempo.getEstado());
+					Respuesta.put("canales_bloqueados", tiempo.getCanalesBloqueados());
 					listJSON.add(Respuesta);
 				}
 				return(listJSON.toString());
@@ -983,14 +984,19 @@ public class ParametrosCtrl {
 				return(Respuesta.toString());
 			}
 			
-			public String retornarTiempoPedidoTienda(int idtienda)
+			public String retornarTiempoPedidoTienda(int idtienda, String canal)
 			{
 				JSONArray listJSON = new JSONArray();
 				JSONObject Respuesta = new JSONObject();
-				int respues = TiempoPedidoDAO.retornarTiempoPedidoTienda( idtienda);
+				int respues = TiempoPedidoDAO.retornarTiempoPedidoTienda(idtienda, canal);
 				Respuesta.put("tiempopedido", respues);
 				listJSON.add(Respuesta);
 				return(Respuesta.toString());
+			}
+
+			public String retornarTiempoPedidoTienda(int idtienda)
+			{
+				return retornarTiempoPedidoTienda(idtienda, "TODOS");
 			}
 			
 			public String insertarDirFueraZona(String direccion, String municipio, int idCliente, double latitud, double longitud, String telefono, String nombre, String apellido)
