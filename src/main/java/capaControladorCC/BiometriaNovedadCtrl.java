@@ -6,6 +6,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import capaDAOCC.BiometriaNovedadDAO;
+import capaModeloCC.Correo;
+import capaModeloCC.CorreoElectronico;
+import utilidadesCC.ControladorEnvioCorreo;
+import utilidadesCC.PlantillaCorreoNovedadBiometria;
 
 /**
  * Novedades de biometria: arma el JSON que consumen la pantalla del central y
@@ -104,7 +108,10 @@ public class BiometriaNovedadCtrl {
 		return (respuesta.toJSONString());
 	}
 
-	/** Marca la novedad como ATENDIDA o RECHAZADA. */
+	/**
+	 * Marca la novedad como ATENDIDA o RECHAZADA. Al atenderla avisa por correo a quien la
+	 * reporto y al empleado de la novedad; rechazarla no manda nada.
+	 */
 	public String cerrarNovedad(final int idNovedad, final String estado, final String usuario,
 			final String observacion) {
 		final JSONObject respuesta = new JSONObject();
@@ -113,10 +120,99 @@ public class BiometriaNovedadCtrl {
 			respuesta.put("resultado", "ERROR");
 			respuesta.put("mensaje", falla);
 		} else {
+			String aviso = "";
+			if ("ATENDIDA".equals(estado)) {
+				aviso = avisarNovedadAtendida(idNovedad);
+			}
 			respuesta.put("resultado", "OK");
-			respuesta.put("mensaje", "Novedad marcada como " + estado + ".");
+			respuesta.put("mensaje", "Novedad marcada como " + estado + "." + aviso);
 		}
 		return (respuesta.toJSONString());
+	}
+
+	/**
+	 * Manda el correo de "novedad atendida" y devuelve una frase para la pantalla, o vacio
+	 * si no hubo nada que decir.
+	 *
+	 * Si quien reporto y el empleado de la novedad son la misma persona sale UN solo correo;
+	 * si son distintos, cada uno recibe el suyo con la frase que le corresponde. Nunca puede
+	 * tumbar el cierre: la novedad ya quedo atendida, un correo que no sale no la revierte.
+	 * El envio va en segundo plano, asi que la frase dice a quien se le envia y no si llego.
+	 */
+	private String avisarNovedadAtendida(final int idNovedad) {
+		try {
+			final JSONObject novedad = BiometriaNovedadDAO.obtenerNovedadParaCorreo(idNovedad);
+			if (novedad == null) {
+				return ("");
+			}
+			final int idEmpleado = ((Number) novedad.get("id")).intValue();
+			final int idReporta = ((Number) novedad.get("idreporta")).intValue();
+			final String fecha = String.valueOf(novedad.get("fecha"));
+			final String correoEmpleado = String.valueOf(novedad.get("email")).trim();
+			final String correoReporta = String.valueOf(novedad.get("emailreporta")).trim();
+			final String nombreEmpleado = String.valueOf(novedad.get("nombre"));
+			final String nombreReporta = String.valueOf(novedad.get("reporta"));
+			final boolean mismaPersona = idReporta > 0 && idReporta == idEmpleado;
+
+			final CorreoElectronico cuenta = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOREPORTES",
+					"CLAVECORREOREPORTE");
+			if (cuenta.getCuentaCorreo() == null || cuenta.getCuentaCorreo().trim().length() == 0) {
+				System.out.println("BiometriaNovedadCtrl: no hay cuenta CUENTACORREOREPORTES, no se avisa la novedad "
+						+ idNovedad);
+				return ("");
+			}
+			final List<JSONObject> cambios = BiometriaNovedadDAO.obtenerCambiosDeNovedad(idNovedad);
+			final List<JSONObject> eventos = BiometriaNovedadDAO.obtenerEventosDelDia(idEmpleado, fecha);
+
+			final java.util.ArrayList<String> enviados = new java.util.ArrayList<String>();
+			final java.util.ArrayList<String> sinCorreo = new java.util.ArrayList<String>();
+
+			if (mismaPersona) {
+				enviarAvisoNovedad(PlantillaCorreoNovedadBiometria.Destino.MISMA_PERSONA, correoEmpleado,
+						nombreEmpleado, novedad, cambios, eventos, cuenta, enviados, sinCorreo);
+			} else {
+				enviarAvisoNovedad(PlantillaCorreoNovedadBiometria.Destino.AFECTADO, correoEmpleado,
+						nombreEmpleado, novedad, cambios, eventos, cuenta, enviados, sinCorreo);
+				//Una novedad anterior a la identificacion no tiene empleado que reporta: solo un nombre escrito.
+				if (idReporta > 0 && !correoReporta.equalsIgnoreCase(correoEmpleado)) {
+					enviarAvisoNovedad(PlantillaCorreoNovedadBiometria.Destino.REPORTA, correoReporta,
+							nombreReporta, novedad, cambios, eventos, cuenta, enviados, sinCorreo);
+				}
+			}
+
+			final StringBuilder frase = new StringBuilder();
+			if (!enviados.isEmpty()) {
+				frase.append(" Se envió correo a: ").append(String.join(", ", enviados)).append(".");
+			}
+			if (!sinCorreo.isEmpty()) {
+				frase.append(" Sin correo válido (no se le avisó): ").append(String.join(", ", sinCorreo))
+						.append(".");
+			}
+			return (frase.toString());
+		} catch (final Exception e) {
+			System.out.println("BiometriaNovedadCtrl.avisarNovedadAtendida: " + e);
+			e.printStackTrace();
+			return ("");
+		}
+	}
+
+	private void enviarAvisoNovedad(final PlantillaCorreoNovedadBiometria.Destino destino, final String direccion,
+			final String nombreDestino, final JSONObject novedad, final List<JSONObject> cambios,
+			final List<JSONObject> eventos, final CorreoElectronico cuenta,
+			final java.util.ArrayList<String> enviados, final java.util.ArrayList<String> sinCorreo) {
+		if (!ControladorEnvioCorreo.esDireccionValida(direccion)) {
+			sinCorreo.add(nombreDestino);
+			return;
+		}
+		final Correo correo = new Correo();
+		correo.setAsunto(PlantillaCorreoNovedadBiometria.asunto(String.valueOf(novedad.get("fecha"))));
+		correo.setUsuarioCorreo(cuenta.getCuentaCorreo());
+		correo.setContrasena(cuenta.getClaveCorreo());
+		correo.setMensaje(PlantillaCorreoNovedadBiometria.cuerpo(destino, novedad, cambios, eventos));
+		final java.util.ArrayList<String> destinatarios = new java.util.ArrayList<String>();
+		destinatarios.add(direccion.trim());
+		new ControladorEnvioCorreo(correo, destinatarios).enviarCorreoAsincrono();
+		enviados.add(nombreDestino);
 	}
 
 	/**
