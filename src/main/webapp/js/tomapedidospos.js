@@ -1909,7 +1909,7 @@ function ejecutarDespachoTiendaDefinitivo() {
         idFormaPagoTienda: idFormaPago,
         valorFormaPago: (idFormaPago === 1) ? valPago : resultadoMotor.total,
         tiempoPedido: tiempoPed,
-        origen: "T",
+        origen: "C",
         cliente: {
             idcliente: clienteActual.idcliente,
             nombres: clienteActual.nombres,
