@@ -1,138 +1,740 @@
 <!DOCTYPE html>
 <html lang="es">
-	<head>
-		<title>Consulta Historial de Estados de un Pedido</title>
-		<meta charset="utf-8" />
-		  <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-		  <link href="css/marca.css" rel="stylesheet" type="text/css" />
-		  <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
-		  <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
-		  <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
-		  <script type="text/javascript" src="js/bootstrap.min.js"></script>
-		  <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
-		  <link rel="stylesheet" href="css/jquery-confirm.min.css">	
-	</head>
-	<body>
+<head>
+	<title>Consulta Historial de Estados de un Pedido - Pizza Americana</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<link href="css/marca.css" rel="stylesheet" type="text/css" />
+	<link href="css/all.min.css" rel="stylesheet" type="text/css" />
+	<link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
+	<link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+	<link rel="stylesheet" href="css/jquery-confirm.min.css">	
+	<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
 
-		<div id="cargarMenu"></div>
-		<script type="text/javascript">
-			
-			var getImport; 
-			var getContent;
-			//Obtenemos el valor de la variable server, con base en la URL digitada
-			var loc = window.location;
-			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
-			server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
-			var respuesta ='';
-			var usuario = "";
-			$.ajax({ 
-		    	url: server + 'ValidarUsuarioAplicacion', 
-		    	dataType: 'json',
-		    	type: 'post', 
-		    	async: false, 
-		    	success: function(data){
-						    respuesta =  data[0].respuesta;	
-						    usuario = data[0].nombreusuario;	
-						    
-				} 
-			});
-			switch(respuesta)
-		    		{
-		    			case 'OK':
-		    				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
-		    				break;
-		    			case 'OKA':
-		    				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
-		    				break;	
-		    			default:
-		    				location.href = server +"Index.html";
-		    				break;
-		    		}
-		    		
-		</script>
+	<style>
+		:root {
+			--pa-navy: #102F6F;
+			--pa-navy-dark: #091D45;
+			--pa-yellow: #FDC806;
+			--pa-red: #E42528;
+			--pa-bg: #F4F6F9;
+			--pa-card-bg: #FFFFFF;
+			--pa-border: #E2E8F0;
+			--pa-text: #1E293B;
+			--pa-text-muted: #64748B;
+		}
 
-		<div class="container">
-			<form>
-				<h1>Consulta Historial de Estados de un Pedido</h1>
-				
-					<table class="table table-bordered">
-						<tbody>
-							
-								<tr>
-										<td class="active">Tienda</td>
-										<td>
-											<select id="selectTiendas" class="form-control"></select></td>
-								</tr>
-								<tr>
-										<td class="active">Número de Pedido</td>
-										<td>
-											<input type="text" id="numeropedido" name="numeropedido" class="form-control" placeholder="Número Pedido"></td>
-								</tr>
-								
-						</tbody>
-					</table>
-						<input type="button" class="btn btn-primary btn-lg" value="Historial Estados Pedido" onclick="consultarHistorialEstadosPedido()">
-						<input type="button" class="btn btn-danger btn-sm" value="Limpiar Busqueda" onclick="limpiarBusqueda()">
+		body {
+			background-color: var(--pa-bg);
+			color: var(--pa-text);
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+		}
 
-				
+		.main-wrapper {
+			max-width: 1240px;
+			margin: 20px auto 40px auto;
+			padding: 0 15px;
+		}
+
+		/* Encabezado Principal */
+		.page-header-card {
+			background: linear-gradient(135deg, var(--pa-navy) 0%, #1a4496 100%);
+			color: #FFFFFF;
+			border-radius: 12px;
+			padding: 24px 30px;
+			margin-bottom: 24px;
+			box-shadow: 0 4px 14px rgba(16, 47, 111, 0.2);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 15px;
+		}
+
+		.page-header-card h1 {
+			margin: 0;
+			font-size: 24px;
+			font-weight: 700;
+			color: #FFFFFF;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.page-header-card .header-sub {
+			color: #E2E8F0;
+			font-size: 14px;
+			margin-top: 4px;
+		}
+
+		.badge-marca-pill {
+			background-color: var(--pa-yellow);
+			color: var(--pa-navy-dark);
+			font-weight: 700;
+			padding: 6px 14px;
+			border-radius: 20px;
+			font-size: 13px;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		/* Tarjetas Modulares */
+		.card-pa {
+			background: #FFFFFF;
+			border: 1px solid var(--pa-border);
+			border-radius: 12px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+			padding: 24px;
+			margin-bottom: 24px;
+			transition: all 0.2s ease-in-out;
+		}
+
+		.card-pa:hover {
+			box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+		}
+
+		.card-pa-title {
+			font-size: 17px;
+			font-weight: 700;
+			color: var(--pa-navy);
+			margin: 0 0 18px 0;
+			padding-bottom: 12px;
+			border-bottom: 2px solid #EDF2F7;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.card-pa-title i {
+			color: var(--pa-navy);
+			margin-right: 8px;
+		}
+
+		/* Formulario de Búsqueda */
+		.form-control-modern {
+			border: 1.5px solid #CBD5E1;
+			border-radius: 8px;
+			padding: 10px 14px;
+			font-size: 15px;
+			height: 44px;
+			box-shadow: none;
+			transition: border-color 0.2s;
+		}
+
+		.form-control-modern:focus {
+			border-color: var(--pa-navy);
+			box-shadow: 0 0 0 3px rgba(16, 47, 111, 0.15);
+		}
+
+		.btn-search-pa {
+			background: var(--pa-navy);
+			color: #FFFFFF;
+			border: none;
+			border-radius: 8px;
+			padding: 11px 24px;
+			font-weight: 600;
+			font-size: 15px;
+			height: 44px;
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			transition: background-color 0.2s, transform 0.1s;
+		}
+
+		.btn-search-pa:hover {
+			background: var(--pa-navy-dark);
+			color: #FFFFFF;
+			transform: translateY(-1px);
+		}
+
+		.btn-clean-pa {
+			background: #F1F5F9;
+			color: #475569;
+			border: 1px solid #CBD5E1;
+			border-radius: 8px;
+			padding: 11px 18px;
+			font-weight: 600;
+			font-size: 15px;
+			height: 44px;
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.btn-clean-pa:hover {
+			background: #E2E8F0;
+			color: #1E293B;
+		}
+
+		/* KPIs de Resumen */
+		.kpi-container {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 16px;
+			margin-bottom: 24px;
+		}
+
+		.kpi-card {
+			background: #FFFFFF;
+			border-radius: 10px;
+			border: 1px solid var(--pa-border);
+			padding: 16px 20px;
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+		}
+
+		.kpi-icon-box {
+			width: 48px;
+			height: 48px;
+			border-radius: 10px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 20px;
+			flex-shrink: 0;
+		}
+
+		.kpi-blue { background: #E0E7FF; color: #3730A3; }
+		.kpi-green { background: #DCFCE7; color: #166534; }
+		.kpi-amber { background: #FEF3C7; color: #92400E; }
+		.kpi-red { background: #FEE2E2; color: #991B1B; }
+
+		.kpi-info .kpi-label {
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			color: var(--pa-text-muted);
+			letter-spacing: 0.5px;
+		}
+
+		.kpi-info .kpi-val {
+			font-size: 19px;
+			font-weight: 700;
+			color: #0F172A;
+			margin-top: 2px;
+		}
+
+		/* Grids de Datos */
+		.data-label {
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			color: var(--pa-text-muted);
+			margin-bottom: 3px;
+		}
+
+		.data-value {
+			font-size: 15px;
+			font-weight: 600;
+			color: #1E293B;
+			margin-bottom: 14px;
+			word-break: break-word;
+		}
+
+		.data-value a {
+			color: var(--pa-navy);
+			text-decoration: underline;
+		}
+
+		/* Comanda / Productos */
+		.table-comanda {
+			margin-bottom: 0;
+			border: 1px solid var(--pa-border);
+		}
+
+		.table-comanda thead th {
+			background: #F8FAFC;
+			color: #475569;
+			font-weight: 700;
+			font-size: 13px;
+			text-transform: uppercase;
+			border-bottom: 2px solid #E2E8F0;
+			padding: 12px 14px;
+		}
+
+		.table-comanda tbody td {
+			padding: 12px 14px;
+			vertical-align: middle;
+			border-top: 1px solid #EDF2F7;
+			font-size: 14px;
+		}
+
+		.badge-cant {
+			background-color: var(--pa-navy);
+			color: #FFFFFF;
+			font-size: 13px;
+			font-weight: 700;
+			padding: 4px 10px;
+			border-radius: 6px;
+		}
+
+		.item-nombre {
+			font-weight: 700;
+			color: #0F172A;
+			font-size: 15px;
+		}
+
+		.item-sabores {
+			color: #475569;
+			font-size: 13px;
+			margin-top: 4px;
+			line-height: 1.4;
+		}
+
+		.item-tamano {
+			display: inline-block;
+			background: #FEF3C7;
+			color: #92400E;
+			font-weight: 600;
+			font-size: 11px;
+			padding: 2px 7px;
+			border-radius: 4px;
+			margin-left: 6px;
+			text-transform: uppercase;
+		}
+
+		/* Totales y Pagos */
+		.totales-box {
+			background: #F8FAFC;
+			border: 1px solid #E2E8F0;
+			border-radius: 8px;
+			padding: 16px 20px;
+			margin-top: 16px;
+		}
+
+		.totales-row {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 6px;
+			font-size: 14px;
+			color: #475569;
+		}
+
+		.totales-row.gran-total {
+			border-top: 2px solid #CBD5E1;
+			margin-top: 10px;
+			padding-top: 10px;
+			font-size: 18px;
+			font-weight: 800;
+			color: var(--pa-navy);
+		}
+
+		.tag-pago {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			background: #EFF6FF;
+			color: #1D4ED8;
+			border: 1px solid #BFDBFE;
+			padding: 5px 12px;
+			border-radius: 6px;
+			font-weight: 600;
+			font-size: 13px;
+			margin-right: 8px;
+			margin-bottom: 6px;
+		}
+
+		/* Badges de Estado */
+		.badge-estado {
+			display: inline-block;
+			padding: 5px 12px;
+			border-radius: 20px;
+			font-weight: 700;
+			font-size: 13px;
+		}
+
+		.badge-estado-entregado { background: #DEF7EC; color: #03543F; }
+		.badge-estado-reparto { background: #E1EFFE; color: #1E429F; }
+		.badge-estado-cocina { background: #FDF6B2; color: #723B13; }
+		.badge-estado-anulado { background: #FDE8E8; color: #9B1C1C; }
+		.badge-estado-default { background: #F3F4F6; color: #374151; }
+
+		/* Loader & Empty State */
+		#panelCargando {
+			display: none;
+			text-align: center;
+			padding: 40px;
+		}
+
+		.spinner-pa {
+			width: 46px;
+			height: 46px;
+			border: 4px solid #E2E8F0;
+			border-top: 4px solid var(--pa-navy);
+			border-radius: 50%;
+			animation: spin 0.8s linear infinite;
+			margin: 0 auto 16px auto;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		#panelSinDatos {
+			display: none;
+			background: #FFFBEB;
+			border: 1px solid #FDE68A;
+			border-radius: 10px;
+			padding: 24px;
+			text-align: center;
+			color: #92400E;
+			margin-bottom: 24px;
+		}
+
+		/* Campos legacy ocultos para total compatibilidad */
+		.legacy-hidden {
+			position: absolute;
+			left: -9999px;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Contenedor del Menú de Navegación Dinámico -->
+	<div id="cargarMenu"></div>
+	<script type="text/javascript">
+		var getImport; 
+		var getContent;
+		var loc = window.location;
+		var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+		server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+		var respuesta ='';
+		var usuario = "";
+		$.ajax({ 
+			url: server + 'ValidarUsuarioAplicacion', 
+			dataType: 'json',
+			type: 'post', 
+			async: false, 
+			success: function(data){
+				respuesta = data[0].respuesta;	
+				usuario = data[0].nombreusuario;	
+			} 
+		});
+		switch(respuesta) {
+			case 'OK':
+				$('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+				break;
+			case 'OKA':
+				$('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+				break;	
+			default:
+				location.href = server +"Index.html";
+				break;
+		}
+	</script>
+
+	<div class="main-wrapper">
+
+		<!-- Encabezado Estilizado -->
+		<div class="page-header-card">
+			<div>
+				<h1><i class="glyphicon glyphicon-search"></i> Historial y Detalle de Pedido</h1>
+				<div class="header-sub">Consulte el estado en vivo, trazabilidad de entrega y el detalle de lo que pidió el cliente en tienda.</div>
+			</div>
+			<div>
+				<span class="badge-marca-pill"><i class="glyphicon glyphicon-flash"></i> Consulta Integral POS</span>
+			</div>
+		</div>
+
+		<!-- Tarjeta de Búsqueda -->
+		<div class="card-pa">
+			<form id="formBusqueda" onsubmit="event.preventDefault(); consultarHistorialEstadosPedido();">
+				<div class="row">
+					<div class="col-md-5 col-sm-6">
+						<div class="form-group">
+							<label for="selectTiendas" style="font-weight: 600; color: #334155;">Tienda</label>
+							<select id="selectTiendas" class="form-control form-control-modern"></select>
+						</div>
+					</div>
+					<div class="col-md-4 col-sm-6">
+						<div class="form-group">
+							<label for="numeropedido" style="font-weight: 600; color: #334155;">Número de Pedido en Tienda</label>
+							<input type="number" id="numeropedido" name="numeropedido" class="form-control form-control-modern" placeholder="Ej: 428275" required>
+						</div>
+					</div>
+					<div class="col-md-3 col-sm-12" style="margin-top: 24px;">
+						<button type="submit" id="btnBuscarPedido" class="btn btn-search-pa" style="width: 100%; justify-content: center;">
+							<i class="glyphicon glyphicon-search"></i> Consultar Pedido
+						</button>
+					</div>
+				</div>
+				<div style="margin-top: 6px;">
+					<button type="button" class="btn btn-clean-pa btn-sm" onclick="limpiarBusqueda()">
+						<i class="glyphicon glyphicon-refresh"></i> Limpiar Búsqueda
+					</button>
+				</div>
 			</form>
 		</div>
-		<div class="container">
 
-					<table class="table table-bordered">
-						<tbody>
-							
-								<tr>
-										<td class="active">Domiciliario que llevo el Pedido</td>
-										<td>
-											<input type="text" id="domiciliario" name="domiciliario" class="form-control" placeholder="Domiciliario"></td>
-								</tr>
-								<tr>
-										<td class="active">Empresa del Domiciliario</td>
-										<td>
-											<input type="text" id="empresa" name="empresa" class="form-control" placeholder="Empresa Domiciliario"></td>
-								</tr>
-								<tr>
-										<td class="active">Uso la APP de Logística?</td>
-										<td>
-											<input type="text" id="usologistica" name="usologistica" class="form-control" placeholder="Uso Logistica"></td>
-								</tr>
-								<tr>
-										<td class="active">Teléfono Domiciliario</td>
-										<td>
-											<input type="text" id="teldomiciliario" name="teldomiciliario" class="form-control" placeholder="Teléfono Domiciliario"></td>
-								</tr>
-								<tr>
-										<td class="active">Tiempo Pedido</td>
-										<td>
-											<input type="text" id="tiempopedido" name="tiempopedido" class="form-control" placeholder="Tiempo Pedido"></td>
-								</tr>
-								<tr>
-										<td class="active">Se debe reportar SI/NO</td>
-										<td>
-											<input type="text" id="reportar" name="reportar" class="form-control" placeholder="Se debe reportar?"></td>
-								</tr>
+		<!-- Panel de Carga / Spinner -->
+		<div id="panelCargando" class="card-pa">
+			<div class="spinner-pa"></div>
+			<div style="font-size: 16px; font-weight: 600; color: #1E293B;">Consultando información del pedido en la tienda...</div>
+			<div style="font-size: 13px; color: #64748B; margin-top: 4px;">Verificando comanda, tiempos de entrega y trazabilidad en tiempo real.</div>
+		</div>
+
+		<!-- Panel de Sin Resultados -->
+		<div id="panelSinDatos">
+			<div style="font-size: 26px; margin-bottom: 8px;"><i class="glyphicon glyphicon-warning-sign"></i></div>
+			<div id="msgSinDatos" style="font-size: 16px; font-weight: 700;">No se encontró información para el pedido ingresado.</div>
+			<div style="font-size: 13px; margin-top: 6px;">Verifique que la tienda seleccionada y el número de pedido sean correctos, o confirme si el computador de la tienda se encuentra encendido.</div>
+		</div>
+
+		<!-- Contenedor de Resultados del Pedido -->
+		<div id="panelResultados" style="display: none;">
+
+			<!-- Barra de KPIs Resumen -->
+			<div class="kpi-container">
+				<div class="kpi-card">
+					<div class="kpi-icon-box kpi-blue">
+						<i class="glyphicon glyphicon-tag"></i>
+					</div>
+					<div class="kpi-info">
+						<div class="kpi-label">Estado Actual</div>
+						<div class="kpi-val" id="kpiEstadoActual">--</div>
+					</div>
+				</div>
+
+				<div class="kpi-card">
+					<div class="kpi-icon-box kpi-amber" id="boxKpiTiempo">
+						<i class="glyphicon glyphicon-time"></i>
+					</div>
+					<div class="kpi-info">
+						<div class="kpi-label">Tiempo del Pedido</div>
+						<div class="kpi-val" id="kpiTiempoPedido">0 min</div>
+					</div>
+				</div>
+
+				<div class="kpi-card">
+					<div class="kpi-icon-box kpi-green">
+						<i class="glyphicon glyphicon-usd"></i>
+					</div>
+					<div class="kpi-info">
+						<div class="kpi-label">Total a Pagar</div>
+						<div class="kpi-val" id="kpiTotalNeto">$ 0</div>
+					</div>
+				</div>
+
+				<div class="kpi-card">
+					<div class="kpi-icon-box kpi-blue">
+						<i class="glyphicon glyphicon-send"></i>
+					</div>
+					<div class="kpi-info">
+						<div class="kpi-label">Tipo de Pedido</div>
+						<div class="kpi-val" id="kpiTipoPedido">Domicilio</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Alerta si se debe reportar por demora -->
+			<div id="alertaReportarDemora" style="display: none; background: #FEE2E2; border: 1.5px solid #F87171; border-radius: 8px; padding: 12px 18px; margin-bottom: 24px; color: #991B1B;">
+				<i class="glyphicon glyphicon-exclamation-sign" style="font-size: 18px; margin-right: 8px;"></i>
+				<strong>ATENCIÓN:</strong> Este pedido supera los 90 minutos de gestión. <strong>Se debe reportar a supervisión de operaciones.</strong>
+			</div>
+
+			<!-- Grid 2 Columnas: Cliente & Logística -->
+			<div class="row">
+				<!-- Tarjeta Cliente y Destino -->
+				<div class="col-md-6 col-sm-12">
+					<div class="card-pa">
+						<div class="card-pa-title">
+							<span><i class="glyphicon glyphicon-user"></i> Datos del Cliente y Destino</span>
+							<span id="badgeFuente" class="badge" style="background:#102F6F;font-weight:600;">Tienda</span>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="data-label">Cliente</div>
+								<div class="data-value" id="valClienteNombre">--</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="data-label">Teléfono</div>
+								<div class="data-value" id="valClienteTelefono">--</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-8">
+								<div class="data-label">Dirección de Entrega</div>
+								<div class="data-value" id="valClienteDireccion">--</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="data-label">Zona / Barrio</div>
+								<div class="data-value" id="valClienteZona">--</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="data-label">Fecha del Pedido</div>
+								<div class="data-value" id="valPedidoFecha">--</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="data-label">Tomado por Usuario</div>
+								<div class="data-value" id="valPedidoUsuario">--</div>
+							</div>
+						</div>
+
+						<div id="seccionObsPedido" style="display: none; background: #F8FAFC; border-left: 3px solid var(--pa-navy); padding: 10px 14px; border-radius: 4px; margin-top: 6px;">
+							<div class="data-label">Observaciones del Pedido</div>
+							<div style="font-size: 13px; color: #334155; font-style: italic;" id="valPedidoObservacion"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Tarjeta Logística y Domiciliario -->
+				<div class="col-md-6 col-sm-12">
+					<div class="card-pa">
+						<div class="card-pa-title">
+							<span><i class="glyphicon glyphicon-road"></i> Domiciliario y Enrutamiento</span>
+							<span id="badgeReportar" class="badge" style="font-weight:600;">--</span>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="data-label">Domiciliario</div>
+								<div class="data-value" id="valDomiNombre">Sin asignar</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="data-label">Teléfono Domiciliario</div>
+								<div class="data-value" id="valDomiTelefono">--</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="data-label">Empresa Transportadora</div>
+								<div class="data-value" id="valDomiEmpresa">--</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="data-label">¿Usa App de Logística?</div>
+								<div class="data-value" id="valDomiLogistica">--</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-sm-6">
+								<div class="data-label">Tiempo Total Registrado</div>
+								<div class="data-value" id="valDomiTiempo">0 min</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="data-label">¿Requiere Reporte?</div>
+								<div class="data-value" id="valDomiReportar">NO</div>
+							</div>
+						</div>
+
+						<div id="seccionObsDomi" style="display: none; background: #F8FAFC; border-left: 3px solid #FDC806; padding: 10px 14px; border-radius: 4px; margin-top: 6px;">
+							<div class="data-label">Instrucciones de Entrega / Domiciliario</div>
+							<div style="font-size: 13px; color: #334155;" id="valPedidoObsDomi"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- COMANDA / QUÉ FUE LO QUE PIDIÓ LA PERSONA -->
+			<div class="card-pa">
+				<div class="card-pa-title">
+					<span><i class="glyphicon glyphicon-cutlery"></i> Detalle de lo que Pidió el Cliente (Comanda)</span>
+					<span id="badgeNumItems" class="badge" style="background:#0F766E;">0 productos</span>
+				</div>
+
+				<div class="table-responsive">
+					<table id="tablaProductosPedido" class="table table-hover table-comanda">
+						<thead>
+							<tr>
+								<th style="width: 80px; text-align: center;">Cant.</th>
+								<th>Producto / Detalle</th>
+								<th style="width: 140px; text-align: right;">Valor Unitario</th>
+								<th style="width: 140px; text-align: right;">Subtotal</th>
+							</tr>
+						</thead>
+						<tbody id="tbodyDetalleProductos">
+							<tr>
+								<td colspan="4" class="text-center" style="padding: 20px; color: #94A3B8;">No hay renglones cargados.</td>
+							</tr>
 						</tbody>
 					</table>
-					<div>
-        				<table id="grid-estadospedido" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
-								        <thead>
-								            <tr>
-								                <th data-column-id="fechacambio">Fecha Cambio</th>
-								                <th data-column-id="estadoanterior">Estado Anterior</th>
-								                <th data-column-id="estadoposterior">Estado Posterior</th>
-								            </tr>
-								        </thead>
-								      	<tbody>
-								      			
-								      	</tbody>
-								</table>
-						</div>
 				</div>
-	</body>
+
+				<!-- Desglose Financiero y Formas de Pago -->
+				<div class="row" style="margin-top: 14px;">
+					<div class="col-md-7 col-sm-12">
+						<div style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: #64748B; margin-bottom: 8px;">
+							<i class="glyphicon glyphicon-credit-card"></i> Formas de Pago Registradas
+						</div>
+						<div id="contenedorFormasPago">
+							<span class="tag-pago"><i class="glyphicon glyphicon-ok-sign"></i> Efectivo: $ 0</span>
+						</div>
+					</div>
+					<div class="col-md-5 col-sm-12">
+						<div class="totales-box">
+							<div class="totales-row">
+								<span>Total Bruto:</span>
+								<strong id="valTotalBruto">$ 0</strong>
+							</div>
+							<div class="totales-row">
+								<span>Impuesto / Impoconsumo:</span>
+								<strong id="valTotalImpuesto">$ 0</strong>
+							</div>
+							<div class="totales-row gran-total">
+								<span>TOTAL NETO:</span>
+								<span id="valTotalNetoFinal">$ 0</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- HISTORIAL Y CRONOLOGÍA DE ESTADOS -->
+			<div class="card-pa">
+				<div class="card-pa-title">
+					<span><i class="glyphicon glyphicon-time"></i> Historial y Cronología de Estados del Pedido</span>
+					<span id="badgeNumEstados" class="badge" style="background:var(--pa-navy);">0 cambios</span>
+				</div>
+
+				<div class="table-responsive">
+					<table id="grid-estadospedido" class="table table-condensed table-hover table-striped" cellspacing="0" width="100%">
+						<thead>
+							<tr>
+								<th data-column-id="fechacambio">Fecha y Hora de Cambio</th>
+								<th data-column-id="estadoanterior">Estado Anterior</th>
+								<th data-column-id="estadoposterior">Estado Posterior</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+		</div>
+
+		<!-- Inputs legacy ocultos para garantizar compatibilidad retroactiva 100% -->
+		<div class="legacy-hidden">
+			<input type="text" id="domiciliario" name="domiciliario">
+			<input type="text" id="empresa" name="empresa">
+			<input type="text" id="usologistica" name="usologistica">
+			<input type="text" id="teldomiciliario" name="teldomiciliario">
+			<input type="text" id="tiempopedido" name="tiempopedido">
+			<input type="text" id="reportar" name="reportar">
+		</div>
+
+	</div>
+
+	<!-- Scripts -->
 	<script src="js/estadoshistorialpedido.js" type="text/javascript"></script>
 	<script src="js/jquery-confirm.min.js"></script>
-	</script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="js/datepicker.js"></script>
+</body>
 </html>

@@ -358,6 +358,95 @@ public class BiometriaNovedadDAO {
 		}
 	}
 
+	/**
+	 * Lo que hace falta para avisar por correo que una novedad se atendio: a quien se
+	 * le reporto, quien la reporto, con sus correos, y lo que decidio el
+	 * administrador. Claves: id, nombre, email, idreporta, reporta, emailreporta, fecha,
+	 * tienda, tiponovedad, observacion, horareportada, eventotipo, estado,
+	 * observacionresolucion, resueltopor, fecharesolucion.
+	 *
+	 * El que reporta sale de id_reporta (el empleado que se identifico en el POS); si la
+	 * novedad es anterior a esa identificacion queda null y se usa solo el nombre escrito.
+	 *
+	 * @return el JSON, o null si la novedad no existe o fallo la consulta
+	 */
+	public static JSONObject obtenerNovedadParaCorreo(final int idNovedad) {
+		final String sql = " SELECT n.id, e.nombre_largo, e.email, n.id_reporta, r.nombre_largo AS nombre_reporta, "
+				+ "        r.email AS email_reporta, n.reportado_por, n.fecha, t.nombre AS tienda, "
+				+ "        n.tipo_novedad, n.observacion_reporte, n.hora_reportada, n.evento_tipo, n.estado, "
+				+ "        n.observacion_resolucion, n.resuelto_por, n.fecha_resolucion "
+				+ " FROM general.empleado_evento_novedad n "
+				+ " LEFT JOIN general.empleado e ON e.id = n.id "
+				+ " LEFT JOIN general.empleado r ON r.id = n.id_reporta "
+				+ " LEFT JOIN pizzaamericana.tienda t ON t.idtienda = n.idtienda "
+				+ " WHERE n.idnovedad = ? ";
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDGeneral();
+			 PreparedStatement pstmt = con1.prepareStatement(sql)) {
+			pstmt.setInt(1, idNovedad);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (!rs.next()) {
+					return (null);
+				}
+				final JSONObject obj = new JSONObject();
+				obj.put("id", rs.getInt("id"));
+				obj.put("nombre", texto(rs.getString("nombre_largo")));
+				obj.put("email", texto(rs.getString("email")));
+				obj.put("idreporta", rs.getInt("id_reporta"));
+				//Si la novedad es anterior a la identificacion no hay empleado: queda el nombre escrito.
+				obj.put("reporta", texto(rs.getString("nombre_reporta")).length() > 0
+						? texto(rs.getString("nombre_reporta")) : texto(rs.getString("reportado_por")));
+				obj.put("emailreporta", texto(rs.getString("email_reporta")));
+				obj.put("fecha", texto(rs.getString("fecha")));
+				obj.put("tienda", texto(rs.getString("tienda")));
+				obj.put("tiponovedad", texto(rs.getString("tipo_novedad")));
+				obj.put("observacion", texto(rs.getString("observacion_reporte")));
+				obj.put("horareportada", texto(rs.getString("hora_reportada")));
+				obj.put("eventotipo", texto(rs.getString("evento_tipo")));
+				obj.put("estado", texto(rs.getString("estado")));
+				obj.put("observacionresolucion", texto(rs.getString("observacion_resolucion")));
+				obj.put("resueltopor", texto(rs.getString("resuelto_por")));
+				obj.put("fecharesolucion", texto(rs.getString("fecha_resolucion")));
+				return (obj);
+			}
+		} catch (final Exception e) {
+			System.out.println("BiometriaNovedadDAO.obtenerNovedadParaCorreo: " + e);
+			e.printStackTrace();
+			return (null);
+		}
+	}
+
+	/**
+	 * Los cambios que se le hicieron a la jornada por cuenta de una novedad, en el orden
+	 * en que se hicieron. Es lo que el empleado necesita leer para saber que se toco.
+	 */
+	public static List<JSONObject> obtenerCambiosDeNovedad(final int idNovedad) {
+		final List<JSONObject> cambios = new ArrayList<JSONObject>();
+		final String sql = " SELECT accion, antes_tipo, antes_fecha_hora_log, despues_tipo, "
+				+ "        despues_fecha_hora_log "
+				+ " FROM general.empleado_evento_log WHERE idnovedad = ? ORDER BY idlog ASC ";
+		final ConexionBaseDatos con = new ConexionBaseDatos();
+		try (Connection con1 = con.obtenerConexionBDGeneral();
+			 PreparedStatement pstmt = con1.prepareStatement(sql)) {
+			pstmt.setInt(1, idNovedad);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					final JSONObject obj = new JSONObject();
+					obj.put("accion", texto(rs.getString("accion")));
+					obj.put("antestipo", texto(rs.getString("antes_tipo")));
+					obj.put("antesfechahora", texto(rs.getString("antes_fecha_hora_log")));
+					obj.put("despuestipo", texto(rs.getString("despues_tipo")));
+					obj.put("despuesfechahora", texto(rs.getString("despues_fecha_hora_log")));
+					cambios.add(obj);
+				}
+			}
+		} catch (final Exception e) {
+			System.out.println("BiometriaNovedadDAO.obtenerCambiosDeNovedad: " + e);
+			e.printStackTrace();
+		}
+		return (cambios);
+	}
+
 	private static boolean vacio(final String valor) {
 		return (valor == null || valor.trim().length() == 0);
 	}
