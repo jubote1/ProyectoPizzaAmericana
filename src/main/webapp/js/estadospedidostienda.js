@@ -19,7 +19,22 @@ $(document).ready(function() {
     dtestadopedido = $('#grid-pedidostienda').DataTable( {
     		"aoColumns": [
     		{ "mData": "domiciliario" },
-            { "mData": "estatus" },
+            {
+                "mData": "estatus",
+                // Un pedido que se lleva Rappi Cargo sale sin domiciliario y queda en
+                // "Esperando": desde el central se ve igual que uno colgado, y operaciones
+                // termina llamando a la tienda a preguntar por algo que ya va en camino.
+                // El chip es para que se distinga de un vistazo, sin abrir nada.
+                "mRender": function (data, type, row) {
+                    if (type !== 'display') { return data; }
+                    if (row.tercerizado !== 'S') { return data; }
+                    var quien = (row.empresatercerizada && row.empresatercerizada.length > 0)
+                                ? row.empresatercerizada : 'RAPPI CARGO';
+                    return data + ' <span style="display:inline-block;background:#FF6B00;color:#fff;'
+                         + 'font-size:10px;font-weight:bold;letter-spacing:.5px;padding:2px 7px;'
+                         + 'border-radius:9px;white-space:nowrap;margin-left:4px;">' + quien + '</span>';
+                }
+            },
             { "mData": "transaccion" },
             { "mData": "horapedido" },
             { "mData": "tiempoenruta" },
@@ -31,6 +46,12 @@ $(document).ready(function() {
             { "mData": "formapago" }
         ],
                 	"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
+        		// Los de Cargo se pintan aparte y se sale: el color por estatus diria
+        		// "Esperando" en amarillo, que es justo la lectura equivocada.
+        		if (aData.tercerizado === 'S') {
+        			$(nRow).css('background-color', '#FFE0C2');
+        			return;
+        		}
         		switch(aData.estatus){
 		            case "Esperando":
 		                $(nRow).css('background-color', '#FFCD3A')
