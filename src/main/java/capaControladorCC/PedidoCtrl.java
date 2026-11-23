@@ -2763,34 +2763,70 @@ public class PedidoCtrl {
 						// Vamos a proceser la fuente del pedido
 						String fuentePedido = (String) objTemp.get("source");
 
-						// Tenemos que crear un nuevo método para el procesamiento según como se recibe
-						// información de KUNO
-						// Creamos un arreglo para traer los descuentos de cupones
-						ArrayList<Double> cupones = new ArrayList();
-						idPedidoCreado = ingresarPedidoTiendaVirtualKuno(jsonItemsArray, idTienda, idCliente,
-								strFechaFinal, idOrdenComercio, idTipoPedido, cupones, origenPedido, fuentePedido);
-						// Calculamos el descuento del pedido luego de ingresado
-						Double descuentoPedido = obtenerDescuentoDiarioPedidoVal(idPedidoCreado, "T");
-						// En caso de que no se tenga descuento por % en lo ya establecido, revisamos si
-						// hay descuento con cupón
-						if (descuentoPedido == 0) {
-							if (cupones.size() > 0) {
-								for (int z = 0; z < cupones.size(); z++) {
-									descuentoPedido = descuentoPedido + (double) cupones.get(z);
+						// Enrutador Multicanal: evalua si el pedido corre por LEGACY, PARALELO o NUEVO
+						String canalPedido = (fuentePedido != null && fuentePedido.toLowerCase().contains("app")) ? "APP" : "KUNO";
+						capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor modoMotor = 
+								capaControladorCC.motor.EnrutadorCanalesMotor.obtenerModo(null, canalPedido, idTienda);
+
+						boolean procesadoNuevo = false;
+						if (modoMotor == capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor.NUEVO) {
+							try {
+								capaControladorCC.motor.KunoNuevoMotorService.ResultadoProceso resNuevo = 
+										capaControladorCC.motor.KunoNuevoMotorService.procesarPedidoNuevo(
+												jsonItemsArray, idTienda, clienteVirtual, strFechaFinal, idOrdenComercio,
+												idTipoPedido, origenPedido, fuentePedido, idFormaPago, programado,
+												horaProgramado, idEstadoPedido);
+								if (resNuevo != null && resNuevo.exito && resNuevo.idPedido > 0) {
+									idPedidoCreado = resNuevo.idPedido;
+									valorTotalContact = (long) resNuevo.total;
+									procesadoNuevo = true;
+								} else {
+									System.out.println("FALLO NUEVO MOTOR KUNO (" + (resNuevo != null ? resNuevo.mensaje : "nulo") 
+											+ "), ejecutando FALLBACK AUTOMATICO a flujo tradicional...");
 								}
+							} catch (Throwable tNuevo) {
+								System.out.println("EXCEPCION NUEVO MOTOR KUNO (" + tNuevo.getMessage() 
+										+ "), ejecutando FALLBACK AUTOMATICO a flujo tradicional...");
+								tNuevo.printStackTrace();
 							}
 						}
-						// Posteriormente realizamos los pasos para la finalización del pedido
-						int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
-						// Consultaremos el tiempo que la tienda está dando en el momento
-						valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedidoCreado);
-						long longDescuento = descuentoPedido.longValue();
-						valorTotalContact = valorTotalContact - longDescuento;
-						// Realizamos un cambio temporal para evitar las diferencias pero igual seguirán
-						// llegando los correos
-						FinalizarPedidoTiendaVirtual(idPedidoCreado, idFormaPago, idCliente, tiempoPedido, "S",
-								descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), programado,
-								horaProgramado, idEstadoPedido);
+
+						if (!procesadoNuevo) {
+							// Camino tradicional (LEGACY o Fallback de seguridad)
+							// Creamos un arreglo para traer los descuentos de cupones
+							ArrayList<Double> cupones = new ArrayList();
+							idPedidoCreado = ingresarPedidoTiendaVirtualKuno(jsonItemsArray, idTienda, idCliente,
+									strFechaFinal, idOrdenComercio, idTipoPedido, cupones, origenPedido, fuentePedido);
+							// Calculamos el descuento del pedido luego de ingresado
+							Double descuentoPedido = obtenerDescuentoDiarioPedidoVal(idPedidoCreado, "T");
+							// En caso de que no se tenga descuento por % en lo ya establecido, revisamos si
+							// hay descuento con cupón
+							if (descuentoPedido == 0) {
+								if (cupones.size() > 0) {
+									for (int z = 0; z < cupones.size(); z++) {
+										descuentoPedido = descuentoPedido + (double) cupones.get(z);
+									}
+								}
+							}
+							// Posteriormente realizamos los pasos para la finalización del pedido
+							int tiempoPedido = TiempoPedidoDAO.retornarTiempoPedidoTienda(idTienda);
+							// Consultaremos el tiempo que la tienda está dando en el momento
+							valorTotalContact = PedidoDAO.calcularTotalNetoPedido(idPedidoCreado);
+							long longDescuento = descuentoPedido.longValue();
+							valorTotalContact = valorTotalContact - longDescuento;
+							// Realizamos un cambio temporal para evitar las diferencias pero igual seguirán
+							// llegando los correos
+							FinalizarPedidoTiendaVirtual(idPedidoCreado, idFormaPago, idCliente, tiempoPedido, "S",
+									descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), programado,
+									horaProgramado, idEstadoPedido);
+
+							// Si el modo es PARALELO, disparar auditoria en sombra de forma asincrona
+							if (modoMotor == capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor.PARALELO) {
+								capaControladorCC.motor.KunoNuevoMotorService.auditarParalelo(
+										jsonItemsArray, idTienda, idCliente, idTipoPedido, fuentePedido,
+										esProgramado, horaProgramado, idPedidoCreado, idOrdenComercio, (double) valorTotalContact);
+							}
+						}
 
 						if (valorTotalContact != valorTotal) {
 							// Realizamos un control para verificar si la diferencia proviene de una

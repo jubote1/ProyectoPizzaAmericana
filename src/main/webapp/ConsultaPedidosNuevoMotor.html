@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Consulta Unificada de Pedidos - Nuevo Modelo</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/all.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/marca.css" rel="stylesheet" type="text/css" />
+    <link href="css/jquery-ui.min.css" rel="stylesheet" type="text/css" />		
+    <link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+    <link rel="stylesheet" href="css/jquery-confirm.min.css">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .main-container {
+            max-width: 98%;
+            margin: 15px auto;
+        }
+        .card-custom {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+            padding: 18px 22px;
+        }
+        .header-title {
+            color: #1a202c;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .header-title i {
+            color: #e53e3e;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            border-left: 4px solid #3182ce;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            transition: transform 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+        }
+        .kpi-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #2d3748;
+            margin-top: 4px;
+        }
+        .kpi-sub {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 2px;
+        }
+        .badge-canal {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .canal-kuno { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+        .canal-app { background-color: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
+        .canal-bot { background-color: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+        .canal-rappi { background-color: #fffaf0; color: #dd6b20; border: 1px solid #feebc8; }
+        .canal-didi { background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
+        .canal-contact { background-color: #fffff0; color: #d69e2e; border: 1px solid #fefcbf; }
+        .canal-motor { background-color: #e6fffa; color: #234e52; border: 1px solid #b2f5ea; }
+
+        .badge-modo {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+        .modo-nuevo { background-color: #38a169; color: #ffffff; }
+        .modo-paralelo { background-color: #3182ce; color: #ffffff; }
+        .modo-legacy { background-color: #718096; color: #ffffff; }
+
+        .filtro-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+        .btn-consultar {
+            background-color: #e53e3e;
+            color: #ffffff;
+            font-weight: 700;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 6px;
+        }
+        .btn-consultar:hover {
+            background-color: #c53030;
+            color: #ffffff;
+        }
+        .pill-canal-contador {
+            display: inline-block;
+            margin-right: 6px;
+            margin-bottom: 4px;
+            font-size: 11px;
+            padding: 3px 9px;
+            border-radius: 12px;
+            background: #edf2f7;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .modal-xl {
+            max-width: 90% !important;
+        }
+        .comparativa-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            background: #f7fafc;
+        }
+        .comparativa-ok {
+            border-left: 5px solid #38a169;
+            background: #f0fff4;
+        }
+        .comparativa-dif {
+            border-left: 5px solid #e53e3e;
+            background: #fff5f5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cargarMenu"></div>
+    <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script> 
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="js/jquery.dataTables.js"></script>
+
+    <script type="text/javascript">
+        var loc = window.location;
+        var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+        var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+        var respuesta = '';
+        var usuario = "";
+
+        $.ajax({ 
+            url: server + 'ValidarUsuarioAplicacion', 
+            dataType: 'json',
+            type: 'post', 
+            async: false, 
+            success: function(data){
+                respuesta = data[0].respuesta;	
+                usuario = data[0].nombreusuario;	
+            } 
+        });
+
+        switch(respuesta) {
+            case 'OK':
+                $('#cargarMenu').load("Menu.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;
+            case 'OKA':
+                $('#cargarMenu').load("MenuAdm.html", function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+                break;	
+            default:
+                location.href = server + "Index.html";
+                break;
+        }
+    </script>
+
+    <div class="main-container">
+
+        <!-- Panel de Filtros -->
+        <div class="card-custom">
+            <div class="header-title">
+                <i class="fas fa-layer-group"></i>
+                <span>Consulta Unificada de Pedidos (Nuevo Modelo y Multicanal)</span>
+                <span class="badge badge-secondary" style="font-size: 11px; margin-left: 10px;">Etapa 3 / Piloto</span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-calendar-alt text-muted"></i> Fecha Inicial</label>
+                    <input type="text" id="filtroFechaIni" class="form-control form-control-sm" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-calendar-alt text-muted"></i> Fecha Final</label>
+                    <input type="text" id="filtroFechaFin" class="form-control form-control-sm" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-stream text-muted"></i> Canal / Plataforma</label>
+                    <select id="filtroCanal" class="form-control form-control-sm">
+                        <option value="TODOS" selected>Todos los Canales</option>
+                        <option value="KUNO">Tienda Virtual (Kuno)</option>
+                        <option value="APP">App Móvil</option>
+                        <option value="BOT">CRM BOT (Kommo)</option>
+                        <option value="RAPPI">Rappi</option>
+                        <option value="DIDI">DiDi</option>
+                        <option value="CONTACT">Contact Center</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-store text-muted"></i> Tienda</label>
+                    <select id="filtroTienda" class="form-control form-control-sm">
+                        <option value="0" selected>Todas las Tiendas</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-microchip text-muted"></i> Modo Motor</label>
+                    <select id="filtroModo" class="form-control form-control-sm">
+                        <option value="TODOS" selected>Todos los Modos</option>
+                        <option value="NUEVO">Nuevo Motor (Exclusivo)</option>
+                        <option value="PARALELO">Paralelo / Sombra</option>
+                        <option value="LEGACY">Tradicional (Legacy)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filtro-label"><i class="fas fa-search text-muted"></i> N° Pedido / Orden</label>
+                    <input type="text" id="filtroNumeroPedido" class="form-control form-control-sm" placeholder="Buscar por número...">
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 14px;">
+                <div class="col-md-10 d-flex align-items-center" id="contenedorCanalesPills">
+                    <!-- Píldoras de canales se inyectan dinámicamente -->
+                </div>
+                <div class="col-md-2 text-right">
+                    <button type="button" class="btn btn-consultar btn-sm btn-block" onclick="cargarPedidos()">
+                        <i class="fas fa-filter"></i> Consultar Pedidos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs Cards -->
+        <div class="row" style="margin-bottom: 15px;">
+            <div class="col-md-3">
+                <div class="kpi-card" style="border-left-color: #3182ce;">
+                    <div class="kpi-title">Total Pedidos</div>
+                    <div class="kpi-value" id="kpiTotalPedidos">0</div>
+                    <div class="kpi-sub" id="kpiSubPedidos">En el rango seleccionado</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card" style="border-left-color: #38a169;">
+                    <div class="kpi-title">Ventas Netas Totales</div>
+                    <div class="kpi-value" id="kpiTotalVentas">$0</div>
+                    <div class="kpi-sub">Total facturado</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card" style="border-left-color: #805ad5;">
+                    <div class="kpi-title">Auditoría Paralela (Sombra)</div>
+                    <div class="kpi-value" id="kpiTotalParalelo">0</div>
+                    <div class="kpi-sub" id="kpiSubParalelo">Confrontados en tiempo real</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card" style="border-left-color: #e53e3e;">
+                    <div class="kpi-title">Discrepancias Detectadas</div>
+                    <div class="kpi-value" id="kpiTotalDiferencias">0</div>
+                    <div class="kpi-sub" id="kpiSubDiferencias">Diferencia en totales >= $1</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla Principal de Pedidos -->
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table id="tablaPedidosUnificados" class="table table-hover table-bordered table-sm" style="width:100%; font-size: 12px;">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Id Pedido</th>
+                            <th>Canal</th>
+                            <th>Orden Ext.</th>
+                            <th>Fecha/Hora</th>
+                            <th>Tienda</th>
+                            <th>Cliente</th>
+                            <th>Dirección</th>
+                            <th>Total Neto</th>
+                            <th>Modo</th>
+                            <th>Estado Pedido</th>
+                            <th>Envío Tienda</th>
+                            <th># Tienda</th>
+                            <th>Forma Pago</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Inyección vía DataTables -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Detalle y Comparativa de Pedido -->
+    <div class="modal fade" id="modalDetallePedido" tabindex="-1" role="dialog" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="modalDetalleLabel">
+                        <i class="fas fa-receipt text-warning mr-2"></i>
+                        <span>Detalle de Pedido #</span><span id="txtModalIdPedido"></span>
+                        <span id="badgeModalCanal" class="badge-canal ml-2"></span>
+                        <span id="badgeModalModo" class="badge-modo ml-1"></span>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <!-- Cabecera de datos del cliente -->
+                    <div class="row" style="margin-bottom: 15px;">
+                        <div class="col-md-3"><strong>Cliente:</strong> <span id="txtModalCliente"></span></div>
+                        <div class="col-md-3"><strong>Teléfono:</strong> <span id="txtModalTelefono"></span></div>
+                        <div class="col-md-4"><strong>Dirección:</strong> <span id="txtModalDireccion"></span></div>
+                        <div class="col-md-2"><strong>Tienda:</strong> <span id="txtModalTienda"></span></div>
+                    </div>
+
+                    <!-- Panel de Comparativa si corrió en Paralelo -->
+                    <div id="panelComparativaSombra" style="display:none;"></div>
+
+                    <!-- Pestañas de Líneas -->
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active font-weight-bold" id="tab-legacy" data-toggle="tab" href="#panel-legacy" role="tab">
+                                <i class="fas fa-list"></i> Productos (Detalle Central)
+                            </a>
+                        </li>
+                        <li class="nav-item" id="navItemPosCentral" style="display:none;">
+                            <a class="nav-link font-weight-bold" id="tab-pos" data-toggle="tab" href="#panel-pos" role="tab">
+                                <i class="fas fa-cash-register"></i> Líneas Nativas POS Central
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" style="padding-top: 15px;">
+                        <!-- Panel Legacy -->
+                        <div class="tab-pane fade show active" id="panel-legacy" role="tabpanel">
+                            <table class="table table-sm table-striped table-bordered" style="font-size: 12px;">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Producto</th>
+                                        <th>Cant.</th>
+                                        <th>Especialidad 1</th>
+                                        <th>Especialidad 2</th>
+                                        <th>Adición</th>
+                                        <th>Observación</th>
+                                        <th>V. Unitario</th>
+                                        <th>V. Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyLineasLegacy"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Panel POS Central -->
+                        <div class="tab-pane fade" id="panel-pos" role="tabpanel">
+                            <table class="table table-sm table-striped table-bordered" style="font-size: 12px;">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>Descripción POS</th>
+                                        <th>Cant.</th>
+                                        <th>V. Unitario</th>
+                                        <th>V. Total</th>
+                                        <th>Master</th>
+                                        <th>Modificador</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyLineasPosCentral"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="js/jquery-confirm.min.js"></script>
+    <script src="js/datepicker.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="js/consultapedidosnuevomotor.js?v=1" type="text/javascript"></script>
+
+</body>
+</html>
