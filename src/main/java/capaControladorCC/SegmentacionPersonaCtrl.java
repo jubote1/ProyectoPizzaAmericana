@@ -81,6 +81,10 @@ public class SegmentacionPersonaCtrl {
 		f.soloConCorreo = "S".equals(p.get("concorreo"));
 		f.soloAutorizados = "S".equals(p.get("autorizados"));
 		f.canal = texto(p.get("canal"), "TODOS");
+		//Campana de punto de venta: compro en MOSTRADOR hace menos de N dias, y/o en
+		//esta tienda. -1 y 0 son "sin filtro" (0 dias seria "solo los de hoy").
+		f.diasTienda = entero(p.get("diastienda"), -1);
+		f.idTiendaMostrador = entero(p.get("tiendamostrador"), 0);
 		//El gusto. Va encima del segmento y no en su lugar: una persona es FIEL
 		//y ademas amante de la Hawaiana.
 		f.familiaFavorita = texto(p.get("familiafavorita"), "");

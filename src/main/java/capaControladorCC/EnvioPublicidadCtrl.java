@@ -807,7 +807,8 @@ public class EnvioPublicidadCtrl {
 	public static String resumenDeFiltros(final java.util.Map<String, String> p) {
 		final StringBuilder t = new StringBuilder();
 		final String[] campos = { "segmentos", "idtienda", "pedidosmin", "valormin",
-				"diasmin", "diasmax", "canal", "concorreo", "autorizados", "universo",
+				"diasmin", "diasmax", "canal", "diastienda", "tiendamostrador",
+				"concorreo", "autorizados", "universo",
 				"diassinpublicidad", "tiposcliente", "productos",
 				"familiafavorita", "fidelidadmin", "pizzasmin" };
 		for (int i = 0; i < campos.length; i++) {

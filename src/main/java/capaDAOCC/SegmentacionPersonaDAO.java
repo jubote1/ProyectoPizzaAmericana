@@ -75,8 +75,26 @@ public class SegmentacionPersonaDAO {
 		public int diasMax = -1;
 		public boolean soloConCorreo = false;
 		public boolean soloAutorizados = false;
-		/** TODOS, MOSTRADOR, DOMICILIO, AMBOS. */
+		/**
+		 * TODOS, MOSTRADOR (solo mostrador), DOMICILIO (solo domicilio), AMBOS (las dos),
+		 * TIENDA (compra en mostrador, con o sin domicilio: la audiencia natural de una
+		 * campana de punto de venta).
+		 */
 		public String canal = "TODOS";
+		/**
+		 * Compro EN MOSTRADOR hace menos de N dias. -1 = sin tope.
+		 *
+		 * Sale de crm.stage_pedido_tienda, que trae el ultimo pedido de mostrador por
+		 * (tienda, persona). persona_resumen.ultimo_pedido NO sirve para esto: es el
+		 * ultimo pedido de cualquier canal, asi que alguien que ayer pidio domicilio
+		 * pasaba como "reciente en mostrador" aunque no pise una tienda hace un ano.
+		 */
+		public int diasTienda = -1;
+		/**
+		 * Compro en mostrador EN ESTA tienda (0 = en cualquiera). No es lo mismo que
+		 * idTienda, que es la tienda habitual (donde mas compra, de todos sus canales).
+		 */
+		public int idTiendaMostrador = 0;
 		/**
 		 * Familia de especialidad que la persona prefiere. Vacio = cualquiera.
 		 *
@@ -244,6 +262,29 @@ public class SegmentacionPersonaDAO {
 			w.append(" AND pedidos_central > 0 AND pedidos_tienda = 0");
 		} else if ("AMBOS".equals(f.canal)) {
 			w.append(" AND pedidos_central > 0 AND pedidos_tienda > 0");
+		} else if ("TIENDA".equals(f.canal)) {
+			//Cualquiera que haya comprado en mostrador alguna vez, pida o no a domicilio.
+			//MOSTRADOR + AMBOS juntos; ninguna de las dos opciones solas sirve para una
+			//campana de punto de venta: la primera deja por fuera a quien tambien pide
+			//domicilio (el 90% de los enviables) y la segunda a quien solo va a tienda.
+			w.append(" AND pedidos_tienda > 0");
+		}
+		if (f.diasTienda >= 0 || f.idTiendaMostrador > 0) {
+			//Una sola subconsulta para las dos condiciones: tienen que cumplirse EN LA
+			//MISMA fila del stage ("compro en Bello hace menos de 90 dias"), no una en
+			//una tienda y la otra en otra. El indice idx_spt_persona la resuelve en
+			//~0,6 s sobre toda la base.
+			w.append(" AND EXISTS (SELECT 1 FROM crm.stage_pedido_tienda spt")
+			 .append(" WHERE spt.idpersona = persona_resumen.idpersona");
+			if (f.diasTienda >= 0) {
+				w.append(" AND spt.ultimo_pedido >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+				valores.add(Integer.valueOf(f.diasTienda));
+			}
+			if (f.idTiendaMostrador > 0) {
+				w.append(" AND spt.idtienda = ?");
+				valores.add(Integer.valueOf(f.idTiendaMostrador));
+			}
+			w.append(")");
 		}
 		return (w.toString());
 	}

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>TABLERO DEL PLAN DE PUNTOS</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+		<link href="css/marca.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+		<style type="text/css">
+			:root { --azul:#102F6F; --rojo:#E42528; --amarillo:#FDC806; --verde:#0b8a4a; --ambar:#d98c00; --gris:#6C7482; --borde:#DEE2E6; --fondo:#f4f6fb; }
+			body { background:#fff; }
+			.tp-sub { color:var(--gris); margin:-4px 0 14px 0; font-size:14px; }
+			.tp-filtros { background:var(--fondo); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+			.tp-filtros label { font-size:12px; font-weight:700; color:var(--azul); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; display:block; }
+			.tp-rapidos { margin-top:8px; font-size:12.5px; color:var(--gris); }
+			.tp-rapidos a { cursor:pointer; margin-right:12px; color:var(--azul); font-weight:600; }
+			#tpCargando { display:none; color:var(--gris); font-size:13px; }
+
+			.tp-tabs { list-style:none; padding-left:0; margin:0 0 14px 0; border-bottom:1px solid var(--borde); }
+			.tp-tabs li { display:inline-block; margin-right:4px; margin-bottom:-1px; }
+			.tp-tabs a { display:block; padding:8px 18px; border:1px solid transparent; border-radius:5px 5px 0 0; font-weight:700; color:var(--azul); cursor:pointer; text-decoration:none; }
+			.tp-tabs li.activo a { background:#fff; border-color:var(--borde) var(--borde) #fff var(--borde); border-top:3px solid var(--amarillo); }
+			.tp-vista { display:none; } .tp-vista.activo { display:block; }
+
+			.tp-grupo { font-size:12px; font-weight:800; letter-spacing:1.3px; color:var(--gris); text-transform:uppercase; margin:6px 0 8px 2px; }
+			.tp-tarjetas { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
+			.tp-tarjeta { flex:1 1 170px; background:var(--fondo); border-radius:12px; padding:12px 16px; min-width:160px; }
+			.tp-tarjeta.alerta { background:#fff6e0; box-shadow:inset 0 0 0 2px var(--amarillo); }
+			.tp-tarjeta.roja { background:#ffeaea; box-shadow:inset 0 0 0 2px var(--rojo); }
+			.tp-tarjeta .k { font-size:11px; letter-spacing:1.2px; font-weight:700; color:var(--gris); text-transform:uppercase; }
+			.tp-tarjeta .v { font-size:29px; font-weight:800; color:var(--azul); line-height:1.15; }
+			.tp-tarjeta .p { font-size:12px; color:var(--gris); }
+			.mal { color:var(--rojo) !important; } .bien { color:var(--verde) !important; }
+
+			.tp-cols { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+			.tp-col { flex:1 1 420px; min-width:0; }
+			.tp-bloque { border:1px solid var(--borde); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+			.tp-bloque h4 { margin:0 0 2px 0; font-size:16px; color:var(--azul); font-weight:800; }
+			.tp-bloque .nota { color:var(--gris); font-size:12.5px; margin-bottom:10px; }
+			.tp-vacio { color:var(--gris); font-size:13px; padding:18px; text-align:center; }
+			.tp-aviso { background:#fff6e0; border-left:4px solid var(--amarillo); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px; }
+			.tp-aviso.roja { background:#ffeaea; border-left-color:var(--rojo); }
+
+			/* barras horizontales */
+			.tp-fila { display:flex; align-items:center; margin:5px 0; font-size:13px; gap:8px; }
+			.tp-fila .et { flex:0 0 150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+			.tp-fila .bar { flex:1 1 auto; background:#eceff6; border-radius:5px; height:18px; }
+			.tp-fila .bar i { display:block; height:18px; border-radius:5px; background:var(--azul); }
+			.tp-fila .bar i.am { background:var(--amarillo); } .tp-fila .bar i.ro { background:var(--rojo); } .tp-fila .bar i.ve { background:var(--verde); }
+			.tp-fila .cif { flex:0 0 130px; text-align:right; white-space:nowrap; }
+
+			/* serie mensual: tres barras por mes */
+			.tp-serie { display:flex; align-items:flex-end; gap:6px; height:190px; padding-top:6px; border-bottom:1px solid var(--borde); }
+			.tp-mes { flex:1 1 0; text-align:center; font-size:11px; color:var(--gris); min-width:0; }
+			.tp-mes .barras { display:flex; align-items:flex-end; justify-content:center; gap:2px; height:160px; }
+			.tp-mes .barras i { display:block; width:30%; min-height:1px; border-radius:3px 3px 0 0; }
+			.tp-leyenda { margin-top:8px; font-size:12px; color:var(--gris); }
+			.tp-leyenda b { display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 12px; vertical-align:-1px; }
+
+			.tp-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+			.tp-tabla th { background:var(--azul); color:#fff; padding:7px 8px; text-align:left; font-size:12px; position:sticky; top:0; z-index:2; }
+			.tp-tabla td { padding:6px 8px; border-bottom:1px solid var(--borde); }
+			.tp-tabla tbody tr:hover { background:#eef3ff; }
+			.tp-scroll { max-height:560px; overflow:auto; border:1px solid var(--borde); border-radius:10px; }
+			.num { text-align:right; white-space:nowrap; }
+			.etq { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:700; background:#fff1cc; color:#8a6100; }
+		</style>
+	</head>
+	<body>
+		<div id="cargarMenu"></div>
+
+		<script type="text/javascript">
+			//El servidor sale de la URL con la que se abrio la pagina.
+			var loc = window.location;
+			var pathName = loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1);
+			var server = loc.href.substring(0, loc.href.length - ((loc.pathname + loc.search + loc.hash).length - pathName.length));
+			var respuesta = '';
+			var usuario = '';
+			var roles = [];
+			$.ajax({
+				url: server + 'ValidarUsuarioAplicacion',
+				dataType: 'json',
+				type: 'post',
+				async: false,
+				success: function (data) {
+					respuesta = data[0].respuesta;
+					usuario = data[0].nombreusuario;
+					roles = data[0].roles || [];
+				}
+			});
+			if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
+				$('#cargarMenu').load('MenuDinamico.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+			} else {
+				switch (respuesta) {
+					case 'OK':
+						$('#cargarMenu').load('Menu.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKA':
+						$('#cargarMenu').load('MenuAdm.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					case 'OKP':
+						$('#cargarMenu').load('MenuPQRS.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+						break;
+					default:
+						location.href = server + 'Index.html';
+						break;
+				}
+			}
+		</script>
+
+		<div class="container-fluid" style="padding:18px 22px;">
+
+			<h3 style="color:var(--azul); font-weight:800; margin-bottom:2px;">Tablero del plan de puntos</h3>
+			<div class="tp-sub">
+				Puntos Pizza: cu&aacute;ntos clientes hay, cu&aacute;ntos puntos se han dado, cu&aacute;ntos est&aacute;n por vencerse
+				y qui&eacute;n los redime. Todo sale del libro de puntos (<code>fidelizacion_transaccion</code>) y de las redenciones.
+			</div>
+
+			<div class="tp-filtros">
+				<div class="row">
+					<div class="col-sm-2">
+						<label for="tpDesde">Desde</label>
+						<input type="date" id="tpDesde" class="form-control" />
+					</div>
+					<div class="col-sm-2">
+						<label for="tpHasta">Hasta</label>
+						<input type="date" id="tpHasta" class="form-control" />
+					</div>
+					<div class="col-sm-3">
+						<label for="tpTienda">Tienda (consultas y por vencer)</label>
+						<select id="tpTienda" class="form-control"><option value="0">Todas</option></select>
+					</div>
+					<div class="col-sm-3">
+						<label for="tpDiasActivo">Cliente activo = acumul&oacute; en los &uacute;ltimos (d&iacute;as)</label>
+						<input type="number" id="tpDiasActivo" class="form-control" min="1" max="730" value="90" />
+					</div>
+					<div class="col-sm-2">
+						<label>&nbsp;</label>
+						<button id="tpActualizar" class="btn btn-primary btn-block">Actualizar</button>
+					</div>
+				</div>
+				<div class="tp-rapidos">
+					<a id="tp7">&Uacute;ltimos 7 d&iacute;as</a>
+					<a id="tp30">&Uacute;ltimos 30 d&iacute;as</a>
+					<a id="tpMes">Este mes</a>
+					<a id="tpMesPas">Mes pasado</a>
+					<a id="tp90">&Uacute;ltimos 90 d&iacute;as</a>
+					<span id="tpCargando">consultando&hellip;</span>
+				</div>
+			</div>
+
+			<ul class="tp-tabs" id="tpTabs">
+				<li class="activo"><a data-vista="resumen">Resumen</a></li>
+				<li><a data-vista="consultas">Consultas</a></li>
+				<li><a data-vista="vencer">Por vencer</a></li>
+			</ul>
+
+			<div id="tpMensaje"></div>
+
+			<!-- ================= RESUMEN ================= -->
+			<div class="tp-vista activo" data-vista="resumen">
+
+				<div class="tp-grupo">Qui&eacute;nes participan</div>
+				<div class="tp-tarjetas" id="tpTarjClientes"></div>
+
+				<div class="tp-grupo">Los puntos</div>
+				<div class="tp-tarjetas" id="tpTarjPuntos"></div>
+
+				<div class="tp-grupo">Por vencerse</div>
+				<div class="tp-tarjetas" id="tpTarjVencer"></div>
+
+				<div class="tp-grupo">Redenciones del per&iacute;odo</div>
+				<div class="tp-tarjetas" id="tpTarjRedenc"></div>
+
+				<div id="tpAlertas"></div>
+
+				<div class="tp-cols">
+					<div class="tp-col">
+						<div class="tp-bloque">
+							<h4>Puntos asignados, redimidos y vencidos</h4>
+							<div class="nota">&Uacute;ltimos 12 meses. Asignados por fecha de la compra; redimidos por fecha de la redenci&oacute;n; vencidos por fecha de vencimiento.</div>
+							<div class="tp-serie" id="tpSerie"></div>
+							<div class="tp-leyenda"><b style="background:#102F6F"></b>asignados<b style="background:#0b8a4a"></b>redimidos<b style="background:#E42528"></b>vencidos</div>
+						</div>
+						<div class="tp-bloque">
+							<h4>Afiliaciones y clientes que acumulan por mes</h4>
+							<div class="nota">Afiliaciones nuevas, y cu&aacute;ntos clientes distintos acumularon puntos ese mes.</div>
+							<div id="tpAfiliaciones"></div>
+						</div>
+					</div>
+					<div class="tp-col">
+						<div class="tp-bloque">
+							<h4>Lo que se vence en los pr&oacute;ximos 60 d&iacute;as</h4>
+							<div class="nota">Puntos vivos que caducan, por tramo.</div>
+							<div id="tpVencimientos"></div>
+						</div>
+						<div class="tp-bloque">
+							<h4>C&oacute;mo se reparte el saldo</h4>
+							<div class="nota">Clientes por rango de puntos vigentes. Son los mismos rangos de las plantillas del correo de puntos.</div>
+							<div id="tpSaldos"></div>
+						</div>
+						<div class="tp-bloque">
+							<h4>Por d&oacute;nde se afilian</h4>
+							<div class="nota">Canal con el que qued&oacute; registrado cada afiliado.</div>
+							<div id="tpCanales"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="tp-bloque">
+					<h4>Por tienda, en el per&iacute;odo</h4>
+					<div class="nota">Lo que se acumul&oacute; y se redimi&oacute; en cada tienda entre las fechas escogidas. &laquo;Afiliados&raquo; son los que se registraron en esa tienda (hist&oacute;rico).</div>
+					<div class="tp-scroll">
+						<table class="tp-tabla">
+							<thead><tr>
+								<th>Tienda</th><th class="num">Afiliados</th><th class="num">Acumulaciones</th><th class="num">Clientes</th>
+								<th class="num">Puntos dados</th><th class="num">Venta con puntos</th><th class="num">Redenciones</th>
+								<th class="num">Puntos redimidos</th><th class="num">% redimido</th>
+							</tr></thead>
+							<tbody id="tpPorTienda"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- ================= CONSULTAS ================= -->
+			<div class="tp-vista" data-vista="consultas">
+				<div class="tp-filtros">
+					<div class="row">
+						<div class="col-sm-5">
+							<label for="tpConsulta">Consulta</label>
+							<select id="tpConsulta" class="form-control">
+								<option value="CLIENTES_SALDO">Clientes con m&aacute;s puntos vigentes</option>
+								<option value="CLIENTES_REDIMEN">Clientes que m&aacute;s redimen (en el per&iacute;odo)</option>
+								<option value="EMPLEADOS_REDIMEN">Empleados que m&aacute;s redimen (en el per&iacute;odo)</option>
+								<option value="EMPLEADOS_ACUMULAN">Empleados que m&aacute;s acumulan puntos (en el per&iacute;odo)</option>
+							</select>
+						</div>
+						<div class="col-sm-2">
+							<label for="tpLimite">Cu&aacute;ntos</label>
+							<select id="tpLimite" class="form-control">
+								<option value="25">25</option><option value="50" selected>50</option>
+								<option value="100">100</option><option value="200">200</option><option value="500">500</option>
+							</select>
+						</div>
+						<div class="col-sm-2"><label>&nbsp;</label><button id="tpConsultar" class="btn btn-primary btn-block">Consultar</button></div>
+						<div class="col-sm-3"><label>&nbsp;</label><button id="tpCsvConsulta" class="btn btn-default btn-block" style="border:1px solid #102F6F;color:#102F6F;font-weight:700;" disabled>Descargar CSV</button></div>
+					</div>
+					<div class="tp-rapidos" id="tpNotaConsulta"></div>
+				</div>
+				<div class="tp-bloque" style="padding:14px;">
+					<h4 id="tpTituloConsulta">&nbsp;</h4>
+					<div class="nota" id="tpRotuloConsulta">&nbsp;</div>
+					<div class="tp-scroll"><table class="tp-tabla"><thead id="tpCabConsulta"></thead><tbody id="tpCuerpoConsulta"></tbody></table></div>
+				</div>
+			</div>
+
+			<!-- ================= POR VENCER ================= -->
+			<div class="tp-vista" data-vista="vencer">
+				<div class="tp-filtros">
+					<div class="row">
+						<div class="col-sm-3">
+							<label for="tpDiasVencer">Puntos que se vencen en los pr&oacute;ximos</label>
+							<select id="tpDiasVencer" class="form-control">
+								<option value="15" selected>15 d&iacute;as</option><option value="30">30 d&iacute;as</option><option value="60">60 d&iacute;as</option>
+							</select>
+						</div>
+						<div class="col-sm-2"><label>&nbsp;</label><button id="tpConsultarVencer" class="btn btn-primary btn-block">Ver</button></div>
+						<div class="col-sm-3"><label>&nbsp;</label><a id="tpCsvVencer" class="btn btn-default btn-block" style="border:1px solid #102F6F;color:#102F6F;font-weight:700;">Descargar CSV completo</a></div>
+					</div>
+					<div class="tp-rapidos">
+						Solo clientes con un correo v&aacute;lido (los que no se pueden avisar quedan por fuera). La tienda de arriba filtra por d&oacute;nde se acumularon los puntos.
+						El CSV trae <b>todos</b>, no solo los de la pantalla.
+					</div>
+				</div>
+				<div class="tp-bloque" style="padding:14px;">
+					<h4 id="tpTituloVencer">&nbsp;</h4>
+					<div class="nota" id="tpRotuloVencer">&nbsp;</div>
+					<div class="tp-scroll"><table class="tp-tabla">
+						<thead><tr><th>Cliente</th><th>Correo</th><th>Celular</th><th class="num">Puntos por vencer</th><th>Primer vencimiento</th><th class="num">Saldo total</th><th></th></tr></thead>
+						<tbody id="tpCuerpoVencer"></tbody>
+					</table></div>
+				</div>
+			</div>
+
+		</div>
+		<script type="text/javascript" src="js/tableroPuntos.js"></script>
+	</body>
+</html>

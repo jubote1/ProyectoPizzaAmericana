@@ -67,6 +67,15 @@ $(document).ready(function () {
 		epLimpiarAlcance();
 	});
 
+	//Atajo de campana de punto de venta: deja puestos los dos filtros que la definen y
+	//dispara el conteo, para ver de una cuanta gente alcanza.
+	$('#ep-atajo-pv').click(function () {
+		$('#ep-canalventa').val('TIENDA');
+		if ($('#ep-diastienda').val() === '') { $('#ep-diastienda').val(180); }
+		epLimpiarAlcance();
+		epContar();
+	});
+
 	$('#ep-contar').click(epContar);
 	$('#ep-enviar').click(epEnviar);
 	$('#ep-probar').click(epProbar);
@@ -159,6 +168,10 @@ function epFiltro() {
 	//mostrador y mando a 3.135, porque al enviar el filtro de mostrador se
 	//perdia.
 	d.canal = $('#ep-canalventa').val();
+	//Campana de punto de venta: ultima compra EN MOSTRADOR y en cual tienda.
+	//Sin valor no viajan, y el servidor lo lee como "sin filtro".
+	if ($('#ep-diastienda').val() !== '') { d.diastienda = $('#ep-diastienda').val(); }
+	if ($('#ep-tiendamostrador').val()) { d.tiendamostrador = $('#ep-tiendamostrador').val(); }
 
 	//El gusto. Los dos minimos solo viajan si hay familia escogida: sin ella
 	//no quieren decir nada y dejarian por fuera a todo el que no tiene perfil.
@@ -205,8 +218,10 @@ function epCargarTiendas() {
 			html += '<option value="' + lista[i].idtienda + '">' + epEscapar(lista[i].nombre) + '</option>';
 		}
 		$('#ep-tienda').html(html);
+		$('#ep-tiendamostrador').html(html);
 	}).fail(function () {
 		$('#ep-tienda').html('<option value="">Todas</option>');
+		$('#ep-tiendamostrador').html('<option value="">Todas</option>');
 	});
 }
 

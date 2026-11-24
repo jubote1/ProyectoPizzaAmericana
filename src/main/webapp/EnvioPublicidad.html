@@ -190,10 +190,40 @@
 											<option value="MOSTRADOR">Solo mostrador</option>
 											<option value="DOMICILIO">Solo domicilio</option>
 											<option value="AMBOS">Mostrador y domicilio</option>
+           <option value="TIENDA">Compra en mostrador (con o sin domicilio)</option>
 										</select>
 									</div>
 
-									<!-- El tope de frecuencia. Va arriba de los demas a proposito:
+									<!-- Campana de PUNTO DE VENTA. Dos filtros que solo tienen sentido con
+              la gente que pisa una tienda: cuando fue la ultima vez en mostrador y
+              en cual. Sin ellos, una promo "solo en punto de venta" le llegaba tambien
+              a quien nunca sale del domicilio. -->
+         <div class="ep-campo" style="background:#F4F6FA;border:1px solid #E2E6EC;border-radius:6px;padding:10px 12px;">
+          <div class="ep-rotulo" style="margin-bottom:6px;">Punto de venta</div>
+          <div class="row">
+           <div class="col-xs-6 ep-campo">
+            <label class="ep-rotulo" for="ep-diastienda">Compr&oacute; en mostrador hace menos de (d&iacute;as)</label>
+            <input type="number" id="ep-diastienda" class="form-control" min="0" placeholder="ej: 180">
+           </div>
+           <div class="col-xs-6 ep-campo">
+            <label class="ep-rotulo" for="ep-tiendamostrador">En la tienda</label>
+            <select id="ep-tiendamostrador" class="form-control"></select>
+           </div>
+          </div>
+          <div class="ep-nota">
+           Es el <b>&uacute;ltimo pedido en mostrador</b>, no el &uacute;ltimo pedido de cualquier canal.
+           Quien pidi&oacute; domicilio ayer pero no pisa una tienda hace un a&ntilde;o no cuenta.
+          </div>
+          <button type="button" id="ep-atajo-pv" class="btn btn-default btn-sm" style="margin-top:8px;">
+           Atajo: campa&ntilde;a de punto de venta
+          </button>
+          <div class="ep-nota" style="margin-top:4px;">
+           Pone &laquo;Compra en mostrador&raquo; y &laquo;hace menos de 180 d&iacute;as&raquo;. Despu&eacute;s cuente:
+           de cada 100 personas que compran en mostrador, solo unas 26 tienen correo y autorizaron.
+          </div>
+         </div>
+
+         <!-- El tope de frecuencia. Va arriba de los demas a proposito:
 									     es el que evita escribirle tres veces en una semana a la
 									     misma persona, que es la forma mas rapida de que se den
 									     de baja. -->
