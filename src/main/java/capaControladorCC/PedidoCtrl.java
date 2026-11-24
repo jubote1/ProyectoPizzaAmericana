@@ -10708,6 +10708,20 @@ public class PedidoCtrl {
 			valorTotalFinalizar = FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente, tiempoPedido, "S",
 					descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact), pedidoProgramado,
 					horaProgramado, idEstadoPedido);
+
+			// Auditoria en sombra paralela para RAPPI
+			try {
+				capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor modoMotorRappi = 
+						capaControladorCC.motor.EnrutadorCanalesMotor.obtenerModo(null, "RAPPI", idTienda);
+				if (modoMotorRappi == capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor.PARALELO) {
+					capaControladorCC.motor.EnrutadorCanalesMotor.auditarRappiParalelo(
+							detalleOrdenArray, jsonOrder, idTienda, idCliente, idTipoPedido,
+							pedidoProgramado, horaProgramado, idPedido, idOrdenComercio,
+							descuentoPropio, tarifaServicio, propina, marketPlace, valorTotalFinalizar);
+				}
+			} catch (Throwable tParalelo) {
+				// No interrumpe jamas produccion
+			}
 			// En este punto indicaremos el estado de la variablea para envío automático a
 			// tienda
 			String automaticoRappi = ParametrosDAO.retornarValorAlfanumerico("AUTOMATICORAPPI");
@@ -11325,6 +11339,20 @@ public class PedidoCtrl {
 				double valorTotalFinalizar = FinalizarPedidoTiendaVirtual(idPedido, idFormaPago, idCliente,
 						tiempoPedido, "S", descuentoPedido, "DESCUENTOS GENERALES DIARIOS", (valorTotalContact),
 						pedidoProgramado, horaProgramado, idEstadoPedido);
+
+				// Auditoria en sombra paralela para DIDI
+				try {
+					capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor modoMotorDidi = 
+							capaControladorCC.motor.EnrutadorCanalesMotor.obtenerModo(null, "DIDI", idTienda);
+					if (modoMotorDidi == capaControladorCC.motor.EnrutadorCanalesMotor.ModoMotor.PARALELO) {
+						capaControladorCC.motor.EnrutadorCanalesMotor.auditarDidiParalelo(
+								detalleOrdenArray, jsonOrderInfo, idTienda, idCliente, idTipoPedido,
+								pedidoProgramado, horaProgramado, idPedido, idOrdenComercio.longValue(),
+								descuentoPropio, tipoDelivery, valorTotalFinalizar);
+					}
+				} catch (Throwable tParalelo) {
+					// No interrumpe jamas produccion
+				}
 				// En este punto indicaremos el estado de la variablea para envío automático a
 				// tienda
 				String automaticoDidi = ParametrosDAO.retornarValorAlfanumerico("AUTOMATICODIDI");

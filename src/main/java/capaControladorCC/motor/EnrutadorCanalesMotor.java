@@ -12,6 +12,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
@@ -134,64 +136,179 @@ public class EnrutadorCanalesMotor {
 			return;
 		}
 
-		EJECUTOR_ASINCRONO.execute(new Runnable() {
-			@Override
-			public void run() {
-				long ini = System.currentTimeMillis();
-				Connection con = null;
-				try {
-					con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
-					CatalogoPos cat = CatalogoPos.cargar(con);
-					MotorPedidoV1 motor = new MotorPedidoV1(cat);
-					MotorResultado res = motor.cotizar(solicitud);
-
-					double subMotor = MotorResultado.OK.equals(res.estado) ? res.subtotal : 0.0;
-					double totMotor = MotorResultado.OK.equals(res.estado) ? res.total : 0.0;
-					double dif = Math.round((totMotor - totalViejo) * 100.0) / 100.0;
-					String estadoComp = MotorResultado.OK.equals(res.estado)
-							? (Math.abs(dif) < 1.0 ? "OK" : "DIFERENCIA")
-							: "ERROR";
-
-					int duracion = (int) (System.currentTimeMillis() - ini);
-
-					String sql = "insert into pos_central.sombra_pedido_canal "
-							+ "(canal, idpedido_central, idorden_comercio, idtienda, modo_ejecucion, "
-							+ "version_motor, estado_motor, subtotal_viejo, total_viejo, subtotal_motor, "
-							+ "total_motor, diferencia, avisos_traduccion, duracion_ms, solicitud_json, resultado_json) "
-							+ "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-					try (PreparedStatement ps = con.prepareStatement(sql)) {
-						ps.setString(1, canal != null ? canal.toUpperCase() : "GENERAL");
-						ps.setInt(2, idPedidoCentral);
-						ps.setString(3, idOrdenComercio != null ? idOrdenComercio : "");
-						ps.setInt(4, idTienda);
-						ps.setString(5, "PARALELO");
-						ps.setString(6, motor.version());
-						ps.setString(7, estadoComp);
-						ps.setDouble(8, subtotalViejo);
-						ps.setDouble(9, totalViejo);
-						ps.setDouble(10, subMotor);
-						ps.setDouble(11, totMotor);
-						ps.setDouble(12, dif);
-						ps.setInt(13, solicitud.avisosTraduccion != null ? solicitud.avisosTraduccion.size() : 0);
-						ps.setInt(14, duracion);
-						ps.setString(15, GSON.toJson(solicitud));
-						ps.setString(16, GSON.toJson(res));
-						ps.executeUpdate();
-					}
-
-				} catch (Throwable t) {
-					logger.error("Error en ejecucion asincrona paralelo nuevo motor: " + t.getMessage(), t);
-				} finally {
+		EJECUTOR_ASINCRONO.execute(() -> {
+			Connection con = null;
+			try {
+				con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+				registrarParaleloSincrono(con, canal, idPedidoCentral, idOrdenComercio, idTienda, subtotalViejo, totalViejo, solicitud);
+			} catch (Throwable t) {
+				logger.error("Error en ejecucion asincrona paralelo nuevo motor: " + t.getMessage(), t);
+			} finally {
+				if (con != null) {
 					try {
-						if (con != null) {
-							con.close();
-						}
+						con.close();
 					} catch (Exception ignorada) {
 					}
 				}
 			}
 		});
+	}
+
+	/**
+	 * Ejecuta la cotizacion y registro comparativo en sombra dentro de la conexion provista.
+	 */
+	public static void registrarParaleloSincrono(
+			Connection con,
+			final String canal,
+			final int idPedidoCentral,
+			final String idOrdenComercio,
+			final int idTienda,
+			final double subtotalViejo,
+			final double totalViejo,
+			final MotorSolicitud solicitud) {
+
+		if (solicitud == null || con == null) {
+			return;
+		}
+
+		long ini = System.currentTimeMillis();
+		try {
+			CatalogoPos cat = CatalogoPos.cargar(con);
+			MotorPedidoV1 motor = new MotorPedidoV1(cat);
+			MotorResultado res = motor.cotizar(solicitud);
+
+			double subMotor = MotorResultado.OK.equals(res.estado) ? res.subtotal : 0.0;
+			double totMotor = MotorResultado.OK.equals(res.estado) ? res.total : 0.0;
+			double dif = Math.round((totMotor - totalViejo) * 100.0) / 100.0;
+			String estadoComp = MotorResultado.OK.equals(res.estado)
+					? (Math.abs(dif) < 1.0 ? "OK" : "DIFERENCIA")
+					: "ERROR";
+
+			int duracion = (int) (System.currentTimeMillis() - ini);
+
+			String sql = "insert into pos_central.sombra_pedido_canal "
+					+ "(canal, idpedido_central, idorden_comercio, idtienda, modo_ejecucion, "
+					+ "version_motor, estado_motor, subtotal_viejo, total_viejo, subtotal_motor, "
+					+ "total_motor, diferencia, avisos_traduccion, duracion_ms, solicitud_json, resultado_json) "
+					+ "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+			try (PreparedStatement ps = con.prepareStatement(sql)) {
+				ps.setString(1, canal != null ? canal.toUpperCase() : "GENERAL");
+				ps.setInt(2, idPedidoCentral);
+				ps.setString(3, idOrdenComercio != null ? idOrdenComercio : "");
+				ps.setInt(4, idTienda);
+				ps.setString(5, "PARALELO");
+				ps.setString(6, motor.version());
+				ps.setString(7, estadoComp);
+				ps.setDouble(8, subtotalViejo);
+				ps.setDouble(9, totalViejo);
+				ps.setDouble(10, subMotor);
+				ps.setDouble(11, totMotor);
+				ps.setDouble(12, dif);
+				ps.setInt(13, solicitud.avisosTraduccion != null ? solicitud.avisosTraduccion.size() : 0);
+				ps.setInt(14, duracion);
+				ps.setString(15, GSON.toJson(solicitud));
+				ps.setString(16, GSON.toJson(res));
+				ps.executeUpdate();
+			}
+
+		} catch (Throwable t) {
+			logger.error("Error en ejecucion sincrona sombra nuevo motor: " + t.getMessage(), t);
+		}
+	}
+
+	/**
+	 * Dispara la auditoria en sombra asincrona para pedidos de RAPPI.
+	 */
+	public static void auditarRappiParalelo(
+			final JSONArray detalleOrdenArray,
+			final JSONObject jsonOrder,
+			final int idTienda,
+			final int idCliente,
+			final int idTipoPedido,
+			final String programado,
+			final String horaProgramado,
+			final int idPedidoCreado,
+			final long idOrdenComercio,
+			final double descuentoPropio,
+			final double tarifaServicio,
+			final double propina,
+			final String marketPlace,
+			final double totalLegacy) {
+
+		try {
+			EJECUTOR_ASINCRONO.execute(() -> {
+				Connection con = null;
+				try {
+					con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+					CatalogoPos cat = CatalogoPos.cargar(con);
+					TraductorRappi traductor = new TraductorRappi(con, cat);
+					MotorSolicitud sol = traductor.traducir(
+							detalleOrdenArray, jsonOrder, idTienda, idCliente, idTipoPedido,
+							programado, horaProgramado, descuentoPropio, tarifaServicio, propina, marketPlace);
+
+					registrarParaleloSincrono(con, "RAPPI", idPedidoCreado, String.valueOf(idOrdenComercio), idTienda,
+							totalLegacy, totalLegacy, sol);
+				} catch (Throwable t) {
+					logger.warn("Advertencia en auditarRappiParalelo: " + t.getMessage());
+				} finally {
+					if (con != null) {
+						try {
+							con.close();
+						} catch (Exception ignorada) {
+						}
+					}
+				}
+			});
+		} catch (Throwable t) {
+			// Jamas interrumpir flujo de produccion
+		}
+	}
+
+	/**
+	 * Dispara la auditoria en sombra asincrona para pedidos de DiDi.
+	 */
+	public static void auditarDidiParalelo(
+			final JSONArray detalleOrdenArray,
+			final JSONObject jsonOrderInfo,
+			final int idTienda,
+			final int idCliente,
+			final int idTipoPedido,
+			final String programado,
+			final String horaProgramado,
+			final int idPedidoCreado,
+			final long idOrdenComercio,
+			final double descuentoPropio,
+			final long tipoDelivery,
+			final double totalLegacy) {
+
+		try {
+			EJECUTOR_ASINCRONO.execute(() -> {
+				Connection con = null;
+				try {
+					con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+					CatalogoPos cat = CatalogoPos.cargar(con);
+					TraductorDidi traductor = new TraductorDidi(con, cat);
+					MotorSolicitud sol = traductor.traducir(
+							detalleOrdenArray, jsonOrderInfo, idTienda, idCliente, idTipoPedido,
+							programado, horaProgramado, descuentoPropio, tipoDelivery);
+
+					registrarParaleloSincrono(con, "DIDI", idPedidoCreado, String.valueOf(idOrdenComercio), idTienda,
+							totalLegacy, totalLegacy, sol);
+				} catch (Throwable t) {
+					logger.warn("Advertencia en auditarDidiParalelo: " + t.getMessage());
+				} finally {
+					if (con != null) {
+						try {
+							con.close();
+						} catch (Exception ignorada) {
+						}
+					}
+				}
+			});
+		} catch (Throwable t) {
+			// Jamas interrumpir flujo de produccion
+		}
 	}
 
 	/**

@@ -42,29 +42,29 @@ CREATE TABLE IF NOT EXISTS pos_central.sombra_pedido_canal (
 --   'PARALELO': Flujo viejito síncrono + Nuevo motor asíncrono en sombra (auditoría/comparación)
 --   'NUEVO'   : 100% nuevo motor con fallback automático al viejito
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('MODO_MOTOR_GLOBAL', 'LEGACY', 'Modo ejecucion motor pedidos: LEGACY (solo viejito), PARALELO (viejito sincrono + nuevo asincrono), NUEVO (solo nuevo motor)')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('MODO_MOTOR_GLOBAL', 'LEGACY')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('KUNO_NUEVO_MOTOR', 'N', 'Interruptor Kuno: N=Legacy, P=Paralelo, S=Nuevo')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('KUNO_NUEVO_MOTOR', 'N')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('MODO_MOTOR_KUNO', 'LEGACY', 'Modo motor para Tienda Virtual Kuno y App: LEGACY, PARALELO, NUEVO')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('MODO_MOTOR_KUNO', 'LEGACY')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('MODO_MOTOR_RAPPI', 'LEGACY', 'Modo motor para Rappi: LEGACY, PARALELO, NUEVO')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('MODO_MOTOR_RAPPI', 'LEGACY')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('MODO_MOTOR_DIDI', 'LEGACY', 'Modo motor para DiDi: LEGACY, PARALELO, NUEVO')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('MODO_MOTOR_DIDI', 'LEGACY')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
-INSERT INTO general.parametros (valorparametro, valortexto, descripcion)
-VALUES ('MODO_MOTOR_BOT', 'LEGACY', 'Modo motor para CRM BOT: LEGACY, PARALELO, NUEVO')
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+INSERT INTO general.parametros (valorparametro, valortexto)
+VALUES ('MODO_MOTOR_BOT', 'LEGACY')
+ON DUPLICATE KEY UPDATE valortexto = VALUES(valortexto);
 
 -- 3. Registro en pantalla (para el menú dinámico GetMenuUsuario)
 -- Ubicación: Submódulo 'Consulta de pedidos' bajo el módulo 'Pedidos'
