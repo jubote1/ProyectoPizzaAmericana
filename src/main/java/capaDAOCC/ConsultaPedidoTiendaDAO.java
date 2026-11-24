@@ -203,50 +203,65 @@ public class ConsultaPedidoTiendaDAO {
 
 	@SuppressWarnings("unchecked")
 	private static boolean procesarConsultaCentralFallback(Connection conCentral, int idTienda, int idPedidoTienda, String nombreTienda, JSONObject res) {
-		String sqlPed = "SELECT p.*, c.nombres, c.apellidos, c.telefono, c.direccion, c.municipio, c.zona "
-				+ "FROM pizzaamericana.pedido p "
-				+ "LEFT JOIN pizzaamericana.cliente c ON p.idcliente = c.idcliente "
-				+ "WHERE p.idtienda = ? AND (p.numposheader = ? OR p.idpedido = ?) "
-				+ "ORDER BY p.idpedido DESC LIMIT 1";
-
+		// Busca primero en las vistas de compatibilidad del nuevo motor (v_pedido_compatibilidad),
+		// y si no se encuentra alli, cae a la tabla fisica legacy (pedido).
+		String[] tablasCabecera = { "pizzaamericana.v_pedido_compatibilidad", "pizzaamericana.pedido" };
 		int idPedidoCentral = 0;
-		try (PreparedStatement ps = conCentral.prepareStatement(sqlPed)) {
-			ps.setInt(1, idTienda);
-			ps.setInt(2, idPedidoTienda);
-			ps.setInt(3, idPedidoTienda);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (!rs.next()) {
-					return false;
+		boolean encontrado = false;
+		String tablaUsada = "";
+
+		for (String tablaPed : tablasCabecera) {
+			String sqlPed = "SELECT p.*, c.nombre AS cliente_nombre, c.apellido AS cliente_apellido, "
+					+ "c.telefono, c.direccion, IFNULL(m.nombre, '') AS municipio_nombre, c.zona "
+					+ "FROM " + tablaPed + " p "
+					+ "LEFT JOIN pizzaamericana.cliente c ON p.idcliente = c.idcliente "
+					+ "LEFT JOIN pizzaamericana.municipio m ON c.idmunicipio = m.idmunicipio "
+					+ "WHERE p.idtienda = ? AND (p.numposheader = ? OR p.idpedido = ?) "
+					+ "ORDER BY p.idpedido DESC LIMIT 1";
+
+			try (PreparedStatement ps = conCentral.prepareStatement(sqlPed)) {
+				ps.setInt(1, idTienda);
+				ps.setInt(2, idPedidoTienda);
+				ps.setInt(3, idPedidoTienda);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						idPedidoCentral = rs.getInt("idpedido");
+						res.put("exito", true);
+						res.put("fuente", tablaPed.contains("v_pedido") ? "CENTRAL_NUEVO_MOTOR" : "CENTRAL_FALLBACK");
+						res.put("tienda", nombreTienda);
+						res.put("idpedidotienda", rs.getInt("numposheader") > 0 ? rs.getInt("numposheader") : idPedidoTienda);
+						res.put("idpedidocentral", idPedidoCentral);
+						res.put("fechapedido", rs.getString("fechapedido"));
+						res.put("fechainsercion", rs.getString("fechainsercion"));
+						res.put("total_neto", rs.getDouble("total_neto"));
+						res.put("total_bruto", rs.getDouble("total_bruto"));
+						res.put("impuesto", rs.getDouble("impuesto"));
+						res.put("tiempopedido", (int) rs.getDouble("tiempopedido"));
+						res.put("usuariopedido", rs.getString("usuariopedido") != null ? rs.getString("usuariopedido") : "");
+						res.put("idtipopedido", rs.getInt("idtipopedido"));
+						res.put("tipopedido", rs.getInt("idtipopedido") == 1 ? "Domicilio" : "Punto de Venta");
+						res.put("observacion", rs.getString("observacion") != null ? rs.getString("observacion") : "");
+
+						JSONObject cli = new JSONObject();
+						String nom = (rs.getString("cliente_nombre") != null ? rs.getString("cliente_nombre").trim() : "") + " "
+								+ (rs.getString("cliente_apellido") != null ? rs.getString("cliente_apellido").trim() : "");
+						cli.put("nombre", nom.trim().isEmpty() ? "Cliente Central" : nom.trim());
+						cli.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono").trim() : "");
+						cli.put("direccion", rs.getString("direccion") != null ? rs.getString("direccion").trim() : "");
+						cli.put("zona", rs.getString("zona") != null ? rs.getString("zona").trim() : "");
+						cli.put("municipio", rs.getString("municipio_nombre") != null ? rs.getString("municipio_nombre").trim() : "");
+						res.put("cliente", cli);
+						encontrado = true;
+						tablaUsada = tablaPed;
+						break;
+					}
 				}
-
-				idPedidoCentral = rs.getInt("idpedido");
-				res.put("exito", true);
-				res.put("fuente", "CENTRAL_FALLBACK");
-				res.put("tienda", nombreTienda);
-				res.put("idpedidotienda", rs.getInt("numposheader") > 0 ? rs.getInt("numposheader") : idPedidoTienda);
-				res.put("idpedidocentral", idPedidoCentral);
-				res.put("fechapedido", rs.getString("fechapedido"));
-				res.put("fechainsercion", rs.getString("fechainsercion"));
-				res.put("total_neto", rs.getDouble("total_neto"));
-				res.put("total_bruto", rs.getDouble("total_bruto"));
-				res.put("impuesto", rs.getDouble("impuesto"));
-				res.put("tiempopedido", (int) rs.getDouble("tiempopedido"));
-				res.put("usuariopedido", rs.getString("usuariopedido") != null ? rs.getString("usuariopedido") : "");
-				res.put("idtipopedido", rs.getInt("idtipopedido"));
-				res.put("tipopedido", rs.getInt("idtipopedido") == 1 ? "Domicilio" : "Punto de Venta");
-				res.put("observacion", "");
-
-				JSONObject cli = new JSONObject();
-				String nom = (rs.getString("nombres") != null ? rs.getString("nombres").trim() : "") + " "
-						+ (rs.getString("apellidos") != null ? rs.getString("apellidos").trim() : "");
-				cli.put("nombre", nom.trim().isEmpty() ? "Cliente Central" : nom.trim());
-				cli.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono").trim() : "");
-				cli.put("direccion", rs.getString("direccion") != null ? rs.getString("direccion").trim() : "");
-				cli.put("zona", rs.getString("zona") != null ? rs.getString("zona").trim() : "");
-				res.put("cliente", cli);
+			} catch (Exception e) {
+				logger.warn("Error leyendo cabecera central fallback sobre " + tablaPed + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			logger.warn("Error leyendo cabecera central fallback: " + e.getMessage());
+		}
+
+		if (!encontrado) {
 			return false;
 		}
 
@@ -269,53 +284,63 @@ public class ConsultaPedidoTiendaDAO {
 		} catch (Exception ignored) {}
 		res.put("formas_pago", pagos);
 
-		// Productos y Renglones del Pedido Central
+		// Productos y Renglones del Pedido Central: consulta vista de detalle o tabla detalle
 		JSONArray items = new JSONArray();
-		String sqlItems = "SELECT a.iddetalle_pedido, a.idproducto, b.nombre AS descripcion, "
-				+ "a.cantidad, a.valorUnitario, a.valorTotal, a.observacion, "
-				+ "CONCAT(IFNULL(c.nombre,''), ' ', IFNULL(a.modespecialidad1,'')) AS esp1, "
-				+ "CONCAT(IFNULL(d.nombre,''), ' ', IFNULL(a.modespecialidad2,'')) AS esp2 "
-				+ "FROM pizzaamericana.detalle_pedido a "
-				+ "JOIN pizzaamericana.producto b ON a.idproducto = b.idproducto "
-				+ "LEFT JOIN pizzaamericana.especialidad c ON a.idespecialidad1 = c.idespecialidad "
-				+ "LEFT JOIN pizzaamericana.especialidad d ON a.idespecialidad2 = d.idespecialidad "
-				+ "WHERE a.idpedido = ? "
-				+ "ORDER BY a.iddetalle_pedido ASC";
-		try (PreparedStatement ps = conCentral.prepareStatement(sqlItems)) {
-			ps.setInt(1, idPedidoCentral);
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					JSONObject it = new JSONObject();
-					it.put("iddetalle", rs.getInt("iddetalle_pedido"));
-					it.put("idproducto", rs.getInt("idproducto"));
-					it.put("descripcion", rs.getString("descripcion"));
-					it.put("tamano", "");
-					it.put("tipo_producto", "P");
-					it.put("cantidad", rs.getDouble("cantidad"));
-					it.put("valorunitario", rs.getDouble("valorUnitario"));
-					it.put("valortotal", rs.getDouble("valorTotal"));
+		String[] tablasDetalle = tablaUsada.contains("v_pedido")
+				? new String[] { "pizzaamericana.v_detalle_pedido_compatibilidad", "pizzaamericana.detalle_pedido" }
+				: new String[] { "pizzaamericana.detalle_pedido", "pizzaamericana.v_detalle_pedido_compatibilidad" };
 
-					StringBuilder obs = new StringBuilder();
-					String esp1 = rs.getString("esp1") != null ? rs.getString("esp1").trim() : "";
-					String esp2 = rs.getString("esp2") != null ? rs.getString("esp2").trim() : "";
-					if (!esp1.isEmpty() && !esp2.isEmpty()) {
-						obs.append("1/2 ").append(esp1).append(" - 1/2 ").append(esp2);
-					} else if (!esp1.isEmpty()) {
-						obs.append(esp1);
+		for (String tablaDet : tablasDetalle) {
+			String sqlItems = "SELECT a.iddetalle_pedido, a.idproducto, b.nombre AS descripcion, "
+					+ "a.cantidad, a.valorUnitario, a.valorTotal, a.observacion, "
+					+ "CONCAT(IFNULL(c.nombre,''), ' ', IFNULL(a.modespecialidad1,'')) AS esp1, "
+					+ "CONCAT(IFNULL(d.nombre,''), ' ', IFNULL(a.modespecialidad2,'')) AS esp2 "
+					+ "FROM " + tablaDet + " a "
+					+ "JOIN pizzaamericana.producto b ON a.idproducto = b.idproducto "
+					+ "LEFT JOIN pizzaamericana.especialidad c ON a.idespecialidad1 = c.idespecialidad "
+					+ "LEFT JOIN pizzaamericana.especialidad d ON a.idespecialidad2 = d.idespecialidad "
+					+ "WHERE a.idpedido = ? "
+					+ "ORDER BY a.iddetalle_pedido ASC";
+			try (PreparedStatement ps = conCentral.prepareStatement(sqlItems)) {
+				ps.setInt(1, idPedidoCentral);
+				try (ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						JSONObject it = new JSONObject();
+						it.put("iddetalle", rs.getInt("iddetalle_pedido"));
+						it.put("idproducto", rs.getInt("idproducto"));
+						it.put("descripcion", rs.getString("descripcion"));
+						it.put("tamano", "");
+						it.put("tipo_producto", "P");
+						it.put("cantidad", rs.getDouble("cantidad"));
+						it.put("valorunitario", rs.getDouble("valorUnitario"));
+						it.put("valortotal", rs.getDouble("valorTotal"));
+
+						StringBuilder obs = new StringBuilder();
+						String esp1 = rs.getString("esp1") != null ? rs.getString("esp1").trim() : "";
+						String esp2 = rs.getString("esp2") != null ? rs.getString("esp2").trim() : "";
+						if (!esp1.isEmpty() && !esp2.isEmpty()) {
+							obs.append("1/2 ").append(esp1).append(" - 1/2 ").append(esp2);
+						} else if (!esp1.isEmpty()) {
+							obs.append(esp1);
+						}
+						String o = rs.getString("observacion") != null ? rs.getString("observacion").trim() : "";
+						if (!o.isEmpty()) {
+							if (obs.length() > 0) obs.append(" | ");
+							obs.append(o);
+						}
+						it.put("observacion", obs.toString());
+						it.put("idmaster", 0);
+						it.put("idmodificador", 0);
+						items.add(it);
 					}
-					String o = rs.getString("observacion") != null ? rs.getString("observacion").trim() : "";
-					if (!o.isEmpty()) {
-						if (obs.length() > 0) obs.append(" | ");
-						obs.append(o);
-					}
-					it.put("observacion", obs.toString());
-					it.put("idmaster", 0);
-					it.put("idmodificador", 0);
-					items.add(it);
 				}
+			} catch (Exception e) {
+				logger.warn("Error leyendo detalle sobre " + tablaDet + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			logger.warn("Error leyendo renglones central fallback: " + e.getMessage());
+
+			if (!items.isEmpty()) {
+				break;
+			}
 		}
 		res.put("productos", items);
 

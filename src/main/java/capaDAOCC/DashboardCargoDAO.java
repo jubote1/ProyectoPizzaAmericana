@@ -37,7 +37,11 @@ public class DashboardCargoDAO {
 			sql.append("SELECT p.idpedido, p.idtienda, IFNULL(t.nombre,'') AS nombretienda, p.numposheader,")
 					.append(" p.fechapedido, p.fechainsercion, p.fecha_entregado,")
 					.append(" p.fecha_cancelacion, p.entregado, p.cancelado")
-					.append(" FROM pedido p LEFT JOIN tienda t ON t.idtienda = p.idtienda")
+					.append(" FROM (SELECT idpedido, idtienda, numposheader, fechapedido, fechainsercion, fecha_entregado, fecha_cancelacion, entregado, cancelado, domicilio_tercerizado FROM pedido")
+					.append("       UNION ALL")
+					.append("       SELECT idpedido, idtienda, numposheader, fechapedido, fechainsercion, fecha_entregado, fecha_cancelacion, entregado, cancelado, domicilio_tercerizado FROM v_pedido_compatibilidad")
+					.append("       WHERE idpedido NOT IN (SELECT idpedido FROM pedido WHERE idpedido IS NOT NULL)) p")
+					.append(" LEFT JOIN tienda t ON t.idtienda = p.idtienda")
 					.append(" WHERE p.domicilio_tercerizado = 'S'");
 			if (fechaDesde != null && fechaDesde.trim().length() > 0) {
 				sql.append(" AND p.fechapedido >= ?");
@@ -111,7 +115,10 @@ public class DashboardCargoDAO {
 			sql.append("SELECT p.idpedido, p.idtienda, IFNULL(t.nombre,'') AS nombretienda, p.numposheader,")
 					.append(" p.fechapedido, ev.proveedor, ev.estado AS ultimo_estado, ev.fecha_recepcion,")
 					.append(" ev.fecha_cancelacion")
-					.append(" FROM pedido p")
+					.append(" FROM (SELECT idpedido, idtienda, numposheader, fechapedido, domicilio_tercerizado FROM pedido")
+					.append("       UNION ALL")
+					.append("       SELECT idpedido, idtienda, numposheader, fechapedido, domicilio_tercerizado FROM v_pedido_compatibilidad")
+					.append("       WHERE idpedido NOT IN (SELECT idpedido FROM pedido WHERE idpedido IS NOT NULL)) p")
 					.append(" JOIN (SELECT id_pedido, MAX(id_evento) AS max_evento FROM tercerizado_domicilio_evento GROUP BY id_pedido) u")
 					.append(" ON u.id_pedido = p.idpedido")
 					.append(" JOIN tercerizado_domicilio_evento ev ON ev.id_evento = u.max_evento")
