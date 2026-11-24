@@ -99,6 +99,7 @@ Cada documento constituye una guía técnica y operativa autosuficiente para el 
 | **04** | **Pedidos Programados y Ciclo de Vida** | `[[04_Pedidos_Programados_y_Ciclo_de_Vida]]` | Reglas de pedidos programados (mismo día, mínimo 1h antelación, franjas de 30 min), pedidos fuera de horario y máquina de estados (`PEN`, `PRO`, `ERR`). |
 | **05** | **Checkout, Pagos y Wompi** | `[[05_Checkout_Pagos_y_Wompi]]` | Métodos activos (Efectivo a domicilio, Wompi directo, PayU en franquicias). Integración de pasarela embebida, webhook de respuesta y conciliación financiera. |
 | **06** | **Integración y Envío a Tienda (POS)** | `[[06_Integracion_Envio_a_Tienda_POS]]` | Protocolo de inyección al POS local, turnos atómicos anti-duplicados (`tomarTurno`), líneas maestras, separadores mitad y mitad (`10000`) y contingencias. |
+| **07** | **Plan Maestro de Transición y Desconexión Legacy** | `[[07_Plan_Maestro_Transicion_Desconexion_Legacy_y_Rediseno]]` | Hoja de ruta estratégica de 26 pasos para la migración definitiva a `pos_central`, rediseño de toma de pedidos, matriz de tablas (deprecadas vs. permanentes) y estrategia de reportes. |
 
 ---
 
