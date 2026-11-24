@@ -44,12 +44,13 @@ public class TableroPuntosCtrl {
 	}
 
 	/**
-	 * Los dos rankings de EMPLEADOS (quien redime y quien acumula) senalan personas de la
-	 * nomina, que es lo que la auditoria protege. El rol del tablero NO los trae: solo la
-	 * auditoria y el Superadministrador.
+	 * Los rankings de EMPLEADOS (quien redime y quien acumula). Decision de Juan David Botero
+	 * (2026-11-24): quien tiene acceso al tablero los ve, incluido el rol "Tablero de Puntos".
+	 * Se deja el metodo aparte para que, si algun dia hay que volver a restringirlos, sea un
+	 * cambio de una linea y no una busqueda por la pantalla y el servlet.
 	 */
 	public static boolean puedeVerEmpleados(final int idUsuario) {
-		return (AuditoriaFidelizacionCtrl.puedeVer(idUsuario));
+		return (puedeVer(idUsuario));
 	}
 
 	/** Los ultimos 30 dias, hoy incluido. */

@@ -21,8 +21,8 @@ import capaModeloCC.Usuario;
  *
  * Ruta: /ProyectoPizzaAmericana/ConsultarTableroPuntos   Metodos: GET, POST (doPost delega en doGet).
  * Tipo: Consulta.  Acceso: RESTRINGIDO a los roles "Tablero de Puntos", "Auditoria de Fidelizacion" o
- *       "Superadministrador". Los rankings de EMPLEADOS (EMPLEADOS_REDIMEN y EMPLEADOS_ACUMULAN) solo los
- *       ven los dos ultimos: senalan personas de la nomina, que es lo que la auditoria protege.
+ *       "Superadministrador". Los tres ven todo, incluidos los rankings de EMPLEADOS
+ *       (EMPLEADOS_REDIMEN y EMPLEADOS_ACUMULAN). La regla vive en TableroPuntosCtrl.puedeVerEmpleados.
  * Recibe (query/form): accion (RESUMEN por defecto, RANKING, PORVENCER o CSVPORVENCER),
  *                      fechainicial, fechafinal (aaaa-mm-dd; sin ellas, los ultimos 30 dias),
  *                      diasactivo (90 por defecto), tipo (CLIENTES_SALDO | CLIENTES_REDIMEN |

@@ -6,10 +6,9 @@
 -- vencerse, redenciones y consultas. Solo lee; no escribe nada.
 --
 -- QUIEN LA VE
---   * Rol NUEVO "Tablero de Puntos": ve el tablero completo MENOS las dos consultas de
---     EMPLEADOS (quien redime y quien acumula), que senalan personas de la nomina y son lo que
---     protege la Auditoria de Fidelizacion. Esas dos las revisa el servlet, no solo la pantalla.
---   * "Auditoria de Fidelizacion" y "Superadministrador": ven todo, incluidos los empleados.
+--   * Rol NUEVO "Tablero de Puntos": ve el tablero completo, incluidos los rankings de EMPLEADOS
+--     (quien redime y quien acumula), por decision de Juan David Botero (2026-11-24).
+--   * "Auditoria de Fidelizacion" y "Superadministrador": tambien ven todo.
 --
 -- A QUIEN SE LE DA: a Juan David Diaz. Se busca por nombre_largo y SOLO se asigna si hay
 -- exactamente UNA coincidencia: dos "Juan David Diaz" (o ninguno) y no se asigna a nadie. La
@@ -27,7 +26,7 @@
 -- 1. EL ROL -----------------------------------------------------------
 INSERT INTO pizzaamericana.rol (nombre, descripcion, activo)
 SELECT 'Tablero de Puntos',
-       'Ve el tablero del plan de puntos (afiliados, puntos asignados, vigentes, por vencer y redenciones). No ve los rankings de empleados.',
+       'Ve el tablero del plan de puntos: afiliados, puntos asignados, vigentes, por vencer, redenciones y rankings de clientes y empleados.',
        'S'
 WHERE NOT EXISTS (SELECT 1 FROM pizzaamericana.rol WHERE nombre = 'Tablero de Puntos');
 
