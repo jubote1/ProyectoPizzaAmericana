@@ -41,7 +41,12 @@ public class LogBloqueoTiendaDAO {
 				observacion = rs.getString("observacion");
 				debloqueoEn = rs.getString("debloqueo_en");
 				urlTienda = rs.getString("url");
-				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, accion, fechaAccion, motivo, observacion, debloqueoEn,urlTienda);
+				String canal = "TODOS";
+				try {
+					canal = rs.getString("canal");
+					if (canal == null || canal.trim().isEmpty()) canal = "TODOS";
+				} catch (Exception eCanal) { canal = "TODOS"; }
+				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, canal, accion, fechaAccion, motivo, observacion, debloqueoEn,urlTienda);
 			}
 			stm.close();
 			con1.close();
@@ -88,7 +93,12 @@ public class LogBloqueoTiendaDAO {
 				observacion = rs.getString("observacion");
 				debloqueoEn = rs.getString("debloqueo_en");
 				urlTienda = rs.getString("url");
-				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, accion, fechaAccion, motivo, observacion, debloqueoEn,urlTienda);
+				String canal = "TODOS";
+				try {
+					canal = rs.getString("canal");
+					if (canal == null || canal.trim().isEmpty()) canal = "TODOS";
+				} catch (Exception eCanal) { canal = "TODOS"; }
+				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, canal, accion, fechaAccion, motivo, observacion, debloqueoEn,urlTienda);
 				logBloqueosTienda.add(logBloqueo);
 			}
 			stm.close();
@@ -178,7 +188,12 @@ public class LogBloqueoTiendaDAO {
 					aprobado = "N";
 				}
 				tienda = rs.getString("nombre");
-				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, accion, fechaAccion, motivo, observacion, debloqueoEn,"");
+				String canal = "TODOS";
+				try {
+					canal = rs.getString("canal");
+					if (canal == null || canal.trim().isEmpty()) canal = "TODOS";
+				} catch (Exception eCanal) { canal = "TODOS"; }
+				logBloqueo = new LogBloqueoTienda(idLogBloqueo, idTienda, canal, accion, fechaAccion, motivo, observacion, debloqueoEn,"");
 				logBloqueo.setTienda(tienda);
 				logBloqueo.setAprobado(aprobado);
 				logBloqueosTienda.add(logBloqueo);

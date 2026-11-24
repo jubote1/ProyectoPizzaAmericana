@@ -111,27 +111,28 @@ public class EmpleadoEncuestaDAO {
 		Connection con1 = con.obtenerConexionBDGeneralLocal();
 		try
 		{
-			Statement stm = con1.createStatement();
-			String insert = "";
 			int idTienda = 0;
-
 			if ((Integer)empEncuesta.getIdTienda() != null) {
 				idTienda = empEncuesta.getIdTienda();
 			}
 
-			if(empEncuesta.getIdEvaluar() == 0)
-			{
-				insert = "insert into empleado_encuesta (id, idencuesta,idtienda) values (" + empEncuesta.getId() + " , " + empEncuesta.getIdEncuesta() + ","+idTienda+")";
-			}else
-			{
-				insert = "insert into empleado_encuesta (id, id_evaluar, idencuesta, idtienda) values (" + empEncuesta.getId() + " , " + empEncuesta.getIdEvaluar() + " , " + empEncuesta.getIdEncuesta() + " , " + empEncuesta.getIdTienda() + ")";
-			}
-			stm.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs = stm.getGeneratedKeys();
+			String insert = "insert into empleado_encuesta (id, id_evaluar, idencuesta, idtienda, nombre_recibe, cargo_recibe, medidas_correctivas, firma_recibe, firma_inspector) values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			PreparedStatement pstmt = con1.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+			pstmt.setInt(1, empEncuesta.getId());
+			pstmt.setInt(2, empEncuesta.getIdEvaluar());
+			pstmt.setInt(3, empEncuesta.getIdEncuesta());
+			pstmt.setInt(4, idTienda);
+			pstmt.setString(5, empEncuesta.getNombreRecibe());
+			pstmt.setString(6, empEncuesta.getCargoRecibe());
+			pstmt.setString(7, empEncuesta.getMedidasCorrectivas());
+			pstmt.setString(8, empEncuesta.getFirmaRecibe());
+			pstmt.setString(9, empEncuesta.getFirmaInspector());
+			pstmt.executeUpdate();
+			ResultSet rs = pstmt.getGeneratedKeys();
 			if (rs.next()){
-				idEmpleadoEncuesta=rs.getInt(1);
-	        }
-			stm.close();
+				idEmpleadoEncuesta = rs.getInt(1);
+			}
+			pstmt.close();
 			con1.close();
 		}
 		catch (Exception e){
@@ -146,6 +147,41 @@ public class EmpleadoEncuestaDAO {
 			return(0);
 		}
 		return(idEmpleadoEncuesta);
+	}
+
+	public static ArrayList<JSONObject> obtenerEmpleadosPorTienda(int idTienda) {
+		ArrayList<JSONObject> lista = new ArrayList<>();
+		ConexionBaseDatos con = new ConexionBaseDatos();
+		Connection con1 = con.obtenerConexionBDGeneralLocal();
+		String sql = "SELECT DISTINCT e.id, e.nombre_largo, COALESCE(te.descripcion, '') AS cargo "
+				+ "FROM general.empleado e "
+				+ "JOIN general.horario_planificado hp ON e.id = hp.idempleado "
+				+ "LEFT JOIN general.tipo_empleado te ON e.idtipoempleado = te.idtipoempleado "
+				+ "WHERE hp.idtienda = " + idTienda + " AND e.activo = '1' AND hp.fecha >= DATE_SUB(CURDATE(), INTERVAL 90 DAY) "
+				+ "ORDER BY e.nombre_largo ASC";
+		Statement stm = null;
+		ResultSet rs = null;
+		try {
+			stm = con1.createStatement();
+			rs = stm.executeQuery(sql);
+			while (rs.next()) {
+				JSONObject emp = new JSONObject();
+				emp.put("id", rs.getInt("id"));
+				emp.put("nombre", rs.getString("nombre_largo"));
+				emp.put("cargo", rs.getString("cargo"));
+				lista.add(emp);
+			}
+		} catch (Exception e) {
+			System.out.println("Error obtenerEmpleadosPorTienda: " + e.getMessage());
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (stm != null) stm.close();
+				if (con1 != null) con1.close();
+			} catch (Exception ex) {
+			}
+		}
+		return lista;
 	}
 
 	
@@ -167,7 +203,12 @@ public class EmpleadoEncuestaDAO {
 					+ "    e.fecha_ingreso,\n"
 					+ "    e.idtienda AS tienda_id,\n"
 					+ "    l.descripcion AS descripcion_encuesta,\n"
-					+ "    e.porcentaje_total\n"
+					+ "    e.porcentaje_total,\n"
+					+ "    COALESCE(e.nombre_recibe, '') AS nombre_recibe,\n"
+					+ "    COALESCE(e.cargo_recibe, '') AS cargo_recibe,\n"
+					+ "    COALESCE(e.medidas_correctivas, '') AS medidas_correctivas,\n"
+					+ "    (CASE WHEN e.firma_recibe IS NOT NULL AND TRIM(e.firma_recibe) != '' THEN 1 ELSE 0 END) AS tiene_firma_recibe,\n"
+					+ "    (CASE WHEN e.firma_inspector IS NOT NULL AND TRIM(e.firma_inspector) != '' THEN 1 ELSE 0 END) AS tiene_firma_inspector\n"
 					+ "\n"
 					+ "FROM \n"
 					+ "    empleado_encuesta AS e\n"
@@ -178,7 +219,7 @@ public class EmpleadoEncuestaDAO {
 					+ "WHERE \n"
 					+ "    e.idencuesta = "+idencuesta+"\n"
 					+ "    AND DATE(e.fecha_ingreso) BETWEEN '"+fecha1+"' AND '"+fecha2+"'\n"
-					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion";
+					+ "    AND e.idtienda = "+idtienda+" GROUP BY e.idempleadoencuesta,em.nombre_largo, e.fecha_ingreso, e.idtienda, l.descripcion, e.porcentaje_total, e.nombre_recibe, e.cargo_recibe, e.medidas_correctivas, e.firma_recibe, e.firma_inspector";
 			
 	            statement = con1.createStatement();
 	            // Ejecutar la consulta SQL
@@ -193,6 +234,12 @@ public class EmpleadoEncuestaDAO {
 	                int tiendaId = resultSet.getInt("tienda_id");
 	                float porcentaje_total =  resultSet.getFloat("porcentaje_total");
 	                String descripcionEncuesta = resultSet.getString("descripcion_encuesta");
+	                String nombreRecibe = resultSet.getString("nombre_recibe");
+	                String cargoRecibe = resultSet.getString("cargo_recibe");
+	                String medidasCorrectivas = resultSet.getString("medidas_correctivas");
+	                int tieneFirmaRecibe = resultSet.getInt("tiene_firma_recibe");
+	                int tieneFirmaInspector = resultSet.getInt("tiene_firma_inspector");
+
 	                JSONObject json = new JSONObject();
 	                json.put("idempleadoencuesta", idempleadoencuesta);
 	                json.put("nombre_empleado", nombreEmpleado);
@@ -200,6 +247,11 @@ public class EmpleadoEncuestaDAO {
 	                json.put("idtienda", tiendaId);
 	                json.put("descripcion_encuesta", descripcionEncuesta);
 	                json.put("porcentaje_total", porcentaje_total);
+	                json.put("nombre_recibe", nombreRecibe != null ? nombreRecibe : "");
+	                json.put("cargo_recibe", cargoRecibe != null ? cargoRecibe : "");
+	                json.put("medidas_correctivas", medidasCorrectivas != null ? medidasCorrectivas : "");
+	                json.put("tiene_firma_recibe", tieneFirmaRecibe == 1);
+	                json.put("tiene_firma_inspector", tieneFirmaInspector == 1);
 	                repResultadoEncuesta.add(json);
 
 	            }

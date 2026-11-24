@@ -3428,7 +3428,7 @@ function ConfirmarPedido()
 		var tiempopedido;
 		var idtien = $("#selectTiendas option:selected").attr('id');
 		$.ajax({ 
-			url: server + 'CRUDTiempoPedido?idoperacion=3&idtienda=' + idtien , 
+			url: server + 'CRUDTiempoPedido?idoperacion=3&idtienda=' + idtien + '&canal=CALL_CENTER', 
 			dataType: 'json',
 			type: 'get', 
 			async: false, 

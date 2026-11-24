@@ -11,6 +11,17 @@ public class CoberturaRequest {
     @SerializedName("tipo_cliente")
     private String tipoCliente;
 
+    @SerializedName("canal")
+    private String canal;
+
+    public String getCanal() {
+        return canal;
+    }
+
+    public void setCanal(String canal) {
+        this.canal = canal;
+    }
+
     private String lead;
     private Double latitud;
     private Double longitud;

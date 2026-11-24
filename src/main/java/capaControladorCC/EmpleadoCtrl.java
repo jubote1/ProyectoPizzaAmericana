@@ -156,13 +156,11 @@ public class EmpleadoCtrl {
 	                    respuesta = Float.valueOf(respuestatxt);
 	                }
 
-	                if (respuesta != 0) {
-	                    if (porcentaje != 0) {
-	                        if (respuesta == -1) {
-	                            p_t += porcentaje;
-	                        } else {
-	                            longitud++;
-	                        }
+	                if (porcentaje != 0) {
+	                    if (respuesta == -1) {
+	                        p_t += porcentaje;
+	                    } else {
+	                        longitud++;
 	                    }
 	                }
 	            }
@@ -177,14 +175,15 @@ public class EmpleadoCtrl {
 	                    respuesta = Float.valueOf(respuestatxt);
 	                }
 
-	                if (respuesta != 0) {
-	                    if (respuesta == -1) {
-	                        porcentaje = 0;
-	                    } else if (p_t > 0 && longitud > 0 && porcentaje != 0) {
+	                if (porcentaje != 0 && respuesta != -1) {
+	                    if (p_t > 0 && longitud > 0) {
 	                        porcentaje += p_t / longitud;
 	                    }
 
 	                    float valor_final = (float) json2.get("valor_final");
+	                    if (valor_final <= 0) {
+	                        valor_final = 1;
+	                    }
 	                    float valor_esperado = (porcentaje * valor_final) / 100;
 	                    float valor_obtenido = (porcentaje * respuesta) / 100;
 

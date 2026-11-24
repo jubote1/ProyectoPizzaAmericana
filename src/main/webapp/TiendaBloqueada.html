@@ -73,6 +73,36 @@
 					    <label for="tienda">Tienda</label>
 					    <select class="form-control" id="tienda" placeholder="Tienda"></select>
 					  </div>
+					  <div class="form-group" style="background: #f8f9fa; padding: 12px; border: 1px solid #e9ecef; border-radius: 4px;">
+					    <label style="font-weight: bold; margin-bottom: 8px; display: block;">Canales a Bloquear:</label>
+					    <div class="checkbox" style="margin-top: 0;">
+					      <label style="font-weight: bold; color: #d9534f;">
+					        <input type="checkbox" id="chkCanalTodos" checked onchange="toggleSeleccionarTodos(this)"> TODOS LOS CANALES (Bloqueo General)
+					      </label>
+					    </div>
+					    <div style="margin-left: 20px; border-left: 2px solid #ddd; padding-left: 12px; margin-top: 6px;">
+					      <div class="checkbox">
+					        <label>
+					          <input type="checkbox" class="chk-canal" value="BOT" checked onchange="actualizarEstadoTodos()"> Bot WhatsApp (CRM Kommo)
+					        </label>
+					      </div>
+					      <div class="checkbox">
+					        <label>
+					          <input type="checkbox" class="chk-canal" value="TIENDA_VIRTUAL" checked onchange="actualizarEstadoTodos()"> Tienda Virtual / Página Web
+					        </label>
+					      </div>
+					      <div class="checkbox">
+					        <label>
+					          <input type="checkbox" class="chk-canal" value="CALL_CENTER" checked onchange="actualizarEstadoTodos()"> Call Center (Pedidos Telefónicos)
+					        </label>
+					      </div>
+					      <div class="checkbox">
+					        <label>
+					          <input type="checkbox" class="chk-canal" value="POS" checked onchange="actualizarEstadoTodos()"> Punto de Venta (Mostrador / Salón POS)
+					        </label>
+					      </div>
+					    </div>
+					  </div>
 					  <div class="form-group">
 					    <label for="observacion">Observacion</label>
 					    <input type="text" class="form-control" id="observacion" placeholder="Observacion">
@@ -114,6 +144,7 @@
 								            <tr>
 								                <th width="20" data-column-id="idtienda">Id Tienda</th>
 								                <th data-column-id="nombre">Nombre Tienda</th>
+								                <th data-column-id="canal" width="160">Canal Afectado</th>
 								                <th data-column-id="comentario">Comentario</th>
 								                <th data-column-id="fecha">Fecha Auditoria</th>
 								                <th width="120">Eliminar</th>

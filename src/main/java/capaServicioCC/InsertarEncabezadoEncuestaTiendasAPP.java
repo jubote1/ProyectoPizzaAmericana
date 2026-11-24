@@ -47,6 +47,8 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		response.addHeader("Access-Control-Allow-Origin", "*");
+		request.setCharacterEncoding("UTF-8");
+		response.setCharacterEncoding("UTF-8");
 		int  idTienda = 0;
 		try
 		{
@@ -58,6 +60,11 @@ public class InsertarEncabezadoEncuestaTiendasAPP extends HttpServlet {
 		int idempleado = Integer.parseInt(request.getParameter("idempleado"));
 		int idencuesta = Integer.parseInt(request.getParameter("idencuesta"));
 		EmpleadoEncuesta empEncuesta = new EmpleadoEncuesta(0,idempleado,0,idencuesta,"",idTienda);
+		empEncuesta.setNombreRecibe(request.getParameter("nombre_recibe"));
+		empEncuesta.setCargoRecibe(request.getParameter("cargo_recibe"));
+		empEncuesta.setMedidasCorrectivas(request.getParameter("medidas_correctivas"));
+		empEncuesta.setFirmaRecibe(request.getParameter("firma"));
+		empEncuesta.setFirmaInspector(request.getParameter("firma_inspector"));
 		EncuestaCtrl encCtrl = new EncuestaCtrl();
 		String respuesta = encCtrl.insertarEmpleadoEncuesta(empEncuesta);
         PrintWriter out = response.getWriter();

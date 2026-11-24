@@ -867,7 +867,7 @@ async function findAddress(idcliente = null, esClicManual = false) {
       }
 
       if (idcliente) {
-          coberturaRequest = { idcliente };
+          coberturaRequest = { idcliente, canal: "CALL_CENTER" };
       } else {
 
           const direccion = obtenerDireccionCobertura();
@@ -887,7 +887,8 @@ async function findAddress(idcliente = null, esClicManual = false) {
           coberturaRequest = {
               direccion,
               municipio: muniVal,
-              barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || ""
+              barrio: obtenerValor("#zona") || obtenerValor("#barrio") || obtenerValor("#zonaact") || "",
+              canal: "CALL_CENTER"
           };
       }
 

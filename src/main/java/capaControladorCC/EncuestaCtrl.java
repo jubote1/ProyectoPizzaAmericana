@@ -101,8 +101,8 @@ public class EncuestaCtrl {
 				det.setObservacionAdicional(item.optString("observacionadi", ""));
 				detallesEncuesta.add(det);
 
-				if (esOperacional && Math.abs(valor) > 0.0001 && porcentaje != 0) {
-					if (valor == -1) {
+				if (esOperacional && porcentaje > 0.0001f) {
+					if (Math.abs(valor - (-1)) < 0.0001f) {
 						porcentajeTransferido += porcentaje;
 					} else {
 						preguntasValidas++;
@@ -114,17 +114,21 @@ public class EncuestaCtrl {
 			if (esOperacional) {
 				for (org.json.JSONObject item : empEncuestaDetalle) {
 					float valor = item.optFloat("valor", 0);
-					if (Math.abs(valor) < 0.0001)
+					float porcentaje = item.optFloat("porcentaje", 0);
+
+					if (porcentaje <= 0.0001f)
 						continue;
 
-					float porcentaje = item.optFloat("porcentaje", 0);
-					if (valor == -1) {
-						porcentaje = 0;
-					} else if (porcentajeTransferido > 0 && preguntasValidas > 0 && porcentaje != 0) {
+					if (Math.abs(valor - (-1)) < 0.0001f) {
+						continue;
+					} else if (porcentajeTransferido > 0 && preguntasValidas > 0) {
 						porcentaje += porcentajeTransferido / preguntasValidas;
 					}
 
-					float valorFinal = item.optFloat("valorfinal", 0);
+					float valorFinal = item.optFloat("valorfinal", 1);
+					if (valorFinal <= 0.0001f) {
+						valorFinal = 1;
+					}
 					totalEsperado += (porcentaje * valorFinal) / 100;
 					totalObtenido += (porcentaje * valor) / 100;
 				}

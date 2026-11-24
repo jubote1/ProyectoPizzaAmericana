@@ -14,11 +14,14 @@ import capaModeloCC.CorreoElectronico;
 import capaModeloCC.Parametro;
 import capaModeloCC.Resultado;
 import capaModeloCC.Ubicacion;
+import utilidadesCC.AlertaCobertura;
 import utilidadesCC.ControladorEnvioCorreo;
+import utilidadesCC.ZonasCoberturaCache;
 import capaDAOCC.ClienteDAO;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +40,11 @@ public class UbicacionCtrl {
 	private static String API_KEY_HERE = "";
 	private static String API_KEY_ARCGIS = "";
 	private static String API_KEY_GOOGLE = "";
+
+	/** Despues de una falla de conexion con ArcGIS, tiempo en que se salta ArcGIS y se usan HERE/Google. */
+	private static final long PAUSA_ARCGIS_MS = 60_000L;
+	private static volatile long arcgisGeocodificacionPausadaHasta = 0L;
+	private static volatile long arcgisZonasPausadaHasta = 0L;
 	private static String serviceUrl = "https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 	private static String queryUrl = "https://services1.arcgis.com/PezsEKOq8AU6Mcbj/arcgis/rest/services/zonas/FeatureServer/0";
 
@@ -90,9 +98,20 @@ public class UbicacionCtrl {
 	    String barrio = coberturaRequest.getBarrio();
 	    String tipo_cliente = coberturaRequest.getTipoCliente();
 	    String lead = coberturaRequest.getLead();
+	    String canal = coberturaRequest.getCanal();
+	    if (canal == null || canal.trim().isEmpty()) {
+	        if ("informacion".equalsIgnoreCase(tipo_cliente) || "programado".equalsIgnoreCase(tipo_cliente) || (lead != null && !lead.isEmpty())) {
+	            canal = "BOT";
+	        } else {
+	            canal = "TIENDA_VIRTUAL";
+	        }
+	    }
 	    Integer idcliente = coberturaRequest.getIdcliente();
 	    String telefono = coberturaRequest.getTelefono();
 	    String referencia  = "";
+
+	    // Datos de la consulta para que una alerta de falla llegue con direccion, lead y cliente.
+	    AlertaCobertura.iniciarContexto(direccion, lead, idcliente, telefono);
 	    
 	
 	    Resultado resultado = new Resultado();
@@ -135,6 +154,8 @@ public class UbicacionCtrl {
 	            referencia = cliente.getObservacion();
 	            barrioBD = cliente.getZonaDireccion();
 	            municipioBD = cliente.getMunicipio();
+
+	            AlertaCobertura.actualizarCliente(idcliente, nombreCliente(cliente), cliente.getTelefono(), direccion);
 	     
 	        }
 	        
@@ -149,7 +170,8 @@ public class UbicacionCtrl {
 	                    lead,
 	                    direccion,
 	                    queryUrl,
-	                    coberturaRequest.getIdTienda()
+	                    coberturaRequest.getIdTienda(),
+	                    canal
 	            );
 	            
 
@@ -181,7 +203,8 @@ public class UbicacionCtrl {
 		                    coords,
 		                    tipo_cliente,
 		                    lead,
-		                    direccion
+		                    direccion,
+		                    canal
 		            );
 
 		            if (idcliente != null
@@ -219,10 +242,12 @@ public class UbicacionCtrl {
 	    } catch (Exception e) {
 	        System.err.println("Error al geocodificar: " + e.getMessage());
 	        e.printStackTrace();
-	        EnvioCorreo(direccion, lead, e.getMessage());
+	        AlertaCobertura.registrar("Consulta de cobertura (geocodificacion)", direccion, lead, mensajeDe(e));
 
 	        resultado.setSuccess(false);
 	        resultado.setResultado("Error interno al intentar ubicar la direccion.");
+	    } finally {
+	        AlertaCobertura.limpiarContexto();
 	    }
 
 	    return resultado;
@@ -496,14 +521,14 @@ public class UbicacionCtrl {
 	 * ese punto y agrega informacion adicional como proveedor, correcciones y
 	 * direccion devuelta por la geocodificacion.
 	 */
-	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion) {
+	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion, String canal) {
 		double lat = coords.get("Latitud").getAsDouble();
 		double lng = coords.get("Longitud").getAsDouble();
 		String address = coords.get("Direccion").getAsString();
 		
 	
 
-		Resultado resultado = consultarZonas(lng, lat, tipo_cliente, lead, direccion, queryUrl);
+		Resultado resultado = consultarZonas(lng, lat, tipo_cliente, lead, direccion, queryUrl, null, canal);
 
 		resultado.setLatitud(lat);
 		resultado.setLongitud(lng);
@@ -540,6 +565,10 @@ public class UbicacionCtrl {
 		}
 
 		return resultado;
+	}
+
+	private static Resultado crearResultadoConCoordenadas(JsonObject coords, String tipo_cliente, String lead ,String direccion) {
+		return crearResultadoConCoordenadas(coords, tipo_cliente, lead, direccion, null);
 	}
 
 	private static JsonObject crearCoordsVacias() {
@@ -588,6 +617,13 @@ public class UbicacionCtrl {
 
 	private static JsonObject obtenerCoordenadasDesdeArcGIS(String direccion, String municipioPedido) throws Exception {
 	    JsonObject coords = crearCoordsVacias();
+
+	    // Si ArcGIS acaba de fallar por conexion, no se insiste durante un minuto: se pasa
+	    // directo a HERE/Google en vez de esperar otro timeout por cada candidato.
+	    if (System.currentTimeMillis() < arcgisGeocodificacionPausadaHasta) {
+	        coords.addProperty("error", "ArcGIS en pausa por falla de conexion reciente");
+	        return coords;
+	    }
 	    
 	    String url = serviceUrl + "/findAddressCandidates"
 	            + "?f=json"
@@ -602,7 +638,18 @@ public class UbicacionCtrl {
 	    
 
 	    
-	    JsonObject json = ejecutarGetJson(url);
+	    JsonObject json;
+	    try {
+	        json = ejecutarGetJson(url);
+	    } catch (Exception e) {
+	        // Antes esta excepcion cortaba toda la consulta y HERE/Google nunca se intentaban.
+	        // Ahora se registra la alerta y se continua con los proveedores de respaldo.
+	        arcgisGeocodificacionPausadaHasta = System.currentTimeMillis() + PAUSA_ARCGIS_MS;
+	        AlertaCobertura.registrar("ArcGIS geocodificacion (" + hostDe(serviceUrl)
+	                + ") - se continuo con HERE/Google", null, null, mensajeDe(e));
+	        coords.addProperty("error", "ArcGIS no respondio: " + mensajeDe(e));
+	        return coords;
+	    }
 
 	    if (json.has("error")) {
 	        coords.addProperty("error", json.getAsJsonObject("error").toString());
@@ -683,9 +730,37 @@ public class UbicacionCtrl {
 
 	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
 	        String lead, String direccion, String queryUrl, Integer idTiendaEsperada) {
+	    return consultarZonas(longitud, latitud, tipo_cliente, lead, direccion, queryUrl, idTiendaEsperada, null);
+	}
+
+	public static Resultado consultarZonas(double longitud, double latitud, String tipo_cliente,
+	        String lead, String direccion, String queryUrl, Integer idTiendaEsperada, String canal) {
 
 	    Resultado resultado = new Resultado();
 	    String tipoCliente = tipo_cliente == null ? "" : tipo_cliente.toLowerCase().trim();
+
+	    // 1. EVALUAR PRIMERO CON LA CACHE LOCAL DE POLIGONOS (0 ms, sin llamadas HTTP ni riesgo de timeout)
+	    try {
+	        ZonasCoberturaCache.Zona zonaLocal = ZonasCoberturaCache.buscarZona(longitud, latitud, idTiendaEsperada);
+	        if (zonaLocal != null) {
+	            String nombre = zonaLocal.getNombre();
+	            int idTiendaZona = zonaLocal.getIdTienda();
+
+	            if (idTiendaEsperada == null || idTiendaEsperada <= 0 || idTiendaZona == idTiendaEsperada) {
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, canal);
+	            }
+	        }
+	    } catch (Exception e) {
+	        System.err.println("consultarZonas: Advertencia al evaluar cache local de zonas: " + e.getMessage());
+	    }
+
+	    // 2. Si no cayó en la caché local y ArcGIS remoto está pausado por fallas recientes,
+	    //    evitamos esperar otro timeout de 10 segundos contra un servidor caído.
+	    if (System.currentTimeMillis() < arcgisZonasPausadaHasta) {
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
+	        resultado.setSuccess(false);
+	        return resultado;
+	    }
 
 	    try {
 	        JsonObject geometry = new JsonObject();
@@ -709,7 +784,6 @@ public class UbicacionCtrl {
 	                + "&returnGeometry=false"
 	                + "&token=" + urlEncode(API_KEY_ARCGIS);
 
-		    
 	        JsonObject json = ejecutarGetJson(url);
 
 	        if (json.has("error")) {
@@ -726,7 +800,6 @@ public class UbicacionCtrl {
 
 	                JsonObject attributes = feature.getAsJsonObject("attributes");
 	                String nombre = obtenerAtributo(attributes, "nombre");
-	                
 
 	                if (nombre.isBlank()) {
 	                    continue;
@@ -738,56 +811,76 @@ public class UbicacionCtrl {
 	                    continue;
 	                }
 
-	                String mensaje = switch (tipoCliente) {
-	                    case "informacion" ->
-	                            "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
-	                                    + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
-
-	                    case "programado" ->
-	                            "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
-	                                    + nombre;
-
-	                    default ->
-	                            "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
-	                };
-
-	                resultado.setResultado(mensaje);
-	                resultado.setInfoAdicional(nombre);
-	                resultado.setEstadoTienda(
-	                        TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona)
-	                                ? "BLOQUEADO"
-	                                : "DISPONIBLE"
-	                );
-	                
-	                resultado.setIdtienda(idTiendaZona);
-	                resultado.setSuccess(true);
-	               
-
-	                return resultado;
+	                return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, canal);
 	            }
 	        }
 
-	        String mensajeSinCobertura = switch (tipoCliente) {
-	            case "informacion" ->
-	                    "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
-
-	            case "programado" ->
-	                    "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
-
-	            default ->
-	                    "La direccion no se encuentra dentro de cobertura.";
-	        };
-
-	        resultado.setResultado(mensajeSinCobertura);
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
 	        resultado.setSuccess(false);
 
 	    } catch (Exception e) {
-	        System.out.println("Error al realizar la consulta: " + e.getMessage());
-	        EnvioCorreo(direccion, lead, e.getMessage());
+	        arcgisZonasPausadaHasta = System.currentTimeMillis() + PAUSA_ARCGIS_MS;
+	        System.out.println("Error al realizar la consulta de zonas en ArcGIS: " + e.getMessage());
+	        AlertaCobertura.registrar("ArcGIS zonas de cobertura (" + hostDe(queryUrl) + ")", direccion, lead, mensajeDe(e));
+	        resultado.setResultado(obtenerMensajeSinCobertura(tipoCliente));
 	        resultado.setSuccess(false);
 	    }
 
 	    return resultado;
+	}
+
+	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente, String canal) {
+	    String mensaje = switch (tipoCliente) {
+	        case "informacion" ->
+	                "Tu direccion se encuentra dentro de nuestra cobertura de la tienda " + nombre
+	                        + ", te invitamos a que sigas con tu pedido. Recuerda que toda la informacion es validada al final por nuestros asesores";
+
+	        case "programado" ->
+	                "Tu direccion se encuentra dentro de la cobertura de nuestras tiendas. El pedido esta siendo programado para la tienda "
+	                        + nombre;
+
+	        default ->
+	                "Tu direccion se encuentra dentro de la cobertura de nuestra tienda " + nombre;
+	    };
+
+	    resultado.setResultado(mensaje);
+	    resultado.setInfoAdicional(nombre);
+
+	    String canalFinal = canal;
+	    if (canalFinal == null || canalFinal.trim().isEmpty()) {
+	        if ("informacion".equalsIgnoreCase(tipoCliente) || "programado".equalsIgnoreCase(tipoCliente)) {
+	            canalFinal = "BOT";
+	        } else {
+	            canalFinal = "TIENDA_VIRTUAL";
+	        }
+	    }
+
+	    resultado.setEstadoTienda(
+	            TiendaBloqueadaDAO.validarTiendaBloqueada(idTiendaZona, canalFinal)
+	                    ? "BLOQUEADO"
+	                    : "DISPONIBLE"
+	    );
+	    
+	    resultado.setIdtienda(idTiendaZona);
+	    resultado.setSuccess(true);
+	    return resultado;
+	}
+
+	private static Resultado armarResultadoZonaExitosa(Resultado resultado, String nombre, int idTiendaZona, String tipoCliente) {
+	    return armarResultadoZonaExitosa(resultado, nombre, idTiendaZona, tipoCliente, null);
+	}
+
+	private static String obtenerMensajeSinCobertura(String tipoCliente) {
+	    return switch (tipoCliente) {
+	        case "informacion" ->
+	                "Por el momento tu direccion no se encuentra dentro de la cobertura de domicilio de nuestras tiendas. Te invitamos a que te comuniques a nuestra linea telefonica 604 4444553 o vuelve a intentar.";
+
+	        case "programado" ->
+	                "La direccion no se encuentra dentro de la cobertura disponible para programar el pedido.";
+
+	        default ->
+	                "La direccion no se encuentra dentro de cobertura.";
+	    };
 	}
 
 	public Ubicacion ubicarDireccionEnTiendaBatch(String direccion, String municipio, String barrio) {
@@ -823,34 +916,36 @@ public class UbicacionCtrl {
 		return ubicacion;
 	}
 
+	/**
+	 * @deprecated se conserva por compatibilidad. Las alertas ahora se agrupan en
+	 *             {@link AlertaCobertura}: primer aviso inmediato y luego un correo cada 10 minutos
+	 *             con el detalle de todas las fallas.
+	 */
+	@Deprecated
 	public static void EnvioCorreo(String direccion,String  lead, String error) {
-		
-		Correo correo = new Correo();
-		CorreoElectronico infoCorreo = ControladorEnvioCorreo.recuperarCorreo("CUENTACORREOERROR", "CLAVECORREOERROR");
-		ArrayList<String> correos = new ArrayList<String>();
+		AlertaCobertura.registrar("Geocodificacion", direccion, lead, error);
+	}
 
-		correo.setAsunto("TENEMOS PROBLEMA CON LA CONSULTA DE LA COBERTURA");
+	/** Mensaje legible de una excepcion (algunas, como los timeouts, pueden traer mensaje nulo). */
+	private static String mensajeDe(Exception e) {
+		String m = e.getMessage();
+		return (m == null || m.isBlank()) ? e.getClass().getSimpleName() : e.getClass().getSimpleName() + ": " + m;
+	}
 
-		correos.add("jubote1@gmail.com");
-		correos.add("a.desarrollosi@gmail.com");
-
-		correo.setContrasena(infoCorreo.getClaveCorreo());
-		correo.setUsuarioCorreo(infoCorreo.getCuentaCorreo());
-
-		String mensCorreo = "Se encontro un problema al invocar uno de los servicios de Geocodificacion. " + error;
-
-		if (lead != null && !lead.trim().isEmpty()) {
-		    mensCorreo += "<br> Numero de Lead: " + lead.trim();
+	/** Host de una URL, para que la alerta diga exactamente que servidor de ArcGIS fallo. */
+	private static String hostDe(String url) {
+		try {
+			String host = URI.create(url).getHost();
+			return host == null ? String.valueOf(url) : host;
+		} catch (Exception e) {
+			return String.valueOf(url);
 		}
-		
-		if (direccion != null && !direccion.trim().isEmpty()) {
-		    mensCorreo += "<br>Dirección a consultar: " + direccion.trim();
-		}
+	}
 
-		correo.setMensaje(mensCorreo);
-
-		ControladorEnvioCorreo contro = new ControladorEnvioCorreo(correo, correos);
-		contro.enviarCorreo();
+	private static String nombreCliente(Cliente cliente) {
+		String nombres = cliente.getNombres() == null ? "" : cliente.getNombres().trim();
+		String apellidos = cliente.getApellidos() == null ? "" : cliente.getApellidos().trim();
+		return (nombres + " " + apellidos).trim();
 	}
 
 
@@ -2157,6 +2252,10 @@ public class UbicacionCtrl {
 	    try {
 	        response = utilidadesCC.ClientesHttp.jdk()
 	                .send(request, HttpResponse.BodyHandlers.ofString());
+	    } catch (HttpConnectTimeoutException e) {
+	        // El servidor remoto no acepto la conexion en el tiempo limite: reintentar de inmediato
+	        // solo duplica la espera. Se falla rapido para pasar a los proveedores de respaldo.
+	        throw e;
 	    } catch (java.io.IOException e) {
 	        // Si la conexión previa fue cerrada por inactividad (GOAWAY / reset), reintentar una vez con conexión fresca
 	        System.out.println("ejecutarGetJson: Advertencia de conexion (" + e.getMessage() + "), reintentando...");

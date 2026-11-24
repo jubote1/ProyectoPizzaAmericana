@@ -92,15 +92,40 @@ public class CRUDTiendaBloqueada extends HttpServlet {
 			{
 				desbloqueoEn = "";
 			}
+			String canales;
+			try
+			{
+				canales = request.getParameter("canales");
+				if (canales == null || canales.trim().isEmpty()) {
+					canales = request.getParameter("canal");
+				}
+			}catch(Exception e)
+			{
+				canales = "TODOS";
+			}
+			if (canales == null || canales.trim().isEmpty()) {
+				canales = "TODOS";
+			}
 			
-			respuesta = TiendaCtrl.insertarTiendaBloqueada(idtienda, observacion, motivo, desbloqueoEn);
+			respuesta = TiendaCtrl.insertarTiendaBloqueada(idtienda, observacion, motivo, desbloqueoEn, canales);
 		}else if (operacion ==2)
 		{
 			
 		}else if (operacion ==3 )
 		{
 			int idtienda = Integer.parseInt(request.getParameter("idtienda"));
-			respuesta = TiendaCtrl.eliminarTiendaBloqueada(idtienda);
+			String canal;
+			try
+			{
+				canal = request.getParameter("canal");
+			}catch(Exception e)
+			{
+				canal = "TODOS";
+			}
+			if (canal == null || canal.trim().isEmpty()) {
+				canal = "TODOS";
+			}
+			respuesta = TiendaCtrl.eliminarTiendaBloqueada(idtienda, canal);
 		}else if (operacion == 4)
 		{
 			

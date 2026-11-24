@@ -567,7 +567,8 @@ function ejecutarGeocodificacionMapa(dir, mun, barrio, lat, lng) {
         direccion: dir,
         municipio: mun,
         barrio: barrio,
-        idcliente: clienteActual.idcliente || 0
+        idcliente: clienteActual.idcliente || 0,
+        canal: "POS"
     };
     if (lat && lng) {
         reqPayload.latitud = lat;
@@ -1379,7 +1380,7 @@ function consultarTiempoTienda(idTienda) {
         return;
     }
     $.ajax({
-        url: "CRUDTiempoPedido?idoperacion=3&idtienda=" + idTienda,
+        url: "CRUDTiempoPedido?idoperacion=3&idtienda=" + idTienda + "&canal=POS",
         dataType: "json",
         type: "GET",
         success: function (data) {
