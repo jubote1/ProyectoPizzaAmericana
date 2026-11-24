@@ -89,7 +89,21 @@
 					roles = data[0].roles || [];
 				}
 			});
-			if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
+			//Quien trabaja en el area de CRM ve el menu del CRM (la barra azul), que es donde
+			//vive esta pantalla. Los demas siguen con el menu que les toca. La proteccion real
+			//esta en el servicio, que valida el rol por su cuenta.
+			var accesoCRM = false;
+			if (respuesta === 'OK' || respuesta === 'OKA' || respuesta === 'OKP') {
+				$.ajax({
+					url: server + 'ValidarAccesoCRM',
+					dataType: 'json',
+					async: false,
+					success: function (d) { accesoCRM = !!(d && d.acceso); }
+				});
+			}
+			if (accesoCRM) {
+				$('#cargarMenu').load('MenuCRM.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
+			} else if (respuesta === 'OK' && roles.indexOf('Administrador de Tienda') !== -1) {
 				$('#cargarMenu').load('MenuDinamico.html', function () { $('#cargarMenu').find('#usuariologin').html(usuario); });
 			} else {
 				switch (respuesta) {
