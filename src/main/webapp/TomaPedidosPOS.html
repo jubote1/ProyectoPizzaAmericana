@@ -328,9 +328,9 @@
                         <div class="form-group col-7 mb-1">
                             <label for="formaPagoSelect" class="mb-1 font-weight-bold" style="font-size: 0.8rem;">Forma de Pago:</label>
                             <select id="formaPagoSelect" class="form-control form-control-sm font-weight-bold">
-                                <option value="1">1 - Efectivo</option>
-                                <option value="2">2 - Datáfono</option>
-                                <option value="4">4 - Link de Pago Wompi</option>
+                                <option value="1" data-virtual="N">1 - Efectivo</option>
+                                <option value="2" data-virtual="N">2 - Datáfono</option>
+                                <option value="4" data-virtual="S">4 - Link de Pago Wompi</option>
                             </select>
                         </div>
                         <div class="form-group col-5 mb-1">
@@ -1217,13 +1217,28 @@
                                             <i class="fas fa-coins mr-2"></i>Formas de Pago, Devuelta y Reinicio de Pedido
                                         </h5>
                                         <p class="small text-muted mb-2">
-                                            Seleccione el medio de pago acordado con el cliente:
+                                            Seleccione el medio de pago acordado con el cliente (cargado dinámicamente según la parametrización de Contact Center):
                                         </p>
-                                        <ul class="small text-muted pl-3 mb-3">
+                                        <ul class="small text-muted pl-3 mb-2">
                                             <li><b>1 - Efectivo:</b> Habilita la caja de cálculo de devuelta y liquidación rápida con botones de billetes.</li>
                                             <li><b>2 - Datáfono:</b> Indica que el domiciliario debe llevar el datáfono inalámbrico físico. Devuelta $0.</li>
-                                            <li><b>4 - Link de Pago Wompi:</b> Pago digital con tarjeta de crédito o débito PSE vía pasarela Wompi.</li>
+                                            <li><b>4 - Link de Pago Wompi:</b> Pago virtual digital con tarjeta de crédito o débito PSE vía pasarela Wompi.</li>
                                         </ul>
+
+                                        <div class="alert alert-warning p-2 small mb-3 border-left" style="border-left: 4px solid #f59e0b !important;">
+                                            <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.85rem;">
+                                                <i class="fas fa-shield-alt text-warning mr-1"></i>Regla Paramétrica: Pago Virtual y Política de Datos (Habeas Data)
+                                            </h6>
+                                            <p class="mb-1 text-dark">
+                                                En cumplimiento de la Ley de Protección de Datos (Habeas Data) y los requerimientos operativos de envío de links de pago por WhatsApp y correo:
+                                            </p>
+                                            <ul class="mb-0 pl-3">
+                                                <li><b>Obligatoriedad:</b> Si se selecciona una forma de pago con parámetro <code>virtual = 'S'</code> (ej. Link de Pago Wompi), es <b>estrictamente obligatorio</b> que el cliente acepte la Política de Tratamiento de Datos.</li>
+                                                <li><b>Candado Activo:</b> Mientras la forma de pago sea virtual, el sistema <b>no permite desmarcar</b> la casilla «Acepta Política de Datos».</li>
+                                                <li><b>Teléfono Celular Válido:</b> Debe estar registrado el número celular para el despacho del link interactivo.</li>
+                                                <li><b>Validación Doble:</b> El sistema valida en la interfaz y en el motor central de despacho; pedidos virtuales sin autorización de datos son rechazados.</li>
+                                            </ul>
+                                        </div>
 
                                         <h6 class="font-weight-bold text-dark">Botón «Reiniciar Pedido» con Confirmación de Clave</h6>
                                         <div class="p-2 rounded bg-light border small mb-2">

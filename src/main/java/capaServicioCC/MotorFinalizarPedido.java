@@ -130,6 +130,91 @@ public class MotorFinalizarPedido extends HttpServlet {
 				return;
 			}
 
+			// 1.1 Extraer datos de cliente si vienen en el cuerpo de la peticion
+			Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
+			if (root.has("cliente")) {
+				try {
+					JsonObject clJson = root.getAsJsonObject("cliente");
+					if (clJson != null) {
+						if (cli == null) {
+							cli = new Cliente();
+							cli.setIdcliente(idCliente);
+						}
+						if (clJson.has("nombres")) cli.setNombres(clJson.get("nombres").getAsString());
+						if (clJson.has("apellidos")) cli.setApellidos(clJson.get("apellidos").getAsString());
+						if (clJson.has("telefono")) cli.setTelefonoCelular(clJson.get("telefono").getAsString());
+						if (clJson.has("direccion")) cli.setDireccion(clJson.get("direccion").getAsString());
+						if (clJson.has("municipio")) cli.setMunicipio(clJson.get("municipio").getAsString());
+						if (clJson.has("zona")) cli.setZonaDireccion(clJson.get("zona").getAsString());
+						if (clJson.has("observacion")) cli.setObservacion(clJson.get("observacion").getAsString());
+						if (clJson.has("latitud")) {
+							cli.setLatitud((float) clJson.get("latitud").getAsDouble());
+						}
+						if (clJson.has("longitud")) {
+							cli.setLontitud((float) clJson.get("longitud").getAsDouble());
+						}
+						if (clJson.has("distanciatienda")) {
+							cli.setDistanciaTienda(clJson.get("distanciatienda").getAsDouble());
+						}
+						if (clJson.has("email")) {
+							cli.setEmail(clJson.get("email").getAsString());
+						}
+						if (clJson.has("emailfact")) {
+							cli.setEmailFacturacion(clJson.get("emailfact").getAsString());
+						}
+						if (clJson.has("clientesiniden")) {
+							cli.setClienteSinIden(clJson.get("clientesiniden").getAsString());
+						}
+						if (clJson.has("idtipopersona")) {
+							cli.setIdTipoPersona(clJson.get("idtipopersona").getAsInt());
+						}
+						if (clJson.has("identificacion")) {
+							cli.setIdentificacion(clJson.get("identificacion").getAsString());
+						}
+						if (clJson.has("politicadatos")) {
+							cli.setPoliticaDatos(clJson.get("politicadatos").getAsString());
+						}
+						if (cli.getIdcliente() > 0 && clJson.has("politicadatos")) {
+							try (PreparedStatement psUpdPol = con.prepareStatement(
+									"update pizzaamericana.cliente set politica_datos = ? where idcliente = ?")) {
+								psUpdPol.setString(1, cli.getPoliticaDatos() != null ? cli.getPoliticaDatos() : "S");
+								psUpdPol.setInt(2, cli.getIdcliente());
+								psUpdPol.executeUpdate();
+							} catch (Exception exPol) {
+								// Ignorado si falla el update puntual
+							}
+						}
+					}
+				} catch (Exception exCli) {
+					// Ignorado si no viene estructura completa
+				}
+			}
+
+			// 1.2 Regla Paramétrica: Si la forma de pago es Virtual (virtual = 'S'), exige política de datos aceptada
+			if (idFormaPagoTienda > 0) {
+				String sqlCheckFP = "select virtual, nombre from pizzaamericana.forma_pago where idforma_pago = ?";
+				try (PreparedStatement psFP = con.prepareStatement(sqlCheckFP)) {
+					psFP.setInt(1, idFormaPagoTienda);
+					try (ResultSet rsFP = psFP.executeQuery()) {
+						if (rsFP.next()) {
+							String esVirtual = rsFP.getString("virtual");
+							String nomFP = rsFP.getString("nombre");
+							if ("S".equalsIgnoreCase(esVirtual)) {
+								String polDatos = (cli != null && cli.getPoliticaDatos() != null) ? cli.getPoliticaDatos().trim() : "N";
+								if (!"S".equalsIgnoreCase(polDatos)) {
+									response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+									out.write("{\"exito\":false,\"mensaje\":\"La forma de pago '" + nomFP
+											+ "' es virtual y requiere obligatoriamente que el cliente acepte la Política de Tratamiento de Datos (Habeas Data) para el envío de notificaciones y links de pago.\"}");
+									return;
+								}
+							}
+						}
+					}
+				} catch (Exception exFPCheck) {
+					System.err.println("Advertencia verificando parámetro virtual de forma_pago: " + exFPCheck.getMessage());
+				}
+			}
+
 			// 2. Crear cabecera inicial en pizzaamericana.pedido para obtener idpedido central
 			int idPedidoCentral = 0;
 			String sqlInsPed = "insert into pizzaamericana.pedido (idtienda, idcliente, idestadopedido, fechapedido, "
@@ -209,65 +294,6 @@ public class MotorFinalizarPedido extends HttpServlet {
 			ConectorTiendaPos.DespachoResultado dr = null;
 
 			if (esPiloto) {
-				Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
-				if (root.has("cliente")) {
-					try {
-						JsonObject clJson = root.getAsJsonObject("cliente");
-						if (clJson != null) {
-							if (cli == null) {
-								cli = new Cliente();
-								cli.setIdcliente(idCliente);
-							}
-							if (clJson.has("nombres")) cli.setNombres(clJson.get("nombres").getAsString());
-							if (clJson.has("apellidos")) cli.setApellidos(clJson.get("apellidos").getAsString());
-							if (clJson.has("telefono")) cli.setTelefonoCelular(clJson.get("telefono").getAsString());
-							if (clJson.has("direccion")) cli.setDireccion(clJson.get("direccion").getAsString());
-							if (clJson.has("municipio")) cli.setMunicipio(clJson.get("municipio").getAsString());
-							if (clJson.has("zona")) cli.setZonaDireccion(clJson.get("zona").getAsString());
-							if (clJson.has("observacion")) cli.setObservacion(clJson.get("observacion").getAsString());
-							if (clJson.has("latitud")) {
-								cli.setLatitud((float) clJson.get("latitud").getAsDouble());
-							}
-							if (clJson.has("longitud")) {
-								cli.setLontitud((float) clJson.get("longitud").getAsDouble());
-							}
-							if (clJson.has("distanciatienda")) {
-								cli.setDistanciaTienda(clJson.get("distanciatienda").getAsDouble());
-							}
-							if (clJson.has("email")) {
-								cli.setEmail(clJson.get("email").getAsString());
-							}
-							if (clJson.has("emailfact")) {
-								cli.setEmailFacturacion(clJson.get("emailfact").getAsString());
-							}
-							if (clJson.has("clientesiniden")) {
-								cli.setClienteSinIden(clJson.get("clientesiniden").getAsString());
-							}
-							if (clJson.has("idtipopersona")) {
-								cli.setIdTipoPersona(clJson.get("idtipopersona").getAsInt());
-							}
-							if (clJson.has("identificacion")) {
-								cli.setIdentificacion(clJson.get("identificacion").getAsString());
-							}
-							if (clJson.has("politicadatos")) {
-								cli.setPoliticaDatos(clJson.get("politicadatos").getAsString());
-							}
-							if (cli.getIdcliente() > 0 && clJson.has("politicadatos")) {
-								try (PreparedStatement psUpdPol = con.prepareStatement(
-										"update pizzaamericana.cliente set politica_datos = ? where idcliente = ?")) {
-									psUpdPol.setString(1, cli.getPoliticaDatos() != null ? cli.getPoliticaDatos() : "S");
-									psUpdPol.setInt(2, cli.getIdcliente());
-									psUpdPol.executeUpdate();
-								} catch (Exception exPol) {
-									// Ignorado si falla el update puntual
-								}
-							}
-						}
-					} catch (Exception exCli) {
-						// Ignorado si no viene estructura completa
-					}
-				}
-
 				if (root.has("contingenciaTienda")) {
 					try {
 						JsonObject contJson = root.getAsJsonObject("contingenciaTienda");

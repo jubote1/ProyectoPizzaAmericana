@@ -23,6 +23,9 @@ var contingenciaTiendaForzada = false; // true si el asesor forzó el despacho a
 var marcacionActiva = null; // { idmarcacion, nombremarcacion, observacion, marketplace, descuento, descuentoAsumido }
 var catalogoMarcaciones = [];
 
+// Formas de Pago Paramétricas (tabla pizzaamericana.forma_pago: virtual = 'S'/'N')
+var catalogoFormasPago = [];
+
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
     tipo: "", // "CUPON" o "MANUAL"
@@ -66,6 +69,7 @@ $(document).ready(function () {
     cargarMenuPOS();
     consultarTiempoTienda();
     cargarCatalogoMarcaciones();
+    cargarFormasPagoParametricas();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -263,11 +267,58 @@ $(document).ready(function () {
 
     // Evento Política de Datos (Habeas Data)
     $("#chkPoliticaDatos").on("change", function () {
-        clienteActual.politicaDatos = $(this).is(":checked") ? "S" : "N";
+        var marcado = $(this).is(":checked");
+        var idFormaActual = parseInt($("#formaPagoSelect").val()) || 1;
+
+        // Regla Paramétrica: Si la forma de pago activa es virtual (virtual = 'S'), la política es OBLIGATORIA
+        if (!marcado && esFormaPagoVirtual(idFormaActual)) {
+            $(this).prop("checked", true);
+            clienteActual.politicaDatos = "S";
+            alert(
+                "⚠️ CONDICIONAL OBLIGATORIO: PAGO VIRTUAL\n\n" +
+                "No es posible desmarcar la Política de Tratamiento de Datos mientras esté seleccionada una forma de Pago Virtual (se enviará enlace de pago vía WhatsApp / Correo).\n\n" +
+                "Si el cliente no autoriza la política de tratamiento de datos, cambie primero la forma de pago a Efectivo o Datáfono."
+            );
+            return;
+        }
+
+        clienteActual.politicaDatos = marcado ? "S" : "N";
     });
 
     // Eventos de Pago y Cálculo de Devuelta
     $("#formaPagoSelect").on("change", function () {
+        var idForma = parseInt($(this).val()) || 1;
+        var esVirtual = esFormaPagoVirtual(idForma);
+
+        // Regla Paramétrica: Si se selecciona pago virtual, exigir aceptación de política de datos y celular
+        if (esVirtual) {
+            var polAceptada = $("#chkPoliticaDatos").is(":checked") && (clienteActual.politicaDatos === "S");
+            var telCelular = ($("#telcelular").val() || clienteActual.telefono || "").trim();
+
+            if (!polAceptada) {
+                var autoriza = confirm(
+                    "⚠️ AUTORIZACIÓN POLÍTICA DE DATOS REQUERIDA\n\n" +
+                    "La forma de pago seleccionada es VIRTUAL y requiere obligatoriamente que el cliente acepte la Política de Tratamiento de Datos (Habeas Data) para enviarle el link de pago por WhatsApp y correo electrónico.\n\n" +
+                    "¿El cliente autoriza expresamente el tratamiento de sus datos personales?"
+                );
+
+                if (autoriza) {
+                    $("#chkPoliticaDatos").prop("checked", true);
+                    clienteActual.politicaDatos = "S";
+                } else {
+                    alert("CUIDADO: Si la forma de pago es virtual debe aceptar la política de manejo de datos. Se restablece la forma de pago a Efectivo.");
+                    $(this).val("1");
+                    ajustarFormaPagoUI();
+                    return;
+                }
+            }
+
+            if (!telCelular || telCelular.length < 7) {
+                alert("¡Atención! Para formas de pago virtual debe registrar un número de teléfono celular válido para enviar el enlace de pago.");
+                $("#telcelular").focus();
+            }
+        }
+
         ajustarFormaPagoUI();
     });
 
@@ -488,6 +539,12 @@ function seleccionarClienteDeTabla(cli) {
     var tienePol = (cli.politicadatos === "S" || cli.politica_datos === "S" || cli.politicadatos === undefined);
     clienteActual.politicaDatos = tienePol ? "S" : "N";
     $("#chkPoliticaDatos").prop("checked", tienePol);
+
+    // Si el cliente no autoriza política y actualmente está seleccionada una forma de pago virtual, revertir a Efectivo
+    if (!tienePol && esFormaPagoVirtual()) {
+        $("#formaPagoSelect").val("1");
+        ajustarFormaPagoUI();
+    }
 
     // Facturación Electrónica DIAN
     if (cli.identificacion && cli.identificacion !== "222222222222" && cli.identificacion !== "") {
@@ -1674,8 +1731,60 @@ function removerDescuentoActivo() {
 }
 
 /* =========================================================================
-   PAGO Y CÁLCULO DE DEVUELTA
+   PAGO Y CÁLCULO DE DEVUELTA (Paramétrico con tabla pizzaamericana.forma_pago)
    ========================================================================= */
+function cargarFormasPagoParametricas() {
+    $.getJSON("CRUDFormaPago?idoperacion=6&tipopago=T", function (data) {
+        if (data && data.length > 0) {
+            catalogoFormasPago = data;
+            var $sel = $("#formaPagoSelect");
+            var valorActual = $sel.val() || "1";
+            $sel.empty();
+
+            $.each(catalogoFormasPago, function (i, fp) {
+                var etiqueta = fp.idformapago + " - " + fp.nombre;
+                if (fp.idformapago === 2 && !fp.nombre.toLowerCase().includes("datáfono") && !fp.nombre.toLowerCase().includes("datafono")) {
+                    etiqueta = fp.idformapago + " - Datáfono (" + fp.nombre + ")";
+                } else if (fp.idformapago === 4 && !fp.nombre.toLowerCase().includes("wompi")) {
+                    etiqueta = fp.idformapago + " - " + fp.nombre + " (Wompi)";
+                }
+                var $opt = $("<option></option>")
+                    .val(fp.idformapago)
+                    .attr("data-virtual", fp.virtual || "N")
+                    .attr("data-tipo", fp.tipoformapago || "")
+                    .text(etiqueta);
+                $sel.append($opt);
+            });
+
+            if ($sel.find("option[value='" + valorActual + "']").length > 0) {
+                $sel.val(valorActual);
+            } else {
+                $sel.val("1");
+            }
+            ajustarFormaPagoUI();
+        }
+    }).fail(function (err) {
+        console.warn("CRUDFormaPago no disponible dinámicamente, se conserva catálogo base:", err);
+    });
+}
+
+function esFormaPagoVirtual(idForma) {
+    idForma = parseInt(idForma) || parseInt($("#formaPagoSelect").val()) || 1;
+    if (catalogoFormasPago && catalogoFormasPago.length > 0) {
+        var encontrada = catalogoFormasPago.find(function (f) {
+            return (parseInt(f.idformapago) === idForma);
+        });
+        if (encontrada && encontrada.virtual) {
+            return (encontrada.virtual.toUpperCase() === "S");
+        }
+    }
+    var $opt = $("#formaPagoSelect option[value='" + idForma + "']");
+    if ($opt.length && $opt.attr("data-virtual")) {
+        return ($opt.attr("data-virtual").toUpperCase() === "S");
+    }
+    return (idForma === 4);
+}
+
 function ajustarFormaPagoUI() {
     var idForma = parseInt($("#formaPagoSelect").val()) || 1;
     if (idForma === 1) {
@@ -2041,6 +2150,27 @@ function abrirModalConfirmacionPedido() {
 
     sincronizarDatosCliente();
 
+    // Validar paramétricamente Formas de Pago Virtuales (Wompi, etc.: virtual = 'S')
+    var idFormaSel = parseInt($("#formaPagoSelect").val()) || 1;
+    if (esFormaPagoVirtual(idFormaSel)) {
+        var polAceptada = $("#chkPoliticaDatos").is(":checked") && (clienteActual.politicaDatos === "S");
+        if (!polAceptada) {
+            alert(
+                "⚠️ CONDICIONAL OBLIGATORIO: PAGO VIRTUAL\n\n" +
+                "La forma de pago seleccionada es VIRTUAL y requiere obligatoriamente que el cliente acepte la Política de Tratamiento de Datos (Habeas Data) para enviarle el link de pago por WhatsApp y correo electrónico.\n\n" +
+                "Por favor active la casilla «Acepta Política de Datos» antes de confirmar."
+            );
+            $("#chkPoliticaDatos").focus();
+            return;
+        }
+        var telCel = ($("#telcelular").val() || clienteActual.telefono || "").trim();
+        if (!telCel || telCel.length < 7) {
+            alert("⚠️ CUIDADO: Para formas de pago virtual debe diligenciar un número de teléfono celular válido para enviar el enlace de pago.");
+            $("#telcelular").focus();
+            return;
+        }
+    }
+
     // Validar facturación electrónica si fue solicitada
     if (clienteActual.clientesiniden === "N") {
         if (!clienteActual.identificacion || clienteActual.identificacion === "222222222222") {
@@ -2180,6 +2310,9 @@ function abrirModalConfirmacionPedido() {
     // 7. Pago y Devuelta
     var formaPagoId = parseInt($("#formaPagoSelect").val()) || 1;
     var formaPagoNom = $("#formaPagoSelect option:selected").text();
+    if (esFormaPagoVirtual(formaPagoId)) {
+        formaPagoNom += " [Habeas Data OK ✓]";
+    }
     $("#txtModalFormaPago").text(formaPagoNom);
 
     var valPagoStr = ($("#txtValorPago").val() || "").toString().replace(/\D/g, "");
@@ -2206,6 +2339,17 @@ function ejecutarDespachoTiendaDefinitivo() {
     }
     var idTipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
     var idFormaPago = parseInt($("#formaPagoSelect").val()) || 1;
+
+    // Regla Paramétrica: Bloqueo de seguridad si la forma de pago es virtual sin autorización de política de datos
+    if (esFormaPagoVirtual(idFormaPago)) {
+        var polAceptada = (clienteActual.politicaDatos === "S");
+        if (!polAceptada) {
+            alert("⚠️ ERROR: No es posible despachar el pedido con forma de pago virtual si el cliente no ha autorizado la Política de Tratamiento de Datos (Habeas Data).");
+            $("#btnDespacharPedidoDefinitivo").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i>Confirmar y Despachar a Tienda");
+            return;
+        }
+    }
+
     var tiempoPed = tiempoEstimadoTienda || 30;
     var esProg = $("#chkPedidoProgramado").is(":checked");
     var horaProg = esProg ? ($("#selectHoraProgramada").val() || "") : "";
