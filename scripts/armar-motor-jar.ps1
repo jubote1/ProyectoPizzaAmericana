@@ -13,6 +13,13 @@
 # Despues hay que COMMITEAR el jar en el repositorio de la tienda: ese si versiona
 # sus libs. En el central no se guarda.
 
+# OJO CON "EL JAR CAMBIO". Rearmarlo SIEMPRE va a aparecer como modificado en
+# git aunque no se haya tocado una sola clase: el zip guarda la fecha de cada
+# entrada y esa fecha cambia en cada corrida. Para saber si cambio de verdad hay
+# que comparar las clases, no el archivo:
+#   jar --extract --file <el viejo>   y   jar --extract --file <el nuevo>   y diff
+# Si las clases dan iguales, no vale la pena subir el jar otra vez.
+
 $ErrorActionPreference = "Stop"
 $raiz = Split-Path -Parent $PSScriptRoot
 $pos  = Join-Path (Split-Path -Parent $raiz) "ProyectoTiendaAmericanaCliente"
