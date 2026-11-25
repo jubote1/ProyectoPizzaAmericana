@@ -653,6 +653,30 @@ body {
     opacity: 0.85;
 }
 
+/* =========================================================================
+   ESTILOS PARA FIDELIZACIÓN, ALERTAS DE CLIENTE Y MARCACIONES / PLATAFORMAS
+   ========================================================================= */
+.franja-fidelizacion-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    transition: all 0.25s ease;
+}
+
+.banner-alerta-cliente {
+    border-left: 4px solid #dc3545;
+    background: #fff5f5;
+}
+
+.badge-marcacion-tag {
+    background: #0284c7;
+    color: #fff;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+
 
 
 

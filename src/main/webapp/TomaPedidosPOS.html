@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Nueva Toma de Pedidos POS - Pizza Americana</title>
+    <title>TOMA DE PEDIDOS - Pizza Americana</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <link href="css/all.min.css" rel="stylesheet" type="text/css" />
@@ -17,13 +17,17 @@
         <!-- Barra Superior de Control de Pedido -->
         <div class="pos-header d-flex flex-wrap align-items-center justify-content-between">
             <h2>
-                <i class="fas fa-cash-register text-warning"></i> Toma de Pedidos POS
+                <i class="fas fa-cash-register text-warning"></i> TOMA DE PEDIDOS
                 <span id="badgePiloto" class="badge-piloto" style="display:none;">
                     <i class="fas fa-bolt mr-1"></i>DESPACHO DIRECTO POS ACTIVO (SIN HOMOLOGACIÓN)
                 </span>
             </h2>
 
             <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
+                <button type="button" class="btn btn-outline-light btn-sm font-weight-bold shadow-sm" id="btnAbrirModalMarcacionPlataforma" title="Marcaciones de Plataformas (Rappi, DiDi, Bot, convenios)">
+                    <i class="fas fa-layer-group text-warning mr-1"></i> Marcaciones / Plataformas
+                </button>
+
                 <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm" id="btnAbrirManualUsuario" title="Consultar Manual de Usuario y Guía del Sistema">
                     <i class="fas fa-book-open mr-1"></i> Manual de Usuario
                 </button>
@@ -47,20 +51,37 @@
         </div>
 
         <!-- =========================================================================
-             SECCIÓN DE DATOS DEL CLIENTE (Muy de la mano de la pantalla actual)
+             SECCIÓN DE DATOS DEL CLIENTE
              ========================================================================= -->
         <div class="card-cliente-pos">
             <div class="seccion-tit">
                 <span><i class="fas fa-user-circle text-primary mr-1"></i> Datos del Cliente & Entrega</span>
-                <div class="d-flex align-items-center flex-wrap" style="gap: 14px;">
-                    <label style="font-size: 0.82rem; cursor: pointer; margin: 0; font-weight: 700;" class="text-success" title="Autorización expresa del cliente para el tratamiento de sus datos personales (Habeas Data)">
-                        <input type="checkbox" id="chkPoliticaDatos" name="politicadatos" checked style="margin-right: 5px; transform: scale(1.15); cursor: pointer;"> <i class="fas fa-shield-alt mr-1"></i>Acepta Política de Datos
+                <!-- Bloque Unificado de Controles y Checks del Cliente -->
+                <div class="d-flex align-items-center flex-wrap" style="gap: 16px;">
+                    <label class="mb-0 font-weight-bold text-success cursor-pointer d-flex align-items-center" style="font-size: 0.83rem;" title="Autorización expresa del cliente para el tratamiento de sus datos personales (Habeas Data)">
+                        <input type="checkbox" id="chkPoliticaDatos" name="politicadatos" checked style="margin-right: 6px; transform: scale(1.15); cursor: pointer;">
+                        <i class="fas fa-shield-alt mr-1"></i> Acepta Política de Datos
                     </label>
-                    <label style="font-size: 0.82rem; cursor: pointer; margin: 0; font-weight: 600;" class="text-muted">
-                        <input type="checkbox" id="chkClienteSinIdentificar" style="margin-right: 5px;"> Cliente sin identificar / Mostrador
+                    <label class="mb-0 font-weight-bold text-primary cursor-pointer d-flex align-items-center" style="font-size: 0.83rem;" title="Marcar si el cliente solicita Factura Electrónica formal con NIT o Cédula ante la DIAN">
+                        <input type="checkbox" id="chkFacturaElectronica" style="margin-right: 6px; transform: scale(1.15); cursor: pointer;">
+                        <i class="fas fa-file-invoice-dollar mr-1"></i> Requiere Factura Electrónica (DIAN)
                     </label>
+                    <span id="badgeEstadoFactura" class="badge badge-light border text-muted" style="font-size: 0.78rem;">
+                        <i class="fas fa-user-tag mr-1"></i>Consumidor Final (Sin Identificación)
+                    </span>
                 </div>
             </div>
+
+            <!-- Banner Alerta / Marcación del Cliente (Seguridad, Fraude, Observaciones de Supervisor) -->
+            <div id="bannerAlertaCliente" class="alert alert-danger py-2 px-3 mb-2 rounded shadow-sm" style="display:none; font-size: 0.85rem;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div id="contenidoAlertaCliente" class="d-flex align-items-center flex-wrap" style="gap: 8px;"></div>
+                    <button type="button" class="close text-danger" style="font-size: 1.2rem; line-height: 1;" onclick="$('#bannerAlertaCliente').slideUp(150);" title="Cerrar aviso">&times;</button>
+                </div>
+            </div>
+
+            <!-- Franja Fidelización: Programa Puntos Pizza -->
+            <div id="franjaFidelizacion" class="franja-fidelizacion-box mb-2 p-2 rounded border" style="display:none; font-size: 0.83rem;"></div>
 
             <!-- Fila 1: Búsqueda por Teléfono Celular y Datos Principales -->
             <div class="form-row">
@@ -92,19 +113,7 @@
                 </div>
             </div>
 
-            <!-- Sección Facturación Electrónica DIAN -->
-            <div class="facturacion-header-bar pt-2 border-top mb-2 d-flex align-items-center justify-content-between flex-wrap" style="gap: 8px;">
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="chkFacturaElectronica">
-                    <label class="custom-control-label font-weight-bold text-dark" for="chkFacturaElectronica" style="cursor: pointer; font-size: 0.84rem;">
-                        <i class="fas fa-file-invoice-dollar text-primary mr-1"></i> Requiere Factura Electrónica (DIAN)
-                    </label>
-                </div>
-                <span id="badgeEstadoFactura" class="badge badge-light border text-muted" style="font-size: 0.78rem;">
-                    <i class="fas fa-user-tag mr-1"></i>Consumidor Final (Sin Identificación)
-                </span>
-            </div>
-
+            <!-- Sección Desplegable: Facturación Electrónica DIAN -->
             <div id="seccionFacturaElectronica" class="p-2 mb-2 rounded bg-light border" style="display: none;">
                 <div class="form-row align-items-center">
                     <div class="form-group col-md-3 mb-1">
@@ -257,6 +266,12 @@
                         <div class="text-truncate text-muted mt-1" id="lblDirComanda" style="font-size: 0.78rem;">
                             <i class="fas fa-map-pin mr-1"></i>Mostrador Directo
                         </div>
+                    </div>
+
+                    <!-- Badge Marcación / Plataforma Externa Activa -->
+                    <div id="badgeMarcacionActiva" class="p-1 px-2 rounded mb-2 bg-info text-white font-weight-bold small d-flex justify-content-between align-items-center shadow-sm" style="display:none; font-size: 0.8rem;">
+                        <span><i class="fas fa-layer-group mr-1"></i> <span id="txtDetalleMarcacionActiva">-</span></span>
+                        <button type="button" class="btn btn-link text-white p-0 ml-2" id="btnRemoverMarcacion" title="Quitar marcación de plataforma" style="text-decoration:none;"><i class="fas fa-times"></i></button>
                     </div>
 
                     <!-- Lista de líneas cotizadas en memoria -->
@@ -753,6 +768,59 @@
         </div>
     </div>
 
+    <!-- Modal Marcaciones / Plataformas Externas (Rappi, DiDi, Bot, Convenios) -->
+    <div class="modal fade" id="modalMarcacionPlataforma" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-primary text-white py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1rem;">
+                        <i class="fas fa-layer-group mr-2 text-warning"></i> Marcaciones / Plataformas Externas
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    <p class="text-muted small mb-3">
+                        Permite asociar este pedido a una plataforma de domicilio externa (Rappi, DiDi, Bot, convenios) con su número de orden y modalidad de reparto. <b>Disponible para todos los operadores.</b>
+                    </p>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-dark mb-1"><i class="fas fa-store-alt mr-1 text-primary"></i>Seleccionar Plataforma / Marcación:</label>
+                        <select id="selectMarcacionPlataforma" class="form-control form-control-sm font-weight-bold">
+                            <option value="0">-- Ninguna (Pedido Directo Tienda / Contact Center) --</option>
+                        </select>
+                    </div>
+                    <div id="grupoDetalleMarcacion" style="display:none;" class="p-3 bg-light rounded border">
+                        <div class="form-group mb-2">
+                            <label class="font-weight-bold small text-dark mb-1"><i class="fas fa-hashtag mr-1 text-danger"></i>ID Orden Plataforma / Observación:</label>
+                            <input type="text" id="txtObsMarcacionPlataforma" class="form-control form-control-sm font-weight-bold" placeholder="Ej: 2528708079 o número de pedido externo" maxlength="60">
+                            <small class="text-muted">Se guardará en la comanda y en el histórico de conciliación de la plataforma.</small>
+                        </div>
+                        
+                        <div class="custom-control custom-checkbox my-2">
+                            <input type="checkbox" class="custom-control-input" id="chkMarketplaceMarcacion" checked>
+                            <label class="custom-control-label font-weight-bold small text-dark" for="chkMarketplaceMarcacion">
+                                <i class="fas fa-biking mr-1 text-success"></i> Domicilio Propio (Tienda entrega con domiciliario propio)
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mb-2">Desmarcar únicamente si el pedido es recogido por un repartidor de la plataforma (DOMI-Plat).</small>
+
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold small text-dark mb-1"><i class="fas fa-tag mr-1 text-warning"></i>Descuento Asumido Plataforma ($):</label>
+                            <input type="number" id="txtDescuentoMarcacion" class="form-control form-control-sm" placeholder="0" min="0" step="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2 bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary btn-sm font-weight-bold px-3 shadow-sm" id="btnGuardarMarcacionPlataforma">
+                        <i class="fas fa-check mr-1"></i> Aplicar Marcación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal para Confirmar Reinicio de Pedido (con Usuario y Clave) -->
     <div class="modal fade" id="modalReiniciarPedidoPOS" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
         <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
@@ -806,11 +874,11 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header modal-header-manual py-2 d-flex justify-content-between align-items-center">
                     <h5 class="modal-title font-weight-bold text-white mb-0" style="font-size: 1.15rem;">
-                        <i class="fas fa-book-open text-warning mr-2"></i>Manual de Usuario - Toma de Pedidos POS
+                        <i class="fas fa-book-open text-warning mr-2"></i>Manual de Usuario - TOMA DE PEDIDOS
                     </h5>
                     <div class="d-flex align-items-center" style="gap: 10px;">
                         <span class="badge badge-warning font-weight-bold px-3 py-1 text-dark">
-                            <i class="fas fa-bolt mr-1"></i>Motor POS V1
+                            <i class="fas fa-bolt mr-1"></i>Motor Unificado V1
                         </span>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                             <span aria-hidden="true">&times;</span>
@@ -831,23 +899,32 @@
                                 <a class="nav-link" id="tab-facturacion-link" data-toggle="pill" href="#tab-facturacion" role="tab">
                                     <i class="fas fa-file-invoice-dollar mr-2 text-success"></i>3. Facturación DIAN
                                 </a>
+                                <a class="nav-link" id="tab-fidelizacion-link" data-toggle="pill" href="#tab-fidelizacion" role="tab">
+                                    <i class="fas fa-medal mr-2 text-warning"></i>4. Puntos Pizza (Fidelización)
+                                </a>
+                                <a class="nav-link" id="tab-alertas-link" data-toggle="pill" href="#tab-alertas" role="tab">
+                                    <i class="fas fa-shield-alt mr-2 text-danger"></i>5. Alertas & Seguridad
+                                </a>
+                                <a class="nav-link" id="tab-plataformas-link" data-toggle="pill" href="#tab-plataformas" role="tab">
+                                    <i class="fas fa-layer-group mr-2 text-info"></i>6. Plataformas Externas
+                                </a>
                                 <a class="nav-link" id="tab-productos-link" data-toggle="pill" href="#tab-productos" role="tab">
-                                    <i class="fas fa-pizza-slice mr-2 text-warning"></i>4. Menú & Mitades
+                                    <i class="fas fa-pizza-slice mr-2 text-warning"></i>7. Menú, Mitades & Adiciones
                                 </a>
                                 <a class="nav-link" id="tab-descuentos-link" data-toggle="pill" href="#tab-descuentos" role="tab">
-                                    <i class="fas fa-tags mr-2 text-info"></i>5. Descuentos & Auditoría
+                                    <i class="fas fa-tags mr-2 text-info"></i>8. Cupones & Descuentos
                                 </a>
                                 <a class="nav-link" id="tab-pagos-link" data-toggle="pill" href="#tab-pagos" role="tab">
-                                    <i class="fas fa-coins mr-2 text-success"></i>6. Pagos & Devuelta
+                                    <i class="fas fa-coins mr-2 text-success"></i>9. Pagos, Devuelta & Reinicio
                                 </a>
                                 <a class="nav-link" id="tab-operaciones-link" data-toggle="pill" href="#tab-operaciones" role="tab">
-                                    <i class="fas fa-clock mr-2 text-secondary"></i>7. Tiempos & Programación
+                                    <i class="fas fa-clock mr-2 text-secondary"></i>10. Tiempos & Programación
                                 </a>
                                 <a class="nav-link" id="tab-confirmacion-link" data-toggle="pill" href="#tab-confirmacion" role="tab">
-                                    <i class="fas fa-clipboard-check mr-2 text-danger"></i>8. Resumen & Despacho
+                                    <i class="fas fa-clipboard-check mr-2 text-danger"></i>11. Resumen & Despacho
                                 </a>
                                 <a class="nav-link" id="tab-faq-link" data-toggle="pill" href="#tab-faq" role="tab">
-                                    <i class="fas fa-question-circle mr-2 text-dark"></i>9. Preguntas Frecuentes
+                                    <i class="fas fa-question-circle mr-2 text-dark"></i>12. Preguntas Frecuentes
                                 </a>
                             </div>
                             <div class="mt-3 p-2 bg-white rounded border small text-muted">
@@ -873,7 +950,7 @@
                                         <div class="p-3 bg-light rounded border mb-3">
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">1</span>
-                                                <b>Identificar al Cliente:</b> Digite el teléfono celular (10 dígitos) y presione Enter o la lupa.
+                                                <b>Identificar al Cliente:</b> Digite el celular (10 dígitos). El sistema consulta en automático alertas de seguridad y el saldo de Puntos Pizza.
                                             </div>
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">2</span>
@@ -881,27 +958,31 @@
                                             </div>
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">3</span>
-                                                <b>Facturación Electrónica:</b> Indique si es Consumidor Final o Factura Electrónica DIAN.
+                                                <b>Facturación DIAN:</b> Active la casilla si requiere Factura Electrónica formal con NIT/Cédula y correo DIAN.
                                             </div>
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">4</span>
-                                                <b>Seleccionar Productos:</b> Elija pizzas, combos o bebidas configurando mitades, sabores y salsas.
+                                                <b>Plataformas / Marcaciones:</b> Si proviene de Rappi, DiDi, Bot o convenios, márquelo con su ID de orden.
                                             </div>
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">5</span>
-                                                <b>Descuentos o Cupones:</b> Aplique códigos de mercadeo o descuentos manuales autorizados.
+                                                <b>Seleccionar Productos:</b> Elija pizzas, combos o bebidas con mitades, salsas y adiciones.
                                             </div>
                                             <div class="d-flex align-items-center mb-2">
                                                 <span class="manual-step-badge">6</span>
-                                                <b>Forma de Pago & Devuelta:</b> Seleccione efectivo, datáfono o transferencia y verifique el cambio.
+                                                <b>Cupones & Promociones:</b> Ingrese cupones comerciales validados en vivo por el motor central.
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="manual-step-badge">7</span>
+                                                <b>Forma de Pago & Devuelta:</b> Seleccione efectivo, datáfono o transferencia y verifique el cambio exacto.
                                             </div>
                                             <div class="d-flex align-items-center">
-                                                <span class="manual-step-badge">7</span>
+                                                <span class="manual-step-badge">8</span>
                                                 <b>Revisar y Despachar:</b> Abra la ventana resumen, verifique los datos y despache directamente al POS.
                                             </div>
                                         </div>
                                         <div class="alert alert-info py-2 small mb-0">
-                                            <i class="fas fa-info-circle mr-1"></i><b>Recuerde:</b> El catálogo permanecerá bloqueado hasta que el cliente esté georreferenciado o marcado como venta física en mostrador.
+                                            <i class="fas fa-info-circle mr-1"></i><b>Recuerde:</b> El catálogo permanecerá bloqueado para pedidos a domicilio hasta que el cliente esté georreferenciado en el mapa. Para pedidos presenciales (Mesa o Llevar), el desbloqueo es automático.
                                         </div>
                                     </div>
                                 </div>
@@ -916,7 +997,7 @@
                                         <ul class="small text-muted pl-3">
                                             <li>Digite el número de celular del cliente (10 dígitos). El sistema buscará en la base de datos histórica.</li>
                                             <li>Si el cliente tiene direcciones anteriores, se desplegará una tabla con el histórico para elegir la dirección preferida con un solo clic en <b>«Elegir»</b>.</li>
-                                            <li>Para clientes presenciales en tienda o sin datos, marque la casilla <b>«Cliente sin identificar / Mostrador»</b> para habilitar la toma inmediata sin mapa.</li>
+                                            <li>Los controles de <b>Política de Datos (Habeas Data)</b> y <b>Factura Electrónica</b> se encuentran unificados en la esquina superior derecha de la tarjeta de cliente para acceso inmediato.</li>
                                         </ul>
 
                                         <h6 class="font-weight-bold text-dark mt-2">Georreferenciación y Polígonos de Cobertura</h6>
@@ -977,7 +1058,91 @@
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 4: Menú y Mitades -->
+                                <!-- SECCIÓN 4: Plan de Fidelización (Puntos Pizza) -->
+                                <div class="tab-pane fade" id="tab-fidelizacion" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-warning font-weight-bold mb-2">
+                                            <i class="fas fa-medal mr-2"></i>Programa de Fidelización Puntos Pizza
+                                        </h5>
+                                        <p class="small text-muted">
+                                            El sistema se integra en tiempo real con el servidor de fidelización para consultar el saldo acumulado y puntos por vencer de cada cliente:
+                                        </p>
+
+                                        <div class="p-3 bg-light rounded border mb-3 small">
+                                            <h6 class="font-weight-bold text-dark mb-1">Funcionamiento Automático:</h6>
+                                            <ul class="pl-3 mb-2 text-muted">
+                                                <li>Al seleccionar un cliente o ingresar su correo electrónico, el sistema consulta su historial de puntos.</li>
+                                                <li><b>Cliente Activo con Puntos:</b> Se despliega una franja verde indicando los <b>Puntos Pizza disponibles</b> para redención.</li>
+                                                <li><b>Puntos Próximos a Vencer:</b> Si el cliente tiene puntos por expirar en los próximos 60 días, la franja se torna <b>amarilla/naranja</b> alertando al operador con la fecha exacta: <i>«¡Recuérdale al cliente que puede redimirlos en este pedido!»</i>.</li>
+                                                <li><b>Cliente NO Vinculado:</b> Aparece un botón de acceso directo <b>«[ + Vincular a Puntos Pizza ]»</b> que permite inscribirlo en el acto asociando su correo y teléfono sin salir de la toma de pedidos.</li>
+                                                <li><b>Rechazo Expreso:</b> Si el cliente manifestó anteriormente no querer pertenecer, se emite una alerta preventiva para respetar su decisión.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="alert alert-success py-2 small mb-0">
+                                            <i class="fas fa-gift mr-1"></i><b>Vigencia de Puntos:</b> Recuerde informar al cliente que los puntos acumulados tienen vigencia de 1 año y son redimibles en productos seleccionados de la carta.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 5: Alertas & Marcaciones del Cliente -->
+                                <div class="tab-pane fade" id="tab-alertas" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-danger font-weight-bold mb-2">
+                                            <i class="fas fa-shield-alt mr-2"></i>Alertas de Seguridad y Marcaciones de Cliente
+                                        </h5>
+                                        <p class="small text-muted">
+                                            Módulo de control de riesgos y notas operativas registrado por líderes y administradores:
+                                        </p>
+
+                                        <div class="p-2 rounded bg-light border small mb-3">
+                                            <h6 class="font-weight-bold text-dark mb-1">Tipos de Marcas y Advertencias:</h6>
+                                            <ul class="pl-3 mb-0 text-muted">
+                                                <li><span class="badge badge-danger mr-1">POSIBLE FRAUDE</span> Cliente con antecedentes de pedidos falsos o direcciones sospechosas. Lanza una advertencia sonora y visual al operador antes de continuar.</li>
+                                                <li><span class="badge badge-warning text-dark mr-1">NO DESEA RAPPI CARGO</span> Clientes que han solicitado explícitamente que su domicilio sea entregado únicamente por mensajeros directos de Pizza Americana y no por plataformas tercerizadas.</li>
+                                                <li><span class="badge badge-info mr-1">OBSERVACIONES / NOTAS</span> Indicaciones especiales dejadas por servicio al cliente sobre preferencias de entrega o ubicación de difícil acceso.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="alert alert-danger py-2 small mb-0">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i><b>Importante:</b> Si un cliente tiene alerta roja activa, valide exhaustivamente el número de contacto y la dirección antes de confirmar y despachar el pedido a cocina.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 6: Plataformas Externas (Rappi, DiDi, Bot) -->
+                                <div class="tab-pane fade" id="tab-plataformas" role="tabpanel">
+                                    <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
+                                        <h5 class="text-info font-weight-bold mb-2">
+                                            <i class="fas fa-layer-group mr-2"></i>Marcaciones / Plataformas Externas
+                                        </h5>
+                                        <p class="small text-muted">
+                                            Esta funcionalidad permite registrar pedidos que ingresan a través de agregadores o convenios (Rappi, DiDi, Bot, etc.) de forma manual y transparente:
+                                        </p>
+
+                                        <div class="p-3 bg-light rounded border mb-3 small">
+                                            <h6 class="font-weight-bold text-dark mb-1">¿Cómo Aplicar una Marcación de Plataforma?</h6>
+                                            <ol class="pl-3 mb-2 text-muted">
+                                                <li>Haga clic en el botón superior <b>`[ 🗂️ Marcaciones / Plataformas ]`</b> (abierto para todos los operadores).</li>
+                                                <li>Seleccione la plataforma correspondiente (ej: <b>RAPPI</b>, <b>DIDI</b> o <b>BOT</b>).</li>
+                                                <li>Digite el <b>ID de Orden de la Plataforma</b> (ej: <code>2528708079</code>) en el campo de observación.</li>
+                                                <li><b>Modalidad de Reparto:</b>
+                                                    <ul class="mt-1">
+                                                        <li><b>Domicilio Propio [x]:</b> La tienda despacha con sus propios domiciliarios.</li>
+                                                        <li><b>Repartidor Plataforma [ ]:</b> El pedido es recogido en tienda por el mensajero de Rappi o DiDi.</li>
+                                                    </ul>
+                                                </li>
+                                                <li>Presione <b>«Aplicar Marcación»</b>. Un distintivo azul aparecerá en la comanda confirmando la asignación.</li>
+                                            </ol>
+                                        </div>
+
+                                        <div class="alert alert-success py-2 small mb-0">
+                                            <i class="fas fa-check-circle mr-1"></i>Al despachar el pedido, el sistema registra automáticamente el vínculo en la tabla de conciliación <code>marcacion_pedido</code> para que cuadre exactamente en los informes de ventas y comisiones.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- SECCIÓN 7: Menú, Mitades & Adiciones -->
                                 <div class="tab-pane fade" id="tab-productos" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-warning font-weight-bold mb-2">
@@ -1011,69 +1176,70 @@
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 5: Descuentos y Cupones -->
+                                <!-- SECCIÓN 8: Cupones, Códigos Promocionales & Descuentos -->
                                 <div class="tab-pane fade" id="tab-descuentos" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-info font-weight-bold mb-2">
-                                            <i class="fas fa-tags mr-2"></i>Descuentos, Cupones y Políticas Comerciales
+                                            <i class="fas fa-tags mr-2"></i>Cupones, Códigos Promocionales & Descuentos
                                         </h5>
                                         <p class="small text-muted">
-                                            En el Contact Center de Pizza Americana, las políticas de descuento se gestionan de forma controlada y estricta:
+                                            El sistema cuenta con un motor de validación en tiempo real de cupones y promociones comerciales:
                                         </p>
 
                                         <div class="p-2 rounded bg-light border small mb-3">
-                                            <b>1. Cupones de Descuento y Ofertas Comerciales (Rol Asesor):</b><br>
-                                            Es el canal autorizado para la toma de pedidos estándar. Ingrese el código promocional (ej: <code>AMERICANA50</code>, <code>PIZZAYDEDOS</code>) y presione <b>«Aplicar»</b>. El motor calcula las reglas de descuento vigentes y las deduce automáticamente del total.
+                                            <b>1. Validación de Códigos Promocionales y Cupones:</b><br>
+                                            <p class="mb-1 text-muted">
+                                                En el cuadro <b>«Descuentos & Cupones»</b> de la comanda, digite el código promocional (ej: <code>CUPON50</code>, <code>AMERICANA2026</code>) y haga clic en <b>«Aplicar»</b>.
+                                            </p>
+                                            <ul class="pl-3 mb-0 text-muted">
+                                                <li>El sistema verifica en el servidor central que el código exista y esté <b>vigente</b> en fecha y hora.</li>
+                                                <li>El motor cotiza las líneas del pedido y deduce automáticamente el valor correspondiente.</li>
+                                                <li>Si el cupón es válido, se refleja en verde en la comanda (ej: <i>«Cupón CUPON50: -$ 15.000»</i>).</li>
+                                                <li>Se puede remover en cualquier momento pulsando el icono ✖ sin necesidad de reiniciar el pedido.</li>
+                                            </ul>
                                         </div>
 
                                         <div class="p-2 rounded bg-light border small mb-3">
                                             <b>2. Descuento Manual / Especial (Exclusivo Administradores y Líderes):</b><br>
                                             <span class="badge badge-warning text-dark mb-1"><i class="fas fa-lock mr-1"></i>Acceso Restringido</span>
-                                            <p class="mb-1 text-muted">
-                                                Los asesores de Contact Center <b>no tienen permitido</b> aplicar descuentos manuales libres. Esta opción permanece oculta y deshabilitada para el perfil operativo.
-                                            </p>
                                             <p class="mb-0 text-muted">
-                                                Solo los <b>Administradores y Líderes</b> autorizados pueden visualizar y activar el modal de descuento manual bajo auditoría (motivo formal y justificación obligatoria).
+                                                Solo los <b>Administradores y Líderes</b> autorizados pueden visualizar y activar el modal de descuento manual bajo auditoría (motivo formal y justificación obligatoria). Para los asesores operativos, los descuentos aplican exclusivamente mediante cupones oficiales.
                                             </p>
-                                        </div>
-
-                                        <div class="alert alert-success py-2 small mb-0">
-                                            <i class="fas fa-check-circle mr-1"></i>Los cupones válidos se reflejan en tiempo real en la comanda con una etiqueta verde y se pueden retirar en cualquier momento haciendo clic en el icono ✖.
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 6: Pagos y Devuelta -->
+                                <!-- SECCIÓN 9: Pagos, Devuelta & Reinicio con Clave -->
                                 <div class="tab-pane fade" id="tab-pagos" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-success font-weight-bold mb-2">
-                                            <i class="fas fa-coins mr-2"></i>Formas de Pago y Cálculo de Devuelta
+                                            <i class="fas fa-coins mr-2"></i>Formas de Pago, Devuelta y Reinicio de Pedido
                                         </h5>
                                         <p class="small text-muted mb-2">
                                             Seleccione el medio de pago acordado con el cliente:
                                         </p>
                                         <ul class="small text-muted pl-3 mb-3">
                                             <li><b>1 - Efectivo:</b> Habilita la caja de cálculo de devuelta y liquidación rápida de billetes.</li>
-                                            <li><b>2 - Datáfono:</b> Indica que el domiciliario debe llevar el datáfono inalámbrico. Devuelta \$0.</li>
-                                            <li><b>3 - Transferencia / Bancolombia:</b> Pago por QR o transferencia bancaria directa. Devuelta \$0.</li>
+                                            <li><b>2 - Datáfono:</b> Indica que el domiciliario debe llevar el datáfono inalámbrico. Devuelta $0.</li>
+                                            <li><b>3 - Transferencia / Bancolombia:</b> Pago por QR o transferencia bancaria directa. Devuelta $0.</li>
                                             <li><b>4 - Link de Pago Wompi:</b> Pago con tarjeta de crédito o PSE vía pasarela virtual.</li>
                                         </ul>
 
-                                        <h6 class="font-weight-bold text-dark">Botones de Cálculo Rápido para Efectivo</h6>
+                                        <h6 class="font-weight-bold text-dark">Botón «Reiniciar Pedido» con Confirmación de Clave</h6>
                                         <div class="p-2 rounded bg-light border small mb-2">
-                                            <div class="d-flex flex-wrap" style="gap: 8px;">
-                                                <span class="badge badge-secondary p-2">Exacto: Asigna el total del pedido</span>
-                                                <span class="badge badge-secondary p-2">Redondear: Al siguiente múltiplo de 10 mil</span>
-                                                <span class="badge badge-secondary p-2">+10k, +20k, +50k, +100k: Suma billetes</span>
-                                            </div>
-                                            <p class="mt-2 mb-0 text-muted">
-                                                El sistema muestra la <b>Devuelta en color verde</b> si el pago cubre la cuenta, o una <b>alerta roja con el faltante</b> si el monto ingresado es menor al total.
+                                            <p class="text-muted mb-1">
+                                                Si por alguna razón el cliente se retracta o es necesario descartar la toma en curso:
                                             </p>
+                                            <ol class="pl-3 mb-0 text-muted">
+                                                <li>Haga clic en el botón rojo <b>«Reiniciar»</b> en la parte superior de la comanda o en <b>«Cancelar / Reiniciar Pedido»</b> al pie del cotizador.</li>
+                                                <li>Para proteger la operación contra clics accidentales, el sistema solicita obligatoriamente el <b>Usuario y Contraseña</b> del operador.</li>
+                                                <li>Al autenticarse, se descarta el ID preliminar en base de datos y la pantalla se restablece limpia para el próximo cliente.</li>
+                                            </ol>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 7: Tiempos y Programados -->
+                                <!-- SECCIÓN 10: Tiempos y Programados -->
                                 <div class="tab-pane fade" id="tab-operaciones" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-secondary font-weight-bold mb-2">
@@ -1086,21 +1252,17 @@
 
                                         <h6 class="font-weight-bold text-dark">Pedidos Programados (Para Más Tarde)</h6>
                                         <div class="p-2 rounded bg-light border small mb-3">
-                                            <ol class="mb-0 pl-3">
+                                            <ol class="mb-0 pl-3 text-muted">
                                                 <li>Active la casilla <b>`[x] Pedido Programado`</b>.</li>
                                                 <li>Se desplegará una lista de selección con intervalos de <b>30 minutos</b> (ej: <i>06:30 PM</i>, <i>07:00 PM</i>, <i>07:30 PM</i>).</li>
                                                 <li><b>Control de Anticipación:</b> Por directriz operativa, no se permiten horas pasadas ni franjas con menos de 1 hora de anticipación. Por ejemplo, a las 5:05 PM la franja de las 6:00 PM no está disponible; la primera opción seleccionable será a partir de las 6:30 PM.</li>
                                                 <li>La cocina de la tienda organizará la producción para despachar el pedido en el horario pactado.</li>
                                             </ol>
                                         </div>
-
-                                        <div class="alert alert-info py-2 small mb-0">
-                                            <i class="fas fa-info-circle mr-1"></i><b>Observaciones Especiales de Cocina:</b> Temporalmente deshabilitadas en esta fase para estandarizar los tiempos y despachos directos a cocina.
-                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 8: Resumen y Despacho -->
+                                <!-- SECCIÓN 11: Resumen y Despacho -->
                                 <div class="tab-pane fade" id="tab-confirmacion" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-danger font-weight-bold mb-2">
@@ -1114,10 +1276,11 @@
                                             <div class="col-md-6">
                                                 <div class="p-2 rounded bg-light border h-100">
                                                     <b>Verificación de Datos:</b>
-                                                    <ul class="pl-3 mb-0 mt-1">
+                                                    <ul class="pl-3 mb-0 mt-1 text-muted">
                                                         <li>Cliente, teléfono, dirección y barrio.</li>
                                                         <li>Coordenadas y tienda de despacho asignada.</li>
                                                         <li>Estado y datos de facturación DIAN.</li>
+                                                        <li>Plataforma externa / marcación asociada.</li>
                                                         <li>Tiempo estimado y programación horaria.</li>
                                                     </ul>
                                                 </div>
@@ -1125,7 +1288,7 @@
                                             <div class="col-md-6">
                                                 <div class="p-2 rounded bg-light border h-100">
                                                     <b>Comanda y Liquidación:</b>
-                                                    <ul class="pl-3 mb-0 mt-1">
+                                                    <ul class="pl-3 mb-0 mt-1 text-muted">
                                                         <li>Lista de productos con mitades y salsas.</li>
                                                         <li>Subtotal, valor de domicilio y descuento.</li>
                                                         <li><b>Total a pagar</b> en tipografía destacada.</li>
@@ -1144,7 +1307,7 @@
                                     </div>
                                 </div>
 
-                                <!-- SECCIÓN 9: Preguntas Frecuentes -->
+                                <!-- SECCIÓN 12: Preguntas Frecuentes -->
                                 <div class="tab-pane fade" id="tab-faq" role="tabpanel">
                                     <div class="card border-0 shadow-sm p-3 mb-3 bg-white">
                                         <h5 class="text-dark font-weight-bold mb-2">
@@ -1153,19 +1316,27 @@
                                         <div class="accordion small" id="accordionFaq">
                                             <div class="border-bottom py-2">
                                                 <b>P: ¿Por qué aparece el mensaje rojo de bloqueo sobre el menú?</b><br>
-                                                <span class="text-muted">R: Es obligatorio ubicar al cliente en el mapa para asegurar que la tienda tenga cobertura y garantizar el precio exacto de domicilio. Haga clic en «Abrir Mapa» o marque «Cliente Mostrador» si es venta presencial.</span>
+                                                <span class="text-muted">R: Es obligatorio ubicar al cliente en el mapa para asegurar que la tienda tenga cobertura y garantizar el precio exacto de domicilio. Haga clic en «Abrir Mapa». Si es una venta presencial (Mesa o Llevar), el catálogo se desbloquea automáticamente al cambiar el Tipo de Pedido.</span>
                                             </div>
                                             <div class="border-bottom py-2">
                                                 <b>P: ¿Qué ocurre si el cliente no desea suministrar su Cédula o NIT?</b><br>
                                                 <span class="text-muted">R: Deje desmarcada la casilla «Requiere Factura Electrónica (DIAN)». El sistema registrará el pedido automáticamente como Consumidor Final bajo el código DIAN 222222222222.</span>
                                             </div>
                                             <div class="border-bottom py-2">
+                                                <b>P: ¿Cómo inscribo a un cliente en el programa de Fidelización Puntos Pizza?</b><br>
+                                                <span class="text-muted">R: En la tarjeta de datos del cliente, si el correo no está registrado en el programa, aparecerá una franja azul con el botón «[ + Vincular a Puntos Pizza ]». Un solo clic realiza la inscripción inmediata.</span>
+                                            </div>
+                                            <div class="border-bottom py-2">
+                                                <b>P: ¿Quién puede registrar pedidos de plataformas externas como Rappi o DiDi?</b><br>
+                                                <span class="text-muted">R: Cualquier operador puede hacerlo haciendo clic en el botón superior «Marcaciones / Plataformas», seleccionando la plataforma e ingresando el número de orden respectivo. No requiere permisos de administrador.</span>
+                                            </div>
+                                            <div class="border-bottom py-2">
                                                 <b>P: ¿Cómo elimino un producto que ingresé por equivocación?</b><br>
                                                 <span class="text-muted">R: En el panel de comanda a la derecha, cada producto principal tiene un icono de caneca roja 🗑️ a su derecha. Al hacer clic se eliminan el producto y sus mitades o adiciones.</span>
                                             </div>
                                             <div class="py-2">
-                                                <b>P: ¿Dónde ve el domiciliario cuánto cambio debe llevar?</b><br>
-                                                <span class="text-muted">R: Los valores de «Paga con» y «Devuelta» viajan en la petición del pedido y se imprimen claramente en la tirilla física de comanda de la tienda.</span>
+                                                <b>P: ¿Cómo reinicio el pedido si el cliente cuelga o se arrepiente?</b><br>
+                                                <span class="text-muted">R: Pulse el botón «Reiniciar» en la comanda, ingrese su usuario y contraseña, y la pantalla quedará totalmente limpia y lista para el siguiente cliente.</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1176,7 +1347,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-white py-2 d-flex justify-content-between">
-                    <span class="small text-muted"><i class="fas fa-shield-alt mr-1"></i>Pizza Americana - Sistema de Pedidos POS</span>
+                    <span class="small text-muted"><i class="fas fa-shield-alt mr-1"></i>Pizza Americana - Sistema TOMA DE PEDIDOS</span>
                     <button type="button" class="btn btn-secondary font-weight-bold px-4" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i> Cerrar Manual
                     </button>

@@ -15,6 +15,10 @@ var esAdministrador = false; // Rol verificado con ValidarUsuarioAplicacion (sol
 var tiempoEstimadoTienda = 30; // Tiempo promesa configurado en la tienda seleccionada
 var idPedidoCentralActivo = 0; // Control de ID de pedido si se asigna previo al despacho definitivo
 
+// Marcaciones / Plataformas Externas (Rappi, DiDi, Bot, convenios)
+var marcacionActiva = null; // { idmarcacion, nombremarcacion, observacion, marketplace, descuento, descuentoAsumido }
+var catalogoMarcaciones = [];
+
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
     tipo: "", // "CUPON" o "MANUAL"
@@ -57,6 +61,7 @@ $(document).ready(function () {
     cargarTiendas();
     cargarMenuPOS();
     consultarTiempoTienda();
+    cargarCatalogoMarcaciones();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -74,16 +79,6 @@ $(document).ready(function () {
         var tel = $(this).val().trim();
         if (tel.length >= 7) {
             ejecutarBusquedaCliente();
-        }
-    });
-
-    $("#chkClienteSinIdentificar").on("change", function () {
-        if ($(this).is(":checked")) {
-            establecerClienteGenerico();
-        } else {
-            clienteUbicado = false;
-            $("#telcelular").val("").focus();
-            actualizarEstadoUbicacionUI();
         }
     });
 
@@ -111,6 +106,40 @@ $(document).ready(function () {
             alert("El correo principal de contacto aún no ha sido ingresado.");
             $("#cliEmail").focus();
         }
+    });
+
+    // Fidelización: Al digitar o modificar el correo electrónico
+    $("#cliEmail").on("change blur", function () {
+        var em = $(this).val().trim();
+        consultarFidelizacionCliente(em);
+    });
+
+    // Eventos de Marcaciones / Plataformas Externas (Rappi, DiDi, Bot, convenios)
+    $("#btnAbrirModalMarcacionPlataforma").on("click", function () {
+        abrirModalMarcacionPlataforma();
+    });
+
+    $("#selectMarcacionPlataforma").on("change", function () {
+        var idm = parseInt($(this).val()) || 0;
+        if (idm > 0) {
+            var sel = catalogoMarcaciones.find(function (m) { return m.idmarcacion === idm; });
+            $("#grupoDetalleMarcacion").slideDown(150);
+            if (sel && sel.marketplace === "S") {
+                $("#chkMarketplaceMarcacion").prop("checked", true);
+            } else {
+                $("#chkMarketplaceMarcacion").prop("checked", false);
+            }
+        } else {
+            $("#grupoDetalleMarcacion").slideUp(150);
+        }
+    });
+
+    $("#btnGuardarMarcacionPlataforma").on("click", function () {
+        guardarMarcacionPlataforma();
+    });
+
+    $("#btnRemoverMarcacion").on("click", function () {
+        removerMarcacionPlataforma();
     });
 
     // Sincronizar inputs del cliente con el estado y la comanda
@@ -141,10 +170,12 @@ $(document).ready(function () {
     // Eventos de Contexto
     $("#tipoPedidoSelect").on("change", function () {
         var tipo = parseInt($(this).val());
-        if (tipo !== 1 && $("#chkClienteSinIdentificar").is(":checked")) {
+        if (tipo !== 1) {
+            // Mesa (2) o Llevar (3): Atencion presencial en tienda, no requiere mapa
             clienteUbicado = true;
-        } else if (tipo === 1 && !clienteActual.latitud) {
-            clienteUbicado = false;
+        } else {
+            // Domicilio (1): Requiere ubicacion en mapa para cobertura y tienda
+            clienteUbicado = (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001);
         }
         actualizarEstadoUbicacionUI();
         cotizarEnVivo();
@@ -313,6 +344,9 @@ function ejecutarBusquedaCliente() {
 
     $("#btnBuscarTelefono").html("<i class='fas fa-spinner fa-spin'></i>");
 
+    // Consultar alertas y marcas de seguridad / fraude asociadas a este teléfono
+    consultarAlertaCliente(tel);
+
     $.ajax({
         type: "GET",
         url: "GetClienteTodos?telefono=" + encodeURIComponent(tel),
@@ -340,9 +374,9 @@ function ejecutarBusquedaCliente() {
                 $("#cliNombres").val("").focus();
                 $("#cliApellidos").val("");
                 $("#cliDireccion").val("");
-                $("#chkClienteSinIdentificar").prop("checked", false);
                 actualizarEstadoUbicacionUI();
                 actualizarResumenClienteComanda();
+                consultarFidelizacionCliente("");
             }
         },
         error: function () {
@@ -406,7 +440,10 @@ function seleccionarClienteDeTabla(cli) {
     $("#cliEmail").val(clienteActual.email);
     $("#cliObservacion").val(clienteActual.observacion);
     $("#telcelular").val(clienteActual.telefono);
-    $("#chkClienteSinIdentificar").prop("checked", false);
+
+    // Consultar alertas de seguridad y estado en el plan de fidelización
+    consultarAlertaCliente(clienteActual.telefono);
+    consultarFidelizacionCliente(clienteActual.email);
 
     // Política de Tratamiento de Datos (Habeas Data)
     var tienePol = (cli.politicadatos === "S" || cli.politica_datos === "S" || cli.politicadatos === undefined);
@@ -498,6 +535,20 @@ function establecerClienteGenerico() {
    GEORREFERENCIACIÓN Y COBERTURA EN MAPA (DESACOPLADO EN MODAL)
    ========================================================================= */
 function actualizarEstadoUbicacionUI() {
+    var tipo = parseInt($("#tipoPedidoSelect").val()) || 1;
+    if (tipo !== 1) {
+        // Pedido en Tienda (Mesa o Llevar): no requiere mapa
+        $("#bloqueoMenuCliente").fadeOut(250);
+        var tNom = idTiendaSeleccionada() ? $("#tiendaSelect option:selected").text() : "tienda sin seleccionar";
+        var tipoStr = (tipo === 2 ? "Atención en Mesa" : "Para Llevar / Mostrador");
+        $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente").addClass("badge-ubicacion-ok").html(
+            "<i class='fas fa-store mr-1 text-success'></i><span>" + tipoStr + " (Punto de Venta: <b>" + tNom + "</b>)</span>"
+        );
+        $("#btnAbrirModalMapa").removeClass("btn-pulsing-map btn-danger").addClass("btn-outline-secondary").html("<i class='fas fa-map-marker-alt mr-1'></i> Mapa Opcional");
+        $("#infoCoordenadasCliente").hide();
+        return;
+    }
+
     if (clienteUbicado) {
         $("#bloqueoMenuCliente").fadeOut(250);
         var tNom = clienteActual.nombreTienda || (idTiendaSeleccionada() ? $("#tiendaSelect option:selected").text() : "tienda sin seleccionar");
@@ -1356,13 +1407,43 @@ function aplicarCodigoCupon() {
         return;
     }
 
-    descuentoAplicado.tipo = "CUPON";
-    descuentoAplicado.codigoPromocional = cupon;
-    descuentoAplicado.descuentoManual = 0.0;
-    descuentoAplicado.motivoDescuento = "CUPÓN: " + cupon;
-    descuentoAplicado.justificacion = "";
+    $("#btnAplicarCupon").prop("disabled", true).html("<i class='fas fa-spinner fa-spin'></i>");
 
-    cotizarEnVivo();
+    $.ajax({
+        url: "GetValidarCodigoPromocional?codigopromocional=" + encodeURIComponent(cupon) + "&canal=C",
+        dataType: "json",
+        type: "GET",
+        success: function (data) {
+            $("#btnAplicarCupon").prop("disabled", false).html("<i class='fas fa-check'></i> Aplicar");
+            if (data && data.respuesta === "OK") {
+                if (data.utilizado === "S") {
+                    alert("El código promocional '" + cupon + "' YA FUE UTILIZADO.");
+                    return;
+                }
+                descuentoAplicado.tipo = "CUPON";
+                descuentoAplicado.codigoPromocional = cupon;
+                descuentoAplicado.descuentoManual = 0.0;
+                descuentoAplicado.motivoDescuento = "CUPÓN: " + cupon + (data.observacion ? (" - " + data.observacion) : "");
+                descuentoAplicado.justificacion = "";
+
+                cotizarEnVivo();
+                alert("¡Código promocional '" + cupon + "' validado y aplicado con éxito!");
+            } else {
+                var motivoError = (data && data.mensaje) ? data.mensaje : "Código promocional no existe o expiró.";
+                alert("No es posible aplicar el código: " + motivoError);
+            }
+        },
+        error: function () {
+            $("#btnAplicarCupon").prop("disabled", false).html("<i class='fas fa-check'></i> Aplicar");
+            // Fallback directo al motor de pedidos
+            descuentoAplicado.tipo = "CUPON";
+            descuentoAplicado.codigoPromocional = cupon;
+            descuentoAplicado.descuentoManual = 0.0;
+            descuentoAplicado.motivoDescuento = "CUPÓN: " + cupon;
+            descuentoAplicado.justificacion = "";
+            cotizarEnVivo();
+        }
+    });
 }
 
 function verificarRolUsuario() {
@@ -2110,6 +2191,11 @@ function ejecutarDespachoTiendaDefinitivo() {
             $("#modalConfirmarPedido").modal("hide");
 
             if (resp.exito) {
+                // Si hay marcación de plataforma activa (Rappi, DiDi, Bot, convenios), asociarla al pedido
+                if (marcacionActiva && marcacionActiva.idmarcacion > 0) {
+                    registrarMarcacionPedido(resp.idPedido, marcacionActiva);
+                }
+
                 var msj = "🎉 ¡Pedido registrado con éxito en Central con id #" + resp.idPedido + "!";
                 if (resp.despachoTienda && resp.despachoTienda.exito) {
                     msj += "\n\nSe despachó directamente al POS de la tienda (sin tabla de homologación).\nComanda generada en tienda: #" + resp.despachoTienda.numeroFactura;
@@ -2143,11 +2229,12 @@ function ejecutarDespachoTiendaDefinitivo() {
  * trabajo de quien toma pedidos, no datos del cliente.
  */
 function limpiarPantallaTrasDespacho() {
-    // 1. Comanda, descuento y programado
+    // 1. Comanda, descuento, programado y marcaciones de plataforma
     draftLineas = [];
     resultadoMotor = null;
     idPedidoCentralActivo = 0;
     removerDescuentoActivo();
+    removerMarcacionPlataforma();
     $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
     $("#selectMotivoDescuento").prop("selectedIndex", 0);
     $("#chkPedidoProgramado").prop("checked", false);
@@ -2170,6 +2257,7 @@ function limpiarPantallaTrasDespacho() {
         longitud: 0.0,
         distanciatienda: 0.0,
         nombreTienda: "",
+        politicaDatos: "S",
         emailfact: "",
         clientesiniden: "S",
         idtipopersona: 2,
@@ -2182,10 +2270,14 @@ function limpiarPantallaTrasDespacho() {
     $("#cliIdentificacion, #cliEmailFacturacion").val("");
     $("#cliMunicipio, #cliTipoPersona").prop("selectedIndex", 0);
     $("#mapaBusqDireccion, #mapaBusqBarrio").val("");
-    $("#chkClienteSinIdentificar").prop("checked", false);
     $("#chkFacturaElectronica").prop("checked", false).trigger("change");
     $("#tbodyClientesEncontrados").empty();
     $("#contenedorTablaClientes").hide();
+
+    // Alertas y Fidelización
+    $("#bannerAlertaCliente").hide();
+    $("#contenidoAlertaCliente").empty();
+    $("#franjaFidelizacion").hide().empty();
 
     // 2b. La tienda vuelve a "sin marcar": la fija la busqueda del cliente o quien toma el pedido
     $("#tiendaSelect").val("");
@@ -2283,4 +2375,244 @@ function ejecutarReinicioPedidoPOS() {
 function formatearPesos(val) {
     if (!val || isNaN(val)) return "0";
     return Math.round(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/* =========================================================================
+   MARCACIONES Y PLATAFORMAS EXTERNAS (Rappi, DiDi, Bot, Convenios)
+   ========================================================================= */
+function cargarCatalogoMarcaciones() {
+    $.getJSON("ObtenerMarcaciones?adm=S", function (data) {
+        if (data && data.length > 0) {
+            catalogoMarcaciones = data;
+            var $sel = $("#selectMarcacionPlataforma");
+            $sel.empty().append("<option value='0'>-- Ninguna (Pedido Directo Tienda / Contact Center) --</option>");
+            $.each(catalogoMarcaciones, function (i, m) {
+                var tag = (m.marketplace === "S") ? " [Marketplace]" : "";
+                $sel.append("<option value='" + m.idmarcacion + "'>" + m.nombremarcacion + tag + "</option>");
+            });
+        }
+    }).fail(function () {
+        console.warn("No se pudo cargar el catálogo de marcaciones.");
+    });
+}
+
+function abrirModalMarcacionPlataforma() {
+    if (marcacionActiva && marcacionActiva.idmarcacion > 0) {
+        $("#selectMarcacionPlataforma").val(marcacionActiva.idmarcacion).trigger("change");
+        $("#txtObsMarcacionPlataforma").val(marcacionActiva.observacion || "");
+        $("#chkMarketplaceMarcacion").prop("checked", marcacionActiva.marketplace === "S");
+        $("#txtDescuentoMarcacion").val(marcacionActiva.descuento || "");
+    } else {
+        $("#selectMarcacionPlataforma").val("0").trigger("change");
+        $("#txtObsMarcacionPlataforma").val("");
+        $("#chkMarketplaceMarcacion").prop("checked", true);
+        $("#txtDescuentoMarcacion").val("");
+    }
+    $("#modalMarcacionPlataforma").modal("show");
+}
+
+function guardarMarcacionPlataforma() {
+    var idm = parseInt($("#selectMarcacionPlataforma").val()) || 0;
+    if (idm === 0) {
+        removerMarcacionPlataforma();
+        $("#modalMarcacionPlataforma").modal("hide");
+        return;
+    }
+    var sel = catalogoMarcaciones.find(function (m) { return m.idmarcacion === idm; });
+    var obs = $("#txtObsMarcacionPlataforma").val().trim();
+    var domiPropio = $("#chkMarketplaceMarcacion").is(":checked") ? "S" : "N";
+    var desc = parseFloat($("#txtDescuentoMarcacion").val()) || 0;
+
+    marcacionActiva = {
+        idmarcacion: idm,
+        nombremarcacion: sel ? sel.nombremarcacion : ("Marcación #" + idm),
+        observacion: obs,
+        marketplace: domiPropio,
+        descuento: desc,
+        descuentoAsumido: (desc > 0 ? 1 : 0)
+    };
+
+    var modoDomi = (domiPropio === "S") ? "Domi Propio" : "Repartidor Plataforma";
+    var txtBadge = marcacionActiva.nombremarcacion + (obs ? " (#" + obs + ")" : "") + " &middot; " + modoDomi;
+    $("#txtDetalleMarcacionActiva").html(txtBadge);
+    $("#badgeMarcacionActiva").slideDown(150);
+    $("#btnAbrirModalMarcacionPlataforma").removeClass("btn-outline-light").addClass("btn-warning text-dark");
+    $("#modalMarcacionPlataforma").modal("hide");
+}
+
+function removerMarcacionPlataforma() {
+    marcacionActiva = null;
+    $("#selectMarcacionPlataforma").val("0");
+    $("#txtObsMarcacionPlataforma").val("");
+    $("#txtDescuentoMarcacion").val("");
+    $("#grupoDetalleMarcacion").hide();
+    $("#badgeMarcacionActiva").slideUp(150);
+    $("#btnAbrirModalMarcacionPlataforma").removeClass("btn-warning text-dark").addClass("btn-outline-light");
+}
+
+function registrarMarcacionPedido(idPedido, m) {
+    if (!idPedido || !m || !m.idmarcacion) return;
+    var obs = m.observacion || "";
+    var desc = m.descuento || 0;
+    var motivo = "";
+    var mkt = m.marketplace || "S";
+    var descAsumido = m.descuentoAsumido || 0;
+
+    $.getJSON("InsertarMarcacionPedido?idpedido=" + idPedido +
+        "&idmarcacion=" + m.idmarcacion +
+        "&observacion=" + encodeURIComponent(obs) +
+        "&descuento=" + desc +
+        "&motivo=" + encodeURIComponent(motivo) +
+        "&marketplace=" + mkt +
+        "&descuentoasumido=" + descAsumido, function (res) {
+            console.log("Marcación asociada con éxito al pedido #" + idPedido, res);
+        }).fail(function (err) {
+            console.error("Error al asociar marcación al pedido #" + idPedido, err);
+        });
+}
+
+/* =========================================================================
+   ALERTAS Y MARCAS DE SEGURIDAD / FRAUDE DEL CLIENTE
+   ========================================================================= */
+function consultarAlertaCliente(telefono) {
+    if (!telefono || telefono.length < 7) {
+        $("#bannerAlertaCliente").slideUp(150);
+        $("#contenidoAlertaCliente").empty();
+        return;
+    }
+
+    $.getJSON("ObtenerClienteAlerta?telefono=" + encodeURIComponent(telefono), function (data) {
+        if (!data || !data.mensaje) {
+            $("#bannerAlertaCliente").slideUp(150);
+            $("#contenidoAlertaCliente").empty();
+            return;
+        }
+
+        var marcas = data.marcas || [];
+        var negativa = (data.tipo_alerta === "ALERTA_NEGATIVA");
+        var positiva = (data.tipo_alerta === "ALERTA_POSITIVA");
+        var texto = (typeof data.texto === "string") ? data.texto : data.mensaje;
+
+        var html = construirHtmlAlertaCliente(marcas, texto, negativa);
+        $("#contenidoAlertaCliente").html(html);
+
+        $("#bannerAlertaCliente").removeClass("alert-danger alert-warning alert-success");
+        if (negativa) {
+            $("#bannerAlertaCliente").addClass("alert-danger");
+        } else if (positiva) {
+            $("#bannerAlertaCliente").addClass("alert-success");
+        } else {
+            $("#bannerAlertaCliente").addClass("alert-warning");
+        }
+        $("#bannerAlertaCliente").slideDown(150);
+    }).fail(function () {
+        $("#bannerAlertaCliente").slideUp(150);
+    });
+}
+
+function construirHtmlAlertaCliente(marcas, texto, negativa) {
+    function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    var html = '<div class="d-flex align-items-center flex-wrap" style="gap:6px;">';
+    html += '<strong class="mr-1"><i class="fas fa-shield-alt mr-1"></i>' + (negativa ? 'ALERTA DE SEGURIDAD / FRAUDE:' : 'OBSERVACIÓN DEL CLIENTE:') + '</strong>';
+
+    if (marcas && marcas.length > 0) {
+        for (var i = 0; i < marcas.length; i++) {
+            var m = marcas[i];
+            var badgeClass = (m.severidad === 'N') ? 'badge-danger' : ((m.severidad === 'P') ? 'badge-success' : 'badge-warning text-dark');
+            html += '<span class="badge ' + badgeClass + ' p-1 px-2" style="font-size:0.8rem;">'
+                + esc(m.nombre) + (m.bloquea_cargo ? ' &middot; Bloquea Cargo' : '') + '</span>';
+        }
+    }
+    if (texto) {
+        html += '<span class="ml-1 text-dark font-weight-bold" style="font-size:0.83rem;">&ndash; ' + esc(texto) + '</span>';
+    }
+    html += '</div>';
+    return html;
+}
+
+/* =========================================================================
+   PROGRAMA DE FIDELIZACIÓN (PUNTOS PIZZA)
+   ========================================================================= */
+function consultarFidelizacionCliente(correo) {
+    if (!correo || correo.indexOf("@") === -1) {
+        $("#franjaFidelizacion").slideUp(150).empty();
+        return;
+    }
+
+    $.getJSON("ServiciosClienteFidelizacion?idoperacion=1&correo=" + encodeURIComponent(correo), function (data) {
+        if (data && data.respuesta) {
+            // El cliente está inscrito en el plan: consultar saldo y puntos por vencer
+            $.getJSON("ServiciosClienteFidelizacion?idoperacion=10&correo=" + encodeURIComponent(correo), function (r) {
+                var puntos = Math.round((r && r.puntos) || 0);
+                var porVencer = Math.round((r && r.porvencer) || 0);
+                var dias = (r && r.dias) || 60;
+                var venceStr = (r && r.vence) ? fechaVenceLegible(r.vence) : "";
+
+                var html = '<div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 8px;">';
+                html += '<div>';
+                html += '<span class="badge badge-warning text-dark mr-2"><i class="fas fa-coins mr-1"></i>Puntos Pizza</span>';
+                html += '<span>Tiene <b>' + puntos + '</b> puntos disponibles</span>';
+                if (porVencer > 0) {
+                    html += '<span class="badge badge-danger ml-2"><i class="fas fa-exclamation-triangle mr-1"></i>' + porVencer + ' vencen en ' + dias + ' días' + (venceStr ? ' (desde ' + venceStr + ')' : '') + '</span>';
+                }
+                html += '</div>';
+                html += '<div>';
+                html += '<span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i>Cliente Fidelizado</span>';
+                html += '</div>';
+                html += '</div>';
+
+                $("#franjaFidelizacion").html(html).removeClass("border-danger border-info border-secondary").addClass("border-primary").slideDown(150);
+            });
+        } else {
+            // No está en el plan: verificar si el cliente manifestó no desear pertenecer
+            $.getJSON("ServiciosClienteFidelizacion?idoperacion=9&correo=" + encodeURIComponent(correo), function (data2) {
+                if (data2 && data2.respuesta) {
+                    var htmlRechazo = '<div class="d-flex align-items-center justify-content-between flex-wrap text-danger font-weight-bold" style="gap: 8px;">';
+                    htmlRechazo += '<span><i class="fas fa-ban mr-1"></i> Cliente manifestó <u>NO querer pertenecer</u> al plan de fidelización.</span>';
+                    htmlRechazo += '<span class="badge badge-danger">No Desea Fidelización</span>';
+                    htmlRechazo += '</div>';
+                    $("#franjaFidelizacion").html(htmlRechazo).removeClass("border-primary border-info border-secondary").addClass("border-danger").slideDown(150);
+                } else {
+                    // Cliente no inscrito: mostrar invitación y botón de vinculación
+                    var htmlInscribir = '<div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 8px;">';
+                    htmlInscribir += '<span><i class="fas fa-gift text-warning mr-1"></i> El cliente <b>no está vinculado</b> al programa de fidelización Puntos Pizza.</span>';
+                    htmlInscribir += '<button type="button" class="btn btn-xs btn-primary font-weight-bold py-1 px-3 shadow-sm" id="btnInscribirFidelizacion"><i class="fas fa-user-plus mr-1"></i> [ + Vincular a Puntos Pizza ]</button>';
+                    htmlInscribir += '</div>';
+                    $("#franjaFidelizacion").html(htmlInscribir).removeClass("border-primary border-danger border-secondary").addClass("border-info").slideDown(150);
+
+                    $("#btnInscribirFidelizacion").off("click").on("click", function () {
+                        inscribirClienteFidelizacion(correo);
+                    });
+                }
+            });
+        }
+    }).fail(function () {
+        $("#franjaFidelizacion").slideUp(150);
+    });
+}
+
+function inscribirClienteFidelizacion(correo) {
+    if (!correo) return;
+    $("#btnInscribirFidelizacion").prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i> Vinculando...");
+    $.getJSON("ServiciosClienteFidelizacion?idoperacion=2&correo=" + encodeURIComponent(correo) + "&canal=POS", function (resp) {
+        if (resp && resp.respuesta) {
+            alert("🎉 ¡El cliente fue ingresado exitosamente al programa de fidelización Puntos Pizza!");
+            consultarFidelizacionCliente(correo);
+        } else {
+            alert("No fue posible vincular al cliente al programa de fidelización. Verifique el correo ingresado.");
+            $("#btnInscribirFidelizacion").prop("disabled", false).html("<i class='fas fa-user-plus mr-1'></i> [ + Vincular a Puntos Pizza ]");
+        }
+    }).fail(function () {
+        alert("Error de conexión al intentar vincular al cliente a fidelización.");
+        $("#btnInscribirFidelizacion").prop("disabled", false).html("<i class='fas fa-user-plus mr-1'></i> [ + Vincular a Puntos Pizza ]");
+    });
+}
+
+function fechaVenceLegible(fecha) {
+    if (!fecha || fecha.length < 10) return '';
+    var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var mes = parseInt(fecha.substring(5, 7), 10);
+    var dia = parseInt(fecha.substring(8, 10), 10);
+    if (isNaN(mes) || isNaN(dia) || mes < 1 || mes > 12) return '';
+    return dia + ' de ' + meses[mes - 1];
 }
