@@ -229,24 +229,31 @@ public class MotorFinalizarPedido extends HttpServlet {
 			int idEstadoInicial = esFormaPagoVirtual ? 2 : 1;
 			int enviadoPixelInicial = esFormaPagoVirtual ? 2 : 0;
 			int idPedidoCentral = 0;
+
+			// Descomposición fiscal oficial (Impoconsumo 8% restaurantes)
+			double totalNeto = res.total;
+			double totalBruto = totalNeto / 1.08;
+			double valorImpuesto = totalNeto - totalBruto;
+
 			String sqlInsPed = "insert into pizzaamericana.pedido (idtienda, idcliente, idestadopedido, fechapedido, "
-					+ "usuariopedido, total_bruto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido, enviadopixel, fechafinalizacion) "
-					+ "values (?,?,?,current_date(),?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP())";
+					+ "usuariopedido, total_bruto, impuesto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido, enviadopixel, fechafinalizacion) "
+					+ "values (?,?,?,current_date(),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP())";
 
 			try (PreparedStatement ps = con.prepareStatement(sqlInsPed, Statement.RETURN_GENERATED_KEYS)) {
 				ps.setInt(1, idTienda);
 				ps.setInt(2, idCliente);
 				ps.setInt(3, idEstadoInicial);
 				ps.setString(4, usuario);
-				ps.setDouble(5, res.subtotal);
-				ps.setDouble(6, res.descuento);
-				ps.setDouble(7, res.total);
-				ps.setDouble(8, tiempoPedido);
-				ps.setString(9, origen);
-				ps.setString(10, solicitud.contexto.programado ? "S" : "N");
-				ps.setString(11, solicitud.contexto.horaProgramado != null ? solicitud.contexto.horaProgramado : "");
-				ps.setInt(12, solicitud.contexto.idtipopedido > 0 ? solicitud.contexto.idtipopedido : 1);
-				ps.setInt(13, enviadoPixelInicial);
+				ps.setDouble(5, totalBruto);
+				ps.setDouble(6, valorImpuesto);
+				ps.setDouble(7, res.descuento);
+				ps.setDouble(8, totalNeto);
+				ps.setDouble(9, tiempoPedido);
+				ps.setString(10, origen);
+				ps.setString(11, solicitud.contexto.programado ? "S" : "N");
+				ps.setString(12, solicitud.contexto.horaProgramado != null ? solicitud.contexto.horaProgramado : "");
+				ps.setInt(13, solicitud.contexto.idtipopedido > 0 ? solicitud.contexto.idtipopedido : 1);
+				ps.setInt(14, enviadoPixelInicial);
 				ps.executeUpdate();
 				try (ResultSet rs = ps.getGeneratedKeys()) {
 					if (rs.next()) {

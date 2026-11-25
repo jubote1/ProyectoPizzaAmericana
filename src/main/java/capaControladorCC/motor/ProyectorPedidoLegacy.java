@@ -51,10 +51,14 @@ public class ProyectorPedidoLegacy {
 
 			int idPedidoPosGenerado = 0;
 			try (PreparedStatement ps = con.prepareStatement(sqlPosPed, Statement.RETURN_GENERATED_KEYS)) {
+				double totalNeto = resultado.total;
+				double totalBruto = totalNeto / 1.08;
+				double valorImpuesto = totalNeto - totalBruto;
+
 				ps.setInt(1, idTienda);
-				ps.setDouble(2, resultado.subtotal);
-				ps.setDouble(3, 0.0);
-				ps.setDouble(4, resultado.total);
+				ps.setDouble(2, totalBruto);
+				ps.setDouble(3, valorImpuesto);
+				ps.setDouble(4, totalNeto);
 				ps.setInt(5, idCliente);
 				ps.setInt(6, idPedidoCentral);
 				ps.setString(7, usuario != null && !usuario.trim().isEmpty() ? usuario : "MOTOR");
@@ -76,7 +80,7 @@ public class ProyectorPedidoLegacy {
 			// 2. Guardar lineas en pos_central.detalle_pedido
 			String sqlPosDet = "insert into pos_central.detalle_pedido (idpedidotienda, idtienda, idproducto, cantidad, "
 					+ "valorunitario, valortotal, valorimpuesto, iddetalle_pedido_master, iddetalle_modificador) "
-					+ "values (?,?,?,?,?,?,0,?,?)";
+					+ "values (?,?,?,?,?,?,?,?,?)";
 
 			Map<Integer, Integer> mapaRefToIdDetalle = new HashMap<Integer, Integer>();
 			try (PreparedStatement ps = con.prepareStatement(sqlPosDet, Statement.RETURN_GENERATED_KEYS)) {
@@ -87,11 +91,13 @@ public class ProyectorPedidoLegacy {
 					ps.setDouble(4, l.cantidad);
 					ps.setDouble(5, l.valorUnitario);
 					ps.setDouble(6, l.valorTotal);
+					double impLinea = (l.valorTotal > 0) ? (l.valorTotal - (l.valorTotal / 1.08)) : 0.0;
+					ps.setDouble(7, impLinea);
 					int masterId = (l.refMaster > 0 && mapaRefToIdDetalle.containsKey(l.refMaster))
 							? mapaRefToIdDetalle.get(l.refMaster)
 							: l.refMaster;
-					ps.setInt(7, masterId);
-					ps.setInt(8, l.refModificador);
+					ps.setInt(8, masterId);
+					ps.setInt(9, l.refModificador);
 					ps.executeUpdate();
 					try (ResultSet rs = ps.getGeneratedKeys()) {
 						if (rs.next()) {
