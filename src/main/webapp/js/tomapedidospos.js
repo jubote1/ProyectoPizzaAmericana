@@ -2440,6 +2440,27 @@ function ejecutarDespachoTiendaDefinitivo() {
                     registrarMarcacionPedido(resp.idPedido, marcacionActiva);
                 }
 
+                // CASO 1: Pedido con Pago Virtual (Wompi, etc.)
+                if (resp.pagoVirtual) {
+                    var msjVirtual = "🎉 ¡PEDIDO REGISTRADO: PAGO VIRTUAL!\n\n"
+                        + "• Número de Pedido Central: #" + resp.idPedido + "\n"
+                        + "• ID Nuevo Motor: #" + (resp.idPedidoPos || resp.idPedido) + "\n"
+                        + "• Estado Operativo: PENDIENTE DE PAGO VIRTUAL (No enviado a tienda aún)\n\n";
+
+                    if (resp.wompiSuccess && resp.urlPago) {
+                        msjVirtual += "✅ Link de Pago Wompi generado exitosamente:\n" + resp.urlPago + "\n\n"
+                            + "📲 Se envió automáticamente al cliente por WhatsApp y correo electrónico.\n"
+                            + "⏳ El pedido quedará en espera y se despachará a tienda una vez Wompi confirme el pago.";
+                    } else {
+                        msjVirtual += "⚠️ Atención: " + (resp.mensaje || "Inconveniente al generar link de pago.") + "\n\n"
+                            + "El pedido quedó registrado en Central. Puede verificar o reenviar el link desde la pantalla de «Monitoreo de Pagos Virtuales».";
+                    }
+                    alert(msjVirtual);
+                    limpiarPantallaTrasDespacho();
+                    return;
+                }
+
+                // CASO 2: Pedido Normal (Efectivo / Datáfono)
                 var msj = "🎉 ¡Pedido registrado con éxito!\n\n"
                     + "• ID Central (Legacy): #" + resp.idPedido + "\n"
                     + "• ID Nuevo Motor: #" + (resp.idPedidoPos || resp.idPedido) + "\n";

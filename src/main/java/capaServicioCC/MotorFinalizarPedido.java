@@ -23,6 +23,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.json.simple.JSONObject;
+
+import capaControladorCC.PedidoCtrl;
 import capaDAOCC.ClienteDAO;
 import capaControladorCC.motor.CatalogoPos;
 import capaControladorCC.motor.ConectorTiendaPos;
@@ -174,13 +177,15 @@ public class MotorFinalizarPedido extends HttpServlet {
 						if (clJson.has("politicadatos")) {
 							cli.setPoliticaDatos(clJson.get("politicadatos").getAsString());
 						}
-						if (cli.getIdcliente() > 0 && clJson.has("politicadatos")) {
-							try (PreparedStatement psUpdPol = con.prepareStatement(
-									"update pizzaamericana.cliente set politica_datos = ? where idcliente = ?")) {
-								psUpdPol.setString(1, cli.getPoliticaDatos() != null ? cli.getPoliticaDatos() : "S");
-								psUpdPol.setInt(2, cli.getIdcliente());
-								psUpdPol.executeUpdate();
-							} catch (Exception exPol) {
+						if (cli.getIdcliente() > 0) {
+							try (PreparedStatement psUpdCli = con.prepareStatement(
+									"update pizzaamericana.cliente set politica_datos = ?, telefono_celular = ?, email = ? where idcliente = ?")) {
+								psUpdCli.setString(1, cli.getPoliticaDatos() != null ? cli.getPoliticaDatos() : "S");
+								psUpdCli.setString(2, cli.getTelefonoCelular() != null ? cli.getTelefonoCelular() : "");
+								psUpdCli.setString(3, cli.getEmail() != null ? cli.getEmail() : "");
+								psUpdCli.setInt(4, cli.getIdcliente());
+								psUpdCli.executeUpdate();
+							} catch (Exception exUpdCli) {
 								// Ignorado si falla el update puntual
 							}
 						}
@@ -191,6 +196,8 @@ public class MotorFinalizarPedido extends HttpServlet {
 			}
 
 			// 1.2 Regla Paramétrica: Si la forma de pago es Virtual (virtual = 'S'), exige política de datos aceptada
+			boolean esFormaPagoVirtual = false;
+			String nombreFormaPago = "";
 			if (idFormaPagoTienda > 0) {
 				String sqlCheckFP = "select virtual, nombre from pizzaamericana.forma_pago where idforma_pago = ?";
 				try (PreparedStatement psFP = con.prepareStatement(sqlCheckFP)) {
@@ -198,12 +205,13 @@ public class MotorFinalizarPedido extends HttpServlet {
 					try (ResultSet rsFP = psFP.executeQuery()) {
 						if (rsFP.next()) {
 							String esVirtual = rsFP.getString("virtual");
-							String nomFP = rsFP.getString("nombre");
+							nombreFormaPago = rsFP.getString("nombre");
 							if ("S".equalsIgnoreCase(esVirtual)) {
+								esFormaPagoVirtual = true;
 								String polDatos = (cli != null && cli.getPoliticaDatos() != null) ? cli.getPoliticaDatos().trim() : "N";
 								if (!"S".equalsIgnoreCase(polDatos)) {
 									response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-									out.write("{\"exito\":false,\"mensaje\":\"La forma de pago '" + nomFP
+									out.write("{\"exito\":false,\"mensaje\":\"La forma de pago '" + nombreFormaPago
 											+ "' es virtual y requiere obligatoriamente que el cliente acepte la Política de Tratamiento de Datos (Habeas Data) para el envío de notificaciones y links de pago.\"}");
 									return;
 								}
@@ -216,23 +224,29 @@ public class MotorFinalizarPedido extends HttpServlet {
 			}
 
 			// 2. Crear cabecera inicial en pizzaamericana.pedido para obtener idpedido central
+			// Si es virtual: idestadopedido = 2 (Pendiente Pago Virtual), enviadopixel = 2 (Pendiente confirmación)
+			// Si no es virtual: idestadopedido = 1 (Nuevo), enviadopixel = 0
+			int idEstadoInicial = esFormaPagoVirtual ? 2 : 1;
+			int enviadoPixelInicial = esFormaPagoVirtual ? 2 : 0;
 			int idPedidoCentral = 0;
 			String sqlInsPed = "insert into pizzaamericana.pedido (idtienda, idcliente, idestadopedido, fechapedido, "
-					+ "usuariopedido, total_bruto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido) "
-					+ "values (?,?,1,current_date(),?,?,?,?,?,?,?,?,?)";
+					+ "usuariopedido, total_bruto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido, enviadopixel, fechafinalizacion) "
+					+ "values (?,?,?,current_date(),?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP())";
 
 			try (PreparedStatement ps = con.prepareStatement(sqlInsPed, Statement.RETURN_GENERATED_KEYS)) {
 				ps.setInt(1, idTienda);
 				ps.setInt(2, idCliente);
-				ps.setString(3, usuario);
-				ps.setDouble(4, res.subtotal);
-				ps.setDouble(5, res.descuento);
-				ps.setDouble(6, res.total);
-				ps.setDouble(7, tiempoPedido);
-				ps.setString(8, origen);
-				ps.setString(9, solicitud.contexto.programado ? "S" : "N");
-				ps.setString(10, solicitud.contexto.horaProgramado != null ? solicitud.contexto.horaProgramado : "");
-				ps.setInt(11, solicitud.contexto.idtipopedido > 0 ? solicitud.contexto.idtipopedido : 1);
+				ps.setInt(3, idEstadoInicial);
+				ps.setString(4, usuario);
+				ps.setDouble(5, res.subtotal);
+				ps.setDouble(6, res.descuento);
+				ps.setDouble(7, res.total);
+				ps.setDouble(8, tiempoPedido);
+				ps.setString(9, origen);
+				ps.setString(10, solicitud.contexto.programado ? "S" : "N");
+				ps.setString(11, solicitud.contexto.horaProgramado != null ? solicitud.contexto.horaProgramado : "");
+				ps.setInt(12, solicitud.contexto.idtipopedido > 0 ? solicitud.contexto.idtipopedido : 1);
+				ps.setInt(13, enviadoPixelInicial);
 				ps.executeUpdate();
 				try (ResultSet rs = ps.getGeneratedKeys()) {
 					if (rs.next()) {
@@ -254,7 +268,7 @@ public class MotorFinalizarPedido extends HttpServlet {
 				psFP.setInt(1, idPedidoCentral);
 				psFP.setInt(2, idFormaPagoTienda > 0 ? idFormaPagoTienda : 1);
 				psFP.setDouble(3, res.total);
-				psFP.setDouble(4, (idFormaPagoTienda == 1 && valorFormaPago > 0) ? valorFormaPago : res.total);
+				psFP.setDouble(4, (!esFormaPagoVirtual && idFormaPagoTienda == 1 && valorFormaPago > 0) ? valorFormaPago : res.total);
 				psFP.executeUpdate();
 			} catch (Exception exFP) {
 				System.err.println("Advertencia insertando pedido_forma_pago para pedido " + idPedidoCentral + ": " + exFP.getMessage());
@@ -289,7 +303,78 @@ public class MotorFinalizarPedido extends HttpServlet {
 			}
 			String origenDespacho = (origen != null && !origen.trim().isEmpty() && !origen.equals("C")) ? origen : "CC-NUEVO";
 
-			// 5. Verificar si la tienda tiene habilitado el despacho directo
+			// 5. Bifurcación: ¿Pago Virtual o Despacho Directo a Tienda?
+			if (esFormaPagoVirtual) {
+				// FLUJO PAGO VIRTUAL: Generar link de pago Wompi, enviar por WhatsApp y correo, y dejar en espera de pago.
+				// NO SE DESPACHA A TIENDA hasta que el cliente pague.
+				JSONObject respWompi = null;
+				try {
+					PedidoCtrl pedCtrl = new PedidoCtrl();
+					if (cli == null) {
+						cli = ClienteDAO.obtenerClienteporID(idCliente);
+					}
+					if (cli != null) {
+						if (cli.getTelefonoCelular() == null || cli.getTelefonoCelular().trim().isEmpty()) {
+							if (root.has("cliente") && root.getAsJsonObject("cliente").has("telefono")) {
+								cli.setTelefonoCelular(root.getAsJsonObject("cliente").get("telefono").getAsString().trim());
+							}
+						}
+						if (cli.getEmail() == null || cli.getEmail().trim().isEmpty()) {
+							if (root.has("cliente") && root.getAsJsonObject("cliente").has("email")) {
+								cli.setEmail(root.getAsJsonObject("cliente").get("email").getAsString().trim());
+							}
+						}
+					}
+
+					respWompi = pedCtrl.verificarEnvioLinkPagosParametrico(idPedidoCentral, cli, res.total, idTienda, "CONTACT");
+				} catch (Exception exWompi) {
+					System.err.println("Error procesando pago virtual Wompi para pedido " + idPedidoCentral + ": " + exWompi.getMessage());
+					exWompi.printStackTrace();
+				}
+
+				boolean wompiSuccess = (respWompi != null && Boolean.TRUE.equals(respWompi.get("success")));
+				String urlPago = (respWompi != null && respWompi.get("urlPago") != null) ? respWompi.get("urlPago").toString() : "";
+				String idLinkGenerado = (respWompi != null && respWompi.get("idLink") != null) ? respWompi.get("idLink").toString() : "";
+				if ((idLinkGenerado == null || idLinkGenerado.isEmpty()) && urlPago != null && urlPago.contains("/")) {
+					idLinkGenerado = urlPago.substring(urlPago.lastIndexOf("/") + 1);
+				}
+
+				// Asegurar que pedido en BD tenga el idlink guardado
+				if (idLinkGenerado != null && !idLinkGenerado.isEmpty()) {
+					try (PreparedStatement psUpdPed = con.prepareStatement(
+							"update pizzaamericana.pedido set idlink = ? where idpedido = ?")) {
+						psUpdPed.setString(1, idLinkGenerado);
+						psUpdPed.setInt(2, idPedidoCentral);
+						psUpdPed.executeUpdate();
+					} catch (Exception exIdL) {
+					}
+				}
+
+				Map<String, Object> respFinal = new HashMap<String, Object>();
+				respFinal.put("exito", true);
+				respFinal.put("idPedido", idPedidoCentral);
+				respFinal.put("idPedidoPos", idPedidoPosGenerado);
+				respFinal.put("idPedidoAlt", altDespacho);
+				respFinal.put("total", res.total);
+				respFinal.put("descuento", res.descuento);
+				respFinal.put("subtotal", res.subtotal);
+				respFinal.put("pagoVirtual", true);
+				respFinal.put("wompiSuccess", wompiSuccess);
+				respFinal.put("urlPago", urlPago);
+				respFinal.put("idLink", idLinkGenerado);
+				respFinal.put("mensaje", wompiSuccess
+						? ("Pedido #" + idPedidoCentral + " registrado con Pago Virtual. Link Wompi generado y enviado por WhatsApp y correo. Pendiente de pago.")
+						: ("Pedido #" + idPedidoCentral + " registrado con Pago Virtual. Atención Wompi: "
+								+ (respWompi != null ? respWompi.get("mensaje") : "Inconveniente al generar link")
+								+ ". Puede gestionarlo en Monitoreo de Pagos Virtuales."));
+				respFinal.put("resultadoMotor", res);
+
+				response.setStatus(HttpServletResponse.SC_OK);
+				out.write(GSON.toJson(respFinal));
+				return;
+			}
+
+			// FLUJO NORMAL (Efectivo / Datáfono): Despacho directo a la tienda
 			boolean esPiloto = EnrutadorDespachoTienda.esTiendaPiloto(con, idTienda);
 			ConectorTiendaPos.DespachoResultado dr = null;
 
