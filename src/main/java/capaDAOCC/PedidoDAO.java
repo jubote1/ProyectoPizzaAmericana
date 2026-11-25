@@ -948,6 +948,18 @@ public class PedidoDAO {
 			String update = "update pedido set numposheader = " + numPedidoPixel + " , enviadoPixel = 1, fechaenviotienda = CURRENT_TIMESTAMP(), envio_tienda_en_curso = NULL where idpedido = "+ idpedido;
 			logger.info(update);
 			stm.executeUpdate(update);
+
+			// Sincronizar confirmacion de despacho y factura en el nuevo modelo (pos_central.pedido)
+			try {
+				String sqlPosFactura = "update pos_central.pedido set idestado = 2, factura_generada = 1 where idpedidocontact = ?";
+				try (PreparedStatement psPosFactura = con1.prepareStatement(sqlPosFactura)) {
+					psPosFactura.setInt(1, idpedido);
+					psPosFactura.executeUpdate();
+				}
+			} catch (Exception exPosFactura) {
+				logger.warn("Advertencia sincronizando factura en pos_central.pedido: " + exPosFactura.getMessage());
+			}
+
 			stm.close();
 			con1.close();
 		}
@@ -4417,6 +4429,31 @@ public class PedidoDAO {
 						respuesta = true;
 						idPedido = idPedidoAct;
 					}
+				}
+			}
+
+			// Sincronizar confirmacion de pago en el nuevo modelo (pos_central.pedido)
+			if (idPedido > 0) {
+				try {
+					String sqlPosPago = "update pos_central.pedido set idestado = 2, "
+							+ "observacion = CONCAT(IFNULL(observacion,''), ' [PAGO VIRTUAL WOMPI CONFIRMADO: ', ?, ']') "
+							+ "where idpedidocontact = ?";
+					try (PreparedStatement psPosPago = con1.prepareStatement(sqlPosPago)) {
+						psPosPago.setString(1, tipoPago != null ? tipoPago : "WOMPI");
+						psPosPago.setInt(2, idPedido);
+						psPosPago.executeUpdate();
+					}
+					// Sincronizar campo datafono/metodo en pos_central.pedido_forma_pago si existe
+					String sqlPosFP = "update pos_central.pedido_forma_pago pfp "
+							+ "join pos_central.pedido p on p.idpedidotienda = pfp.idpedidotienda "
+							+ "set pfp.datafono = ? where p.idpedidocontact = ?";
+					try (PreparedStatement psPosFP = con1.prepareStatement(sqlPosFP)) {
+						psPosFP.setString(1, tipoPago != null ? tipoPago : "WOMPI");
+						psPosFP.setInt(2, idPedido);
+						psPosFP.executeUpdate();
+					}
+				} catch (Exception exPos) {
+					logger.warn("Advertencia sincronizando pago virtual en pos_central: " + exPos.getMessage());
 				}
 			}
 			//Realizamos validaci�n de si el pedido estaba cancelado en cuyo caso deberemos de alertar

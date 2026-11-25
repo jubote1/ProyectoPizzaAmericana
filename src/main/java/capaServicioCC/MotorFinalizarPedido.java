@@ -284,6 +284,21 @@ public class MotorFinalizarPedido extends HttpServlet {
 			// 3. Proyectar en pos_central y pizzaamericana.detalle_pedido
 			int idPedidoPosGenerado = ProyectorPedidoLegacy.proyectarPedidoRetornandoIdPos(con, idPedidoCentral, idTienda, idCliente, solicitud, res, usuario);
 
+			// 3.1 Registrar forma de pago en pos_central.pedido_forma_pago
+			if (idPedidoPosGenerado > 0) {
+				String sqlInsFPPos = "insert into pos_central.pedido_forma_pago (idpedidotienda, idforma_pago, valortotal, valorformapago) "
+						+ "values (?, ?, ?, ?)";
+				try (PreparedStatement psFPPos = con.prepareStatement(sqlInsFPPos)) {
+					psFPPos.setInt(1, idPedidoPosGenerado);
+					psFPPos.setInt(2, idFormaPagoTienda > 0 ? idFormaPagoTienda : 1);
+					psFPPos.setDouble(3, res.total);
+					psFPPos.setDouble(4, (!esFormaPagoVirtual && idFormaPagoTienda == 1 && valorFormaPago > 0) ? valorFormaPago : res.total);
+					psFPPos.executeUpdate();
+				} catch (Exception exFPPos) {
+					System.err.println("Advertencia insertando pos_central.pedido_forma_pago: " + exFPPos.getMessage());
+				}
+			}
+
 			// 4. Extraer datos de trazabilidad, plataforma y contingencia operativa
 			String idPedidoAlt = root.has("idPedidoAlt") ? root.get("idPedidoAlt").getAsString() : "";
 			String plataforma = root.has("plataforma") ? root.get("plataforma").getAsString() : "";
