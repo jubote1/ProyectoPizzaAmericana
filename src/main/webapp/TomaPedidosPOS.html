@@ -461,6 +461,45 @@
         </div>
     </div>
 
+    <!-- Modal Alerta Discrepancia de Cobertura de Domicilio / Contingencia Operativa -->
+    <div class="modal fade" id="modalDiscrepanciaCobertura" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-warning shadow-lg">
+                <div class="modal-header bg-warning text-dark py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1.1rem;">
+                        <i class="fas fa-exclamation-triangle mr-2 text-danger"></i>Discrepancia de Cobertura de Domicilio
+                    </h5>
+                </div>
+                <div class="modal-body p-3">
+                    <p class="mb-2" style="font-size: 0.95rem;">
+                        La dirección del cliente (<strong id="lblDiscrepanciaDireccion">Prado Centro</strong>) pertenece al polígono de <strong id="lblDiscrepanciaTiendaOficialTxt">Manrique</strong>.
+                    </p>
+                    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center">
+                        <i class="fas fa-map-marker-alt fa-2x mr-3 text-primary"></i>
+                        <div>
+                            <div class="small text-muted font-weight-bold">TIENDA OFICIAL DE COBERTURA:</div>
+                            <div class="h5 mb-0 font-weight-bold text-dark" id="lblDiscrepanciaTiendaOficial">Manrique</div>
+                        </div>
+                    </div>
+                    <p class="mb-2" style="font-size: 0.95rem;">
+                        ¿Desea forzar el despacho desde <strong class="text-danger" id="lblDiscrepanciaTiendaDestino">América</strong> por contingencia operativa?
+                    </p>
+                    <div class="small text-muted">
+                        <i class="fas fa-info-circle mr-1"></i> Si cancela, el pedido se mantendrá en la tienda oficial de cobertura para asegurar los tiempos de entrega.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary font-weight-bold btn-sm px-3" id="btnDiscrepanciaCancelar">
+                        <i class="fas fa-undo mr-1"></i> Cancelar y mantener <span id="lblBtnMantenerTienda">Manrique</span>
+                    </button>
+                    <button type="button" class="btn btn-warning text-dark font-weight-bold btn-sm px-3 shadow-sm" id="btnDiscrepanciaConfirmar">
+                        <i class="fas fa-check-circle mr-1 text-danger"></i> Confirmar Redirección a <span id="lblBtnRedirigirTienda">América</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Georreferenciación y Cobertura en Mapa Desacoplado -->
     <div class="modal fade" id="modalMapaCliente" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
@@ -1376,6 +1415,6 @@
     <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="text/javascript" src="js/tomapedidospos.js?v=20261122"></script>
+    <script type="text/javascript" src="js/tomapedidospos.js?v=20261125_cobertura"></script>
 </body>
 </html>

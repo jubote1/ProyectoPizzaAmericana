@@ -18,6 +18,7 @@ var idPedidoCentralActivo = 0; // Control de ID de pedido si se asigna previo al
 // Control de Tienda vs Cobertura de Georreferenciación
 var tiendaCoberturaCliente = null; // { id: number, nombre: string }
 var contingenciaTiendaForzada = false; // true si el asesor forzó el despacho a una tienda diferente a la cobertura
+var tiendaPendienteConfirmacion = null; // { id: number, nombre: string } almacena temporalmente la tienda a la que se desea forzar por contingencia
 
 // Marcaciones / Plataformas Externas (Rappi, DiDi, Bot, convenios)
 var marcacionActiva = null; // { idmarcacion, nombremarcacion, observacion, marketplace, descuento, descuentoAsumido }
@@ -177,13 +178,25 @@ $(document).ready(function () {
 
     // Eventos de Contexto
     $("#tipoPedidoSelect").on("change", function () {
-        var tipo = parseInt($(this).val());
+        var tipo = parseInt($(this).val()) || 1;
         if (tipo !== 1) {
-            // Mesa (2) o Llevar (3): Atencion presencial en tienda, no requiere mapa
+            // Mesa (2) o Llevar (3): Atencion presencial en tienda, el selector queda libre sin alertas de cobertura
             clienteUbicado = true;
+            contingenciaTiendaForzada = false;
         } else {
-            // Domicilio (1): Requiere ubicacion en mapa para cobertura y tienda
+            // Domicilio (1): Requiere ubicacion en mapa para cobertura y valida sincronizacion
             clienteUbicado = (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001);
+            if (tiendaCoberturaCliente && tiendaCoberturaCliente.id > 0) {
+                var tiendaActualSel = parseInt($("#tiendaSelect").val()) || 0;
+                if (tiendaActualSel > 0 && tiendaActualSel !== tiendaCoberturaCliente.id) {
+                    contingenciaTiendaForzada = true;
+                } else if (tiendaActualSel <= 0) {
+                    $("#tiendaSelect").val(tiendaCoberturaCliente.id);
+                    contingenciaTiendaForzada = false;
+                    verificarTiendaPiloto();
+                    consultarTiempoTienda(tiendaCoberturaCliente.id);
+                }
+            }
         }
         actualizarEstadoUbicacionUI();
         cotizarEnVivo();
@@ -191,43 +204,72 @@ $(document).ready(function () {
 
     $("#tiendaSelect").on("change", function () {
         var nuevoIdTienda = parseInt($(this).val()) || 0;
-        var nuevaTiendaNom = $("#tiendaSelect option:selected").text().trim();
+        var nuevaTiendaNom = $("#tiendaSelect option:selected").text().replace(/\[.*?\]/g, "").trim();
         var tipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
 
-        // Control de Cobertura vs Despacho en Domicilios:
-        // Si el cliente está ubicado y tiene una tienda de cobertura asignada diferente a la seleccionada
-        if (tipoPedido === 1 && clienteUbicado && tiendaCoberturaCliente && tiendaCoberturaCliente.id > 0
-            && nuevoIdTienda > 0 && nuevoIdTienda !== tiendaCoberturaCliente.id) {
-
-            var dirTxt = clienteActual.direccion || "la dirección registrada";
-            var advertencia = "⚠️ ADVERTENCIA DE COBERTURA DE ENTREGA\n\n"
-                + "La dirección del cliente (" + dirTxt + ") pertenece al polígono de cobertura de la tienda:\n"
-                + "➡️ " + tiendaCoberturaCliente.nombre.toUpperCase() + "\n\n"
-                + "Ha seleccionado despachar desde:\n"
-                + "➡️ " + nuevaTiendaNom.toUpperCase() + "\n\n"
-                + "¿Desea FORZAR el despacho desde " + nuevaTiendaNom + " por contingencia operativa?\n\n"
-                + "(Al presionar Cancelar, el selector regresará a la tienda de cobertura " + tiendaCoberturaCliente.nombre + ")";
-
-            if (!confirm(advertencia)) {
-                // El operador declina forzar: revertir a la tienda de cobertura
-                $(this).val(tiendaCoberturaCliente.id);
-                contingenciaTiendaForzada = false;
-                verificarTiendaPiloto();
-                consultarTiempoTienda(tiendaCoberturaCliente.id);
-                actualizarEstadoUbicacionUI();
-                return;
-            } else {
-                // Operador confirma despacho por contingencia
-                contingenciaTiendaForzada = true;
-            }
-        } else {
+        if (nuevoIdTienda <= 0) {
             contingenciaTiendaForzada = false;
+            actualizarEstadoUbicacionUI();
+            return;
         }
 
+        // Control de Cobertura vs Despacho en Domicilios (Propuesta A):
+        // Si el cliente tiene una tienda de cobertura asignada diferente a la seleccionada
+        if (tipoPedido === 1 && tiendaCoberturaCliente && tiendaCoberturaCliente.id > 0
+            && nuevoIdTienda !== tiendaCoberturaCliente.id) {
+
+            var dirTxt = clienteActual.zona || clienteActual.direccion || "Prado Centro";
+            var tiendaOficialNom = tiendaCoberturaCliente.nombre;
+
+            // Poblar textos en el modal de advertencia de contingencia
+            $("#lblDiscrepanciaDireccion").text(dirTxt);
+            $("#lblDiscrepanciaTiendaOficialTxt").text(tiendaOficialNom);
+            $("#lblDiscrepanciaTiendaOficial").text(tiendaOficialNom);
+            $("#lblDiscrepanciaTiendaDestino").text(nuevaTiendaNom);
+            $("#lblBtnMantenerTienda").text(tiendaOficialNom);
+            $("#lblBtnRedirigirTienda").text(nuevaTiendaNom);
+
+            tiendaPendienteConfirmacion = {
+                id: nuevoIdTienda,
+                nombre: nuevaTiendaNom
+            };
+
+            // Mostrar el modal de alerta inmediata
+            $("#modalDiscrepanciaCobertura").modal("show");
+            return;
+        }
+
+        contingenciaTiendaForzada = false;
         verificarTiendaPiloto();
         consultarTiempoTienda(nuevoIdTienda);
         actualizarEstadoUbicacionUI();
         cotizarEnVivo();
+    });
+
+    // Botones del Modal de Discrepancia de Cobertura
+    $("#btnDiscrepanciaCancelar").on("click", function () {
+        $("#modalDiscrepanciaCobertura").modal("hide");
+        if (tiendaCoberturaCliente && tiendaCoberturaCliente.id > 0) {
+            $("#tiendaSelect").val(tiendaCoberturaCliente.id);
+            contingenciaTiendaForzada = false;
+            tiendaPendienteConfirmacion = null;
+            verificarTiendaPiloto();
+            consultarTiempoTienda(tiendaCoberturaCliente.id);
+            actualizarEstadoUbicacionUI();
+            cotizarEnVivo();
+        }
+    });
+
+    $("#btnDiscrepanciaConfirmar").on("click", function () {
+        $("#modalDiscrepanciaCobertura").modal("hide");
+        if (tiendaPendienteConfirmacion) {
+            $("#tiendaSelect").val(tiendaPendienteConfirmacion.id);
+            contingenciaTiendaForzada = true;
+            verificarTiendaPiloto();
+            consultarTiempoTienda(tiendaPendienteConfirmacion.id);
+            actualizarEstadoUbicacionUI();
+            cotizarEnVivo();
+        }
     });
 
     // Eventos de Descuentos & Cupones
@@ -556,21 +598,9 @@ function seleccionarClienteDeTabla(cli) {
         $("#chkFacturaElectronica").prop("checked", false).trigger("change");
     }
 
-    // Si el cliente tiene tienda asignada en texto, intentar seleccionarla si coincide
-    if (cli.tienda) {
-        $("#tiendaSelect option").each(function () {
-            if ($(this).text().toUpperCase().indexOf(cli.tienda.toUpperCase()) !== -1) {
-                $(this).prop("selected", true);
-                tiendaCoberturaCliente = {
-                    id: parseInt($(this).val()),
-                    nombre: $(this).text().trim()
-                };
-                contingenciaTiendaForzada = false;
-                verificarTiendaPiloto();
-                consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
-                return false;
-            }
-        });
+    // Sincronización Automática de Tienda de Cobertura (Propuesta A)
+    if (cli.tienda || cli.idtienda) {
+        sincronizarTiendaConCobertura(cli.tienda, cli.idtienda);
     }
 
     // Verificar si ya cuenta con coordenadas GPS válidas
@@ -656,13 +686,14 @@ function actualizarEstadoUbicacionUI() {
         var coordsTxt = (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001) ? " (" + clienteActual.latitud.toFixed(4) + ", " + clienteActual.longitud.toFixed(4) + ")" : "";
 
         if (contingenciaTiendaForzada && tiendaCoberturaCliente) {
-            var tDespacho = $("#tiendaSelect option:selected").text().trim();
+            var tDespacho = $("#tiendaSelect option:selected").text().replace(/\[.*?\]/g, "").trim();
             $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente badge-ubicacion-ok").addClass("badge-warning text-dark font-weight-bold").html(
-                "<i class='fas fa-exclamation-triangle mr-1 text-danger'></i><span>Contingencia: Despacho forzado a <b>" + tDespacho + "</b> (Cobertura: <b>" + tiendaCoberturaCliente.nombre + "</b>)</span>"
+                "<i class='fas fa-exclamation-triangle mr-1 text-danger'></i><span>Ubicado en Mapa: <b>" + tiendaCoberturaCliente.nombre + "</b> ⚠️ (Redireccionado a: <b>" + tDespacho + "</b>)</span>"
             );
         } else {
+            var tOficial = (tiendaCoberturaCliente && tiendaCoberturaCliente.nombre) ? tiendaCoberturaCliente.nombre : tNom;
             $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente badge-warning font-weight-bold").addClass("badge-ubicacion-ok").html(
-                "<i class='fas fa-check-circle mr-1 text-success'></i><span>Ubicado en Mapa: <b>" + tNom + "</b>" + coordsTxt + "</span>"
+                "<i class='fas fa-check-circle mr-1 text-success'></i><span>Ubicado en Mapa: <b>" + tOficial + "</b>" + coordsTxt + "</span>"
             );
         }
         $("#btnAbrirModalMapa").removeClass("btn-pulsing-map btn-danger").addClass("btn-outline-primary").html("<i class='fas fa-map-marker-alt mr-1'></i> Reubicar / Ver Mapa");
@@ -826,22 +857,9 @@ function confirmarUbicacionDesdeMapa() {
     $("#cliMunicipio").val(clienteActual.municipio);
     $("#cliZona").val(clienteActual.zona);
 
-    // Asignar tienda detectada si coincide
-    if (coberturaTemporal.infoAdicional) {
-        var tNom = coberturaTemporal.infoAdicional.toUpperCase();
-        $("#tiendaSelect option").each(function () {
-            if ($(this).text().toUpperCase().indexOf(tNom) !== -1) {
-                $(this).prop("selected", true);
-                tiendaCoberturaCliente = {
-                    id: parseInt($(this).val()),
-                    nombre: $(this).text().trim()
-                };
-                contingenciaTiendaForzada = false;
-                verificarTiendaPiloto();
-                consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
-                return false;
-            }
-        });
+    // Sincronización Automática de Tienda de Cobertura desde Mapa (Propuesta A)
+    if (coberturaTemporal.infoAdicional || coberturaTemporal.idTienda) {
+        sincronizarTiendaConCobertura(coberturaTemporal.infoAdicional, coberturaTemporal.idTienda);
     }
 
     actualizarResumenClienteComanda();
@@ -906,8 +924,58 @@ function cargarTiendas() {
             $sel.val("");
             verificarTiendaPiloto();
             consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
+
+            // Si el cliente ya estaba cargado con tienda de cobertura, sincronizarla
+            if (clienteActual && (clienteActual.nombreTienda || tiendaCoberturaCliente)) {
+                sincronizarTiendaConCobertura(clienteActual.nombreTienda || (tiendaCoberturaCliente ? tiendaCoberturaCliente.nombre : ""),
+                                              tiendaCoberturaCliente ? tiendaCoberturaCliente.id : 0);
+            }
         }
     });
+}
+
+function sincronizarTiendaConCobertura(nombreTienda, idTienda) {
+    if (!nombreTienda && !idTienda) return false;
+    var matchExacto = null;
+    var matchParcial = null;
+    var nomBusq = (nombreTienda || "").trim().toUpperCase();
+
+    $("#tiendaSelect option").each(function () {
+        var valId = parseInt($(this).val()) || 0;
+        if (valId <= 0) return;
+        var txtLimpio = $(this).text().replace(/\[.*?\]/g, "").trim().toUpperCase();
+
+        if (idTienda && valId === parseInt(idTienda)) {
+            matchExacto = $(this);
+            return false;
+        }
+        if (nomBusq && txtLimpio === nomBusq) {
+            matchExacto = $(this);
+            return false;
+        }
+        if (nomBusq && (txtLimpio.indexOf(nomBusq) !== -1 || nomBusq.indexOf(txtLimpio) !== -1) && !matchParcial) {
+            matchParcial = $(this);
+        }
+    });
+
+    var $opt = matchExacto || matchParcial;
+    if ($opt && $opt.length > 0) {
+        var idSel = parseInt($opt.val()) || 0;
+        var nombreLimpio = $opt.text().replace(/\[.*?\]/g, "").trim();
+
+        tiendaCoberturaCliente = {
+            id: idSel,
+            nombre: nombreLimpio,
+            textoOpcion: $opt.text().trim()
+        };
+        contingenciaTiendaForzada = false;
+        $("#tiendaSelect").val(idSel);
+        verificarTiendaPiloto();
+        consultarTiempoTienda(idSel);
+        actualizarEstadoUbicacionUI();
+        return true;
+    }
+    return false;
 }
 
 function verificarTiendaPiloto() {
