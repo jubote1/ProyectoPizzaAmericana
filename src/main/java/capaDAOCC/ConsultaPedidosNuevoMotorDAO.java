@@ -191,6 +191,7 @@ public class ConsultaPedidosNuevoMotorDAO {
 						fila.put("hora_programado", rs.getString("hora_programado"));
 						fila.put("formapago", rs.getString("formapago"));
 						fila.put("modo_procesamiento", modoFila);
+						fila.put("idpedidoposcentral", idPosCentral);
 
 						// Datos comparativos de Sombra / Paralelo si existen
 						fila.put("idsombra", idSombra);
@@ -276,13 +277,15 @@ public class ConsultaPedidosNuevoMotorDAO {
 					+ "  CONCAT(IFNULL(c.nombre,''), ' ', IFNULL(c.apellido,'')) AS nombrecliente, "
 					+ "  IFNULL(c.telefono, IFNULL(c.telefono_celular,'')) AS telefono, "
 					+ "  IFNULL(c.direccion,'') AS direccion, IFNULL(mun.nombre,'') AS municipio, "
-					+ "  p.origen, p.total_neto, IFNULL(ep.descripcion,'') AS estadopedido "
+					+ "  p.origen, p.total_neto, p.numposheader, IFNULL(ep.descripcion,'') AS estadopedido, "
+					+ "  IFNULL(MAX(pos_p.idpedidotienda), 0) AS idpedidoposcentral "
 					+ "FROM pizzaamericana.pedido p "
 					+ "JOIN pizzaamericana.tienda t ON t.idtienda = p.idtienda "
 					+ "LEFT JOIN pizzaamericana.cliente c ON c.idcliente = p.idcliente "
 					+ "LEFT JOIN pizzaamericana.municipio mun ON mun.idmunicipio = c.idmunicipio "
 					+ "LEFT JOIN pizzaamericana.estado_pedido ep ON ep.idestadopedido = p.idestadopedido "
-					+ "WHERE p.idpedido = ?";
+					+ "LEFT JOIN pos_central.pedido pos_p ON pos_p.idpedidocontact = p.idpedido "
+					+ "WHERE p.idpedido = ? GROUP BY p.idpedido";
 
 			long idOrdenComercio = 0;
 			String origenPedido = "C";
@@ -292,6 +295,7 @@ public class ConsultaPedidosNuevoMotorDAO {
 					if (rs.next()) {
 						idOrdenComercio = rs.getLong("idordencomercio");
 						origenPedido = rs.getString("origen");
+						resultado.put("idpedido", idPedido);
 						resultado.put("idordencomercio", rs.getString("idordencomercio"));
 						resultado.put("idtienda", rs.getInt("idtienda"));
 						resultado.put("tienda", rs.getString("nombretienda"));
@@ -305,6 +309,8 @@ public class ConsultaPedidosNuevoMotorDAO {
 						resultado.put("canal_legible", resolverCanalLegible(origenPedido));
 						resultado.put("totalneto", rs.getDouble("total_neto"));
 						resultado.put("estadopedido", rs.getString("estadopedido"));
+						resultado.put("numposheader", rs.getInt("numposheader"));
+						resultado.put("idpedidoposcentral", rs.getInt("idpedidoposcentral"));
 					}
 				}
 			}

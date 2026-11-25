@@ -59,7 +59,16 @@ function inicializarDataTable() {
         order: [[0, "desc"]],
         pageLength: 25,
         columns: [
-            { data: "idpedido" },
+            { 
+                data: "idpedido",
+                render: function(data, type, row) {
+                    var html = '<div class="font-weight-bold text-primary">#' + data + '</div>';
+                    if (row.idpedidoposcentral && row.idpedidoposcentral > 0) {
+                        html += '<small class="badge badge-warning text-dark" title="ID Nuevo Motor"><i class="fas fa-bolt"></i> NM-#' + row.idpedidoposcentral + '</small>';
+                    }
+                    return html;
+                }
+            },
             { 
                 data: "origen",
                 render: function(data, type, row) {
@@ -242,7 +251,14 @@ function verDetallePedido(idPedido) {
         data: { accion: 'detalle', idpedido: idPedido },
         dataType: 'json',
         success: function(d) {
-            $("#txtModalIdPedido").text(idPedido);
+            var txtTripleta = 'Pedido Central #' + idPedido;
+            if (d.idpedidoposcentral && d.idpedidoposcentral > 0) {
+                txtTripleta += ' <span class="badge badge-warning text-dark ml-2"><i class="fas fa-bolt"></i> NM-#' + d.idpedidoposcentral + '</span>';
+            }
+            if (d.numposheader && d.numposheader > 0) {
+                txtTripleta += ' <span class="badge badge-dark ml-2"><i class="fas fa-receipt"></i> Factura #' + d.numposheader + '</span>';
+            }
+            $("#txtModalIdPedido").html(txtTripleta);
             $("#txtModalCliente").text(d.cliente || "-");
             $("#txtModalTelefono").text(d.telefono || "-");
             $("#txtModalDireccion").text(d.direccion || "-");

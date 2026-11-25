@@ -273,7 +273,7 @@ public class ConectorTiendaPos {
 						dr.mensaje = "Pedido insertado exitosamente en tienda con comanda #" + dr.numeroFactura;
 
 						// Actualizar estado en central: enviadopixel = 1, numposheader = numeroFactura
-						actualizarEstadoCentral(con, idPedidoCentral, dr.numeroFactura);
+						actualizarEstadoCentral(con, idPedidoCentral, dr.numeroFactura, idPedidoPos);
 					} else {
 						dr.exito = false;
 						dr.mensaje = "La tienda respondio pero no genero numero de factura/comanda.";
@@ -295,13 +295,24 @@ public class ConectorTiendaPos {
 		return dr;
 	}
 
-	private static void actualizarEstadoCentral(Connection con, int idPedidoCentral, int numFactura) {
+	private static void actualizarEstadoCentral(Connection con, int idPedidoCentral, int numFactura, int idPedidoPos) {
 		String sql = "update pizzaamericana.pedido set enviadopixel = 1, numposheader = ?, fechaenviotienda = current_timestamp, "
 				+ "idestadopedido = 2, fechafinalizacion = current_timestamp where idpedido = ?";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			ps.setInt(1, numFactura);
 			ps.setInt(2, idPedidoCentral);
 			ps.executeUpdate();
+		} catch (Exception ignorada) {
+		}
+
+		// Actualizar estado en pos_central para reflejar que la comanda/factura fue generada
+		try {
+			String sqlPos = "update pos_central.pedido set idestado = 2, factura_generada = 1 where "
+					+ (idPedidoPos > 0 ? "idpedidotienda = ?" : "idpedidocontact = ?");
+			try (PreparedStatement psPos = con.prepareStatement(sqlPos)) {
+				psPos.setInt(1, idPedidoPos > 0 ? idPedidoPos : idPedidoCentral);
+				psPos.executeUpdate();
+			}
 		} catch (Exception ignorada) {
 		}
 	}
