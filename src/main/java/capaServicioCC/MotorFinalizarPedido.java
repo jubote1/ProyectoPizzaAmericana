@@ -176,9 +176,35 @@ public class MotorFinalizarPedido extends HttpServlet {
 			}
 
 			// 3. Proyectar en pos_central y pizzaamericana.detalle_pedido
-			ProyectorPedidoLegacy.proyectarPedido(con, idPedidoCentral, idTienda, idCliente, solicitud, res, usuario);
+			int idPedidoPosGenerado = ProyectorPedidoLegacy.proyectarPedidoRetornandoIdPos(con, idPedidoCentral, idTienda, idCliente, solicitud, res, usuario);
 
-			// 4. Verificar si la tienda tiene habilitado el despacho directo
+			// 4. Extraer datos de trazabilidad, plataforma y contingencia operativa
+			String idPedidoAlt = root.has("idPedidoAlt") ? root.get("idPedidoAlt").getAsString() : "";
+			String plataforma = root.has("plataforma") ? root.get("plataforma").getAsString() : "";
+			if (root.has("marcacion")) {
+				try {
+					JsonObject marcJson = root.getAsJsonObject("marcacion");
+					if (marcJson != null && marcJson.has("nombremarcacion")) {
+						plataforma = marcJson.get("nombremarcacion").getAsString();
+						String obsMarc = marcJson.has("observacion") ? marcJson.get("observacion").getAsString() : "";
+						if (obsMarc != null && !obsMarc.trim().isEmpty()) {
+							idPedidoAlt = obsMarc.trim();
+						}
+					}
+				} catch (Exception ignorada) {
+				}
+			}
+
+			String altDespacho = "";
+			if (idPedidoAlt != null && !idPedidoAlt.trim().isEmpty()) {
+				altDespacho = (plataforma != null && !plataforma.trim().isEmpty() ? (plataforma + "-" + idPedidoAlt) : idPedidoAlt)
+						+ " [NM-" + idPedidoPosGenerado + "]";
+			} else {
+				altDespacho = "NM-" + idPedidoPosGenerado;
+			}
+			String origenDespacho = (origen != null && !origen.trim().isEmpty() && !origen.equals("C")) ? origen : "CC-NUEVO";
+
+			// 5. Verificar si la tienda tiene habilitado el despacho directo
 			boolean esPiloto = EnrutadorDespachoTienda.esTiendaPiloto(con, idTienda);
 			ConectorTiendaPos.DespachoResultado dr = null;
 
@@ -241,13 +267,28 @@ public class MotorFinalizarPedido extends HttpServlet {
 						// Ignorado si no viene estructura completa
 					}
 				}
+
+				if (root.has("contingenciaTienda")) {
+					try {
+						JsonObject contJson = root.getAsJsonObject("contingenciaTienda");
+						String origTienda = contJson.has("tiendaCoberturaOriginal") ? contJson.get("tiendaCoberturaOriginal").getAsString() : "";
+						if (cli != null && origTienda != null && !origTienda.trim().isEmpty()) {
+							String obsAct = cli.getObservacion() != null ? cli.getObservacion() : "";
+							cli.setObservacion(("[CONTINGENCIA: Cobertura " + origTienda + "] " + obsAct).trim());
+						}
+					} catch (Exception ignorada) {
+					}
+				}
+
 				dr = ConectorTiendaPos.despachar(con, idPedidoCentral, idTienda, cli, solicitud, res, idFormaPagoTienda,
-						valorFormaPago, usuario, tiempoPedido, origen);
+						valorFormaPago, usuario, tiempoPedido, origenDespacho, altDespacho, plataforma, idPedidoPosGenerado);
 			}
 
 			Map<String, Object> respFinal = new HashMap<String, Object>();
 			respFinal.put("exito", true);
 			respFinal.put("idPedido", idPedidoCentral);
+			respFinal.put("idPedidoPos", idPedidoPosGenerado);
+			respFinal.put("idPedidoAlt", altDespacho);
 			respFinal.put("total", res.total);
 			respFinal.put("descuento", res.descuento);
 			respFinal.put("subtotal", res.subtotal);

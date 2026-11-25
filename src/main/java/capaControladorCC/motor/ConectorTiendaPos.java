@@ -54,6 +54,16 @@ public class ConectorTiendaPos {
 	public static DespachoResultado despachar(Connection con, int idPedidoCentral, int idTienda, Cliente cliente,
 			MotorSolicitud solicitud, MotorResultado resultado, int idFormaPagoTienda, double valorFormaPago,
 			String usuario, double tiempoPedido, String origen) {
+		return despachar(con, idPedidoCentral, idTienda, cliente, solicitud, resultado, idFormaPagoTienda, valorFormaPago,
+				usuario, tiempoPedido, origen, "", "", 0);
+	}
+
+	/**
+	 * Despacho con doble trazabilidad transitoria (ID Central tradicional + ID Nuevo Motor + Plataforma).
+	 */
+	public static DespachoResultado despachar(Connection con, int idPedidoCentral, int idTienda, Cliente cliente,
+			MotorSolicitud solicitud, MotorResultado resultado, int idFormaPagoTienda, double valorFormaPago,
+			String usuario, double tiempoPedido, String origen, String idPedidoAlt, String plataforma, int idPedidoPos) {
 
 		DespachoResultado dr = new DespachoResultado();
 
@@ -107,7 +117,15 @@ public class ConectorTiendaPos {
 			mapCliente.put("distanciatienda", cliente != null ? cliente.getDistanciaTienda() : 0.0);
 			mapCliente.put("zonadireccion",
 					cliente != null && cliente.getZonaDireccion() != null ? cliente.getZonaDireccion() : "");
-			mapCliente.put("observacion", cliente != null && cliente.getObservacion() != null ? cliente.getObservacion() : "");
+
+			// Trazabilidad transitoria en observaciones: vincular ID Central tradicional y ID Nuevo Motor
+			String obsCliente = cliente != null && cliente.getObservacion() != null ? cliente.getObservacion().trim() : "";
+			String prefijoTrazabilidad = "[CC #" + idPedidoCentral + (idPedidoPos > 0 ? " | NM #" + idPedidoPos : "") + "] ";
+			if (!obsCliente.contains("CC #" + idPedidoCentral)) {
+				obsCliente = (prefijoTrazabilidad + obsCliente).trim();
+			}
+			mapCliente.put("observacion", obsCliente);
+
 			mapCliente.put("idnomenclatura", cliente != null ? cliente.getIdnomenclatura() : 0);
 			mapCliente.put("nomenclatura",
 					cliente != null && cliente.getNomenclatura() != null ? cliente.getNomenclatura() : "");
@@ -158,7 +176,19 @@ public class ConectorTiendaPos {
 			mapPedido.put("idformapagotienda", idFormaPagoTienda > 0 ? idFormaPagoTienda : 1);
 			mapPedido.put("usuariopedido", usuario != null && !usuario.trim().isEmpty() ? usuario : "MOTOR");
 			mapPedido.put("tiempopedido", (int) tiempoPedido);
-			mapPedido.put("origen", origen != null && !origen.trim().isEmpty() ? origen : "C");
+			// Doble trazabilidad transitoria:
+			// - origen: "CC-NUEVO" o nombre de plataforma para identificar claramente el nuevo canal
+			// - idpedidoalt: "NM-<idpos>" o "<PLATAFORMA>-<orden> [NM-<idpos>]"
+			// - idpedido: idPedidoCentral tradicional para cruces contables
+			String idAltCalculado = (idPedidoAlt != null && !idPedidoAlt.trim().isEmpty())
+					? idPedidoAlt.trim()
+					: (idPedidoPos > 0 ? "NM-" + idPedidoPos : "NM-" + idPedidoCentral);
+
+			String origenCalculado = (origen != null && !origen.trim().isEmpty() && !origen.equals("C"))
+					? origen
+					: "CC-NUEVO";
+
+			mapPedido.put("origen", origenCalculado);
 			mapPedido.put("programado",
 					solicitud.contexto != null && solicitud.contexto.programado ? "S" : "N");
 			mapPedido.put("horaprogramado",
@@ -166,8 +196,8 @@ public class ConectorTiendaPos {
 							? solicitud.contexto.horaProgramado
 							: "");
 			mapPedido.put("idtipopedido", solicitud.contexto != null ? solicitud.contexto.idtipopedido : 1);
-			mapPedido.put("plataforma", "");
-			mapPedido.put("idpedidoalt", "");
+			mapPedido.put("plataforma", plataforma != null ? plataforma : "");
+			mapPedido.put("idpedidoalt", idAltCalculado);
 			mapPedido.put("domiciliotercerizado", "N");
 			mapPedido.put("empresatercerizada", "");
 			mapPedido.put("cliente", GSON.toJson(arrayCliente));

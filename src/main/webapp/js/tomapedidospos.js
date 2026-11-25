@@ -15,6 +15,10 @@ var esAdministrador = false; // Rol verificado con ValidarUsuarioAplicacion (sol
 var tiempoEstimadoTienda = 30; // Tiempo promesa configurado en la tienda seleccionada
 var idPedidoCentralActivo = 0; // Control de ID de pedido si se asigna previo al despacho definitivo
 
+// Control de Tienda vs Cobertura de Georreferenciación
+var tiendaCoberturaCliente = null; // { id: number, nombre: string }
+var contingenciaTiendaForzada = false; // true si el asesor forzó el despacho a una tienda diferente a la cobertura
+
 // Marcaciones / Plataformas Externas (Rappi, DiDi, Bot, convenios)
 var marcacionActiva = null; // { idmarcacion, nombremarcacion, observacion, marketplace, descuento, descuentoAsumido }
 var catalogoMarcaciones = [];
@@ -182,8 +186,43 @@ $(document).ready(function () {
     });
 
     $("#tiendaSelect").on("change", function () {
+        var nuevoIdTienda = parseInt($(this).val()) || 0;
+        var nuevaTiendaNom = $("#tiendaSelect option:selected").text().trim();
+        var tipoPedido = parseInt($("#tipoPedidoSelect").val()) || 1;
+
+        // Control de Cobertura vs Despacho en Domicilios:
+        // Si el cliente está ubicado y tiene una tienda de cobertura asignada diferente a la seleccionada
+        if (tipoPedido === 1 && clienteUbicado && tiendaCoberturaCliente && tiendaCoberturaCliente.id > 0
+            && nuevoIdTienda > 0 && nuevoIdTienda !== tiendaCoberturaCliente.id) {
+
+            var dirTxt = clienteActual.direccion || "la dirección registrada";
+            var advertencia = "⚠️ ADVERTENCIA DE COBERTURA DE ENTREGA\n\n"
+                + "La dirección del cliente (" + dirTxt + ") pertenece al polígono de cobertura de la tienda:\n"
+                + "➡️ " + tiendaCoberturaCliente.nombre.toUpperCase() + "\n\n"
+                + "Ha seleccionado despachar desde:\n"
+                + "➡️ " + nuevaTiendaNom.toUpperCase() + "\n\n"
+                + "¿Desea FORZAR el despacho desde " + nuevaTiendaNom + " por contingencia operativa?\n\n"
+                + "(Al presionar Cancelar, el selector regresará a la tienda de cobertura " + tiendaCoberturaCliente.nombre + ")";
+
+            if (!confirm(advertencia)) {
+                // El operador declina forzar: revertir a la tienda de cobertura
+                $(this).val(tiendaCoberturaCliente.id);
+                contingenciaTiendaForzada = false;
+                verificarTiendaPiloto();
+                consultarTiempoTienda(tiendaCoberturaCliente.id);
+                actualizarEstadoUbicacionUI();
+                return;
+            } else {
+                // Operador confirma despacho por contingencia
+                contingenciaTiendaForzada = true;
+            }
+        } else {
+            contingenciaTiendaForzada = false;
+        }
+
         verificarTiendaPiloto();
-        consultarTiempoTienda(parseInt($(this).val()));
+        consultarTiempoTienda(nuevoIdTienda);
+        actualizarEstadoUbicacionUI();
         cotizarEnVivo();
     });
 
@@ -465,8 +504,13 @@ function seleccionarClienteDeTabla(cli) {
         $("#tiendaSelect option").each(function () {
             if ($(this).text().toUpperCase().indexOf(cli.tienda.toUpperCase()) !== -1) {
                 $(this).prop("selected", true);
+                tiendaCoberturaCliente = {
+                    id: parseInt($(this).val()),
+                    nombre: $(this).text().trim()
+                };
+                contingenciaTiendaForzada = false;
                 verificarTiendaPiloto();
-            consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
+                consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
                 return false;
             }
         });
@@ -551,11 +595,19 @@ function actualizarEstadoUbicacionUI() {
 
     if (clienteUbicado) {
         $("#bloqueoMenuCliente").fadeOut(250);
-        var tNom = clienteActual.nombreTienda || (idTiendaSeleccionada() ? $("#tiendaSelect option:selected").text() : "tienda sin seleccionar");
+        var tNom = clienteActual.nombreTienda || (idTiendaSeleccionada() ? $("#tiendaSelect option:selected").text().trim() : "tienda sin seleccionar");
         var coordsTxt = (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001) ? " (" + clienteActual.latitud.toFixed(4) + ", " + clienteActual.longitud.toFixed(4) + ")" : "";
-        $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente").addClass("badge-ubicacion-ok").html(
-            "<i class='fas fa-check-circle mr-1 text-success'></i><span>Ubicado en Mapa: <b>" + tNom + "</b>" + coordsTxt + "</span>"
-        );
+
+        if (contingenciaTiendaForzada && tiendaCoberturaCliente) {
+            var tDespacho = $("#tiendaSelect option:selected").text().trim();
+            $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente badge-ubicacion-ok").addClass("badge-warning text-dark font-weight-bold").html(
+                "<i class='fas fa-exclamation-triangle mr-1 text-danger'></i><span>Contingencia: Despacho forzado a <b>" + tDespacho + "</b> (Cobertura: <b>" + tiendaCoberturaCliente.nombre + "</b>)</span>"
+            );
+        } else {
+            $("#badgeEstadoUbicacion").removeClass("badge-ubicacion-pendiente badge-warning font-weight-bold").addClass("badge-ubicacion-ok").html(
+                "<i class='fas fa-check-circle mr-1 text-success'></i><span>Ubicado en Mapa: <b>" + tNom + "</b>" + coordsTxt + "</span>"
+            );
+        }
         $("#btnAbrirModalMapa").removeClass("btn-pulsing-map btn-danger").addClass("btn-outline-primary").html("<i class='fas fa-map-marker-alt mr-1'></i> Reubicar / Ver Mapa");
         if (clienteActual.latitud && Math.abs(clienteActual.latitud) > 0.001) {
             $("#infoCoordenadasCliente").show();
@@ -723,9 +775,13 @@ function confirmarUbicacionDesdeMapa() {
         $("#tiendaSelect option").each(function () {
             if ($(this).text().toUpperCase().indexOf(tNom) !== -1) {
                 $(this).prop("selected", true);
+                tiendaCoberturaCliente = {
+                    id: parseInt($(this).val()),
+                    nombre: $(this).text().trim()
+                };
+                contingenciaTiendaForzada = false;
                 verificarTiendaPiloto();
-            consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
-                consultarTiempoTienda(parseInt($(this).val()));
+                consultarTiempoTienda(parseInt($("#tiendaSelect").val()));
                 return false;
             }
         });
@@ -1763,11 +1819,26 @@ function formatearLineaHijaComanda(h, draftItem) {
     // 1. Buscar en selecciones del draft original para rescatar la porción exacta elegida por el asesor
     var metaDraft = null;
     if (draftItem && draftItem.selecciones && draftItem.selecciones.length > 0) {
+        // Coincidencia exacta por idproducto Y mitad (si h.mitad está definida)
         for (var k = 0; k < draftItem.selecciones.length; k++) {
             var sel = draftItem.selecciones[k];
             if (sel.idproductoOpcion === h.idproducto) {
-                metaDraft = sel;
-                break;
+                if (h.mitad > 0 && sel.mitad === h.mitad) {
+                    metaDraft = sel;
+                    break;
+                } else if (h.mitad === 0 && (!sel.mitad || sel.mitad === 0)) {
+                    metaDraft = sel;
+                    break;
+                }
+            }
+        }
+        if (!metaDraft) {
+            for (var k = 0; k < draftItem.selecciones.length; k++) {
+                var sel = draftItem.selecciones[k];
+                if (sel.idproductoOpcion === h.idproducto) {
+                    metaDraft = sel;
+                    break;
+                }
             }
         }
     }
@@ -1779,7 +1850,9 @@ function formatearLineaHijaComanda(h, draftItem) {
 
     if (esAdicion) {
         var porcionVal = (metaDraft && metaDraft.porcion) ? metaDraft.porcion : null;
-        var mitadVal = (metaDraft && metaDraft.mitad !== undefined) ? metaDraft.mitad : (h.mitad !== undefined ? h.mitad : 0);
+        var mitadVal = (h.mitad !== undefined && h.mitad > 0)
+            ? h.mitad
+            : ((metaDraft && metaDraft.mitad !== undefined && metaDraft.mitad > 0) ? metaDraft.mitad : 0);
         var porcionLabel = "Toda (100%)";
         var badgeColor = "badge-dark";
 
@@ -1819,15 +1892,20 @@ function formatearLineaHijaComanda(h, draftItem) {
         };
     } else {
         // Sabor o Bebida regular
-        var mitadVal = (metaDraft && metaDraft.mitad !== undefined) ? metaDraft.mitad : (h.mitad !== undefined ? h.mitad : 0);
+        var mitadVal = (h.mitad !== undefined && h.mitad > 0)
+            ? h.mitad
+            : ((metaDraft && metaDraft.mitad !== undefined && metaDraft.mitad > 0) ? metaDraft.mitad : 0);
         var porcionLabel = "";
         var badgeColor = "";
-        if (mitadVal === 1 || h.cantidad === 0.5) {
+        if (mitadVal === 1) {
             porcionLabel = "Mitad 1";
             badgeColor = "badge-danger";
         } else if (mitadVal === 2) {
             porcionLabel = "Mitad 2";
             badgeColor = "badge-primary";
+        } else if (h.cantidad === 0.5) {
+            porcionLabel = "Mitad";
+            badgeColor = "badge-secondary";
         }
         return {
             tipo: "OPCION",
@@ -1921,7 +1999,7 @@ function renderizarComanda(res) {
             textoDesc = "Descuento manual: -$ " + formatearPesos(res.descuento) + " (" + (descuentoAplicado.motivoDescuento || "Auditoría") + ")";
         }
         $("#lblDetalleDescuentoActivo").html("<i class='fas fa-tag mr-1'></i>" + textoDesc);
-        $("#contenedorDescuentoActivo").show();
+        $("#contenedorDescuentoActivo").css("display", "flex");
     } else {
         $("#contenedorDescuentoActivo").hide();
     }
@@ -1982,6 +2060,17 @@ function abrirModalConfirmacionPedido() {
     $("#txtModalTiendaDestino").html("<i class='fas fa-store mr-1'></i>" + nombreTiendaSel);
 
     // 2. Datos del Cliente y Entrega
+    if (contingenciaTiendaForzada && tiendaCoberturaCliente) {
+        $("#bannerAlertaContingenciaTienda").html(
+            "<i class='fas fa-exclamation-triangle mr-2 text-warning'></i>" +
+            "<span><b>Atención Contingencia:</b> Este pedido a domicilio será despachado desde <b>" +
+            nombreTiendaSel + "</b>, aunque la dirección pertenece a la cobertura de <b>" +
+            tiendaCoberturaCliente.nombre + "</b>.</span>"
+        ).show();
+    } else {
+        $("#bannerAlertaContingenciaTienda").hide();
+    }
+
     var nomCompleto = clienteActual.nombres + (clienteActual.apellidos ? " " + clienteActual.apellidos : "");
     $("#txtModalClienteNombre").text(nomCompleto);
     $("#txtModalClienteTel").text(clienteActual.telefono);
@@ -2134,7 +2223,18 @@ function ejecutarDespachoTiendaDefinitivo() {
         idFormaPagoTienda: idFormaPago,
         valorFormaPago: (idFormaPago === 1) ? valPago : resultadoMotor.total,
         tiempoPedido: tiempoPed,
-        origen: "C",
+        origen: "CC-NUEVO",
+        idPedidoAlt: (marcacionActiva && marcacionActiva.observacion) ? marcacionActiva.observacion.trim() : "",
+        plataforma: (marcacionActiva && marcacionActiva.nombremarcacion) ? marcacionActiva.nombremarcacion.trim() : "",
+        marcacion: (marcacionActiva && marcacionActiva.idmarcacion > 0) ? {
+            idmarcacion: marcacionActiva.idmarcacion,
+            nombremarcacion: marcacionActiva.nombremarcacion,
+            observacion: marcacionActiva.observacion || "",
+            domiciliopropio: marcacionActiva.domiciliopropio || "S"
+        } : null,
+        contingenciaTienda: contingenciaTiendaForzada ? {
+            tiendaCoberturaOriginal: tiendaCoberturaCliente ? tiendaCoberturaCliente.nombre : ""
+        } : null,
         cliente: {
             idcliente: clienteActual.idcliente,
             nombres: clienteActual.nombres,
@@ -2196,11 +2296,16 @@ function ejecutarDespachoTiendaDefinitivo() {
                     registrarMarcacionPedido(resp.idPedido, marcacionActiva);
                 }
 
-                var msj = "🎉 ¡Pedido registrado con éxito en Central con id #" + resp.idPedido + "!";
+                var msj = "🎉 ¡Pedido registrado con éxito!\n\n"
+                    + "• ID Central (Legacy): #" + resp.idPedido + "\n"
+                    + "• ID Nuevo Motor: #" + (resp.idPedidoPos || resp.idPedido) + "\n";
+
                 if (resp.despachoTienda && resp.despachoTienda.exito) {
-                    msj += "\n\nSe despachó directamente al POS de la tienda (sin tabla de homologación).\nComanda generada en tienda: #" + resp.despachoTienda.numeroFactura;
+                    msj += "\nSe despachó directamente a la tienda con éxito.\n"
+                        + "• Comanda en tienda: #" + resp.despachoTienda.numeroFactura + "\n"
+                        + "• Trazabilidad enviada a tienda: " + (resp.idPedidoAlt || ("NM-" + (resp.idPedidoPos || resp.idPedido)));
                 } else if (resp.despachoTienda && !resp.despachoTienda.exito) {
-                    msj += "\n\nAtención en tienda: " + resp.despachoTienda.mensaje;
+                    msj += "\nAtención en tienda: " + resp.despachoTienda.mensaje;
                 }
                 alert(msj);
 
@@ -2265,6 +2370,8 @@ function limpiarPantallaTrasDespacho() {
     };
     clienteUbicado = false;
     coberturaTemporal = null;
+    tiendaCoberturaCliente = null;
+    contingenciaTiendaForzada = false;
 
     $("#telcelular, #cliNombres, #cliApellidos, #cliEmail, #cliDireccion, #cliZona, #cliObservacion").val("");
     $("#cliIdentificacion, #cliEmailFacturacion").val("");
@@ -2435,7 +2542,7 @@ function guardarMarcacionPlataforma() {
     var modoDomi = (domiPropio === "S") ? "Domi Propio" : "Repartidor Plataforma";
     var txtBadge = marcacionActiva.nombremarcacion + (obs ? " (#" + obs + ")" : "") + " &middot; " + modoDomi;
     $("#txtDetalleMarcacionActiva").html(txtBadge);
-    $("#badgeMarcacionActiva").slideDown(150);
+    $("#badgeMarcacionActiva").css("display", "flex").hide().slideDown(150);
     $("#btnAbrirModalMarcacionPlataforma").removeClass("btn-outline-light").addClass("btn-warning text-dark");
     $("#modalMarcacionPlataforma").modal("hide");
 }
@@ -2446,7 +2553,9 @@ function removerMarcacionPlataforma() {
     $("#txtObsMarcacionPlataforma").val("");
     $("#txtDescuentoMarcacion").val("");
     $("#grupoDetalleMarcacion").hide();
-    $("#badgeMarcacionActiva").slideUp(150);
+    $("#badgeMarcacionActiva").slideUp(150, function() {
+        $(this).css("display", "none");
+    });
     $("#btnAbrirModalMarcacionPlataforma").removeClass("btn-warning text-dark").addClass("btn-outline-light");
 }
 

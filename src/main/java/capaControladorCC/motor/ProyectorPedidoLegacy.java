@@ -30,9 +30,17 @@ public class ProyectorPedidoLegacy {
 	 */
 	public static boolean proyectarPedido(Connection con, int idPedidoCentral, int idTienda, int idCliente,
 			MotorSolicitud solicitud, MotorResultado resultado, String usuario) {
+		return proyectarPedidoRetornandoIdPos(con, idPedidoCentral, idTienda, idCliente, solicitud, resultado, usuario) > 0;
+	}
+
+	/**
+	 * Guarda el pedido en pos_central y lo proyecta a pizzaamericana, retornando el id de pedido generado en pos_central.pedido.
+	 */
+	public static int proyectarPedidoRetornandoIdPos(Connection con, int idPedidoCentral, int idTienda, int idCliente,
+			MotorSolicitud solicitud, MotorResultado resultado, String usuario) {
 
 		if (idPedidoCentral <= 0 || resultado == null || !MotorResultado.OK.equals(resultado.estado)) {
-			return false;
+			return 0;
 		}
 
 		try {
@@ -208,12 +216,12 @@ public class ProyectorPedidoLegacy {
 				ps.executeUpdate();
 			}
 
-			return true;
+			return idPedidoPosGenerado > 0 ? idPedidoPosGenerado : idPedidoCentral;
 
 		} catch (Throwable t) {
 			System.out.println("ERROR en ProyectorPedidoLegacy: " + t.getMessage());
 			t.printStackTrace();
-			return false;
+			return 0;
 		}
 	}
 }
