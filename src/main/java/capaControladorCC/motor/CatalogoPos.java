@@ -155,10 +155,32 @@ public class CatalogoPos {
 		return horarios.get(idProducto);
 	}
 
-	/** Cuantas columnas idpreguntaforzadaN tiene pos_central.producto: 5, o 10 con la migracion 2026_11_12_01. */
+	/**
+	 * El esquema del que se lee por defecto: el catalogo unificado del central.
+	 * La tienda carga el suyo pasando "tiendaamericana", que tiene las MISMAS
+	 * tablas y columnas porque pos_central es un espejo de ella.
+	 */
+	public static final String ESQUEMA_CENTRAL = "pos_central";
+
+	/** Cuantas columnas idpreguntaforzadaN tiene <esquema>.producto: 5, o 10 con la migracion 2026_11_12_01. */
 	public static int cantidadPreguntas(Connection con) {
+		return cantidadPreguntas(con, ESQUEMA_CENTRAL);
+	}
+
+	/** Si una tabla opcional del catalogo esta o no en ese esquema. */
+	public static boolean existeTabla(Connection con, String esquema, String tabla) {
+		try (Statement st = con.createStatement();
+				ResultSet rs = st.executeQuery("select count(*) from information_schema.tables "
+						+ "where table_schema = '" + esquema + "' and table_name = '" + tabla + "'")) {
+			return rs.next() && rs.getInt(1) > 0;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public static int cantidadPreguntas(Connection con, String esquema) {
 		try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery("select count(*) from information_schema.columns "
-				+ "where table_schema = 'pos_central' and table_name = 'producto' and column_name in ('idpreguntaforzada6', "
+				+ "where table_schema = '" + esquema + "' and table_name = 'producto' and column_name in ('idpreguntaforzada6', "
 				+ "'idpreguntaforzada7', 'idpreguntaforzada8', 'idpreguntaforzada9', 'idpreguntaforzada10')")) {
 			if (rs.next() && rs.getInt(1) == 5) {
 				return 10;
@@ -170,8 +192,18 @@ public class CatalogoPos {
 	}
 
 	public static CatalogoPos cargar(Connection con) throws Exception {
+		return cargar(con, ESQUEMA_CENTRAL);
+	}
+
+	/**
+	 * Carga el catalogo desde el esquema que se le indique. Es lo unico que
+	 * ataba el motor al central: la logica (MotorPedidoV1) no tiene SQL ni sabe
+	 * de que base salieron los datos, asi que con esta sobrecarga el MISMO motor
+	 * corre dentro de la tienda leyendo su base local, sin red de por medio.
+	 */
+	public static CatalogoPos cargar(Connection con, String esquema) throws Exception {
 		CatalogoPos cat = new CatalogoPos();
-		final int nPreg = cantidadPreguntas(con);
+		final int nPreg = cantidadPreguntas(con, esquema);
 		StringBuilder sel = new StringBuilder("select idproducto, descripcion, tipo_producto, precio_pila, no_venta, "
 				+ "id_producto_depende, precio_puntos, promocion");
 		for (int i = 1; i <= nPreg; i++) {
@@ -180,7 +212,7 @@ public class CatalogoPos {
 		for (String c : COLUMNAS) {
 			sel.append(", ").append(c);
 		}
-		sel.append(" from pos_central.producto");
+		sel.append(" from " + esquema + ".producto");
 		try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sel.toString())) {
 			while (rs.next()) {
 				Producto p = new Producto();
@@ -203,7 +235,7 @@ public class CatalogoPos {
 		}
 		try (Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery("select idpregunta, titulopregunta, obliga_eleccion, numero_minimo_eleccion, "
-						+ "numero_maximo_eleccion, permite_dividir from pos_central.pregunta")) {
+						+ "numero_maximo_eleccion, permite_dividir from " + esquema + ".pregunta")) {
 			while (rs.next()) {
 				Pregunta q = new Pregunta();
 				q.id = rs.getInt(1);
@@ -216,7 +248,7 @@ public class CatalogoPos {
 			}
 		}
 		try (Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery("select idpregunta, idproducto, precio from pos_central.eleccion_forzada "
+				ResultSet rs = st.executeQuery("select idpregunta, idproducto, precio from " + esquema + ".eleccion_forzada "
 						+ "where estado = 1 order by ideleccion_forzada")) {
 			while (rs.next()) {
 				Pregunta q = cat.preguntas.get(rs.getInt(1));
@@ -227,7 +259,7 @@ public class CatalogoPos {
 		}
 		try (Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery("select idproductoincluido, idproductoincluye, cantidad, precio "
-						+ "from pos_central.producto_incluido")) {
+						+ "from " + esquema + ".producto_incluido")) {
 			while (rs.next()) {
 				Incluido inc = new Incluido();
 				inc.idProductoQueSeAgrega = rs.getInt(2);
@@ -246,7 +278,7 @@ public class CatalogoPos {
 						+ "martes, hora_inicial_m, hora_final_m, miercoles, hora_inicial_mi, hora_final_mi, "
 						+ "jueves, hora_inicial_j, hora_final_j, viernes, hora_inicial_v, hora_final_v, "
 						+ "sabado, hora_inicial_s, hora_final_s, domingo, hora_inicial_d, hora_final_d "
-						+ "from pos_central.producto_horario")) {
+						+ "from " + esquema + ".producto_horario")) {
 			while (rs.next()) {
 				Horario h = new Horario();
 				h.idproducto = rs.getInt(1);
@@ -255,23 +287,29 @@ public class CatalogoPos {
 				cat.horarios.put(h.idproducto, h);
 			}
 		}
-		try (Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery("select idproducto, canal, lunes, hora_inicial_l, hora_final_l, "
-						+ "martes, hora_inicial_m, hora_final_m, miercoles, hora_inicial_mi, hora_final_mi, "
-						+ "jueves, hora_inicial_j, hora_final_j, viernes, hora_inicial_v, hora_final_v, "
-						+ "sabado, hora_inicial_s, hora_final_s, domingo, hora_inicial_d, hora_final_d "
-						+ "from pos_central.producto_horario_canal")) {
-			while (rs.next()) {
-				Horario h = new Horario();
-				h.idproducto = rs.getInt(1);
-				h.canal = rs.getString(2) == null ? "" : rs.getString(2).trim();
-				leerFilaHorario(rs, h, 3);
-				cat.horariosCanal.put(h.canal.toUpperCase() + "|" + h.idproducto, h);
+		// Los horarios POR CANAL son opcionales: la tabla existe en pos_central
+		// -vacia- pero NO en las bases de las tiendas. Si falta, el motor sigue
+		// con los horarios generales en vez de caerse; de otro modo no podria
+		// cargar el catalogo local de ninguna tienda.
+		if (existeTabla(con, esquema, "producto_horario_canal")) {
+			try (Statement st = con.createStatement();
+					ResultSet rs = st.executeQuery("select idproducto, canal, lunes, hora_inicial_l, hora_final_l, "
+							+ "martes, hora_inicial_m, hora_final_m, miercoles, hora_inicial_mi, hora_final_mi, "
+							+ "jueves, hora_inicial_j, hora_final_j, viernes, hora_inicial_v, hora_final_v, "
+							+ "sabado, hora_inicial_s, hora_final_s, domingo, hora_inicial_d, hora_final_d "
+							+ "from " + esquema + ".producto_horario_canal")) {
+				while (rs.next()) {
+					Horario h = new Horario();
+					h.idproducto = rs.getInt(1);
+					h.canal = rs.getString(2) == null ? "" : rs.getString(2).trim();
+					leerFilaHorario(rs, h, 3);
+					cat.horariosCanal.put(h.canal.toUpperCase() + "|" + h.idproducto, h);
+				}
 			}
 		}
 		try (Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery("select iddescuento, idproducto, valor_porcentaje, valor_pesos, "
-						+ "tipo_descuento, hora_inicio, hora_final from pos_central.descuentos_generales")) {
+						+ "tipo_descuento, hora_inicio, hora_final from " + esquema + ".descuentos_generales")) {
 			while (rs.next()) {
 				DescuentoGeneral dg = new DescuentoGeneral();
 				dg.idDescuento = rs.getInt(1);
