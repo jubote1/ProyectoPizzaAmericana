@@ -154,8 +154,8 @@ public class TraductorRappi {
 		solicitud.contexto.horaProgramado = (horaProgramado != null) ? horaProgramado : "";
 		solicitud.contexto.fechaHora = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
 
-		// 1. Manejo del domicilio
-		if ("S".equalsIgnoreCase(marketPlace) || solicitud.contexto.esDomicilio) {
+		// 1. Manejo del domicilio: solo si es entrega propia ("S" = DOMI-Propio)
+		if ("S".equalsIgnoreCase(marketPlace)) {
 			double costoEnvio = 4500.0;
 			try {
 				if (jsonOrder != null && jsonOrder.get("totals") != null) {
