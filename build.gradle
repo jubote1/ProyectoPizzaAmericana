@@ -131,6 +131,7 @@ task copyNatives(type: Copy) {
 
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // motorJar: el motor de pedidos como libreria aparte, para que la TIENDA use
 // exactamente las mismas reglas que el central.
 //
@@ -139,13 +140,21 @@ task copyNatives(type: Copy) {
 // que base salieron los datos, solo recibe un CatalogoPos y devuelve lineas-,
 // asi que viaja como libreria y lee el catalogo LOCAL de la tienda.
 //
+// POR QUE NO SE COPIA EL CODIGO AL POS: dos copias se separan solas. Alguien
+// corrige una regla en una y no en la otra, y a los meses el contact center
+// cobra distinto que la tienda. El fuente vive SOLO aqui; la tienda recibe el
+// compilado.
+//
 // POR QUE NO EL JAR GRANDE: el central ya consume libs/PizzaAmericanaCliente.jar,
 // una foto del POS de 287 MB que se rearma a mano. Meter el motor ahi obligaria
 // a rearmarla en cada cambio. Este jar pesa unos pocos KB.
 //
-// Solo lleva los dos paquetes del motor, que no dependen de nada del central:
-// se verifico compilandolos solos y salen 19 clases, sin arrastrar una sola
-// clase mas.
+// LA LISTA ES EXPLICITA A PROPOSITO. El paquete capaControladorCC/motor tiene 16
+// clases y solo estas cinco sirven fuera del central; las otras importan
+// capaDAOCC, log4j, json-simple o el modelo viejo del central, y si entraran al
+// jar la tienda tendria que cargar con todo eso. Llevar la lista a mano obliga a
+// pensarlo cada vez que se agregue una clase, en vez de que se cuele sola.
+// Gson es la unica dependencia del jar, y la tienda ya la usa.
 //
 //   gradle motorJar     ->  build/libs/motor-pedido.jar
 //
@@ -155,11 +164,13 @@ task copyNatives(type: Copy) {
 task motorJar(type: Jar) {
     archiveFileName = 'motor-pedido.jar'
     from(sourceSets.main.output) {
-        include 'capaControladorCC/motor/**'
         include 'capaModeloCC/motor/**'
+        include 'capaControladorCC/motor/CatalogoPos*'
+        include 'capaControladorCC/motor/MotorPedido.class'
+        include 'capaControladorCC/motor/MotorPedidoV1*'
+        include 'capaControladorCC/motor/MotorPedidoNoImplementado*'
+        include 'capaControladorCC/motor/SombraPedido*'
     }
-    // Si algun dia el motor empieza a arrastrar clases de afuera, esto lo delata
-    // antes de que el jar llegue a la tienda.
     doLast {
         println "motor-pedido.jar armado en: ${archiveFile.get().asFile}"
     }

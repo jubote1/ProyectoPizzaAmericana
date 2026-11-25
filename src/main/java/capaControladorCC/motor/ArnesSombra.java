@@ -35,9 +35,9 @@ import capaModeloCC.motor.MotorSolicitud;
 public class ArnesSombra {
 
 	private static final Gson GSON = new Gson();
-	/** Productos del POS que son costo de domicilio: no son una linea pedida sino parte del contexto. */
-	private static final int[] PRODUCTOS_DOMICILIO = { 411, 412 };
 	private static final int LOTE = 200;
+	/** De donde lee los pedidos ya tomados. La tienda corre este mismo codigo sobre su propia base. */
+	private static final String ESQUEMA_PEDIDOS = "datamart";
 
 	private final Connection con;
 	/** id de producto del POS -> {tipo_producto, descripcion}. */
@@ -56,29 +56,34 @@ public class ArnesSombra {
 		}
 	}
 
-	private static boolean esDomicilio(int idProducto) {
-		for (int d : PRODUCTOS_DOMICILIO) {
-			if (d == idProducto) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private static double r2(double v) {
 		return Math.round(v * 100.0) / 100.0;
 	}
 
-	/** Linea tal como la guardo la tienda. */
-	private static class LineaTienda {
-		int id;
-		int idProducto;
-		double cantidad;
-		double valorUnitario;
-		double valorTotal;
-		int master;
-		int modificador;
-		int anulada;
+	/*
+	 * Lo que sigue son envoltorios de una linea sobre SombraPedido: leer las lineas
+	 * de la tienda, reconstruir lo que eligio el cajero y comparar contra el motor
+	 * es exactamente lo mismo que hace la tienda en su propia base, asi que la regla
+	 * vive alla y aca solo se le dice de que esquema leer. Si se vuelve a escribir
+	 * aqui, el central y la tienda terminan clasificando distinto y la sombra deja
+	 * de servir para decidir nada.
+	 */
+
+	private Map<String, List<SombraPedido.LineaTienda>> leerLineas(List<int[]> lote) throws Exception {
+		return SombraPedido.leerLineas(con, ESQUEMA_PEDIDOS, lote);
+	}
+
+	private MotorSolicitud construirSolicitud(int idTienda, int idTipoPedido, Timestamp fecha,
+			List<SombraPedido.LineaTienda> lineas) {
+		return SombraPedido.construirSolicitud(catalogo, "TIENDA", idTienda, idTipoPedido, fecha, lineas);
+	}
+
+	private MotorResultado construirEsperado(List<SombraPedido.LineaTienda> lineas) {
+		return SombraPedido.construirEsperado(lineas);
+	}
+
+	static String[] comparar(MotorResultado esp, MotorResultado res) {
+		return SombraPedido.comparar(esp, res);
 	}
 
 	/**
@@ -117,16 +122,16 @@ public class ArnesSombra {
 		int nuevos = 0, sinLineas = 0, anuladas = 0, desconocidos = 0;
 		for (int ini = 0; ini < pedidos.size(); ini += LOTE) {
 			int fin = Math.min(ini + LOTE, pedidos.size());
-			Map<String, List<LineaTienda>> porPedido = leerLineas(pedidos.subList(ini, fin));
+			Map<String, List<SombraPedido.LineaTienda>> porPedido = leerLineas(pedidos.subList(ini, fin));
 			for (int i = ini; i < fin; i++) {
 				int idPed = pedidos.get(i)[0], idTienda = pedidos.get(i)[1];
-				List<LineaTienda> lineas = porPedido.get(idTienda + "|" + idPed);
+				List<SombraPedido.LineaTienda> lineas = porPedido.get(idTienda + "|" + idPed);
 				if (lineas == null || lineas.isEmpty()) {
 					sinLineas++;
 					continue;
 				}
 				boolean anulada = false, desconocido = false;
-				for (LineaTienda l : lineas) {
+				for (SombraPedido.LineaTienda l : lineas) {
 					if (l.anulada > 0) {
 						anulada = true;
 					}
@@ -153,133 +158,6 @@ public class ArnesSombra {
 				+ sinLineas + " | con lineas anuladas: " + anuladas + " | con producto fuera del catalogo POS: "
 				+ desconocidos);
 		return nuevos;
-	}
-
-	private Map<String, List<LineaTienda>> leerLineas(List<int[]> lote) throws Exception {
-		StringBuilder in = new StringBuilder();
-		for (int i = 0; i < lote.size(); i++) {
-			in.append(i == 0 ? "(?,?)" : ",(?,?)");
-		}
-		String sql = "select idpedidotienda, idtienda, iddetalle_pedido, idproducto, cantidad, valorunitario, valortotal, "
-				+ "iddetalle_pedido_master, iddetalle_modificador, ifnull(idmotivoanulacion,0) from datamart.detalle_pedido "
-				+ "where (idpedidotienda, idtienda) in (" + in + ") order by iddetalle_pedido";
-		Map<String, List<LineaTienda>> mapa = new HashMap<String, List<LineaTienda>>();
-		try (PreparedStatement ps = con.prepareStatement(sql)) {
-			int k = 1;
-			for (int[] p : lote) {
-				ps.setInt(k++, p[0]);
-				ps.setInt(k++, p[1]);
-			}
-			try (ResultSet rs = ps.executeQuery()) {
-				while (rs.next()) {
-					LineaTienda l = new LineaTienda();
-					l.id = rs.getInt(3);
-					l.idProducto = rs.getInt(4);
-					l.cantidad = rs.getDouble(5);
-					l.valorUnitario = rs.getDouble(6);
-					l.valorTotal = rs.getDouble(7);
-					l.master = rs.getInt(8);
-					l.modificador = rs.getInt(9);
-					l.anulada = rs.getInt(10);
-					String clave = rs.getInt(2) + "|" + rs.getInt(1);
-					List<LineaTienda> lista = mapa.get(clave);
-					if (lista == null) {
-						lista = new ArrayList<LineaTienda>();
-						mapa.put(clave, lista);
-					}
-					lista.add(l);
-				}
-			}
-		}
-		return mapa;
-	}
-
-	/** Reconstruye lo que el cajero eligio: cada linea de nivel superior con sus hijas como selecciones. */
-	private MotorSolicitud construirSolicitud(int idTienda, int idTipoPedido, Timestamp fecha, List<LineaTienda> lineas) {
-		MotorSolicitud s = new MotorSolicitud();
-		s.contexto.canal = "TIENDA";
-		s.contexto.idtienda = idTienda;
-		s.contexto.idtipopedido = idTipoPedido;
-		s.contexto.fechaHora = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(fecha);
-		Map<Integer, LineaTienda> porId = new HashMap<Integer, LineaTienda>();
-		for (LineaTienda l : lineas) {
-			porId.put(l.id, l);
-		}
-		Map<Integer, MotorSolicitud.Linea> lineaDeMaster = new LinkedHashMap<Integer, MotorSolicitud.Linea>();
-		for (LineaTienda l : lineas) {
-			if (l.master != 0) {
-				continue;
-			}
-			if (esDomicilio(l.idProducto)) {
-				s.domicilio = new MotorSolicitud.Domicilio();
-				s.domicilio.idproducto = l.idProducto;
-				s.domicilio.valor = l.valorTotal;
-				s.contexto.esDomicilio = true;
-				continue;
-			}
-			MotorSolicitud.Linea ln = new MotorSolicitud.Linea();
-			ln.idproducto = l.idProducto;
-			ln.cantidad = l.cantidad;
-			ln.valorReferencia = l.valorTotal;
-			s.lineas.add(ln);
-			lineaDeMaster.put(l.id, ln);
-		}
-		for (LineaTienda l : lineas) {
-			if (l.master == 0) {
-				continue;
-			}
-			MotorSolicitud.Linea padre = lineaDeMaster.get(l.master);
-			if (padre == null) {
-				continue;
-			}
-			if (l.modificador > 0) {
-				MotorSolicitud.Modificador m = new MotorSolicitud.Modificador();
-				String[] info = productos.get(l.idProducto);
-				m.tipo = info != null && "MS".equals(info[0]) ? "SIN" : "CON";
-				m.idproducto = l.idProducto;
-				// cantidad POR UNIDAD de la linea principal (la tienda guarda el total ya multiplicado)
-				m.cantidad = padre.cantidad > 0 ? l.cantidad / padre.cantidad : l.cantidad;
-				LineaTienda modificada = porId.get(l.modificador);
-				m.sobreProducto = modificada != null ? modificada.idProducto : 0;
-				padre.modificadores.add(m);
-			} else {
-				if (loAgregoElSistema(l, lineas)) {
-					continue;
-				}
-				MotorSolicitud.Seleccion sel = new MotorSolicitud.Seleccion();
-				sel.idproductoOpcion = l.idProducto;
-				// cantidad POR UNIDAD de la linea principal (la tienda guarda el total ya multiplicado)
-				sel.cantidad = padre.cantidad > 0 ? l.cantidad / padre.cantidad : l.cantidad;
-				padre.selecciones.add(sel);
-			}
-		}
-		return s;
-	}
-
-	/**
-	 * Una hija no es una eleccion del cajero si otra linea del mismo pedido (la maestra o una opcion hermana)
-	 * trae ese producto como "incluido" en la tabla producto_incluido: la agrego el sistema solo.
-	 */
-	private boolean loAgregoElSistema(LineaTienda hija, List<LineaTienda> lineas) {
-		for (LineaTienda x : lineas) {
-			if (x == hija) {
-				continue;
-			}
-			boolean mismoGrupo = x.id == hija.master || (x.master == hija.master && x.master != 0);
-			if (!mismoGrupo) {
-				continue;
-			}
-			List<CatalogoPos.Incluido> inc = catalogo.incluidos.get(x.idProducto);
-			if (inc == null) {
-				continue;
-			}
-			for (CatalogoPos.Incluido i : inc) {
-				if (i.idProductoQueSeAgrega == hija.idProducto) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -332,7 +210,7 @@ public class ArnesSombra {
 			for (int[] v : pedidoDeLead.values()) {
 				claves.add(new int[] { v[2], v[1] });
 			}
-			Map<String, List<LineaTienda>> lineasPorPedido = claves.isEmpty() ? new HashMap<String, List<LineaTienda>>()
+			Map<String, List<SombraPedido.LineaTienda>> lineasPorPedido = claves.isEmpty() ? new HashMap<String, List<SombraPedido.LineaTienda>>()
 					: leerLineas(claves);
 			for (Object[] o : lote) {
 				int[] v = pedidoDeLead.get((Long) o[1]);
@@ -340,7 +218,7 @@ public class ArnesSombra {
 					sinPedido++;
 					continue;
 				}
-				List<LineaTienda> lineas = lineasPorPedido.get(v[1] + "|" + v[2]);
+				List<SombraPedido.LineaTienda> lineas = lineasPorPedido.get(v[1] + "|" + v[2]);
 				if (lineas == null || lineas.isEmpty()) {
 					continue;
 				}
@@ -409,11 +287,11 @@ public class ArnesSombra {
 		int nuevos = 0, sinLineas = 0, anuladas = 0, desconocidos = 0, sinLead = 0;
 		for (int ini = 0; ini < leads.size(); ini += LOTE) {
 			int fin = Math.min(ini + LOTE, leads.size());
-			Map<String, List<LineaTienda>> porPedido = leerLineas(pedidos.subList(ini, fin));
+			Map<String, List<SombraPedido.LineaTienda>> porPedido = leerLineas(pedidos.subList(ini, fin));
 			for (int i = ini; i < fin; i++) {
 				Object[] o = leads.get(i);
 				int idTienda = (Integer) o[1], idPed = (Integer) o[2];
-				List<LineaTienda> lineas = porPedido.get(idTienda + "|" + idPed);
+				List<SombraPedido.LineaTienda> lineas = porPedido.get(idTienda + "|" + idPed);
 				if (o[0] == null || ((String) o[0]).length() < 20) {
 					sinLead++;
 					continue;
@@ -423,7 +301,7 @@ public class ArnesSombra {
 					continue;
 				}
 				boolean anulada = false, desconocido = false;
-				for (LineaTienda l : lineas) {
+				for (SombraPedido.LineaTienda l : lineas) {
 					anulada |= l.anulada > 0;
 					desconocido |= !productos.containsKey(l.idProducto);
 				}
@@ -450,33 +328,6 @@ public class ArnesSombra {
 				+ " | sin lineas: " + sinLineas + " | con lineas anuladas: " + anuladas + " | producto fuera del POS: "
 				+ desconocidos);
 		return nuevos;
-	}
-
-	/** Lo que la tienda registro, en la forma del resultado del motor. */
-	private MotorResultado construirEsperado(List<LineaTienda> lineas) {
-		MotorResultado r = new MotorResultado();
-		r.estado = MotorResultado.OK;
-		r.versionMotor = "tienda";
-		Map<Integer, Integer> refDeId = new HashMap<Integer, Integer>();
-		int ref = 1;
-		for (LineaTienda l : lineas) {
-			refDeId.put(l.id, ref++);
-		}
-		for (LineaTienda l : lineas) {
-			MotorResultado.Linea ml = new MotorResultado.Linea();
-			ml.ref = refDeId.get(l.id);
-			ml.idproducto = l.idProducto;
-			ml.cantidad = l.cantidad;
-			ml.valorUnitario = l.valorUnitario;
-			ml.valorTotal = l.valorTotal;
-			ml.refMaster = l.master == 0 ? 0 : (refDeId.containsKey(l.master) ? refDeId.get(l.master) : 0);
-			ml.refModificador = l.modificador == 0 ? 0 : (refDeId.containsKey(l.modificador) ? refDeId.get(l.modificador) : 0);
-			ml.origen = esDomicilio(l.idProducto) ? "DOMICILIO"
-					: (l.modificador > 0 ? "MODIFICADOR" : (l.master > 0 ? "OPCION" : "SOLICITADA"));
-			r.lineas.add(ml);
-		}
-		r.recalcularTotales();
-		return r;
 	}
 
 	private boolean insertarCaso(String origen, int idTienda, int idPedido, Timestamp fecha, MotorSolicitud sol,
@@ -566,74 +417,6 @@ public class ArnesSombra {
 		}
 		System.out.println("Casos corridos con '" + version + "': " + hechos);
 		return hechos;
-	}
-
-	private static boolean mismasLineasSinPrecio(MotorResultado esp, MotorResultado res) {
-		Map<String, Integer> a = new HashMap<String, Integer>();
-		Map<String, Integer> b = new HashMap<String, Integer>();
-		for (MotorResultado.Linea l : esp.lineas) {
-			a.merge(l.idproducto + "|" + r2(l.cantidad), 1, Integer::sum);
-		}
-		for (MotorResultado.Linea l : res.lineas) {
-			b.merge(l.idproducto + "|" + r2(l.cantidad), 1, Integer::sum);
-		}
-		return a.equals(b);
-	}
-
-	/** Clave de comparacion de una linea: producto, cantidad y valor unitario (sin refs ni orden). */
-	private static String clave(MotorResultado.Linea l) {
-		return l.idproducto + "|" + r2(l.cantidad) + "|" + r2(l.valorUnitario);
-	}
-
-	/** Devuelve {clasificacion, detalle}. */
-	static String[] comparar(MotorResultado esp, MotorResultado res) {
-		if (MotorResultado.NO_IMPLEMENTADO.equals(res.estado)) {
-			return new String[] { "NO_IMPLEMENTADO", GSON.toJson(res.advertencias) };
-		}
-		if (MotorResultado.RECHAZADO.equals(res.estado)) {
-			return new String[] { "RECHAZADO", GSON.toJson(res.advertencias) };
-		}
-		if (!MotorResultado.OK.equals(res.estado)) {
-			return new String[] { "ERROR", GSON.toJson(res.advertencias) };
-		}
-		Map<String, Integer> faltan = new LinkedHashMap<String, Integer>();
-		Map<String, Integer> sobran = new LinkedHashMap<String, Integer>();
-		for (MotorResultado.Linea l : esp.lineas) {
-			faltan.merge(clave(l), 1, Integer::sum);
-		}
-		for (MotorResultado.Linea l : res.lineas) {
-			sobran.merge(clave(l), 1, Integer::sum);
-		}
-		Map<String, Integer> soloEsperado = new LinkedHashMap<String, Integer>();
-		Map<String, Integer> soloMotor = new LinkedHashMap<String, Integer>();
-		for (Map.Entry<String, Integer> e : faltan.entrySet()) {
-			int otro = sobran.containsKey(e.getKey()) ? sobran.get(e.getKey()) : 0;
-			if (e.getValue() > otro) {
-				soloEsperado.put(e.getKey(), e.getValue() - otro);
-			}
-		}
-		for (Map.Entry<String, Integer> e : sobran.entrySet()) {
-			int otro = faltan.containsKey(e.getKey()) ? faltan.get(e.getKey()) : 0;
-			if (e.getValue() > otro) {
-				soloMotor.put(e.getKey(), e.getValue() - otro);
-			}
-		}
-		boolean totalIgual = Math.abs(res.subtotal - esp.subtotal) < 0.5;
-		boolean lineasIguales = soloEsperado.isEmpty() && soloMotor.isEmpty();
-		if (totalIgual && lineasIguales) {
-			return new String[] { "OK", null };
-		}
-		Map<String, Object> detalle = new LinkedHashMap<String, Object>();
-		detalle.put("subtotal_esperado", esp.subtotal);
-		detalle.put("subtotal_motor", res.subtotal);
-		detalle.put("solo_en_tienda", soloEsperado);
-		detalle.put("solo_en_motor", soloMotor);
-		// Si las mismas lineas (producto y cantidad) estan en los dos lados y solo cambia el valor unitario, es
-		// una diferencia de PRECIO (por ejemplo un cambio de precio posterior al pedido), no de estructura.
-		if (mismasLineasSinPrecio(esp, res)) {
-			return new String[] { "PRECIO_DISTINTO", GSON.toJson(detalle) };
-		}
-		return new String[] { totalIgual ? "LINEAS_DISTINTAS" : "TOTAL_DISTINTO", GSON.toJson(detalle) };
 	}
 
 	public void resumen(String version, String origen) throws Exception {
