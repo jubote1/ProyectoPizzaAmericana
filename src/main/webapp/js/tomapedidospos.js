@@ -2435,7 +2435,8 @@ function ejecutarDespachoTiendaDefinitivo() {
         idFormaPagoTienda: idFormaPago,
         valorFormaPago: (idFormaPago === 1) ? valPago : resultadoMotor.total,
         tiempoPedido: tiempoPed,
-        origen: "CC-NUEVO",
+        origen: (marcacionActiva && marcacionActiva.codigo && marcacionActiva.codigo.trim().length <= 3) ? marcacionActiva.codigo.trim() : "C",
+        fuentepedido: "CC-NUEVO",
         idPedidoAlt: (marcacionActiva && marcacionActiva.observacion) ? marcacionActiva.observacion.trim() : "",
         plataforma: (marcacionActiva && marcacionActiva.nombremarcacion) ? marcacionActiva.nombremarcacion.trim() : "",
         marcacion: (marcacionActiva && marcacionActiva.idmarcacion > 0) ? {

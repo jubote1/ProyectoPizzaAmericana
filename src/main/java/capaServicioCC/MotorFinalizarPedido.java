@@ -101,7 +101,29 @@ public class MotorFinalizarPedido extends HttpServlet {
 			int idFormaPagoTienda = root.has("idFormaPagoTienda") ? root.get("idFormaPagoTienda").getAsInt() : 1;
 			double valorFormaPago = root.has("valorFormaPago") ? root.get("valorFormaPago").getAsDouble() : 0.0;
 			double tiempoPedido = root.has("tiempoPedido") ? root.get("tiempoPedido").getAsDouble() : 30.0;
-			String origen = root.has("origen") ? root.get("origen").getAsString() : "C";
+			String origenRaw = root.has("origen") ? root.get("origen").getAsString() : "C";
+			String fuentePedido = root.has("fuentepedido") ? root.get("fuentepedido").getAsString() : "CC-NUEVO";
+
+			// Normalización para pizzaamericana.pedido: la columna 'origen' es varchar(3).
+			// Los canales tradicionales son 'C' (Contact Center), 'RAP', 'DID', 'APP', 'TK'.
+			// 'CC-NUEVO' o cadenas mayores a 3 caracteres no caben en 'origen' y van a 'fuentepedido' (varchar(20)).
+			String origen = "C";
+			if (origenRaw != null && !origenRaw.trim().isEmpty()) {
+				String oTrim = origenRaw.trim();
+				if (oTrim.length() <= 3) {
+					origen = oTrim;
+				} else if ("CC-NUEVO".equalsIgnoreCase(oTrim)) {
+					origen = "C";
+				} else {
+					origen = oTrim.substring(0, 3);
+				}
+			}
+
+			if (fuentePedido == null || fuentePedido.trim().isEmpty()) {
+				fuentePedido = "CC-NUEVO";
+			} else if (fuentePedido.length() > 20) {
+				fuentePedido = fuentePedido.substring(0, 20);
+			}
 
 			if (!root.has("solicitud")) {
 				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -236,8 +258,8 @@ public class MotorFinalizarPedido extends HttpServlet {
 			double valorImpuesto = totalNeto - totalBruto;
 
 			String sqlInsPed = "insert into pizzaamericana.pedido (idtienda, idcliente, idestadopedido, fechapedido, "
-					+ "usuariopedido, total_bruto, impuesto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido, enviadopixel, fechafinalizacion) "
-					+ "values (?,?,?,current_date(),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP())";
+					+ "usuariopedido, total_bruto, impuesto, descuento, total_neto, tiempopedido, origen, programado, hora_programado, idtipopedido, enviadopixel, fechafinalizacion, fuentepedido) "
+					+ "values (?,?,?,current_date(),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP(),?)";
 
 			try (PreparedStatement ps = con.prepareStatement(sqlInsPed, Statement.RETURN_GENERATED_KEYS)) {
 				ps.setInt(1, idTienda);
@@ -254,6 +276,7 @@ public class MotorFinalizarPedido extends HttpServlet {
 				ps.setString(12, solicitud.contexto.horaProgramado != null ? solicitud.contexto.horaProgramado : "");
 				ps.setInt(13, solicitud.contexto.idtipopedido > 0 ? solicitud.contexto.idtipopedido : 1);
 				ps.setInt(14, enviadoPixelInicial);
+				ps.setString(15, fuentePedido);
 				ps.executeUpdate();
 				try (ResultSet rs = ps.getGeneratedKeys()) {
 					if (rs.next()) {
@@ -323,7 +346,7 @@ public class MotorFinalizarPedido extends HttpServlet {
 			} else {
 				altDespacho = "NM-" + idPedidoPosGenerado;
 			}
-			String origenDespacho = (origen != null && !origen.trim().isEmpty() && !origen.equals("C")) ? origen : "CC-NUEVO";
+			String origenDespacho = (origenRaw != null && !origenRaw.trim().isEmpty() && !origenRaw.equals("C")) ? origenRaw : "CC-NUEVO";
 
 			// 5. Bifurcación: ¿Pago Virtual o Despacho Directo a Tienda?
 			if (esFormaPagoVirtual) {
