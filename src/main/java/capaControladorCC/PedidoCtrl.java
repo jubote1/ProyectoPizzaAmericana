@@ -765,6 +765,15 @@ public class PedidoCtrl {
 		}
 		String respuestaJson = listJSON.toJSONString();
 		PedidoDAO.actualizarJSONPedido(idpedido, respuestaJson, "");
+
+		// Auditoria en sombra Nuevo Motor para Contact Center (modo PARALELO)
+		try {
+			capaControladorCC.motor.EnrutadorCanalesMotor.auditarContactCenterParalelo(
+					idpedido, tienda.getIdTienda(), valortotal, pedidoPixel.getIdTipoPedido(), detPedPOS);
+		} catch (Throwable t) {
+			// Jamas bloquear la finalizacion del pedido
+		}
+
 		return (respuestaJson);
 	}
 
@@ -8435,6 +8444,12 @@ public class PedidoCtrl {
 			int idTipoPedido = 1;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
+
+			// Asociar inmediatamente el idpedido con la auditoria en sombra del BOT si existe
+			try {
+				capaControladorCC.motor.MotorSombraBot.asociarPedido(Long.parseLong(lead), idPedido);
+			} catch (Throwable ignorada) {
+			}
 			
 			 if (idPedido > 0) {
 			        pedidoInsertado = true; // aquí sí sabemos que se insertó
@@ -9357,6 +9372,12 @@ public class PedidoCtrl {
 			int idTipoPedido = 4;
 			int idPedido = PedidoDAO.InsertarEncabezadoPedidoTiendaVirtualKuno(idTienda, idCliente, strFechaFinal,
 					asesor, Integer.parseInt(lead), idTipoPedido, "CRM", fuentePedido);
+
+			// Asociar inmediatamente el idpedido con la auditoria en sombra del BOT si existe
+			try {
+				capaControladorCC.motor.MotorSombraBot.asociarPedido(Long.parseLong(lead), idPedido);
+			} catch (Throwable ignorada) {
+			}
 			
 			// Realizamos la inserción del producto ordenado
 			String log = insertarProductoBOTCRM(idPedido, nombreDelCombo, sabor1, sabor2, adicion, bebida,

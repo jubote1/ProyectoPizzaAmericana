@@ -243,6 +243,20 @@ function verDetallePedido(idPedido) {
         dataType: 'json',
         success: function(d) {
             $("#txtModalIdPedido").text(idPedido);
+            $("#txtModalCliente").text(d.cliente || "-");
+            $("#txtModalTelefono").text(d.telefono || "-");
+            $("#txtModalDireccion").text(d.direccion || "-");
+            $("#txtModalTienda").text(d.tienda || "-");
+            $("#badgeModalCanal").html(formatearBadgeCanal(d.origen, d.canal_legible));
+
+            if (d.sombra) {
+                var s = d.sombra;
+                var dif = Math.round(s.diferencia * 100) / 100;
+                var badgeModoClase = (Math.abs(dif) < 1.0) ? 'badge-success' : 'badge-danger';
+                $("#badgeModalModo").html('<span class="badge ' + badgeModoClase + '"><i class="fas fa-check-double"></i> ' + (s.modo_ejecucion || 'PARALELO') + '</span>');
+            } else {
+                $("#badgeModalModo").html('<span class="badge badge-secondary"><i class="fas fa-archive"></i> LEGACY</span>');
+            }
 
             // 1. Lineas Legacy
             var tbodyLeg = $("#tbodyLineasLegacy");

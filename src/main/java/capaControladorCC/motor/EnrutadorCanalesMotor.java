@@ -3,8 +3,11 @@ package capaControladorCC.motor;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,6 +20,8 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
+import capaDAOCC.PedidoPOSPMDAO;
+import capaModeloCC.DetallePedidoPixel;
 import capaModeloCC.motor.MotorResultado;
 import capaModeloCC.motor.MotorSolicitud;
 import conexionCC.ConexionBaseDatos;
@@ -312,6 +317,93 @@ public class EnrutadorCanalesMotor {
 	}
 
 	/**
+	 * Dispara la auditoria en sombra asincrona para pedidos tomados en Contact Center (Legacy C).
+	 */
+	public static void auditarContactCenterParalelo(
+			final int idPedidoCreado,
+			final int idTienda,
+			final double totalLegacy,
+			final int idTipoPedido,
+			final List<DetallePedidoPixel> detPedPOS) {
+
+		try {
+			EJECUTOR_ASINCRONO.execute(() -> {
+				Connection con = null;
+				try {
+					con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
+
+					// Verificar si el canal CONTACT debe auditarse
+					ModoMotor modo = obtenerModo(con, "CONTACT", idTienda);
+					if (modo == ModoMotor.LEGACY) {
+						String g = modoGlobalCache;
+						if (!"PARALELO".equalsIgnoreCase(g) && !"NUEVO".equalsIgnoreCase(g) && !"P".equalsIgnoreCase(g) && !"S".equalsIgnoreCase(g)) {
+							return;
+						}
+					}
+
+					List<DetallePedidoPixel> items = detPedPOS;
+					if (items == null || items.isEmpty()) {
+						items = PedidoPOSPMDAO.InsertarPedidoPOSPM(idPedidoCreado, idTienda);
+					}
+					if (items == null || items.isEmpty()) {
+						return;
+					}
+
+					CatalogoPos cat = CatalogoPos.cargar(con);
+					List<SombraPedido.LineaTienda> lineas = new ArrayList<>();
+					int idSecuencia = 1;
+					Map<Integer, Integer> mapaIds = new HashMap<>();
+
+					for (DetallePedidoPixel d : items) {
+						if (d.getIdproductoext() <= 0 || d.getIdproductoext() == 10000) {
+							continue;
+						}
+						SombraPedido.LineaTienda lt = new SombraPedido.LineaTienda();
+						lt.id = idSecuencia++;
+						lt.idProducto = d.getIdproductoext();
+						lt.cantidad = d.getCantidad();
+						lt.valorTotal = d.getValor();
+						lt.valorUnitario = d.getCantidad() > 0 ? d.getValor() / d.getCantidad() : d.getValor();
+
+						if (d.isEsMaster()) {
+							lt.master = 0;
+							mapaIds.put(d.getIdDetallePedido(), lt.id);
+						} else {
+							Integer idMasterPadre = mapaIds.get(d.getIdMaster());
+							lt.master = (idMasterPadre != null) ? idMasterPadre : d.getIdMaster();
+						}
+						lt.modificador = d.getIdModificador();
+						lt.anulada = 0;
+						lineas.add(lt);
+					}
+
+					if (lineas.isEmpty()) {
+						return;
+					}
+
+					MotorSolicitud sol = SombraPedido.construirSolicitud(cat, "CONTACT", idTienda, idTipoPedido,
+							new Timestamp(System.currentTimeMillis()), lineas);
+
+					registrarParaleloSincrono(con, "CONTACT", idPedidoCreado, "", idTienda,
+							totalLegacy, totalLegacy, sol);
+
+				} catch (Throwable t) {
+					logger.warn("Advertencia en auditarContactCenterParalelo: " + t.getMessage());
+				} finally {
+					if (con != null) {
+						try {
+							con.close();
+						} catch (Exception ignorada) {
+						}
+					}
+				}
+			});
+		} catch (Throwable t) {
+			// Jamas interrumpir flujo de produccion
+		}
+	}
+
+	/**
 	 * Refresca la configuracion desde general.parametros con TTL de 30 segundos.
 	 */
 	private static synchronized void refrescarCacheSiEsNecesario(Connection con) {
@@ -322,7 +414,7 @@ public class EnrutadorCanalesMotor {
 
 		String sql = "select valorparametro, valortexto from general.parametros where valorparametro in ("
 				+ "'MODO_MOTOR_GLOBAL', 'KUNO_NUEVO_MOTOR', 'MODO_MOTOR_KUNO', 'MODO_MOTOR_RAPPI', "
-				+ "'MODO_MOTOR_DIDI', 'MODO_MOTOR_BOT', 'MOTOR_PILOTO_TIENDAS')";
+				+ "'MODO_MOTOR_DIDI', 'MODO_MOTOR_BOT', 'MODO_MOTOR_CONTACT', 'MOTOR_PILOTO_TIENDAS')";
 
 		boolean cerroConexion = false;
 		Connection conexionALeer = con;

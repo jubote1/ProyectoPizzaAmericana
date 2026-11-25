@@ -82,7 +82,7 @@ public class ConsultaPedidosNuevoMotorDAO {
 			   .append("LEFT JOIN pizzaamericana.pedido_forma_pago pfp ON pfp.idpedido = p.idpedido ")
 			   .append("LEFT JOIN pizzaamericana.forma_pago fp ON fp.idforma_pago = pfp.idforma_pago ")
 			   .append("LEFT JOIN pos_central.sombra_pedido_canal s ON s.idpedido_central = p.idpedido ")
-			   .append("LEFT JOIN pos_central.sombra_vivo sv ON sv.idpedido = p.idpedido ")
+			   .append("LEFT JOIN pos_central.sombra_vivo sv ON (sv.idpedido = p.idpedido OR (p.origen = 'CRM' AND sv.lead_id = p.idordencomercio AND p.idordencomercio > 0)) ")
 			   .append("LEFT JOIN pos_central.pedido pos_p ON pos_p.idpedidocontact = p.idpedido ")
 			   .append("WHERE p.fechapedido >= ? AND p.fechapedido <= ? ");
 
@@ -271,10 +271,48 @@ public class ConsultaPedidosNuevoMotorDAO {
 		try {
 			con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 
+			// 0. Informacion de cabecera del pedido (Cliente, Tienda, etc.)
+			String sqlCab = "SELECT p.idpedido, p.idordencomercio, p.idtienda, t.nombre AS nombretienda, "
+					+ "  CONCAT(IFNULL(c.nombre,''), ' ', IFNULL(c.apellido,'')) AS nombrecliente, "
+					+ "  IFNULL(c.telefono, IFNULL(c.telefono_celular,'')) AS telefono, "
+					+ "  IFNULL(c.direccion,'') AS direccion, IFNULL(mun.nombre,'') AS municipio, "
+					+ "  p.origen, p.total_neto, IFNULL(ep.descripcion,'') AS estadopedido "
+					+ "FROM pizzaamericana.pedido p "
+					+ "JOIN pizzaamericana.tienda t ON t.idtienda = p.idtienda "
+					+ "LEFT JOIN pizzaamericana.cliente c ON c.idcliente = p.idcliente "
+					+ "LEFT JOIN pizzaamericana.municipio mun ON mun.idmunicipio = c.idmunicipio "
+					+ "LEFT JOIN pizzaamericana.estado_pedido ep ON ep.idestadopedido = p.idestadopedido "
+					+ "WHERE p.idpedido = ?";
+
+			long idOrdenComercio = 0;
+			String origenPedido = "C";
+			try (PreparedStatement ps = con.prepareStatement(sqlCab)) {
+				ps.setInt(1, idPedido);
+				try (ResultSet rs = ps.executeQuery()) {
+					if (rs.next()) {
+						idOrdenComercio = rs.getLong("idordencomercio");
+						origenPedido = rs.getString("origen");
+						resultado.put("idordencomercio", rs.getString("idordencomercio"));
+						resultado.put("idtienda", rs.getInt("idtienda"));
+						resultado.put("tienda", rs.getString("nombretienda"));
+						resultado.put("cliente", rs.getString("nombrecliente").trim());
+						resultado.put("telefono", rs.getString("telefono"));
+						String dir = rs.getString("direccion");
+						String mun = rs.getString("municipio");
+						if (mun != null && !mun.trim().isEmpty()) dir += " (" + mun + ")";
+						resultado.put("direccion", dir);
+						resultado.put("origen", origenPedido);
+						resultado.put("canal_legible", resolverCanalLegible(origenPedido));
+						resultado.put("totalneto", rs.getDouble("total_neto"));
+						resultado.put("estadopedido", rs.getString("estadopedido"));
+					}
+				}
+			}
+
 			// 1. Lineas en pizzaamericana.detalle_pedido
 			String sqlLeg = "SELECT dp.iddetalle_pedido, dp.idproducto, IFNULL(p.descripcion, CONCAT('Item ', dp.idproducto)) AS nombreproducto, "
-					+ "  dp.cantidad, dp.idespecialidad1, IFNULL(e1.descripcion, '') AS nomespecialidad1, "
-					+ "  dp.idespecialidad2, IFNULL(e2.descripcion, '') AS nomespecialidad2, "
+					+ "  dp.cantidad, dp.idespecialidad1, IFNULL(e1.nombre, '') AS nomespecialidad1, "
+					+ "  dp.idespecialidad2, IFNULL(e2.nombre, '') AS nomespecialidad2, "
 					+ "  dp.valorUnitario, dp.valorTotal, IFNULL(dp.adicion,'') AS adicion, IFNULL(dp.observacion,'') AS observacion "
 					+ "FROM pizzaamericana.detalle_pedido dp "
 					+ "LEFT JOIN pizzaamericana.producto p ON p.idproducto = dp.idproducto "
@@ -359,12 +397,16 @@ public class ConsultaPedidosNuevoMotorDAO {
 
 			// 3.1 Si no esta en sombra_pedido_canal, buscar en sombra_vivo (BOT CRM)
 			if (datosSombra == null) {
-				String sqlSomBot = "SELECT idsombra, 'BOT' as canal, 'PARALELO' as modo_ejecucion, version_motor, estado_motor, "
-						+ "  subtotal_viejo, subtotal_viejo as total_viejo, subtotal_motor, subtotal_motor as total_motor, diferencia_vs_viejo as diferencia, "
-						+ "  avisos_traduccion, duracion_ms, solicitud_json, resultado_json "
-						+ "FROM pos_central.sombra_vivo WHERE idpedido = ? ORDER BY idsombra DESC LIMIT 1";
+				String sqlSomBot = "SELECT sv.idsombra, 'BOT' as canal, 'PARALELO' as modo_ejecucion, sv.version_motor, sv.estado_motor, "
+						+ "  sv.subtotal_viejo, sv.subtotal_viejo as total_viejo, sv.subtotal_motor, sv.subtotal_motor as total_motor, sv.diferencia_vs_viejo as diferencia, "
+						+ "  sv.avisos_traduccion, sv.duracion_ms, sv.solicitud_json, sv.resultado_json "
+						+ "FROM pos_central.sombra_vivo sv "
+						+ "WHERE sv.idpedido = ? OR (sv.lead_id = ? AND ? > 0) "
+						+ "ORDER BY sv.idsombra DESC LIMIT 1";
 				try (PreparedStatement ps = con.prepareStatement(sqlSomBot)) {
 					ps.setInt(1, idPedido);
+					ps.setLong(2, idOrdenComercio);
+					ps.setLong(3, idOrdenComercio);
 					try (ResultSet rs = ps.executeQuery()) {
 						if (rs.next()) {
 							datosSombra = new JSONObject();

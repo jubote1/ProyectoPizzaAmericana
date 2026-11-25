@@ -195,6 +195,30 @@ public class MotorSombraBot {
 		}
 	}
 
+	/**
+	 * Asocia el idpedido creado en base de datos a la sombra del BOT para este lead.
+	 */
+	public static void asociarPedido(final long leadId, final int idPedido) {
+		if (leadId <= 0 || idPedido <= 0) {
+			return;
+		}
+		try {
+			EJECUTOR.execute(() -> {
+				try (Connection con = new conexionCC.ConexionBaseDatos().obtenerConexionBDPrincipal();
+					 PreparedStatement ps = con.prepareStatement(
+						"UPDATE pos_central.sombra_vivo SET idpedido = ? WHERE lead_id = ? AND (idpedido IS NULL OR idpedido = 0)")) {
+					ps.setInt(1, idPedido);
+					ps.setLong(2, leadId);
+					ps.executeUpdate();
+				} catch (Throwable t) {
+					// No interrumpir
+				}
+			});
+		} catch (Throwable t) {
+			// No interrumpir
+		}
+	}
+
 	/** Cuantas filas lleva la sombra y como van contra el flujo viejo. Para el informe. */
 	public static String resumenRapido(Connection con) throws Exception {
 		try (Statement st = con.createStatement();
