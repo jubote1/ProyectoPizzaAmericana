@@ -308,6 +308,13 @@ public class MotorPedidoV1 implements MotorPedido {
 			}
 			double cant = sel.cantidad * q;
 			MotorResultado.Linea hija = linea(o.id, cant, o.precio(columna), maestra.ref, 0, "OPCION");
+			hija.mitad = sel.mitad;
+			Pregunta pqRef = (idPregunta > 0) ? catalogo.preguntas.get(idPregunta) : null;
+			boolean esPregAdicion = (pqRef != null && pqRef.titulo != null
+					&& (pqRef.titulo.toLowerCase().contains("adici") || pqRef.titulo.toLowerCase().contains("adicion")));
+			boolean esDescAdicion = (o.descripcion != null
+					&& (o.descripcion.toLowerCase().contains("adici") || o.descripcion.toLowerCase().contains("adicion")));
+			hija.esAdicion = esPregAdicion || esDescAdicion || (o.precio(columna) > 0 && hija.valorTotal > 0);
 			r.lineas.add(hija);
 			if (!lineaDeProducto.containsKey(o.id)) {
 				lineaDeProducto.put(o.id, hija);

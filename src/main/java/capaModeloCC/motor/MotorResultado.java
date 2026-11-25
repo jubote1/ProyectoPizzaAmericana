@@ -39,6 +39,10 @@ public class MotorResultado {
 		public int refModificador;
 		/** SOLICITADA, OPCION, INCLUIDO, MODIFICADOR o DOMICILIO. */
 		public String origen = "";
+		/** 0 = sin division / entera, 1 = mitad 1, 2 = mitad 2. */
+		public int mitad = 0;
+		/** Verdadero si la linea representa una adicion extra al producto maestro. */
+		public boolean esAdicion = false;
 	}
 
 	public static class Advertencia {

@@ -13,6 +13,7 @@ var leafletMarker = null;
 var coberturaTemporal = null;
 var esAdministrador = false; // Rol verificado con ValidarUsuarioAplicacion (solo líderes y admin aplican descuentos manuales)
 var tiempoEstimadoTienda = 30; // Tiempo promesa configurado en la tienda seleccionada
+var idPedidoCentralActivo = 0; // Control de ID de pedido si se asigna previo al despacho definitivo
 
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
@@ -280,6 +281,20 @@ $(document).ready(function () {
 
     $("#btnAgregarProductoModal").on("click", function () {
         guardarProductoDesdeModal();
+    });
+
+    // Eventos de Reinicio de Pedido con Autenticación
+    $("#btnReiniciarPedidoPOS, .btn-trigger-reiniciar-pedido").on("click", function () {
+        solicitarReinicioPedidoPOS();
+    });
+
+    $("#btnConfirmarReinicioDefinitivo").on("click", function () {
+        ejecutarReinicioPedidoPOS();
+    });
+
+    $("#formConfirmarReinicioPOS").on("submit", function (e) {
+        e.preventDefault();
+        ejecutarReinicioPedidoPOS();
     });
 
     // Estado inicial de ubicación y bloqueo de menú
@@ -1053,17 +1068,17 @@ function renderizarModalProducto(prod) {
                         $card.removeClass("selected-entera selected-m1 selected-m2");
 
                         if (modo === "entera") {
-                            $btnToda.removeClass("btn-outline-secondary").addClass("active btn-dark");
+                            $btnToda.removeClass("btn-outline-secondary").addClass("active btn-dark font-weight-bold");
                             $card.addClass("selected-entera");
-                            $badgePrecio.html("+$ " + formatearPesos(op.precio) + " <small class='badge badge-dark'>100%</small>");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio) + " <small class='badge badge-dark'>Toda (100%)</small>");
                         } else if (modo === "m1") {
-                            $btnM1.removeClass("btn-outline-danger").addClass("active btn-danger");
+                            $btnM1.removeClass("btn-outline-danger").addClass("active btn-danger font-weight-bold");
                             $card.addClass("selected-m1");
-                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-danger'>1/2 M1</small>");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-danger'>Mitad 1 (50%)</small>");
                         } else if (modo === "m2") {
-                            $btnM2.removeClass("btn-outline-primary").addClass("active btn-primary");
+                            $btnM2.removeClass("btn-outline-primary").addClass("active btn-primary font-weight-bold");
                             $card.addClass("selected-m2");
-                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-primary'>1/2 M2</small>");
+                            $badgePrecio.html("+$ " + formatearPesos(op.precio / 2) + " <small class='badge badge-primary'>Mitad 2 (50%)</small>");
                         } else {
                             $badgePrecio.html("+$ " + formatearPesos(op.precio));
                         }
@@ -1096,7 +1111,8 @@ function renderizarModalProducto(prod) {
                         }
                     });
 
-                    $head.on("click", function () {
+                    $card.on("click", function (e) {
+                        if ($(e.target).closest(".adicion-portion-btns").length > 0) return;
                         if ($card.attr("data-porcion") === "entera") {
                             actualizarEstadoCard("none");
                         } else {
@@ -1248,12 +1264,16 @@ function guardarProductoDesdeModal() {
                 $adCards.each(function () {
                     var porcion = $(this).attr("data-porcion");
                     var idOpcion = parseInt($(this).attr("data-idopcion"));
+                    var opDesc = $(this).find(".adicion-titulo").text().trim();
                     if (porcion === "entera") {
                         selecciones.push({
                             idpregunta: preg.idpregunta,
                             mitad: 0,
                             idproductoOpcion: idOpcion,
-                            cantidad: 1.0
+                            cantidad: 1.0,
+                            esAdicion: true,
+                            descripcion: opDesc,
+                            porcion: "entera"
                         });
                         totalSelAd++;
                     } else if (porcion === "m1") {
@@ -1261,7 +1281,10 @@ function guardarProductoDesdeModal() {
                             idpregunta: preg.idpregunta,
                             mitad: 1,
                             idproductoOpcion: idOpcion,
-                            cantidad: 0.5
+                            cantidad: 0.5,
+                            esAdicion: true,
+                            descripcion: opDesc,
+                            porcion: "m1"
                         });
                         totalSelAd++;
                     } else if (porcion === "m2") {
@@ -1269,7 +1292,10 @@ function guardarProductoDesdeModal() {
                             idpregunta: preg.idpregunta,
                             mitad: 2,
                             idproductoOpcion: idOpcion,
-                            cantidad: 0.5
+                            cantidad: 0.5,
+                            esAdicion: true,
+                            descripcion: opDesc,
+                            porcion: "m2"
                         });
                         totalSelAd++;
                     }
@@ -1645,6 +1671,94 @@ function cotizarEnVivo() {
     });
 }
 
+/**
+ * Normaliza y clasifica cada línea hija (sabor, adición, bebida o incluido)
+ * para garantizar una visualización clara, destacada y diferenciada en la comanda.
+ */
+function formatearLineaHijaComanda(h, draftItem) {
+    var isInc = (h.origen === "INCLUIDO");
+    var descH = (h.descripcion || ("Opción #" + h.idproducto)).trim();
+
+    // 1. Buscar en selecciones del draft original para rescatar la porción exacta elegida por el asesor
+    var metaDraft = null;
+    if (draftItem && draftItem.selecciones && draftItem.selecciones.length > 0) {
+        for (var k = 0; k < draftItem.selecciones.length; k++) {
+            var sel = draftItem.selecciones[k];
+            if (sel.idproductoOpcion === h.idproducto) {
+                metaDraft = sel;
+                break;
+            }
+        }
+    }
+
+    var esAdicion = (metaDraft && metaDraft.esAdicion)
+        || h.esAdicion
+        || (descH.toLowerCase().indexOf("adici") !== -1)
+        || (h.valorTotal > 0 && !isInc);
+
+    if (esAdicion) {
+        var porcionVal = (metaDraft && metaDraft.porcion) ? metaDraft.porcion : null;
+        var mitadVal = (metaDraft && metaDraft.mitad !== undefined) ? metaDraft.mitad : (h.mitad !== undefined ? h.mitad : 0);
+        var porcionLabel = "Toda (100%)";
+        var badgeColor = "badge-dark";
+
+        if (porcionVal === "m1" || mitadVal === 1) {
+            porcionLabel = "Mitad 1 (50%)";
+            badgeColor = "badge-danger";
+        } else if (porcionVal === "m2" || mitadVal === 2) {
+            porcionLabel = "Mitad 2 (50%)";
+            badgeColor = "badge-primary";
+        } else if (porcionVal === "entera" || mitadVal === 0) {
+            porcionLabel = "Toda (100%)";
+            badgeColor = "badge-dark";
+        } else if (h.cantidad < 1.0) {
+            porcionLabel = "Mitad (50%)";
+            badgeColor = "badge-danger";
+        }
+
+        // Limpiar prefijo 'Adición' repetido para que quede limpio junto al badge
+        var nombreLimpio = descH.replace(/^adici[oó]n\s+/i, "").trim();
+
+        return {
+            tipo: "ADICION",
+            esAdicion: true,
+            nombre: nombreLimpio,
+            porcion: porcionLabel,
+            badgeColor: badgeColor,
+            precio: h.valorTotal
+        };
+    } else if (isInc) {
+        return {
+            tipo: "INCLUIDO",
+            esAdicion: false,
+            nombre: descH,
+            porcion: "",
+            badgeColor: "badge-success",
+            precio: 0
+        };
+    } else {
+        // Sabor o Bebida regular
+        var mitadVal = (metaDraft && metaDraft.mitad !== undefined) ? metaDraft.mitad : (h.mitad !== undefined ? h.mitad : 0);
+        var porcionLabel = "";
+        var badgeColor = "";
+        if (mitadVal === 1 || h.cantidad === 0.5) {
+            porcionLabel = "Mitad 1";
+            badgeColor = "badge-danger";
+        } else if (mitadVal === 2) {
+            porcionLabel = "Mitad 2";
+            badgeColor = "badge-primary";
+        }
+        return {
+            tipo: "OPCION",
+            esAdicion: false,
+            nombre: descH,
+            porcion: porcionLabel,
+            badgeColor: badgeColor,
+            precio: h.valorTotal
+        };
+    }
+}
+
 function renderizarComanda(res) {
     var $box = $("#listaComanda");
     $box.empty();
@@ -1676,13 +1790,30 @@ function renderizarComanda(res) {
             $item.append($m);
 
             if (hijasMap[l.ref]) {
+                var draftItem = draftLineas[itemDraftIdx];
                 $.each(hijasMap[l.ref], function (j, h) {
-                    var isInc = (h.origen === "INCLUIDO");
-                    var $h = $("<div></div>").addClass(isInc ? "item-comanda-incluido" : "item-comanda-hija");
-                    var pref = isInc ? "[Inc] " : (h.cantidad === 0.5 ? "• (1/2) " : "• ");
-                    $h.append("<span>" + pref + (h.descripcion || ("Opcion #" + h.idproducto)) + "</span>");
-                    $h.append("<span>" + (h.valorTotal > 0 ? "+$ " + formatearPesos(h.valorTotal) : "$ 0") + "</span>");
-                    $item.append($h);
+                    var info = formatearLineaHijaComanda(h, draftItem);
+                    if (info.tipo === "ADICION") {
+                        var $h = $("<div></div>").addClass("item-comanda-adicion");
+                        var $izq = $("<div></div>").addClass("d-flex align-items-center flex-wrap");
+                        $izq.append("<span class='badge badge-warning text-dark mr-1 font-weight-bold' style='font-size:0.70rem;'><i class='fas fa-plus-circle text-danger mr-1'></i>Adición</span>");
+                        $izq.append("<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + info.porcion + "</span>");
+                        $izq.append("<b class='text-dark'>" + info.nombre + "</b>");
+                        $h.append($izq);
+                        $h.append("<span class='text-danger font-weight-bold ml-auto'>+$ " + formatearPesos(info.precio) + "</span>");
+                        $item.append($h);
+                    } else if (info.tipo === "INCLUIDO") {
+                        var $h = $("<div></div>").addClass("item-comanda-incluido");
+                        $h.append("<span><span class='badge badge-success mr-1' style='font-size:0.68rem;'><i class='fas fa-check mr-1'></i>Incluye</span> " + info.nombre + "</span>");
+                        $h.append("<span>$ 0</span>");
+                        $item.append($h);
+                    } else {
+                        var $h = $("<div></div>").addClass("item-comanda-hija");
+                        var prefBadge = info.porcion ? ("<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + info.porcion + "</span>") : "<span class='text-muted mr-1'>•</span> ";
+                        $h.append("<span>" + prefBadge + "<span class='text-dark font-weight-bold'>" + info.nombre + "</span></span>");
+                        $h.append("<span>" + (info.precio > 0 ? "+$ " + formatearPesos(info.precio) : "$ 0") + "</span>");
+                        $item.append($h);
+                    }
                 });
             }
 
@@ -1830,12 +1961,25 @@ function abrirModalConfirmacionPedido() {
             $tdDesc.append("<div class='font-weight-bold text-dark'>" + (l.descripcion || ("Producto #" + l.idproducto)) + "</div>");
 
             if (hijasMap[l.ref]) {
-                var $subList = $("<div class='pl-2 text-muted small mt-1'></div>");
+                var draftItem = (totalItemsCount - 1 < draftLineas.length) ? draftLineas[totalItemsCount - 1] : null;
+                var $subList = $("<div class='pl-2 small mt-1'></div>");
                 $.each(hijasMap[l.ref], function (j, h) {
-                    var isInc = (h.origen === "INCLUIDO");
-                    var pref = isInc ? "<span class='text-success font-weight-bold'>[Inc]</span> " : (h.cantidad === 0.5 ? "• (1/2) " : "• ");
-                    var precioExtra = h.valorTotal > 0 ? " (+$" + formatearPesos(h.valorTotal) + ")" : "";
-                    $subList.append("<div>" + pref + (h.descripcion || ("Opción #" + h.idproducto)) + precioExtra + "</div>");
+                    var info = formatearLineaHijaComanda(h, draftItem);
+                    if (info.tipo === "ADICION") {
+                        var $rowAdi = $("<div class='my-1 p-1 rounded bg-light border-left border-warning d-flex justify-content-between align-items-center' style='border-left: 3px solid #f59e0b !important;'></div>");
+                        var $izq = $("<div></div>").append("<span class='badge badge-warning text-dark mr-1 font-weight-bold' style='font-size:0.70rem;'><i class='fas fa-plus-circle text-danger mr-1'></i>Adición</span>")
+                            .append("<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + info.porcion + "</span>")
+                            .append("<b class='text-dark'>" + info.nombre + "</b>");
+                        $rowAdi.append($izq);
+                        $rowAdi.append("<b class='text-danger'>+$ " + formatearPesos(info.precio) + "</b>");
+                        $subList.append($rowAdi);
+                    } else if (info.tipo === "INCLUIDO") {
+                        $subList.append("<div class='text-success'><span class='badge badge-success mr-1' style='font-size:0.68rem;'><i class='fas fa-check mr-1'></i>Incluye</span>" + info.nombre + " ($0)</div>");
+                    } else {
+                        var prefBadge = info.porcion ? ("<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + info.porcion + "</span>") : "• ";
+                        var precioExtra = info.precio > 0 ? " (+$" + formatearPesos(info.precio) + ")" : "";
+                        $subList.append("<div class='text-muted'>" + prefBadge + "<span class='text-dark'>" + info.nombre + "</span>" + precioExtra + "</div>");
+                    }
                 });
                 $tdDesc.append($subList);
             }
@@ -2002,6 +2146,7 @@ function limpiarPantallaTrasDespacho() {
     // 1. Comanda, descuento y programado
     draftLineas = [];
     resultadoMotor = null;
+    idPedidoCentralActivo = 0;
     removerDescuentoActivo();
     $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
     $("#selectMotivoDescuento").prop("selectedIndex", 0);
@@ -2058,6 +2203,81 @@ function limpiarPantallaTrasDespacho() {
     actualizarEstadoUbicacionUI();
     cotizarEnVivo();
     $("#telcelular").focus();
+}
+
+/**
+ * Solicita confirmación con usuario y clave para reiniciar/cancelar el pedido en curso.
+ * Similar al flujo histórico en pedidos.js:3112 (GetIngresarAplicacion).
+ */
+function solicitarReinicioPedidoPOS() {
+    var hayDatosCliente = (clienteActual && clienteActual.idcliente > 0) || ($("#telcelular").val() && $("#telcelular").val().trim() !== "");
+    var hayLineas = (draftLineas && draftLineas.length > 0);
+    if (!hayDatosCliente && !hayLineas) {
+        alert("La pantalla ya está limpia y no hay ningún pedido en curso.");
+        return;
+    }
+
+    $("#txtUsuarioReinicio").val("");
+    $("#txtPasswordReinicio").val("");
+    $("#alertaErrorReinicioPOS").hide().text("");
+    $("#modalReiniciarPedidoPOS").modal("show");
+    setTimeout(function () {
+        $("#txtUsuarioReinicio").focus();
+    }, 400);
+}
+
+/**
+ * Valida usuario y contraseña con el servicio GetIngresarAplicacion.
+ * Si las credenciales son correctas, descarta el idPedido central si existía,
+ * y blanquea completamente la pantalla para iniciar un nuevo cliente.
+ */
+function ejecutarReinicioPedidoPOS() {
+    var usuario = $("#txtUsuarioReinicio").val().trim();
+    var password = $("#txtPasswordReinicio").val().trim();
+    if (!usuario || !password) {
+        $("#alertaErrorReinicioPOS").html("<i class='fas fa-exclamation-circle mr-1'></i> Ingrese usuario y contraseña para continuar.").show();
+        return;
+    }
+
+    $("#btnConfirmarReinicioDefinitivo").prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i> Validando...");
+    $("#alertaErrorReinicioPOS").hide();
+
+    $.ajax({
+        url: "GetIngresarAplicacion",
+        type: "POST",
+        dataType: "text",
+        data: {
+            "txtUsuario": usuario,
+            "txtPassword": password
+        },
+        success: function (data) {
+            $("#btnConfirmarReinicioDefinitivo").prop("disabled", false).html("<i class='fas fa-undo-alt mr-1'></i> Confirmar Reinicio");
+            var resultado = (data || "").trim();
+            if (resultado === "OK") {
+                $("#modalReiniciarPedidoPOS").modal("hide");
+
+                // Si se generó un pedido preliminar en el backend, se descarta
+                if (typeof idPedidoCentralActivo !== "undefined" && idPedidoCentralActivo > 0) {
+                    $.ajax({
+                        url: "EliminarPedidoSinConfirmar?idpedido=" + idPedidoCentralActivo,
+                        dataType: "json",
+                        type: "GET"
+                    });
+                    idPedidoCentralActivo = 0;
+                }
+
+                limpiarPantallaTrasDespacho();
+                alert("✅ Pedido reiniciado exitosamente. Toda la comanda y datos del cliente han sido descartados.");
+            } else {
+                $("#alertaErrorReinicioPOS").html("<i class='fas fa-times-circle mr-1'></i> Usuario o contraseña incorrectos.").show();
+                $("#txtPasswordReinicio").val("").focus();
+            }
+        },
+        error: function (xhr) {
+            $("#btnConfirmarReinicioDefinitivo").prop("disabled", false).html("<i class='fas fa-undo-alt mr-1'></i> Confirmar Reinicio");
+            $("#alertaErrorReinicioPOS").html("<i class='fas fa-exclamation-triangle mr-1'></i> Error al validar credenciales: " + (xhr.statusText || "Error de red")).show();
+        }
+    });
 }
 
 function formatearPesos(val) {

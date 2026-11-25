@@ -60,23 +60,24 @@ public class ConsultaPedidosNuevoMotorDAO {
 			StringBuilder sql = new StringBuilder();
 			sql.append("SELECT ")
 			   .append("  p.idpedido, p.idordencomercio, p.idtienda, t.nombre AS nombretienda, t.url AS urltienda, ")
-			   .append("  p.idcliente, CONCAT(IFNULL(c.nombres,''), ' ', IFNULL(c.apellidos,'')) AS nombrecliente, ")
+			   .append("  p.idcliente, CONCAT(IFNULL(c.nombre,''), ' ', IFNULL(c.apellido,'')) AS nombrecliente, ")
 			   .append("  IFNULL(c.telefono, IFNULL(c.telefono_celular,'')) AS telefono, IFNULL(c.direccion,'') AS direccion, ")
-			   .append("  IFNULL(c.municipio,'') AS municipio, p.fechapedido, p.fechainsercion, ")
+			   .append("  IFNULL(mun.nombre,'') AS municipio, p.fechapedido, p.fechainsercion, ")
 			   .append("  p.total_bruto, p.descuento, p.total_neto, p.idestadopedido, IFNULL(ep.descripcion,'') AS estadopedido, ")
 			   .append("  p.enviadopixel, p.numposheader, p.origen, p.usuariopedido, p.tiempopedido, ")
-			   .append("  p.programado, p.hora_programado, IFNULL(fp.nombre, 'NO DEFINIDO') AS formapago, ")
-			   .append("  IFNULL(s.idsombra, IFNULL(sv.idsombra, 0)) AS idsombra, ")
-			   .append("  IFNULL(s.modo_ejecucion, IF(sv.idsombra IS NOT NULL, 'PARALELO', 'LEGACY')) AS modosombra, ")
-			   .append("  IFNULL(s.estado_motor, IFNULL(sv.estado_motor, '')) AS estado_motor, ")
-			   .append("  IFNULL(s.total_viejo, IFNULL(sv.subtotal_viejo, 0)) AS total_viejo, ")
-			   .append("  IFNULL(s.total_motor, IFNULL(sv.subtotal_motor, 0)) AS total_motor, ")
-			   .append("  IFNULL(s.diferencia, IFNULL(sv.diferencia_vs_viejo, 0)) AS diferenciasombra, ")
-			   .append("  IFNULL(s.avisos_traduccion, IFNULL(sv.avisos_traduccion, 0)) AS avisos_traduccion, ")
-			   .append("  pos_p.idpedidotienda AS idpedidoposcentral ")
+			   .append("  p.programado, p.hora_programado, IFNULL(MAX(fp.nombre), 'NO DEFINIDO') AS formapago, ")
+			   .append("  IFNULL(MAX(s.idsombra), IFNULL(MAX(sv.idsombra), 0)) AS idsombra, ")
+			   .append("  IFNULL(MAX(s.modo_ejecucion), IF(MAX(sv.idsombra) IS NOT NULL, 'PARALELO', 'LEGACY')) AS modosombra, ")
+			   .append("  IFNULL(MAX(s.estado_motor), IFNULL(MAX(sv.estado_motor), '')) AS estado_motor, ")
+			   .append("  IFNULL(MAX(s.total_viejo), IFNULL(MAX(sv.subtotal_viejo), 0)) AS total_viejo, ")
+			   .append("  IFNULL(MAX(s.total_motor), IFNULL(MAX(sv.subtotal_motor), 0)) AS total_motor, ")
+			   .append("  IFNULL(MAX(s.diferencia), IFNULL(MAX(sv.diferencia_vs_viejo), 0)) AS diferenciasombra, ")
+			   .append("  IFNULL(MAX(s.avisos_traduccion), IFNULL(MAX(sv.avisos_traduccion), 0)) AS avisos_traduccion, ")
+			   .append("  MAX(pos_p.idpedidotienda) AS idpedidoposcentral ")
 			   .append("FROM pizzaamericana.pedido p ")
 			   .append("JOIN pizzaamericana.tienda t ON t.idtienda = p.idtienda ")
 			   .append("LEFT JOIN pizzaamericana.cliente c ON c.idcliente = p.idcliente ")
+			   .append("LEFT JOIN pizzaamericana.municipio mun ON mun.idmunicipio = c.idmunicipio ")
 			   .append("LEFT JOIN pizzaamericana.estado_pedido ep ON ep.idestadopedido = p.idestadopedido ")
 			   .append("LEFT JOIN pizzaamericana.pedido_forma_pago pfp ON pfp.idpedido = p.idpedido ")
 			   .append("LEFT JOIN pizzaamericana.forma_pago fp ON fp.idforma_pago = pfp.idforma_pago ")
@@ -271,7 +272,7 @@ public class ConsultaPedidosNuevoMotorDAO {
 			con = new ConexionBaseDatos().obtenerConexionBDPrincipal();
 
 			// 1. Lineas en pizzaamericana.detalle_pedido
-			String sqlLeg = "SELECT dp.iddetallepedido, dp.idproducto, IFNULL(p.descripcion, 'Item ' + dp.idproducto) AS nombreproducto, "
+			String sqlLeg = "SELECT dp.iddetalle_pedido, dp.idproducto, IFNULL(p.descripcion, CONCAT('Item ', dp.idproducto)) AS nombreproducto, "
 					+ "  dp.cantidad, dp.idespecialidad1, IFNULL(e1.descripcion, '') AS nomespecialidad1, "
 					+ "  dp.idespecialidad2, IFNULL(e2.descripcion, '') AS nomespecialidad2, "
 					+ "  dp.valorUnitario, dp.valorTotal, IFNULL(dp.adicion,'') AS adicion, IFNULL(dp.observacion,'') AS observacion "
@@ -279,14 +280,14 @@ public class ConsultaPedidosNuevoMotorDAO {
 					+ "LEFT JOIN pizzaamericana.producto p ON p.idproducto = dp.idproducto "
 					+ "LEFT JOIN pizzaamericana.especialidad e1 ON e1.idespecialidad = dp.idespecialidad1 "
 					+ "LEFT JOIN pizzaamericana.especialidad e2 ON e2.idespecialidad = dp.idespecialidad2 "
-					+ "WHERE dp.idpedido = ? ORDER BY dp.iddetallepedido";
+					+ "WHERE dp.idpedido = ? ORDER BY dp.iddetalle_pedido";
 
 			try (PreparedStatement ps = con.prepareStatement(sqlLeg)) {
 				ps.setInt(1, idPedido);
 				try (ResultSet rs = ps.executeQuery()) {
 					while (rs.next()) {
 						JSONObject lin = new JSONObject();
-						lin.put("iddetallepedido", rs.getInt("iddetallepedido"));
+						lin.put("iddetallepedido", rs.getInt("iddetalle_pedido"));
 						lin.put("idproducto", rs.getInt("idproducto"));
 						lin.put("nombreproducto", rs.getString("nombreproducto"));
 						lin.put("cantidad", rs.getDouble("cantidad"));
@@ -302,19 +303,19 @@ public class ConsultaPedidosNuevoMotorDAO {
 			}
 
 			// 2. Lineas en pos_central.detalle_pedido si fue proyectado al POS
-			String sqlPos = "SELECT dp.iddetallepedido, dp.idproducto, IFNULL(p.descripcion, 'POS ' + dp.idproducto) AS descripcion, "
+			String sqlPos = "SELECT dp.iddetalle_pedido, dp.idproducto, IFNULL(p.descripcion, CONCAT('POS ', dp.idproducto)) AS descripcion, "
 					+ "  dp.cantidad, dp.valorunitario, dp.valortotal, dp.iddetalle_pedido_master, dp.iddetalle_modificador "
 					+ "FROM pos_central.detalle_pedido dp "
 					+ "JOIN pos_central.pedido ped ON ped.idpedidotienda = dp.idpedidotienda "
 					+ "LEFT JOIN pos_central.producto p ON p.idproducto = dp.idproducto "
-					+ "WHERE ped.idpedidocontact = ? ORDER BY dp.iddetallepedido";
+					+ "WHERE ped.idpedidocontact = ? ORDER BY dp.iddetalle_pedido";
 
 			try (PreparedStatement ps = con.prepareStatement(sqlPos)) {
 				ps.setInt(1, idPedido);
 				try (ResultSet rs = ps.executeQuery()) {
 					while (rs.next()) {
 						JSONObject lin = new JSONObject();
-						lin.put("iddetallepedido", rs.getInt("iddetallepedido"));
+						lin.put("iddetallepedido", rs.getInt("iddetalle_pedido"));
 						lin.put("idproducto", rs.getInt("idproducto"));
 						lin.put("descripcion", rs.getString("descripcion"));
 						lin.put("cantidad", rs.getDouble("cantidad"));
