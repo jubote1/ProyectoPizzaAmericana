@@ -24,6 +24,10 @@
             </h2>
 
             <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
+                <button type="button" class="btn btn-danger btn-sm font-weight-bold shadow-sm" id="btnBadgeNoEnviados" style="display:none;" title="Ver pedidos del día pendientes por llegar a tienda">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> No enviados hoy: <span class="badge badge-light ml-1" id="cantNoEnviadosHoy">0</span>
+                </button>
+
                 <button type="button" class="btn btn-outline-light btn-sm font-weight-bold shadow-sm" id="btnAbrirModalMarcacionPlataforma" title="Marcaciones de Plataformas (Rappi, DiDi, Bot, convenios)">
                     <i class="fas fa-layer-group text-warning mr-1"></i> Marcaciones / Plataformas
                 </button>
@@ -1107,6 +1111,189 @@
         </div>
     </div>
 
+    <!-- =========================================================================
+         NUEVO MODAL VISUAL POST-DESPACHO (Éxito / Wompi / Fallo de Comunicación)
+         ========================================================================= -->
+    <div class="modal fade" id="modalResultadoDespacho" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 540px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 10px; overflow: hidden;">
+                <!-- CASO 1: ÉXITO TOTAL (Llegó a Tienda) -->
+                <div id="vistaDespachoExito" style="display:none;">
+                    <div class="text-center p-4" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-bottom: 2px solid #28a745;">
+                        <div class="mb-3">
+                            <span class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle shadow" style="width: 75px; height: 75px; font-size: 2.5rem;">
+                                <i class="fas fa-receipt"></i>
+                            </span>
+                        </div>
+                        <h4 class="font-weight-bold text-success mb-1">
+                            ¡Comanda #<span id="resDespachoNumComanda">---</span> Generada con Éxito!
+                        </h4>
+                        <p class="text-dark font-weight-bold mb-0" style="font-size: 1.05rem;">
+                            <i class="fas fa-store mr-1 text-success"></i> Impresa en Tienda <span id="resDespachoNombreTienda">---</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-white">
+                        <div class="row text-center mb-3">
+                            <div class="col-4 border-right">
+                                <span class="small text-muted d-block font-weight-bold">TIEMPO ESTIMADO</span>
+                                <span class="h5 font-weight-bold text-primary mb-0"><i class="fas fa-clock mr-1"></i><span id="resDespachoTiempo">30</span> min</span>
+                            </div>
+                            <div class="col-4 border-right">
+                                <span class="small text-muted d-block font-weight-bold">PEDIDO CENTRAL</span>
+                                <span class="h5 font-weight-bold text-dark mb-0">#<span id="resDespachoIdCentral">---</span></span>
+                            </div>
+                            <div class="col-4">
+                                <span class="small text-muted d-block font-weight-bold">TOTAL NETO</span>
+                                <span class="h5 font-weight-bold text-success mb-0">$<span id="resDespachoTotal">0</span></span>
+                            </div>
+                        </div>
+                        <div class="alert alert-light border small text-muted text-center py-2 mb-3">
+                            <i class="fas fa-check-circle text-success mr-1"></i> El pedido fue recibido directamente por la tienda y ya se encuentra en cola de cocina / despacho.
+                        </div>
+                        <button type="button" class="btn btn-success btn-lg btn-block font-weight-bold shadow py-3" id="btnDespachoSiguientePedido" style="font-size: 1.15rem;">
+                            <i class="fas fa-plus-circle mr-2"></i> + Tomar Siguiente Pedido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CASO 2: PAGO VIRTUAL PENDIENTE (Wompi) -->
+                <div id="vistaDespachoWompi" style="display:none;">
+                    <div class="text-center p-4" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-bottom: 2px solid #ffc107;">
+                        <div class="mb-3">
+                            <span class="d-inline-flex align-items-center justify-content-center bg-warning text-dark rounded-circle shadow" style="width: 75px; height: 75px; font-size: 2.5rem;">
+                                <i class="fas fa-hourglass-half"></i>
+                            </span>
+                        </div>
+                        <h4 class="font-weight-bold text-dark mb-1">
+                            Pedido Central #<span id="resWompiIdCentral">---</span>
+                        </h4>
+                        <span class="badge badge-warning text-dark px-3 py-1 font-weight-bold" style="font-size: 0.95rem;">
+                            <i class="fas fa-clock mr-1"></i> PENDIENTE DE PAGO VIRTUAL
+                        </span>
+                    </div>
+                    <div class="p-3 bg-white">
+                        <div class="alert alert-warning border-warning font-weight-bold py-2 mb-3" style="font-size: 0.9rem;">
+                            <i class="fas fa-exclamation-circle mr-1 text-danger"></i> <b>NO enviado a tienda aún:</b> Este pedido se despachará automáticamente a cocina una vez Wompi confirme el pago.
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-muted mb-1"><i class="fas fa-link mr-1"></i>Link de Pago Wompi:</label>
+                            <div class="input-group">
+                                <input type="text" id="txtWompiLinkResultado" class="form-control font-weight-bold text-primary" readonly style="font-size: 0.88rem;">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary font-weight-bold px-3" type="button" id="btnCopiarLinkWompiResultado" title="Copiar link al portapapeles">
+                                        <i class="fas fa-copy mr-1"></i> Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-light border small text-muted text-center py-2 mb-3">
+                            <i class="fab fa-whatsapp text-success mr-1"></i> Se envió automáticamente notificación por WhatsApp y correo electrónico al cliente.
+                        </div>
+                        <button type="button" class="btn btn-primary btn-lg btn-block font-weight-bold shadow py-3" id="btnWompiSiguientePedido" style="font-size: 1.15rem;">
+                            <i class="fas fa-plus-circle mr-2"></i> + Tomar Siguiente Pedido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CASO 3: FALLO DE COMUNICACIÓN CON TIENDA -->
+                <div id="vistaDespachoFallo" style="display:none;">
+                    <div class="text-center p-4" style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-bottom: 2px solid #dc3545;">
+                        <div class="mb-3">
+                            <span class="d-inline-flex align-items-center justify-content-center bg-danger text-white rounded-circle shadow" style="width: 75px; height: 75px; font-size: 2.5rem;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </span>
+                        </div>
+                        <h4 class="font-weight-bold text-danger mb-1">
+                            ⚠️ ATENCIÓN: NO LLEGÓ A LA TIENDA
+                        </h4>
+                        <p class="text-dark font-weight-bold mb-0" style="font-size: 1rem;">
+                            El pedido quedó registrado en Central pero falló la comunicación con tienda
+                        </p>
+                    </div>
+                    <div class="p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <span class="text-muted font-weight-bold">Pedido Central: <b class="text-dark">#<span id="resFalloIdCentral">---</span></b></span>
+                            <span class="text-muted font-weight-bold">Tienda Destino: <b class="text-dark" id="resFalloNombreTienda">---</b></span>
+                        </div>
+                        <div class="alert alert-danger font-weight-bold p-2 mb-3 text-left" style="font-size: 0.88rem;">
+                            <i class="fas fa-bug mr-1"></i> <b>Motivo del Fallo:</b><br>
+                            <span id="resFalloMotivo" class="font-weight-normal">Error de conexión con la tienda (Timeout)</span>
+                        </div>
+                        <div class="alert alert-warning border-warning small font-weight-bold py-2 mb-3">
+                            <i class="fas fa-shield-alt mr-1"></i> La orden está guardada en Central (la venta no se pierde). Presione <b>Reintentar</b> para reenviarla de inmediato o llame a la tienda para coordinar.
+                        </div>
+                        <div class="d-flex flex-column" style="gap: 10px;">
+                            <button type="button" class="btn btn-success btn-lg font-weight-bold shadow py-3" id="btnReintentarDespachoModal" style="font-size: 1.1rem;">
+                                <i class="fas fa-sync-alt mr-2"></i> 🔄 Reintentar Envío a Tienda Ahora
+                            </button>
+                            <div class="d-flex justify-content-between" style="gap: 10px;">
+                                <a href="#" class="btn btn-info font-weight-bold flex-fill py-2 d-flex align-items-center justify-content-center" id="btnLlamarTiendaModal" target="_blank">
+                                    <i class="fas fa-phone-alt mr-2"></i> 📞 Llamar a Tienda: <span id="resFalloTelTienda" class="ml-1">6044444553</span>
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary font-weight-bold px-3 py-2" id="btnCerrarFalloContinuar">
+                                    <i class="fas fa-arrow-right mr-1"></i> Continuar / Tomar Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL DE MONITOREO: PEDIDOS NO ENVIADOS HOY A TIENDA (enviadopixel = 0)
+         ========================================================================= -->
+    <div class="modal fade" id="modalPedidosNoEnviadosHoy" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white py-2 d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title font-weight-bold mb-0" style="font-size: 1.15rem;">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Pedidos No Enviados a Tienda Hoy (enviadopixel = 0)
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3 bg-light">
+                    <div class="alert alert-warning border-warning small font-weight-bold py-2 mb-3">
+                        <i class="fas fa-info-circle mr-1"></i> Estos pedidos quedaron registrados en el sistema Central pero <b>no generaron comanda en la tienda</b> (por fallo de red, corte de luz o timeout). Puede reintentar el envío directo con un clic o llamar a la tienda.
+                    </div>
+                    <div class="table-responsive bg-white rounded border shadow-sm">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;" id="tablaPedidosNoEnviadosHoy">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 90px;"># Central</th>
+                                    <th class="text-center" style="width: 80px;">Hora</th>
+                                    <th>Tienda Destino</th>
+                                    <th>Cliente</th>
+                                    <th>Teléfono / Dirección</th>
+                                    <th class="text-right" style="width: 90px;">Total</th>
+                                    <th class="text-center" style="width: 200px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyPedidosNoEnviadosHoy">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="emptyPedidosNoEnviadosHoy" class="text-center py-4 bg-white rounded border mt-2" style="display:none;">
+                        <i class="fas fa-check-circle text-success fa-3x mb-2"></i>
+                        <h6 class="font-weight-bold text-success mb-0">¡Excelente! Todos los pedidos del día han llegado correctamente a las tiendas.</h6>
+                        <span class="small text-muted">No hay pedidos pendientes con enviadopixel = 0.</span>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white py-2 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm font-weight-bold" id="btnRefrescarNoEnviadosHoy">
+                        <i class="fas fa-sync-alt mr-1"></i> Actualizar Lista
+                    </button>
+                    <button type="button" class="btn btn-secondary font-weight-bold px-4 btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Completo de Manual de Usuario y Guía Operativa -->
     <div class="modal fade" id="modalManualUsuario" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
@@ -1614,6 +1801,6 @@
     <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_puntos_pizza_v1"></script>
+    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_despacho_modal_v2"></script>
 </body>
 </html>

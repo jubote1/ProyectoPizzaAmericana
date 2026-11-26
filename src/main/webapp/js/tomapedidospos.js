@@ -472,6 +472,35 @@ $(document).ready(function () {
         ejecutarReinicioPedidoPOS();
     });
 
+    // Eventos del Nuevo Modal Post-Despacho Visual y Monitoreo de No Enviados
+    $("#btnDespachoSiguientePedido, #btnWompiSiguientePedido, #btnCerrarFalloContinuar").on("click", function () {
+        $("#modalResultadoDespacho").modal("hide");
+        limpiarPantallaTrasDespacho();
+        consultarPedidosNoEnviadosHoy();
+    });
+
+    $("#btnReintentarDespachoModal").on("click", function () {
+        ejecutarReintentoDespachoModal();
+    });
+
+    $("#btnCopiarLinkWompiResultado").on("click", function () {
+        copiarLinkWompiResultado();
+    });
+
+    $("#btnBadgeNoEnviados, #btnRefrescarNoEnviadosHoy").on("click", function () {
+        abrirModalPedidosNoEnviadosHoy();
+    });
+
+    $(document).on("click", ".btn-reintentar-fila-no-enviado", function () {
+        var idPed = parseInt($(this).data("id")) || 0;
+        var idTien = parseInt($(this).data("tienda")) || 0;
+        ejecutarReintentoFilaNoEnviado(idPed, idTien, $(this));
+    });
+
+    // Iniciar sondeo de pedidos no enviados hoy (al abrir y cada 60s)
+    consultarPedidosNoEnviadosHoy();
+    setInterval(consultarPedidosNoEnviadosHoy, 60000);
+
     // Estado inicial de ubicación y bloqueo de menú
     actualizarEstadoUbicacionUI();
     ajustarFormaPagoUI();
@@ -2630,42 +2659,8 @@ function ejecutarDespachoTiendaDefinitivo() {
                     registrarMarcacionPedido(resp.idPedido, marcacionActiva);
                 }
 
-                // CASO 1: Pedido con Pago Virtual (Wompi, etc.)
-                if (resp.pagoVirtual) {
-                    var msjVirtual = "🎉 ¡PEDIDO REGISTRADO: PAGO VIRTUAL!\n\n"
-                        + "• Número de Pedido Central: #" + resp.idPedido + "\n"
-                        + "• ID Nuevo Motor: #" + (resp.idPedidoPos || resp.idPedido) + "\n"
-                        + "• Estado Operativo: PENDIENTE DE PAGO VIRTUAL (No enviado a tienda aún)\n\n";
-
-                    if (resp.wompiSuccess && resp.urlPago) {
-                        msjVirtual += "✅ Link de Pago Wompi generado exitosamente:\n" + resp.urlPago + "\n\n"
-                            + "📲 Se envió automáticamente al cliente por WhatsApp y correo electrónico.\n"
-                            + "⏳ El pedido quedará en espera y se despachará a tienda una vez Wompi confirme el pago.";
-                    } else {
-                        msjVirtual += "⚠️ Atención: " + (resp.mensaje || "Inconveniente al generar link de pago.") + "\n\n"
-                            + "El pedido quedó registrado en Central. Puede verificar o reenviar el link desde la pantalla de «Monitoreo de Pagos Virtuales».";
-                    }
-                    alert(msjVirtual);
-                    limpiarPantallaTrasDespacho();
-                    return;
-                }
-
-                // CASO 2: Pedido Normal (Efectivo / Datáfono)
-                var msj = "🎉 ¡Pedido registrado con éxito!\n\n"
-                    + "• ID Central (Legacy): #" + resp.idPedido + "\n"
-                    + "• ID Nuevo Motor: #" + (resp.idPedidoPos || resp.idPedido) + "\n";
-
-                if (resp.despachoTienda && resp.despachoTienda.exito) {
-                    msj += "\nSe despachó directamente a la tienda con éxito.\n"
-                        + "• Comanda en tienda: #" + resp.despachoTienda.numeroFactura + "\n"
-                        + "• Trazabilidad enviada a tienda: " + (resp.idPedidoAlt || ("NM-" + (resp.idPedidoPos || resp.idPedido)));
-                } else if (resp.despachoTienda && !resp.despachoTienda.exito) {
-                    msj += "\nAtención en tienda: " + resp.despachoTienda.mensaje;
-                }
-                alert(msj);
-
-                // Pedido listo para el siguiente cliente: nada del anterior debe quedar
-                limpiarPantallaTrasDespacho();
+                // Mostrar el nuevo Modal Visual Post-Despacho (Éxito / Wompi / Fallo de Comunicación)
+                mostrarModalResultadoDespacho(resp, payload);
             } else {
                 alert("Error al finalizar el pedido: " + (resp.mensaje || "Error desconocido"));
             }
@@ -2673,6 +2668,7 @@ function ejecutarDespachoTiendaDefinitivo() {
         error: function (xhr) {
             $("#btnDespacharPedidoDefinitivo").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i>Confirmar y Despachar a Tienda");
             alert("Error en el servidor al enviar pedido: " + (xhr.responseText || "Error de red"));
+            consultarPedidosNoEnviadosHoy();
         }
     });
 }
@@ -2763,6 +2759,277 @@ function limpiarPantallaTrasDespacho() {
     actualizarEstadoUbicacionUI();
     cotizarEnVivo();
     $("#telcelular").focus();
+}
+
+/* =========================================================================
+   NUEVO MODAL VISUAL POST-DESPACHO & MONITOREO DE NO ENVIADOS HOY
+   ========================================================================= */
+
+var ultimoDespachoRealizado = null;
+
+var DIRECTORIO_TIENDAS_TELEFONO = {
+    1: "6044444553", // Manrique
+    2: "6044444553", // Bello
+    3: "6044444553", // La América
+    4: "6044444553", // La 80
+    5: "6044444553", // Itagüí
+    7: "6044444553", // La Mota
+    8: "6044444553", // Envigado
+    9: "6044444553", // Robledo Pilarica
+    10: "6044444553", // Estrella - San Antonio
+    11: "6044444553", // Manrique Piloto
+    13: "6044444553"  // Niquía
+};
+
+function obtenerTelefonoTienda(idTienda) {
+    if (DIRECTORIO_TIENDAS_TELEFONO[idTienda]) {
+        return DIRECTORIO_TIENDAS_TELEFONO[idTienda];
+    }
+    return "6044444553";
+}
+
+function mostrarModalResultadoDespacho(resp, payload) {
+    var idTiendaSel = parseInt($("#tiendaSelect").val()) || (resp.despachoTienda ? resp.despachoTienda.idtienda : 1);
+    var nomTienda = ($("#tiendaSelect option:selected").text() || "").replace(/\[PILOTO.*\]/g, "").replace(/-- Seleccione.*/g, "").trim();
+    if (!nomTienda && tiendaCoberturaCliente) {
+        nomTienda = tiendaCoberturaCliente.nombre || "Tienda";
+    }
+    if (!nomTienda) nomTienda = "Tienda Destino";
+
+    var tiempo = tiempoEstimadoTienda || 30;
+    var totalNeto = resp.total || (resp.resultadoMotor ? resp.resultadoMotor.total : (resultadoMotor ? resultadoMotor.total : 0));
+
+    ultimoDespachoRealizado = {
+        resp: resp,
+        payload: payload,
+        idTienda: idTiendaSel,
+        nombreTienda: nomTienda,
+        tiempo: tiempo,
+        totalNeto: totalNeto
+    };
+
+    // Ocultar las 3 vistas primero
+    $("#vistaDespachoExito, #vistaDespachoWompi, #vistaDespachoFallo").hide();
+
+    // CASO 2: Pago Virtual Pendiente (Wompi)
+    if (resp.pagoVirtual) {
+        $("#resWompiIdCentral").text(resp.idPedido);
+        if (resp.wompiSuccess && resp.urlPago) {
+            $("#txtWompiLinkResultado").val(resp.urlPago);
+            $("#btnCopiarLinkWompiResultado").prop("disabled", false).html("<i class='fas fa-copy mr-1'></i> Copiar");
+        } else {
+            $("#txtWompiLinkResultado").val(resp.mensaje || "Pendiente gestión en Monitoreo Wompi");
+            $("#btnCopiarLinkWompiResultado").prop("disabled", true);
+        }
+        $("#vistaDespachoWompi").show();
+        $("#modalResultadoDespacho").modal("show");
+        consultarPedidosNoEnviadosHoy();
+        return;
+    }
+
+    // CASO 1: Éxito Total (Llegó a Tienda con comanda generada)
+    if (resp.despachoTienda && resp.despachoTienda.exito && resp.despachoTienda.numeroFactura > 0) {
+        $("#resDespachoNumComanda").text(resp.despachoTienda.numeroFactura);
+        $("#resDespachoNombreTienda").text(nomTienda);
+        $("#resDespachoTiempo").text(tiempo);
+        $("#resDespachoIdCentral").text(resp.idPedido);
+        $("#resDespachoTotal").text(formatearPesos(totalNeto));
+        $("#vistaDespachoExito").show();
+        $("#modalResultadoDespacho").modal("show");
+        consultarPedidosNoEnviadosHoy();
+        return;
+    }
+
+    // CASO 3: Fallo de Comunicación con Tienda (Quedó en Central, enviadopixel = 0)
+    var motivoFallo = (resp.despachoTienda && resp.despachoTienda.mensaje)
+        ? resp.despachoTienda.mensaje
+        : (resp.mensaje || "Error de conexión o timeout al comunicarse con la tienda.");
+
+    var telTienda = obtenerTelefonoTienda(idTiendaSel);
+
+    $("#resFalloIdCentral").text(resp.idPedido);
+    $("#resFalloNombreTienda").text(nomTienda);
+    $("#resFalloMotivo").html("<i class='fas fa-exclamation-circle text-danger mr-1'></i> " + motivoFallo);
+    $("#resFalloTelTienda").text(telTienda);
+    $("#btnLlamarTiendaModal").attr("href", "tel:" + telTienda);
+    $("#btnReintentarDespachoModal").prop("disabled", false).html("<i class='fas fa-sync-alt mr-2'></i> 🔄 Reintentar Envío a Tienda Ahora");
+
+    $("#vistaDespachoFallo").show();
+    $("#modalResultadoDespacho").modal("show");
+    consultarPedidosNoEnviadosHoy();
+}
+
+function ejecutarReintentoDespachoModal() {
+    if (!ultimoDespachoRealizado || !ultimoDespachoRealizado.resp || !ultimoDespachoRealizado.resp.idPedido) {
+        alert("No hay información suficiente para reintentar el despacho.");
+        return;
+    }
+
+    $("#btnReintentarDespachoModal").prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-2'></i> Conectando con Tienda...");
+
+    var postData = {
+        idPedido: ultimoDespachoRealizado.resp.idPedido,
+        idPedidoPos: ultimoDespachoRealizado.resp.idPedidoPos || 0,
+        idTienda: ultimoDespachoRealizado.idTienda,
+        payload: ultimoDespachoRealizado.payload,
+        resultadoMotor: ultimoDespachoRealizado.resp.resultadoMotor
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "api/motor/reintentar-despacho",
+        contentType: "application/json;charset=UTF-8",
+        data: JSON.stringify(postData),
+        success: function (r) {
+            if (r.exito && r.numeroFactura > 0) {
+                // Éxito: transformar modal al Caso 1 (Verde)
+                $("#vistaDespachoFallo").hide();
+                $("#vistaDespachoWompi").hide();
+                $("#resDespachoNumComanda").text(r.numeroFactura);
+                $("#resDespachoNombreTienda").text(ultimoDespachoRealizado.nombreTienda);
+                $("#resDespachoTiempo").text(ultimoDespachoRealizado.tiempo);
+                $("#resDespachoIdCentral").text(r.idPedido || ultimoDespachoRealizado.resp.idPedido);
+                $("#resDespachoTotal").text(formatearPesos(ultimoDespachoRealizado.totalNeto));
+                $("#vistaDespachoExito").fadeIn(200);
+                consultarPedidosNoEnviadosHoy();
+            } else {
+                $("#btnReintentarDespachoModal").prop("disabled", false).html("<i class='fas fa-sync-alt mr-2'></i> 🔄 Reintentar Envío a Tienda Ahora");
+                var errorDet = r.mensaje || "La tienda no generó número de comanda.";
+                $("#resFalloMotivo").html("<i class='fas fa-exclamation-triangle text-danger mr-1'></i> <b>Fallo en reintento:</b> " + errorDet);
+                consultarPedidosNoEnviadosHoy();
+            }
+        },
+        error: function (xhr) {
+            $("#btnReintentarDespachoModal").prop("disabled", false).html("<i class='fas fa-sync-alt mr-2'></i> 🔄 Reintentar Envío a Tienda Ahora");
+            var msjErr = xhr.responseText || "Error de red al reintentar envío.";
+            $("#resFalloMotivo").html("<i class='fas fa-times-circle text-danger mr-1'></i> <b>Error de comunicación:</b> " + msjErr);
+        }
+    });
+}
+
+function copiarLinkWompiResultado() {
+    var link = $("#txtWompiLinkResultado").val();
+    if (!link) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function () {
+            $("#btnCopiarLinkWompiResultado").html("<i class='fas fa-check mr-1'></i> ¡Copiado!");
+            setTimeout(function () {
+                $("#btnCopiarLinkWompiResultado").html("<i class='fas fa-copy mr-1'></i> Copiar");
+            }, 2500);
+        });
+    } else {
+        $("#txtWompiLinkResultado").select();
+        document.execCommand("copy");
+        $("#btnCopiarLinkWompiResultado").html("<i class='fas fa-check mr-1'></i> ¡Copiado!");
+        setTimeout(function () {
+            $("#btnCopiarLinkWompiResultado").html("<i class='fas fa-copy mr-1'></i> Copiar");
+        }, 2500);
+    }
+}
+
+function consultarPedidosNoEnviadosHoy() {
+    $.getJSON("api/motor/reintentar-despacho?accion=no-enviados-hoy", function (resp) {
+        if (resp && resp.exito) {
+            var total = resp.total || 0;
+            $("#cantNoEnviadosHoy").text(total);
+            if (total > 0) {
+                $("#btnBadgeNoEnviados").fadeIn(200);
+            } else {
+                $("#btnBadgeNoEnviados").hide();
+            }
+            if ($("#modalPedidosNoEnviadosHoy").is(":visible")) {
+                renderTablaPedidosNoEnviadosHoy(resp.pedidos || []);
+            }
+        }
+    }).fail(function () {
+        // Silencioso ante fallos temporales de sondeo
+    });
+}
+
+function abrirModalPedidosNoEnviadosHoy() {
+    $("#modalPedidosNoEnviadosHoy").modal("show");
+    $("#tbodyPedidosNoEnviadosHoy").html("<tr><td colspan='7' class='text-center py-3 text-muted'><i class='fas fa-spinner fa-spin mr-2'></i>Consultando pedidos pendientes del día...</td></tr>");
+    $("#tablaPedidosNoEnviadosHoy").show();
+    $("#emptyPedidosNoEnviadosHoy").hide();
+
+    $.getJSON("api/motor/reintentar-despacho?accion=no-enviados-hoy", function (resp) {
+        if (resp && resp.exito) {
+            renderTablaPedidosNoEnviadosHoy(resp.pedidos || []);
+        } else {
+            $("#tbodyPedidosNoEnviadosHoy").html("<tr><td colspan='7' class='text-center text-danger py-3'>Error al consultar pedidos no enviados.</td></tr>");
+        }
+    }).fail(function () {
+        $("#tbodyPedidosNoEnviadosHoy").html("<tr><td colspan='7' class='text-center text-danger py-3'>Error de conexión al consultar pedidos no enviados.</td></tr>");
+    });
+}
+
+function renderTablaPedidosNoEnviadosHoy(pedidos) {
+    var $tbody = $("#tbodyPedidosNoEnviadosHoy");
+    $tbody.empty();
+
+    if (!pedidos || pedidos.length === 0) {
+        $("#tablaPedidosNoEnviadosHoy").hide();
+        $("#emptyPedidosNoEnviadosHoy").show();
+        $("#cantNoEnviadosHoy").text("0");
+        $("#btnBadgeNoEnviados").hide();
+        return;
+    }
+
+    $("#tablaPedidosNoEnviadosHoy").show();
+    $("#emptyPedidosNoEnviadosHoy").hide();
+    $("#cantNoEnviadosHoy").text(pedidos.length);
+    $("#btnBadgeNoEnviados").show();
+
+    $.each(pedidos, function (i, p) {
+        var hora = (p.fechaInsercion || "").substring(11, 16) || (p.fechaPedido || "");
+        var telTienda = obtenerTelefonoTienda(p.idTienda);
+        var $tr = $("<tr></tr>");
+        $tr.append($("<td class='text-center font-weight-bold'></td>").text("#" + p.idPedido));
+        $tr.append($("<td class='text-center text-muted'></td>").text(hora));
+        $tr.append($("<td class='font-weight-bold text-dark'></td>").text(p.nombreTienda || ("Tienda " + p.idTienda)));
+        $tr.append($("<td></td>").text(p.nombreCliente || "Cliente Mostrador"));
+        $tr.append($("<td class='small text-muted'></td>").html("<b>" + (p.telefonoCliente || "") + "</b><br>" + (p.direccionCliente || "")));
+        $tr.append($("<td class='text-right font-weight-bold text-success'></td>").text("$" + formatearPesos(p.totalNeto || 0)));
+
+        var $acciones = $("<td class='text-center' style='white-space: nowrap;'></td>");
+        var $btnReint = $("<button type='button' class='btn btn-success btn-sm btn-reintentar-fila-no-enviado font-weight-bold px-2 py-1 mr-1'></button>")
+            .attr("data-id", p.idPedido)
+            .attr("data-tienda", p.idTienda)
+            .html("<i class='fas fa-sync-alt mr-1'></i> Reintentar");
+        var $btnLlam = $("<a class='btn btn-outline-info btn-sm font-weight-bold px-2 py-1' target='_blank'></a>")
+            .attr("href", "tel:" + telTienda)
+            .attr("title", "Llamar a " + p.nombreTienda + " (" + telTienda + ")")
+            .html("<i class='fas fa-phone-alt'></i>");
+
+        $acciones.append($btnReint).append($btnLlam);
+        $tr.append($acciones);
+        $tbody.append($tr);
+    });
+}
+
+function ejecutarReintentoFilaNoEnviado(idPedido, idTienda, $btn) {
+    $btn.prop("disabled", true).html("<i class='fas fa-spinner fa-spin'></i> Reintentando...");
+
+    $.ajax({
+        type: "POST",
+        url: "api/motor/reintentar-despacho",
+        contentType: "application/json;charset=UTF-8",
+        data: JSON.stringify({ idPedido: idPedido, idTienda: idTienda }),
+        success: function (r) {
+            if (r.exito && r.numeroFactura > 0) {
+                $btn.closest("td").html("<span class='badge badge-success px-2 py-1 font-weight-bold'><i class='fas fa-check mr-1'></i> Enviado #" + r.numeroFactura + "</span>");
+                consultarPedidosNoEnviadosHoy();
+            } else {
+                $btn.prop("disabled", false).html("<i class='fas fa-sync-alt mr-1'></i> Reintentar");
+                alert("Fallo al reintentar pedido #" + idPedido + ": " + (r.mensaje || "La tienda no generó comanda."));
+                consultarPedidosNoEnviadosHoy();
+            }
+        },
+        error: function (xhr) {
+            $btn.prop("disabled", false).html("<i class='fas fa-sync-alt mr-1'></i> Reintentar");
+            alert("Error de red al reintentar pedido #" + idPedido + ": " + (xhr.responseText || "No se pudo conectar"));
+        }
+    });
 }
 
 /**
