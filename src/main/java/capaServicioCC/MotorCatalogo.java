@@ -103,7 +103,7 @@ public class MotorCatalogo extends HttpServlet {
 
 		// 2. Obtener productos configurados en la cuadricula de cada multimenu
 		String sqlItems = "select cm.multimenu, cm.menu, cm.fila, cm.columna, cm.idproducto, "
-				+ "p.descripcion, p.tipo_producto as tipo, p.precio1, p.precio_pila, p.promocion, p.empleado "
+				+ "p.descripcion, p.tipo_producto as tipo, p.precio1, p.precio_pila, p.promocion, p.empleado, p.precio_puntos "
 				+ "from pos_central.configuracion_menu cm "
 				+ "join pos_central.producto p on p.idproducto = cm.idproducto "
 				// El parentesis alrededor del no_venta no es adorno: sin el, el OR
@@ -130,6 +130,7 @@ public class MotorCatalogo extends HttpServlet {
 						item.put("precioPila", rs.getInt("precio_pila"));
 						item.put("promocion", rs.getString("promocion"));
 						item.put("empleado", rs.getString("empleado"));
+						item.put("precioPuntos", rs.getDouble("precio_puntos"));
 						item.put("menu", rs.getInt("menu"));
 						item.put("fila", rs.getInt("fila"));
 						item.put("columna", rs.getInt("columna"));

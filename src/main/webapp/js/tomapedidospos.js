@@ -33,6 +33,10 @@ var productoEmpleadoPendienteId = null;
 var timerBusquedaEmpleado = null;
 var empleadoSeleccionadoTemporal = null;
 
+// Gestión de Redención y Reversa de Puntos Pizza
+var idsRedencionPedido = [];
+var puntosRedimidos = 0;
+
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
     tipo: "", // "CUPON" o "MANUAL"
@@ -78,6 +82,7 @@ $(document).ready(function () {
     cargarCatalogoMarcaciones();
     cargarFormasPagoParametricas();
     initValidacionPrecioEmpleado();
+    initGestionPuntosPizza();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -1037,7 +1042,7 @@ function cargarMenuPOS() {
                         .addClass("card-prod")
                         .attr("data-idproducto", item.idproducto)
                         .on("click", function () {
-                            abrirModalProducto(item.idproducto, item.empleado === "S");
+                            abrirModalProducto(item.idproducto, item.empleado === "S", item.precioPuntos || 0);
                         });
 
                     if (item.promocion && item.promocion === "S") {
@@ -1046,10 +1051,14 @@ function cargarMenuPOS() {
                     if (item.empleado && item.empleado === "S") {
                         $card.append("<span class='badge-promo' style='background: #0d6efd;'>🔒 EMPLEADO</span>");
                     }
+                    if (item.precioPuntos && item.precioPuntos > 0) {
+                        $card.append("<span class='badge-promo' style='background: #ffc107; color: #212529;'><i class='fas fa-gift mr-1'></i>" + Math.round(item.precioPuntos) + " PTS</span>");
+                    }
 
                     var $title = $("<div></div>").addClass("prod-title").text(item.descripcion);
                     var $tipo = $("<div></div>").addClass("prod-tipo").text(item.tipo === "P" ? "Pizza" : (item.tipo === "B" ? "Bebida" : "Item"));
-                    var $precio = $("<div></div>").addClass("prod-precio").text("$ " + formatearPesos(item.precio));
+                    var precioTexto = (item.precioPuntos && item.precioPuntos > 0) ? (Math.round(item.precioPuntos) + " Puntos") : ("$ " + formatearPesos(item.precio));
+                    var $precio = $("<div></div>").addClass("prod-precio").text(precioTexto);
 
                     $card.append($title).append($tipo).append($precio);
                     $grid.append($card);
@@ -1079,7 +1088,7 @@ function obtenerIconoMenu(nombre) {
 /* =========================================================================
    CONFIGURADOR DE PRODUCTO (MODAL CON PREGUNTAS FORZADAS Y MITADES)
    ========================================================================= */
-function abrirModalProducto(idProducto, esEmpleadoHint) {
+function abrirModalProducto(idProducto, esEmpleadoHint, precioPuntosHint) {
     if (!clienteUbicado) {
         alert("¡Atención! Es obligatorio ingresar los datos del cliente y ubicar su dirección en el mapa antes de tomar el pedido.");
         abrirModalMapa();
@@ -1101,6 +1110,8 @@ function abrirModalProducto(idProducto, esEmpleadoHint) {
     }
 
     $.getJSON("api/motor/catalogo?accion=producto&id=" + idProducto, function (prod) {
+        prod.precioPuntos = prod.precioPuntos || precioPuntosHint || 0;
+
         // Intercepción: Beneficio de Precio Empleado
         if (prod.empleado === "S") {
             var yaTieneEmpleadoEnComanda = draftLineas.some(function (l) { return l.esEmpleado; });
@@ -1129,7 +1140,8 @@ function renderizarModalProducto(prod) {
 
     var $cab = $("<div></div>").addClass("mb-2 d-flex justify-content-between align-items-center p-2 rounded bg-light border");
     $cab.append("<div><h5 class='mb-0 font-weight-bold text-dark'>" + prod.descripcion + "</h5><small class='text-muted'>" + (prod.tipo === "P" ? "Pizza" : "Producto") + "</small></div>");
-    $cab.append("<div class='h4 text-danger font-weight-bold mb-0'>$ " + formatearPesos(prod.precio1) + "</div>");
+    var precTxt = (prod.precioPuntos && prod.precioPuntos > 0) ? (Math.round(prod.precioPuntos) + " Pts") : ("$ " + formatearPesos(prod.precio1));
+    $cab.append("<div class='h4 text-danger font-weight-bold mb-0'>" + precTxt + "</div>");
     $c.append($cab);
 
     // Banner de Beneficio Precio Empleado si aplica
@@ -1137,6 +1149,11 @@ function renderizarModalProducto(prod) {
         var empNom = empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.nombre : "Colaborador de Nómina";
         var empCod = empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.codigo : "";
         $c.append("<div class='alert alert-primary py-1 px-3 mb-2' style='font-size:0.83rem;'><i class='fas fa-user-shield mr-1'></i> <b>Beneficio Precio Empleado Autorizado:</b> " + empNom + " (Cód: " + empCod + ") - Máx. 1 unidad</div>");
+    }
+
+    // Banner de Redención Puntos Pizza si aplica
+    if (prod.precioPuntos && prod.precioPuntos > 0) {
+        $c.append("<div class='alert alert-warning py-1 px-3 mb-2' style='font-size:0.83rem;'><i class='fas fa-gift mr-1'></i> <b>Producto de Fidelización:</b> Requiere <b>" + Math.round(prod.precioPuntos) + " Puntos Pizza</b> para redimir.</div>");
     }
 
     // Productos incluidos automáticos ($0)
@@ -1624,7 +1641,8 @@ function guardarProductoDesdeModal() {
         observacion: (esEmp && empleadoPrecioEmpleadoValidado)
             ? ("[PRECIO EMPLEADO: " + empleadoPrecioEmpleadoValidado.nombre + " (Cód: " + empleadoPrecioEmpleadoValidado.codigo + ")]")
             : "",
-        esEmpleado: esEmp
+        esEmpleado: esEmp,
+        precioPuntos: (productoEnEdicion && productoEnEdicion.precioPuntos) ? productoEnEdicion.precioPuntos : 0
     });
 
     actualizarBadgePrecioEmpleado();
@@ -1985,6 +2003,7 @@ function cotizarEnVivo() {
         $("#domicilioTxt").text("$ 0");
         $("#totalTxt").text("$ 0");
         $("#contenedorDescuentoActivo").hide();
+        actualizarCajaPuntosComanda(0);
         $("#btnConfirmarPedido").prop("disabled", true);
         return;
     }
@@ -2245,6 +2264,10 @@ function renderizarComanda(res) {
         $("#txtValorPago").val(formatearPesos(res.total));
     }
     calcularDevuelta();
+
+    // Actualizar estado de Puntos Pizza en Comanda
+    var totalPtsReq = calcularPuntosRequeridosComanda();
+    actualizarCajaPuntosComanda(totalPtsReq);
 }
 
 function eliminarItemDraft(index) {
@@ -2255,6 +2278,8 @@ function eliminarItemDraft(index) {
             empleadoPrecioEmpleadoValidado = null;
         }
         actualizarBadgePrecioEmpleado();
+        var totalPtsReq = calcularPuntosRequeridosComanda();
+        actualizarCajaPuntosComanda(totalPtsReq);
         cotizarEnVivo();
     }
 }
@@ -2276,6 +2301,17 @@ function abrirModalConfirmacionPedido() {
 
     if (!resultadoMotor || draftLineas.length === 0) {
         alert("La comanda no tiene productos para despachar.");
+        return;
+    }
+
+    // Regla de Puntos Pizza: validación obligatoria antes de confirmar
+    var totalPtsReq = calcularPuntosRequeridosComanda();
+    if (totalPtsReq > 0 && puntosRedimidos < totalPtsReq) {
+        alert("⚠️ CONDICIONAL OBLIGATORIO: REDENCIÓN DE PUNTOS PIZZA\n\n"
+            + "El pedido contiene productos que requieren " + totalPtsReq + " puntos de fidelización.\n"
+            + "Puntos redimidos hasta el momento: " + puntosRedimidos + " pts.\n\n"
+            + "Por favor realice la redención de puntos con el código enviado al cliente antes de continuar.");
+        abrirModalRedencionPuntos();
         return;
     }
 
@@ -2490,6 +2526,15 @@ function ejecutarDespachoTiendaDefinitivo() {
         }
     }
 
+    // Regla de Puntos Pizza: validación obligatoria antes de despachar
+    var totalPtsReq = calcularPuntosRequeridosComanda();
+    if (totalPtsReq > 0 && puntosRedimidos < totalPtsReq) {
+        alert("⚠️ ERROR: El pedido requiere " + totalPtsReq + " puntos pero solo se han redimido " + puntosRedimidos + " puntos.\n\nPor favor realice la redención de puntos antes de despachar a la tienda.");
+        $("#btnDespacharPedidoDefinitivo").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i>Confirmar y Despachar a Tienda");
+        abrirModalRedencionPuntos();
+        return;
+    }
+
     var tiempoPed = tiempoEstimadoTienda || 30;
     var esProg = $("#chkPedidoProgramado").is(":checked");
     var horaProg = esProg ? ($("#selectHoraProgramada").val() || "") : "";
@@ -2513,6 +2558,8 @@ function ejecutarDespachoTiendaDefinitivo() {
         plataforma: (marcacionActiva && marcacionActiva.nombremarcacion) ? marcacionActiva.nombremarcacion.trim() : "",
         idEmpleadoPrecioEmpleado: empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.id : 0,
         codigoPrecioEmpleado: empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.codigo : "",
+        idsRedencion: idsRedencionPedido,
+        puntosRedimidos: puntosRedimidos,
         marcacion: (marcacionActiva && marcacionActiva.idmarcacion > 0) ? {
             idmarcacion: marcacionActiva.idmarcacion,
             nombremarcacion: marcacionActiva.nombremarcacion,
@@ -2642,7 +2689,7 @@ function ejecutarDespachoTiendaDefinitivo() {
  * trabajo de quien toma pedidos, no datos del cliente.
  */
 function limpiarPantallaTrasDespacho() {
-    // 1. Comanda, descuento, programado y marcaciones de plataforma
+    // 1. Comanda, descuento, programado, puntos pizza y marcaciones de plataforma
     draftLineas = [];
     resultadoMotor = null;
     idPedidoCentralActivo = 0;
@@ -2651,6 +2698,9 @@ function limpiarPantallaTrasDespacho() {
     empleadoPrecioEmpleadoValidado = null;
     productoEmpleadoPendienteId = null;
     actualizarBadgePrecioEmpleado();
+    idsRedencionPedido = [];
+    puntosRedimidos = 0;
+    actualizarCajaPuntosComanda(0);
     $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
     $("#selectMotivoDescuento").prop("selectedIndex", 0);
     $("#chkPedidoProgramado").prop("checked", false);
@@ -2776,8 +2826,13 @@ function ejecutarReinicioPedidoPOS() {
                     idPedidoCentralActivo = 0;
                 }
 
+                // Reversar automáticamente redenciones de puntos si el pedido no se finalizó
+                var cantRev = (idsRedencionPedido && idsRedencionPedido.length > 0) ? idsRedencionPedido.length : 0;
+                reversarRedencionesActivas("Pedido cancelado o reiniciado por el usuario");
+
                 limpiarPantallaTrasDespacho();
-                alert("✅ Pedido reiniciado exitosamente. Toda la comanda y datos del cliente han sido descartados.");
+                var extraMsg = cantRev > 0 ? " Los puntos redimidos fueron devueltos automáticamente al cliente." : "";
+                alert("✅ Pedido reiniciado exitosamente. Toda la comanda y datos del cliente han sido descartados." + extraMsg);
             } else {
                 $("#alertaErrorReinicioPOS").html("<i class='fas fa-times-circle mr-1'></i> Usuario o contraseña incorrectos.").show();
                 $("#txtPasswordReinicio").val("").focus();
@@ -3283,4 +3338,291 @@ function mostrarAlertaPrecioEmp(tipo, html) {
         .addClass("alert-" + tipo)
         .html(html)
         .show();
+}
+
+/* =========================================================================
+   GESTIÓN DE REDENCIÓN Y REVERSA DE PUNTOS PIZZA (FIDELIZACIÓN)
+   ========================================================================= */
+function initGestionPuntosPizza() {
+    $("#btnTriggerRedimirPuntos").on("click", function (e) {
+        e.preventDefault();
+        abrirModalRedencionPuntos();
+    });
+
+    $("#btnEnviarCodigoRedencionPuntos").on("click", function (e) {
+        e.preventDefault();
+        enviarCodigoRedencionPuntos();
+    });
+
+    $("#btnValidarYConfirmarCodigoPuntos").on("click", function (e) {
+        e.preventDefault();
+        validarYConfirmarCodigoRedencionPuntos();
+    });
+
+    $("#linkReenviarCodigoPuntos").on("click", function (e) {
+        e.preventDefault();
+        enviarCodigoRedencionPuntos();
+    });
+
+    $("#txtCodigoVerifPuntos").on("keypress", function (e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            validarYConfirmarCodigoRedencionPuntos();
+        }
+    });
+}
+
+function calcularPuntosRequeridosComanda() {
+    var pts = 0;
+    if (draftLineas && draftLineas.length > 0) {
+        for (var i = 0; i < draftLineas.length; i++) {
+            pts += ((draftLineas[i].precioPuntos || 0) * (draftLineas[i].cantidad || 1));
+        }
+    }
+    return Math.round(pts);
+}
+
+function actualizarCajaPuntosComanda(totalPuntosReq) {
+    if (totalPuntosReq > 0) {
+        $("#boxPuntosPizzaComanda").show();
+        var faltantes = Math.max(0, totalPuntosReq - puntosRedimidos);
+        if (puntosRedimidos >= totalPuntosReq) {
+            $("#badgePuntosRequeridosComanda")
+                .removeClass("badge-warning")
+                .addClass("badge-success")
+                .html("<i class='fas fa-check mr-1'></i>" + totalPuntosReq + " pts (Redimidos)");
+            $("#txtEstadoPuntosComanda").html(
+                "<span class='text-success font-weight-bold'><i class='fas fa-check-circle mr-1'></i> Redención confirmada en BD (" + puntosRedimidos + " pts)</span>"
+            );
+            $("#btnTriggerRedimirPuntos")
+                .removeClass("btn-warning")
+                .addClass("btn-outline-success")
+                .html("<i class='fas fa-check mr-1'></i> Redimido");
+        } else {
+            $("#badgePuntosRequeridosComanda")
+                .removeClass("badge-success")
+                .addClass("badge-warning")
+                .text(totalPuntosReq + " pts");
+            $("#txtEstadoPuntosComanda").html(
+                "<span class='text-danger font-weight-bold'><i class='fas fa-exclamation-triangle mr-1'></i> Pendiente (" + faltantes + " pts por redimir)</span>"
+            );
+            $("#btnTriggerRedimirPuntos")
+                .removeClass("btn-outline-success")
+                .addClass("btn-warning")
+                .html("<i class='fas fa-coins mr-1'></i> Redimir Puntos");
+        }
+    } else {
+        $("#boxPuntosPizzaComanda").hide();
+        // Si no quedan productos de puntos pero se habían redimido puntos, reversarlos automáticamente
+        if (idsRedencionPedido && idsRedencionPedido.length > 0) {
+            reversarRedencionesActivas("Se eliminaron los productos de puntos de la comanda");
+            alert("ℹ️ Se eliminaron los productos de puntos de la comanda. Los puntos redimidos fueron devueltos automáticamente al saldo del cliente.");
+        }
+    }
+}
+
+function abrirModalRedencionPuntos() {
+    var totalReq = calcularPuntosRequeridosComanda();
+    if (totalReq <= 0) {
+        alert("La comanda actual no contiene productos que requieran redención de Puntos Pizza.");
+        return;
+    }
+
+    var emailCli = (clienteActual && clienteActual.email ? clienteActual.email.trim() : "") || ($("#cliEmail").val() || "").trim();
+    if (!emailCli) {
+        alert("⚠️ ATENCIÓN: El cliente debe tener un correo electrónico registrado para enviarle el código de verificación de puntos.\n\nPor favor digite el correo en la casilla 'Correo Electrónico' del cliente.");
+        $("#cliEmail").focus();
+        return;
+    }
+
+    var pendientes = Math.max(0, totalReq - puntosRedimidos);
+    $("#lblPuntosReqModal").text(totalReq + " pts");
+    $("#lblPuntosYaRedimidosModal").text(puntosRedimidos + " pts");
+    $("#lblPuntosPendientesModal").text(pendientes + " pts");
+    $("#txtCorreoRedencionPuntos").val(emailCli);
+    $("#txtCodigoVerifPuntos").val("");
+    $("#seccionValidarCodigoPuntos").hide();
+    $("#seccionEnvioCodigoPuntos").show();
+    $("#alertaRedencionPuntosModal").hide().empty();
+    $("#lblPuntosDisponiblesModal").html("<i class='fas fa-spinner fa-spin mr-1'></i> Consultando...");
+    $("#btnEnviarCodigoRedencionPuntos").prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+
+    // Consultar saldo actual del cliente
+    $.getJSON("ValidarRedencionPuntos?correo=" + encodeURIComponent(emailCli), function (data) {
+        if (data && data.respuesta === "OK") {
+            var saldo = Math.round(parseFloat(data.puntos) || 0);
+            $("#lblPuntosDisponiblesModal").text(saldo + " pts");
+            if (saldo < pendientes) {
+                mostrarAlertaPuntosModal("danger", "⛔ <b>Saldo insuficiente:</b> El cliente tiene <b>" + saldo + " pts</b> y el pedido requiere redimir <b>" + pendientes + " pts</b>.");
+                $("#btnEnviarCodigoRedencionPuntos").prop("disabled", true);
+            }
+        } else {
+            $("#lblPuntosDisponiblesModal").text("No vinculado");
+            mostrarAlertaPuntosModal("warning", "⚠️ <b>Cliente no vinculado:</b> Este correo no se encuentra registrado en el programa de Puntos Pizza. Utilice el botón «[ + Vincular a Puntos Pizza ]» en la franja superior.");
+            $("#btnEnviarCodigoRedencionPuntos").prop("disabled", true);
+        }
+    }).fail(function () {
+        $("#lblPuntosDisponiblesModal").text("Error consultando saldo");
+    });
+
+    $("#modalRedimirPuntosPOS").modal("show");
+}
+
+function enviarCodigoRedencionPuntos() {
+    var emailCli = $("#txtCorreoRedencionPuntos").val().trim();
+    if (!emailCli) {
+        mostrarAlertaPuntosModal("danger", "Ingrese un correo electrónico válido.");
+        return;
+    }
+
+    var totalReq = calcularPuntosRequeridosComanda();
+    var puntosARedimir = Math.max(0, totalReq - puntosRedimidos);
+    if (puntosARedimir <= 0) {
+        mostrarAlertaPuntosModal("info", "Todos los puntos de este pedido ya han sido redimidos.");
+        return;
+    }
+
+    var $btn = $("#btnEnviarCodigoRedencionPuntos");
+    $btn.prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-2'></i> Enviando código...");
+    $("#alertaRedencionPuntosModal").hide();
+
+    // 1. Validar saldo
+    $.getJSON("ValidarRedencionPuntos?correo=" + encodeURIComponent(emailCli), function (data1) {
+        if (!data1 || data1.respuesta !== "OK") {
+            $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+            mostrarAlertaPuntosModal("danger", "El cliente no está registrado en el programa de fidelización.");
+            return;
+        }
+
+        var saldo = Math.round(parseFloat(data1.puntos) || 0);
+        if (saldo < puntosARedimir) {
+            $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+            mostrarAlertaPuntosModal("danger", "Saldo insuficiente: el cliente tiene " + saldo + " pts y requiere " + puntosARedimir + " pts.");
+            return;
+        }
+
+        // 2. Generar y enviar OTP al correo
+        var fechaBD = obtenerFechaFormatoBD();
+        var idTienda = idTiendaSeleccionada() || 1;
+        $.getJSON("CrearCodigoValidarRedencionPuntos?correo=" + encodeURIComponent(emailCli)
+            + "&puntosredimir=" + puntosARedimir
+            + "&fechasistema=" + encodeURIComponent(fechaBD)
+            + "&idtienda=" + idTienda, function (data2) {
+                if (data2) {
+                    mostrarAlertaPuntosModal("success", "✅ <b>Código enviado:</b> Se ha enviado el código de verificación al correo <b>" + emailCli + "</b>. Solicítelo al cliente e ingréselo a continuación.");
+                    $("#seccionValidarCodigoPuntos").slideDown();
+                    $("#txtCodigoVerifPuntos").val("").focus();
+                    $btn.html("<i class='fas fa-check mr-2'></i> Código Despachado");
+                } else {
+                    $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+                    mostrarAlertaPuntosModal("danger", "No se pudo generar el código de verificación. Intente nuevamente.");
+                }
+            }).fail(function (xhr) {
+                $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+                mostrarAlertaPuntosModal("danger", "Error de comunicación al generar código: " + (xhr.statusText || "Error de red"));
+            });
+    }).fail(function (xhr) {
+        $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo");
+        mostrarAlertaPuntosModal("danger", "Error validando saldo del cliente: " + (xhr.statusText || "Error de red"));
+    });
+}
+
+function validarYConfirmarCodigoRedencionPuntos() {
+    var codigo = $("#txtCodigoVerifPuntos").val().trim();
+    if (!codigo) {
+        mostrarAlertaPuntosModal("warning", "Debe ingresar el código de verificación para continuar.");
+        $("#txtCodigoVerifPuntos").focus();
+        return;
+    }
+
+    var emailCli = $("#txtCorreoRedencionPuntos").val().trim();
+    var fechaBD = obtenerFechaFormatoBD();
+    var idTienda = idTiendaSeleccionada() || 1;
+    var totalReq = calcularPuntosRequeridosComanda();
+    var puntosARedimir = Math.max(0, totalReq - puntosRedimidos);
+
+    var $btn = $("#btnValidarYConfirmarCodigoPuntos");
+    $btn.prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i> Validando código...");
+    $("#alertaRedencionPuntosModal").hide();
+
+    // 1. Validar existencia del código
+    $.getJSON("ValidarExistenciaCodigoRedencion?correo=" + encodeURIComponent(emailCli)
+        + "&codigo=" + encodeURIComponent(codigo)
+        + "&fechasistema=" + encodeURIComponent(fechaBD), function (data1) {
+            if (data1 && data1.respuesta) {
+                // Código válido: realizar la redención en base de datos
+                $btn.html("<i class='fas fa-spinner fa-spin mr-1'></i> Confirmando redención...");
+                $.getJSON("RealizarRedencionPuntos?correo=" + encodeURIComponent(emailCli)
+                    + "&codigo=" + encodeURIComponent(codigo)
+                    + "&puntosredimir=" + puntosARedimir
+                    + "&idtienda=" + idTienda
+                    + "&idpedido=0", function (data2) {
+                        $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Confirmar Redención");
+                        if (data2 && data2.respuesta === "OK") {
+                            idsRedencionPedido.push(data2.idredencion);
+                            puntosRedimidos += puntosARedimir;
+
+                            $("#modalRedimirPuntosPOS").modal("hide");
+                            var ptsRest = (data2.puntosrestantes != null) ? Math.round(data2.puntosrestantes) : "-";
+                            alert("🎉 ¡REDENCIÓN DE PUNTOS EXITOSA!\n\n"
+                                + "• Puntos redimidos: " + puntosARedimir + " pts\n"
+                                + "• ID Transacción: #" + data2.idredencion + "\n"
+                                + "• Saldo restante del cliente: " + ptsRest + " pts\n\n"
+                                + "Ya puede continuar con el despacho del pedido.");
+
+                            actualizarCajaPuntosComanda(calcularPuntosRequeridosComanda());
+                            cotizarEnVivo();
+                        } else {
+                            var det = (data2 && data2.detalle) ? ("<br>" + data2.detalle) : "";
+                            mostrarAlertaPuntosModal("danger", "⛔ No se pudo finalizar la redención: " + det);
+                        }
+                    }).fail(function (xhr) {
+                        $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Confirmar Redención");
+                        mostrarAlertaPuntosModal("danger", "Error de red al aplicar redención: " + (xhr.statusText || "Error"));
+                    });
+            } else {
+                $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Confirmar Redención");
+                mostrarAlertaPuntosModal("danger", "❌ Código de verificación incorrecto, ya usado o vencido.");
+                $("#txtCodigoVerifPuntos").focus();
+            }
+        }).fail(function (xhr) {
+            $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Confirmar Redención");
+            mostrarAlertaPuntosModal("danger", "Error al comprobar código de verificación: " + (xhr.statusText || "Error"));
+        });
+}
+
+function reversarRedencionesActivas(motivo) {
+    if (!idsRedencionPedido || idsRedencionPedido.length === 0) return;
+    var mot = motivo || "Pedido cancelado o reiniciado";
+    for (var i = 0; i < idsRedencionPedido.length; i++) {
+        $.ajax({
+            url: "ReversarRedencionPedido?idredencion=" + idsRedencionPedido[i] + "&puntos=0&motivo=" + encodeURIComponent(mot),
+            dataType: "json",
+            async: false,
+            success: function (d) {
+                console.log("Redención #" + idsRedencionPedido[i] + " reversada exitosamente:", d);
+            },
+            error: function (e) {
+                console.error("Error reversando redención #" + idsRedencionPedido[i] + ":", e);
+            }
+        });
+    }
+    idsRedencionPedido = [];
+    puntosRedimidos = 0;
+}
+
+function mostrarAlertaPuntosModal(tipo, html) {
+    var $a = $("#alertaRedencionPuntosModal");
+    $a.removeClass("alert-info alert-success alert-danger alert-warning")
+        .addClass("alert-" + tipo)
+        .html(html)
+        .show();
+}
+
+function obtenerFechaFormatoBD() {
+    var date = new Date();
+    var year = date.getFullYear();
+    var month = String(date.getMonth() + 1).padStart(2, '0');
+    var day = String(date.getDate()).padStart(2, '0');
+    return (year + "/" + month + "/" + day);
 }

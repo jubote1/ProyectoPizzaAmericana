@@ -208,6 +208,56 @@ public class MotorFinalizarPedido extends HttpServlet {
 				}
 			}
 
+			// 1.06 Validacion de Puntos Pizza si el pedido contiene productos de puntos
+			double puntosRequeridosTotal = 0;
+			if (solicitud != null && solicitud.lineas != null) {
+				for (MotorSolicitud.Linea l : solicitud.lineas) {
+					CatalogoPos.Producto pCat = cat.productos.get(l.idproducto);
+					if (pCat != null && pCat.precioPuntos > 0) {
+						puntosRequeridosTotal += (pCat.precioPuntos * l.cantidad);
+					}
+				}
+			}
+
+			java.util.List<Integer> idsRedencion = new java.util.ArrayList<Integer>();
+			if (root.has("idsRedencion") && root.get("idsRedencion").isJsonArray()) {
+				for (com.google.gson.JsonElement el : root.getAsJsonArray("idsRedencion")) {
+					try {
+						idsRedencion.add(el.getAsInt());
+					} catch (Exception ignored) {}
+				}
+			}
+
+			if (puntosRequeridosTotal > 0) {
+				if (idsRedencion.isEmpty()) {
+					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					out.write("{\"exito\":false,\"mensaje\":\"El pedido incluye productos que requieren " + (int) puntosRequeridosTotal + " Puntos Pizza. Es obligatorio realizar la redención con código de verificación antes de despachar.\"}");
+					return;
+				}
+
+				double puntosRedimidosConfirmados = 0;
+				for (int idRed : idsRedencion) {
+					String sqlChkRed = "SELECT puntos_redimidos, estado FROM pizzaamericana.fidelizacion_redencion WHERE idredencion = ?";
+					try (PreparedStatement psR = con.prepareStatement(sqlChkRed)) {
+						psR.setInt(1, idRed);
+						try (ResultSet rsR = psR.executeQuery()) {
+							if (rsR.next()) {
+								String est = rsR.getString("estado");
+								if ("CONFIRMADA".equalsIgnoreCase(est)) {
+									puntosRedimidosConfirmados += rsR.getDouble("puntos_redimidos");
+								}
+							}
+						}
+					}
+				}
+
+				if (puntosRedimidosConfirmados < puntosRequeridosTotal) {
+					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					out.write("{\"exito\":false,\"mensaje\":\"El pedido requiere " + (int) puntosRequeridosTotal + " Puntos Pizza pero solo se han confirmado " + (int) puntosRedimidosConfirmados + " puntos.\"}");
+					return;
+				}
+			}
+
 			// 1.1 Extraer datos de cliente si vienen en el cuerpo de la peticion
 			Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
 			if (root.has("cliente")) {
@@ -360,6 +410,21 @@ public class MotorFinalizarPedido extends HttpServlet {
 					}
 				} catch (Exception exPPE) {
 					System.err.println("Advertencia actualizando pedido_precio_empleado para pedido " + idPedidoCentral + ": " + exPPE.getMessage());
+				}
+			}
+
+			// 2.06 Si es pedido con redención de puntos, asociar idpedido e idtienda a fidelizacion_redencion
+			if (puntosRequeridosTotal > 0 && !idsRedencion.isEmpty()) {
+				String sqlUpdRed = "UPDATE pizzaamericana.fidelizacion_redencion SET idtienda = ?, idpedidotienda = ? WHERE idredencion = ?";
+				for (int idRed : idsRedencion) {
+					try (PreparedStatement psRed = con.prepareStatement(sqlUpdRed)) {
+						psRed.setInt(1, idTienda);
+						psRed.setInt(2, idPedidoCentral);
+						psRed.setInt(3, idRed);
+						psRed.executeUpdate();
+					} catch (Exception exRed) {
+						System.err.println("Advertencia asociando redencion " + idRed + " a pedido " + idPedidoCentral + ": " + exRed.getMessage());
+					}
 				}
 			}
 

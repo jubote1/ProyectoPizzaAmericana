@@ -280,6 +280,24 @@
                         <button type="button" class="btn btn-link text-white p-0 ml-2" id="btnRemoverPrecioEmpleado" title="Quitar beneficio precio empleado" style="text-decoration:none;"><i class="fas fa-times"></i></button>
                     </div>
 
+                    <!-- Box / Alerta de Puntos Pizza Requeridos en Comanda -->
+                    <div id="boxPuntosPizzaComanda" class="p-2 rounded mb-2 border shadow-sm" style="display:none; background-color: #fff8e1; border-color: #ffe082 !important;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="font-weight-bold text-dark small">
+                                    <i class="fas fa-gift text-warning mr-1"></i> Puntos Pizza Requeridos:
+                                    <span class="badge badge-warning text-dark font-weight-bold" id="badgePuntosRequeridosComanda">0 pts</span>
+                                </div>
+                                <div class="small mt-1" id="txtEstadoPuntosComanda">
+                                    <span class="text-danger font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Pendiente por redimir</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-warning btn-sm font-weight-bold shadow-sm py-1 px-2" id="btnTriggerRedimirPuntos" style="font-size: 0.78rem;">
+                                <i class="fas fa-coins mr-1"></i> Redimir Puntos
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Lista de líneas cotizadas en memoria -->
                     <div class="lista-comanda" id="listaComanda">
                         <p class="text-muted text-center py-4">La comanda está vacía.<br><small>Selecciona productos en el menú.</small></p>
@@ -520,6 +538,94 @@
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Redención de Puntos Pizza (Programa de Fidelización) -->
+    <div class="modal fade" id="modalRedimirPuntosPOS" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+            <div class="modal-content shadow-lg border-warning">
+                <div class="modal-header bg-warning text-dark py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                        <i class="fas fa-gift mr-2 text-danger"></i>Redención de Puntos Pizza
+                    </h5>
+                    <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="alert alert-warning py-2 px-3 mb-3 small" style="background-color: #fffbf0; border-color: #ffe8b3;">
+                        <i class="fas fa-info-circle mr-1"></i> Este pedido contiene productos con redención de <b>Puntos Pizza</b>. Para aplicar la redención se enviará un código de verificación al correo del cliente.
+                    </div>
+
+                    <!-- Ficha Resumen de Puntos -->
+                    <div class="card bg-light border-0 mb-3 shadow-sm">
+                        <div class="card-body p-2" style="font-size: 0.85rem;">
+                            <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                                <span class="text-muted">Puntos requeridos por el pedido:</span>
+                                <span class="font-weight-bold text-danger" id="lblPuntosReqModal">0 pts</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                                <span class="text-muted">Puntos ya redimidos:</span>
+                                <span class="font-weight-bold text-success" id="lblPuntosYaRedimidosModal">0 pts</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                                <span class="text-muted">Puntos pendientes por redimir:</span>
+                                <span class="font-weight-bold" id="lblPuntosPendientesModal" style="color: #d97706 !important;">0 pts</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Saldo disponible del cliente:</span>
+                                <span class="font-weight-bold text-primary" id="lblPuntosDisponiblesModal">Consultando...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Correo del Cliente -->
+                    <div class="form-group mb-3">
+                        <label for="txtCorreoRedencionPuntos" class="font-weight-bold text-dark small mb-1">
+                            <i class="fas fa-envelope mr-1 text-primary"></i>Correo Electrónico del Cliente:
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input type="email" id="txtCorreoRedencionPuntos" class="form-control font-weight-bold" placeholder="correo@ejemplo.com">
+                            <div class="input-group-append">
+                                <span class="input-group-text bg-white"><i class="fas fa-user-check text-success"></i></span>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">A este correo se despachará el código de redención de 6 dígitos.</small>
+                    </div>
+
+                    <!-- Paso 1: Enviar Código -->
+                    <div id="seccionEnvioCodigoPuntos" class="mb-3">
+                        <button type="button" class="btn btn-primary btn-block font-weight-bold py-2 shadow-sm" id="btnEnviarCodigoRedencionPuntos">
+                            <i class="fas fa-paper-plane mr-2"></i> Generar y Enviar Código al Correo
+                        </button>
+                    </div>
+
+                    <!-- Paso 2: Ingresar y Validar Código -->
+                    <div id="seccionValidarCodigoPuntos" class="p-3 rounded border border-warning mb-3" style="display:none; background-color: #fff9e6;">
+                        <label class="font-weight-bold text-dark small mb-1 d-block text-center">
+                            <i class="fas fa-key text-warning mr-1"></i>Ingresa el código dictado por el cliente:
+                        </label>
+                        <div class="d-flex justify-content-center mb-2">
+                            <input type="text" id="txtCodigoVerifPuntos" class="form-control text-center font-weight-bold text-uppercase" placeholder="000000" maxlength="10" style="letter-spacing: 5px; font-size: 1.4rem; max-width: 220px; font-family: monospace;">
+                        </div>
+                        <button type="button" class="btn btn-success btn-block font-weight-bold py-2 shadow-sm" id="btnValidarYConfirmarCodigoPuntos">
+                            <i class="fas fa-check-circle mr-1"></i> Validar Código y Confirmar Redención
+                        </button>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">¿No recibió el correo? <a href="javascript:void(0)" id="linkReenviarCodigoPuntos" class="text-primary font-weight-bold">Reenviar código</a></small>
+                        </div>
+                    </div>
+
+                    <!-- Alertas del Modal -->
+                    <div id="alertaRedencionPuntosModal" class="alert py-2 px-3 mb-0" style="display:none; font-size: 0.84rem;"></div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cerrar
                     </button>
                 </div>
             </div>
@@ -1508,6 +1614,6 @@
     <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_precio_empleado_v2"></script>
+    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_puntos_pizza_v1"></script>
 </body>
 </html>
