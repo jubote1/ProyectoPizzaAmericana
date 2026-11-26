@@ -274,6 +274,12 @@
                         <button type="button" class="btn btn-link text-white p-0 ml-2" id="btnRemoverMarcacion" title="Quitar marcación de plataforma" style="text-decoration:none;"><i class="fas fa-times"></i></button>
                     </div>
 
+                    <!-- Badge Beneficiario Precio Empleado Activo -->
+                    <div id="badgePrecioEmpleadoActivo" class="p-1 px-2 rounded mb-2 bg-primary text-white font-weight-bold small justify-content-between align-items-center shadow-sm" style="display:none; font-size: 0.8rem;">
+                        <span><i class="fas fa-user-shield mr-1"></i> <span id="txtDetallePrecioEmpleadoActivo">-</span></span>
+                        <button type="button" class="btn btn-link text-white p-0 ml-2" id="btnRemoverPrecioEmpleado" title="Quitar beneficio precio empleado" style="text-decoration:none;"><i class="fas fa-times"></i></button>
+                    </div>
+
                     <!-- Lista de líneas cotizadas en memoria -->
                     <div class="lista-comanda" id="listaComanda">
                         <p class="text-muted text-center py-4">La comanda está vacía.<br><small>Selecciona productos en el menú.</small></p>
@@ -431,6 +437,90 @@
                             <i class="fas fa-trash-restore mr-1"></i> Cancelar / Reiniciar Pedido
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Validación de Precio Empleado (OTP Correo Nómina) -->
+    <div class="modal fade" id="modalValidacionPrecioEmpleado" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 530px;">
+            <div class="modal-content shadow-lg border-primary">
+                <div class="modal-header bg-primary text-white py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                        <i class="fas fa-user-shield mr-2"></i>Validación Beneficio Precio Empleado
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 0.83rem;">
+                        <i class="fas fa-info-circle mr-1"></i> Este producto cuenta con <b>Precio Empleado</b>. Es exclusivo para colaboradores activos en nómina (límite: 1 pizza por semana). Selecciona al colaborador para enviarle su código de verificación al correo registrado en talento humano.
+                    </div>
+
+                    <!-- Paso 1: Búsqueda reactiva de empleado -->
+                    <div id="seccionBusquedaEmpleado" class="position-relative mb-3">
+                        <label class="font-weight-bold text-dark small mb-1">
+                            <i class="fas fa-search mr-1 text-primary"></i>Buscar Colaborador de Nómina:
+                        </label>
+                        <div class="input-group">
+                            <input type="text" id="txtBuscarEmpleadoPrecioEmp" class="form-control" placeholder="Escribe cédula o nombre del colaborador..." autocomplete="off">
+                            <div class="input-group-append">
+                                <span class="input-group-text bg-white"><i class="fas fa-id-card text-muted"></i></span>
+                            </div>
+                        </div>
+                        <div id="listaResultadosEmpleados" class="list-group position-absolute w-100 shadow border" style="display:none; max-height:210px; overflow-y:auto; z-index:1060; top: 100%; left: 0; background: #fff;"></div>
+                        <small class="form-text text-muted">Escribe al menos 2 caracteres para buscar en la base de nómina activa.</small>
+                    </div>
+
+                    <!-- Ficha del Colaborador Seleccionado -->
+                    <div id="tarjetaEmpleadoSeleccionado" class="card border-info mb-3 bg-light" style="display:none;">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 font-weight-bold text-dark" id="txtNombreEmpleadoSel">-</h6>
+                                <div class="small text-muted">
+                                    <span><b>Cédula:</b> <span id="txtCedulaEmpleadoSel">-</span></span> | 
+                                    <span><b>Correo Nómina:</b> <span id="txtEmailEmpleadoSel" class="text-primary font-weight-bold">-</span></span>
+                                </div>
+                                <div class="mt-1" id="badgeEstadoSemanaEmpleado"></div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm ml-2" id="btnCambiarEmpleadoPrecioEmp" title="Buscar otro colaborador">
+                                <i class="fas fa-sync-alt mr-1"></i>Cambiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Generar y Enviar Código OTP -->
+                    <div id="seccionEnvioCodigoPrecioEmp" class="mb-3" style="display:none;">
+                        <button type="button" class="btn btn-primary btn-block font-weight-bold py-2 shadow-sm" id="btnEnviarCodigoPrecioEmp">
+                            <i class="fas fa-paper-plane mr-2"></i> Generar y Enviar Código al Correo de Nómina
+                        </button>
+                    </div>
+
+                    <!-- Paso 3: Ingreso y Validación del Código OTP -->
+                    <div id="seccionValidarCodigoPrecioEmp" class="p-3 rounded border border-warning mb-3" style="display:none; background-color: #fff9e6;">
+                        <label class="font-weight-bold text-dark small mb-1 d-block text-center">
+                            <i class="fas fa-key text-warning mr-1"></i>Ingresa el código dictado por el colaborador:
+                        </label>
+                        <div class="d-flex justify-content-center mb-2">
+                            <input type="text" id="txtCodigoVerifPrecioEmp" class="form-control text-center font-weight-bold text-uppercase" placeholder="CÓDIGO" maxlength="10" style="letter-spacing: 5px; font-size: 1.4rem; max-width: 240px; font-family: monospace;">
+                        </div>
+                        <button type="button" class="btn btn-success btn-block font-weight-bold py-2 shadow-sm" id="btnValidarCodigoPrecioEmp">
+                            <i class="fas fa-check-circle mr-1"></i> Validar Código y Autorizar
+                        </button>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">¿No recibió el correo? <a href="javascript:void(0)" id="linkReenviarCodigoPrecioEmp" class="text-primary font-weight-bold">Reenviar código</a></small>
+                        </div>
+                    </div>
+
+                    <!-- Mensajes y Alertas -->
+                    <div id="alertaPrecioEmpleado" class="alert py-2 px-3 mb-0" style="display:none; font-size: 0.84rem;"></div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cancelar
+                    </button>
                 </div>
             </div>
         </div>
@@ -743,6 +833,9 @@
                                     <span class="badge badge-secondary" id="badgeModalTotalItems">0 items</span>
                                 </div>
                                 <div class="card-body p-2 flex-grow-1" style="max-height: 250px; overflow-y: auto;">
+                                    <div id="boxModalPrecioEmpleado" class="alert alert-primary py-1 px-2 mb-2" style="font-size:0.82rem; display:none;">
+                                        <i class="fas fa-user-shield mr-1"></i><b>Beneficiario Precio Empleado:</b> <span id="txtModalBeneficiarioEmpleado">-</span>
+                                    </div>
                                     <table class="table table-sm table-striped mb-0" style="font-size: 0.84rem;">
                                         <thead class="thead-light">
                                             <tr>
@@ -1415,6 +1508,6 @@
     <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="text/javascript" src="js/tomapedidospos.js?v=20261125_origen"></script>
+    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_precio_empleado"></script>
 </body>
 </html>

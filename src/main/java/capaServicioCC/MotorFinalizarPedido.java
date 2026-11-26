@@ -155,6 +155,59 @@ public class MotorFinalizarPedido extends HttpServlet {
 				return;
 			}
 
+			// 1.05 Validacion de Precio Empleado si la orden contiene productos de empleado
+			int idEmpleadoPrecioEmpleado = root.has("idEmpleadoPrecioEmpleado") ? root.get("idEmpleadoPrecioEmpleado").getAsInt() : 0;
+			String codigoPrecioEmpleado = root.has("codigoPrecioEmpleado") ? root.get("codigoPrecioEmpleado").getAsString().trim() : "";
+			boolean contienePrecioEmpleado = false;
+			if (solicitud != null && solicitud.lineas != null) {
+				for (MotorSolicitud.Linea l : solicitud.lineas) {
+					CatalogoPos.Producto pCat = cat.productos.get(l.idproducto);
+					if (pCat != null && "S".equalsIgnoreCase(pCat.empleado)) {
+						contienePrecioEmpleado = true;
+						break;
+					}
+				}
+			}
+
+			if (contienePrecioEmpleado) {
+				if (idEmpleadoPrecioEmpleado <= 0 || codigoPrecioEmpleado.isEmpty()) {
+					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					out.write("{\"exito\":false,\"mensaje\":\"El pedido incluye productos a Precio Empleado. Es obligatorio seleccionar al empleado de nómina y validar su código de verificación OTP.\"}");
+					return;
+				}
+
+				boolean codigoValido = false;
+				ConexionBaseDatos cnxGen = new ConexionBaseDatos();
+				try (Connection conGen = cnxGen.obtenerConexionBDGeneral()) {
+					String sqlCheckCod = "SELECT autorizado FROM general.pedido_precio_empleado "
+							+ "WHERE idempleado = ? AND UPPER(TRIM(codigo)) = ? "
+							+ "ORDER BY fecha_insercion DESC LIMIT 1";
+					try (PreparedStatement psCC = conGen.prepareStatement(sqlCheckCod)) {
+						psCC.setInt(1, idEmpleadoPrecioEmpleado);
+						psCC.setString(2, codigoPrecioEmpleado.toUpperCase());
+						try (ResultSet rsCC = psCC.executeQuery()) {
+							if (rsCC.next()) {
+								String aut = rsCC.getString("autorizado");
+								if ("S".equalsIgnoreCase(aut)) {
+									response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+									out.write("{\"exito\":false,\"mensaje\":\"El código de precio empleado ya fue utilizado previamente.\"}");
+									return;
+								}
+								codigoValido = true;
+							}
+						}
+					}
+				} catch (Exception exGen) {
+					System.err.println("Error validando codigo precio empleado en DB General: " + exGen.getMessage());
+				}
+
+				if (!codigoValido) {
+					response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+					out.write("{\"exito\":false,\"mensaje\":\"El código de precio empleado (" + codigoPrecioEmpleado + ") no es válido para el empleado seleccionado o no fue encontrado.\"}");
+					return;
+				}
+			}
+
 			// 1.1 Extraer datos de cliente si vienen en el cuerpo de la peticion
 			Cliente cli = idCliente > 0 ? ClienteDAO.obtenerClienteporID(idCliente) : null;
 			if (root.has("cliente")) {
@@ -289,6 +342,25 @@ public class MotorFinalizarPedido extends HttpServlet {
 				response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 				out.write("{\"exito\":false,\"mensaje\":\"No fue posible generar el numero de pedido central.\"}");
 				return;
+			}
+
+			// 2.05 Si es pedido con precio empleado, autorizar en general.pedido_precio_empleado
+			if (contienePrecioEmpleado && idEmpleadoPrecioEmpleado > 0 && !codigoPrecioEmpleado.isEmpty()) {
+				ConexionBaseDatos cnxGen = new ConexionBaseDatos();
+				try (Connection conGen = cnxGen.obtenerConexionBDGeneral()) {
+					String sqlUpdPPE = "UPDATE general.pedido_precio_empleado SET autorizado = 'S', idpedido = ?, idtienda = ?, valor = ? "
+							+ "WHERE idempleado = ? AND UPPER(TRIM(codigo)) = ?";
+					try (PreparedStatement psPPE = conGen.prepareStatement(sqlUpdPPE)) {
+						psPPE.setInt(1, idPedidoCentral);
+						psPPE.setInt(2, idTienda);
+						psPPE.setDouble(3, res.total);
+						psPPE.setInt(4, idEmpleadoPrecioEmpleado);
+						psPPE.setString(5, codigoPrecioEmpleado.toUpperCase());
+						psPPE.executeUpdate();
+					}
+				} catch (Exception exPPE) {
+					System.err.println("Advertencia actualizando pedido_precio_empleado para pedido " + idPedidoCentral + ": " + exPPE.getMessage());
+				}
 			}
 
 			// 2.1 Registrar forma de pago en pizzaamericana.pedido_forma_pago (requerido para visualizacion en pantallas y reportes)

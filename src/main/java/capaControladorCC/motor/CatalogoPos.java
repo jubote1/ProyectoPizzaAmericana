@@ -27,6 +27,7 @@ public class CatalogoPos {
 		public int idProductoDepende;
 		public double precioPuntos;
 		public String promocion;
+		public String empleado;
 		/** precio1..precio10 por nombre de columna. */
 		public Map<String, Double> precios = new HashMap<String, Double>();
 		/** Ids de las preguntas forzadas, en orden (0 = sin pregunta). */
@@ -205,7 +206,7 @@ public class CatalogoPos {
 		CatalogoPos cat = new CatalogoPos();
 		final int nPreg = cantidadPreguntas(con, esquema);
 		StringBuilder sel = new StringBuilder("select idproducto, descripcion, tipo_producto, precio_pila, no_venta, "
-				+ "id_producto_depende, precio_puntos, promocion");
+				+ "id_producto_depende, precio_puntos, promocion, empleado");
 		for (int i = 1; i <= nPreg; i++) {
 			sel.append(", idpreguntaforzada").append(i);
 		}
@@ -224,11 +225,12 @@ public class CatalogoPos {
 				p.idProductoDepende = rs.getInt(6);
 				p.precioPuntos = rs.getDouble(7);
 				p.promocion = rs.getString(8);
+				p.empleado = rs.getString(9);
 				for (int i = 0; i < nPreg; i++) {
-					p.preguntas[i] = rs.getInt(9 + i);
+					p.preguntas[i] = rs.getInt(10 + i);
 				}
 				for (int i = 0; i < COLUMNAS.length; i++) {
-					p.precios.put(COLUMNAS[i], rs.getDouble(9 + nPreg + i));
+					p.precios.put(COLUMNAS[i], rs.getDouble(10 + nPreg + i));
 				}
 				cat.productos.put(p.id, p);
 			}

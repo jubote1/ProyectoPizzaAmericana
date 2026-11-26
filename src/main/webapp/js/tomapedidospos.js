@@ -27,6 +27,12 @@ var catalogoMarcaciones = [];
 // Formas de Pago Paramétricas (tabla pizzaamericana.forma_pago: virtual = 'S'/'N')
 var catalogoFormasPago = [];
 
+// Beneficio Precio Empleado (Colaboradores de Nómina con verificación OTP)
+var empleadoPrecioEmpleadoValidado = null; // { id: number, cedula: string, nombre: string, email: string, emailEnmascarado: string, codigo: string }
+var productoEmpleadoPendienteId = null;
+var timerBusquedaEmpleado = null;
+var empleadoSeleccionadoTemporal = null;
+
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
     tipo: "", // "CUPON" o "MANUAL"
@@ -71,6 +77,7 @@ $(document).ready(function () {
     consultarTiempoTienda();
     cargarCatalogoMarcaciones();
     cargarFormasPagoParametricas();
+    initValidacionPrecioEmpleado();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -1036,6 +1043,9 @@ function cargarMenuPOS() {
                     if (item.promocion && item.promocion === "S") {
                         $card.append("<span class='badge-promo'>PROMO</span>");
                     }
+                    if (item.empleado && item.empleado === "S") {
+                        $card.append("<span class='badge-promo' style='background: #0d6efd;'>🔒 EMPLEADO</span>");
+                    }
 
                     var $title = $("<div></div>").addClass("prod-title").text(item.descripcion);
                     var $tipo = $("<div></div>").addClass("prod-tipo").text(item.tipo === "P" ? "Pizza" : (item.tipo === "B" ? "Bebida" : "Item"));
@@ -1080,6 +1090,23 @@ function abrirModalProducto(idProducto) {
     $("#modalProductoConfig").modal("show");
 
     $.getJSON("api/motor/catalogo?accion=producto&id=" + idProducto, function (prod) {
+        // Intercepción: Beneficio de Precio Empleado
+        if (prod.empleado === "S") {
+            var yaTieneEmpleadoEnComanda = draftLineas.some(function (l) { return l.esEmpleado; });
+            if (yaTieneEmpleadoEnComanda) {
+                $("#modalProductoConfig").modal("hide");
+                alert("⚠️ Límite del beneficio: Solo se permite una (1) pizza a Precio Empleado por pedido.");
+                return;
+            }
+
+            if (!empleadoPrecioEmpleadoValidado) {
+                $("#modalProductoConfig").modal("hide");
+                productoEmpleadoPendienteId = idProducto;
+                abrirModalValidacionPrecioEmpleado();
+                return;
+            }
+        }
+
         productoEnEdicion = prod;
         renderizarModalProducto(prod);
     }).fail(function (xhr) {
@@ -1094,6 +1121,13 @@ function renderizarModalProducto(prod) {
     $cab.append("<div><h5 class='mb-0 font-weight-bold text-dark'>" + prod.descripcion + "</h5><small class='text-muted'>" + (prod.tipo === "P" ? "Pizza" : "Producto") + "</small></div>");
     $cab.append("<div class='h4 text-danger font-weight-bold mb-0'>$ " + formatearPesos(prod.precio1) + "</div>");
     $c.append($cab);
+
+    // Banner de Beneficio Precio Empleado si aplica
+    if (prod.empleado === "S") {
+        var empNom = empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.nombre : "Colaborador de Nómina";
+        var empCod = empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.codigo : "";
+        $c.append("<div class='alert alert-primary py-1 px-3 mb-2' style='font-size:0.83rem;'><i class='fas fa-user-shield mr-1'></i> <b>Beneficio Precio Empleado Autorizado:</b> " + empNom + " (Cód: " + empCod + ") - Máx. 1 unidad</div>");
+    }
 
     // Productos incluidos automáticos ($0)
     if (prod.incluidos && prod.incluidos.length > 0) {
@@ -1424,6 +1458,11 @@ function renderizarModalProducto(prod) {
         var v = parseInt($("#cantModal").val());
         if (v < 50) { $("#cantModal").val(v + 1); }
     });
+
+    if (prod.empleado === "S") {
+        $("#btnMenosModal, #btnMasModal").prop("disabled", true);
+        $("#cantModal").val(1).prop("disabled", true);
+    }
 }
 
 function guardarProductoDesdeModal() {
@@ -1562,14 +1601,23 @@ function guardarProductoDesdeModal() {
     }
 
     var cant = parseInt($("#cantModal").val()) || 1;
+    var esEmp = (productoEnEdicion.empleado === "S");
+    if (esEmp && cant > 1) {
+        cant = 1;
+    }
 
     draftLineas.push({
         idproducto: productoEnEdicion.idproducto,
         cantidad: cant,
         selecciones: selecciones,
         modificadores: [],
-        observacion: ""
+        observacion: (esEmp && empleadoPrecioEmpleadoValidado)
+            ? ("[PRECIO EMPLEADO: " + empleadoPrecioEmpleadoValidado.nombre + " (Cód: " + empleadoPrecioEmpleadoValidado.codigo + ")]")
+            : "",
+        esEmpleado: esEmp
     });
+
+    actualizarBadgePrecioEmpleado();
 
     $("#modalProductoConfig").modal("hide");
     productoEnEdicion = null;
@@ -2192,6 +2240,11 @@ function renderizarComanda(res) {
 function eliminarItemDraft(index) {
     if (index >= 0 && index < draftLineas.length) {
         draftLineas.splice(index, 1);
+        var quedanEmpleados = draftLineas.some(function (l) { return l.esEmpleado; });
+        if (!quedanEmpleados) {
+            empleadoPrecioEmpleadoValidado = null;
+        }
+        actualizarBadgePrecioEmpleado();
         cotizarEnVivo();
     }
 }
@@ -2307,6 +2360,15 @@ function abrirModalConfirmacionPedido() {
     }
 
     // 5. Tabla de Comanda Detallada
+    if (empleadoPrecioEmpleadoValidado) {
+        $("#txtModalBeneficiarioEmpleado").text(
+            empleadoPrecioEmpleadoValidado.nombre + " (CC: " + empleadoPrecioEmpleadoValidado.cedula + ") - Código: " + empleadoPrecioEmpleadoValidado.codigo
+        );
+        $("#boxModalPrecioEmpleado").show();
+    } else {
+        $("#boxModalPrecioEmpleado").hide();
+    }
+
     var $tbody = $("#tbodyModalComanda");
     $tbody.empty();
 
@@ -2439,6 +2501,8 @@ function ejecutarDespachoTiendaDefinitivo() {
         fuentepedido: "CC-NUEVO",
         idPedidoAlt: (marcacionActiva && marcacionActiva.observacion) ? marcacionActiva.observacion.trim() : "",
         plataforma: (marcacionActiva && marcacionActiva.nombremarcacion) ? marcacionActiva.nombremarcacion.trim() : "",
+        idEmpleadoPrecioEmpleado: empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.id : 0,
+        codigoPrecioEmpleado: empleadoPrecioEmpleadoValidado ? empleadoPrecioEmpleadoValidado.codigo : "",
         marcacion: (marcacionActiva && marcacionActiva.idmarcacion > 0) ? {
             idmarcacion: marcacionActiva.idmarcacion,
             nombremarcacion: marcacionActiva.nombremarcacion,
@@ -2574,6 +2638,9 @@ function limpiarPantallaTrasDespacho() {
     idPedidoCentralActivo = 0;
     removerDescuentoActivo();
     removerMarcacionPlataforma();
+    empleadoPrecioEmpleadoValidado = null;
+    productoEmpleadoPendienteId = null;
+    actualizarBadgePrecioEmpleado();
     $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
     $("#selectMotivoDescuento").prop("selectedIndex", 0);
     $("#chkPedidoProgramado").prop("checked", false);
@@ -2958,4 +3025,243 @@ function fechaVenceLegible(fecha) {
     var dia = parseInt(fecha.substring(8, 10), 10);
     if (isNaN(mes) || isNaN(dia) || mes < 1 || mes > 12) return '';
     return dia + ' de ' + meses[mes - 1];
+}
+
+/* =========================================================================
+   CONTROL DE BENEFICIO - PRECIO EMPLEADO (NÓMINA & VERIFICACIÓN OTP)
+   ========================================================================= */
+function initValidacionPrecioEmpleado() {
+    $("#btnRemoverPrecioEmpleado").on("click", function (e) {
+        e.preventDefault();
+        if (confirm("¿Desea quitar el beneficio de Precio Empleado de este pedido? Se removerán los productos a precio empleado de la comanda.")) {
+            draftLineas = draftLineas.filter(function (l) { return !l.esEmpleado; });
+            empleadoPrecioEmpleadoValidado = null;
+            actualizarBadgePrecioEmpleado();
+            cotizarEnVivo();
+        }
+    });
+
+    $("#txtBuscarEmpleadoPrecioEmp").on("input keyup", function () {
+        var q = $(this).val().trim();
+        if (timerBusquedaEmpleado) clearTimeout(timerBusquedaEmpleado);
+        if (q.length < 2) {
+            $("#listaResultadosEmpleados").hide().empty();
+            return;
+        }
+        timerBusquedaEmpleado = setTimeout(function () {
+            buscarEmpleadosNomina(q);
+        }, 280);
+    });
+
+    $("#btnCambiarEmpleadoPrecioEmp").on("click", function () {
+        empleadoSeleccionadoTemporal = null;
+        $("#tarjetaEmpleadoSeleccionado").hide();
+        $("#seccionEnvioCodigoPrecioEmp").hide();
+        $("#seccionValidarCodigoPrecioEmp").hide();
+        $("#alertaPrecioEmpleado").hide().empty();
+        $("#seccionBusquedaEmpleado").show();
+        $("#txtBuscarEmpleadoPrecioEmp").val("").focus();
+    });
+
+    $("#btnEnviarCodigoPrecioEmp, #linkReenviarCodigoPrecioEmp").on("click", function (e) {
+        e.preventDefault();
+        enviarCodigoPrecioEmpleado();
+    });
+
+    $("#btnValidarCodigoPrecioEmp").on("click", function () {
+        validarCodigoPrecioEmpleado();
+    });
+
+    $("#txtCodigoVerifPrecioEmp").on("keypress", function (e) {
+        if (e.which === 13) {
+            validarCodigoPrecioEmpleado();
+        }
+    });
+}
+
+function actualizarBadgePrecioEmpleado() {
+    if (empleadoPrecioEmpleadoValidado) {
+        $("#txtDetallePrecioEmpleadoActivo").text(
+            "Precio Empleado: " + empleadoPrecioEmpleadoValidado.nombre + " (CC: " + empleadoPrecioEmpleadoValidado.cedula + ") | Cód: " + empleadoPrecioEmpleadoValidado.codigo
+        );
+        $("#badgePrecioEmpleadoActivo").css("display", "flex");
+    } else {
+        $("#badgePrecioEmpleadoActivo").hide();
+    }
+}
+
+function abrirModalValidacionPrecioEmpleado() {
+    empleadoSeleccionadoTemporal = null;
+    $("#txtBuscarEmpleadoPrecioEmp").val("");
+    $("#listaResultadosEmpleados").hide().empty();
+    $("#tarjetaEmpleadoSeleccionado").hide();
+    $("#seccionEnvioCodigoPrecioEmp").hide();
+    $("#seccionValidarCodigoPrecioEmp").hide();
+    $("#txtCodigoVerifPrecioEmp").val("");
+    $("#alertaPrecioEmpleado").hide().empty();
+    $("#seccionBusquedaEmpleado").show();
+    $("#modalValidacionPrecioEmpleado").modal("show");
+    setTimeout(function () {
+        $("#txtBuscarEmpleadoPrecioEmp").focus();
+    }, 400);
+}
+
+function buscarEmpleadosNomina(q) {
+    $("#listaResultadosEmpleados").html("<div class='p-2 text-center text-muted small'><i class='fas fa-spinner fa-spin mr-1'></i> Buscando en nómina activa...</div>").show();
+    $.getJSON("BuscarEmpleadosPrecioEmpleado?q=" + encodeURIComponent(q), function (empleados) {
+        var $l = $("#listaResultadosEmpleados");
+        $l.empty();
+        if (!empleados || empleados.length === 0) {
+            $l.html("<div class='p-2 text-muted small text-center'><i class='fas fa-info-circle mr-1'></i> No se encontraron colaboradores activos con ese criterio.</div>");
+            return;
+        }
+        $.each(empleados, function (i, emp) {
+            var $item = $("<a href='javascript:void(0)' class='list-group-item list-group-item-action py-2 px-3'></a>");
+            $item.append("<div class='d-flex justify-content-between align-items-center'><strong class='text-dark'>" + emp.nombre + "</strong><span class='badge badge-secondary'>CC: " + emp.cedula + "</span></div>");
+            var emailTxt = emp.tieneEmail
+                ? ("<span class='text-muted small'><i class='fas fa-envelope mr-1 text-primary'></i>" + emp.emailEnmascarado + "</span>")
+                : "<span class='text-danger small font-weight-bold'><i class='fas fa-exclamation-triangle mr-1'></i>Sin correo registrado en nómina</span>";
+            $item.append("<div>" + emailTxt + "</div>");
+            $item.on("click", function () {
+                seleccionarEmpleadoNomina(emp);
+            });
+            $l.append($item);
+        });
+    }).fail(function () {
+        $("#listaResultadosEmpleados").html("<div class='p-2 text-danger small text-center'><i class='fas fa-exclamation-triangle mr-1'></i> Error al consultar base de nómina.</div>");
+    });
+}
+
+function seleccionarEmpleadoNomina(emp) {
+    empleadoSeleccionadoTemporal = emp;
+    $("#listaResultadosEmpleados").hide().empty();
+    $("#seccionBusquedaEmpleado").hide();
+    $("#txtNombreEmpleadoSel").text(emp.nombre);
+    $("#txtCedulaEmpleadoSel").text(emp.cedula);
+    $("#txtEmailEmpleadoSel").text(emp.emailEnmascarado || "Sin correo");
+    $("#badgeEstadoSemanaEmpleado").html("<span class='text-muted small'><i class='fas fa-spinner fa-spin mr-1'></i> Verificando frecuencia semanal...</span>");
+    $("#tarjetaEmpleadoSeleccionado").show();
+    $("#alertaPrecioEmpleado").hide().empty();
+
+    // Validar frecuencia semanal de lunes a domingo
+    $.getJSON("api/precio-empleado?accion=frecuencia&idempleado=" + emp.id, function (resp) {
+        if (resp.exito) {
+            if (resp.yaPidio) {
+                $("#badgeEstadoSemanaEmpleado").html("<span class='badge badge-danger p-1'><i class='fas fa-ban mr-1'></i> Límite semanal alcanzado: Ya redimió esta semana</span>");
+                $("#seccionEnvioCodigoPrecioEmp").hide();
+                mostrarAlertaPrecioEmp("danger", "⛔ <b>No es posible redimir:</b> El colaborador <b>" + emp.nombre + "</b> ya pidió su pizza de precio empleado esta semana (límite: 1 pizza por semana).");
+            } else {
+                $("#badgeEstadoSemanaEmpleado").html("<span class='badge badge-success p-1'><i class='fas fa-check-circle mr-1'></i> Habilitado para redimir esta semana</span>");
+                if (!emp.tieneEmail) {
+                    $("#seccionEnvioCodigoPrecioEmp").hide();
+                    mostrarAlertaPrecioEmp("warning", "⚠️ <b>Atención:</b> Este colaborador no tiene correo electrónico registrado en nómina. Para redimir el beneficio a través del Contact Center, Talento Humano debe registrar su correo en nómina.");
+                } else {
+                    $("#seccionEnvioCodigoPrecioEmp").show();
+                    $("#alertaPrecioEmpleado").hide();
+                }
+            }
+        } else {
+            $("#badgeEstadoSemanaEmpleado").html("<span class='badge badge-warning p-1'>Error verificando frecuencia</span>");
+        }
+    }).fail(function () {
+        $("#badgeEstadoSemanaEmpleado").html("<span class='badge badge-danger p-1'>Error de conexión</span>");
+    });
+}
+
+function enviarCodigoPrecioEmpleado() {
+    if (!empleadoSeleccionadoTemporal) return;
+    var $btn = $("#btnEnviarCodigoPrecioEmp");
+    $btn.prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i> Generando y enviando código OTP...");
+    $("#alertaPrecioEmpleado").hide();
+
+    var tiendaId = idTiendaSeleccionada() || 1;
+
+    $.ajax({
+        type: "POST",
+        url: "api/precio-empleado",
+        data: {
+            accion: "enviar",
+            idempleado: empleadoSeleccionadoTemporal.id,
+            idtienda: tiendaId,
+            valor: 0
+        },
+        dataType: "json",
+        success: function (resp) {
+            $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo de Nómina");
+            if (resp.exito) {
+                mostrarAlertaPrecioEmp("success", "📨 <b>¡Código generado y enviado!</b> Se envió un correo a <u>" + (resp.emailEnmascarado || empleadoSeleccionadoTemporal.emailEnmascarado) + "</u>. Pídele al colaborador que revise su buzón y te brinde el código.");
+                $("#seccionValidarCodigoPrecioEmp").show();
+                $("#txtCodigoVerifPrecioEmp").val("").focus();
+            } else {
+                mostrarAlertaPrecioEmp("danger", "❌ Error: " + (resp.mensaje || "No fue posible enviar el código."));
+            }
+        },
+        error: function (xhr) {
+            $btn.prop("disabled", false).html("<i class='fas fa-paper-plane mr-2'></i> Generar y Enviar Código al Correo de Nómina");
+            mostrarAlertaPrecioEmp("danger", "❌ Error de conexión al generar código: " + (xhr.statusText || "Error de red"));
+        }
+    });
+}
+
+function validarCodigoPrecioEmpleado() {
+    if (!empleadoSeleccionadoTemporal) return;
+    var codigo = ($("#txtCodigoVerifPrecioEmp").val() || "").trim().toUpperCase();
+    if (!codigo) {
+        mostrarAlertaPrecioEmp("warning", "Por favor ingresa el código de verificación dictado por el colaborador.");
+        $("#txtCodigoVerifPrecioEmp").focus();
+        return;
+    }
+
+    var $btn = $("#btnValidarCodigoPrecioEmp");
+    $btn.prop("disabled", true).html("<i class='fas fa-spinner fa-spin mr-1'></i> Validando código...");
+
+    $.ajax({
+        type: "POST",
+        url: "api/precio-empleado",
+        data: {
+            accion: "validar",
+            idempleado: empleadoSeleccionadoTemporal.id,
+            codigo: codigo
+        },
+        dataType: "json",
+        success: function (resp) {
+            $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Autorizar");
+            if (resp.exito && resp.valido) {
+                empleadoPrecioEmpleadoValidado = {
+                    id: empleadoSeleccionadoTemporal.id,
+                    cedula: empleadoSeleccionadoTemporal.cedula,
+                    nombre: empleadoSeleccionadoTemporal.nombre,
+                    email: empleadoSeleccionadoTemporal.email,
+                    emailEnmascarado: empleadoSeleccionadoTemporal.emailEnmascarado,
+                    codigo: resp.codigo
+                };
+
+                actualizarBadgePrecioEmpleado();
+                $("#modalValidacionPrecioEmpleado").modal("hide");
+
+                alert("🎉 ¡Código validado exitosamente!\n\nBeneficiario: " + empleadoPrecioEmpleadoValidado.nombre + "\nCédula: " + empleadoPrecioEmpleadoValidado.cedula + "\n\nAhora puedes personalizar la pizza del colaborador.");
+
+                if (productoEmpleadoPendienteId) {
+                    var pid = productoEmpleadoPendienteId;
+                    productoEmpleadoPendienteId = null;
+                    abrirModalProducto(pid);
+                }
+            } else {
+                mostrarAlertaPrecioEmp("danger", "❌ " + (resp.mensaje || "Código inválido."));
+                $("#txtCodigoVerifPrecioEmp").focus();
+            }
+        },
+        error: function (xhr) {
+            $btn.prop("disabled", false).html("<i class='fas fa-check-circle mr-1'></i> Validar Código y Autorizar");
+            mostrarAlertaPrecioEmp("danger", "❌ Error al validar código: " + (xhr.statusText || "Error de red"));
+        }
+    });
+}
+
+function mostrarAlertaPrecioEmp(tipo, html) {
+    var $a = $("#alertaPrecioEmpleado");
+    $a.removeClass("alert-info alert-success alert-danger alert-warning")
+        .addClass("alert-" + tipo)
+        .html(html)
+        .show();
 }
