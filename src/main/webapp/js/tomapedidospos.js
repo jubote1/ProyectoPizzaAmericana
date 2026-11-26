@@ -1037,7 +1037,7 @@ function cargarMenuPOS() {
                         .addClass("card-prod")
                         .attr("data-idproducto", item.idproducto)
                         .on("click", function () {
-                            abrirModalProducto(item.idproducto);
+                            abrirModalProducto(item.idproducto, item.empleado === "S");
                         });
 
                     if (item.promocion && item.promocion === "S") {
@@ -1079,28 +1079,37 @@ function obtenerIconoMenu(nombre) {
 /* =========================================================================
    CONFIGURADOR DE PRODUCTO (MODAL CON PREGUNTAS FORZADAS Y MITADES)
    ========================================================================= */
-function abrirModalProducto(idProducto) {
+function abrirModalProducto(idProducto, esEmpleadoHint) {
     if (!clienteUbicado) {
         alert("¡Atención! Es obligatorio ingresar los datos del cliente y ubicar su dirección en el mapa antes de tomar el pedido.");
         abrirModalMapa();
         return;
     }
 
-    $("#modalProductoBody").html("<div class='text-center p-4'><i class='fas fa-spinner fa-spin fa-2x text-danger'></i><p class='mt-2'>Cargando opciones del producto...</p></div>");
-    $("#modalProductoConfig").modal("show");
+    // Intercepción preventiva inmediata sin abrir el modal de personalización
+    if (esEmpleadoHint) {
+        var yaTiene = draftLineas.some(function (l) { return l.esEmpleado; });
+        if (yaTiene) {
+            alert("⚠️ Límite del beneficio: Solo se permite una (1) pizza a Precio Empleado por pedido.");
+            return;
+        }
+        if (!empleadoPrecioEmpleadoValidado) {
+            productoEmpleadoPendienteId = idProducto;
+            abrirModalValidacionPrecioEmpleado();
+            return;
+        }
+    }
 
     $.getJSON("api/motor/catalogo?accion=producto&id=" + idProducto, function (prod) {
         // Intercepción: Beneficio de Precio Empleado
         if (prod.empleado === "S") {
             var yaTieneEmpleadoEnComanda = draftLineas.some(function (l) { return l.esEmpleado; });
             if (yaTieneEmpleadoEnComanda) {
-                $("#modalProductoConfig").modal("hide");
                 alert("⚠️ Límite del beneficio: Solo se permite una (1) pizza a Precio Empleado por pedido.");
                 return;
             }
 
             if (!empleadoPrecioEmpleadoValidado) {
-                $("#modalProductoConfig").modal("hide");
                 productoEmpleadoPendienteId = idProducto;
                 abrirModalValidacionPrecioEmpleado();
                 return;
@@ -1109,8 +1118,9 @@ function abrirModalProducto(idProducto) {
 
         productoEnEdicion = prod;
         renderizarModalProducto(prod);
+        $("#modalProductoConfig").modal("show");
     }).fail(function (xhr) {
-        $("#modalProductoBody").html("<div class='alert alert-danger'>Error al cargar opciones: " + xhr.responseText + "</div>");
+        alert("Error al cargar opciones del producto: " + (xhr.responseText || xhr.statusText));
     });
 }
 
@@ -3237,15 +3247,18 @@ function validarCodigoPrecioEmpleado() {
                 };
 
                 actualizarBadgePrecioEmpleado();
+
+                $("#modalValidacionPrecioEmpleado").one("hidden.bs.modal", function () {
+                    alert("🎉 ¡Código validado exitosamente!\n\nBeneficiario: " + empleadoPrecioEmpleadoValidado.nombre + "\nCédula: " + empleadoPrecioEmpleadoValidado.cedula + "\n\nAhora puedes personalizar la pizza del colaborador.");
+
+                    if (productoEmpleadoPendienteId) {
+                        var pid = productoEmpleadoPendienteId;
+                        productoEmpleadoPendienteId = null;
+                        abrirModalProducto(pid);
+                    }
+                });
+
                 $("#modalValidacionPrecioEmpleado").modal("hide");
-
-                alert("🎉 ¡Código validado exitosamente!\n\nBeneficiario: " + empleadoPrecioEmpleadoValidado.nombre + "\nCédula: " + empleadoPrecioEmpleadoValidado.cedula + "\n\nAhora puedes personalizar la pizza del colaborador.");
-
-                if (productoEmpleadoPendienteId) {
-                    var pid = productoEmpleadoPendienteId;
-                    productoEmpleadoPendienteId = null;
-                    abrirModalProducto(pid);
-                }
             } else {
                 mostrarAlertaPrecioEmp("danger", "❌ " + (resp.mensaje || "Código inválido."));
                 $("#txtCodigoVerifPrecioEmp").focus();

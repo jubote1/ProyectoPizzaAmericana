@@ -23,6 +23,7 @@ public class EnrutadorDespachoTienda {
 	private static final long VIGENCIA_MS = 30_000L; // 30 segundos cache
 
 	private static volatile Set<Integer> tiendasPilotoCache = new HashSet<Integer>();
+	private static volatile boolean esTodasCache = false;
 	private static volatile long ultimaLectura = 0L;
 
 	public static boolean esTiendaPiloto(Connection con, int idTienda) {
@@ -31,11 +32,12 @@ public class EnrutadorDespachoTienda {
 		}
 
 		long ahora = System.currentTimeMillis();
-		if (ahora - ultimaLectura < VIGENCIA_MS && !tiendasPilotoCache.isEmpty()) {
-			return tiendasPilotoCache.contains(idTienda);
+		if (ahora - ultimaLectura < VIGENCIA_MS && (esTodasCache || !tiendasPilotoCache.isEmpty())) {
+			return esTodasCache || tiendasPilotoCache.contains(idTienda);
 		}
 
 		Set<Integer> nuevasTiendas = new HashSet<Integer>();
+		boolean esTodas = false;
 		String sql = "select valortexto from general.parametros where valorparametro = ?";
 		try (PreparedStatement ps = con.prepareStatement(sql)) {
 			ps.setString(1, PARAMETRO);
@@ -43,13 +45,18 @@ public class EnrutadorDespachoTienda {
 				if (rs.next()) {
 					String val = rs.getString(1);
 					if (val != null && !val.trim().isEmpty()) {
-						String[] partes = val.split(",");
-						for (String p : partes) {
-							p = p.trim();
-							if (!p.isEmpty()) {
-								try {
-									nuevasTiendas.add(Integer.parseInt(p));
-								} catch (NumberFormatException ignorada) {
+						String vTrim = val.trim();
+						if ("TODAS".equalsIgnoreCase(vTrim) || "ALL".equalsIgnoreCase(vTrim)) {
+							esTodas = true;
+						} else {
+							String[] partes = vTrim.split(",");
+							for (String p : partes) {
+								p = p.trim();
+								if (!p.isEmpty()) {
+									try {
+										nuevasTiendas.add(Integer.parseInt(p));
+									} catch (NumberFormatException ignorada) {
+									}
 								}
 							}
 						}
@@ -61,7 +68,8 @@ public class EnrutadorDespachoTienda {
 		}
 
 		tiendasPilotoCache = nuevasTiendas;
+		esTodasCache = esTodas;
 		ultimaLectura = ahora;
-		return nuevasTiendas.contains(idTienda);
+		return esTodas || nuevasTiendas.contains(idTienda);
 	}
 }
