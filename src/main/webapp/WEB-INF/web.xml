@@ -119,4 +119,24 @@
 		<session-timeout>2</session-timeout>
 	</session-config>
 
+	<servlet>
+		<servlet-name>BuscarEmpleadosPrecioEmpleado</servlet-name>
+		<servlet-class>capaServicioCC.BuscarEmpleadosPrecioEmpleado</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>BuscarEmpleadosPrecioEmpleado</servlet-name>
+		<url-pattern>/BuscarEmpleadosPrecioEmpleado</url-pattern>
+		<url-pattern>/api/precio-empleado/empleados</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>GestionCodigoPrecioEmpleado</servlet-name>
+		<servlet-class>capaServicioCC.GestionCodigoPrecioEmpleado</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>GestionCodigoPrecioEmpleado</servlet-name>
+		<url-pattern>/GestionCodigoPrecioEmpleado</url-pattern>
+		<url-pattern>/api/precio-empleado</url-pattern>
+	</servlet-mapping>
+
 </web-app>
