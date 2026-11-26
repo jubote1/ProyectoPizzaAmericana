@@ -3087,6 +3087,12 @@ function initValidacionPrecioEmpleado() {
             validarCodigoPrecioEmpleado();
         }
     });
+
+    $("#modalValidacionPrecioEmpleado").on("hidden.bs.modal", function () {
+        if (!empleadoPrecioEmpleadoValidado) {
+            productoEmpleadoPendienteId = null;
+        }
+    });
 }
 
 function actualizarBadgePrecioEmpleado() {
