@@ -7,6 +7,8 @@ import com.google.gson.JsonParser;
 
 import capaDAOCC.ParametrosDAO;
 import capaDAOCC.TiendaBloqueadaDAO;
+import capaDAOCC.TiendaDAO;
+import capaModeloCC.Tienda;
 import capaModeloCC.Cliente;
 import capaModeloCC.CoberturaRequest;
 import capaModeloCC.Correo;
@@ -196,7 +198,10 @@ public class UbicacionCtrl {
 	        	
 	            DireccionNormalizada direccionNormalizada = normalizarDireccionEntrega(direccion, municipio, barrio);
 
-		        JsonObject coords = geocodificarConCandidatos(direccionNormalizada, direccion, municipio, barrio);
+		        JsonObject coords = cliente == null
+		                ? geocodificarConCandidatos(direccionNormalizada, direccion, municipio, barrio)
+		                : geocodificarDireccionDeCliente(direccionNormalizada, direccion, municipio,
+		                        municipioParaGeocodificar(municipioBD), barrio, cliente.getIdtienda());
 		        if (esCoordenadaValida(coords)) {
 
 		            Resultado resultadoCoordenadas = crearResultadoConCoordenadas(
@@ -579,11 +584,113 @@ public class UbicacionCtrl {
 	    return coords;
 	}
 
+	// Si la respuesta con el municipio de la ficha cae asi de cerca de la tienda del cliente, se
+	// toma sin hacer la segunda consulta (el 80% de los clientes vive a 2 km o menos de su tienda).
+	private static final double KM_CERCA_DE_SU_TIENDA = 2.0;
+
 	/**
-	 * Valida que el objeto tenga latitud y longitud utilizables.
+	 * Geocodifica la direccion de un cliente ya registrado.
 	 *
-	 * Actualmente descarta solo el caso 0,0. Para valores recibidos directamente
-	 * del request se recomienda validar tambien rangos geograficos en CoberturaRequest.
+	 * La consulta por idcliente no trae municipio, y sin municipio se acepta la misma nomenclatura
+	 * en cualquier pueblo. Pero el municipio de la ficha tampoco es confiable (hay clientes de
+	 * Bello o Itagui marcados como Medellin): usarlo a ciegas dania direcciones que hoy salen bien.
+	 * Por eso se consulta con el municipio de la ficha y como venia, y de las dos respuestas se toma
+	 * la mas cercana a la tienda del cliente. La distancia solo sirve para ESCOGER, nunca para
+	 * descartar: hay clientes bien ubicados lejos de su tienda.
+	 */
+	private static JsonObject geocodificarDireccionDeCliente(DireccionNormalizada comoVenia, String direccion,
+			String municipio, String municipioFicha, String barrio, int idTienda) throws Exception {
+
+		if (municipioFicha.isEmpty()) {
+			return geocodificarConCandidatos(comoVenia, direccion, municipio, barrio);
+		}
+
+		Tienda tienda = null;
+		for (Tienda t : TiendaDAO.obtenerTiendasFuncionales()) {
+			if (t.getIdTienda() == idTienda && estaEnAreaDeServicio(t.getLatitud(), t.getLongitud())) {
+				tienda = t;
+				break;
+			}
+		}
+		if (tienda == null) {
+			// Sin tienda no hay como escoger: se deja como estaba.
+			return geocodificarConCandidatos(comoVenia, direccion, municipio, barrio);
+		}
+
+		JsonObject conFicha = geocodificarConCandidatos(
+				normalizarDireccionEntrega(direccion, municipioFicha, barrio), direccion, municipioFicha, barrio);
+		if (esCoordenadaValida(conFicha)
+				&& distanciaKm(conFicha, tienda.getLatitud(), tienda.getLongitud()) <= KM_CERCA_DE_SU_TIENDA) {
+			return conFicha;
+		}
+
+		JsonObject original = geocodificarConCandidatos(comoVenia, direccion, municipio, barrio);
+		return elegirMasCercana(conFicha, original, tienda.getLatitud(), tienda.getLongitud());
+	}
+
+	/**
+	 * De dos respuestas del geocodificador, la que quede mas cerca del punto dado. Si solo una es
+	 * valida, esa; si ninguna, la segunda (que es la que lleva las pistas de lo que se hacia antes).
+	 */
+	static JsonObject elegirMasCercana(JsonObject primera, JsonObject segunda, double lat, double lng) {
+		if (!esCoordenadaValida(primera)) {
+			return segunda;
+		}
+		if (!esCoordenadaValida(segunda)) {
+			return primera;
+		}
+		return distanciaKm(segunda, lat, lng) < distanciaKm(primera, lat, lng) ? segunda : primera;
+	}
+
+	// Distancia aproximada en kilometros; a esta escala no hace falta la formula del circulo maximo.
+	private static double distanciaKm(JsonObject coords, double lat, double lng) {
+		double latPunto = coords.get("Latitud").getAsDouble();
+		double lngPunto = coords.get("Longitud").getAsDouble();
+		double porGrado = Math.PI / 180;
+		double x = (lngPunto - lng) * porGrado * Math.cos((latPunto + lat) / 2 * porGrado);
+		double y = (latPunto - lat) * porGrado;
+		return Math.sqrt(x * x + y * y) * 6371;
+	}
+
+	/**
+	 * Nombre del municipio de la ficha del cliente tal como lo entienden los geocodificadores.
+	 *
+	 * "No Definido" no sirve de filtro. San Antonio de Prado es un corregimiento de Medellin:
+	 * los proveedores responden "Medellin" y con el nombre del corregimiento se rechazaria todo.
+	 *
+	 * @return el municipio a usar, o "" si la ficha no dice uno que sirva.
+	 */
+	static String municipioParaGeocodificar(String municipioFicha) {
+		if (municipioFicha == null) {
+			return "";
+		}
+		String m = municipioFicha.trim();
+		String clave = m.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+		if (clave.isEmpty() || clave.equals("no definido")) {
+			return "";
+		}
+		if (clave.equals("san antonio prado") || clave.equals("san antonio de prado")) {
+			return "Medellin";
+		}
+		return m;
+	}
+
+	// Caja del area donde puede caer un cliente: Valle de Aburra y sus alrededores (alcanza hasta
+	// La Ceja y El Santuario). Un punto por fuera es un error del geocodificador, no un cliente lejano.
+	private static final double LAT_MIN_SERVICIO = 5.9;
+	private static final double LAT_MAX_SERVICIO = 6.6;
+	private static final double LNG_MIN_SERVICIO = -75.9;
+	private static final double LNG_MAX_SERVICIO = -75.2;
+
+	static boolean estaEnAreaDeServicio(double lat, double lng) {
+		return lat >= LAT_MIN_SERVICIO && lat <= LAT_MAX_SERVICIO
+				&& lng >= LNG_MIN_SERVICIO && lng <= LNG_MAX_SERVICIO;
+	}
+
+	/**
+	 * Valida que el objeto tenga latitud y longitud utilizables: dentro del area de servicio
+	 * (lo que tambien descarta el 0,0). Si un proveedor responde por fuera, la cascada sigue con
+	 * el siguiente; si ninguno acierta, la direccion queda sin coordenada.
 	 */
 	private static boolean esCoordenadaValida(JsonObject coords) {
 		if (coords == null || !coords.has("Latitud") || !coords.has("Longitud")) {
@@ -592,7 +699,7 @@ public class UbicacionCtrl {
 
 		double lat = coords.get("Latitud").getAsDouble();
 		double lng = coords.get("Longitud").getAsDouble();
-		return !(lat == 0 && lng == 0);
+		return estaEnAreaDeServicio(lat, lng);
 	}
 
 	

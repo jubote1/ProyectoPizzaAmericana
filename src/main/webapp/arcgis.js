@@ -708,6 +708,20 @@ function coordenadasValidas(latitud, longitud) {
     lng <= 180;
 }
 
+// Para lo que devuelve el geocodificador: ademas de ser una coordenada, tiene que caer en el area
+// de servicio (la misma caja de UbicacionCtrl.estaEnAreaDeServicio). Un punto por fuera no se
+// toma, porque al guardar el pedido reemplazaria la coordenada que ya tenia el cliente.
+// No se usa para el marcador que el operario pone a mano.
+function coordenadasEnAreaDeServicio(latitud, longitud) {
+  if (!coordenadasValidas(latitud, longitud)) {
+    return false;
+  }
+  const lat = Number(latitud);
+  const lng = Number(longitud);
+
+  return lat >= 5.9 && lat <= 6.6 && lng >= -75.9 && lng <= -75.2;
+}
+
 function readTextFile(file, callback) {
   const rawFile = new XMLHttpRequest();
 
@@ -991,7 +1005,7 @@ async function findAddress(idcliente = null, esClicManual = false) {
          
           if (!response.ok || !data.success) {
               // Si el servicio geocodificó coordenadas válidas (aunque esté fuera de cobertura):
-              if (coordenadasValidas(data.latitud, data.longitud)) {
+              if (coordenadasEnAreaDeServicio(data.latitud, data.longitud)) {
                   const punto = {
                       type: "point",
                       latitude: Number(data.latitud),
@@ -1054,7 +1068,7 @@ async function findAddress(idcliente = null, esClicManual = false) {
               return;
           }
 
-          if (!coordenadasValidas(data.latitud, data.longitud)) {
+          if (!coordenadasEnAreaDeServicio(data.latitud, data.longitud)) {
               if (esClicManual) {
                   mostrarMensajeDireccionNoEncontrada("El servicio no devolvió coordenadas válidas.");
               }
