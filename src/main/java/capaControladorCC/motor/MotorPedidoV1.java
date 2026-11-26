@@ -137,8 +137,8 @@ public class MotorPedidoV1 implements MotorPedido {
 				agregarLinea(r, p, l);
 			}
 
-			// 4. Domicilio
-			if (s.domicilio != null && s.domicilio.idproducto > 0) {
+			// 4. Domicilio (si no ha sido exonerado con justificación y auditoría)
+			if (s.domicilio != null && !s.domicilio.exonerado && s.domicilio.idproducto > 0) {
 				Producto d = catalogo.productos.get(s.domicilio.idproducto);
 				if (d == null) {
 					return MotorResultado.conEstado(MotorResultado.RECHAZADO, VERSION, "DOMICILIO_DESCONOCIDO",

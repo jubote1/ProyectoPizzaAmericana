@@ -37,6 +37,14 @@ var empleadoSeleccionadoTemporal = null;
 var idsRedencionPedido = [];
 var puntosRedimidos = 0;
 
+// Control de Exoneración de Cobro de Domicilio con Auditoría
+var domicilioExonerado = {
+    activo: false,
+    motivo: "",
+    justificacion: "",
+    valorExonerado: 5000.0
+};
+
 // Objeto de control de Descuentos & Cupones
 var descuentoAplicado = {
     tipo: "", // "CUPON" o "MANUAL"
@@ -83,6 +91,7 @@ $(document).ready(function () {
     cargarFormasPagoParametricas();
     initValidacionPrecioEmpleado();
     initGestionPuntosPizza();
+    initGestionExoneracionDomicilio();
 
     // Eventos de Búsqueda de Cliente
     $("#btnBuscarTelefono").on("click", function () {
@@ -1085,11 +1094,10 @@ function cargarMenuPOS() {
                     }
 
                     var $title = $("<div></div>").addClass("prod-title").text(item.descripcion);
-                    var $tipo = $("<div></div>").addClass("prod-tipo").text(item.tipo === "P" ? "Pizza" : (item.tipo === "B" ? "Bebida" : "Item"));
                     var precioTexto = (item.precioPuntos && item.precioPuntos > 0) ? (Math.round(item.precioPuntos) + " Puntos") : ("$ " + formatearPesos(item.precio));
                     var $precio = $("<div></div>").addClass("prod-precio").text(precioTexto);
 
-                    $card.append($title).append($tipo).append($precio);
+                    $card.append($title).append($precio);
                     $grid.append($card);
                 });
             } else {
@@ -2063,7 +2071,11 @@ function cotizarEnVivo() {
             direccion: clienteActual.direccion
         },
         domicilio: {
-            idproducto: (idTipoPedido === 1 ? 412 : 0) // 412 = Domicilio POS
+            idproducto: (idTipoPedido === 1 && !domicilioExonerado.activo ? 412 : 0),
+            valor: 5000.0,
+            exonerado: (idTipoPedido === 1 && domicilioExonerado.activo),
+            motivo: domicilioExonerado.motivo || "",
+            justificacion: domicilioExonerado.justificacion || ""
         },
         descuentos: {
             codigoPromocional: descuentoAplicado.codigoPromocional || "",
@@ -2269,7 +2281,25 @@ function renderizarComanda(res) {
     });
 
     $("#subtotalTxt").text("$ " + formatearPesos(res.subtotal - domVal));
-    $("#domicilioTxt").text("$ " + formatearPesos(domVal));
+    var idTipoPedActual = parseInt($("#tipoPedidoSelect").val()) || 1;
+    if (idTipoPedActual === 1) {
+        if (domicilioExonerado.activo) {
+            $("#badgeDomicilioExonerado").show();
+            $("#btnExonerarDomicilio").hide();
+            $("#btnRestaurarDomicilio").show();
+            $("#domicilioTxt").html("<span class='text-muted mr-1' style='text-decoration:line-through; font-size: 0.82rem;'>$ 5.000</span><span class='text-success font-weight-bold'>$ 0</span>");
+        } else {
+            $("#badgeDomicilioExonerado").hide();
+            $("#btnExonerarDomicilio").show();
+            $("#btnRestaurarDomicilio").hide();
+            $("#domicilioTxt").text("$ " + formatearPesos(domVal > 0 ? domVal : 5000));
+        }
+    } else {
+        $("#badgeDomicilioExonerado").hide();
+        $("#btnExonerarDomicilio").hide();
+        $("#btnRestaurarDomicilio").hide();
+        $("#domicilioTxt").text("$ 0");
+    }
     $("#descuentoTxt").text("-$ " + formatearPesos(res.descuento));
     $("#totalTxt").text("$ " + formatearPesos(res.total));
 
@@ -2503,7 +2533,13 @@ function abrirModalConfirmacionPedido() {
     });
 
     $("#txtModalSubtotal").text("$ " + formatearPesos(resultadoMotor.subtotal - domVal));
-    $("#txtModalDomicilio").text("$ " + formatearPesos(domVal));
+    if (domicilioExonerado.activo) {
+        $("#badgeModalDomicilioExonerado").show();
+        $("#txtModalDomicilio").html("<span class='text-muted mr-1' style='text-decoration:line-through;'>$ 5.000</span> <span class='text-success font-weight-bold'>$ 0</span>");
+    } else {
+        $("#badgeModalDomicilioExonerado").hide();
+        $("#txtModalDomicilio").text("$ " + formatearPesos(domVal));
+    }
     $("#txtModalDescuento").text("-$ " + formatearPesos(resultadoMotor.descuento));
     if (descuentoAplicado.motivoDescuento) {
         $("#lblModalDescLabel").text("Descuento (" + descuentoAplicado.motivoDescuento + "):");
@@ -2632,7 +2668,11 @@ function ejecutarDespachoTiendaDefinitivo() {
                 direccion: clienteActual.direccion
             },
             domicilio: {
-                idproducto: (idTipoPedido === 1 ? 412 : 0)
+                idproducto: (idTipoPedido === 1 && !domicilioExonerado.activo ? 412 : 0),
+                valor: 5000.0,
+                exonerado: (idTipoPedido === 1 && domicilioExonerado.activo),
+                motivo: domicilioExonerado.motivo || "",
+                justificacion: domicilioExonerado.justificacion || ""
             },
             descuentos: {
                 codigoPromocional: descuentoAplicado.codigoPromocional || "",
@@ -2697,6 +2737,15 @@ function limpiarPantallaTrasDespacho() {
     idsRedencionPedido = [];
     puntosRedimidos = 0;
     actualizarCajaPuntosComanda(0);
+    domicilioExonerado = {
+        activo: false,
+        motivo: "",
+        justificacion: "",
+        valorExonerado: 5000.0
+    };
+    $("#badgeDomicilioExonerado").hide();
+    $("#btnExonerarDomicilio").hide();
+    $("#btnRestaurarDomicilio").hide();
     $("#txtValorDescuentoManual, #txtJustificacionDescuento").val("");
     $("#selectMotivoDescuento").prop("selectedIndex", 0);
     $("#chkPedidoProgramado").prop("checked", false);
@@ -3892,4 +3941,46 @@ function obtenerFechaFormatoBD() {
     var month = String(date.getMonth() + 1).padStart(2, '0');
     var day = String(date.getDate()).padStart(2, '0');
     return (year + "/" + month + "/" + day);
+}
+
+/* =========================================================================
+   GESTIÓN DE EXONERACIÓN DE COBRO DE DOMICILIO CON AUDITORÍA
+   ========================================================================= */
+function initGestionExoneracionDomicilio() {
+    $("#btnExonerarDomicilio").on("click", function () {
+        $("#cboMotivoExoneracionDomicilio").val("");
+        $("#txtJustificacionExoneracionDomicilio").val("");
+        $("#modalExonerarDomicilio").modal("show");
+    });
+
+    $("#btnConfirmarExonerarDomicilio").on("click", function () {
+        var motivo = $("#cboMotivoExoneracionDomicilio").val();
+        var just = $("#txtJustificacionExoneracionDomicilio").val().trim();
+
+        if (!motivo) {
+            alert("⚠️ Debe seleccionar un motivo formal para exonerar el cobro de domicilio.");
+            $("#cboMotivoExoneracionDomicilio").focus();
+            return;
+        }
+
+        if (motivo === "OTRO" && just.length < 5) {
+            alert("⚠️ Al seleccionar 'Otro', es obligatorio ingresar una justificación detallada (mínimo 5 caracteres) para auditoría.");
+            $("#txtJustificacionExoneracionDomicilio").focus();
+            return;
+        }
+
+        domicilioExonerado.activo = true;
+        domicilioExonerado.motivo = motivo;
+        domicilioExonerado.justificacion = just;
+
+        $("#modalExonerarDomicilio").modal("hide");
+        cotizarEnVivo();
+    });
+
+    $("#btnRestaurarDomicilio").on("click", function () {
+        domicilioExonerado.activo = false;
+        domicilioExonerado.motivo = "";
+        domicilioExonerado.justificacion = "";
+        cotizarEnVivo();
+    });
 }

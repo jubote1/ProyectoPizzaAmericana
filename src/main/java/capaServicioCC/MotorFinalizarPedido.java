@@ -428,6 +428,38 @@ public class MotorFinalizarPedido extends HttpServlet {
 				}
 			}
 
+			// 2.07 Si el cobro de domicilio fue exonerado en un pedido a domicilio, registrar en auditoria_domicilio_exonerado
+			if (solicitud.contexto != null && solicitud.contexto.idtipopedido == 1
+					&& solicitud.domicilio != null && solicitud.domicilio.exonerado) {
+				String sqlAudDom = "INSERT INTO pizzaamericana.auditoria_domicilio_exonerado "
+						+ "(idpedido, idtienda, usuario, motivo, justificacion, valor_exonerado, fecha_hora) "
+						+ "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP())";
+				try (PreparedStatement psAud = con.prepareStatement(sqlAudDom)) {
+					psAud.setInt(1, idPedidoCentral);
+					psAud.setInt(2, idTienda);
+					psAud.setString(3, usuario);
+					String motDom = (solicitud.domicilio.motivo != null && !solicitud.domicilio.motivo.trim().isEmpty())
+							? solicitud.domicilio.motivo.trim()
+							: "Exonerado en comanda";
+					String justDom = (solicitud.domicilio.justificacion != null) ? solicitud.domicilio.justificacion.trim() : "";
+					psAud.setString(4, motDom);
+					psAud.setString(5, justDom);
+					psAud.setDouble(6, (solicitud.domicilio.valor > 0) ? solicitud.domicilio.valor : 5000.0);
+					psAud.executeUpdate();
+				} catch (Exception exAud) {
+					System.err.println("Advertencia registrando auditoria_domicilio_exonerado para pedido " + idPedidoCentral + ": " + exAud.getMessage());
+				}
+
+				// Agregar marca en observacion del cliente para cocina y tienda
+				if (cli != null) {
+					String motDom = (solicitud.domicilio.motivo != null && !solicitud.domicilio.motivo.trim().isEmpty())
+							? solicitud.domicilio.motivo.trim()
+							: "Exonerado";
+					String obsAct = (cli.getObservacion() != null) ? cli.getObservacion() : "";
+					cli.setObservacion(("[DOMICILIO $0: " + motDom + "] " + obsAct).trim());
+				}
+			}
+
 			// 2.1 Registrar forma de pago en pizzaamericana.pedido_forma_pago (requerido para visualizacion en pantallas y reportes)
 			String sqlInsFP = "insert into pizzaamericana.pedido_forma_pago (idpedido, idforma_pago, valortotal, valorformapago) "
 					+ "values (?, ?, ?, ?)";

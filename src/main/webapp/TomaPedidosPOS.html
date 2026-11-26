@@ -7,7 +7,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <link href="css/all.min.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="css/tomapedidospos.css" rel="stylesheet" type="text/css" />
+    <link href="css/tomapedidospos.css?v=20261126_cards_v2" rel="stylesheet" type="text/css" />
 </head>
 <body>
 
@@ -337,9 +337,22 @@
                             <span>Subtotal productos:</span>
                             <b id="subtotalTxt">$ 0</b>
                         </div>
-                        <div class="fila-total">
-                            <span>Domicilio:</span>
-                            <b id="domicilioTxt">$ 0</b>
+                        <div class="fila-total align-items-center justify-content-between" id="filaTotalDomicilio">
+                            <div class="d-flex align-items-center">
+                                <span>Domicilio:</span>
+                                <span id="badgeDomicilioExonerado" class="badge badge-warning text-dark ml-2 py-0 px-1" style="display:none; font-size: 0.72rem;">
+                                    <i class="fas fa-gift mr-1"></i>Exonerado
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <b id="domicilioTxt" class="mr-2">$ 0</b>
+                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1" id="btnExonerarDomicilio" title="Exonerar cobro de domicilio (requiere justificación)" style="font-size: 0.72rem; height: 22px; display:none;">
+                                    <i class="fas fa-trash-alt"></i> Quitar
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm py-0 px-1" id="btnRestaurarDomicilio" title="Restaurar cobro de domicilio" style="font-size: 0.72rem; height: 22px; display:none;">
+                                    <i class="fas fa-undo-alt"></i> Cobrar
+                                </button>
+                            </div>
                         </div>
                         <div class="fila-total text-success">
                             <span>Descuentos:</span>
@@ -630,6 +643,51 @@
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Exoneración Cobro de Domicilio con Auditoría -->
+    <div class="modal fade" id="modalExonerarDomicilio" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 480px;">
+            <div class="modal-content shadow-lg border-danger">
+                <div class="modal-header bg-danger text-white py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                        <i class="fas fa-shield-alt mr-2"></i>Exonerar Cobro de Domicilio
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="alert alert-warning py-2 px-3 mb-3 small">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> El cobro de domicilio ($5.000) se aplica automáticamente. Quitar este cobro requiere un <b>motivo formal</b> que quedará registrado en la auditoría del pedido.
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="cboMotivoExoneracionDomicilio" class="font-weight-bold small mb-1">Motivo de Exoneración:</label>
+                        <select id="cboMotivoExoneracionDomicilio" class="form-control form-control-sm">
+                            <option value="">-- Seleccione un motivo --</option>
+                            <option value="Cortesía Gerencia / Administración">Cortesía Gerencia / Administración</option>
+                            <option value="Garantía / Reposición de Pedido">Garantía / Reposición de Pedido</option>
+                            <option value="Convenio Corporativo">Convenio Corporativo</option>
+                            <option value="Cliente Recoge en Tienda / Error Tipo">Cliente Recoge en Tienda / Error Tipo</option>
+                            <option value="Demora Extrema / Compensación Fidelización">Demora Extrema / Compensación Fidelización</option>
+                            <option value="OTRO">Otro (Especificar en justificación)</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-1">
+                        <label for="txtJustificacionExoneracionDomicilio" class="font-weight-bold small mb-1">Justificación Detallada (Obligatoria para auditoría):</label>
+                        <textarea id="txtJustificacionExoneracionDomicilio" class="form-control form-control-sm" rows="3" placeholder="Indique el número de caso, autorización de quién o detalle del motivo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm font-weight-bold px-3" id="btnConfirmarExonerarDomicilio">
+                        <i class="fas fa-check mr-1"></i> Confirmar Exoneración
                     </button>
                 </div>
             </div>
@@ -964,8 +1022,13 @@
                                         <span>Subtotal Productos:</span>
                                         <b id="txtModalSubtotal">$ 0</b>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.88rem;">
-                                        <span>Servicio Domicilio:</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.88rem;">
+                                        <div>
+                                            <span>Servicio Domicilio:</span>
+                                            <span id="badgeModalDomicilioExonerado" class="badge badge-warning text-dark ml-1" style="display:none; font-size: 0.72rem;">
+                                                <i class="fas fa-gift mr-1"></i>Exonerado
+                                            </span>
+                                        </div>
                                         <b id="txtModalDomicilio">$ 0</b>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2 text-success" style="font-size: 0.88rem;">
@@ -1801,6 +1864,6 @@
     <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_despacho_modal_v2"></script>
+    <script type="text/javascript" src="js/tomapedidospos.js?v=20261126_cards_domicilio_v3"></script>
 </body>
 </html>

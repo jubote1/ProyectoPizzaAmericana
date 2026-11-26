@@ -92,6 +92,10 @@ public class MotorSolicitud {
 		public int idproducto;
 		/** Valor que se espera cobrar; el motor lo compara con el precio del catalogo y advierte si difieren. */
 		public double valor;
+		/** Si el asesor exonero el cobro de domicilio con justificacion/auditoria */
+		public boolean exonerado;
+		public String motivo = "";
+		public String justificacion = "";
 	}
 
 	public static class Descuentos {
