@@ -146,6 +146,37 @@ public class SombraPedido {
 				s.contexto.esDomicilio = true;
 				continue;
 			}
+			// Si la linea viene sin master (l.master == 0) y su valor es 0, verificar si es
+			// una eleccion forzada de un combo padre en el pedido (ej. la gaseosa del Combo Insuperable
+			// que el tomador legacy guarda huerfana con valor 0).
+			if (l.valorTotal == 0 && l.valorUnitario == 0 && catalogo != null) {
+				boolean absorbidaPorCombo = false;
+				for (MotorSolicitud.Linea posiblePadre : s.lineas) {
+					CatalogoPos.Producto prodPadre = catalogo.productos.get(posiblePadre.idproducto);
+					if (prodPadre != null && prodPadre.preguntas != null) {
+						for (int idPreg : prodPadre.preguntas) {
+							if (idPreg > 0) {
+								CatalogoPos.Pregunta preg = catalogo.preguntas.get(idPreg);
+								if (preg != null && preg.opciones != null && preg.opciones.containsKey(l.idProducto)) {
+									MotorSolicitud.Seleccion sel = new MotorSolicitud.Seleccion();
+									sel.idproductoOpcion = l.idProducto;
+									sel.cantidad = posiblePadre.cantidad > 0 ? l.cantidad / posiblePadre.cantidad : l.cantidad;
+									posiblePadre.selecciones.add(sel);
+									absorbidaPorCombo = true;
+									break;
+								}
+							}
+						}
+					}
+					if (absorbidaPorCombo) {
+						break;
+					}
+				}
+				if (absorbidaPorCombo) {
+					continue;
+				}
+			}
+
 			MotorSolicitud.Linea ln = new MotorSolicitud.Linea();
 			ln.idproducto = l.idProducto;
 			ln.cantidad = l.cantidad;

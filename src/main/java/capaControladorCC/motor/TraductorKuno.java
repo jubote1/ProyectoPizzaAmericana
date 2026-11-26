@@ -143,11 +143,19 @@ public class TraductorKuno {
 
 		// Si no se encuentra directo por P, intentar como producto genérico o excepción
 		if (idProductoPos == 0) {
-			Integer idExc = skus.get("X|" + normalizar(sku));
+			Integer idExc = skus.get("EX|" + normalizar(sku));
+			if (idExc == null) {
+				idExc = skus.get("X|" + normalizar(sku));
+			}
 			if (idExc != null && idExc > 0) {
 				for (Map.Entry<String, Integer> entry : eqExcepcion.entrySet()) {
 					if (entry.getKey().endsWith("|" + idExc)) {
 						idProductoPos = entry.getValue();
+						try {
+							String[] partes = entry.getKey().split("\\|");
+							idProductoCentral = Integer.parseInt(partes[0]);
+						} catch (Exception ignorada) {
+						}
 						break;
 					}
 				}
@@ -214,9 +222,11 @@ public class TraductorKuno {
 			}
 		}
 
-		// Si no es especialidad, probar como adición o sabor
+		// Si no es especialidad, probar como adición, sabor o bebida (P, T, A)
 		if (idOpcionPos == 0) {
-			int idAdiCentral = obtenerIdCentral("A", nombre);
+			int idAdiCentral = obtenerIdCentral("P", nombre);
+			if (idAdiCentral == 0) idAdiCentral = obtenerIdCentral("T", nombre);
+			if (idAdiCentral == 0) idAdiCentral = obtenerIdCentral("A", nombre);
 			if (idAdiCentral > 0 && eqProducto.containsKey(String.valueOf(idAdiCentral))) {
 				idOpcionPos = eqProducto.get(String.valueOf(idAdiCentral));
 			}

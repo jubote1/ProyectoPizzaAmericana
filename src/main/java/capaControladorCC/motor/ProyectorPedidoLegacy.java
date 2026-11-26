@@ -212,13 +212,17 @@ public class ProyectorPedidoLegacy {
 				}
 			}
 
-			// 4. Actualizar totales en pizzaamericana.pedido
-			String sqlUpdPed = "update pizzaamericana.pedido set total_bruto = ?, descuento = ?, total_neto = ? where idpedido = ?";
+			// 4. Actualizar totales en pizzaamericana.pedido con regla fiscal oficial (Impoconsumo 8%)
+			double totalNetoAct = resultado.total;
+			double totalBrutoAct = totalNetoAct / 1.08;
+			double valorImpuestoAct = totalNetoAct - totalBrutoAct;
+			String sqlUpdPed = "update pizzaamericana.pedido set total_bruto = ?, impuesto = ?, descuento = ?, total_neto = ? where idpedido = ?";
 			try (PreparedStatement ps = con.prepareStatement(sqlUpdPed)) {
-				ps.setDouble(1, resultado.subtotal);
-				ps.setDouble(2, resultado.descuento);
-				ps.setDouble(3, resultado.total);
-				ps.setInt(4, idPedidoCentral);
+				ps.setDouble(1, totalBrutoAct);
+				ps.setDouble(2, valorImpuestoAct);
+				ps.setDouble(3, resultado.descuento);
+				ps.setDouble(4, totalNetoAct);
+				ps.setInt(5, idPedidoCentral);
 				ps.executeUpdate();
 			}
 
