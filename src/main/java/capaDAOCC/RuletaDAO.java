@@ -318,11 +318,21 @@ public class RuletaDAO {
      */
     private static String calcularEstado(int idOfertaCliente, int idOferta, String correo,
             String fechaAviso) {
-        // Negativo es la marca de los premios entregados a mano antes de que
-        // existiera esta pantalla. Se distinguen de los que disperso el sistema
-        // porque de esos no tenemos codigo ni fecha de aviso: mostrarlos como
-        // DISPERSADO haria creer que la informacion esta, y esas columnas estarian
-        // vacias sin explicacion.
+        // -2 es un premio retenido a proposito: salio de una encuesta que se
+        // lleno en masa cambiando el numero de pedido en el QR (ver
+        // sql/2026_11_27_01_bloquear_premios_ruleta_encuesta_masiva.sql). Tiene
+        // que leerse distinto de los entregados a mano: decir "ENTREGADO A MANO"
+        // de algo que se bloqueo por sospecha haria creer que el premio salio.
+        // El bloqueo en si no depende de esta etiqueta sino de que
+        // marcarDispersion exija idofertacliente = 0.
+        if (idOfertaCliente == -2) {
+            return "BLOQUEADO POR REVISAR";
+        }
+        // Los demas negativos son la marca de los premios entregados a mano antes
+        // de que existiera esta pantalla. Se distinguen de los que disperso el
+        // sistema porque de esos no tenemos codigo ni fecha de aviso: mostrarlos
+        // como DISPERSADO haria creer que la informacion esta, y esas columnas
+        // estarian vacias sin explicacion.
         if (idOfertaCliente < 0) {
             return "ENTREGADO A MANO";
         }
