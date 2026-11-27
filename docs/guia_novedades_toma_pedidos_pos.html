@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Guía Operativa: Novedades en Toma de Pedidos Web POS - Pizza Americana</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 15mm 18mm 15mm;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #1f2937;
+            line-height: 1.55;
+            font-size: 10.5pt;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            border-bottom: 3px solid #b91c1c;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header-title h1 {
+            color: #b91c1c;
+            font-size: 19pt;
+            margin: 0 0 4px 0;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .header-title h2 {
+            color: #4b5563;
+            font-size: 11pt;
+            margin: 0;
+            font-weight: 600;
+        }
+        .header-meta {
+            text-align: right;
+            font-size: 8.5pt;
+            color: #6b7280;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-gray { background: #f3f4f6; color: #374151; }
+
+        h3 {
+            color: #111827;
+            font-size: 12pt;
+            margin: 18px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+        }
+        .num-circle {
+            background: #b91c1c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9pt;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        p {
+            margin: 0 0 10px 0;
+        }
+        ul {
+            margin: 0 0 12px 0;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+
+        .alert-box {
+            border-left: 4px solid #b91c1c;
+            background: #fef2f2;
+            padding: 10px 14px;
+            border-radius: 0 6px 6px 0;
+            margin: 12px 0;
+            font-size: 9.5pt;
+        }
+        .alert-box.info {
+            border-left-color: #2563eb;
+            background: #eff6ff;
+        }
+        .alert-box.success {
+            border-left-color: #16a34a;
+            background: #f0fdf4;
+        }
+        .alert-box.tip {
+            border-left-color: #d97706;
+            background: #fffbeb;
+        }
+        .alert-title {
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .table-resumen {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 9.5pt;
+        }
+        .table-resumen th {
+            background: #b91c1c;
+            color: white;
+            text-align: left;
+            padding: 8px 10px;
+            font-weight: 600;
+        }
+        .table-resumen td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+        }
+        .table-resumen tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        .strong {
+            font-weight: 600;
+            color: #111827;
+        }
+        .footer {
+            margin-top: 30px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            color: #9ca3af;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title">
+            <h1>PIZZA AMERICANA</h1>
+            <h2>Guía Operativa: Novedades en Toma de Pedidos Web POS</h2>
+        </div>
+        <div class="header-meta">
+            <div><strong>Versión:</strong> 2.1 (Alineación con Tiendas)</div>
+            <div><strong>Fecha:</strong> Noviembre 2026</div>
+            <div><strong>Área:</strong> Contact Center & Operaciones</div>
+        </div>
+    </div>
+
+    <div class="alert-box info">
+        <div class="alert-title">🎯 Objetivo de la Actualización</div>
+        Alinear la experiencia del Contact Center con el sistema táctil de las tiendas físicas. Se incorporan seis (6) mejoras operativas concretas surgidas de las jornadas de pruebas para reducir el tiempo de toma de pedidos, evitar errores manuales y agilizar la cocina.
+    </div>
+
+    <!-- NOVEDAD 1 -->
+    <h3><span class="num-circle">1</span> Consulta de Estados en Tienda (Día Activo vs. Histórico)</h3>
+    <p><strong>¿Qué ocurría en las pruebas?</strong> Al consultar un pedido tomado el día anterior en la pantalla de <em>Estados Pedidos Tienda</em>, el sistema indicaba que no existía registro, a pesar de haber llegado e impreso en la tienda.</p>
+    <ul>
+        <li><strong>Explicación para el personal:</strong> La pantalla <code>EstadosPedidosTienda</code> es un <strong>monitor en tiempo real del día operativo en curso</strong> (antes del cierre diario de la tienda o <em>Close of Day</em>).</li>
+        <li><strong>Dónde consultar cada caso:</strong>
+            <ul>
+                <li><strong>Pedidos de hoy (en preparación / entrega):</strong> Consultar en <code>EstadosPedidosTienda</code>.</li>
+                <li><strong>Pedidos de días anteriores:</strong> Consultar en <strong><code>EstadosHistorialPedido.html</code></strong> o filtrando por rango de fechas en el historial central.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <!-- NOVEDAD 2 -->
+    <h3><span class="num-circle">2</span> Botón Directo "Todos los Condimentos" ($0)</h3>
+    <p>Para agilizar la atención y no obligar al asesor a marcar salsa de tomate, orégano, ají y servilletas uno a uno:</p>
+    <ul>
+        <li>En la categoría <strong>Condimentos Otros</strong> se habilitó la tarjeta directa <strong>"Todos los Condimentos"</strong> ($0).</li>
+        <li>El producto (código <code>554</code>) quedó completamente homologado y sincronizado en las <strong>13 tiendas físicas</strong>. Con un solo clic se envía la instrucción completa a la comanda de la tienda.</li>
+    </ul>
+
+    <!-- NOVEDAD 3 -->
+    <h3><span class="num-circle">3</span> Especialidades e Ingredientes en Orden Alfabético (A - Z)</h3>
+    <p>Anteriormente, las especialidades se ordenaban según el identificador interno de la base de datos, dispersando los sabores en pantalla.</p>
+    <ul>
+        <li><strong>Mejora implementada:</strong> Tanto en la pizza completa (100%) como en las columnas de Mitad 1 y Mitad 2, las especialidades e ingredientes ahora se presentan en <strong>estricto orden alfabético</strong> (Americana, BBQ, Carnes, Criolla, Hawaiana, Pollo Champiñón, etc.).</li>
+        <li><strong>Resultado:</strong> El asesor ubica cualquier especialidad o ingrediente en menos de 2 segundos.</li>
+    </ul>
+
+    <!-- NOVEDAD 4 -->
+    <h3><span class="num-circle">4</span> Entrada Numérica Manual en Cantidades</h3>
+    <div class="alert-box tip">
+        <div class="alert-title">💡 Aceleración en pedidos corporativos o grandes</div>
+        Si el cliente pide 15 porcioneros o 20 vasos, el asesor ya no tiene que hacer 15 o 20 clics repetitivos en el botón <code>+</code>.
+    </div>
+    <ul>
+        <li>Se habilitó la edición directa con el teclado en la casilla de cantidad.</li>
+        <li>El asesor escribe el número directamente (rango validado automáticamente de <strong>1 a 99 unidades</strong>).</li>
+        <li>Los botones <code>+</code> y <code>-</code> siguen disponibles para ajustes unitarios rápidos.</li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <!-- NOVEDAD 5 -->
+    <h3><span class="num-circle">5</span> "Arma tu Pizza" con Ingredientes Incluidos ($0)</h3>
+    <p>En el menú de tiendas, "Arma tu Pizza" incluye hasta <strong>3 ingredientes sin costo adicional</strong>.</p>
+    <ul>
+        <li><strong>Flujo automático:</strong> Al hacer clic en <em>Arma tu Pizza</em> (XL, Grande, Mediana o Personal), se expande de inmediato un panel visual:  
+            <br><code>🍕 Ingredientes Arma tu Pizza: 0/3 (Elige hasta 3 incluidos - $0)</code>.</li>
+        <li>El asesor selecciona los ingredientes pedidos por el cliente (ej: Tocineta, Maíz, Champiñón), los cuales se marcan en verde con ícono de verificación.</li>
+        <li><strong>Copiar a Mitad 2:</strong> Al presionar el botón <code>Toda la Pizza</code>, los ingredientes de la Mitad 1 se copian automáticamente a la Mitad 2.</li>
+        <li><strong>Seguridad:</strong> El sistema exige seleccionar al menos un ingrediente para evitar comandas vacías hacia la cocina.</li>
+    </ul>
+
+    <!-- NOVEDAD 6 -->
+    <h3><span class="num-circle">6</span> Modificadores "PRODUCTO CON" y "PRODUCTO SIN" (Estilo Tienda)</h3>
+    <p>Para atender solicitudes de preparación sin recurrir a notas sueltas en texto que la cocina pueda pasar por alto:</p>
+    <ul>
+        <li><strong>Botón <span class="badge badge-green">👍 PRODUCTO CON</span>:</strong> Despliega los ingredientes adicionales permitidos con su costo correspondiente.</li>
+        <li><strong>Botón <span class="badge badge-amber">👎 PRODUCTO SIN</span>:</strong> Despliega los ingredientes propios de la receta para retirar a solicitud del cliente (ej: <em>SIN Cebolla</em>, <em>SIN Champiñón</em>) a $0.</li>
+        <li><strong>Integración en Comanda y Despacho:</strong>
+            <ul>
+                <li>En la comanda web aparecen badges claros: verde para <span class="badge badge-green">👍 CON</span> y rojo para <span class="badge badge-red">👎 SIN</span>.</li>
+                <li>Hacia la tienda viajan como líneas hijas enlazadas al producto (<code>idmodificador</code>), imprimiéndose en la comanda de cocina de PixelPOS en el formato estándar de las tiendas.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <!-- TABLA DE CAPACITACIÓN -->
+    <h3><span class="num-circle">7</span> Resumen Práctico para Capacitación de Asesores</h3>
+
+    <table class="table-resumen">
+        <thead>
+            <tr>
+                <th style="width: 32%;">Situación del Cliente</th>
+                <th style="width: 38%;">Acción en el Nuevo Web POS</th>
+                <th style="width: 30%;">Resultado en Comanda / Tienda</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="strong">"Envíeme todos los condimentos"</span></td>
+                <td>Submenú <em>Condimentos</em> &rarr; Tarjeta <strong>Todos los Condimentos</strong>.</td>
+                <td>Ítem único a $0 homologado en tienda.</td>
+            </tr>
+            <tr>
+                <td><span class="strong">"Quiero 12 porcioneros de ajo"</span></td>
+                <td>Clic en <em>Porcionero Ajo</em> &rarr; Escribir <strong>12</strong> con el teclado en cantidad.</td>
+                <td>Carga 12 unidades al instante.</td>
+            </tr>
+            <tr>
+                <td><span class="strong">"Deseo una Pizza Arma tu Pizza XL"</span></td>
+                <td>Seleccionar <em>Arma tu Pizza XL</em> &rarr; Elegir hasta 3 ingredientes del panel.</td>
+                <td>Ingredientes incluidos a $0 hacia cocina.</td>
+            </tr>
+            <tr>
+                <td><span class="strong">"Una Hawaiana pero sin cebolla"</span></td>
+                <td>Seleccionar sabor &rarr; Clic en <strong>[ 👎 PRODUCTO SIN ]</strong> &rarr; Marcar <em>SIN Cebolla</em>.</td>
+                <td>Badge rojo <code>SIN Cebolla ($0)</code> en comanda.</td>
+            </tr>
+            <tr>
+                <td><span class="strong">"¿Qué pasó con el pedido de ayer?"</span></td>
+                <td>Consultar en <strong>Historial de Pedidos</strong> (no en el monitor activo de hoy).</td>
+                <td>Muestra estado final cerrado.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="alert-box success">
+        <div class="alert-title">✅ Estado de Despliegue</div>
+        Todos estos cambios están compilados, verificados y sincronizados en la rama <strong><code>JuanDavidClaude</code></strong> del repositorio institucional.
+    </div>
+
+    <div class="footer">
+        <div>Pizza Americana &copy; 2026 — Departamento de Tecnología y Procesos</div>
+        <div>Documento Interno de Capacitación — Versión 2.1</div>
+    </div>
+
+</body>
+</html>
