@@ -1172,6 +1172,191 @@ function abrirModalProducto(idProducto, esEmpleadoHint, precioPuntosHint) {
     });
 }
 
+/* =========================================================================
+   MODIFICADORES CON Y SIN Y ARMA TU PIZZA (ESTILO TIENDA POS)
+   ========================================================================= */
+var cacheModificadores = {};
+
+function obtenerModificadores(idProducto, callback) {
+    if (!idProducto || idProducto <= 0) {
+        if (callback) callback(null);
+        return;
+    }
+    if (cacheModificadores[idProducto]) {
+        if (callback) callback(cacheModificadores[idProducto]);
+        return;
+    }
+    $.getJSON("api/motor/catalogo?accion=modificadores&id=" + idProducto, function (data) {
+        cacheModificadores[idProducto] = data;
+        if (callback) callback(data);
+    }).fail(function () {
+        if (callback) callback(null);
+    });
+}
+
+function renderizarArmaTuPizzaBox($boxContainer, idSabor, mitadNum, estadoPrevio) {
+    $boxContainer.empty();
+    if (!idSabor || idSabor <= 0) {
+        $boxContainer.hide();
+        return;
+    }
+    obtenerModificadores(idSabor, function (data) {
+        if (!data || !data.modificadoresCon || data.modificadoresCon.length === 0) {
+            $boxContainer.hide();
+            return;
+        }
+        var esArma = (data.modificadorcon > 0) || (data.modConPregunta === 1) || (data.descripcion && data.descripcion.toLowerCase().indexOf("arma") !== -1);
+        if (!esArma) {
+            $boxContainer.hide();
+            return;
+        }
+
+        var maxIng = data.modificadorcon > 0 ? data.modificadorcon : 3;
+        $boxContainer.attr("data-sabor-id", idSabor);
+        $boxContainer.attr("data-mitad", mitadNum);
+        $boxContainer.attr("data-max-ing", maxIng);
+
+        var mitadTxt = mitadNum === 1 ? " (Mitad 1)" : (mitadNum === 2 ? " (Mitad 2)" : " (Toda la Pizza)");
+        var $head = $("<div class='d-flex justify-content-between align-items-center mb-2'></div>");
+        $head.append("<span class='font-weight-bold text-dark' style='font-size:0.83rem;'><i class='fas fa-pizza-slice text-warning mr-1'></i>Ingredientes Arma tu Pizza" + mitadTxt + ": <span class='badge badge-dark ing-badge-counter'>0/" + maxIng + "</span></span>");
+        $head.append("<small class='text-muted'>Elige hasta " + maxIng + " incluidos</small>");
+        $boxContainer.append($head);
+
+        var $grid = $("<div class='d-flex flex-wrap' style='gap:5px;'></div>");
+        // Orden alfabético
+        data.modificadoresCon.sort(function (a, b) {
+            return (a.descripcion || "").localeCompare(b.descripcion || "", 'es', { sensitivity: 'base' });
+        });
+
+        function actualizarContador() {
+            var selCount = $grid.find(".btn-arma-ing.selected").length;
+            $boxContainer.find(".ing-badge-counter").text(selCount + "/" + maxIng);
+            if (selCount === maxIng) {
+                $boxContainer.find(".ing-badge-counter").removeClass("badge-dark").addClass("badge-success");
+            } else {
+                $boxContainer.find(".ing-badge-counter").removeClass("badge-success").addClass("badge-dark");
+            }
+        }
+
+        $.each(data.modificadoresCon, function (k, ing) {
+            var nomLimpio = ing.descripcion.replace(/^con\s+/i, "").trim();
+            var $btnIng = $("<button type='button' class='btn btn-xs btn-outline-secondary py-1 px-2 btn-arma-ing'></button>")
+                .attr("data-id", ing.idproducto)
+                .attr("data-nombre", ing.descripcion)
+                .attr("title", ing.descripcion)
+                .text("+ " + nomLimpio);
+
+            if (ing.precio > 0) {
+                $btnIng.append(" <small class='text-danger font-weight-bold'>+$" + formatearPesos(ing.precio) + "</small>");
+            }
+
+            if (estadoPrevio && estadoPrevio.indexOf(ing.idproducto) !== -1) {
+                $btnIng.removeClass("btn-outline-secondary").addClass("btn-success font-weight-bold text-white selected");
+                $btnIng.prepend("<i class='fas fa-check mr-1'></i>");
+            }
+
+            $btnIng.on("click", function (e) {
+                e.preventDefault();
+                var curSel = $grid.find(".btn-arma-ing.selected").length;
+                if ($(this).hasClass("selected")) {
+                    $(this).removeClass("btn-success font-weight-bold text-white selected").addClass("btn-outline-secondary");
+                    $(this).find("i.fa-check").remove();
+                } else {
+                    if (curSel >= maxIng) {
+                        alert("Solo puedes seleccionar hasta " + maxIng + " ingredientes para Arma tu Pizza.");
+                        return;
+                    }
+                    $(this).removeClass("btn-outline-secondary").addClass("btn-success font-weight-bold text-white selected");
+                    $(this).prepend("<i class='fas fa-check mr-1'></i>");
+                }
+                actualizarContador();
+            });
+
+            $grid.append($btnIng);
+        });
+
+        $boxContainer.append($grid);
+        actualizarContador();
+        $boxContainer.slideDown(150);
+    });
+}
+
+function actualizarModificadoresTienda(idSabor) {
+    var $sec = $("#seccionModificadoresTienda");
+    if ($sec.length === 0) return;
+    if (!idSabor || idSabor <= 0) {
+        $sec.hide();
+        return;
+    }
+    $sec.show();
+    $sec.attr("data-sabor-id", idSabor);
+
+    obtenerModificadores(idSabor, function (data) {
+        if (!data) return;
+
+        var $gridCon = $("#gridModCon").empty();
+        var $gridSin = $("#gridModSin").empty();
+
+        // Modificadores CON
+        if (data.modificadoresCon && data.modificadoresCon.length > 0) {
+            data.modificadoresCon.sort(function (a, b) {
+                return (a.descripcion || "").localeCompare(b.descripcion || "", 'es', { sensitivity: 'base' });
+            });
+            $.each(data.modificadoresCon, function (i, c) {
+                var nom = c.descripcion.replace(/^con\s+/i, "").trim();
+                var $b = $("<button type='button' class='btn btn-xs btn-outline-secondary py-1 px-2 chip-mod-con'></button>")
+                    .attr("data-id", c.idproducto)
+                    .attr("data-nombre", c.descripcion)
+                    .text("+ " + nom);
+                if (c.precio > 0) {
+                    $b.append(" <small class='text-danger font-weight-bold'>+$" + formatearPesos(c.precio) + "</small>");
+                }
+                $b.on("click", function () {
+                    $(this).toggleClass("selected btn-outline-secondary btn-success text-white font-weight-bold");
+                    var cnt = $("#gridModCon .chip-mod-con.selected").length;
+                    if (cnt > 0) {
+                        $("#badgeCountModCon").text(cnt).show();
+                    } else {
+                        $("#badgeCountModCon").hide();
+                    }
+                });
+                $gridCon.append($b);
+            });
+        } else {
+            $gridCon.html("<small class='text-muted'>No hay modificadores CON disponibles para este sabor.</small>");
+        }
+
+        // Modificadores SIN
+        if (data.modificadoresSin && data.modificadoresSin.length > 0) {
+            data.modificadoresSin.sort(function (a, b) {
+                return (a.descripcion || "").localeCompare(b.descripcion || "", 'es', { sensitivity: 'base' });
+            });
+            $.each(data.modificadoresSin, function (i, s) {
+                var nom = s.descripcion.replace(/^sin\s+/i, "").trim();
+                var $b = $("<button type='button' class='btn btn-xs btn-outline-secondary py-1 px-2 chip-mod-sin'></button>")
+                    .attr("data-id", s.idproducto)
+                    .attr("data-nombre", s.descripcion)
+                    .text("SIN " + nom);
+                $b.on("click", function () {
+                    $(this).toggleClass("selected btn-outline-secondary btn-danger text-white font-weight-bold");
+                    var cnt = $("#gridModSin .chip-mod-sin.selected").length;
+                    if (cnt > 0) {
+                        $("#badgeCountModSin").text(cnt).show();
+                    } else {
+                        $("#badgeCountModSin").hide();
+                    }
+                });
+                $gridSin.append($b);
+            });
+        } else {
+            $gridSin.html("<small class='text-muted'>No hay modificadores SIN disponibles para este sabor.</small>");
+        }
+
+        $("#badgeCountModCon").hide().text("0");
+        $("#badgeCountModSin").hide().text("0");
+    });
+}
+
 function renderizarModalProducto(prod) {
     var $c = $("<div></div>");
 
@@ -1208,6 +1393,15 @@ function renderizarModalProducto(prod) {
     // Preguntas forzadas
     if (prod.preguntas && prod.preguntas.length > 0) {
         $.each(prod.preguntas, function (idx, preg) {
+            // Ordenar alfabéticamente las opciones de la pregunta
+            if (preg.opciones && preg.opciones.length > 1) {
+                preg.opciones.sort(function (a, b) {
+                    var na = (a.descripcion || "").trim();
+                    var nb = (b.descripcion || "").trim();
+                    return na.localeCompare(nb, 'es', { sensitivity: 'base' });
+                });
+            }
+
             var $pBox = $("<div></div>").addClass("pregunta-seccion").attr("data-idpregunta", preg.idpregunta);
             var tituloPreg = preg.titulo || preg.descripcion || ("Pregunta " + (idx + 1));
             var descPreg = (preg.descripcion && preg.descripcion !== preg.titulo) ? " - " + preg.descripcion : "";
@@ -1229,6 +1423,8 @@ function renderizarModalProducto(prod) {
                 // Contenedor 1: Entera (1 Sabor)
                 var $boxEntera = $("<div></div>").addClass("box-entera").attr("id", "box-entera-" + idPreg);
                 var $gridEntera = $("<div></div>").addClass("opciones-grid");
+                var $armaBoxEntera = $("<div class='box-arma-tu-pizza p-2 mt-2 bg-light border border-warning rounded' id='arma-box-entera' style='display:none;' data-mitad='0'></div>");
+
                 $.each(preg.opciones, function (j, op) {
                     var $btn = $("<div></div>")
                         .addClass("opcion-btn")
@@ -1238,13 +1434,18 @@ function renderizarModalProducto(prod) {
                     $btn.on("click", function () {
                         $gridEntera.find(".opcion-btn").removeClass("selected");
                         $(this).addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxEntera, op.idproducto, 0);
+                        actualizarModificadoresTienda(op.idproducto);
                     });
                     if (preg.obligaEleccion === 1 && j === 0) {
                         $btn.addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxEntera, op.idproducto, 0);
+                        actualizarModificadoresTienda(op.idproducto);
                     }
                     $gridEntera.append($btn);
                 });
                 $boxEntera.append($gridEntera);
+                $boxEntera.append($armaBoxEntera);
                 $pBox.append($boxEntera);
 
                 // Contenedor 2: Mitades (Mitad 1 y Mitad 2)
@@ -1261,15 +1462,22 @@ function renderizarModalProducto(prod) {
 
                 var $gridM1 = $("<div></div>").addClass("opciones-grid");
                 var $gridM2 = $("<div></div>").addClass("opciones-grid");
+                var $armaBoxM1 = $("<div class='box-arma-tu-pizza p-2 mt-2 bg-light border border-warning rounded' id='arma-box-m1' style='display:none;' data-mitad='1'></div>");
+                var $armaBoxM2 = $("<div class='box-arma-tu-pizza p-2 mt-2 bg-light border border-warning rounded' id='arma-box-m2' style='display:none;' data-mitad='2'></div>");
 
                 function clonarM1aM2() {
                     var $selM1 = $gridM1.find(".opcion-btn.selected");
                     if ($selM1.length > 0) {
-                        var idSel = $selM1.attr("data-idopcion");
+                        var idSel = parseInt($selM1.attr("data-idopcion"));
                         $gridM2.find(".opcion-btn").removeClass("selected");
                         var $m2Target = $gridM2.find(".opcion-btn[data-idopcion='" + idSel + "']");
                         if ($m2Target.length > 0) {
                             $m2Target.addClass("selected");
+                            var prevIngs = [];
+                            $armaBoxM1.find(".btn-arma-ing.selected").each(function () {
+                                prevIngs.push(parseInt($(this).attr("data-id")));
+                            });
+                            renderizarArmaTuPizzaBox($armaBoxM2, idSel, 2, prevIngs);
                             $btnClonarM1.removeClass("btn-outline-warning").addClass("btn-success").html("<i class='fas fa-check mr-1'></i>Copiado a Mitad 2");
                             setTimeout(function () {
                                 $btnClonarM1.removeClass("btn-success").addClass("btn-outline-warning").html("<i class='fas fa-clone mr-1'></i>Toda la Pizza");
@@ -1298,6 +1506,8 @@ function renderizarModalProducto(prod) {
                     $btn.on("click", function () {
                         $gridM1.find(".opcion-btn").removeClass("selected");
                         $(this).addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxM1, op.idproducto, 1);
+                        actualizarModificadoresTienda(op.idproducto);
                     });
                     $btn.on("dblclick", function () {
                         $gridM1.find(".opcion-btn").removeClass("selected");
@@ -1310,6 +1520,7 @@ function renderizarModalProducto(prod) {
                     $gridM1.append($btn);
                 });
                 $colM1.append($gridM1);
+                $colM1.append($armaBoxM1);
 
                 // Columna Mitad 2
                 var $colM2 = $("<div></div>").addClass("col-mitad");
@@ -1323,6 +1534,7 @@ function renderizarModalProducto(prod) {
                     $btn.on("click", function () {
                         $gridM2.find(".opcion-btn").removeClass("selected");
                         $(this).addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxM2, op.idproducto, 2);
                     });
                     if (preg.obligaEleccion === 1 && j === 1) {
                         $btn.addClass("selected");
@@ -1332,6 +1544,7 @@ function renderizarModalProducto(prod) {
                     $gridM2.append($btn);
                 });
                 $colM2.append($gridM2);
+                $colM2.append($armaBoxM2);
 
                 $boxMitades.append($colM1).append($colM2);
                 $pBox.append($boxMitades);
@@ -1343,9 +1556,11 @@ function renderizarModalProducto(prod) {
                     $pBox.attr("data-modo-activo", "entera");
                     var $selM1 = $gridM1.find(".opcion-btn.selected");
                     if ($selM1.length > 0) {
-                        var idM1 = $selM1.attr("data-idopcion");
+                        var idM1 = parseInt($selM1.attr("data-idopcion"));
                         $gridEntera.find(".opcion-btn").removeClass("selected");
                         $gridEntera.find(".opcion-btn[data-idopcion='" + idM1 + "']").addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxEntera, idM1, 0);
+                        actualizarModificadoresTienda(idM1);
                     }
                 });
                 $btnMitad.on("click", function () {
@@ -1354,9 +1569,11 @@ function renderizarModalProducto(prod) {
                     $pBox.attr("data-modo-activo", "mitad");
                     var $selEnt = $gridEntera.find(".opcion-btn.selected");
                     if ($selEnt.length > 0) {
-                        var idEnt = $selEnt.attr("data-idopcion");
+                        var idEnt = parseInt($selEnt.attr("data-idopcion"));
                         $gridM1.find(".opcion-btn").removeClass("selected");
                         $gridM1.find(".opcion-btn[data-idopcion='" + idEnt + "']").addClass("selected");
+                        renderizarArmaTuPizzaBox($armaBoxM1, idEnt, 1);
+                        actualizarModificadoresTienda(idEnt);
                     }
                 });
                 $pBox.attr("data-modo-activo", "entera");
@@ -1501,26 +1718,88 @@ function renderizarModalProducto(prod) {
         });
     }
 
-    // Selector de cantidad
+    // Sección de Modificadores CON y SIN Estilo Tienda POS
+    var $modSec = $("<div id='seccionModificadoresTienda' class='mt-3 p-2 border rounded bg-white' style='display:none;'>"
+        + "<div class='d-flex align-items-center justify-content-between mb-2'>"
+        + "  <span class='font-weight-bold text-dark' style='font-size:0.85rem;'><i class='fas fa-sliders-h text-primary mr-1'></i>MODIFICADORES DE LA PIZZA</span>"
+        + "  <small class='text-muted'>Estilo Tienda POS</small>"
+        + "</div>"
+        + "<div class='row no-gutters' style='gap:6px;'>"
+        + "  <div class='col pr-1'>"
+        + "    <button type='button' class='btn btn-outline-success btn-block font-weight-bold py-2 position-relative' id='btnToggleModCon'>"
+        + "      <i class='fas fa-thumbs-up mr-1'></i>PRODUCTO CON"
+        + "      <span class='badge badge-success ml-1' id='badgeCountModCon' style='display:none;'>0</span>"
+        + "    </button>"
+        + "  </div>"
+        + "  <div class='col pl-1'>"
+        + "    <button type='button' class='btn btn-outline-warning text-dark btn-block font-weight-bold py-2 position-relative' id='btnToggleModSin'>"
+        + "      <i class='fas fa-thumbs-down mr-1'></i>PRODUCTO SIN"
+        + "      <span class='badge badge-danger ml-1' id='badgeCountModSin' style='display:none;'>0</span>"
+        + "    </button>"
+        + "  </div>"
+        + "</div>"
+        + "<div id='panelModCon' class='mt-2 p-2 border rounded bg-light' style='display:none; max-height:160px; overflow-y:auto;'>"
+        + "  <div class='d-flex justify-content-between align-items-center mb-1'>"
+        + "    <small class='font-weight-bold text-success'><i class='fas fa-plus-circle mr-1'></i>Ingredientes adicionales (CON):</small>"
+        + "    <button type='button' class='btn btn-xs btn-outline-secondary py-0' id='btnCerrarModCon'><i class='fas fa-times'></i></button>"
+        + "  </div>"
+        + "  <div id='gridModCon' class='d-flex flex-wrap' style='gap:5px;'></div>"
+        + "</div>"
+        + "<div id='panelModSin' class='mt-2 p-2 border rounded bg-light' style='display:none; max-height:160px; overflow-y:auto;'>"
+        + "  <div class='d-flex justify-content-between align-items-center mb-1'>"
+        + "    <small class='font-weight-bold text-warning text-dark'><i class='fas fa-minus-circle mr-1'></i>Retirar ingredientes (SIN):</small>"
+        + "    <button type='button' class='btn btn-xs btn-outline-secondary py-0' id='btnCerrarModSin'><i class='fas fa-times'></i></button>"
+        + "  </div>"
+        + "  <div id='gridModSin' class='d-flex flex-wrap' style='gap:5px;'></div>"
+        + "</div>"
+        + "</div>");
+    $c.append($modSec);
+
+    // Selector de cantidad con entrada numérica manual habilitada (min 1, max 99)
     var $cantBox = $("<div></div>").addClass("mt-2 d-flex align-items-center justify-content-between p-2 bg-light rounded border");
     $cantBox.append("<span class='font-weight-bold'>Cantidad:</span>");
     var $cantControl = $("<div class='d-flex align-items-center' style='gap:6px;'>"
-        + "<button class='btn btn-sm btn-outline-secondary' type='button' id='btnMenosModal'><i class='fas fa-minus'></i></button>"
-        + "<input type='number' id='cantModal' value='1' min='1' max='50' class='form-control form-control-sm text-center font-weight-bold' style='width:55px;' readonly>"
-        + "<button class='btn btn-sm btn-outline-secondary' type='button' id='btnMasModal'><i class='fas fa-plus'></i></button>"
+        + "<button class='btn btn-sm btn-outline-secondary' type='button' id='btnMenosModal' title='Restar 1'><i class='fas fa-minus'></i></button>"
+        + "<input type='number' id='cantModal' value='1' min='1' max='99' class='form-control form-control-sm text-center font-weight-bold' style='width:65px;' title='Ingrese cantidad numérica manual (1 a 99)'>"
+        + "<button class='btn btn-sm btn-outline-secondary' type='button' id='btnMasModal' title='Sumar 1'><i class='fas fa-plus'></i></button>"
         + "</div>");
     $cantBox.append($cantControl);
     $c.append($cantBox);
 
     $("#modalProductoBody").html($c);
 
+    // Eventos de botones y paneles de modificadores CON y SIN estilo tienda
+    $("#btnToggleModCon").on("click", function () {
+        $("#panelModSin").hide();
+        $("#panelModCon").slideToggle(150);
+    });
+    $("#btnToggleModSin").on("click", function () {
+        $("#panelModCon").hide();
+        $("#panelModSin").slideToggle(150);
+    });
+    $("#btnCerrarModCon").on("click", function () {
+        $("#panelModCon").slideUp(150);
+    });
+    $("#btnCerrarModSin").on("click", function () {
+        $("#panelModSin").slideUp(150);
+    });
+
+    // Control de cantidad numérica manual y botones +/-
     $("#btnMenosModal").on("click", function () {
-        var v = parseInt($("#cantModal").val());
+        var v = parseInt($("#cantModal").val()) || 1;
         if (v > 1) { $("#cantModal").val(v - 1); }
     });
     $("#btnMasModal").on("click", function () {
-        var v = parseInt($("#cantModal").val());
-        if (v < 50) { $("#cantModal").val(v + 1); }
+        var v = parseInt($("#cantModal").val()) || 1;
+        if (v < 99) { $("#cantModal").val(v + 1); }
+    });
+    $("#cantModal").on("input change blur", function (e) {
+        var v = parseInt($(this).val());
+        if (isNaN(v) || v < 1) {
+            if (e.type === "blur") { $(this).val(1); }
+        } else if (v > 99) {
+            $(this).val(99);
+        }
     });
 
     if (prod.empleado === "S") {
@@ -1670,11 +1949,103 @@ function guardarProductoDesdeModal() {
         cant = 1;
     }
 
+    // Recopilar modificadores (Arma tu Pizza $0 y Modificadores Tienda CON/SIN)
+    var modificadores = [];
+
+    // 1. Modificadores de Arma tu Pizza (Ingredientes incluidos $0)
+    var modoMitadActivo = $(".pregunta-seccion[data-permite-dividir='2']").attr("data-modo-activo") || "entera";
+    if (modoMitadActivo === "entera") {
+        var $armaEntera = $("#arma-box-entera");
+        if ($armaEntera.length > 0 && $armaEntera.is(":visible")) {
+            var idSaborEntera = parseInt($armaEntera.attr("data-sabor-id")) || productoEnEdicion.idproducto;
+            var ingsSelEnt = $armaEntera.find(".btn-arma-ing.selected");
+            if (ingsSelEnt.length === 0) {
+                alert("Debes seleccionar al menos 1 ingrediente para Arma tu Pizza.");
+                return;
+            }
+            ingsSelEnt.each(function () {
+                modificadores.push({
+                    tipo: "ARMA",
+                    idproducto: parseInt($(this).attr("data-id")),
+                    cantidad: 1.0,
+                    sobreProducto: idSaborEntera,
+                    precio: 0.0
+                });
+            });
+        }
+    } else {
+        // Mitad 1
+        var $armaM1 = $("#arma-box-m1");
+        if ($armaM1.length > 0 && $armaM1.is(":visible")) {
+            var idSaborM1 = parseInt($armaM1.attr("data-sabor-id")) || productoEnEdicion.idproducto;
+            var ingsSelM1 = $armaM1.find(".btn-arma-ing.selected");
+            if (ingsSelM1.length === 0) {
+                alert("Debes seleccionar al menos 1 ingrediente para Arma tu Pizza en la Mitad 1.");
+                return;
+            }
+            ingsSelM1.each(function () {
+                modificadores.push({
+                    tipo: "ARMA",
+                    idproducto: parseInt($(this).attr("data-id")),
+                    cantidad: 0.5,
+                    sobreProducto: idSaborM1,
+                    precio: 0.0
+                });
+            });
+        }
+        // Mitad 2
+        var $armaM2 = $("#arma-box-m2");
+        if ($armaM2.length > 0 && $armaM2.is(":visible")) {
+            var idSaborM2 = parseInt($armaM2.attr("data-sabor-id")) || productoEnEdicion.idproducto;
+            var ingsSelM2 = $armaM2.find(".btn-arma-ing.selected");
+            if (ingsSelM2.length === 0) {
+                alert("Debes seleccionar al menos 1 ingrediente para Arma tu Pizza en la Mitad 2.");
+                return;
+            }
+            ingsSelM2.each(function () {
+                modificadores.push({
+                    tipo: "ARMA",
+                    idproducto: parseInt($(this).attr("data-id")),
+                    cantidad: 0.5,
+                    sobreProducto: idSaborM2,
+                    precio: 0.0
+                });
+            });
+        }
+    }
+
+    // 2. Modificadores Tienda CON y SIN
+    var $secMod = $("#seccionModificadoresTienda");
+    if ($secMod.length > 0 && $secMod.is(":visible")) {
+        var idSaborMod = parseInt($secMod.attr("data-sabor-id")) || productoEnEdicion.idproducto;
+        var cantModPorcion = (modoMitadActivo === "mitad") ? 0.5 : 1.0;
+
+        $("#gridModCon .chip-mod-con.selected").each(function () {
+            modificadores.push({
+                tipo: "CON",
+                idproducto: parseInt($(this).attr("data-id")),
+                cantidad: cantModPorcion,
+                sobreProducto: idSaborMod,
+                precio: -1
+            });
+        });
+
+        $("#gridModSin .chip-mod-sin.selected").each(function () {
+            modificadores.push({
+                tipo: "SIN",
+                idproducto: parseInt($(this).attr("data-id")),
+                cantidad: cantModPorcion,
+                sobreProducto: idSaborMod,
+                precio: 0.0
+            });
+        });
+    }
+
     draftLineas.push({
         idproducto: productoEnEdicion.idproducto,
         cantidad: cant,
         selecciones: selecciones,
-        modificadores: [],
+        modificadores: modificadores,
         observacion: (esEmp && empleadoPrecioEmpleadoValidado)
             ? ("[PRECIO EMPLEADO: " + empleadoPrecioEmpleadoValidado.nombre + " (Cód: " + empleadoPrecioEmpleadoValidado.codigo + ")]")
             : "",
@@ -2111,6 +2482,22 @@ function formatearLineaHijaComanda(h, draftItem) {
     var isInc = (h.origen === "INCLUIDO");
     var descH = (h.descripcion || ("Opción #" + h.idproducto)).trim();
 
+    // 0. Modificadores CON y SIN estilo tienda (origen === "MODIFICADOR")
+    if (h.origen === "MODIFICADOR") {
+        var isSin = (descH.toUpperCase().indexOf("SIN ") === 0);
+        var labelMod = isSin ? "SIN" : "CON";
+        var badgeColor = isSin ? "badge-danger" : "badge-success";
+        var nombreLimpio = descH.replace(/^(con|sin)\s+/i, "").trim();
+        return {
+            tipo: "MODIFICADOR",
+            esAdicion: false,
+            nombre: (isSin ? "SIN " : "CON ") + nombreLimpio,
+            porcion: (h.cantidad < 1.0 ? "Mitad" : "Toda"),
+            badgeColor: badgeColor,
+            precio: h.valorTotal
+        };
+    }
+
     // 1. Buscar en selecciones del draft original para rescatar la porción exacta elegida por el asesor
     var metaDraft = null;
     if (draftItem && draftItem.selecciones && draftItem.selecciones.length > 0) {
@@ -2260,6 +2647,17 @@ function renderizarComanda(res) {
                         var $h = $("<div></div>").addClass("item-comanda-incluido");
                         $h.append("<span><span class='badge badge-success mr-1' style='font-size:0.68rem;'><i class='fas fa-check mr-1'></i>Incluye</span> " + info.nombre + "</span>");
                         $h.append("<span>$ 0</span>");
+                        $item.append($h);
+                    } else if (info.tipo === "MODIFICADOR") {
+                        var $h = $("<div></div>").addClass("item-comanda-hija");
+                        var isSin = (info.nombre.indexOf("SIN ") === 0);
+                        var badgeIcon = isSin ? "<i class='fas fa-thumbs-down mr-1'></i>" : "<i class='fas fa-thumbs-up mr-1'></i>";
+                        var prefBadge = "<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + badgeIcon + (isSin ? "SIN" : "CON") + "</span> ";
+                        if (info.porcion && info.porcion !== "Toda") {
+                            prefBadge += "<span class='badge badge-secondary mr-1' style='font-size:0.65rem;'>" + info.porcion + "</span> ";
+                        }
+                        $h.append("<span>" + prefBadge + "<span class='text-dark font-weight-bold'>" + info.nombre + "</span></span>");
+                        $h.append("<span>" + (info.precio > 0 ? "+$ " + formatearPesos(info.precio) : "$ 0") + "</span>");
                         $item.append($h);
                     } else {
                         var $h = $("<div></div>").addClass("item-comanda-hija");
@@ -2510,6 +2908,14 @@ function abrirModalConfirmacionPedido() {
                         $subList.append($rowAdi);
                     } else if (info.tipo === "INCLUIDO") {
                         $subList.append("<div class='text-success'><span class='badge badge-success mr-1' style='font-size:0.68rem;'><i class='fas fa-check mr-1'></i>Incluye</span>" + info.nombre + " ($0)</div>");
+                    } else if (info.tipo === "MODIFICADOR") {
+                        var isSin = (info.nombre.indexOf("SIN ") === 0);
+                        var badgeIcon = isSin ? "<i class='fas fa-thumbs-down mr-1'></i>" : "<i class='fas fa-thumbs-up mr-1'></i>";
+                        var prefBadge = "<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + badgeIcon + (isSin ? "SIN" : "CON") + "</span> ";
+                        if (info.porcion && info.porcion !== "Toda") {
+                            prefBadge += "<span class='badge badge-secondary mr-1' style='font-size:0.65rem;'>" + info.porcion + "</span> ";
+                        }
+                        $subList.append("<div class='text-dark'>" + prefBadge + "<b>" + info.nombre + "</b>" + (info.precio > 0 ? " (+$ " + formatearPesos(info.precio) + ")" : " ($0)") + "</div>");
                     } else {
                         var prefBadge = info.porcion ? ("<span class='badge " + info.badgeColor + " mr-1' style='font-size:0.68rem;'>" + info.porcion + "</span>") : "• ";
                         var precioExtra = info.precio > 0 ? " (+$" + formatearPesos(info.precio) + ")" : "";

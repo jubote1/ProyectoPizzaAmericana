@@ -86,6 +86,8 @@ public class MotorSolicitud {
 		public double cantidad = 0.5;
 		/** Producto de la linea sobre el que aplica (por ejemplo la especialidad de una mitad). */
 		public int sobreProducto;
+		/** Precio opcional forzado (ej: 0.0 para SIN o incluidos de Arma tu Pizza). */
+		public double precio = -1;
 	}
 
 	public static class Domicilio {

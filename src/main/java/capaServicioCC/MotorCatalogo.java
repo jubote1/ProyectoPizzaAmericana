@@ -71,6 +71,10 @@ public class MotorCatalogo extends HttpServlet {
 				String idStr = request.getParameter("id");
 				int idProducto = (idStr != null && !idStr.trim().isEmpty()) ? Integer.parseInt(idStr.trim()) : 0;
 				out.write(obtenerDetalleProducto(con, idProducto));
+			} else if ("modificadores".equalsIgnoreCase(accion)) {
+				String idStr = request.getParameter("id");
+				int idProducto = (idStr != null && !idStr.trim().isEmpty()) ? Integer.parseInt(idStr.trim()) : 0;
+				out.write(obtenerModificadoresProducto(con, idProducto));
 			} else if ("tiendas".equalsIgnoreCase(accion)) {
 				out.write(obtenerTiendas(con));
 			} else {
@@ -159,7 +163,7 @@ public class MotorCatalogo extends HttpServlet {
 			cp.append(i > 1 ? ", " : "").append("idpreguntaforzada").append(i);
 		}
 		// Datos basicos del producto
-		String sqlP = "select idproducto, descripcion, tipo_producto as tipo, precio1, precio_pila, id_producto_depende, precio_puntos, promocion, empleado, "
+		String sqlP = "select idproducto, descripcion, tipo_producto as tipo, precio1, precio_pila, id_producto_depende, precio_puntos, promocion, empleado, modificadorcon, modificadorsin, mod_con_pregunta, "
 				+ cp + " "
 				+ "from pos_central.producto where idproducto = ?";
 		int[] idPreguntas = new int[nPreg];
@@ -179,6 +183,9 @@ public class MotorCatalogo extends HttpServlet {
 				resp.put("precioPuntos", rs.getDouble("precio_puntos"));
 				resp.put("promocion", rs.getString("promocion"));
 				resp.put("empleado", rs.getString("empleado"));
+				resp.put("modificadorcon", rs.getInt("modificadorcon"));
+				resp.put("modificadorsin", rs.getInt("modificadorsin"));
+				resp.put("modConPregunta", rs.getInt("mod_con_pregunta"));
 
 				for (int i = 0; i < nPreg; i++) {
 					idPreguntas[i] = rs.getInt("idpreguntaforzada" + (i + 1));
@@ -231,13 +238,14 @@ public class MotorCatalogo extends HttpServlet {
 				}
 			}
 
-			// Opciones de esta pregunta
+			// Opciones de esta pregunta (ordenadas alfabeticamente por descripcion)
 			String sqlOp = "select ef.idproducto, p.descripcion, ef.precio as col_precio, "
-					+ "p.precio1, p.precio2, p.precio3, p.precio4, p.precio5, p.precio6, p.precio7, p.precio8, p.precio9, p.precio10 "
+					+ "p.precio1, p.precio2, p.precio3, p.precio4, p.precio5, p.precio6, p.precio7, p.precio8, p.precio9, p.precio10, "
+					+ "p.modificadorcon, p.modificadorsin, p.mod_con_pregunta "
 					+ "from pos_central.eleccion_forzada ef "
 					+ "join pos_central.producto p on p.idproducto = ef.idproducto "
 					+ "where ef.idpregunta = ? and ef.estado = 1 and (p.no_venta = 0 or p.no_venta = '0' or p.no_venta = 0x30) "
-					+ "order by ef.ideleccion_forzada, p.descripcion";
+					+ "order by p.descripcion";
 			List<Map<String, Object>> opciones = new ArrayList<Map<String, Object>>();
 			try (PreparedStatement ps = con.prepareStatement(sqlOp)) {
 				ps.setInt(1, idPregunta);
@@ -259,6 +267,15 @@ public class MotorCatalogo extends HttpServlet {
 							valorPrecio = rs.getDouble("precio1");
 						}
 						op.put("precio", valorPrecio);
+						int mCon = rs.getInt("modificadorcon");
+						int mSin = rs.getInt("modificadorsin");
+						int mPre = rs.getInt("mod_con_pregunta");
+						op.put("modificadorcon", mCon);
+						op.put("modificadorsin", mSin);
+						op.put("modConPregunta", mPre);
+						if (mCon > 0 || mPre == 1) {
+							op.put("tieneModificadores", true);
+						}
 						opciones.add(op);
 					}
 				}
@@ -267,6 +284,72 @@ public class MotorCatalogo extends HttpServlet {
 			preguntas.add(preg);
 		}
 		resp.put("preguntas", preguntas);
+
+		return GSON.toJson(resp);
+	}
+
+	private String obtenerModificadoresProducto(Connection con, int idProducto) throws Exception {
+		if (idProducto <= 0) {
+			return "{\"error\":\"idproducto invalido\"}";
+		}
+		Map<String, Object> resp = new HashMap<String, Object>();
+		resp.put("idproducto", idProducto);
+
+		String sqlP = "select descripcion, modificadorcon, modificadorsin, mod_con_pregunta "
+				+ "from pos_central.producto where idproducto = ?";
+		try (PreparedStatement ps = con.prepareStatement(sqlP)) {
+			ps.setInt(1, idProducto);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) {
+					resp.put("descripcion", rs.getString("descripcion"));
+					resp.put("modificadorcon", rs.getInt("modificadorcon"));
+					resp.put("modificadorsin", rs.getInt("modificadorsin"));
+					resp.put("modConPregunta", rs.getInt("mod_con_pregunta"));
+				}
+			}
+		}
+
+		// Modificadores CON (ingredientes adicionales o para armar)
+		String sqlCon = "select c.idproductocon as idproducto, p.descripcion, p.precio1 "
+				+ "from pos_central.producto_modificador_con c "
+				+ "join pos_central.producto p on c.idproductocon = p.idproducto "
+				+ "where c.idproducto = ? "
+				+ "order by p.descripcion";
+		List<Map<String, Object>> listaCon = new ArrayList<Map<String, Object>>();
+		try (PreparedStatement ps = con.prepareStatement(sqlCon)) {
+			ps.setInt(1, idProducto);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					Map<String, Object> m = new HashMap<String, Object>();
+					m.put("idproducto", rs.getInt("idproducto"));
+					m.put("descripcion", rs.getString("descripcion"));
+					m.put("precio", rs.getDouble("precio1"));
+					listaCon.add(m);
+				}
+			}
+		}
+		resp.put("modificadoresCon", listaCon);
+
+		// Modificadores SIN (ingredientes que se pueden retirar)
+		String sqlSin = "select s.idproductosin as idproducto, p.descripcion, p.precio1 "
+				+ "from pos_central.producto_modificador_sin s "
+				+ "join pos_central.producto p on s.idproductosin = p.idproducto "
+				+ "where s.idproducto = ? "
+				+ "order by p.descripcion";
+		List<Map<String, Object>> listaSin = new ArrayList<Map<String, Object>>();
+		try (PreparedStatement ps = con.prepareStatement(sqlSin)) {
+			ps.setInt(1, idProducto);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					Map<String, Object> m = new HashMap<String, Object>();
+					m.put("idproducto", rs.getInt("idproducto"));
+					m.put("descripcion", rs.getString("descripcion"));
+					m.put("precio", rs.getDouble("precio1"));
+					listaSin.add(m);
+				}
+			}
+		}
+		resp.put("modificadoresSin", listaSin);
 
 		return GSON.toJson(resp);
 	}

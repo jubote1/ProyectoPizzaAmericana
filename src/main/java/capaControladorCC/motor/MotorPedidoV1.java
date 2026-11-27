@@ -331,7 +331,19 @@ public class MotorPedidoV1 implements MotorPedido {
 			}
 			MotorResultado.Linea sobre = lineaDeProducto.get(m.sobreProducto);
 			int refSobre = sobre != null ? sobre.ref : maestra.ref;
-			r.lineas.add(linea(mp.id, m.cantidad * q, mp.precio("precio1"), maestra.ref, refSobre, "MODIFICADOR"));
+			double precioMod = mp.precio("precio1");
+			if ("SIN".equalsIgnoreCase(m.tipo) || m.precio == 0.0 || (m.tipo != null && m.tipo.startsWith("ARMA"))) {
+				precioMod = 0.0;
+			} else if (m.precio > 0.0) {
+				precioMod = m.precio;
+			}
+			MotorResultado.Linea modLinea = linea(mp.id, m.cantidad * q, precioMod, maestra.ref, refSobre, "MODIFICADOR");
+			if ("SIN".equalsIgnoreCase(m.tipo)) {
+				modLinea.descripcion = "SIN " + mp.descripcion;
+			} else if ("CON".equalsIgnoreCase(m.tipo) || (m.tipo != null && m.tipo.startsWith("ARMA"))) {
+				modLinea.descripcion = "CON " + mp.descripcion;
+			}
+			r.lineas.add(modLinea);
 		}
 		// Minimo de elecciones: asi lo exige la pantalla de la tienda. OJO: "obliga_eleccion" por si solo NO
 		// obliga a nada; la pantalla solo bloquea cuando el minimo es mayor que lo elegido. Con minimo 0 (el
