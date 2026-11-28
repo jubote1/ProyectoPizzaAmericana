@@ -10,7 +10,7 @@
 -- cualquier otra (oferta_cliente.idenvio es lo que separa cada tanda) en vez
 -- de dejar 499 codigos huerfanos.
 --
--- 499 y no 500: la persona 267618 (jorgerpo74@hotmail.com) no tiene ninguna
+-- 499 y no 500: la persona 267618 no tiene ninguna
 -- fila de cliente ligada, y sin cliente no se puede emitir. Es la misma regla
 -- del sistema: antes que mandar un correo que promete un descuento sin codigo,
 -- no se manda.
