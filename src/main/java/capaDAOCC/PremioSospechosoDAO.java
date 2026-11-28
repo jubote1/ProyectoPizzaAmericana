@@ -43,6 +43,8 @@ public class PremioSospechosoDAO {
 
     public static final String REGLA_TELEFONO = "TELEFONO";
     public static final String REGLA_NAVEGADOR = "NAVEGADOR";
+    /** La encuesta dice "punto de venta" pero el pedido lo tomo el central. */
+    public static final String REGLA_CANAL = "CANAL";
 
     private static final int UMBRAL_POR_DEFECTO = 5;
 
@@ -86,6 +88,7 @@ public class PremioSospechosoDAO {
             final int umbral = umbral(con);
             marcados += porTelefono(con, idTienda, idPedido, umbral);
             marcados += porNavegador(con, idTienda, idPedido, umbral);
+            marcados += porCanal(con, idTienda, idPedido);
         } catch (final Throwable t) {
             System.out.println("PremioSospechosoDAO: no se pudo revisar el premio - " + t);
         }
@@ -185,6 +188,115 @@ public class PremioSospechosoDAO {
         }
         return marcarGrupo(con, REGLA_NAVEGADOR, llave, idTienda, dia,
                 motivo(cuantas, "el mismo equipo", nombreTienda(con, idTienda), dia, minutos));
+    }
+
+    /**
+     * La encuesta dice "punto de venta" pero el pedido lo tomo el CENTRAL: un
+     * domicilio de Rappi, DiDi, el BOT o el contact center. Esos pedidos no
+     * entregan un tiquete con QR en el mostrador, asi que quien contesto no
+     * estaba ahi.
+     *
+     * POR QUE MARCA Y NO RECHAZA. Medido sobre la semana del 16 al 22 de
+     * noviembre: de las 163 encuestas senaladas como fraude, 92 -el 56%- son de
+     * pedidos del central. Pero del resto de encuestas de punto de venta tambien
+     * hay 8 -el 2%-, y esas tienen explicacion legitima: el cliente que pide por
+     * telefono y pasa a recoger si recibe tiquete impreso. Rechazar sacrificaria
+     * esas 8 por semana para atajar algo que la marca ya atrapa, y con la marca
+     * es un humano el que decide.
+     *
+     * DE DONDE SE LEE. De pizzaamericana.pedido, NO del datamart: el datamart va
+     * con un dia de retraso -comprobado el 28-nov: su ultimo dato era del 27 a
+     * las 23:34- y la encuesta llega el mismo dia. Y se busca con subconsulta
+     * acotada a 2 dias porque (idtienda, numposheader) NO es unica en pedido.
+     */
+    private static int porCanal(final Connection con, final int idTienda, final int idPedido)
+            throws Exception {
+        final String sql = "select e.tipo_atencion, date(min(e.fecha_creacion))"
+                + " from pizzaamericana.encuesta_servicio e"
+                + " where e.idtienda = ? and e.idpedido = ? group by e.tipo_atencion";
+        String tipo = null;
+        String dia = null;
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idTienda);
+            ps.setInt(2, idPedido);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    tipo = rs.getString(1);
+                    dia = rs.getString(2);
+                }
+            }
+        }
+        if (tipo == null || dia == null || !tipo.toLowerCase().contains("punto de venta")) {
+            return 0;
+        }
+        String quienLoTomo = null;
+        try (PreparedStatement ps = con.prepareStatement(
+                "select p.idpedido from pizzaamericana.pedido p"
+                        + " where p.idtienda = ? and p.numposheader = ?"
+                        + "   and p.fechapedido between date_sub(?, interval 2 day) and ?"
+                        + " order by p.fechapedido desc, p.idpedido desc limit 1")) {
+            ps.setInt(1, idTienda);
+            ps.setInt(2, idPedido);
+            ps.setString(3, dia);
+            ps.setString(4, dia);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    quienLoTomo = "el central";
+                }
+            }
+        }
+        if (quienLoTomo == null) {
+            return 0;
+        }
+        return marcarPedido(con, REGLA_CANAL, idTienda, idPedido,
+                "La encuesta dice punto de venta pero el pedido lo tomo " + quienLoTomo
+                        + " (domicilio, plataforma o contact center) el " + dia);
+    }
+
+    /**
+     * La misma regla de canal, pero barriendo de una vez todos los premios
+     * PENDIENTES de los ultimos dias. La usa el proceso por lote, y sirve para
+     * dos cosas: alcanzar los premios que nacieron antes de que esto existiera,
+     * y recoger lo que se le haya escapado al camino en vivo.
+     */
+    public static int marcarCanalPendientes(final Connection con, final int dias) throws Exception {
+        final String sql = "insert ignore into pizzaamericana.premio_sospechoso (idresultado, regla, motivo)"
+                + " select r.idresultado, ?,"
+                + "        concat('La encuesta dice punto de venta pero el pedido lo tomo el central"
+                + " (domicilio, plataforma o contact center) el ', date(r.fecha))"
+                + "   from pizzaamericana.resultado_ruleta r"
+                + "   join pizzaamericana.ruleta_oferta ro on ro.idopcion = r.idopcion and ro.activo = 'S'"
+                + "  where r.idofertacliente = 0"
+                + "    and r.fecha >= date_sub(curdate(), interval ? day)"
+                + "    and exists (select 1 from pizzaamericana.encuesta_servicio e"
+                + "                 where e.idtienda = r.idtienda and e.idpedido = r.idpedido"
+                + "                   and e.tipo_atencion like '%punto de venta%')"
+                + "    and exists (select 1 from pizzaamericana.pedido p"
+                + "                 where p.idtienda = r.idtienda and p.numposheader = r.idpedido"
+                + "                   and p.fechapedido between date_sub(date(r.fecha), interval 2 day)"
+                + "                                        and date(r.fecha))";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, REGLA_CANAL);
+            ps.setInt(2, dias);
+            return ps.executeUpdate();
+        }
+    }
+
+    /** Marca el premio de UN pedido. Mismo criterio que marcarGrupo: solo pendientes y solo premios. */
+    public static int marcarPedido(final Connection con, final String regla, final int idTienda,
+            final int idPedido, final String motivo) throws Exception {
+        final String sql = "insert ignore into pizzaamericana.premio_sospechoso (idresultado, regla, motivo)"
+                + " select r.idresultado, ?, ?"
+                + "   from pizzaamericana.resultado_ruleta r"
+                + "   join pizzaamericana.ruleta_oferta ro on ro.idopcion = r.idopcion and ro.activo = 'S'"
+                + "  where r.idtienda = ? and r.idpedido = ? and r.idofertacliente = 0";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, regla);
+            ps.setString(2, motivo == null ? "" : (motivo.length() > 200 ? motivo.substring(0, 200) : motivo));
+            ps.setInt(3, idTienda);
+            ps.setInt(4, idPedido);
+            return ps.executeUpdate();
+        }
     }
 
     /** El texto que lee quien dispersa, al lado del premio. */
