@@ -52,4 +52,14 @@ create table if not exists pizzaamericana.encuesta_origen (
   key idx_origen_ip (ip, fecha)
 ) engine=InnoDB default charset=latin1;
 
+-- Las columnas de texto van en utf8mb4 aunque la tabla sea latin1, como el resto
+-- del esquema. El User-Agent de un celular puede traer el modelo escrito en otro
+-- alfabeto, y en latin1 ese INSERT fallaria. Como el DAO se traga los errores
+-- para no tumbar la encuesta, la fila se perderia EN SILENCIO: justo lo que una
+-- tabla de auditoria no se puede permitir. Correrlo de nuevo no cambia nada.
+alter table pizzaamericana.encuesta_origen
+  modify navegador    varchar(255) character set utf8mb4 null,
+  modify referencia   varchar(255) character set utf8mb4 null,
+  modify ip_reenviada varchar(255) character set utf8mb4 null;
+
 select count(*) as filas_registradas from pizzaamericana.encuesta_origen;
