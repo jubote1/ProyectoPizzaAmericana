@@ -23,6 +23,7 @@ import capaControladorCC.ClienteCtrl;
 import capaControladorCC.EncuestaCtrl;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.VacanteCtrl;
+import capaDAOCC.EncuestaOrigenDAO;
 import capaModeloCC.Candidato;
 import capaModeloCC.Cliente;
 import capaModeloCC.EncuestaServicio;
@@ -94,6 +95,13 @@ public class EncuestaServicioWb extends HttpServlet {
             String accion = jsonObj.has("type") ? jsonObj.get("type").getAsString() : "survey";
 
             logger.info("📩 Encuesta recibida: " + gson.toJson(encuesta) + " | Acción: " + accion);
+
+            // De donde llego: IP, navegador y hora. No bloquea ni valida nada, solo
+            // deja constancia; el DAO se traga cualquier error justamente para que
+            // esto no pueda tumbar la encuesta de un cliente. Va ANTES de procesar
+            // para que quede registro aunque el guardado falle despues.
+            EncuestaOrigenDAO.registrar(request, encuesta.getIdtienda(), encuesta.getIdpedido(),
+                    "roulette".equals(accion) ? EncuestaOrigenDAO.RULETA : EncuestaOrigenDAO.ENCUESTA);
 
             String respuesta;
             switch (accion) {
