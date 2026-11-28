@@ -24,6 +24,8 @@ import capaControladorCC.EncuestaCtrl;
 import capaControladorCC.PedidoCtrl;
 import capaControladorCC.VacanteCtrl;
 import capaDAOCC.EncuestaOrigenDAO;
+import capaDAOCC.ParametrosDAO;
+import capaSeguridad.FirmaEncuestaQR;
 import capaModeloCC.Candidato;
 import capaModeloCC.Cliente;
 import capaModeloCC.EncuestaServicio;
@@ -67,6 +69,58 @@ public class EncuestaServicioWb extends HttpServlet {
         clienteCtrl = new ClienteCtrl();
     }
 
+    /**
+     * Revisa la firma del QR y devuelve en que quedo, sin rechazar nada.
+     *
+     * POR QUE NO RECHAZA. Los tiquetes impresos antes del cambio no traen firma y
+     * el cliente que guardo el suyo tiene derecho a contestar. Primero se anota
+     * que llega; cuando los SIN_FIRMA bajen a casi cero, el parametro
+     * QRENCUESTA_MODO pasa a EXIGE y ahi si se rechaza. Mientras tanto esto solo
+     * mide, que es como se decide con datos y no de memoria.
+     *
+     * BUSCA LA FIRMA EN LOS DOS LADOS, cuerpo y direccion, porque la pagina de
+     * pizzaamericana.co esta en el medio y no sabemos todavia por cual de los dos
+     * la va a reenviar. Si no la manda por ninguno -que es lo que va a pasar
+     * hasta que la pagina se ajuste-, queda SIN_FIRMA, y eso mismo es el dato que
+     * dice que la pagina aun no la reenvia.
+     *
+     * NUNCA LANZA: una encuesta no se puede perder por culpa de esta revision.
+     */
+    private String revisarFirma(final HttpServletRequest request, final JsonObject cuerpo,
+            final EncuestaServicio encuesta) {
+        try {
+            final String exp = primero(valor(cuerpo, "exp"), request.getParameter("exp"));
+            final String firma = primero(valor(cuerpo, "f"), request.getParameter("f"));
+            final String tipo = primero(valor(cuerpo, "tipo"), request.getParameter("tipo"), "pv");
+            final String clave = ParametrosDAO.retornarValorAlfanumerico(FirmaEncuestaQR.PARAMETRO_CLAVE);
+            return FirmaEncuestaQR.revisar(encuesta.getIdtienda(), encuesta.getIdpedido(), tipo, exp, firma,
+                    clave);
+        } catch (final Throwable t) {
+            logger.info("No se pudo revisar la firma del QR: " + t);
+            return null;
+        }
+    }
+
+    private static String valor(final JsonObject o, final String clave) {
+        try {
+            if (o != null && o.has(clave) && !o.get(clave).isJsonNull()) {
+                return o.get(clave).getAsString();
+            }
+        } catch (final Exception ignored) {
+            // un campo con otra forma no es motivo para nada
+        }
+        return null;
+    }
+
+    private static String primero(final String... valores) {
+        for (final String v : valores) {
+            if (v != null && !v.trim().isEmpty()) {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -96,12 +150,15 @@ public class EncuestaServicioWb extends HttpServlet {
 
             logger.info("📩 Encuesta recibida: " + gson.toJson(encuesta) + " | Acción: " + accion);
 
-            // De donde llego: IP, navegador y hora. No bloquea ni valida nada, solo
-            // deja constancia; el DAO se traga cualquier error justamente para que
-            // esto no pueda tumbar la encuesta de un cliente. Va ANTES de procesar
-            // para que quede registro aunque el guardado falle despues.
+            // De donde llego: IP, navegador y hora, y si el QR venia firmado. No
+            // bloquea ni valida nada, solo deja constancia; el DAO se traga
+            // cualquier error justamente para que esto no pueda tumbar la encuesta
+            // de un cliente. Va ANTES de procesar para que quede registro aunque el
+            // guardado falle despues.
+            final String firmaEstado = revisarFirma(request, jsonObj, encuesta);
             EncuestaOrigenDAO.registrar(request, encuesta.getIdtienda(), encuesta.getIdpedido(),
-                    "roulette".equals(accion) ? EncuestaOrigenDAO.RULETA : EncuestaOrigenDAO.ENCUESTA);
+                    "roulette".equals(accion) ? EncuestaOrigenDAO.RULETA : EncuestaOrigenDAO.ENCUESTA,
+                    firmaEstado);
 
             String respuesta;
             switch (accion) {

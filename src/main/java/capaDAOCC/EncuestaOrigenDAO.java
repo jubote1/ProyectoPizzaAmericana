@@ -46,11 +46,21 @@ public class EncuestaOrigenDAO {
      */
     public static void registrar(final HttpServletRequest request, final int idTienda, final int idPedido,
             final String accion) {
+        registrar(request, idTienda, idPedido, accion, null);
+    }
+
+    /**
+     * Igual que el anterior, anotando ademas como quedo la revision de la firma
+     * del QR: OK, SIN_FIRMA, INVALIDA, VENCIDA o SIN_CLAVE. Nulo cuando no se
+     * pudo revisar.
+     */
+    public static void registrar(final HttpServletRequest request, final int idTienda, final int idPedido,
+            final String accion, final String firmaEstado) {
         if (request == null) {
             return;
         }
         final String sql = "INSERT INTO encuesta_origen (idtienda, idpedido, accion, ip, ip_reenviada,"
-                + " navegador, idioma, referencia) VALUES (?,?,?,?,?,?,?,?)";
+                + " navegador, idioma, referencia, firma_estado) VALUES (?,?,?,?,?,?,?,?,?)";
         final ConexionBaseDatos con = new ConexionBaseDatos();
         try (Connection con1 = con.obtenerConexionBDPrincipal();
                 PreparedStatement pstmt = con1.prepareStatement(sql)) {
@@ -66,6 +76,7 @@ public class EncuestaOrigenDAO {
             pstmt.setString(6, recortar(request.getHeader("User-Agent"), MAX_LARGO));
             pstmt.setString(7, recortar(request.getHeader("Accept-Language"), MAX_IDIOMA));
             pstmt.setString(8, recortar(request.getHeader("Referer"), MAX_LARGO));
+            pstmt.setString(9, recortar(firmaEstado, 20));
             pstmt.executeUpdate();
         } catch (final Throwable t) {
             // A proposito: registrar el origen jamas puede tumbar una encuesta.
