@@ -241,13 +241,17 @@ public class RuletaDAO {
                 + " IFNULL(DATE_FORMAT(oc.fecha_mensaje,'%Y-%m-%d %H:%i'),'') AS fecha_aviso,"
                 + " IFNULL(oc.utilizada,'') AS utilizada,"
                 + " IFNULL(DATE_FORMAT(oc.uso_oferta,'%Y-%m-%d %H:%i'),'') AS uso_oferta,"
-                + " IFNULL(oc.usuario_uso,'') AS usuario_uso"
+                + " IFNULL(oc.usuario_uso,'') AS usuario_uso,"
+                // El motivo de sospecha, para que quien dispersa lo vea ANTES de
+                // oprimir el boton. No bloquea: la decision sigue siendo suya.
+                + " IFNULL(s.motivo,'') AS motivo_sospecha"
                 + " FROM resultado_ruleta r"
                 + " JOIN opciones_ruleta o ON o.idopcion = r.idopcion AND o.premio = 1"
                 + " LEFT JOIN tienda t ON t.idtienda = r.idtienda"
                 + " LEFT JOIN ruleta_oferta ro ON ro.idopcion = r.idopcion AND ro.activo = 'S'"
                 + " LEFT JOIN oferta f ON f.idoferta = ro.idoferta"
                 + " LEFT JOIN oferta_cliente oc ON oc.idofertacliente = r.idofertacliente"
+                + " LEFT JOIN premio_sospechoso s ON s.idresultado = r.idresultado"
                 // Se elige UN pedido y se une por llave primaria, para que la fila
                 // no se pueda multiplicar. Usa el indice numposheader.
                 + " LEFT JOIN pedido p ON p.idpedido = ("
@@ -295,9 +299,10 @@ public class RuletaDAO {
                         obj.put("utilizada", rs.getString("utilizada"));
                         obj.put("uso_oferta", rs.getString("uso_oferta"));
                         obj.put("usuario_uso", rs.getString("usuario_uso"));
+                        obj.put("motivo_sospecha", rs.getString("motivo_sospecha"));
                         obj.put("estado", calcularEstado(rs.getInt("idofertacliente"),
                                 rs.getInt("idoferta"), rs.getString("correo"),
-                                rs.getString("fecha_aviso")));
+                                rs.getString("fecha_aviso"), rs.getString("motivo_sospecha")));
                         premios.add(obj);
                     }
                 }
@@ -317,7 +322,7 @@ public class RuletaDAO {
      * dispersar nunca discrepen sobre que es dispersable.
      */
     private static String calcularEstado(int idOfertaCliente, int idOferta, String correo,
-            String fechaAviso) {
+            String fechaAviso, String motivoSospecha) {
         // -2 es un premio retenido a proposito: salio de una encuesta que se
         // lleno en masa cambiando el numero de pedido en el QR (ver
         // sql/2026_11_27_01_bloquear_premios_ruleta_encuesta_masiva.sql). Tiene
@@ -348,6 +353,22 @@ public class RuletaDAO {
         }
         if (idOferta == 0) {
             return "SIN OFERTA";
+        }
+        // El premio salio de una encuesta que el vigilante marco como llenada en
+        // masa. A PROPOSITO NO SE BLOQUEA: sigue siendo dispersable y la decision
+        // es de quien oprime el boton, que para eso ve el motivo al lado. Es la
+        // diferencia con BLOQUEADO POR REVISAR, que si impide entregarlo.
+        //
+        // Se decidio asi porque la dispersion ya es manual -o sea que la marca
+        // alcanza a un humano antes de que se mueva la plata- y porque hay casos
+        // legitimos que caen en la regla: una familia, un pedido corregido varias
+        // veces. Retener le quitaria la decision a esa persona y obligaria a
+        // meterse a la base para soltarlo.
+        //
+        // Va despues de SIN OFERTA y antes de SIN CORREO: si no hay nada que
+        // entregar, eso es lo primero que hay que saber.
+        if (motivoSospecha != null && motivoSospecha.trim().length() > 0) {
+            return "SOSPECHOSO";
         }
         if (!correoValido(correo)) {
             return "SIN CORREO";

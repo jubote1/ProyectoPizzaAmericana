@@ -103,10 +103,29 @@ function pintarEstado(dato, tipo, fila) {
 		'FALTA AVISO': 'est-faltaaviso',
 		'ENTREGADO A MANO': 'est-amano',
 		'SIN CORREO': 'est-sincorreo',
-		'SIN OFERTA': 'est-sinoferta'
+		'SIN OFERTA': 'est-sinoferta',
+		'SOSPECHOSO': 'est-sospechoso',
+		'BLOQUEADO POR REVISAR': 'est-bloqueado'
 	};
 	var clase = clases[dato] || '';
-	return '<span class="etiqueta-estado ' + clase + '">' + dato + '</span>';
+	var etiqueta = '<span class="etiqueta-estado ' + clase + '">' + dato + '</span>';
+	// SOSPECHOSO no impide dispersar: la decision es de quien oprime el boton,
+	// y por eso tiene que ver AQUI por que se marco, sin ir a buscarlo a otro
+	// lado. Una etiqueta sin motivo no sirve para decidir nada.
+	if (dato === 'SOSPECHOSO' && fila.motivo_sospecha) {
+		etiqueta += '<div class="motivo-sospecha" title="' + escaparHtml(fila.motivo_sospecha) + '">'
+			+ escaparHtml(fila.motivo_sospecha) + '</div>';
+	}
+	return etiqueta;
+}
+
+/** El motivo viene de la base y se pinta como HTML: hay que escaparlo. */
+function escaparHtml(texto) {
+	return String(texto)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
 }
 
 /**

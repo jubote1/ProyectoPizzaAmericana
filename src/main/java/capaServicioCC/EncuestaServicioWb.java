@@ -25,6 +25,7 @@ import capaControladorCC.PedidoCtrl;
 import capaControladorCC.VacanteCtrl;
 import capaDAOCC.EncuestaOrigenDAO;
 import capaDAOCC.ParametrosDAO;
+import capaDAOCC.PremioSospechosoDAO;
 import capaSeguridad.FirmaEncuestaQR;
 import capaModeloCC.Candidato;
 import capaModeloCC.Cliente;
@@ -164,6 +165,17 @@ public class EncuestaServicioWb extends HttpServlet {
             switch (accion) {
                 case "roulette":
                     respuesta = encuestaCtrl.resultadoRuleta(encuesta);
+                    // El premio acaba de nacer: se revisa AQUI MISMO si viene de una
+                    // tanda de encuestas masivas. Si se dejara solo para el proceso
+                    // nocturno, entre que la persona contesta y el proceso corre
+                    // queda una ventana en la que alguien puede dispersar el premio,
+                    // y marcarlo despues ya no sirve de nada.
+                    //
+                    // No bloquea nada ni cambia la respuesta que ve el cliente: la
+                    // ruleta gira igual y el premio sigue siendo dispersable. Lo que
+                    // cambia es que quien dispersa lo va a ver como SOSPECHOSO con el
+                    // motivo al lado.
+                    PremioSospechosoDAO.marcarSiEsMasiva(encuesta.getIdtienda(), encuesta.getIdpedido());
                     break;
                 default:
                 {
